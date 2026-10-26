@@ -138,6 +138,7 @@ function readInstalledManifest(name) {
 }
 
 const violations = [];
+const builtWorkspaces = new Set();
 for (const { dir: example, output } of CONSUMER_EXAMPLES) {
     const dir = path.join(REPO_ROOT, example);
     const manifestPath = path.join(dir, 'package.json');
@@ -147,7 +148,12 @@ for (const { dir: example, output } of CONSUMER_EXAMPLES) {
     }
     const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'));
 
-    buildExample(example);
+    // The e2e workspace emits two hosts in one build. Reuse that fresh build,
+    // while keeping the output-presence and engine checks for each host.
+    if (!builtWorkspaces.has(example)) {
+        buildExample(example);
+        builtWorkspaces.add(example);
+    }
     const outputDir = path.join(dir, output);
     const built =
         existsSync(outputDir) && statSync(outputDir).isDirectory()

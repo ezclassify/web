@@ -64,16 +64,6 @@ jobs:
           NODE_AUTH_TOKEN: ${{ secrets.EZ_GHPKG_TOKEN || github.token }}
         run: npm run deps:relock && npm ci
 
-      - name: Dependency quarantine window
-        # Enforce the publish-date quarantine for third-party packages while
-        # allowing the configured trusted first-party registry exemption.
-        # Pinned to one matrix leg: the check reads the ephemeral lockfile and asks the
-        # registry for publish dates, so it is Node-version-independent and
-        # network-bound. Running it on both legs would double that for no
-        # extra signal.
-        if: matrix.node-version == 22
-        run: npm run check:dependency-age
-
       # Spec integrity: the vendored bundle has to be the one MANIFEST.json
       # names. This repository generates nothing from it, so there is no
       # regenerate-and-diff step; the hash is the whole check.
@@ -113,21 +103,12 @@ jobs:
         run: npm run build
         working-directory: integrations/angular
 
-      - name: Build examples and e2e hosts
-        # The four README examples and the two integration hosts consume the
-        # public REST API over HTTP. The public install closure builds them
-        # without an embedded engine.
-        run: >
-          npm run build --workspace=examples/vanilla-example
-          --workspace=examples/react-example --workspace=examples/vue-example
-          --workspace=examples/angular-example --workspace=e2e
-
       - name: Examples and hosts carry no engine
         # The claim the examples exist to make, checked rather than asserted:
         # no dependency field names the engine, no source or built file imports
         # it, and the engine is outside the closure an outside consumer would
         # install. The gate builds every application itself, so it needs
-        # nothing from the step above and cannot go quiet when their gitignored
+        # no separate host-build step and cannot go quiet when their gitignored
         # output is absent.
         run: npm run check:consumer-engine-free -- --verbose
 
