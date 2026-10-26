@@ -1,3 +1,6 @@
+# Routine updates preserve the supported compatibility lines.
+# Major upgrades are deliberate; security updates retain their separate policy.
+
 version: 2
 
 updates:
@@ -24,16 +27,6 @@ updates:
         update-types:
           - minor
           - patch
-    # Ignores are per-family, not blanket. Ignoring every major meant a
-    # dependency that had moved on stayed invisible until someone went looking,
-    # which is the opposite of what this file is for. What stays ignored is what
-    # cannot move on its own:
-    #   - the Angular toolchain, which moves as one coordinated bump across the
-    #     library and separately in the Angular example and e2e host;
-    #   - vite and its framework plugins, which AGENTS.md requires to stay on
-    #     a compatible major across the Vite examples and e2e hosts;
-    #   - typescript, paired with each Angular compiler line;
-    #   - first-party packages, which are updated with each release.
     ignore:
       - dependency-name: '@angular/*'
         update-types:
@@ -57,9 +50,15 @@ updates:
         update-types:
           - version-update:semver-major
       - dependency-name: '@ezclassify/*'
-    open-pull-requests-limit: 10
+    open-pull-requests-limit: 2
     labels:
       - dependencies
+    allow:
+      - dependency-name: '*'
+        update-types:
+          - version-update:semver-minor
+          - version-update:semver-patch
+    versioning-strategy: increase-if-necessary
 
   - package-ecosystem: github-actions
     directory: /
@@ -73,8 +72,12 @@ updates:
         update-types:
           - minor
           - patch
-    # No major ignore here: actions are pinned by commit SHA, and a major that
-    # never opens a pull request is a pin nobody revisits.
     labels:
       - dependencies
       - ci
+    allow:
+      - dependency-name: '*'
+        update-types:
+          - version-update:semver-minor
+          - version-update:semver-patch
+    open-pull-requests-limit: 2

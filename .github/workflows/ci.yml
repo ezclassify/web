@@ -20,7 +20,9 @@ concurrency:
 
 jobs:
   build-and-test:
-    if: ${{ github.event_name != 'schedule' || github.repository == 'ezclassify/web' }}
+    if:
+      ${{ github.event_name != 'schedule' || github.repository == 'ezclassify/web'
+      }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
     strategy:
@@ -32,8 +34,11 @@ jobs:
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: ${{ matrix.node-version }}
+
           registry-url: 'https://npm.pkg.github.com'
           scope: '@ezclassify'
+      - name: Install supported npm
+        run: npm install -g npm@^11.10.0
 
       - name: Configure package registry
         run: |
@@ -113,12 +118,9 @@ jobs:
         # public REST API over HTTP. The public install closure builds them
         # without an embedded engine.
         run: >
-          npm run build
-          --workspace=examples/vanilla-example
-          --workspace=examples/react-example
-          --workspace=examples/vue-example
-          --workspace=examples/angular-example
-          --workspace=e2e
+          npm run build --workspace=examples/vanilla-example
+          --workspace=examples/react-example --workspace=examples/vue-example
+          --workspace=examples/angular-example --workspace=e2e
 
       - name: Examples and hosts carry no engine
         # The claim the examples exist to make, checked rather than asserted:
