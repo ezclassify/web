@@ -1,37 +1,42 @@
 name: CI
 
-# Runs on push and pull request; the weekly run catches vendored-spec drift
-# between pushes.
 on:
   push:
     branches: [main]
   pull_request:
     branches: [main]
-  schedule:
-    - cron: '0 12 * * 6' # weekly, Saturday 12:00 UTC; only fires on the repo's default branch
+    types:
+      - opened
+      - synchronize
+      - reopened
+      - ready_for_review
+  workflow_dispatch: null
 
 permissions:
   contents: read
   packages: read
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.ref }}-${{ github.event_name }}
   cancel-in-progress: true
 
 jobs:
+  policy:
+    uses: ezclassify/.github/.github/workflows/ci-policy.yml@a42ece80f520858a2926723d12bba2af2dca0474
+    with:
+      primary-version: '22'
+      full-versions: '["22","24"]'
   build-and-test:
-    if:
-      ${{ github.event_name != 'schedule' || github.repository == 'ezclassify/web'
-      }}
+    if: ${{ needs.policy.result == 'success' && (github.event_name != 'schedule' || github.repository == 'ezclassify/web') }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
     strategy:
       matrix:
-        node-version: [22, 24]
+        node-version: ${{ fromJSON(needs.policy.outputs.versions) }}
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
 
-      - uses: ezclassify/.github/actions/setup-node-npm@0c105ab5340fb612d18e3f745f160a43e4b34f7f
+      - uses: ezclassify/.github/actions/setup-node-npm@a42ece80f520858a2926723d12bba2af2dca0474
         with:
           node-version: ${{ matrix.node-version }}
           registry-url: 'https://npm.pkg.github.com'
@@ -59,7 +64,10 @@ jobs:
         # exactly those bytes.
         env:
           NODE_AUTH_TOKEN: ${{ secrets.EZ_GHPKG_TOKEN || github.token }}
-        run: npm run deps:relock && npm ci
+        uses: ezclassify/.github/actions/install-node-dependencies@a42ece80f520858a2926723d12bba2af2dca0474
+        with:
+          mode: generated
+          relock-installs: 'false'
 
       # Spec integrity: the vendored bundle has to be the one MANIFEST.json
       # names. This repository generates nothing from it, so there is no
@@ -158,6 +166,7 @@ jobs:
         run: |
           npx playwright install --with-deps chromium
           npm run verify:pack-consume
+        if: ${{ needs.policy.outputs.full == 'true' }}
       - name: No published tarball carries proprietary content
         # The publication-boundary gate. It has to run here, as an explicit
         # step, because .npmrc sets ignore-scripts=true: under that setting npm
@@ -166,10 +175,14 @@ jobs:
         # enforcement at all. Placed after the builds because pack reflects what
         # is on disk, and a tree that was never built proves nothing.
         run: npm run check:publish-content
+    needs:
+      - policy
 
   qualified-artifacts:
-    needs: build-and-test
-    if: ${{ always() && !cancelled() }}
+    needs:
+      - policy
+      - build-and-test
+    if: ${{ needs.policy.result == 'success' && needs.policy.outputs.full == 'true' && (always() && !cancelled()) }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -190,3 +203,29 @@ jobs:
           name: sbom
           path: dist/sbom.json
           if-no-files-found: error
+  qualification:
+    needs:
+      - policy
+      - build-and-test
+      - qualified-artifacts
+    if: ${{ always() && !cancelled() && needs.policy.result == 'success' && needs.policy.outputs.full == 'true' }}
+    uses: ezclassify/.github/.github/workflows/ci-result.yml@a42ece80f520858a2926723d12bba2af2dca0474
+    with:
+      results: ${{ toJSON(needs) }}
+      full: ${{ needs.policy.outputs.full == 'true' }}
+      full-only: '[]'
+      optional: '[]'
+  ci:
+    needs:
+      - policy
+      - build-and-test
+      - qualified-artifacts
+      - qualification
+    if: ${{ always() && !cancelled() }}
+    uses: ezclassify/.github/.github/workflows/ci-result.yml@a42ece80f520858a2926723d12bba2af2dca0474
+    with:
+      results: ${{ toJSON(needs) }}
+      full: ${{ needs.policy.outputs.full == 'true' }}
+      full-only: '["qualified-artifacts","qualification"]'
+      optional: '[]'
+run-name: CI · ${{ github.event_name }} · ${{ github.ref_name }}
