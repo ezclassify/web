@@ -87,6 +87,32 @@ jobs:
             exit 1
           fi
 
+      - name: Lint
+        run: npm run lint
+
+      - name: Check formatting
+        run: npm run format:check
+
+      - name: Dependency license compliance
+        # Validate every publishable workspace before accepting an empty closure;
+        # consumer-provided peers are outside the redistributed production graph.
+        run: node scripts/check-production-licenses.mjs
+
+      - name: Third-party notices are current
+        # THIRD-PARTY-NOTICES.md is generated from the direct production
+        # dependencies of the publishable workspaces; regenerating and
+        # diffing here means a dependency change cannot land without the
+        # committed notices file following it.
+        run: |
+          npm run notices
+          git diff --exit-code THIRD-PARTY-NOTICES.md
+
+      - name: No dependency or import escapes the repo
+        # Static half of the PR-time independence proxy: no file:/link:/
+        # workspace: dependency protocols in publishable packages, and no
+        # relative import that resolves above the repo root.
+        run: npm run check:no-escape
+
       - name: Build UI
         run: npm run build
         working-directory: libs/ui
@@ -123,43 +149,8 @@ jobs:
         # cover is told to a reviewer rather than left to be discovered.
         run: npm test
 
-      - name: Lint
-        run: npm run lint
-
-      - name: Check formatting
-        run: npm run format:check
-
       - name: Typecheck
         run: npm run typecheck
-
-      - name: Dependency license compliance
-        # Validate every publishable workspace before accepting an empty closure;
-        # consumer-provided peers are outside the redistributed production graph.
-        run: node scripts/check-production-licenses.mjs
-
-      - name: Third-party notices are current
-        # THIRD-PARTY-NOTICES.md is generated from the direct production
-        # dependencies of the publishable workspaces; regenerating and
-        # diffing here means a dependency change cannot land without the
-        # committed notices file following it.
-        run: |
-          npm run notices
-          git diff --exit-code THIRD-PARTY-NOTICES.md
-
-      - name: Generate SBOM
-        run: npm run sbom
-
-      - name: Upload SBOM artifact
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: sbom
-          path: dist/sbom.json
-
-      - name: No dependency or import escapes the repo
-        # Static half of the PR-time independence proxy: no file:/link:/
-        # workspace: dependency protocols in publishable packages, and no
-        # relative import that resolves above the repo root.
-        run: npm run check:no-escape
 
       - name: Pack and consume publishable workspaces from tarballs
         # Dynamic half: npm-pack every publishable workspace, install the
@@ -178,3 +169,27 @@ jobs:
         # enforcement at all. Placed after the builds because pack reflects what
         # is on disk, and a tree that was never built proves nothing.
         run: npm run check:publish-content
+
+  qualified-artifacts:
+    needs: build-and-test
+    if: ${{ always() && !cancelled() }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Require the complete compatibility matrix
+        env:
+          VALIDATION_RESULT: ${{ needs.build-and-test.result }}
+        run: test "$VALIDATION_RESULT" = success
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '24'
+      # This native inventory reads committed manifests, not an installed tree.
+      - name: Generate SBOM
+        run: node scripts/generate-sbom.mjs
+      - name: Upload SBOM artifact
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: sbom
+          path: dist/sbom.json
+          if-no-files-found: error
