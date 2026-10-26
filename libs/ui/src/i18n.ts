@@ -21,7 +21,7 @@ export const defaultLocale = {
         'Some markings were not read, so this marking may be incomplete.',
 
     'placeholder.searchInput': 'Type to search, \u2191\u2193 to browse',
-    'placeholder.searchInputTouch': 'Search markings\u2026',
+    'placeholder.searchInputTouch': 'Search\u2026',
 
     'aria.markingInput': 'Marking input',
     'aria.searchMarkings': 'Search markings',
