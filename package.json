@@ -71,7 +71,7 @@
     },
     "devDependencies": {
         "@ezclassify/rest-client": "^1.0.0-0",
-        "@types/node": "24.10.1",
+        "@types/node": "26.6.5",
         "@typescript-eslint/eslint-plugin": "^8.0.0",
         "@typescript-eslint/parser": "^8.0.0",
         "esbuild": "^0.28.0",
