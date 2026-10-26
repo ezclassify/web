@@ -143,6 +143,9 @@ describe('vendor-readonly gate wiring', () => {
     it('names the spec bot and contracts as the writer and source', () => {
         expect(workflow).toContain('ezclassify-spec-bot');
         expect(workflow).toContain('ezclassify/contracts');
+        expect(workflow).toContain(
+            'ALLOWED_BOT_CANONICAL_EMAIL: 348097708+ezclassify-spec-bot[bot]@users.noreply.github.com',
+        );
     });
 
     it('falls back with --is-ancestor rather than a string comparison', () => {
@@ -185,6 +188,8 @@ describe('vendor-readonly gate wiring', () => {
 describe('vendor-readonly gate, executed', () => {
     const BOT_NAME = 'ezclassify-spec-bot[bot]';
     const BOT_EMAIL = 'ezclassify-spec-bot[bot]@users.noreply.github.com';
+    const CANONICAL_BOT_EMAIL =
+        '348097708+ezclassify-spec-bot[bot]@users.noreply.github.com';
     // A stand-in maintainer. The gate reads the author pair and the PR login
     // as opaque strings and only ever compares them against the bot identity,
     // so any name that is not the bot's exercises the human path.
@@ -370,6 +375,7 @@ describe('vendor-readonly gate, executed', () => {
                     ...process.env,
                     ALLOWED_BOT_LOGIN: BOT_NAME,
                     ALLOWED_BOT_EMAIL: BOT_EMAIL,
+                    ALLOWED_BOT_CANONICAL_EMAIL: CANONICAL_BOT_EMAIL,
                     OVERRIDE_LABEL: 'spec-mirror-override',
                     PR_AUTHOR: '',
                     PR_LABELS: '',
@@ -407,6 +413,24 @@ describe('vendor-readonly gate, executed', () => {
             HEAD_SHA: fixture.head,
         };
     }
+
+    it.each([
+        [BOT_NAME, CANONICAL_BOT_EMAIL, 0],
+        [BOT_NAME, `348097709+${BOT_EMAIL}`, 1],
+        [BOT_NAME, '348097708+other-bot[bot]@users.noreply.github.com', 1],
+        ['Other Bot', CANONICAL_BOT_EMAIL, 1],
+    ])('checks GitHub squash identity %s <%s>', (name, email, expected) => {
+        const fixture = repoWithVendorCommit(
+            String(name),
+            String(email),
+            'chore(spec): vendor contracts@deadbeef (#9)',
+        );
+        const result = runGate(fixture.dir, {
+            EVENT_NAME: 'push',
+            ...range(fixture),
+        });
+        expect(result.status, result.output).toBe(expected);
+    });
 
     it('refuses a forged author email even though the name reads as the bot', () => {
         // The original blocker. `%an` is a claim, not an identity.
