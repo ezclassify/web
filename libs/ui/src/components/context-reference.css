@@ -1,0 +1,287 @@
+/*
+ * ContextReference: a docked reference drawer that composes the loaded
+ * context's Handbook / Guidebook / AccessHandbook surfaces, plus any
+ * host-authored custom tabs, into one tabbed panel pinned to a viewport edge.
+ *
+ * The host element IS the drawer root (`.ez-context-ref`): the controller
+ * enhances it in place rather than building a separate frame, because a custom
+ * tab's host node must stay exactly where its framework rendered it (see the
+ * component header). The tablist and every tabpanel (the built-in ones the
+ * controller creates and the custom ones the host authored) are direct
+ * children of the root, laid out by this stylesheet. The handle is absolutely
+ * positioned just outside the surface so it stays reachable when the surface is
+ * folded away, without needing to be a flow sibling of the panels.
+ *
+ * Structural-versus-color split (see styles.css header): every color here reads
+ * a component token that FALLS BACK to a theme-driven --ez-color-* value, e.g.
+ * `var(--ez-context-ref-surface, var(--ez-color-surface))`. A consumer themes
+ * per security domain by setting the component token on any ancestor (a
+ * [data-theme] scope included) and structure is never touched; left unset, the
+ * surface tracks the host's light/dark theme through --ez-color-* directly. The
+ * structural tokens (--ez-context-ref-size and the four --ez-context-ref-offset-*)
+ * are theme-invariant and set inline per instance by the controller.
+ */
+
+.ez-context-ref {
+    position: fixed;
+    z-index: var(--ez-z-dropdown, 1000);
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    min-height: 0;
+    font-family: var(--ez-font-family, inherit);
+    /* The frame is a transparent positioning shell until opened; the handle and
+     * the open surface re-enable pointer events so a closed drawer never
+     * swallows clicks along the whole edge. */
+    pointer-events: none;
+}
+
+/* ── Placement: which edge the surface pins to. The offsets anchor the frame;
+ * the size axis (width for left/right, height for top/bottom) is applied only
+ * when open, so a closed drawer collapses to just its handle. ── */
+.ez-context-ref[data-ez-context-ref-placement='left'] {
+    top: var(--ez-context-ref-offset-top, 0);
+    bottom: var(--ez-context-ref-offset-bottom, 0);
+    left: var(--ez-context-ref-offset-left, 0);
+}
+.ez-context-ref[data-ez-context-ref-placement='right'] {
+    top: var(--ez-context-ref-offset-top, 0);
+    bottom: var(--ez-context-ref-offset-bottom, 0);
+    right: var(--ez-context-ref-offset-right, 0);
+}
+.ez-context-ref[data-ez-context-ref-placement='top'] {
+    top: var(--ez-context-ref-offset-top, 0);
+    left: var(--ez-context-ref-offset-left, 0);
+    right: var(--ez-context-ref-offset-right, 0);
+}
+.ez-context-ref[data-ez-context-ref-placement='bottom'] {
+    bottom: var(--ez-context-ref-offset-bottom, 0);
+    left: var(--ez-context-ref-offset-left, 0);
+    right: var(--ez-context-ref-offset-right, 0);
+}
+
+/* ── Open surface: the bordered, filled box. Only present when open, so the
+ * closed state is just the handle. ── */
+.ez-context-ref[data-ez-context-ref-open='true'] {
+    pointer-events: auto;
+    background: var(--ez-context-ref-surface, var(--ez-color-background, #fff));
+    color: var(--ez-context-ref-text, var(--ez-color-text, inherit));
+    border: var(--ez-border-width, 1px) solid
+        var(--ez-context-ref-border, var(--ez-color-border, #d1d5db));
+    box-shadow: var(--ez-context-ref-shadow, 0 4px 24px rgba(0, 0, 0, 0.18));
+}
+.ez-context-ref[data-ez-context-ref-open='true'][data-ez-context-ref-placement='left'],
+.ez-context-ref[data-ez-context-ref-open='true'][data-ez-context-ref-placement='right'] {
+    width: var(--ez-context-ref-size, 22rem);
+    max-width: 96vw;
+}
+.ez-context-ref[data-ez-context-ref-open='true'][data-ez-context-ref-placement='top'],
+.ez-context-ref[data-ez-context-ref-open='true'][data-ez-context-ref-placement='bottom'] {
+    height: var(--ez-context-ref-size, 16rem);
+    max-height: 90vh;
+}
+
+/* Closed: fold the tablist and every panel away; the frame collapses to the
+ * handle, which is positioned outside the frame and stays reachable. Custom
+ * panels are the host's own nodes, marked with [data-ez-context-ref-panel]
+ * rather than a class, because the framework owns their `class`. */
+.ez-context-ref[data-ez-context-ref-open='false'] .ez-context-ref__tablist,
+.ez-context-ref[data-ez-context-ref-open='false'] .ez-context-ref__tabpanel,
+.ez-context-ref[data-ez-context-ref-open='false'] [data-ez-context-ref-panel] {
+    display: none;
+}
+
+/* Keep dismissal inside the viewport independently of the external pull-tab.
+ * A separate flex item stays clear of wrapping tabs and scrolling panels. */
+.ez-context-ref__close {
+    align-self: flex-end;
+    flex: 0 0 auto;
+    min-height: 2.75rem;
+    margin: 0.25rem;
+    padding: 0.5rem 0.75rem;
+    appearance: none;
+    cursor: pointer;
+    border: 0;
+    border-radius: var(--ez-border-radius, 0.375rem);
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    font-size: calc(var(--ez-font-size, 1rem) - 0.125rem);
+}
+.ez-context-ref__close:hover {
+    background: var(--ez-color-surface-hover, #f3f4f6);
+}
+.ez-context-ref__close:focus-visible {
+    outline: 0.125rem solid var(--ez-color-primary, #fdb827);
+    outline-offset: -0.125rem;
+}
+.ez-context-ref__close[hidden] {
+    display: none;
+}
+
+/* ── Tablist ── */
+.ez-context-ref__tablist {
+    pointer-events: auto;
+    display: flex;
+    flex-wrap: wrap;
+    flex: 0 0 auto;
+    gap: 0;
+    border-bottom: var(--ez-border-width, 1px) solid
+        var(--ez-context-ref-border, var(--ez-color-border, #d1d5db));
+    background: var(--ez-context-ref-tab-bg, var(--ez-color-surface, #f8f9fa));
+}
+
+.ez-context-ref__tab {
+    appearance: none;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    padding: var(--ez-spacing-sm, 0.5rem) var(--ez-spacing-md, 0.75rem);
+    font: inherit;
+    font-size: calc(var(--ez-font-size, 1rem) - 0.0625rem);
+    color: var(--ez-context-ref-tab-text, var(--ez-color-muted, #6b7280));
+    border-bottom: 2px solid transparent;
+    transition:
+        color var(--ez-transition, 150ms ease),
+        border-color var(--ez-transition, 150ms ease),
+        background var(--ez-transition, 150ms ease);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    white-space: nowrap;
+}
+.ez-context-ref__tab:hover {
+    background: var(--ez-color-surface-hover, #f3f4f6);
+}
+.ez-context-ref__tab[aria-selected='true'] {
+    color: var(--ez-context-ref-tab-active-text, var(--ez-color-text, #1a1a1a));
+    background: var(
+        --ez-context-ref-tab-active-bg,
+        var(--ez-color-background, #fff)
+    );
+    border-bottom-color: var(--ez-color-primary, #fdb827);
+    font-weight: 600;
+}
+.ez-context-ref__tab:focus-visible {
+    outline: 2px solid var(--ez-color-primary, #fdb827);
+    outline-offset: -2px;
+}
+.ez-context-ref__tab-icon {
+    font-size: 1em;
+    line-height: 1;
+}
+
+/* ── Panels: built-in and custom alike are direct children of the root. Only
+ * the active one is shown; the rest are hidden via the `hidden` attribute, so
+ * exactly one panel participates in the flex column and fills the surface. ── */
+.ez-context-ref__tabpanel,
+.ez-context-ref > [data-ez-context-ref-panel] {
+    pointer-events: auto;
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: auto;
+    padding: var(--ez-spacing-sm, 0.5rem);
+    box-sizing: border-box;
+}
+.ez-context-ref__tabpanel[hidden],
+.ez-context-ref > [data-ez-context-ref-panel][hidden] {
+    display: none;
+}
+
+/* ── Handle: the always-reachable open/close toggle, pinned just outside the
+ * surface edge so it survives the surface folding away. ── */
+.ez-context-ref__handle {
+    position: absolute;
+    pointer-events: auto;
+    appearance: none;
+    cursor: pointer;
+    border: var(--ez-border-width, 1px) solid
+        var(--ez-context-ref-border, var(--ez-color-border, #d1d5db));
+    background: var(
+        --ez-context-ref-handle-bg,
+        var(--ez-color-primary, #fdb827)
+    );
+    color: var(
+        --ez-context-ref-handle-text,
+        var(--ez-color-primary-contrast, #1c1c1c)
+    );
+    font: inherit;
+    font-size: calc(var(--ez-font-size, 1rem) - 0.125rem);
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    padding: var(--ez-spacing-sm, 0.5rem) var(--ez-spacing-xs, 0.25rem);
+    box-shadow: var(--ez-context-ref-shadow, 0 4px 24px rgba(0, 0, 0, 0.18));
+}
+.ez-context-ref__handle:focus-visible {
+    outline: 2px solid var(--ez-color-primary, #fdb827);
+    outline-offset: 2px;
+}
+
+/* Left/right: the handle sits on the inner (page-facing) edge, centered
+ * vertically, its label reading down the edge. Top/bottom: it sits on the inner
+ * edge centered horizontally, label horizontal. */
+.ez-context-ref[data-ez-context-ref-placement='left'] .ez-context-ref__handle {
+    left: 100%;
+    top: 50%;
+    transform: translateY(-50%);
+    writing-mode: vertical-rl;
+    border-radius: 0 var(--ez-border-radius, 0.375rem)
+        var(--ez-border-radius, 0.375rem) 0;
+}
+.ez-context-ref[data-ez-context-ref-placement='right'] .ez-context-ref__handle {
+    right: 100%;
+    top: 50%;
+    transform: translateY(-50%);
+    writing-mode: vertical-lr;
+    border-radius: var(--ez-border-radius, 0.375rem) 0 0
+        var(--ez-border-radius, 0.375rem);
+}
+.ez-context-ref[data-ez-context-ref-placement='top'] .ez-context-ref__handle {
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border-radius: 0 0 var(--ez-border-radius, 0.375rem)
+        var(--ez-border-radius, 0.375rem);
+}
+.ez-context-ref[data-ez-context-ref-placement='bottom']
+    .ez-context-ref__handle {
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border-radius: var(--ez-border-radius, 0.375rem)
+        var(--ez-border-radius, 0.375rem) 0 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .ez-context-ref__tab {
+        transition: none;
+    }
+}
+
+/* The handle is drawn narrow on purpose; on a finger an overlay makes it a
+   44px target on the axis it is narrow in, growing toward the page (its outer
+   edge is the viewport's). */
+@media (pointer: coarse) {
+    .ez-context-ref__handle::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+    }
+    .ez-context-ref[data-ez-context-ref-placement='left']
+        .ez-context-ref__handle::after {
+        right: -0.75rem;
+    }
+    .ez-context-ref[data-ez-context-ref-placement='right']
+        .ez-context-ref__handle::after {
+        left: -0.75rem;
+    }
+    .ez-context-ref[data-ez-context-ref-placement='top']
+        .ez-context-ref__handle::after {
+        bottom: -0.75rem;
+    }
+    .ez-context-ref[data-ez-context-ref-placement='bottom']
+        .ez-context-ref__handle::after {
+        top: -0.75rem;
+    }
+}

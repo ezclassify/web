@@ -1,0 +1,30 @@
+node_modules/
+package-lock.json
+dist/
+*.local
+.env
+.DS_Store
+.angular/
+# The examples are workspaces, but each also installs on its own. Their
+# lockfiles stay local and regenerable.
+examples/*/package-lock.json
+test-results/
+coverage/
+
+# Interrupted `npm run deps:relock` run (see scripts/relock.mjs); a clean run
+# always restores these, so a stray one means the run failed mid-strip.
+*.relock-backup
+
+# scripts/typecheck-specs.mjs writes one of these per workspace while it runs
+# and removes it afterward; a stray one means an interrupted run.
+tsconfig.spec.lane.json
+
+# Local agent settings.
+CLAUDE.local.md
+.claude/
+
+# The mirror workflow copies the root .npmrc here so the standalone ui-tools
+# install sees the same registry and auth. It carries a token; nothing in this
+# tree should ever be able to commit it. The root .npmrc is tracked and stays
+# tracked.
+libs/ui-tools/.npmrc

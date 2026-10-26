@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>UI IIFE Smoke Test</title>
+    </head>
+    <body>
+        <div id="result">Loading...</div>
+        <script src="../../dist/browser/ezclassify-ui.iife.js"></script>
+        <script>
+            (function () {
+                var result = document.getElementById('result');
+                try {
+                    if (typeof EzClassifyUI === 'undefined')
+                        throw new Error('EzClassifyUI global not defined');
+                    if (typeof EzClassifyUI.EzClassifyUI !== 'function')
+                        throw new Error(
+                            'EzClassifyUI.EzClassifyUI not a constructor',
+                        );
+
+                    result.textContent = 'PASS: EzClassifyUI global available';
+                    result.dataset.testPassed = 'true';
+                } catch (err) {
+                    result.textContent = 'FAIL: ' + err.message;
+                    result.dataset.testPassed = 'false';
+                }
+            })();
+        </script>
+    </body>
+</html>

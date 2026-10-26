@@ -1,0 +1,118 @@
+.ez-coverage-action {
+    position: relative;
+    display: inline-flex;
+    align-self: flex-start;
+    margin-inline-start: 0.375rem;
+    color: var(--ez-color-muted, #6b7280);
+    font: inherit;
+}
+
+.ez-coverage-action__trigger {
+    position: relative;
+    width: 1.5rem;
+    height: 1.5rem;
+    padding: 0.125rem;
+    border: 0;
+    border-radius: 0.25rem;
+    background: transparent;
+    color: inherit;
+    cursor: help;
+}
+
+.ez-coverage-action__trigger:hover,
+.ez-coverage-action__trigger:focus-visible {
+    background: var(--ez-color-surface-hover, #f3f4f6);
+}
+
+.ez-coverage-action__trigger:focus-visible {
+    outline: 0.125rem solid var(--ez-color-primary, #fdb827);
+    outline-offset: 0.125rem;
+}
+
+.ez-coverage-action__trigger svg {
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+}
+
+.ez-coverage-action__spark {
+    fill: currentColor;
+}
+
+.ez-coverage-action--unseen .ez-coverage-action__spark,
+.ez-coverage-action--seen .ez-coverage-action__spark {
+    fill: var(--ez-color-primary, #fdb827);
+}
+
+.ez-coverage-action__dot {
+    display: none;
+    position: absolute;
+    inset-block-end: 0;
+    inset-inline-start: 0;
+    width: 0.5rem;
+    height: 0.5rem;
+    border-radius: 50%;
+    background: var(--ez-color-primary, #fdb827);
+    box-shadow: 0 0 0 0.125rem var(--ez-color-background, #fff);
+}
+
+.ez-coverage-action--unseen .ez-coverage-action__dot {
+    display: block;
+}
+
+.ez-coverage-action__popover {
+    position: absolute;
+    z-index: var(--ez-z-tooltip, 10000);
+    inset-block-start: calc(100% + 0.5rem);
+    inset-inline-end: 0;
+    width: min(24rem, calc(100vw - 2rem));
+    padding: 1rem;
+    border: 0.0625rem solid var(--ez-color-border, #d1d5db);
+    border-radius: 0.5rem;
+    background: var(--ez-color-background, #fff);
+    color: var(--ez-color-text, #1f2937);
+    box-shadow: var(
+        --ez-dropdown-shadow,
+        0 0.25rem 0.75rem rgba(0, 0, 0, 0.14)
+    );
+}
+
+.ez-coverage-action__text,
+.ez-coverage-action__source {
+    display: block;
+}
+
+.ez-coverage-action__source {
+    margin-block-start: 0.5rem;
+    color: var(--ez-color-muted, #6b7280);
+    font-size: 0.875em;
+}
+
+.ez-coverage-action__apply {
+    margin-block-start: 0.875rem;
+    padding: 0.5rem 0.75rem;
+    border: 0.0625rem solid var(--ez-color-primary, #fdb827);
+    border-radius: 0.375rem;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.ez-coverage-action__apply:hover,
+.ez-coverage-action__apply:focus-visible {
+    background: color-mix(
+        in srgb,
+        var(--ez-color-primary, #fdb827) 14%,
+        transparent
+    );
+}
+
+@media (forced-colors: active) {
+    .ez-coverage-action__dot {
+        background: Highlight;
+        border: 0.125rem solid Canvas;
+        box-shadow: none;
+    }
+}

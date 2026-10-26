@@ -1,0 +1,1142 @@
+scheme:
+  id: multi-scope-regression
+  version: 1.0.0
+  name: Multi-scope UI regression
+  description: >-
+    An authored UI regression fixture with marking and office-record scopes, gated category
+    choices, free-text capture, alternate render views, and whole/part rollup behavior.
+  role_aware: true
+  vocabulary:
+    whole:
+      singular: test
+      plural: tests
+    part:
+      singular: question
+      plural: questions
+  role_detection:
+    whole:
+      - long
+    part:
+      - short
+  default_scope: marking
+  scopes:
+    - id: marking
+      label: Marking
+    - id: office_record
+      label: Office Record Block
+  data:
+    categories:
+      - id: level
+        label: Minimum audience level
+        required: true
+        single: true
+        rollup: max
+        position: 0
+      - id: status
+        label: Release Status
+        required: false
+        single: true
+        rollup: max
+      - id: artifact
+        label: What It Is
+        required: false
+        single: false
+        rollup: union
+        sort: alphabetical
+      - id: from_school
+        label: From School
+        required: false
+        single: true
+        rollup: pipeline
+        default_concept: OUR_SCHOOL
+        sort: alphabetical
+      - id: questions_from
+        label: Questions From
+        required: false
+        single: false
+        rollup: union
+        sort: alphabetical
+      - id: test_section
+        label: Test Section
+        required: false
+        single: false
+        rollup: union
+        sort: position
+      - id: sharing
+        label: Sharing
+        required: false
+        single: false
+        rollup: pipeline
+        sort: position
+      - id: share_recipients
+        label: Share With
+        required: false
+        single: false
+        rollup: intersection
+        collapse_groups: true
+        group_exclude: OUR_SCHOOL
+        sort: alphabetical
+      - id: in_class_recipients
+        label: Read In Class With
+        required: false
+        single: false
+        rollup: intersection
+        sort: alphabetical
+      - id: marked_by
+        label: Marked By
+        scopes:
+          - office_record
+        required: false
+        single: true
+        rollup: union
+      - id: comes_from
+        label: Comes From
+        scopes:
+          - office_record
+        required: false
+        single: true
+        rollup: first
+      - id: open_up
+        label: Open Up
+        scopes:
+          - office_record
+        required: false
+        single: true
+        rollup: first
+      - id: then_do
+        label: Then
+        scopes:
+          - office_record
+        required: false
+        single: true
+        rollup: first
+      - id: filing_status
+        label: Filing
+        required: false
+        single: true
+        rollup: first
+        default_concept: FILED
+    concepts:
+      inline:
+        - id: STUDENTS
+          name: Students
+          definition: >-
+            Students may read released practice material and the active test assigned to them. This
+            is the lowest audience level in a fictional state assessment program.
+          views:
+            default: STUDENTS
+            short: ST
+            long: STUDENTS
+          aliases:
+            - students
+            - student
+          categories:
+            - level
+          color:
+            background: '#2e7d32'
+            text: '#ffffff'
+          rank: bottom
+        - id: SCHOOL_STAFF
+          name: School Staff
+          definition: >-
+            Authorized teachers, school test coordinators, and principals may read school
+            administration material and scoring rubrics. Students may not. The level represents
+            granted access, not automatic access for every school employee.
+          views:
+            default: SCHOOL STAFF
+            short: SS
+            long: SCHOOL STAFF
+          aliases:
+            - school staff
+          categories:
+            - level
+          color:
+            background: '#1565c0'
+            text: '#ffffff'
+          rank:
+            above: STUDENTS
+        - id: DISTRICT_COORDINATORS
+          name: District Coordinators
+          definition: >-
+            Authorized district assessment coordinators may read distribution plans, test-security
+            arrangements, and material under review. School staff and students may not.
+          views:
+            default: DISTRICT COORDINATORS
+            short: DC
+            long: DISTRICT COORDINATORS
+          aliases:
+            - district coordinators
+          categories:
+            - level
+          color:
+            background: '#546e7a'
+            text: '#ffffff'
+          rank:
+            above: SCHOOL_STAFF
+        - id: STATE_ASSESSMENT_STAFF
+          name: State Assessment Staff
+          definition: >-
+            Authorized staff of the state education agency manage the assessment program and may
+            read unreleased item banks, answer keys, and statewide review material. This is the
+            highest audience level; district and school audiences may not read it.
+          views:
+            default: STATE ASSESSMENT STAFF
+            short: SA
+            long: STATE ASSESSMENT STAFF
+          aliases:
+            - state assessment staff
+          categories:
+            - level
+          color:
+            background: '#ff8c00'
+            text: '#000000'
+          rank: top
+          notices:
+            - type: handling
+              required: true
+              text: Record access according to the state assessment program’s procedures.
+        - id: FINAL
+          name: Final
+          definition: Final. The approved version used as the official record.
+          views:
+            default: FINAL
+            short: FINAL
+            long: FINAL
+          aliases:
+            - final
+            - released
+          categories:
+            - status
+          rank: bottom
+        - id: DRAFT
+          name: Draft
+          definition: Draft. Still being written or reviewed; not ready to use.
+          views:
+            default: DRAFT
+            short: DRAFT
+            long: DRAFT
+          aliases:
+            - draft
+          categories:
+            - status
+          rank:
+            above: FINAL
+        - id: PRE_RELEASE
+          name: Pre-release
+          definition: Pre-release. Finished for controlled review but not released for use.
+          views:
+            default: PRE-RELEASE
+            short: PRE
+            long: PRE-RELEASE
+          aliases:
+            - pre-release
+            - prerelease
+            - unreleased
+          categories:
+            - status
+          rank: top
+        - id: TEST
+          name: Test
+          definition: The test or test booklet itself, including its questions.
+          views:
+            default: TEST
+            short: TEST
+            long: TEST
+          aliases:
+            - test
+            - test booklet
+            - test questions
+          categories:
+            - artifact
+        - id: ANSWER_KEY
+          name: Answer Key
+          definition: The official answers used to score the test.
+          views:
+            default: ANSWER KEY
+            short: KEY
+            long: ANSWER KEY
+          aliases:
+            - answer key
+            - answers
+          categories:
+            - artifact
+        - id: INDIVIDUAL_RESULTS
+          name: Individual Results
+          definition: The detailed score record for one student.
+          views:
+            default: INDIVIDUAL RESULTS
+            short: RES-ONE
+            long: INDIVIDUAL RESULTS
+          aliases:
+            - individual results
+            - student results
+            - student score details
+          categories:
+            - artifact
+        - id: AGGREGATE_RESULTS
+          name: Aggregate Results
+          definition: Combined score results for a class, school, or district.
+          views:
+            default: AGGREGATE RESULTS
+            short: RES-MANY
+            long: AGGREGATE RESULTS
+          aliases:
+            - aggregate results
+            - district results
+            - district scores
+          categories:
+            - artifact
+        - id: OUR_SCHOOL
+          name: Our School
+          definition: >
+            Our School. The school you are standing in. Questions written here, and anything the
+            district hands us that is not tied to one of the other four schools.
+          views:
+            default: OUR SCHOOL
+            short: OURS
+            long: OUR SCHOOL
+          categories:
+            - from_school
+            - questions_from
+        - id: OAKWOOD
+          name: Oakwood
+          definition: >
+            Oakwood. Another elementary school in the district. They prepare local reading practice
+            materials.
+          views:
+            default: OAKWOOD
+            short: OAK
+            long: OAKWOOD
+          categories:
+            - from_school
+            - share_recipients
+            - questions_from
+        - id: LINCOLN
+          name: Lincoln
+          definition: >
+            Lincoln. Another elementary school in the district. They prepare local math word
+            problems for practice.
+          views:
+            default: LINCOLN
+            short: LIN
+            long: LINCOLN
+          categories:
+            - from_school
+            - share_recipients
+            - questions_from
+        - id: RIVERSIDE
+          name: Riverside
+          definition: >
+            Riverside. Another elementary school in the district. They prepare local science
+            practice questions.
+          views:
+            default: RIVERSIDE
+            short: RIV
+            long: RIVERSIDE
+          categories:
+            - from_school
+            - share_recipients
+            - questions_from
+        - id: HILLTOP
+          name: Hilltop
+          definition: >
+            Hilltop. Another elementary school in the district. They run the makeup test day for the
+            whole district.
+          views:
+            default: HILLTOP
+            short: HILL
+            long: HILLTOP
+          categories:
+            - from_school
+            - share_recipients
+            - questions_from
+        - id: MATH
+          name: Math
+          definition: >
+            The math section of the test. A student assigned to math may open student-level math
+            material; staff still need the section on their access list for more restricted math
+            material.
+          guidance: >
+            The section identifies subject matter and never changes who may see it. Choose the
+            audience level separately. Math has a Part 2 sub-section with its own assignment list.
+          views:
+            default: MATH
+            short: MATH
+            long: MATH
+          categories:
+            - test_section
+          tier: compartment
+        - id: MATH_PART_2
+          name: Part 2
+          definition: >
+            Part 2 of the math section. Students taking Part 2 may open its student-level test
+            material. Anyone opening more restricted Part 2 material must also satisfy that
+            material's audience level.
+          guidance: >
+            Part 2 narrows the section assignment without changing the audience level. You must be
+            on both the math and Part 2 lists.
+          views:
+            default: PART 2
+            short: P2
+          categories:
+            - test_section
+          parents:
+            - MATH
+          tier: subcompartment
+        - id: READING
+          name: Reading
+          definition: >
+            The reading section of the test. Students assigned to reading may open student-level
+            reading material. Being on the math list tells you nothing about reading.
+          guidance: The section does not change the audience level.
+          views:
+            default: READING
+            short: READ
+          categories:
+            - test_section
+          tier: compartment
+        - id: SCIENCE
+          name: Science
+          definition: >
+            The science section of the test, including the lab questions. Students assigned to
+            science may open student-level science material.
+          guidance: The section does not change the audience level.
+          views:
+            default: SCIENCE
+            short: SCI
+          categories:
+            - test_section
+          tier: compartment
+        - id: SCHOOL_ONLY
+          name: School Only
+          definition: >
+            School Only. This stays in our building. Do not send it to another school, do not send
+            it to a school group, do not take it home. Read it here or not at all.
+          guidance: >
+            Beats every other sharing instruction. If a test has even one question marked School
+            Only, the whole test is School Only.
+          views:
+            default: SCHOOL ONLY
+            short: SCHOOL
+            long: SCHOOL ONLY
+          categories:
+            - sharing
+          position: 0
+        - id: SHARE_WITH
+          name: Share With
+          definition: >
+            Share With (list follows). You may send this to any school or school group named in the
+            list. They may take it back to their own building and use it there.
+          guidance: >
+            The list mixes single schools and school groups. When several questions go into one
+            test, the engine keeps only the schools that appear on every question's list, since a
+            test may only go where every question is allowed to go.
+          views:
+            default: SHARE WITH
+            short: SHARE
+            long: SHARE WITH
+          categories:
+            - sharing
+          position: 1
+        - id: READ_IN_CLASS
+          name: Read In Class
+          definition: >
+            Read In Class (list follows). Anyone at a school or school group in the list may look at
+            this in a classroom, with a teacher watching. They may not take it away and they may not
+            copy it.
+          guidance: >
+            Like Share With, but nobody gets to keep it. Used for questions the district wants
+            people to see without letting them leave the room.
+          views:
+            default: READ IN CLASS
+            short: IN CLASS
+          categories:
+            - sharing
+          position: 2
+        - id: NORTH_SCHOOLS
+          name: North Schools
+          definition: >
+            North Schools. The group of schools on the north side of the district. Naming the group
+            is the same as naming every school in it.
+          views:
+            default: NORTH SCHOOLS
+            short: NORTH
+          categories:
+            - share_recipients
+            - in_class_recipients
+        - id: SOUTH_SCHOOLS
+          name: South Schools
+          definition: >
+            South Schools. The group of schools on the south side of the district. Naming the group
+            is the same as naming every school in it.
+          views:
+            default: SOUTH SCHOOLS
+            short: SOUTH
+          categories:
+            - share_recipients
+            - in_class_recipients
+        - id: MARKED_BY_TEXT
+          name: Marked By
+          definition: >
+            Marked By. The name or initials of the person who wrote the marking on this question.
+            Whoever wrote it is the person to ask about it.
+          views:
+            default: '{value}'
+          categories:
+            - marked_by
+          text_input:
+            placeholder: Name or initials (e.g., Ruiz, M.)
+            label: Marked By
+            required: false
+        - id: TEST_RULES
+          name: Test Rules
+          definition: >
+            Test Rules. This question is marked the way the district's test rules book says to mark
+            it. The ordinary case.
+          views:
+            default: TEST RULES
+            short: RULES
+          aliases:
+            - test rules
+            - rules
+          categories:
+            - comes_from
+        - id: NEW_ITEM
+          name: New Item
+          definition: >
+            New Item. Somebody wrote this question this year. Nobody has seen it before, so it is
+            the easiest one to ruin by leaking it.
+          views:
+            default: NEW ITEM
+            short: NEW
+          aliases:
+            - new item
+            - new
+          categories:
+            - comes_from
+        - id: FROM_TEST_BANK
+          name: From Test Bank
+          definition: >
+            From Test Bank. Borrowed from the district's shared pile of questions. It goes back when
+            we are done with it.
+          views:
+            default: FROM TEST BANK
+            short: BANK
+          aliases:
+            - from test bank
+            - test bank
+            - bank
+          categories:
+            - comes_from
+        - id: FROM_LAST_YEAR
+          name: From Last Year
+          definition: >
+            From Last Year. Reused from a test we already gave. Nobody wrote down where it came from
+            before that, so be careful with it.
+          views:
+            default: FROM LAST YEAR
+            short: LAST YR
+          aliases:
+            - from last year
+            - last year
+          categories:
+            - comes_from
+        - id: FROM_STATE_OFFICE
+          name: From State Office
+          definition: >
+            From State Office. The state sent us this question. The state still gets to say what
+            happens to it.
+          views:
+            default: FROM STATE OFFICE
+            short: STATE
+          aliases:
+            - from state office
+            - state office
+            - state
+          categories:
+            - comes_from
+        - id: END_OF_YEAR
+          name: End of Year
+          definition: >
+            End of Year. This stops being a secret when the school year ends. Until then, treat it
+            like any other test question.
+          guidance: >
+            Only use this when Comes From is New Item. A borrowed or reused question is not ours to
+            open up.
+          views:
+            default: END OF YEAR
+            short: YEAR END
+          aliases:
+            - end of year
+            - year end
+          categories:
+            - open_up
+        - id: AFTER_TEST_DAY
+          name: After Test Day
+          definition: >
+            After Test Day. This stops being a secret once everyone has taken the test. The ordinary
+            answer.
+          views:
+            default: AFTER TEST DAY
+            short: TEST DAY
+          aliases:
+            - after test day
+            - test day
+          categories:
+            - open_up
+        - id: AFTER_MAKEUP_DAY
+          name: After Makeup Day
+          definition: >
+            After Makeup Day. Kids who were sick take the test later, so this stays a secret until
+            the makeup day is over too.
+          guidance: Only use this when Comes From is From Test Bank.
+          views:
+            default: AFTER MAKEUP DAY
+            short: MAKEUP
+          aliases:
+            - after makeup day
+            - makeup day
+            - makeup
+          categories:
+            - open_up
+        - id: WHEN_BOARD_SAYS
+          name: When State Assessment Staff Says
+          definition: >
+            When State Assessment Staff Says. Nobody has picked a date. The state assessment staff
+            decides when this opens up, and until they do, it stays shut.
+          guidance: >
+            The only answer allowed while a question is Being Checked. The check has to finish
+            before anyone can put a date on it.
+          views:
+            default: WHEN BOARD SAYS
+            short: BOARD
+          aliases:
+            - when state assessment staff says
+            - state assessment staff says
+          categories:
+            - open_up
+        - id: NEVER
+          name: Never
+          definition: >
+            Never. This one never opens up. The district gives it again next year and the year
+            after, so it has to stay secret forever.
+          views:
+            default: NEVER
+            short: NEVER
+          aliases:
+            - never
+          categories:
+            - open_up
+        - id: LOCK_IN_OFFICE
+          name: Lock In Office
+          definition: >
+            Lock In Office. The paper goes in the locked cabinet in the front office and stays
+            there. Nobody takes it out without the district coordinators.
+          guidance: >
+            The right answer whenever Open Up is Never. For a question in a test section, check
+            whether the section has its own cabinet first.
+          views:
+            default: LOCK IN OFFICE
+            short: LOCK
+          aliases:
+            - lock in office
+            - lock
+          categories:
+            - then_do
+        - id: SEND_HOME
+          name: Send Home
+          definition: >
+            Send Home. The paper goes home with the student so their family can see how they did.
+            Once it leaves the building it is not coming back.
+          guidance: Use with the End of Year open-up and the New Item source.
+          views:
+            default: SEND HOME
+            short: HOME
+          aliases:
+            - send home
+            - home
+          categories:
+            - then_do
+        - id: OTHER_SCHOOL
+          name: Other School
+          definition: >
+            Other School. The paper goes to another school in the district that still needs it. From
+            then on, that school decides who may see it.
+          guidance: Use with the From Test Bank source and the After Makeup Day open-up.
+          views:
+            default: OTHER SCHOOL
+            short: OTHER
+          aliases:
+            - other school
+            - other
+          categories:
+            - then_do
+        - id: PRACTICE_TEST
+          name: Practice Test
+          definition: >
+            Practice Test. The question moves into the practice packet that students study from. It
+            is not a secret anymore.
+          guidance: >
+            Check that the question is not scheduled to be reused before you put it in the practice
+            packet. A State Assessment Staff question needs the state assessment staff to sign off
+            first.
+          views:
+            default: PRACTICE TEST
+            short: PRACTICE
+          aliases:
+            - practice test
+            - practice
+          categories:
+            - then_do
+        - id: RECYCLE
+          name: Recycle
+          definition: >
+            Recycle. The paper gets shredded and recycled. Used for spare copies and for questions
+            nobody is going to use again. Shred it, do not just drop it in the bin.
+          views:
+            default: RECYCLE
+            short: RECYC
+          aliases:
+            - recycle
+          categories:
+            - then_do
+        - id: FILED
+          name: Filed
+          definition: >
+            Filed. The office has put this in the binder where it belongs. The ordinary state; not
+            worth telling anyone about.
+          views:
+            default: FILED
+            short: FILED
+          aliases:
+            - filed
+          categories:
+            - filing_status
+        - id: NOT_FILED
+          name: Not Filed
+          definition: >
+            Not Filed. The office has not put this in the binder yet. Nobody is sure where it
+            belongs, so say so before anyone relies on it.
+          views:
+            default: NOT FILED
+            short: NOT FILED
+          aliases:
+            - not filed
+          categories:
+            - filing_status
+  rules:
+    - id: exclusive-level
+      action: exclusive
+      target:
+        - STUDENTS
+        - SCHOOL_STAFF
+        - DISTRICT_COORDINATORS
+        - STATE_ASSESSMENT_STAFF
+    - id: school-needs-level
+      when:
+        all:
+          - category: from_school
+      action: require_any
+      target:
+        - STUDENTS
+        - SCHOOL_STAFF
+        - DISTRICT_COORDINATORS
+        - STATE_ASSESSMENT_STAFF
+      phases:
+        - suggest
+      message: Say who can see it before you say which school it came from.
+    - id: draft-requires-district-coordinators-or-above
+      when: DRAFT
+      action: require_any
+      target:
+        - DISTRICT_COORDINATORS
+        - STATE_ASSESSMENT_STAFF
+      message: DRAFT material requires DISTRICT COORDINATORS or STATE ASSESSMENT STAFF level.
+    - id: pre-release-requires-state-assessment
+      when: PRE_RELEASE
+      action: require_any
+      target: STATE_ASSESSMENT_STAFF
+      message: PRE-RELEASE material requires STATE ASSESSMENT STAFF level.
+    - id: answer-key-requires-state-assessment
+      when: ANSWER_KEY
+      action: require_any
+      target: STATE_ASSESSMENT_STAFF
+      message: ANSWER KEY material requires STATE ASSESSMENT STAFF level.
+    - id: score-results-require-state-assessment
+      when:
+        any:
+          - category: artifact
+            has: INDIVIDUAL_RESULTS
+          - category: artifact
+            has: AGGREGATE_RESULTS
+      action: require_any
+      target: STATE_ASSESSMENT_STAFF
+      message: Score results require STATE ASSESSMENT STAFF level.
+    - id: school-only-supersedes-sharing
+      when: SCHOOL_ONLY
+      action: supersede
+      target:
+        - SHARE_WITH
+        - READ_IN_CLASS
+      message: SCHOOL ONLY beats every sharing instruction.
+    - id: share-with-defaults-to-our-school
+      when:
+        all:
+          - category: share_recipients
+            is: has_content
+          - category: from_school
+            is: count_eq 0
+      action: require
+      target: OUR_SCHOOL
+      category: from_school
+      explanation: >-
+        Our School is filled in when share_recipients has content and no school has been explicitly
+        set.
+  rollup_pipelines:
+    - id: school-derivation
+      categories:
+        - from_school
+        - questions_from
+      mode: ordered
+      explanation: >
+        Resolve from_school at aggregation time. When all questions share one school, keep it. When
+        questions came from different schools, the test belongs to Our School and the source schools
+        are surfaced as Questions From.
+      steps:
+        - when:
+            any:
+              - category_id: from_school
+                operator: count_unique_gt
+                value: 1
+          then:
+            copy:
+              from: from_school
+              to: questions_from
+              exclude: OUR_SCHOOL
+            add:
+              - concept: OUR_SCHOOL
+                category: from_school
+        - then:
+            union: true
+    - id: sharing
+      categories:
+        - sharing
+        - share_recipients
+        - in_class_recipients
+      explanation: District-wide sharing resolution.
+      steps:
+        - when:
+            any:
+              - category_id: sharing
+                operator: has_concept
+                value: SCHOOL_ONLY
+          then:
+            union: true
+            remove:
+              - SHARE_WITH
+              - READ_IN_CLASS
+            clear_categories:
+              - share_recipients
+              - in_class_recipients
+        - when:
+            all:
+              - category_id: sharing
+                operator: has_concept
+                value: SHARE_WITH
+          then:
+            union: true
+            remove:
+              - READ_IN_CLASS
+            intersect:
+              category: share_recipients
+              empty_fallback: SCHOOL_ONLY
+              fallback_if_only:
+                - OUR_SCHOOL
+            clear_categories:
+              - in_class_recipients
+        - when:
+            all:
+              - category_id: sharing
+                operator: has_concept
+                value: READ_IN_CLASS
+          then:
+            union: true
+            remove:
+              - SHARE_WITH
+            intersect:
+              category: in_class_recipients
+              empty_fallback: SCHOOL_ONLY
+            clear_categories:
+              - share_recipients
+              - in_class_recipients
+        - when:
+            any:
+              - category_id: sharing
+                operator: has_concept
+                value: SHARE_WITH
+            none:
+              - category_id: level
+                operator: has_concept
+                value: STUDENTS
+          then:
+            keep:
+              - SCHOOL_ONLY
+            union: true
+            remove:
+              - SHARE_WITH
+              - READ_IN_CLASS
+            clear_categories:
+              - share_recipients
+              - in_class_recipients
+        - then:
+            union: true
+  embedded_marking:
+    - pattern: \(([^)]+)\)
+      template: ({marking})
+  parse:
+    case_sensitive: false
+    strip_whitespace: true
+  render:
+    color_from: level
+    default: long
+    formats:
+      - id: short
+        surface: marking
+        mode: inline
+        view: short
+        prefix:
+          - text: //
+            when:
+              - category_id: from_school
+                operator: has_content
+              - category_id: from_school
+                operator: not_has_concept
+                value: OUR_SCHOOL
+        separator: //
+        joins:
+          - between:
+              - from_school
+              - level
+            separator: ' '
+        fields:
+          - category: from_school
+            when:
+              - category_id: from_school
+                operator: not_has_concept
+                value: OUR_SCHOOL
+          - category: level
+          - category: test_section
+            separator: /
+            tiers:
+              - tier: compartment
+                attached_by: '-'
+              - tier: subcompartment
+                attached_by: '-'
+          - category: status
+          - category: artifact
+            separator: /
+          - category: questions_from
+            separator: ', '
+            prefix: 'FROM '
+          - category: sharing
+            separator: /
+            phrases:
+              - head: SHARE_WITH
+                separator: ' '
+                fields:
+                  - category: share_recipients
+                    separator: ', '
+              - head: READ_IN_CLASS
+                separator: ' '
+                fields:
+                  - category: in_class_recipients
+                    separator: /
+      - id: long
+        surface: marking
+        mode: inline
+        view: long
+        prefix:
+          - text: //
+            when:
+              - category_id: from_school
+                operator: has_content
+              - category_id: from_school
+                operator: not_has_concept
+                value: OUR_SCHOOL
+        separator: //
+        joins:
+          - between:
+              - from_school
+              - level
+            separator: ' '
+        fields:
+          - category: from_school
+            when:
+              - category_id: from_school
+                operator: not_has_concept
+                value: OUR_SCHOOL
+          - category: level
+          - category: test_section
+            separator: /
+            tiers:
+              - tier: compartment
+                attached_by: '-'
+              - tier: subcompartment
+                attached_by: '-'
+                view: default
+          - category: status
+          - category: artifact
+            separator: /
+          - category: questions_from
+            separator: ', '
+            prefix: 'QUESTIONS FROM '
+          - category: sharing
+            separator: /
+            phrases:
+              - head: SHARE_WITH
+                separator: ' '
+                fields:
+                  - category: share_recipients
+                    separator: ', '
+              - head: READ_IN_CLASS
+                separator: ' '
+                fields:
+                  - category: in_class_recipients
+                    separator: /
+      - id: instructions
+        surface: marking
+        mode: inline
+        view: long
+        prefix:
+          - text: 'From '
+            when:
+              - category_id: from_school
+                operator: has_content
+              - category_id: from_school
+                operator: not_has_concept
+                value: OUR_SCHOOL
+        separator: ' // '
+        joins:
+          - between:
+              - from_school
+              - level
+            separator: ': '
+        fields:
+          - category: from_school
+            when:
+              - category_id: from_school
+                operator: not_has_concept
+                value: OUR_SCHOOL
+          - category: level
+          - category: test_section
+            separator: ', '
+            tiers:
+              - tier: compartment
+                attached_by: '-'
+              - tier: subcompartment
+                attached_by: '-'
+                view: default
+          - category: status
+          - category: artifact
+            separator: ', '
+          - category: questions_from
+            separator: ', '
+            prefix: 'QUESTIONS FROM: '
+          - category: sharing
+            separator: ', '
+            phrases:
+              - head: SHARE_WITH
+                separator: ' '
+                fields:
+                  - category: share_recipients
+                    separator: ', '
+              - head: READ_IN_CLASS
+                separator: ' '
+                fields:
+                  - category: in_class_recipients
+                    separator: ', '
+      - id: instructions-with-office-record
+        surface: marking
+        mode: inline
+        view: long
+        prefix:
+          - text: 'From '
+            when:
+              - category_id: from_school
+                operator: has_content
+              - category_id: from_school
+                operator: not_has_concept
+                value: OUR_SCHOOL
+        separator: |
+
+          --- OFFICE RECORD ---
+        joins:
+          - between:
+              - marking
+              - office record
+            separator: |
+
+              --- OFFICE RECORD ---
+        fields:
+          - name: marking
+            separator: ' // '
+            joins:
+              - between:
+                  - from_school
+                  - level
+                separator: ': '
+            fields:
+              - category: from_school
+                when:
+                  - category_id: from_school
+                    operator: not_has_concept
+                    value: OUR_SCHOOL
+              - category: level
+              - category: test_section
+                separator: ', '
+                tiers:
+                  - tier: compartment
+                    attached_by: '-'
+                  - tier: subcompartment
+                    attached_by: '-'
+                    view: default
+              - category: status
+              - category: artifact
+                separator: ', '
+              - category: questions_from
+                separator: ', '
+                prefix: 'QUESTIONS FROM: '
+              - category: sharing
+                separator: ', '
+                phrases:
+                  - head: SHARE_WITH
+                    separator: ' '
+                    fields:
+                      - category: share_recipients
+                        separator: ', '
+                  - head: READ_IN_CLASS
+                    separator: ' '
+                    fields:
+                      - category: in_class_recipients
+                        separator: ', '
+          - name: office record
+            separator: |+
+
+            fields:
+              - category: marked_by
+                prefix: 'Marked By: '
+              - category: comes_from
+                prefix: 'Comes From: '
+              - category: open_up
+                prefix: 'Open Up: '
+              - category: then_do
+                prefix: 'Then: '
+      - id: student-notice
+        surface: marking
+        mode: inline
+        view: default
+        omit_defaults: true
+        separator: ' — '
+        fields:
+          - category: level
+          - category: filing_status

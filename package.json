@@ -1,0 +1,98 @@
+{
+    "name": "@ezclassify/web-monorepo",
+    "version": "1.0.0-dev.30",
+    "type": "module",
+    "description": "EzClassify public web ecosystem: UI component library, framework integrations, and runnable demos",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/ezclassify/web"
+    },
+    "homepage": "https://github.com/ezclassify/web#readme",
+    "bugs": {
+        "url": "https://github.com/ezclassify/web/issues"
+    },
+    "author": "EzClassify",
+    "license": "Apache-2.0",
+    "private": true,
+    "workspaces": [
+        "libs/ui",
+        "integrations/angular",
+        "integrations/react",
+        "integrations/vue",
+        "examples/vanilla-example",
+        "examples/react-example",
+        "examples/vue-example",
+        "examples/angular-example",
+        "e2e"
+    ],
+    "engines": {
+        "node": ">=22.0.0"
+    },
+    "keywords": [
+        "classification",
+        "security-classification",
+        "marking",
+        "ui",
+        "react",
+        "vue",
+        "angular"
+    ],
+    "scripts": {
+        "build": "npm run build -w @ezclassify/ui && npm run build -w @ezclassify/angular -w @ezclassify/react -w @ezclassify/vue --if-present && npm run build --workspace=examples/vanilla-example --workspace=examples/react-example --workspace=examples/vue-example --workspace=examples/angular-example --workspace=e2e",
+        "check:consumer-engine-free": "node scripts/check-consumer-engine-free.mjs",
+        "check:dependency-age": "node scripts/check-dependency-age.mjs",
+        "check:lockfile-portable": "node scripts/check-lockfile-portable.mjs",
+        "check:no-escape": "node scripts/check-no-escape.mjs",
+        "check:public-dependencies": "node scripts/check-public-dependencies.mjs",
+        "check:publish-content": "node scripts/check-publish-content.mjs",
+        "clean:deep": "npm run clean:deep --workspaces --if-present",
+        "deps:relock": "node scripts/relock.mjs --clean && node scripts/relock.mjs --strip && npm install --package-lock-only --include=optional --ignore-scripts --before=\"$(node -e 'console.log(new Date(Date.now()-7*864e5).toISOString())')\" && node scripts/relock.mjs --restore && npm install --package-lock-only --include=optional --ignore-scripts --tag=dev && node scripts/relock.mjs --normalize && npm run check:lockfile-portable && npm run check:dependency-age",
+        "docs": "npm exec --yes --package=typedoc@0.28.20 --package=typescript@5.9.3 -- typedoc --treatWarningsAsErrors",
+        "docs:source": "npm exec --yes --package=typedoc@0.28.20 --package=typescript@5.9.3 -- typedoc --options typedoc.source.json --treatWarningsAsErrors",
+        "e2e": "npm run test --workspace e2e",
+        "e2e:golden-corpus": "EZ_INTEGRATION_SCENARIO=golden-corpus npm run test --workspace e2e",
+        "format": "prettier --write .",
+        "format:check": "prettier --check .",
+        "lane:private": "node scripts/private-lane.mjs",
+        "link:local": "node scripts/link-publishable.mjs",
+        "lint": "npx eslint --max-warnings=0 libs/ui integrations tests e2e",
+        "notices": "node scripts/generate-third-party-notices.mjs",
+        "sbom": "node scripts/generate-sbom.mjs",
+        "test": "node scripts/run-test-projects.mjs",
+        "test:angular": "vitest run --config vitest.angular.config.ts",
+        "test:frameworks": "vitest run integrations --pool=forks --maxWorkers=2",
+        "test:integration": "vitest run --config vitest.integration.config.ts",
+        "test:scripts": "vitest run scripts --pool=forks --maxWorkers=2",
+        "test:ui-components": "vitest run libs/ui/src/components --pool=forks --maxWorkers=2",
+        "test:ui-core": "vitest run libs/ui --exclude 'libs/ui/src/components/**' --pool=forks --maxWorkers=2",
+        "test:verbose": "node scripts/run-test-projects.mjs --reporter=verbose",
+        "typecheck": "npm run typecheck --workspaces --if-present && node scripts/typecheck-specs.mjs tests",
+        "verify:pack-consume": "node scripts/verify-pack-consume.mjs"
+    },
+    "devDependencies": {
+        "@ezclassify/rest-client": "^1.0.0-0",
+        "@types/node": "24.10.1",
+        "@typescript-eslint/eslint-plugin": "^8.0.0",
+        "@typescript-eslint/parser": "^8.0.0",
+        "esbuild": "^0.28.0",
+        "eslint": "^10.12.0",
+        "eslint-plugin-react-hooks": "^7.1.1",
+        "jsdom": "^26.0.0",
+        "prettier": "^3.5.0",
+        "prettier-plugin-jsdoc": "^1.3.0",
+        "prettier-plugin-organize-attributes": "^1.0.0",
+        "prettier-plugin-pkg": "^0.21.0",
+        "prettier-plugin-sort-json": "^4.1.0",
+        "typescript": "5.9.3",
+        "vitest": "^4.1.2"
+    },
+    "overrides": {
+        "@hono/node-server": "2.1.0",
+        "@modelcontextprotocol/sdk": "1.32.1",
+        "eventsource-parser": "3.1.0",
+        "hono": "4.13.13",
+        "ip-address": "10.7.4",
+        "rollup-plugin-dts": "6.5.1",
+        "vite": "8.3.4"
+    }
+}

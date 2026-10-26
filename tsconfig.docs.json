@@ -1,0 +1,36 @@
+{
+    "compilerOptions": {
+        "allowJs": true,
+        "checkJs": false,
+        "noEmit": true,
+        "types": ["node"]
+    },
+    "exclude": [
+        "node_modules",
+        "dist",
+        "vendor",
+        "**/*.spec.*",
+        "**/*.test.*",
+        "**/__mocks__/**"
+    ],
+    "extends": "./tsconfig.base.json",
+    "include": [
+        "libs/*/src/**/*.ts",
+        "integrations/*/src/**/*.ts",
+        "integrations/*/src/**/*.tsx",
+        "integrations/angular/schematics/**/*.ts",
+        "scripts/**/*.mjs",
+        "examples/*/src/**/*.ts",
+        "examples/*/src/**/*.tsx",
+        "scripts/**/*.ts",
+        "scripts/**/*.tsx",
+        "libs/*/build-*.mjs",
+        "integrations/*/build-*.mjs",
+        "vitest.private-runtime.ts",
+        "integrations/angular/clean.mjs",
+        "e2e/lanes.mjs",
+        "e2e/hosts/**/*.mjs",
+        "e2e/hosts/**/*.ts",
+        "e2e/hosts/**/*.tsx"
+    ]
+}

@@ -1,0 +1,29 @@
+{
+    "name": "ezclassify-angular-example",
+    "description": "The @ezclassify/angular README document form: a document marking with marked parts, connected over REST",
+    "private": true,
+    "scripts": {
+        "build": "ng build",
+        "ng": "ng",
+        "start": "ng serve",
+        "typecheck": "ngc -p tsconfig.app.json --noEmit"
+    },
+    "dependencies": {
+        "@angular/common": "22.2.2",
+        "@angular/compiler": "22.2.2",
+        "@angular/core": "22.2.2",
+        "@angular/forms": "22.2.2",
+        "@angular/platform-browser": "22.2.2",
+        "@ezclassify/angular": "^1.0.0-0",
+        "@ezclassify/rest-client": "^1.0.0-0",
+        "@ezclassify/ui": "^1.0.0-0",
+        "rxjs": "^7.8.2",
+        "tslib": "^2.3.0"
+    },
+    "devDependencies": {
+        "@angular/build": "22.2.2",
+        "@angular/cli": "22.2.2",
+        "@angular/compiler-cli": "22.2.2",
+        "typescript": "6.0.3"
+    }
+}

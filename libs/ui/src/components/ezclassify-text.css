@@ -1,0 +1,18 @@
+/* ── EzClassifyText ──────────────────────────────────────────────────────
+ * Validation feedback for visible-marking controllers
+ * (data-ezclassify-controller="text"). CSS classes only, the component
+ * never reflows surrounding DOM, never injects sibling error elements.
+ * Consumers wire any richer tooltip / summary / sidebar UX themselves
+ * by listening for ezclassify:change or subscribing to the store.
+ */
+
+[data-ezclassify-controller='text'].ez-text--invalid {
+    color: var(--ez-color-error, #b91c1c);
+    text-decoration: underline wavy var(--ez-color-error, #b91c1c);
+    text-underline-offset: 2px;
+}
+
+[data-ezclassify-controller='text'].ez-text--valid {
+    /* Default valid styling is intentionally invisible. Consumers can opt in
+   * to a positive cue (e.g. subtle green underline) by overriding this rule. */
+}

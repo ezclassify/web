@@ -1,0 +1,9 @@
+{
+    "compilerOptions": {
+        "noEmit": true,
+        "types": ["node", "vite/client", "vitest/globals"]
+    },
+    "exclude": [],
+    "extends": "../tsconfig.base.json",
+    "include": ["**/*.spec.ts", "**/*.d.ts", "setup/**/*.ts"]
+}

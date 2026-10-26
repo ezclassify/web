@@ -1,0 +1,186 @@
+/* MarkingField: a plain editable text host while focused, a per-token colored
+   display at rest. Both layers share one box: border/padding/font/colors are
+   mirrored from the native host onto the display in JS (see
+   captureAndMirrorStyles in marking-field.ts, host-first design; see
+   styles.css's header comment), so toggling between them never reflows the
+   field. Both layers wrap and grow vertically instead of ever clipping or
+   scrolling horizontally: the field's value IS the whole marking, with no
+   free-text region competing for room the way MarkedInput's leading-mark-
+   plus-text shape has, so there is no reason to hide any of it. */
+
+/* A one-column grid: the field (host or display, only one of them in flow at a
+   time) and its ★ drawer share the first row, and the rule-error list, which
+   sits inside the wrap so Tab reaches its fixes before the drawer, takes the
+   second. An absolutely positioned child placed in a grid area uses that area
+   as its containing block, so the resting host's inset and the drawer's edges
+   and centering measure the field alone, never the errors beneath it. */
+.marking-field-wrap {
+    position: relative;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    width: 100%;
+    min-width: 0;
+}
+
+.marking-field-wrap > .marking-field-host,
+.marking-field-wrap > .marking-field-display,
+.marking-field-wrap > .ez-field-drawer {
+    /* Both end lines explicit: an absolutely positioned item's auto end line
+       is the wrap's padding edge, which would take in the error row again. */
+    grid-area: 1 / 1 / 2 / 2;
+}
+
+.marking-field-wrap > .ez-validation-errors {
+    grid-row: 2;
+}
+
+.marking-field-wrap:focus-within {
+    outline: none;
+}
+
+/* The ★ drawer picks up the same ring color the host's own inset focus
+   outline uses (below) on its own free edges, so the compound field+tab
+   shape reads as one continuously highlighted unit when focused: the same
+   treatment TagInput's wrap applies (tag-input.css), kept here in sync so
+   the two fields' attached-tab geometry matches in both orientations. */
+.marking-field-wrap:focus-within:not(:has(> .ez-clear-button:focus))
+    > .ez-field-drawer {
+    border-color: var(--ez-color-primary, #fdb827);
+}
+
+/* The editable surface is a <textarea>: a single-line input cannot wrap
+   by construction (browsers force single-line layout on it regardless of
+   CSS), so a growing field needs a real multi-line element. resize:none and
+   overflow:hidden turn off the textarea's own resize handle and scrollbar:
+   marking-field.ts's syncHostHeight() keeps its height matched to content
+   instead, growing a line the way the display below already does natively. */
+/* The original text input remains a successful named form control. */
+.marking-field-native {
+    display: none !important;
+}
+
+.marking-field-host {
+    box-sizing: border-box;
+    width: 100%;
+    display: block;
+    resize: none;
+    overflow: hidden;
+    white-space: pre-wrap;
+    overflow-wrap: break-word;
+}
+
+.marking-field-host:focus {
+    outline: 2px solid var(--ez-color-primary, #fdb827);
+    outline-offset: -2px;
+    border-radius: var(--ez-border-radius, 0.25rem);
+}
+
+/* At rest: the display layer shows the painted, per-token colored marking.
+   The host stays mounted, in the tab order, and in the accessibility tree
+   (never display:none, which would drop it from both): it is only rendered
+   invisible and click-through so the painted layer beneath is what's seen and
+   clicked. Absolutely positioning it over the display keeps its accessible
+   bounding box aligned with what's actually on screen for assistive-tech and
+   magnifier users tabbing through the form: inset:0 stretches it to match the
+   display's own size. That stretch only works when the host has NO inline
+   height of its own: top+bottom+height together over-constrain an
+   absolutely positioned box (CSS2.1 10.6.4), and the browser resolves that by
+   dropping `bottom`, not the inline height, leaving the invisible hit-target
+   pinned to a stale size instead of tracking the display. setEditingMode()
+   clears the inline height on every transition into rest for exactly this
+   reason (see marking-field.ts). */
+.marking-field-host--resting {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    pointer-events: none;
+}
+
+/* Display layer: the painted marking, visible only at rest. Mirrors the
+   host's box metrics (JS) so there is no size jump when the field blurs. */
+.marking-field-display {
+    box-sizing: border-box;
+    width: 100%;
+    font: inherit;
+    letter-spacing: inherit;
+    word-spacing: inherit;
+    white-space: pre-wrap;
+    overflow-wrap: break-word;
+    cursor: text;
+    min-height: 2rem;
+    line-height: 2rem;
+}
+
+.marking-field-display:empty::before {
+    content: '\200b';
+}
+.marking-field-display[data-placeholder]:empty::before {
+    content: attr(data-placeholder);
+    color: var(--ez-color-muted, #9ca3af);
+}
+
+/* At rest, each token reads as normal text with a solid underline in its
+   category color, NOT a filled background block. TagInput's chips own the
+   filled-pill treatment; MarkingField's value IS ordinary text the user is
+   about to click back into, so painting it as a row of colored buttons would
+   read wrong. The token span itself carries no decoration (see
+   marking-field-token-run below); it only holds --ez-token-underline
+   (inherited down to its runs) plus tooltip/identity. */
+.marking-field-token {
+    display: inline;
+    color: inherit;
+}
+
+/* The underline lives on each WORD run inside a token, not the token's own
+   box: marking-field.ts splits a multi-word label like "STATE ASSESSMENT
+   STAFF" into word runs with the space between them left as a plain,
+   undecorated text node. A run of whitespace
+   never carries paint, so a wrap that lands on that space (including the
+   "stranded trailing space" case white-space: pre-wrap produces when an
+   earlier word itself had to hard-break) never leaves a floating dash with
+   no glyph under it: only real characters get underlined, on every line a
+   run happens to span.
+   text-decoration, not border-bottom: a decoration line is painted across
+   the glyphs without contributing to the line box's own height, so
+   painting a token can never nudge wrapped lines apart the way a
+   border+padding box (which sits IN the box model) can. text-decoration-
+   skip-ink: none keeps the line solid through descenders (free-text values
+   can be mixed case), so the underline reads as one solid bar. */
+/* Author text the engine could not read, kept where it was written. The
+   error color's wavy rule says it was not understood; the field's error list
+   says which text and why. */
+.marking-field-unread {
+    text-decoration-line: underline;
+    text-decoration-style: wavy;
+    text-decoration-color: var(--ez-color-error, #b91c1c);
+    text-decoration-thickness: 0.0625rem;
+    text-underline-offset: 0.1875rem;
+    text-decoration-skip-ink: none;
+}
+
+.marking-field-token-run {
+    text-decoration-line: underline;
+    text-decoration-color: var(
+        --ez-token-underline,
+        var(--ez-color-primary, #fdb827)
+    );
+    text-decoration-thickness: 0.1875rem;
+    text-underline-offset: 0.125rem;
+    text-decoration-skip-ink: none;
+}
+
+@media (pointer: coarse) {
+    /* iOS Safari zooms the page when a focused field's effective font-size is
+       under 16px; the invisible-zoom threshold is device px, not rem. */
+    .marking-field-host,
+    .marking-field-display {
+        font-size: max(1em, 16px);
+    }
+}
+
+/* Keep the status-mark lane in both modes so focus never changes wrapping.
+   The host may carry inline padding; the display mirrors those same metrics. */
+.marking-field-host,
+.marking-field-display {
+    padding-inline-end: 2.5rem !important;
+}

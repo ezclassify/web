@@ -1,0 +1,544 @@
+/* ── Tag ──────────────────────────────────────────────── */
+/* A real pill: filled background in the concept's category color
+   (--ez-tag-bg, set inline per chip by tag-factory.ts), with a
+   pre-resolved WCAG-contrast text color painted on top (--ez-tag-color).
+   Neither custom property is set when color coding is off, so the
+   fallbacks below (a neutral surface, inherited text) apply instead. */
+.proto-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.1875rem 0.3125rem 0.1875rem 0.625rem;
+    margin: 0;
+    font: inherit;
+    font-size: 0.8125rem;
+    border-radius: 999px;
+    background: var(
+        --ez-tag-bg,
+        var(--ez-color-surface-active, rgba(0, 0, 0, 0.08))
+    );
+    color: var(--ez-tag-color, inherit);
+    border: none;
+    cursor: default;
+    user-select: none;
+    white-space: nowrap;
+    line-height: 1.4;
+    max-width: 100%;
+    transition: background 100ms;
+}
+/* An inferred chip reads as the engine's, not the user's: italic, with a
+   dashed rule at its edge. Never faded: a translucent chip dropped its
+   text below 4.5:1 on the lighter category colors. */
+.proto-tag--inferred {
+    font-style: italic;
+    outline: 1px dashed currentColor;
+    outline-offset: -1px;
+}
+.proto-tag--editable {
+    padding-right: 0.25rem;
+}
+/* The field holds this fact but the rendered marking leaves it out, as a
+   scheme does with a fact it suppresses from print. Faded to say so; the
+   chip's own accessible name says it in words. Fade the category fill rather
+   than the whole element so its label keeps the field's readable contrast. */
+.proto-tag--unprinted {
+    background: color-mix(
+        in srgb,
+        var(--ez-tag-bg, var(--ez-color-surface-active, #e5e7eb)) 15%,
+        var(--ez-color-surface, #f8fafc)
+    );
+    color: var(--ez-color-text, inherit);
+}
+/* Text the engine could not read, kept as the author wrote it. It has no
+   category, so no fill: the error color draws its edge and a wavy rule under
+   its text, the same flag the marking field paints in place. */
+.proto-tag--unread {
+    background: transparent;
+    color: inherit;
+    outline: 1px dashed var(--ez-color-error, #b91c1c);
+    outline-offset: -1px;
+    text-decoration: underline wavy var(--ez-color-error, #b91c1c);
+    text-decoration-skip-ink: none;
+    text-underline-offset: 0.1875rem;
+}
+/* The base padding's smaller right edge (0.3125rem vs. 0.625rem on the left)
+   exists to leave room for the trailing ✕ button. A pill with no remove
+   control (e.g. an inferred-default chip) has nothing to fill that gap,
+   so its trailing edge reads lopsided unless matched to the left. */
+.proto-tag--no-remove {
+    padding-right: 0.625rem;
+}
+.proto-tag-edit {
+    border: none;
+    background: transparent;
+    color: inherit;
+    font-family: inherit;
+    font-size: inherit;
+    padding: 0 0.125rem;
+    margin-left: 0.125rem;
+    outline: none;
+    min-width: 3rem;
+    border-bottom: 1px dashed currentColor;
+}
+.proto-tag-edit::placeholder {
+    color: inherit;
+    opacity: 0.5;
+    font-style: italic;
+}
+/* Focus indicator: a background swap doesn't read against an already-filled
+   pill, so this is a ring instead, same technique the remove button below
+   already uses. */
+.proto-tag:focus-visible,
+.proto-tag.active {
+    outline: 2px solid var(--ez-color-primary, #fdb827);
+    outline-offset: 1px;
+}
+.proto-tag:focus:not(:focus-visible) {
+    outline: none;
+}
+/* Remove control on a selected chip. Always visible at rest (not hover-only):
+   a thumb on a touch device and a glancing reader both need to see it without
+   interaction. `color: inherit` ties the glyph to the pill's own text color
+   (already WCAG-contrast-checked against --ez-tag-bg by the caller), and its
+   disc backdrop is a currentColor mix so it stays legible against any category
+   color rather than assuming a light/neutral chip background. */
+.proto-tag-remove {
+    position: relative;
+    border: none;
+    color: inherit;
+    font-size: 0.8125rem;
+    cursor: pointer;
+    padding: 0;
+    margin-left: 0.0625rem;
+    width: 1.125rem;
+    height: 1.125rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+    border-radius: 50%;
+    background: color-mix(in srgb, currentColor 16%, transparent);
+    flex-shrink: 0;
+    opacity: 0.85;
+    transition:
+        background 100ms,
+        opacity 100ms;
+}
+.proto-tag-remove:hover {
+    opacity: 1;
+    background: color-mix(in srgb, currentColor 30%, transparent);
+}
+.proto-tag-remove:focus-visible {
+    outline: 2px solid var(--ez-color-primary, #fdb827);
+    outline-offset: 1px;
+    opacity: 1;
+}
+
+/* ── Separator ───────────────────────────────────────── */
+.proto-sep {
+    display: inline-block;
+    color: var(--ez-color-muted, #4b5563);
+    font: inherit;
+    /* Render separator whitespace verbatim so chips read like the printed
+     marking (e.g. "USA, AUS" not "USA,AUS"). The wrap is flex with gap:0, so
+     the separator element carries all spacing between chips. */
+    white-space: pre;
+    padding: 0;
+    user-select: none;
+    pointer-events: none;
+}
+
+/* ── Preview ─────────────────────────────────────────── */
+.proto-preview {
+    font-family: var(--ez-font-family, inherit);
+    font-size: 0.875rem;
+    font-weight: 600;
+    padding: 0.5rem 0.75rem;
+    background: var(--ez-color-background, #f8f9fa);
+    border: 1px solid var(--ez-color-border, #e5e7eb);
+    border-radius: var(--ez-border-radius, 0.375rem);
+    margin-bottom: 0.75rem;
+    color: var(--ez-color-text, #1a1a2e);
+    min-height: 1.25rem;
+    overflow-wrap: break-word;
+    word-break: normal;
+    hyphens: none;
+}
+.proto-preview:empty::before {
+    content: 'No marking';
+    color: var(--ez-color-placeholder, #767676);
+    font-weight: 400;
+    font-style: italic;
+}
+
+/* ── Mount container ────────────────────────────────── */
+/* Prevent grid/flex track blowout when a mount div is a grid or flex item.
+   Without this, a tag-input-wrap with wide chips propagates its intrinsic
+   min-size up through the mount div and overflows the enclosing column. */
+[data-ezclassify-mount] {
+    min-width: 0;
+}
+
+/* ── List panel ──────────────────────────────────────── */
+/* The favorites panel's list. The field family's picker is the composer
+   (composer/composer.css); these classes are the favorites surface's own. */
+.proto-dropdown {
+    position: absolute;
+    z-index: var(--ez-z-dropdown, 1000);
+    background: var(--ez-dropdown-background, var(--ez-color-background, #fff));
+    color: var(--ez-dropdown-color, var(--ez-color-text, inherit));
+    border: 1px solid var(--ez-color-border, #d1d5db);
+    border-radius: var(--ez-border-radius, 0.375rem);
+    box-shadow: var(--ez-dropdown-shadow, 0 4px 12px rgba(0, 0, 0, 0.12));
+    left: 0;
+    width: min(20rem, calc(100vw - 2rem));
+    max-width: calc(100vw - 1rem);
+}
+.proto-dropdown__items {
+    overflow-y: auto;
+    max-height: 17.5rem;
+    /* Reaching the list's end on touch must not scroll the page underneath
+       (that shifts the anchored dropdown mid-interaction). */
+    overscroll-behavior: contain;
+    /* Makes this the offsetParent for its row children, so a highlighted
+       row's `offsetTop` is measured against the same box this element's own
+       `scrollTop` scrolls. */
+    position: relative;
+}
+
+/* ── Dropdown item ───────────────────────────────────── */
+.proto-dropdown-item {
+    padding: 0.5rem 0.625rem;
+    cursor: pointer;
+    font-size: 0.8125rem;
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    line-height: 1.5;
+    overflow: hidden;
+    gap: 0.375rem;
+    background: transparent;
+    min-height: 2.75rem; /* 44px WCAG 2.5.5 touch target */
+    box-sizing: border-box;
+}
+.proto-dropdown-item--highlighted {
+    background: var(--ez-dropdown-highlight, rgba(59, 130, 246, 0.2));
+}
+.proto-dropdown-item--selected {
+    background: var(--ez-dropdown-selected, rgba(34, 197, 94, 0.1));
+    opacity: 0.7;
+}
+/* Preserve the marking being offered. Descriptions can move to the next
+   line instead of squeezing the code or hiding distinguishing words. */
+.proto-dropdown-item__label {
+    font-weight: 500;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    flex: 0 0 auto;
+    max-width: 100%;
+    min-width: 0;
+}
+.proto-dropdown-item__desc {
+    color: var(--ez-color-muted, #555);
+    font-size: 0.75rem;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    flex: 1 1 12rem;
+    min-width: 0;
+}
+.proto-dropdown-item__check {
+    color: var(--ez-color-success, #16a34a);
+    font-weight: 700;
+    flex-shrink: 0;
+}
+
+/* ── Dropdown group header ───────────────────────────── */
+.proto-dropdown-group {
+    padding: 0.375rem 0.5rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--ez-color-muted, #555);
+    text-transform: uppercase;
+    background: var(--ez-dropdown-group-bg, rgba(0, 0, 0, 0.04));
+    letter-spacing: 0.04em;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    cursor: pointer;
+    min-height: 2.75rem; /* 44px WCAG 2.5.5 touch target */
+    box-sizing: border-box;
+}
+
+/* ── Screen reader only ───────────────────────────────── */
+.ez-sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+/* ── Keyboard hints ──────────────────────────────────── */
+/* Base rule stays display:none: other (non-field-family) consumers of this
+   same bar via ComponentBase.appendKeyboardHints (single-select, dual-pane,
+   category-selector) have no reveal rule of their own and are out of scope
+   here; this default must not change their behavior. */
+.proto-kbd-hints {
+    display: none;
+    flex-wrap: wrap;
+    gap: 0.375rem;
+}
+/* Inside the ★ drawer (TagInput; see field-chrome-drawer.ts/css), the hints
+   live as a normal-flow sibling to the LEFT of the status mark + ★ button in
+   the drawer's one quiet row: always visible there (matching the status
+   mark/★ button's own always-visible treatment), never a hover-triggered
+   overlay, and with no chrome of their own since the drawer already supplies
+   the border/background. The data-ezclassify-no-hints opt-out still wins: it
+   sets `display: none` inline, which beats this class selector. */
+.ez-field-drawer > .proto-kbd-hints {
+    display: flex;
+}
+/* Mirrored to the top edge, the drawer hangs into the space above the field,
+   which belongs to the field's label. There it carries only the status mark
+   and the star, which stay clear of a label at any width. The key hints come
+   back with the drawer to the bottom edge, and an open composer lists its
+   own keys meanwhile. */
+.ez-field-drawer--top > .proto-kbd-hints {
+    display: none;
+}
+.proto-kbd-hint {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: 0.6875rem;
+    color: var(--ez-color-muted, #555);
+}
+.proto-kbd-hint kbd {
+    display: inline-block;
+    padding: 1px 0.25rem;
+    font-family: monospace;
+    font-size: 0.625rem;
+    background: var(--ez-kbd-background, rgba(0, 0, 0, 0.06));
+    color: var(--ez-kbd-color, var(--ez-color-muted, #444));
+    border: 1px solid var(--ez-color-border, #d1d5db);
+    border-radius: 0.1875rem;
+    line-height: 1.3;
+}
+
+/* TagInput's own row-gap (default and coarse-pointer) lives in
+   tag-input.css, not here: `injectComponentStyles` always concatenates
+   `COMPONENT_CSS + <component>Css`, so a rule placed in this file loads
+   BEFORE tag-input.css's and any equal-specificity `.tag-input-wrap` rule
+   there (including its `gap`/`column-gap` reset) wins over whatever this
+   file sets. Keeping the row-gap value in the file that actually wins the
+   cascade avoids a dead override. */
+
+/* ── Touch / coarse pointer (mobile) ─────────────────── */
+@media (pointer: coarse) {
+    /* Keyboard-hint chrome is useless on a touch device and just clutters
+     the field, so hide it on coarse pointers. */
+    .proto-kbd-hints,
+    /* The remove control is visible at rest on every pointer; on a coarse
+     (touch) pointer it also needs a bigger hit area for a thumb. Grow the tap
+     target with an INVISIBLE overlay (::after) rather than padding or a
+     min-height, so the compact inline marking string keeps its layout and does
+     not sprawl across extra rows on touch. The visible disc stays compact. The
+     overlay is capped at what chip geometry can afford: a larger inset (about
+     47px per button) overlaps NEIGHBORING chips' remove buttons, so a centered
+     tap on one chip's button would delete a different concept. An ambiguous
+     oversized target is worse than a slightly smaller unambiguous one. */
+    .proto-tag-remove::after {
+        content: '';
+        position: absolute;
+        inset: -0.4rem -0.5rem;
+    }
+    /* The matching row-gap bump so wrapped rows never let this enlarged
+       overlay cross into the next row lives in tag-input.css, alongside
+       the default row-gap it overrides; see the note there. */
+}
+
+/* ── Reduced motion ──────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+    .proto-tag,
+    .proto-dropdown-item {
+        transition: none;
+    }
+}
+
+/* ── High contrast mode (forced-colors) ────────────── */
+@media (forced-colors: active) {
+    .proto-tag {
+        text-decoration-color: ButtonText;
+        color: ButtonText;
+        forced-color-adjust: none;
+    }
+    .proto-tag:focus-visible,
+    .proto-tag.active {
+        background: Highlight;
+        color: HighlightText;
+    }
+    .proto-tag--inferred {
+        text-decoration-style: dashed;
+    }
+    .proto-tag-remove {
+        color: ButtonText;
+        background: ButtonFace;
+        border: 1px solid ButtonText;
+        forced-color-adjust: none;
+    }
+    .proto-tag-remove:focus-visible {
+        outline: 2px solid Highlight;
+    }
+    .proto-dropdown {
+        border: 1px solid ButtonText;
+        background: Canvas;
+    }
+    .proto-dropdown-item {
+        color: CanvasText;
+    }
+    .proto-dropdown-item--highlighted {
+        background: Highlight;
+        color: HighlightText;
+    }
+    .proto-dropdown-item--selected {
+        border: 1px dashed ButtonText;
+    }
+    .proto-dropdown-group {
+        border-bottom: 1px solid ButtonText;
+        color: CanvasText;
+        background: Canvas;
+    }
+    .proto-sep {
+        color: CanvasText;
+    }
+    .proto-preview {
+        border: 1px solid ButtonText;
+        background: Canvas;
+        color: CanvasText;
+    }
+    .proto-kbd-hint kbd {
+        border: 1px solid ButtonText;
+        background: Canvas;
+        color: CanvasText;
+    }
+}
+
+/* Clear is a normal form action. Keep it quieter than the marking status. */
+.ez-clear-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    width: 2rem;
+    height: 2rem;
+    padding: 0;
+    border: 1px solid transparent;
+    border-radius: 0.25rem;
+    color: var(--ez-color-text, #374151);
+    background: transparent;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+}
+.ez-clear-button:focus-visible {
+    outline: 2px solid var(--ez-color-primary, #2563eb);
+    outline-offset: 2px;
+}
+.ez-clear-button:disabled,
+.ez-clear-button[aria-disabled='true'] {
+    opacity: 0.45;
+    cursor: default;
+}
+.ez-has-clear,
+.ez-clear-frame {
+    position: relative;
+}
+.ez-has-clear > .ez-clear-button {
+    position: absolute;
+    inset-inline-end: 0.25rem;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 4;
+}
+.marking-field-wrap > .ez-clear-button {
+    grid-area: 1 / 1 / 2 / 2;
+}
+.ez-has-clear > .ez-field-drawer {
+    right: 2.25rem;
+}
+.ez-clear-frame > .ez-clear-button,
+.ez-clear-text > .ez-clear-button {
+    position: absolute;
+    inset-inline-end: 0.25rem;
+    top: 0.25rem;
+    z-index: 4;
+}
+.ez-clear-preview > .proto-preview {
+    padding-inline-end: 2.75rem;
+    min-height: 2.5rem;
+    box-sizing: border-box;
+}
+.ez-clear-preview > .ez-clear-button {
+    top: 50%;
+    transform: translateY(-50%);
+}
+.ez-clear-frame > .select-cards,
+.ez-clear-frame > .category-selector-body > :first-child,
+.ez-clear-frame > .ez-decision-flow > :first-child {
+    padding-inline-end: 2.5rem;
+}
+.ez-clear-frame > .ez-decision-flow > :first-child {
+    min-height: 2.5rem;
+}
+.ez-clear-text > .marked-input-native,
+.ez-clear-text > .marked-input-display,
+.ez-clear-text > .marked-textarea-input,
+.ez-clear-text > .marked-textarea-display {
+    padding-inline-end: 2.75rem !important;
+}
+.ez-has-clear .marking-field-host,
+.ez-has-clear .marking-field-display,
+.tag-input-wrap.ez-has-clear {
+    padding-inline-end: 4.25rem !important;
+}
+@media (pointer: coarse) {
+    .ez-clear-button {
+        width: 2.75rem;
+        height: 2.75rem;
+    }
+    .ez-has-clear > .ez-field-drawer {
+        right: 3.75rem;
+    }
+    .ez-clear-frame > .select-cards,
+    .ez-clear-frame > .category-selector-body > :first-child,
+    .ez-clear-frame > .ez-decision-flow > :first-child {
+        padding-inline-end: 3.25rem;
+    }
+    .ez-clear-frame > .ez-decision-flow > :first-child {
+        min-height: 3.25rem;
+    }
+    .ez-clear-preview > .proto-preview {
+        padding-inline-end: 3.5rem;
+        min-height: 3.25rem;
+    }
+    .ez-clear-text > .marked-input-native,
+    .ez-clear-text > .marked-input-display,
+    .ez-clear-text > .marked-textarea-input,
+    .ez-clear-text > .marked-textarea-display {
+        padding-inline-end: 3.5rem !important;
+    }
+    .ez-has-clear .marking-field-host,
+    .ez-has-clear .marking-field-display,
+    .tag-input-wrap.ez-has-clear {
+        padding-inline-end: 6.25rem !important;
+    }
+}
+@media (forced-colors: active) {
+    .ez-clear-button:focus-visible {
+        outline-color: Highlight;
+    }
+}

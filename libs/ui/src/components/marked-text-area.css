@@ -1,0 +1,377 @@
+.marked-textarea-wrap {
+    position: relative;
+    display: block;
+    width: 100%;
+    min-width: 0;
+}
+
+/* Focus ring: the textarea is invisible so its native outline is hidden;
+   show a real ring on the display layer when the textarea receives focus. */
+.marked-textarea-wrap:focus-within:not(:has(> .ez-clear-button:focus))
+    .marked-textarea-display {
+    outline: 2px solid var(--ez-color-primary, #fdb827);
+    outline-offset: -2px;
+    border-radius: var(--ez-border-radius, 0.25rem);
+}
+
+/* Footer row: keyboard hint (or, on coarse pointers, the touch "Add marking"
+   button) on the left, the status mark + ★ favorites chrome right-aligned on
+   the right: both live here so the chrome always lands opposite whichever of
+   the other two is currently visible. padding-right clears the resize handle,
+   which anchors to the wrap's own bottom-right corner (see
+   .marked-textarea-resize-handle below) and would otherwise sit on top of the
+   chrome slot's icons. */
+.marked-textarea-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    margin-top: 0.25rem;
+    padding-right: 1.125rem;
+}
+
+/* Ctrl+Enter hint below the textarea: a REAL button (same action as the
+   shortcut it documents), styled to still read as quiet inline hint text
+   rather than a button. Needs the same above-the-invisible-textarea z-index
+   treatment as .marked-textarea-touch-add (see that rule's comment): the
+   native textarea's position:absolute; inset:0 stretches over the whole
+   wrap, including this footer, so without it clicks land on the invisible
+   textarea instead of this button. */
+.marked-textarea-kb-hint {
+    position: relative;
+    z-index: 3;
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    font: inherit;
+    font-size: 0.6875rem;
+    color: var(--ez-color-muted, #9ca3af);
+    background: transparent;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    border-radius: 0.1875rem;
+}
+.marked-textarea-kb-hint:hover {
+    color: var(--ez-color-text, #374151);
+}
+.marked-textarea-kb-hint:focus-visible {
+    outline: 2px solid var(--ez-color-primary, #fdb827);
+    outline-offset: 2px;
+}
+/* Touch "Add marking" affordance: same action as Cmd/Ctrl+Enter. Hidden on
+   fine pointers (keyboard users get the hint instead); shown on coarse pointers. */
+.marked-textarea-touch-add {
+    position: relative;
+    z-index: 3;
+    display: none;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.25rem 0.625rem;
+    font-size: 0.75rem;
+    color: var(--ez-color-primary, #fdb827);
+    background: transparent;
+    border: 1px solid var(--ez-color-border, #d1d5db);
+    border-radius: 0.375rem;
+    cursor: pointer;
+}
+
+/* Chrome slot: status mark + ★ favorites button at the field's
+   bottom-right edge. `.marked-textarea-wrap` (position: relative) is the containing
+   block, so it takes no normal-flow space and never pushes the field down.
+   It stays here at rest and while the inline editor is open, so the controls
+   never move when editing starts; the editor opens below or above the line
+   being edited and has no footer slot to push the chrome out of. The z-index
+   keeps it above the invisible native textarea, which covers the whole wrap. */
+.marked-textarea-hint-chrome {
+    position: absolute;
+    right: 1.5rem;
+    bottom: 0.25rem;
+    z-index: 3;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+/* Touch devices have no physical keyboard, so the Cmd/Ctrl+Enter hint is
+   meaningless, so hide it and show the tappable "Add marking" button instead. */
+@media (pointer: coarse) {
+    .marked-textarea-kb-hint {
+        display: none;
+    }
+    .marked-textarea-touch-add {
+        display: inline-flex;
+    }
+    /* The ns-resize grip needs a precise pointer; on touch it just blocks page
+     scroll, so drop it. */
+    .marked-textarea-resize-handle {
+        display: none;
+    }
+}
+.marked-textarea-kb-hint kbd {
+    display: inline-block;
+    padding: 0.125rem 0.375rem;
+    font-family: monospace;
+    font-size: 0.75rem;
+    line-height: 1.5;
+    background: var(--ez-color-surface, #f3f4f6);
+    border: 1px solid var(--ez-color-border, #d1d5db);
+    border-radius: 0.25rem;
+    white-space: nowrap;
+}
+
+/* Textarea: captures input but is fully invisible. It covers the whole wrap,
+   footer included, so its own outline (the browser's, or a host's textarea
+   focus rule) would draw a second ring around both: the display layer's ring
+   above is the only one. */
+.marked-textarea-wrap > textarea.marked-textarea-input {
+    position: absolute;
+    inset: 0;
+    margin: 0;
+    box-sizing: border-box;
+    white-space: pre-wrap;
+    overflow-wrap: break-word;
+    width: 100%;
+    resize: none;
+    overflow: auto;
+    color: transparent;
+    caret-color: transparent;
+    background: transparent;
+    border-color: transparent;
+    outline: none;
+    z-index: 2;
+}
+
+.marked-textarea-wrap > textarea.marked-textarea-input::selection {
+    background: transparent;
+    color: transparent;
+}
+
+/* Display layer: renders styled text, cursor, and selection */
+.marked-textarea-display {
+    position: relative;
+    box-sizing: border-box;
+    font: inherit;
+    letter-spacing: inherit;
+    word-spacing: inherit;
+    tab-size: inherit;
+    text-indent: inherit;
+    text-align: inherit;
+    text-transform: inherit;
+    direction: inherit;
+    white-space: pre-wrap;
+    overflow-wrap: break-word;
+    overflow: auto;
+    min-height: 6rem;
+    /* Sit above the transparent textarea so the few interactive descendants
+       (invalid chips and the inline editor) can receive hover/click events.
+       The display itself remains click-through, preserving native textarea
+       selection everywhere else. */
+    z-index: 3;
+    pointer-events: none;
+    cursor: text;
+}
+
+.marked-textarea-chip {
+    background: var(--ez-color-surface-active, rgba(253, 184, 39, 0.25));
+    border-radius: 0.125rem;
+}
+
+/* A chip with its picker open is mid-edit, not a committed marking: the
+   base rule's solid fill (the same accent-tinted background var used for
+   real text selection elsewhere in the design tokens, e.g. --ez-dropdown-
+   selected/highlight) painted behind the freshly-inserted, still-empty
+   "()" template read as a stray selection highlight sitting on the open
+   delimiter, not as "you're editing this." Clearing it here lets the
+   picker's own focus/caret carry that signal instead. */
+.marked-textarea-chip--editing {
+    background: transparent;
+    /* The display layer is otherwise click-through to the invisible textarea.
+       The whole visible editing mark must own its hit area so a caret-
+       repositioning click near punctuation cannot masquerade as leaving the
+       inline editor and commit provisional text. */
+    pointer-events: auto;
+}
+
+.marked-textarea-chip--invalid {
+    position: relative;
+    z-index: 3;
+    pointer-events: auto;
+    cursor: help;
+    background: color-mix(
+        in srgb,
+        var(--ez-color-error, #b91c1c) 20%,
+        transparent
+    );
+    text-decoration: underline wavy var(--ez-color-error, #b91c1c);
+    text-decoration-skip-ink: none;
+}
+
+/* A warning leaves the marking valid: an underline in the warning color, no
+   fill, so it reads as a note rather than something broken. */
+.marked-textarea-chip--warning {
+    position: relative;
+    z-index: 3;
+    pointer-events: auto;
+    cursor: help;
+    text-decoration: underline dotted var(--ez-color-warning, #f59e0b);
+    text-decoration-thickness: 0.125rem;
+    text-decoration-skip-ink: none;
+}
+
+/* The paragraph whose mark is open in the editor: its mark and its text to
+   the end of the line, tinted and ruled in the accent color, so the editor's
+   list is visibly about this portion in a long document. A background and an
+   inset shadow only: no padding or border, so the text never reflows and the
+   display stays in register with the invisible textarea above it. */
+.marked-textarea-active-paragraph {
+    background: color-mix(
+        in srgb,
+        var(--ez-color-primary, #fdb827) 12%,
+        transparent
+    );
+    box-shadow: inset 0.1875rem 0 0 var(--ez-color-primary, #fdb827);
+    box-decoration-break: clone;
+    -webkit-box-decoration-break: clone;
+}
+
+.marked-textarea-picker-mount {
+    pointer-events: auto;
+}
+
+/* Blinking caret rendered inside the display div */
+.marked-textarea-caret {
+    display: inline;
+    position: relative;
+    width: 0;
+    margin-left: -0.0625rem;
+    margin-right: -0.0625rem;
+    border-left: 0.125rem solid var(--ez-color-text, currentColor);
+    animation: marked-textarea-blink 1s step-end infinite;
+    pointer-events: none;
+}
+
+@keyframes marked-textarea-blink {
+    0%,
+    100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0;
+    }
+}
+
+/* Selection highlight */
+.marked-textarea-selection {
+    background: Highlight;
+    color: HighlightText;
+}
+
+@media (forced-colors: active) {
+    .marked-textarea-selection {
+        background: Highlight;
+        color: HighlightText;
+    }
+}
+
+/* Popup shell: positioned over the marking */
+.marked-textarea-popup {
+    position: absolute;
+    z-index: 1000;
+    padding: 0;
+    margin: 0;
+    border: none;
+    background: none;
+    overflow: visible;
+}
+
+.marked-textarea-popup[hidden] {
+    display: none;
+}
+
+@media (pointer: coarse) {
+    /* iOS Safari zooms the page when a focused field's effective font-size is
+       under 16px. The threshold is defined in device px, not rem, so px is
+       correct here; max() keeps larger host fonts intact. The invisible textarea
+       is the focus target that triggers the zoom, and the display layer must
+       carry the same floor so the transparent-caret/selection overlay stays
+       aligned with the text metrics. */
+    .marked-textarea-wrap > textarea.marked-textarea-input,
+    .marked-textarea-display {
+        font-size: max(1em, 16px);
+    }
+}
+
+.marked-textarea-picker-mount {
+    display: inline !important;
+    background-color: transparent !important;
+}
+
+.marked-textarea-picker-active .ez-tooltip {
+    display: none !important;
+}
+
+.marked-textarea-hidden-fields {
+    display: none;
+}
+
+/* Incomplete scan: the field could not check all of its text. The words carry
+   it; the error color only reinforces them. */
+.marked-textarea-scan-notice {
+    display: flex;
+    align-items: baseline;
+    gap: 0.375rem;
+    margin-top: 0.25rem;
+    font-size: 0.8125rem;
+    line-height: 1.4;
+    color: var(--ez-color-error, #b91c1c);
+    overflow-wrap: anywhere;
+}
+.marked-textarea-scan-notice[hidden] {
+    display: none;
+}
+@media (forced-colors: active) {
+    .marked-textarea-scan-notice {
+        color: CanvasText;
+    }
+}
+
+/* Resize handle */
+.marked-textarea-resize-handle {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    width: 1rem;
+    height: 1rem;
+    cursor: ns-resize;
+    z-index: 3;
+    background: linear-gradient(
+        135deg,
+        transparent 40%,
+        var(--ez-color-border, #ccc) 40%,
+        var(--ez-color-border, #ccc) 45%,
+        transparent 45%,
+        transparent 55%,
+        var(--ez-color-border, #ccc) 55%,
+        var(--ez-color-border, #ccc) 60%,
+        transparent 60%,
+        transparent 70%,
+        var(--ez-color-border, #ccc) 70%,
+        var(--ez-color-border, #ccc) 75%,
+        transparent 75%
+    );
+}
+
+/* Touch targets: a finger needs 44px. The "+ Add marking" / "+ Set marking"
+   button grows to it; the status mark and star keep their 20px icons with a
+   44px overlay each (status-mark.css, favorites-panel.css), spaced so the two
+   overlays never meet. */
+@media (pointer: coarse) {
+    .marked-textarea-touch-add {
+        min-height: 2.75rem;
+    }
+    .marked-textarea-hint-chrome {
+        gap: 1.5rem;
+        right: 2rem;
+    }
+}

@@ -1,0 +1,64 @@
+{
+    "name": "@ezclassify/ui",
+    "version": "1.0.0-dev.30",
+    "type": "module",
+    "description": "UI component library (autocomplete, handbook, comparison, document-format, forms) for EzClassify deployments",
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/ezclassify/web.git",
+        "directory": "libs/ui"
+    },
+    "homepage": "https://github.com/ezclassify/web/tree/main/libs/ui#readme",
+    "bugs": {
+        "url": "https://github.com/ezclassify/web/issues"
+    },
+    "license": "Apache-2.0",
+    "engines": {
+        "node": ">=22.0.0"
+    },
+    "main": "./dist/lib/index.cjs",
+    "types": "./dist/lib/index.d.ts",
+    "module": "./dist/lib/index.mjs",
+    "exports": {
+        ".": {
+            "types": "./dist/lib/index.d.ts",
+            "import": "./dist/lib/index.mjs",
+            "require": "./dist/lib/index.cjs"
+        }
+    },
+    "files": [
+        "NOTICE",
+        "dist/lib",
+        "!dist/**/*.map"
+    ],
+    "keywords": [
+        "classification",
+        "forms",
+        "tags",
+        "security-classification",
+        "html"
+    ],
+    "scripts": {
+        "build": "npm run build:lib",
+        "build:browser": "node build-browser.mjs",
+        "build:lib": "node build-lib.mjs",
+        "build:watch": "node build-lib.mjs --watch",
+        "lint": "npx eslint src/",
+        "prepublishOnly": "npm run build:lib && node ../../scripts/check-publish-content.mjs @ezclassify/ui",
+        "test": "cd ../.. && npx vitest run --config vitest.config.ts",
+        "test:verbose": "cd ../.. && npx vitest run --config vitest.config.ts --reporter=verbose --no-file-parallelism",
+        "typecheck": "node ../../scripts/typecheck-specs.mjs libs/ui",
+        "verify:publish-ready": "npm run build:lib && npm test && node ../../scripts/check-publish-content.mjs @ezclassify/ui"
+    },
+    "dependencies": {
+        "@ezclassify/types": "^1.0.0-0"
+    },
+    "devDependencies": {
+        "@types/js-yaml": "^4.0.9",
+        "js-yaml": "^4.1.0",
+        "vitest": "^4.1.2"
+    },
+    "publishConfig": {
+        "access": "public"
+    }
+}

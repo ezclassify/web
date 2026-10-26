@@ -1,0 +1,190 @@
+/* ── Status Banner ───────────────────────────────── */
+.status-banner {
+    box-sizing: border-box;
+    width: 100%;
+    border-radius: 0.5rem;
+    text-align: center;
+    transition:
+        background-color 0.2s,
+        color 0.2s;
+}
+
+/* ── Size variants ───────────────────────────────── */
+.status-banner--prominent {
+    padding: 1.5rem 1rem;
+}
+
+.status-banner--compact {
+    padding: 0.375rem 1rem;
+}
+
+/* ── Single-concept mode elements ──────────────── */
+.status-banner-label {
+    font-weight: 700;
+}
+
+.status-banner--prominent .status-banner-label {
+    font-size: 1.5rem;
+}
+
+.status-banner--compact .status-banner-label {
+    font-size: 1rem;
+}
+
+.status-banner-subtitle {
+    margin-top: 0.25rem;
+    font-size: 0.8125rem;
+    opacity: 0.85;
+}
+
+/* ── Boundary-mode inline elements ───────────────── */
+.status-banner-boundary {
+    font-weight: 600;
+    font-size: 0.875rem;
+    overflow-wrap: break-word;
+}
+
+.status-banner-current {
+    font-weight: 700;
+    font-size: 0.9375rem;
+    overflow-wrap: break-word;
+}
+
+.status-banner--compact .status-banner-boundary,
+.status-banner--compact .status-banner-current {
+    font-size: 0.8125rem;
+}
+
+.status-banner-sep {
+    font-weight: 400;
+    opacity: 0.6;
+}
+
+/*
+ * The separator character is presentation, so it lives here rather than in a
+ * string the component builds.
+ */
+.status-banner-sep::before {
+    content: '\00b7';
+    margin: 0 0.5rem;
+}
+
+/* ── Color variant ───────────────────────────────── */
+.status-banner--colored {
+    background-color: var(--ez-banner-bg);
+    color: var(--ez-banner-text);
+}
+
+/* ── Empty state ─────────────────────────────────── */
+.status-banner--empty {
+    background: var(--ez-color-background, #f3f4f6);
+    color: var(--ez-color-muted, #6b7280);
+    border: 1px dashed var(--ez-color-border, #d1d5db);
+}
+
+/* ── Over-boundary alert ─────────────────────────── */
+/*
+ * Default over-boundary colors: #fef2f2 on #7f1d1d ≈ 5.6:1 contrast (WCAG AA).
+ * Air-gap deployments with custom branding can override via
+ * --ez-banner-over-boundary-bg / --ez-banner-over-boundary-text without forking
+ * this file.
+ */
+.status-banner--over-boundary {
+    background-color: var(--ez-banner-over-boundary-bg, #7f1d1d) !important;
+    color: var(--ez-banner-over-boundary-text, #fef2f2) !important;
+    --ez-banner-bg: var(--ez-banner-over-boundary-bg, #7f1d1d);
+    --ez-banner-text: var(--ez-banner-over-boundary-text, #fef2f2);
+}
+
+.status-banner-over-boundary-alert {
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    margin-right: 0.75rem;
+    font-size: 0.875rem;
+    text-transform: uppercase;
+}
+
+/* ── Incomplete value ────────────────────────────── */
+/*
+ * The value on display may be missing markings (a stale rollup, unread text).
+ * The words carry it; the dashed inset only reinforces it.
+ */
+.status-banner--incomplete {
+    outline: 2px dashed currentColor;
+    outline-offset: -0.375rem;
+}
+
+.status-banner-incomplete {
+    margin-top: 0.375rem;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    overflow-wrap: break-word;
+}
+
+.status-banner-incomplete__icon {
+    margin-right: 0.375rem;
+}
+
+/* ── Affix, position:fixed viewport bars ────────── */
+/* Applied to the container element (the host div), not the inner .status-banner. */
+.ez-banner-affix-top,
+.ez-banner-affix-bottom {
+    position: fixed;
+    left: 0;
+    right: 0;
+    z-index: 9999;
+    /* Consumers must add matching body padding to prevent content overlap.
+     Example (compact size): body { padding-top: 2rem; }
+     Example (prominent size): body { padding-top: 4.5rem; } */
+}
+
+.ez-banner-affix-top {
+    top: 0;
+}
+
+.ez-banner-affix-bottom {
+    bottom: 0;
+}
+
+/* Affixed banners span the full viewport width: remove corner rounding. */
+.ez-banner-affix-top .status-banner,
+.ez-banner-affix-bottom .status-banner {
+    border-radius: 0;
+}
+
+/* ── Reduced motion ───────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+    .status-banner {
+        transition: none;
+    }
+}
+
+/* ── High contrast (forced-colors) ────────────────── */
+@media (forced-colors: active) {
+    .status-banner {
+        border: 2px solid ButtonText;
+        background: ButtonFace;
+        color: ButtonText;
+        forced-color-adjust: none;
+    }
+    .status-banner--empty {
+        border: 2px dashed GrayText;
+        background: ButtonFace;
+        color: GrayText;
+    }
+    .status-banner--over-boundary {
+        border: 2px solid Mark !important;
+        background: Mark !important;
+        color: MarkText !important;
+    }
+    .status-banner-label,
+    .status-banner-boundary,
+    .status-banner-current,
+    .status-banner-incomplete {
+        color: ButtonText;
+    }
+    .status-banner-subtitle {
+        color: GrayText;
+        opacity: 1;
+    }
+}

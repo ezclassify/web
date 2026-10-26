@@ -1,0 +1,25 @@
+@ezclassify/ui-tools
+Copyright (c) 2026 EzClassify, LLC
+Licensed under the Apache License 2.0 (see LICENSE).
+
+THIRD-PARTY RUNTIME DEPENDENCIES
+================================
+
+This package declares the following third-party production dependencies.
+They are installed by the consumer through npm and are not bundled into the
+published `dist/` output; each ships its own license file.
+
+- @axe-core/playwright (MPL-2.0): https://github.com/dequelabs/axe-core-npm
+- @playwright/test (Apache-2.0): https://github.com/microsoft/playwright
+
+The @ezclassify/testing-utils dependency is first-party EzClassify code under
+the EzClassify Runtime License, not Apache-2.0. It is not on a public registry,
+so this package resolves only for a consumer configured for the @ezclassify
+scope on an EzClassify registry.
+
+Full license texts for the direct third-party dependencies of every
+publishable package in this repo are collected in THIRD-PARTY-NOTICES.md at
+the repository root.
+
+Build- and test-time tooling (devDependencies) is not distributed and is not
+listed here.

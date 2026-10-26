@@ -1,0 +1,97 @@
+/* The ★ drawer: a small tab of chrome (status mark + ★ favorites button)
+   hanging off a field's bottom-right edge by default, an attached tab rather
+   than a chip floating over the field's own content. Field background, shared
+   left/right borders, no border on the edge touching the field, rounded corners
+   on the two far corners only: it reads as coming off the field. Used by
+   MarkingField and TagInput; MarkedInput/MarkedTextArea instead fold their
+   chrome into their own bottom hint row (see marked-input.css /
+   marked-text-area.css `*-hint-chrome`). */
+.ez-field-drawer {
+    position: absolute;
+    right: 0.5rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.125rem 0.375rem;
+    border-left: 1px solid
+        var(--ez-field-drawer-border-color, var(--ez-color-border, #d1d5db));
+    border-right: 1px solid
+        var(--ez-field-drawer-border-color, var(--ez-color-border, #d1d5db));
+    background: var(--ez-color-background, #fff);
+    /* Below the portaled suggestion dropdown (var(--ez-z-dropdown, 1000) in
+       component-utils.css): an open dropdown is meant to read as the active
+       surface and may legitimately cover the drawer when both occupy the
+       field's same edge. Above the field's own invisible capture-layer
+       input/textarea (the highest of which uses z-index 3, see e.g.
+       marked-input.css's native input) so the drawer stays clickable. */
+    z-index: 4;
+}
+
+/* Default: hangs below the field. No top border/rounding (it merges
+   with the field's own bottom edge); rounded bottom corners read
+   as the tab's free end. The 3px negative margin covers the field border and its
+   inset focus ring, so the drawer's opaque background
+   paints over the segment of the field's bottom border directly behind the
+   tab; otherwise that line stays visible underneath, and the tab reads as
+   a second box stacked below the field rather than one shape with a notch
+   cut into it. */
+.ez-field-drawer--bottom {
+    top: calc(100% - var(--ez-field-margin-bottom, 0px));
+    margin-top: -3px;
+    border-top: none;
+    border-bottom: 1px solid
+        var(--ez-field-drawer-border-color, var(--ez-color-border, #d1d5db));
+    border-radius: 0 0 0.375rem 0.375rem;
+}
+
+/* Mirrored: hangs above the field, for whenever the field's own suggestion
+   dropdown is open BELOW it: the bottom edge is occupied, so the drawer
+   moves to the opposite, free edge (see setFieldDrawerOrientation's
+   callers). No bottom border/rounding (merges with the field's top edge);
+   rounded top corners. Same 3px overlap as the bottom variant, mirrored:
+   pulls the drawer down over the field's own top border to absorb it. */
+.ez-field-drawer--top {
+    bottom: calc(100% - var(--ez-field-margin-top, 0px));
+    margin-bottom: -3px;
+    border-bottom: none;
+    border-top: 1px solid
+        var(--ez-field-drawer-border-color, var(--ez-color-border, #d1d5db));
+    border-radius: 0.375rem 0.375rem 0 0;
+}
+
+/* Only focus inside the field reveals the helper drawer. Focus parked on the
+   outer box after a touch repair keeps the status mark inside the field. */
+:is(.marking-field-wrap, .tag-input-wrap):has(> .ez-clear-button:focus)
+    > .ez-field-drawer,
+:is(.marking-field-wrap, .tag-input-wrap):focus > .ez-field-drawer,
+:is(.marking-field-wrap, .tag-input-wrap):not(:focus-within)
+    > .ez-field-drawer {
+    top: 50%;
+    bottom: auto;
+    transform: translateY(-50%);
+    margin: 0;
+    padding: 0;
+    border: none;
+    border-radius: 0;
+    background: transparent !important;
+}
+
+:is(.marking-field-wrap, .tag-input-wrap):has(> .ez-clear-button:focus)
+    > .ez-field-drawer
+    > :not(.ez-status-mark),
+:is(.marking-field-wrap, .tag-input-wrap):focus
+    > .ez-field-drawer
+    > :not(.ez-status-mark),
+:is(.marking-field-wrap, .tag-input-wrap):not(:focus-within)
+    > .ez-field-drawer
+    > :not(.ez-status-mark) {
+    display: none;
+}
+
+/* On a finger the mark and the star each take a 44px target (an overlay
+   around the 20px icon); the gap between them keeps the two apart. */
+@media (pointer: coarse) {
+    .ez-field-drawer {
+        gap: 1.5rem;
+    }
+}

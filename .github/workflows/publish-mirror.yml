@@ -1,0 +1,146 @@
+name: Publish mirror (GitHub Packages)
+
+# Nightly republish of this repo's @ezclassify/* packages (ui, react, vue,
+# angular, ui-tools) to the organization's GitHub Packages development
+# mirror, so consumers resolve real artifacts between releases. It runs after
+# the packages this repository installs have published. Gated on "did a commit
+# land in the last 24h" so idle days publish nothing. The real npm publish
+# belongs to the release process.
+
+on:
+  schedule:
+    - cron: '30 6 * * *' # 06:30 UTC nightly, after the packages this repo installs
+  workflow_dispatch:
+    inputs:
+      force:
+        description: Publish even if no commit landed in the last 24h
+        type: boolean
+        default: false
+
+permissions:
+  packages: write
+  contents: read
+
+concurrency:
+  group: publish-mirror
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    # Publication authority is repository configuration, not repository
+    # identity, so moving the variable and secret moves the publisher without
+    # a code change.
+    if: vars.EZ_DEVELOPMENT_MIRROR_PUBLISHER == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - name: Gate on a commit in the last 24h
+        id: gate
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ inputs.force }}" = "true" ]; then
+            echo "forced publish"; echo "run=yes" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          age=$(( $(date +%s) - $(git show -s --format=%ct HEAD) ))
+          if [ "$age" -lt 86400 ]; then
+            echo "HEAD is ${age}s old (<24h), publishing"; echo "run=yes" >> "$GITHUB_OUTPUT"
+          else
+            echo "HEAD is ${age}s old (>=24h), nothing landed today, skipping"; echo "run=no" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        if: steps.gate.outputs.run == 'yes'
+        with:
+          node-version: '24'
+          registry-url: 'https://npm.pkg.github.com'
+          scope: '@ezclassify'
+
+      - name: Configure registry (install first-party packages from GH Packages)
+        if: steps.gate.outputs.run == 'yes'
+        run: |
+          cat > .npmrc << 'NPMRC'
+          ignore-scripts=true
+          legacy-peer-deps=false
+          @ezclassify:registry=https://npm.pkg.github.com
+          //npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}
+          NPMRC
+          # libs/ui-tools is not a workspace, so a root install never reaches it
+          # and npm reads no config from a parent directory. It gets its own
+          # copy of the same settings. npm never packs a .npmrc.
+          cp .npmrc libs/ui-tools/.npmrc
+
+      - name: Install
+        # `--tag=dev` because this mirror publishes every build under `dev` and
+        # leaves `latest` behind, and npm takes the version under its default
+        # tag over the highest one whenever that version satisfies the range.
+        # The first resolve runs with the first-party
+        # ranges stripped, so every third-party version is chosen under npm's
+        # default tag and locked. The second puts them back and adds only the
+        # first-party packages under `dev`. The ui-tools install below does the
+        # same for the same reason.
+        if: steps.gate.outputs.run == 'yes'
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.EZ_GHPKG_TOKEN }}
+        run: |
+          set -euo pipefail
+          npm run deps:relock && npm ci
+
+      - name: Install and test ui-tools (standalone, outside the workspace closure)
+        # No other job in this repository can run these specs: they resolve
+        # against libs/ui-tools/node_modules, which the root install does not
+        # create and a clean clone cannot populate. This job configures the one
+        # registry that carries the package's own dependencies, so it is where
+        # the suite runs, and it runs before anything is published.
+        if: steps.gate.outputs.run == 'yes'
+        working-directory: libs/ui-tools
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.EZ_GHPKG_TOKEN }}
+        run: |
+          set -euo pipefail
+          node ../../scripts/relock.mjs --strip --root=.
+          npm install --package-lock-only
+          node ../../scripts/relock.mjs --restore --root=.
+          npm install --tag=dev
+          npm test
+
+      - name: Stamp mirror version
+        if: steps.gate.outputs.run == 'yes'
+        run: |
+          VERSION="1.0.0-mirror.${{ github.run_number }}"
+          for w in ui react vue angular; do
+            npm pkg set "version=${VERSION}" -w "@ezclassify/${w}"
+          done
+          # ui-tools is stamped in its own directory because it is not a
+          # workspace. `private` is dropped here, in the runner's disposable
+          # checkout, and never in the committed manifest: the source stays
+          # private so nothing can publish it to npmjs.org by accident.
+          ( cd libs/ui-tools && npm pkg set "version=${VERSION}" && npm pkg delete private )
+
+      - name: Build (dependency order)
+        if: steps.gate.outputs.run == 'yes'
+        run: |
+          npm run build -w @ezclassify/ui
+          npm run build -w @ezclassify/react
+          npm run build -w @ezclassify/vue
+          npm run build -w @ezclassify/angular
+          npm run build --prefix libs/ui-tools
+
+      - name: Verify packed framework consumers
+        if: steps.gate.outputs.run == 'yes'
+        run: |
+          npx playwright install --with-deps chromium
+          npm run verify:pack-consume
+
+      # `--access restricted`: on GitHub Packages a public package reads as
+      # organization-public, which is not what a development mirror is for.
+      - name: Publish to GitHub Packages
+        if: steps.gate.outputs.run == 'yes'
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.EZ_GHPKG_TOKEN }}
+        run: |
+          npm publish --tag dev --access restricted -w @ezclassify/ui
+          npm publish --tag dev --access restricted -w @ezclassify/react
+          npm publish --tag dev --access restricted -w @ezclassify/vue
+          npm publish --tag dev --access restricted ./integrations/angular/dist/ngpkg
+          npm publish --tag dev --access restricted ./libs/ui-tools

@@ -1,0 +1,18 @@
+{
+    "compilerOptions": {
+        "declaration": true,
+        "declarationMap": true,
+        "noEmit": false,
+        "outDir": "../../dist/out-tsc",
+        "rootDir": "src",
+        "skipLibCheck": true
+    },
+    "exclude": [
+        "src/**/*.spec.ts",
+        "src/**/*.test.ts",
+        "src/**/*.vue",
+        "tests/**"
+    ],
+    "extends": "./tsconfig.json",
+    "include": ["src/**/*.ts"]
+}

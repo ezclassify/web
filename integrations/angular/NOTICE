@@ -1,0 +1,18 @@
+@ezclassify/angular
+Copyright (c) 2026 EzClassify, LLC
+Licensed under the Apache License 2.0 (see LICENSE).
+
+THIRD-PARTY RUNTIME DEPENDENCIES
+================================
+
+This package declares no production ("dependencies") third-party packages and
+bundles no third-party runtime code in its published library output. The
+compiled output imports only peer dependencies the consumer installs
+(@angular/common, @angular/core, @angular/forms, rxjs, @ezclassify/types,
+@ezclassify/ui), which ship their own license and notice files.
+
+There is therefore no third-party copyright or license obligation carried by
+this package's runtime.
+
+Build- and test-time tooling (devDependencies) is not distributed and is not
+listed here.

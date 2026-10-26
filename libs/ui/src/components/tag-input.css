@@ -1,0 +1,116 @@
+.tag-input-wrap {
+    position: relative;
+    box-sizing: border-box;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    /* Longhands, not the `gap` shorthand: `injectComponentStyles` always
+       emits `COMPONENT_CSS + tagInputCss` (component-base-readonly.ts), so
+       this file's rules load AFTER component-utils.css's in the same
+       stylesheet and win at equal specificity. A `gap: 0` shorthand here
+       would zero out row-gap too, silently discarding any row-gap this file
+       (or a later rule in it) sets, and a default row-gap declared in
+       component-utils.css would be clobbered by it. Row-gap lives here,
+       after this rule, so nothing downstream can shadow it. */
+    column-gap: 0;
+    row-gap: 0.375rem;
+    /* Visual properties come from the library's own design-token custom
+       properties, read directly. Reserve the resting status mark's lane in
+       both modes so focusing the field does not reflow its chips. */
+    padding: 0.375rem 2.5rem 0.375rem 0.5rem;
+    background: var(--ez-color-background, inherit);
+    border: 1px solid var(--ez-color-border, #d1d5db);
+    border-radius: var(--ez-border-radius, 0.25rem);
+    color: var(--ez-color-text, inherit);
+    font: inherit;
+    cursor: text;
+    /* The single-line height every field in the family shares (see
+       .marking-field-display and .marked-input-display), as an outer height.
+       A host that asks for more keeps it (tag-input.ts mirrors the larger of
+       the two, with the host's own box-sizing), and a single row of chips sits
+       centered in the extra room. */
+    min-height: 2rem;
+    align-content: center;
+}
+
+.tag-input-wrap > .proto-tag {
+    box-sizing: border-box;
+    min-width: 0;
+    border-radius: 0.875rem;
+}
+.tag-input-wrap > .proto-tag > span {
+    min-width: 0;
+    white-space: normal;
+    overflow-wrap: anywhere;
+}
+/* Inset (negative offset), matching MarkingField's own focus ring
+   (marking-field.css): an outward ring would paint 1px past the wrap's own
+   border, straight across the seam where the ★ drawer attaches
+   (field-chrome-drawer.css), cutting behind it instead of joining it:
+   visible on the drawer's --top orientation in particular, since that
+   orientation only ever appears while the field is focused (the dropdown
+   that triggers it can't open otherwise). Kept fully inside the border, the
+   ring can never cross into the drawer's footprint. */
+.tag-input-wrap:focus-within:not(:has(> .ez-clear-button:focus)) {
+    outline: 2px solid var(--ez-color-primary, #fdb827);
+    outline-offset: -2px;
+}
+
+/* The drawer itself picks up the same ring color on its own free edges so
+   the compound field+tab shape reads as one continuously highlighted unit,
+   not a highlighted box with a separately-colored tab hanging off it. */
+.tag-input-wrap:focus-within:not(:has(> .ez-clear-button:focus))
+    > .ez-field-drawer {
+    border-color: var(--ez-color-primary, #fdb827);
+}
+.tag-input-filter {
+    flex: 1;
+    min-width: 3.75rem;
+    border: none !important;
+    outline: none !important;
+    box-shadow: none !important;
+    font: inherit;
+    padding: 0 0 0 0.25rem;
+    background: transparent !important;
+    color: inherit;
+    /* A hint longer than the room left beside the chips ends in an ellipsis
+       rather than under the chrome lane (see updateFilterPlaceholder). */
+    text-overflow: ellipsis;
+}
+@media (pointer: coarse) {
+    /* iOS Safari zooms the page when a focused field's effective font-size is
+       under 16px. The threshold is defined in device px, not rem, so px is
+       correct here; max() keeps larger host fonts intact. */
+    .tag-input-filter {
+        font-size: max(1em, 16px);
+    }
+    /* The search input is a 44px target on a finger. */
+    .tag-input-filter {
+        min-height: 2.75rem;
+    }
+    /* Wrapped chip rows need more vertical room on touch than the default
+       above: the coarse-pointer remove-button hit target below
+       (`.proto-tag-remove::after`, component-utils.css) grows past the
+       chip's own edges, and a tighter row-gap would let it cross into the
+       next row. Lives in this file (not component-utils.css) so it loads
+       after the default `row-gap: 0.375rem` above and wins on source order
+       instead of depending on which file the cascade happens to concatenate
+       first. */
+    .tag-input-wrap {
+        row-gap: 0.5rem;
+    }
+}
+@media (forced-colors: active) {
+    .tag-input-wrap {
+        border: 1px solid ButtonText;
+        background: Field;
+        color: FieldText;
+    }
+    .tag-input-wrap:focus-within {
+        outline: 2px solid Highlight;
+        box-shadow: none;
+    }
+    .tag-input-filter {
+        color: FieldText;
+    }
+}

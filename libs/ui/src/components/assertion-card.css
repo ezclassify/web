@@ -1,0 +1,75 @@
+/* ── Assertion Card ──────────────────────────────── */
+.assertion-card {
+    border-left: 0.25rem solid var(--assertion-card-color, #666);
+    background: var(--ez-color-background, #fff);
+    border-radius: 0.5rem;
+    padding: 1rem 1.25rem;
+}
+
+.assertion-card-primary {
+    font-size: 1.25rem;
+    font-weight: 700;
+    margin-bottom: 0.75rem;
+    color: var(--ez-color-text, #333);
+}
+
+.assertion-card-category {
+    margin-bottom: 0.5rem;
+}
+
+.assertion-card-category-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--ez-color-muted, #6b7280);
+}
+
+.assertion-card-category-values {
+    font-size: 0.875rem;
+    color: var(--ez-color-text, #333);
+}
+
+.assertion-card-footer {
+    border-top: 1px solid var(--ez-color-border, #e5e7eb);
+    margin-top: 0.75rem;
+    padding-top: 0.75rem;
+    font-size: 0.8125rem;
+    color: var(--ez-color-muted, #6b7280);
+}
+
+.assertion-card--empty {
+    color: var(--ez-color-muted, #6b7280);
+    font-style: italic;
+    font-size: 0.875rem;
+}
+
+/* ── Reduced motion ───────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+    .assertion-card {
+        transition: none;
+    }
+}
+
+/* ── High contrast (forced-colors) ────────────────── */
+@media (forced-colors: active) {
+    .assertion-card {
+        border: 2px solid ButtonText;
+        background: ButtonFace;
+        color: ButtonText;
+        forced-color-adjust: none;
+    }
+    .assertion-card-primary {
+        color: ButtonText;
+    }
+    .assertion-card-category-label {
+        color: GrayText;
+    }
+    .assertion-card-category-values {
+        color: ButtonText;
+    }
+    .assertion-card-footer {
+        border-color: ButtonText;
+        color: GrayText;
+    }
+}

@@ -1,0 +1,238 @@
+name: CI
+
+# Runs on push and pull request; the weekly run catches vendored-spec drift
+# between pushes.
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: '0 12 * * 6' # weekly, Saturday 12:00 UTC; only fires on the repo's default branch
+
+permissions:
+  contents: read
+  packages: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-test:
+    if: ${{ github.event_name != 'schedule' || github.repository == 'ezclassify/web' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      matrix:
+        node-version: [22, 24]
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: ${{ matrix.node-version }}
+          registry-url: 'https://npm.pkg.github.com'
+          scope: '@ezclassify'
+
+      - name: Configure package registry
+        run: |
+          cat > "$RUNNER_TEMP/ci-npmrc" << 'NPMRC'
+          @ezclassify:registry=https://npm.pkg.github.com
+          //npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}
+          NPMRC
+          echo "NPM_CONFIG_USERCONFIG=$RUNNER_TEMP/ci-npmrc" >> "$GITHUB_ENV"
+
+      - name: Public dependency closure
+        # First gate, before anything is installed, because this is the one
+        # failure an outside contributor meets before every other check gets a
+        # turn. It reads the committed manifests and fails if the workspace
+        # declares a package that is not published publicly, which is how the
+        # engine and the example schemes would come back: quietly, as somebody's
+        # devDependency, breaking `npm install` for every fork.
+        run: npm run check:public-dependencies
+
+      - name: Install dependencies
+        # Generate a portable, date-bounded lock from empty state, then install
+        # exactly those bytes.
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.EZ_GHPKG_TOKEN || github.token }}
+        run: npm run deps:relock && npm ci
+
+      - name: Dependency quarantine window
+        # Enforce the publish-date quarantine for third-party packages while
+        # allowing the configured trusted first-party registry exemption.
+        # Pinned to one matrix leg: the check reads the ephemeral lockfile and asks the
+        # registry for publish dates, so it is Node-version-independent and
+        # network-bound. Running it on both legs would double that for no
+        # extra signal.
+        if: matrix.node-version == 22
+        run: npm run check:dependency-age
+
+      # Spec integrity: the vendored bundle has to be the one MANIFEST.json
+      # names. This repository generates nothing from it, so there is no
+      # regenerate-and-diff step; the hash is the whole check.
+      - name: Read MANIFEST
+        id: manifest
+        run: |
+          python3 -c "
+          import json, os
+          m = json.load(open('vendor/spec/MANIFEST.json'))
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
+              f.write('spec_sha256=' + m['openapiSha256'] + '\n')
+          "
+
+      - name: Verify spec hash
+        run: |
+          ACTUAL=$(sha256sum vendor/spec/openapi.yaml | awk '{print $1}')
+          if [ "${{ steps.manifest.outputs.spec_sha256 }}" != "$ACTUAL" ]; then
+            echo "ERROR: vendor/spec/openapi.yaml SHA mismatch"
+            echo "  MANIFEST: ${{ steps.manifest.outputs.spec_sha256 }}"
+            echo "  actual:   $ACTUAL"
+            exit 1
+          fi
+
+      - name: Build UI
+        run: npm run build
+        working-directory: libs/ui
+
+      - name: Build React integration
+        run: npm run build
+        working-directory: integrations/react
+
+      - name: Build Vue integration
+        run: npm run build
+        working-directory: integrations/vue
+
+      - name: Build Angular integration
+        run: npm run build
+        working-directory: integrations/angular
+
+      - name: Build examples and e2e hosts
+        # The four README examples and the two integration hosts consume the
+        # public REST API over HTTP. The public install closure builds them
+        # without an embedded engine.
+        run: >
+          npm run build
+          --workspace=examples/vanilla-example
+          --workspace=examples/react-example
+          --workspace=examples/vue-example
+          --workspace=examples/angular-example
+          --workspace=e2e
+
+      - name: Examples and hosts carry no engine
+        # The claim the examples exist to make, checked rather than asserted:
+        # no dependency field names the engine, no source or built file imports
+        # it, and the engine is outside the closure an outside consumer would
+        # install. The gate builds every application itself, so it needs
+        # nothing from the step above and cannot go quiet when their gitignored
+        # output is absent.
+        run: npm run check:consumer-engine-free -- --verbose
+
+      - name: Working tree is clean after build
+        run: git diff --exit-code && test -z "$(git status --porcelain)"
+
+      - name: Run tests
+        # The public lane. Specs that need the engine, the example schemes, or
+        # the store conformance suite are excluded by
+        # vitest.private-runtime.ts, which annotates the run and writes a job
+        # summary block naming every one of them, so what this check does not
+        # cover is told to a reviewer rather than left to be discovered.
+        run: npm test
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Check formatting
+        run: npm run format:check
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Dependency license compliance
+        # The workspace root is a private shell with no production deps of its
+        # own, so a plain --production run here checks nothing (it passed on
+        # an empty package set). So build the real production closure of the
+        # publishable workspaces from npm, then check exactly those packages
+        # against the allowlist. Examples are private demo
+        # apps and are deliberately out of scope.
+        run: |
+          set -euo pipefail
+          # npm ls exits 1 on advisory ELSPROBLEMS (e.g. extraneous optional
+          # wasm shims) while still printing the full tree; the coverage
+          # assertion below is the real guard, so tolerate that exit code.
+          PKGS=$( (npm ls --omit=dev --all --parseable --long \
+              -w @ezclassify/ui \
+              -w @ezclassify/react -w @ezclassify/vue -w @ezclassify/angular 2>/dev/null || true) \
+            | awk -F: 'NF>1 {print $2}' | grep -v '^@ezclassify/' | sort -u | paste -sd ';' -)
+          test -n "$PKGS"
+          OUT="$(mktemp -d)/licenses.json"
+          # MPL-2.0 is allowed for unmodified, unbundled dependencies only:
+          # its file-level copyleft attaches to nothing when the files ship
+          # untouched from the registry.
+          npx --yes license-checker-rseidelsohn@4.4.2 --includePackages "$PKGS" --json \
+            --onlyAllow "MIT;ISC;Apache-2.0;BSD-2-Clause;BSD-3-Clause;0BSD;CC0-1.0;Unlicense;BlueOak-1.0.0;CC-BY-4.0;Python-2.0;MPL-2.0" \
+            > "$OUT"
+          # --includePackages fails open: when its filter matches nothing the
+          # checker exits 0 having inspected zero packages, so a drift in how
+          # npm ls or the checker spells a package name would silently turn
+          # this gate off rather than break it. Assert every package we asked
+          # about actually came back, and print the licenses that cleared.
+          node -e '
+            const fs = require("node:fs");
+            const found = JSON.parse(fs.readFileSync(process.argv[1], "utf8"));
+            const want = process.argv[2].split(";").filter(Boolean);
+            const missing = want.filter((p) => !(p in found));
+            if (missing.length) {
+              console.error("License gate inspected no entry for: " + missing.join(", "));
+              process.exit(1);
+            }
+            const tally = {};
+            for (const p of want) tally[found[p].licenses] = (tally[found[p].licenses] || 0) + 1;
+            console.log("Checked " + want.length + " third-party packages:");
+            for (const [license, count] of Object.entries(tally).sort()) {
+              console.log("  " + license + ": " + count);
+            }
+          ' "$OUT" "$PKGS"
+
+      - name: Third-party notices are current
+        # THIRD-PARTY-NOTICES.md is generated from the direct production
+        # dependencies of the publishable workspaces; regenerating and
+        # diffing here means a dependency change cannot land without the
+        # committed notices file following it.
+        run: |
+          npm run notices
+          git diff --exit-code THIRD-PARTY-NOTICES.md
+
+      - name: Generate SBOM
+        run: npm run sbom
+
+      - name: Upload SBOM artifact
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: sbom
+          path: dist/sbom.json
+
+      - name: No dependency or import escapes the repo
+        # Static half of the PR-time independence proxy: no file:/link:/
+        # workspace: dependency protocols in publishable packages, and no
+        # relative import that resolves above the repo root.
+        run: npm run check:no-escape
+
+      - name: Pack and consume publishable workspaces from tarballs
+        # Dynamic half: npm-pack every publishable workspace, install the
+        # tarballs jointly into a scratch project outside the repo (sibling
+        # @ezclassify/* deps must resolve from the tarballs, never a
+        # registry), then load every declared entry point the way a consumer
+        # would.
+        run: |
+          npx playwright install --with-deps chromium
+          npm run verify:pack-consume
+      - name: No published tarball carries proprietary content
+        # The publication-boundary gate. It has to run here, as an explicit
+        # step, because .npmrc sets ignore-scripts=true: under that setting npm
+        # skips the publishing package's own prepublishOnly, so wiring the gate
+        # into that hook and stopping there leaves the repo with no automatic
+        # enforcement at all. Placed after the builds because pack reflects what
+        # is on disk, and a tree that was never built proves nothing.
+        run: npm run check:publish-content

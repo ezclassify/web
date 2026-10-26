@@ -1,0 +1,347 @@
+/* Guidebook: read-only guide reference viewer */
+
+.ez-guidebook {
+    font-family: var(--ez-font-family, inherit);
+    color: var(--ez-color-text, inherit);
+    line-height: 1.5;
+}
+
+.ez-guidebook__overview {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--ez-color-border);
+    margin-bottom: 0.5rem;
+}
+
+.ez-guidebook__overview-name {
+    font-size: 1.125rem;
+    font-weight: 600;
+}
+
+.ez-guidebook__overview-meta {
+    font-size: 0.8125rem;
+    color: var(--ez-color-muted);
+    margin-top: 0.125rem;
+}
+
+.ez-guidebook__overview-desc {
+    margin-top: 0.375rem;
+    font-size: 0.875rem;
+}
+
+.ez-guidebook__overview-profiles {
+    margin-top: 0.25rem;
+    font-size: 0.8125rem;
+    color: var(--ez-color-muted);
+}
+
+.ez-guidebook__search {
+    padding: 0.5rem 1rem;
+}
+
+.ez-guidebook__search-input {
+    width: 100%;
+    padding: 0.375rem 0.5rem;
+    font-size: 0.875rem;
+    border: 1px solid var(--ez-color-border);
+    border-radius: 0.25rem;
+    background: var(--ez-color-background);
+    color: var(--ez-color-text, inherit);
+}
+
+.ez-guidebook__search-input:focus-visible {
+    outline: 2px solid var(--ez-color-primary);
+    outline-offset: 1px;
+}
+
+.ez-guidebook__body {
+    display: flex;
+    flex-direction: column;
+}
+
+.ez-guidebook__guide {
+    border-bottom: 2px solid var(--ez-color-border);
+    padding-bottom: 0.5rem;
+}
+
+.ez-guidebook__guide:last-child {
+    border-bottom: none;
+}
+
+.ez-guidebook__guide--hidden {
+    display: none;
+}
+
+.ez-guidebook__guide-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    width: 100%;
+    padding: 0.625rem 1rem;
+    background: var(--ez-color-surface);
+    border: none;
+    border-bottom: 1px solid var(--ez-color-border);
+    cursor: pointer;
+    font: inherit;
+    text-align: left;
+    color: inherit;
+}
+
+.ez-guidebook__guide-header:hover {
+    background: var(--ez-color-surface-hover, var(--ez-color-surface));
+}
+
+.ez-guidebook__guide-header:focus-visible {
+    outline: 2px solid var(--ez-color-primary);
+    outline-offset: -2px;
+}
+
+.ez-guidebook__guide-arrow {
+    font-size: 0.8125rem;
+    width: 1rem;
+    text-align: center;
+    flex-shrink: 0;
+    /* Full text color so the disclosure triangle is legible as the expander. */
+    color: var(--ez-color-text);
+}
+
+.ez-guidebook__guide-title {
+    margin: 0;
+    padding: 0.625rem 1rem 0.25rem;
+    font-size: 0.9375rem;
+    font-weight: 700;
+    background: var(--ez-color-surface);
+}
+
+.ez-guidebook__guide-header .ez-guidebook__guide-title {
+    padding: 0;
+    background: transparent;
+    flex: 1;
+}
+
+.ez-guidebook__guide-count {
+    font-weight: 400;
+    color: var(--ez-color-muted);
+    font-size: 0.8125rem;
+}
+
+.ez-guidebook__guide-desc {
+    margin: 0;
+    padding: 0.375rem 1rem 0.5rem;
+    font-size: 0.875rem;
+    color: var(--ez-color-muted);
+}
+
+.ez-guidebook__tree {
+    display: flex;
+    flex-direction: column;
+}
+
+.ez-guidebook__guide-body {
+    display: flex;
+    flex-direction: column;
+}
+
+.ez-guidebook__guide-body--collapsed {
+    display: none;
+}
+
+.ez-guidebook__category {
+    display: flex;
+    flex-direction: column;
+}
+
+.ez-guidebook__category--hidden {
+    display: none;
+}
+
+.ez-guidebook__entry--hidden {
+    display: none;
+}
+
+.ez-guidebook__category-header {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.5rem 1rem;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 0.875rem;
+    border-bottom: 1px solid var(--ez-color-border);
+    user-select: none;
+}
+
+.ez-guidebook__category-header:focus-visible {
+    outline: 2px solid var(--ez-color-primary);
+    outline-offset: -2px;
+}
+
+.ez-guidebook__category-arrow {
+    font-size: 0.8125rem;
+    width: 1rem;
+    text-align: center;
+    flex-shrink: 0;
+}
+
+.ez-guidebook__category-count {
+    font-weight: 400;
+    color: var(--ez-color-muted);
+    margin-left: auto;
+}
+
+.ez-guidebook__category-body {
+    padding: 0.25rem 0;
+}
+
+.ez-guidebook__entry {
+    padding: 0.5rem 1rem 0.5rem 2rem;
+    border-bottom: 1px solid var(--ez-color-border);
+}
+
+.ez-guidebook__entry:focus-visible {
+    outline: 2px solid var(--ez-color-primary);
+    outline-offset: -2px;
+}
+
+.ez-guidebook__entry-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.ez-guidebook__entry-name {
+    font-weight: 600;
+    font-size: 0.875rem;
+}
+
+.ez-guidebook__computed-badge {
+    display: inline-block;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    padding: 0.0625rem 0.375rem;
+    border-radius: 0.1875rem;
+    background: var(--ez-color-muted);
+    color: var(--ez-color-background);
+}
+
+@media (forced-colors: active) {
+    .ez-guidebook__computed-badge {
+        border: 1px solid;
+    }
+}
+
+.ez-guidebook__outcome {
+    display: inline-block;
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 0.0625rem 0.375rem;
+    border-radius: 0.1875rem;
+    background: var(--ezc-guide-outcome-bg, var(--ez-color-surface-active));
+    color: var(--ezc-guide-outcome-fg, var(--ez-color-text));
+}
+
+@media (forced-colors: active) {
+    .ez-guidebook__outcome {
+        border: 1px solid;
+    }
+}
+
+.ez-guidebook__keywords {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+    margin-top: 0.25rem;
+}
+
+.ez-guidebook__keyword {
+    font-size: 0.6875rem;
+    padding: 0.0625rem 0.3125rem;
+    border-radius: 0.1875rem;
+}
+
+.ez-guidebook__keyword--literal {
+    background: var(--ez-color-surface);
+    color: var(--ez-color-muted);
+    border: 1px solid var(--ez-color-border);
+}
+
+.ez-guidebook__keyword--matcher {
+    background: transparent;
+    color: var(--ez-color-muted);
+    border: 1px dashed var(--ez-color-border);
+    font-style: italic;
+}
+
+@media (forced-colors: active) {
+    .ez-guidebook__keyword {
+        border: 1px solid;
+    }
+}
+
+.ez-guidebook__desc {
+    font-size: 0.8125rem;
+    color: var(--ez-color-muted);
+    margin-top: 0.25rem;
+}
+
+.ez-guidebook__condition {
+    font-size: 0.8125rem;
+    color: var(--ez-color-muted);
+    margin-top: 0.25rem;
+    font-style: italic;
+}
+
+.ez-guidebook__overrides {
+    font-size: 0.8125rem;
+    color: var(--ez-color-muted);
+    margin-top: 0.125rem;
+}
+
+.ez-guidebook__rationale {
+    font-size: 0.8125rem;
+    color: var(--ez-color-muted);
+    margin-top: 0.125rem;
+}
+
+.ez-guidebook__empty {
+    padding: 1rem;
+    text-align: center;
+    color: var(--ez-color-muted);
+    font-size: 0.875rem;
+}
+
+/* Failure state. Deliberately louder than the empty state: it reads as an
+   error, not as an absence of rules. */
+.ez-guidebook__error {
+    padding: 1rem 0.75rem;
+    border-left: 0.25rem solid var(--ez-color-error, #b91c1c);
+    background: var(--ez-color-error-bg, #fef2f2);
+    color: var(--ez-color-error-text, #7f1d1d);
+    font-size: 0.875rem;
+}
+
+.ez-guidebook__tabs {
+    display: flex;
+    gap: 0;
+    border-bottom: 1px solid var(--ez-color-border);
+}
+
+.ez-guidebook__tab {
+    padding: 0.375rem 0.75rem;
+    font-size: 0.8125rem;
+    border: none;
+    background: none;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    color: var(--ez-color-muted);
+}
+
+.ez-guidebook__tab[aria-selected='true'] {
+    color: var(--ez-color-primary);
+    border-bottom-color: var(--ez-color-primary);
+    font-weight: 600;
+}
+
+.ez-guidebook__tab:focus-visible {
+    outline: 2px solid var(--ez-color-primary);
+    outline-offset: -2px;
+}

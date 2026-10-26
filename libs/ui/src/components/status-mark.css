@@ -1,0 +1,148 @@
+/* ── Enhancement status mark ─────────────────────────── */
+/* One brand-logo mark per enhanced field: 3 bars + a sparkle. Bars stay muted
+   in every state; the sparkle carries the state. Quiet: whole glyph muted, no
+   fixes applied. Unseen: sparkle turns accent, a corner dot appears, and the
+   sparkle pulses on an interval. Seen: dot clears, sparkle stays accent, no
+   pulse: the tooltip already explained what changed. */
+.ez-status-mark {
+    position: absolute;
+    width: 1.25rem;
+    height: 1.25rem;
+    padding: 0;
+    margin: 0;
+    border: none;
+    background: transparent;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--ez-status-mark-color, #9ca3af);
+    opacity: 0.75;
+    cursor: default;
+    z-index: 3;
+}
+.ez-status-mark svg {
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+}
+.ez-status-mark__sparkle {
+    transform-box: fill-box;
+    transform-origin: center;
+}
+.ez-status-mark--unseen,
+.ez-status-mark--seen {
+    opacity: 1;
+    cursor: help;
+}
+.ez-status-mark--unseen .ez-status-mark__sparkle,
+.ez-status-mark--seen .ez-status-mark__sparkle {
+    fill: var(--ez-color-primary, #fdb827);
+}
+/* Error: the field could not check all of its text. The sparkle takes the
+   error color; the popover and the label say why. */
+.ez-status-mark--error {
+    opacity: 1;
+    cursor: help;
+}
+.ez-status-mark--error .ez-status-mark__sparkle {
+    fill: var(--ez-color-error, #b91c1c);
+}
+.ez-status-mark:focus-visible {
+    outline: 2px solid var(--ez-color-primary, #fdb827);
+    outline-offset: 2px;
+}
+/* An input places the mark at the right edge, centered on the field's first
+   line: the only self-positioning shape; every other field folds the mark
+   into its own chrome row or drawer. */
+.ez-status-mark--input {
+    top: 1rem;
+    right: 0.375rem;
+    transform: translateY(-50%);
+}
+/* 'chrome': no self-positioning. The mark sits in normal flow as a flex child
+   of a caller-owned container (a hint-row chrome slot or the ★ drawer), which
+   provides layout; this only needs to sit above the field's own invisible
+   capture-layer input (same z-index the 'input' shape already uses) and stay
+   a positioned element so that z-index takes effect. */
+.ez-status-mark--chrome {
+    position: relative;
+    top: auto;
+    right: auto;
+    transform: none;
+}
+
+/* Corner notification dot: unseen only. Sits bottom-left, diagonally opposite
+   the sparkle (translated to the glyph's top-right in buildMarkSvg): the dot
+   is a second, independent signal, and placing it on top of the sparkle would
+   paint over the one element that actually carries the accent color for this
+   state. A box-shadow ring stands the dot off the background it sits on
+   without growing its layout box; box-sizing keeps that ring from resizing
+   the box in the forced-colors override below, which uses a real border
+   instead (forced-colors strips box-shadow entirely). */
+.ez-status-mark__dot {
+    display: none;
+    position: absolute;
+    bottom: -0.1875rem;
+    left: -0.1875rem;
+    width: 0.5625rem;
+    height: 0.5625rem;
+    box-sizing: border-box;
+    border-radius: 50%;
+    background: var(--ez-color-primary, #fdb827);
+    box-shadow: 0 0 0 0.125rem
+        var(--ez-status-mark-ring, var(--ez-color-background, #fff));
+    pointer-events: none;
+}
+.ez-status-mark--unseen .ez-status-mark__dot {
+    display: block;
+}
+
+/* One short twinkle burst near the start of each cycle, then stillness.
+   A nudge, not a distraction. */
+@keyframes ez-status-mark-pulse {
+    0%,
+    12.5%,
+    100% {
+        transform: scale(1) rotate(0deg);
+    }
+    6% {
+        transform: scale(1.6) rotate(10deg);
+    }
+}
+.ez-status-mark--pulse .ez-status-mark__sparkle {
+    animation: ez-status-mark-pulse 4s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+    .ez-status-mark--pulse .ez-status-mark__sparkle {
+        animation: none;
+    }
+}
+
+@media (forced-colors: active) {
+    .ez-status-mark {
+        color: ButtonText;
+    }
+    .ez-status-mark--unseen .ez-status-mark__sparkle,
+    .ez-status-mark--seen .ez-status-mark__sparkle {
+        fill: Highlight;
+    }
+    .ez-status-mark--error .ez-status-mark__sparkle {
+        fill: Mark;
+    }
+    .ez-status-mark__dot {
+        background: Highlight;
+        border: 0.125rem solid Canvas;
+    }
+}
+
+/* A finger needs a 44px target. The drawn mark stays 20px; an invisible
+   overlay takes the taps around it. Its chrome row spaces the mark from its
+   neighbor enough that the two overlays never overlap (see
+   field-chrome-drawer.css and the marked fields' chrome rows). */
+@media (pointer: coarse) {
+    .ez-status-mark::after {
+        content: '';
+        position: absolute;
+        inset: -0.75rem;
+    }
+}

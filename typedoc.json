@@ -1,0 +1,41 @@
+{
+    "$schema": "https://typedoc.org/schema.json",
+    "entryPoints": [
+        "libs/ui/src/index.ts",
+        "integrations/angular/src/index.ts",
+        "integrations/react/src/index.ts",
+        "integrations/vue/src/index.ts"
+    ],
+    "excludeInternal": true,
+    "excludePrivate": true,
+    "excludeProtected": true,
+    "externalSymbolLinkMappings": {
+        "@ezclassify/types": {
+            "AccessEngineAdapter": "https://github.com/ezclassify/contracts/blob/main/libs/types/src/engine.ts",
+            "AccessEngineAdapter.check": "https://github.com/ezclassify/contracts/blob/main/libs/types/src/engine.ts",
+            "FormatCoverage": "https://github.com/ezclassify/contracts/blob/main/libs/types/src/format-coverage.ts",
+            "GuideEngineAdapter": "https://github.com/ezclassify/contracts/blob/main/libs/types/src/engine.ts",
+            "ProcessResult": "https://github.com/ezclassify/contracts/blob/main/libs/types/src/scheme.ts",
+            "RemoteSchemeEngineAdapter": "https://github.com/ezclassify/contracts/blob/main/libs/types/src/engine.ts",
+            "RenderAssessment": "https://github.com/ezclassify/contracts/blob/main/libs/types/src/scheme.ts",
+            "RenderResult": "https://github.com/ezclassify/contracts/blob/main/libs/types/src/scheme.ts",
+            "SchemeEngineAdapter.process": "https://github.com/ezclassify/contracts/blob/main/libs/types/src/engine.ts",
+            "SchemeEngineAdapter.suggest": "https://github.com/ezclassify/contracts/blob/main/libs/types/src/engine.ts",
+            "SchemeEngineAdapter.validate": "https://github.com/ezclassify/contracts/blob/main/libs/types/src/engine.ts",
+            "SuggestResult": "https://github.com/ezclassify/contracts/blob/main/libs/types/src/scheme.ts",
+            "ValidateResult": "https://github.com/ezclassify/contracts/blob/main/libs/types/src/scheme.ts"
+        },
+        "@ezclassify/ui": {
+            "BaseEzClassifyStore.readAssertions": "https://github.com/ezclassify/web/blob/main/libs/ui/src/store/base-ezclassify-store.ts",
+            "EzClassifyPresentationOptions": "https://github.com/ezclassify/web/blob/main/libs/ui/src/provision-options.ts",
+            "EzClassifyState": "https://github.com/ezclassify/web/blob/main/libs/ui/src/store/ezclassify-store.ts",
+            "FacetState": "https://github.com/ezclassify/web/blob/main/libs/ui/src/store/ezclassify-store.ts",
+            "FavoritesConfig": "https://github.com/ezclassify/web/blob/main/libs/ui/src/components/favorites-panel.ts"
+        }
+    },
+    "name": "EzClassify Web API",
+    "out": "dist/api",
+    "readme": "none",
+    "skipErrorChecking": true,
+    "tsconfig": "tsconfig.docs.json"
+}

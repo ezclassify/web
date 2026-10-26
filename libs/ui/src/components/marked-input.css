@@ -1,0 +1,294 @@
+.marked-input-wrap {
+    position: relative;
+    display: block;
+    width: 100%;
+    /* Prevent grid/flex track blowout from the field's content. */
+    min-width: 0;
+}
+.marked-input-wrap.ez-clear-text {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+}
+.marked-input-wrap.ez-clear-text > .marked-input-display {
+    grid-area: 1 / 1 / 2 / 2;
+}
+.marked-input-wrap.ez-clear-text > .ez-clear-button {
+    grid-area: 1 / 1 / 2 / 2;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+/* Visible focus ring on the display layer: defined here so it never goes missing.
+   The native host's outline is suppressed; this is the only affordance. The
+   ring follows the native input's own corner radius, which marked-input.ts
+   mirrors onto the display, so focus never reshapes the field. */
+.marked-input-wrap:focus-within:not(:has(> .ez-clear-button:focus))
+    .marked-input-display {
+    outline: 2px solid var(--ez-color-primary, #fdb827);
+    outline-offset: -2px;
+}
+
+/* Owned editor: invisible but active wrapping capture layer. The original
+   input remains the native form control; a single-line <input> cannot wrap by construction, so
+   a growing field needs a real multi-line element even though the field's
+   VALUE stays one logical line (marked-input.ts's onKeydown/onPaste keep
+   "\n" out of it). Always absolutely positioned over the display, focused
+   or not (unlike MarkingField, which swaps its host into normal flow
+   while editing), so it never contributes to the wrap's own height; resize
+   and overflow are suppressed since a scrollbar or resize handle on an
+   invisible element would be actively confusing if it ever appeared. */
+.marked-input-wrap > textarea.marked-input-native {
+    position: absolute;
+    inset: 0;
+    margin: 0;
+    box-sizing: border-box;
+    font: inherit;
+    letter-spacing: inherit;
+    word-spacing: inherit;
+    white-space: pre-wrap;
+    overflow-wrap: break-word;
+    resize: none;
+    overflow: hidden;
+    width: 100%;
+    color: transparent;
+    caret-color: transparent;
+    background: transparent;
+    border-color: transparent;
+    outline: none;
+    z-index: 2;
+}
+
+.marked-input-wrap > textarea.marked-input-native::selection {
+    background: transparent;
+    color: transparent;
+}
+
+/* Display layer: the styled visual for the marking chip + free text. Wraps
+   instead of clipping/scrolling horizontally: white-space and
+   overflow-wrap must match the host exactly (above) so a click resolves to
+   the same character offset in both layers, and the wrap's own height
+   (this is display's only normal-flow sibling; the host is always
+   absolutely positioned, see above) grows with wrapped content instead of
+   needing a JS-driven height sync the way MarkingField's does. */
+.marked-input-display {
+    position: relative;
+    box-sizing: border-box;
+    font: inherit;
+    letter-spacing: inherit;
+    word-spacing: inherit;
+    white-space: pre-wrap;
+    overflow-wrap: break-word;
+    z-index: 1;
+    cursor: text;
+    min-height: 2rem;
+    line-height: 2rem;
+}
+.marked-input-display:empty::before {
+    content: '\200b';
+}
+
+.marked-input-chip {
+    display: inline-block;
+    background: var(--ez-color-surface-active, rgba(253, 184, 39, 0.25));
+    border-radius: 0.125rem;
+}
+
+/* The field wraps and grows to display the full marking and free-text tail.
+   vertical-align aligns the chip with surrounding text. The active editing
+   chip is excluded because it hosts the live picker mount. */
+.marked-input-chip:not(.marked-input-chip--editing) {
+    vertical-align: bottom;
+}
+
+.marked-input-chip--invalid {
+    background: color-mix(
+        in srgb,
+        var(--ez-color-error, #b91c1c) 20%,
+        transparent
+    );
+    text-decoration: underline wavy var(--ez-color-error, #b91c1c);
+    text-decoration-skip-ink: none;
+}
+
+/* A warning leaves the mark valid: a dotted underline in the warning color. */
+.marked-input-chip--warning {
+    text-decoration: underline dotted var(--ez-color-warning, #f59e0b);
+    text-decoration-thickness: 0.125rem;
+    text-decoration-skip-ink: none;
+}
+
+/* Selection highlight rendered by the display layer. The native input's own
+   ::selection is transparent (it is the invisible capture layer), so without
+   these spans a drag/shift selection gives no visual feedback at all. Uses
+   the system Highlight colors like the textarea variant. */
+.marked-input-selection {
+    background: Highlight;
+    color: HighlightText;
+}
+
+/* Blinking caret rendered inside the display div: must have sufficient
+   contrast in both light and dark host themes. */
+.marked-input-caret {
+    display: inline;
+    position: relative;
+    width: 0;
+    margin-left: -0.0625rem;
+    margin-right: -0.0625rem;
+    border-left: 0.125rem solid var(--ez-color-text, currentColor);
+    animation: marked-input-blink 1s step-end infinite;
+    pointer-events: none;
+}
+
+@keyframes marked-input-blink {
+    0%,
+    100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0;
+    }
+}
+
+/* Footer row for the keyboard hint or coarse-pointer "Add marking" button.
+   Status and favorites controls occupy the separate hint-chrome slot. */
+.marked-input-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    margin-top: 0.25rem;
+}
+
+/* Keyboard hint line below the input: a REAL button (same action as the
+   shortcut it documents), styled to still read as quiet inline hint text
+   rather than a button. Needs the same above-the-invisible-input z-index
+   treatment as .marked-input-touch-add (see that rule's comment): the
+   native host's position:absolute; inset:0 stretches over the whole wrap,
+   including this footer, so without it clicks land on the invisible host
+   instead of this button. */
+.marked-input-kb-hint {
+    position: relative;
+    z-index: 3;
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    font: inherit;
+    font-size: 0.6875rem;
+    color: var(--ez-color-muted, #9ca3af);
+    background: transparent;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    border-radius: 0.1875rem;
+}
+.marked-input-kb-hint:hover {
+    color: var(--ez-color-text, #374151);
+}
+.marked-input-kb-hint:focus-visible {
+    outline: 2px solid var(--ez-color-primary, #fdb827);
+    outline-offset: 2px;
+}
+
+/* Touch "Add marking" affordance: same action as Cmd/Ctrl+Enter. Hidden on
+   fine pointers (keyboard users get the hint instead); shown on coarse pointers. */
+.marked-input-touch-add {
+    /* Sit above the invisible native host (z-index 2), which covers the
+       whole wrap; without this the button can never receive a tap. Matches
+       .marked-textarea-touch-add. */
+    position: relative;
+    z-index: 3;
+    display: none;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.25rem 0.625rem;
+    font-size: 0.75rem;
+    color: var(--ez-color-primary, #fdb827);
+    background: transparent;
+    border: 1px solid var(--ez-color-border, #d1d5db);
+    border-radius: 0.375rem;
+    cursor: pointer;
+}
+
+/* Chrome slot: status mark + ★ favorites button at the field's
+   bottom-right edge. `.marked-input-wrap` (position: relative) is the containing
+   block, so it takes no normal-flow space and never pushes the field down.
+   It stays here at rest and while the inline editor is open, so the controls
+   never move when editing starts; the editor opens below or above the line
+   being edited and has no footer slot to push the chrome out of. The z-index
+   keeps it above the invisible native host, which covers the whole wrap. */
+.marked-input-hint-chrome {
+    position: absolute;
+    right: 0;
+    bottom: 0.25rem;
+    z-index: 3;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+/* Touch devices have no physical keyboard, so the Cmd/Ctrl+Enter hint is
+   meaningless, so hide it and show the tappable "Add marking" button instead. */
+@media (pointer: coarse) {
+    .marked-input-kb-hint {
+        display: none;
+    }
+    .marked-input-touch-add {
+        display: inline-flex;
+    }
+}
+
+.marked-input-kb-hint kbd {
+    display: inline-block;
+    padding: 0.125rem 0.375rem;
+    font-family: monospace;
+    font-size: 0.75rem;
+    line-height: 1.5;
+    background: var(--ez-color-surface, #f3f4f6);
+    border: 1px solid var(--ez-color-border, #d1d5db);
+    border-radius: 0.25rem;
+    white-space: nowrap;
+}
+
+@media (pointer: coarse) {
+    /* iOS Safari zooms the page when a focused field's effective font-size is
+       under 16px. The threshold is defined in device px, not rem, so px is
+       correct here; max() keeps larger host fonts intact. The invisible native
+       host is the focus target that triggers the zoom, and the display layer
+       must carry the same floor so the transparent-caret/selection overlay
+       stays aligned with the text metrics. */
+    .marked-input-wrap > textarea.marked-input-native,
+    .marked-input-display {
+        font-size: max(1em, 16px);
+    }
+}
+
+.marked-input-picker-mount {
+    display: inline !important;
+    background-color: transparent !important;
+}
+
+.marked-input-picker-active .ez-tooltip {
+    display: none !important;
+}
+
+/* The rule-error list sits inside the wrap, between the field and its hint
+   row, so Tab reaches the fixes before the chrome. The invisible native host
+   stretches over the whole wrap (inset: 0), so the list stacks above it the
+   way the footer's buttons do, or its fix buttons could not be pressed. */
+.marked-input-wrap > .ez-validation-errors {
+    position: relative;
+    z-index: 3;
+}
+
+/* Touch targets: a finger needs 44px. The "+ Add marking" / "+ Set marking"
+   button grows to it; the status mark and star keep their 20px icons with a
+   44px overlay each (status-mark.css, favorites-panel.css), spaced so the two
+   overlays never meet. */
+@media (pointer: coarse) {
+    .marked-input-touch-add {
+        min-height: 2.75rem;
+    }
+    .marked-input-hint-chrome {
+        gap: 1.5rem;
+    }
+}

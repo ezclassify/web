@@ -1,0 +1,21 @@
+{
+    "compilerOptions": {
+        "allowJs": true,
+        "isolatedModules": true,
+        "lib": ["ES2022", "DOM"],
+        "module": "ESNext",
+        "moduleResolution": "bundler",
+        "noEmit": true,
+        "skipLibCheck": true,
+        "strict": true,
+        "target": "ES2022",
+        "types": ["node"]
+    },
+    "include": [
+        "playwright.config.ts",
+        "lanes.mjs",
+        "examples",
+        "hosts/*.ts",
+        "hosts/*.mjs"
+    ]
+}

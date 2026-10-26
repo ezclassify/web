@@ -1,0 +1,436 @@
+/*
+ * EzClassify Forms: Design Tokens & Base Styles
+ *
+ * Host-first design: structural HTML elements (input, button, fieldset, etc.)
+ * inherit from the host page by default. Our custom components (dropdowns,
+ * tags, tooltips, cards) are always styled but use inherit/currentColor so
+ * they blend with the host's typography and colors.
+ *
+ * Layers:
+ *  1. Host inheritance: native elements keep host styling (default)
+ *  2. Custom components: our UI, always styled via CSS custom properties
+ *  3. Color scheme: dark variants are set on the ancestor that carries
+ *                         the theme attribute (data-theme, data-bs-theme, or
+ *                         the .dark class). The vars then INHERIT down via the
+ *                         normal cascade, so a nested `[data-theme]` ancestor
+ *                         shadows an outer one, nearest theme ancestor wins.
+ *                         A component can also force a specific palette on
+ *                         itself with data-color-scheme. The library never
+ *                         queries prefers-color-scheme directly; the host is
+ *                         responsible for mapping OS preference to its own
+ *                         theme attribute when it opts in.
+ *  4. Theme overrides: preset or custom CSS variable overrides on top
+ *
+ * Opt-in: add .ez-styled-inputs on the container (or set styleInputs: true)
+ * to apply our opinionated input styling for standalone deployments.
+ *
+ * Theming via cascade: IMPORTANT
+ * --------------------------------
+ * Theme-sensitive color tokens live on selectors that target the theme-
+ * carrying element itself (`:root`, `[data-theme="dark"]`, `[data-theme="light"]`,
+ * `[data-color-scheme="light"]`, `[data-color-scheme="dark"]`, `.dark`,
+ * `[data-bs-theme="dark"]`, `[data-bs-theme="light"]`). We MUST NOT redeclare
+ * those color tokens on `.ez-root` / `[data-ezclassify]`: doing so would
+ * shadow the ancestor's vars at every component container and break the
+ * nested-card "nearest theme ancestor wins" guarantee.
+ *
+ * The `.ez-root, [data-ezclassify]` block below is therefore restricted to
+ * tokens that don't have light/dark variants: typography, spacing, z-index,
+ * transitions, and aliases that resolve other vars at consumption time.
+ */
+
+/* ── Light-palette defaults at the document root ─────────── */
+/* These flow down to descendants via CSS custom property inheritance.
+ * A nested ancestor with [data-theme="dark"] / [data-color-scheme="dark"]
+ * shadows them for its subtree; a nested ancestor with [data-theme="light"]
+ * shadows back to light. */
+:root {
+    --ez-color-text: inherit;
+    --ez-color-background: #ffffff;
+    --ez-color-border: #d1d5db;
+    --ez-color-placeholder: #767676;
+    --ez-color-muted: #6b7280;
+    --ez-color-primary: #fdb827;
+    --ez-color-primary-contrast: #1c1c1c;
+    --ez-color-error: #b91c1c;
+    --ez-color-success: #22c55e;
+    --ez-color-warning: #f59e0b;
+
+    /* Semantic state colors: backgrounds, text for error/warning/notice states */
+    --ez-color-error-bg: #fef2f2;
+    --ez-color-error-text: #7f1d1d;
+    --ez-color-warning-text: #92400e;
+    --ez-color-info-text: #374151;
+
+    /* Tooltip */
+    --ez-tooltip-bg: #1a1a2e;
+    --ez-tooltip-color: #fff;
+
+    /* Separator */
+    --ez-separator-color: #e5e7eb;
+
+    /* Surface colors: panels, panes, secondary backgrounds */
+    --ez-color-surface: #f8f9fa;
+    --ez-color-surface-hover: #f3f4f6;
+    --ez-color-surface-active: #e8f0fe;
+
+    /* Focus aliases resolve --ez-color-primary at their declaration site.
+       Declare them in each theme scope for the local palette. The :root
+       copy also serves standalone .ez-input.ez-styled inputs that have no
+       component or theme ancestor. */
+    --ez-color-border-focus: var(--ez-color-primary, #fdb827);
+    --ez-focus-ring-shadow: 0 0 0 3px
+        color-mix(in srgb, var(--ez-color-primary, #3b82f6) 15%, transparent);
+
+    /* These theme-invariant border, spacing, and transition literals serve
+       standalone .ez-input.ez-styled inputs from :root. Unlike the focus
+       aliases, they do not require redeclaration in each theme scope. */
+    --ez-border-width: 1px;
+    --ez-border-radius: 0.375rem;
+    --ez-spacing-sm: 0.5rem;
+    --ez-spacing-md: 0.75rem;
+    --ez-transition: 150ms ease;
+
+    /* Dropdown */
+    --ez-dropdown-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    --ez-dropdown-item-hover: #f3f4f6;
+    --ez-dropdown-group-bg: rgba(0, 0, 0, 0.04);
+    /* A var()-based alias resolves at its declaration site. Redeclare these
+       aliases in every theme block so nested themes use their local palette.
+       :root supplies the fallback for consumers without a theme ancestor. */
+    --ez-dropdown-background: var(--ez-color-background);
+    --ez-dropdown-color: var(--ez-color-text);
+    --ez-dropdown-highlight: color-mix(
+        in srgb,
+        var(--ez-color-primary, #3b82f6) 20%,
+        transparent
+    );
+    --ez-dropdown-selected: color-mix(
+        in srgb,
+        var(--ez-color-success, #22c55e) 10%,
+        transparent
+    );
+
+    /* Mode headers: preset/custom toggle in dropdowns */
+
+    /* Marking label: default color (domain-specific colors supplied by consumer) */
+    --ez-marking-label-default: #6b7280;
+    --ez-marking-label-text: #ffffff;
+
+    /* Keyboard hint */
+    --ez-kbd-background: rgba(0, 0, 0, 0.06);
+    --ez-kbd-color: #1f2937;
+
+    /* Single-select hover shadow */
+    --ez-select-hover-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+
+    /* Tag pill colors. --ez-tag-bg/--ez-tag-color are overridden per-element
+       via JS for category-colored chips (tag-factory.ts); these are the
+       color-coding-disabled fallback, a neutral filled pill rather than the
+       accent tint --ez-color-surface-active carries elsewhere, so an
+       uncolored chip doesn't read as "selected"/"active" chrome. The remove
+       (×) control has no separate color hook: it inherits the chip's own
+       text color (see .proto-tag-remove), which is always contrast-checked
+       against whatever background is in play, category-colored or not. */
+    --ez-tag-color: #475569;
+    --ez-tag-bg: #e2e8f0;
+}
+
+.ez-root,
+[data-ezclassify] {
+    /* Typography: inherit from host. Theme-invariant. */
+    --ez-font-family: inherit;
+    --ez-font-size: inherit;
+    --ez-font-weight: inherit;
+    --ez-line-height: inherit;
+
+    /* Select-card aliases resolve against the component's nearest palette.
+       SingleSelect appends cards into its data-ezclassify container.
+       Dropdown and focus aliases also serve standalone inputs, so those
+       are declared in :root and the dark/light theme blocks instead. */
+    --ez-select-active-border: var(--ez-color-primary, #3b82f6);
+    --ez-select-active-bg: color-mix(
+        in srgb,
+        var(--ez-color-primary, #3b82f6) 6%,
+        transparent
+    );
+
+    /* Spacing: theme-invariant. --ez-spacing-sm/-md also live at :root (see
+       the :root Border/spacing/transition block above) for the standalone
+       `.ez-input.ez-styled` consumer; --ez-spacing-xs/-lg have no consumer
+       outside a component wrapper, so they stay scoped here only. */
+    --ez-spacing-xs: 0.25rem;
+    --ez-spacing-sm: 0.5rem;
+    --ez-spacing-md: 0.75rem;
+    --ez-spacing-lg: 1rem;
+
+    /* Border: theme-invariant. Also declared at :root; see the same note
+       above. */
+    --ez-border-radius: 0.375rem;
+    --ez-border-width: 1px;
+
+    /* Transitions: theme-invariant. Also declared at :root; see the same
+       note above. */
+    --ez-transition: 150ms ease;
+
+    /* Z-index layers: theme-invariant. A portaled panel cannot inherit these,
+       so overlay-portal copies them onto the portal element; the values here
+       are what a host reads and shadows. The tooltip layer sits above the
+       portaled picker's own fallback, which is why it is not on the same scale
+       as the in-flow dropdown. */
+    --ez-z-dropdown: 1000;
+    --ez-z-tooltip: 10002;
+}
+
+/* ── Dark palette ─────────────────────────────────────────
+ * Applied at the theme-carrying element itself (NOT at descendant
+ * `.ez-root` / `[data-ezclassify]` containers; doing so would shadow
+ * an outer ancestor's nearer light siblings). CSS custom property
+ * inheritance carries these values into the subtree, so a nested
+ * `[data-theme="light"]` ancestor cleanly shadows back to light. */
+[data-color-scheme='dark'],
+[data-theme='dark']:not([data-color-scheme='light']),
+[data-bs-theme='dark']:not([data-color-scheme='light']),
+.dark:not([data-color-scheme='light']) {
+    /* Structural */
+    --ez-color-text: #e5e7eb;
+    --ez-color-background: #1f2937;
+    --ez-color-border: #4b5563;
+    --ez-color-placeholder: #6b7280;
+    --ez-color-muted: #9ca3af;
+
+    /* Accent: gold on dark backgrounds */
+    --ez-color-primary: #fdb827;
+    --ez-color-primary-contrast: #1c1c1c;
+    --ez-color-error: #f87171;
+    --ez-color-success: #34d399;
+    --ez-color-warning: #fbbf24;
+    --ez-color-warning-text: #fcd34d;
+
+    /* Surface */
+    --ez-color-surface: #111827;
+    --ez-color-surface-hover: #374151;
+    --ez-color-surface-active: #3b5998;
+
+    /* Focus: redeclared per the :root comment above (theme-scoping audit,
+       same reasoning as the Dropdown block's redeclare below). */
+    --ez-color-border-focus: var(--ez-color-primary, #fdb827);
+    --ez-focus-ring-shadow: 0 0 0 3px
+        color-mix(in srgb, var(--ez-color-primary, #3b82f6) 15%, transparent);
+
+    /* Dropdown */
+    --ez-dropdown-item-hover: #374151;
+    --ez-dropdown-group-bg: rgba(255, 255, 255, 0.05);
+    --ez-dropdown-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+    --ez-dropdown-group-sticky-bg: #1f2937;
+    /* Resolve aliases against this dark block's local palette. */
+    --ez-dropdown-background: var(--ez-color-background);
+    --ez-dropdown-color: var(--ez-color-text);
+    --ez-dropdown-highlight: color-mix(
+        in srgb,
+        var(--ez-color-primary, #3b82f6) 20%,
+        transparent
+    );
+    --ez-dropdown-selected: color-mix(
+        in srgb,
+        var(--ez-color-success, #22c55e) 10%,
+        transparent
+    );
+
+    /* Mode headers */
+
+    --ez-marking-label-default: #4b5563;
+    --ez-marking-label-text: #e5e7eb;
+    --ez-kbd-background: rgba(255, 255, 255, 0.08);
+    --ez-kbd-color: #b0b8c4;
+    --ez-select-hover-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+
+    --ez-tag-color: #e5e7eb;
+    --ez-tag-bg: #374151;
+}
+
+/* ── Light palette ────────────────────────────────────────
+ * Same shape as the dark block but applied at light-themed ancestors so
+ * a nested `[data-theme="light"]` correctly shadows an outer dark theme.
+ * Component-pinned light (`[data-color-scheme="light"]`) re-applies the
+ * same vars on the component itself, winning over any ancestor. */
+[data-color-scheme='light'],
+[data-theme='light']:not([data-color-scheme='dark']),
+[data-bs-theme='light']:not([data-color-scheme='dark']) {
+    --ez-color-text: inherit;
+    --ez-color-background: #ffffff;
+    --ez-color-border: #d1d5db;
+    --ez-color-placeholder: #767676;
+    --ez-color-muted: #6b7280;
+    --ez-color-primary: #fdb827;
+    --ez-color-primary-contrast: #1c1c1c;
+    --ez-color-error: #b91c1c;
+    --ez-color-success: #22c55e;
+    --ez-color-warning: #f59e0b;
+    --ez-color-warning-text: #92400e;
+
+    --ez-color-surface: #f8f9fa;
+    --ez-color-surface-hover: #f3f4f6;
+    --ez-color-surface-active: #e8f0fe;
+
+    /* Focus: redeclared per the :root comment above (theme-scoping audit,
+       same reasoning as the Dropdown block's redeclare below). */
+    --ez-color-border-focus: var(--ez-color-primary, #fdb827);
+    --ez-focus-ring-shadow: 0 0 0 3px
+        color-mix(in srgb, var(--ez-color-primary, #3b82f6) 15%, transparent);
+
+    --ez-dropdown-item-hover: #f3f4f6;
+    --ez-dropdown-group-bg: rgba(0, 0, 0, 0.04);
+    --ez-dropdown-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    --ez-dropdown-group-sticky-bg: initial;
+    /* Resolve aliases against this light block's local palette, including
+       light islands nested inside a dark ancestor. */
+    --ez-dropdown-background: var(--ez-color-background);
+    --ez-dropdown-color: var(--ez-color-text);
+    --ez-dropdown-highlight: color-mix(
+        in srgb,
+        var(--ez-color-primary, #3b82f6) 20%,
+        transparent
+    );
+    --ez-dropdown-selected: color-mix(
+        in srgb,
+        var(--ez-color-success, #22c55e) 10%,
+        transparent
+    );
+
+    --ez-marking-label-default: #6b7280;
+    --ez-marking-label-text: #ffffff;
+    --ez-kbd-background: rgba(0, 0, 0, 0.06);
+    --ez-kbd-color: #1f2937;
+    --ez-select-hover-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+
+    --ez-tag-color: #475569;
+    --ez-tag-bg: #e2e8f0;
+}
+
+/* ── Opt-in input styling (.ez-styled-inputs or styleInputs: true) ── */
+.ez-styled-inputs .ez-input,
+.ez-input.ez-styled {
+    font-family: var(--ez-font-family);
+    font-size: var(--ez-font-size);
+    font-weight: var(--ez-font-weight);
+    line-height: var(--ez-line-height);
+    color: var(--ez-color-text);
+    background: var(--ez-color-background);
+    border: var(--ez-border-width) solid var(--ez-color-border);
+    border-radius: var(--ez-border-radius);
+    padding: var(--ez-spacing-sm) var(--ez-spacing-md);
+    width: 100%;
+    box-sizing: border-box;
+    transition:
+        border-color var(--ez-transition),
+        box-shadow var(--ez-transition);
+    outline: none;
+}
+
+.ez-styled-inputs .ez-input:focus,
+.ez-input.ez-styled:focus {
+    border-color: var(--ez-color-border-focus);
+    box-shadow: var(--ez-focus-ring-shadow);
+}
+
+/* State classes: always available (lightweight, no layout/font overrides) */
+.ez-input--error {
+    border-color: var(--ez-color-error);
+}
+
+.ez-input--valid {
+    border-color: var(--ez-color-success);
+}
+
+/* Display */
+.ez-display {
+    font-family: var(--ez-font-family);
+    font-size: var(--ez-font-size);
+    font-weight: 600;
+    color: var(--ez-color-text);
+    letter-spacing: 0.02em;
+}
+
+/* Marking label: colored display bar showing a marking string */
+.ez-marking-label {
+    font-family: var(--ez-font-family);
+    font-size: var(--ez-font-size);
+    font-weight: 700;
+    text-align: center;
+    padding: var(--ez-spacing-sm) var(--ez-spacing-lg);
+    color: var(--ez-marking-label-text);
+    letter-spacing: 0.05em;
+    width: 100%;
+    box-sizing: border-box;
+    background: var(--ez-marking-label-default);
+}
+
+/* Validation */
+.ez-validation {
+    font-family: var(--ez-font-family);
+    font-size: calc(var(--ez-font-size) - 0.125rem);
+    margin-top: var(--ez-spacing-xs);
+}
+
+.ez-validation--error {
+    color: var(--ez-color-error);
+}
+
+.ez-validation--valid {
+    color: var(--ez-color-success);
+}
+
+/* Container */
+.ez-container {
+    position: relative;
+    width: 100%;
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+    .ez-input {
+        transition: none !important;
+        animation: none !important;
+    }
+}
+
+/* High contrast preference */
+@media (prefers-contrast: more) {
+    /* :root includes standalone .ez-input.ez-styled inputs without a
+       component ancestor. Redeclare the focus-ring alias here so its
+       color-mix() resolves against the high-contrast primary.
+       !important on all four: a host commonly puts its theme attribute
+       (`data-theme`, `.dark`, etc.) directly on `<html>`, which IS `:root`,
+       so this rule and the dark/light theme blocks above can target the
+       SAME element, not an ancestor/descendant pair. `.ez-root`/
+       `[data-ezclassify]` never has that problem (a component's own value
+       always wins over whatever it merely inherited from an ancestor,
+       regardless of the ancestor rule's specificity), but a bare `:root`
+       here would lose the specificity contest to `[data-theme='dark']:not
+       (...)` (an attribute selector plus a :not()), which is more specific
+       than a lone `:root` pseudo-class. prefers-contrast is a hard
+       accessibility signal that must win regardless of theme, the same
+       reasoning the prefers-reduced-motion block above already applies
+       with its own `!important`. */
+    :root,
+    .ez-root,
+    [data-ezclassify] {
+        --ez-color-border: #000 !important;
+        --ez-color-border-focus: #000 !important;
+        --ez-color-primary: #b8860b !important;
+        --ez-focus-ring-shadow: 0 0 0 3px
+            color-mix(
+                in srgb,
+                var(--ez-color-primary, #b8860b) 15%,
+                transparent
+            ) !important;
+    }
+}
+
+/* Forced colors (high contrast) */
+@media (forced-colors: active) {
+    .ez-banner {
+        border: 3px solid ButtonText !important;
+    }
+}

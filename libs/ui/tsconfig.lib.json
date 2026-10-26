@@ -1,0 +1,19 @@
+{
+    "compilerOptions": {
+        "declaration": true,
+        "declarationMap": true,
+        "outDir": "../../dist/out-tsc",
+        "rootDir": "src",
+        "stripInternal": true,
+        "types": ["node", "vite/client"]
+    },
+    "exclude": [
+        "src/**/*.spec.ts",
+        "src/**/*.test.ts",
+        "src/**/*-mock.ts",
+        "src/**/*-harness.ts",
+        "src/**/*-suite.ts"
+    ],
+    "extends": "./tsconfig.json",
+    "include": ["src/**/*.ts"]
+}

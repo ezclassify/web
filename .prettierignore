@@ -1,0 +1,27 @@
+# Generated build output, formatted by their generators, not by Prettier.
+**/dist/**
+**/__snapshots__/**
+
+# Compiled schematics output (gitignored; appears locally after an angular
+# build and would otherwise trip format:check).
+integrations/angular/schematics/**/*.js
+integrations/angular/schematics/**/*.d.ts
+
+# Test fixtures are intentional, literal-match data (golden vectors, hash
+# vectors, manifests that tests string-match against). Reformatting them (quote
+# style, JSON key sort) silently breaks tests, so Prettier must leave them alone,
+# for the same reason as the __snapshots__ exclusion above.
+**/tests/fixtures/**
+**/test/fixtures/**
+**/fixtures/**
+
+# The vendored spec and its provenance record are written by the spec bot from
+# the contracts repository; any local reformatting would cause spec drift. The
+# vendor-readonly workflow gates their integrity.
+vendor/spec/
+vendor/SPEC.md
+
+# Generated notices file (scripts/generate-third-party-notices.mjs) embeds verbatim
+# third-party license texts; the notices drift check enforces its content,
+# so Prettier must not reformat it.
+THIRD-PARTY-NOTICES.md

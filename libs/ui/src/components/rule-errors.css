@@ -1,0 +1,80 @@
+/* The rule-error list under a field. Full width and flush with the field's
+   left edge in any host layout: a grid gives it its own row, a wrapping flex
+   row gives it its own line. */
+.ez-validation-errors {
+    display: block;
+    box-sizing: border-box;
+    inline-size: 100%;
+    flex: 1 1 100%;
+    grid-column: 1 / -1;
+    margin: 0.25rem 0 0;
+    padding: 0;
+    color: var(--ez-color-error, #b91c1c);
+    font-size: 0.75rem;
+    line-height: 1.4;
+    text-align: start;
+}
+
+.ez-validation-errors[hidden] {
+    display: none;
+}
+
+.ez-validation-errors__item + .ez-validation-errors__item {
+    margin-block-start: 0.375rem;
+}
+
+.ez-validation-errors__message {
+    display: block;
+}
+
+/* A warning is not an error: the field stays valid and nothing needs fixing. */
+.ez-validation-errors__item--warning {
+    color: var(--ez-color-warning-text, #92400e);
+}
+
+/* The heading is plain text, not an error: what follows are remedies. */
+.ez-validation-errors__fixes-heading {
+    margin-block-start: 0.5rem;
+    color: var(--ez-color-text, #1f2937);
+    font-weight: 600;
+}
+
+.ez-validation-errors__fixes {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.375rem;
+    margin-block-start: 0.25rem;
+}
+
+/* Same affordance as the whole-over-parts correction's apply button. */
+.ez-validation-errors__fix {
+    padding: 0.25rem 0.625rem;
+    border: 0.0625rem solid var(--ez-color-primary, #fdb827);
+    border-radius: 0.375rem;
+    background: transparent;
+    color: var(--ez-color-text, #1f2937);
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.ez-validation-errors__fix:hover,
+.ez-validation-errors__fix:focus-visible {
+    background: color-mix(
+        in srgb,
+        var(--ez-color-primary, #fdb827) 14%,
+        transparent
+    );
+}
+
+.ez-validation-errors__fix:focus-visible {
+    outline: 0.125rem solid var(--ez-color-primary, #fdb827);
+    outline-offset: 0.125rem;
+}
+
+/* A finger needs a 44px target; the drawn button may stay compact. */
+@media (pointer: coarse) {
+    .ez-validation-errors__fix {
+        min-height: 2.75rem;
+    }
+}

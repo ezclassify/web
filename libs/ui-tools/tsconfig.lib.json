@@ -1,0 +1,12 @@
+{
+    "compilerOptions": {
+        "declaration": true,
+        "declarationMap": true,
+        "outDir": "../../dist/out-tsc",
+        "rootDir": "./src",
+        "types": ["node", "vite/client"]
+    },
+    "exclude": ["src/**/*.spec.ts", "src/**/*.test.ts", "src/**/__tests__/**"],
+    "extends": "./tsconfig.json",
+    "include": ["src/**/*.ts"]
+}

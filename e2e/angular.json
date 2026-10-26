@@ -1,0 +1,69 @@
+{
+    "$schema": "../node_modules/@angular/cli/lib/config/schema.json",
+    "cli": {
+        "analytics": false,
+        "cache": {
+            "enabled": false
+        }
+    },
+    "newProjectRoot": "projects",
+    "projects": {
+        "angular-host": {
+            "architect": {
+                "build": {
+                    "builder": "@angular/build:application",
+                    "configurations": {
+                        "development": {
+                            "extractLicenses": false,
+                            "optimization": false,
+                            "sourceMap": true
+                        },
+                        "production": {
+                            "budgets": [
+                                {
+                                    "maximumError": "1.5mb",
+                                    "maximumWarning": "1mb",
+                                    "type": "initial"
+                                },
+                                {
+                                    "maximumError": "8kb",
+                                    "maximumWarning": "6kb",
+                                    "type": "anyComponentStyle"
+                                }
+                            ],
+                            "outputHashing": "all"
+                        }
+                    },
+                    "defaultConfiguration": "production",
+                    "options": {
+                        "browser": "hosts/angular/src/main.ts",
+                        "index": "hosts/angular/src/index.html",
+                        "outputPath": "dist/angular-host",
+                        "styles": ["hosts/angular/src/styles.css"],
+                        "tsConfig": "hosts/angular/tsconfig.app.json"
+                    }
+                },
+                "serve": {
+                    "builder": "@angular/build:dev-server",
+                    "configurations": {
+                        "development": {
+                            "buildTarget": "angular-host:build:development"
+                        },
+                        "production": {
+                            "buildTarget": "angular-host:build:production"
+                        }
+                    },
+                    "defaultConfiguration": "development",
+                    "options": {
+                        "proxyConfig": "hosts/angular/proxy.conf.mjs"
+                    }
+                }
+            },
+            "prefix": "app",
+            "projectType": "application",
+            "root": "hosts/angular",
+            "sourceRoot": "hosts/angular/src"
+        }
+    },
+    "version": 1
+}

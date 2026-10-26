@@ -1,0 +1,62 @@
+{
+    "name": "@ezclassify/ui-tools",
+    "version": "1.0.0-dev.30",
+    "type": "module",
+    "description": "Playwright/browser test tooling: crawler runtime (browser, a11y, baselines, run-loop) plus the Playwright record/replay route transport",
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/ezclassify/web.git",
+        "directory": "libs/ui-tools"
+    },
+    "homepage": "https://github.com/ezclassify/web/tree/main/libs/ui-tools#readme",
+    "bugs": {
+        "url": "https://github.com/ezclassify/web/issues"
+    },
+    "license": "Apache-2.0",
+    "private": true,
+    "engines": {
+        "node": ">=22.0.0"
+    },
+    "main": "./dist/lib/index.cjs",
+    "types": "./dist/lib/index.d.ts",
+    "module": "./dist/lib/index.mjs",
+    "exports": {
+        ".": {
+            "types": "./dist/lib/index.d.ts",
+            "import": "./dist/lib/index.mjs",
+            "require": "./dist/lib/index.cjs"
+        }
+    },
+    "files": [
+        "NOTICE",
+        "dist/lib",
+        "!dist/**/*.map"
+    ],
+    "keywords": [
+        "playwright",
+        "testing",
+        "crawler",
+        "accessibility",
+        "record-replay"
+    ],
+    "scripts": {
+        "build": "npm run build:lib",
+        "build:lib": "node build-lib.mjs",
+        "build:watch": "node build-lib.mjs --watch",
+        "lint": "npx eslint src/",
+        "prepublishOnly": "npm run build",
+        "test": "vitest run",
+        "verify:publish-ready": "npm run build && npm test && npm pack --dry-run"
+    },
+    "dependencies": {
+        "@axe-core/playwright": "^4.11.2",
+        "@ezclassify/testing-utils": "^1.0.0-0",
+        "@playwright/test": "^1.59.1"
+    },
+    "devDependencies": {
+        "vitest": "^4.1.2"
+    },
+    "publishConfig": {
+        "access": "restricted"
+    }
+}

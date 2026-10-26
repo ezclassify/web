@@ -1,0 +1,17 @@
+@ezclassify/ui
+Copyright (c) 2026 EzClassify, LLC
+Licensed under the Apache License 2.0 (see LICENSE).
+
+THIRD-PARTY RUNTIME DEPENDENCIES
+================================
+
+This package declares no production ("dependencies") third-party packages and
+bundles no third-party runtime code in its published `dist/` output. The
+compiled output imports only the EzClassify-authored package it declares,
+@ezclassify/types, which ships its own license and notice files.
+
+There is therefore no third-party copyright or license obligation carried by
+this package's runtime.
+
+Build- and test-time tooling (devDependencies) is not distributed and is not
+listed here.

@@ -1,0 +1,18 @@
+{
+    "//": "The adapter-parity suite is reached through a vitest alias (see the root vitest.angular.config.ts), not a package export, so the compiler needs the same mapping or the shared suite typechecks nowhere. That mapping pulls @ezclassify/ui sources into this project, where they would otherwise be held to Angular's noPropertyAccessFromIndexSignature; that rule belongs to this package's own sources and is kept on in tsconfig.lib.json.",
+    "compilerOptions": {
+        "isolatedModules": true,
+        "moduleResolution": "bundler",
+        "noEmit": true,
+        "noPropertyAccessFromIndexSignature": false,
+        "paths": {
+            "@ezclassify/ui/adapter-parity-suite": [
+                "../../libs/ui/src/store/adapter-parity-suite.ts"
+            ]
+        },
+        "types": ["node", "vite/client", "vitest/globals"]
+    },
+    "extends": "./tsconfig.json",
+    "files": ["vitest.setup.ts"],
+    "include": ["src/**/*.test.ts", "src/**/*.spec.ts", "src/**/*.d.ts"]
+}

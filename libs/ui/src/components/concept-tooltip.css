@@ -1,0 +1,97 @@
+/* ── Concept Tooltip ─────────────────────────────────── */
+
+.ez-tooltip {
+    position: fixed;
+    /* A concept tooltip opens from inside a dropdown, so its default sits
+       above every dropdown default, including the portaled fallback the inline
+       editor's picker uses (10001). At 10000 it landed behind that picker in
+       MarkedTextArea and MarkedInput. Hosts that set --ez-z-tooltip keep
+       control. */
+    z-index: var(--ez-z-tooltip, 10002);
+    max-width: 32rem;
+    padding: 0.625rem 0.75rem;
+    font-family: var(--ez-font-family, inherit);
+    font-size: 0.75rem;
+    line-height: 1.5;
+    color: var(--ez-tooltip-color, var(--ez-color-text, #1a1a2e));
+    background: var(--ez-tooltip-background, var(--ez-color-background, #fff));
+    border: 1px solid var(--ez-tooltip-border, var(--ez-color-border, #d1d5db));
+    border-radius: var(--ez-border-radius, 0.375rem);
+    box-shadow: var(--ez-tooltip-shadow, 0 4px 16px rgba(0, 0, 0, 0.15));
+    pointer-events: none;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    max-height: var(--ez-tooltip-max-height, 20rem);
+    overflow-y: auto;
+}
+
+.ez-tooltip[hidden] {
+    display: none;
+}
+
+.ez-tooltip__header {
+    font-weight: 700;
+    font-size: 0.8125rem;
+    margin-bottom: 0.375rem;
+    color: var(--ez-tooltip-header-color, var(--ez-color-text, #111));
+}
+
+.ez-tooltip__heading {
+    font-weight: 600;
+    font-size: 0.6875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--ez-tooltip-heading-color, var(--ez-color-muted, #555));
+    margin-top: 0.5rem;
+    margin-bottom: 0.125rem;
+}
+
+.ez-tooltip__body {
+    color: var(--ez-tooltip-body-color, var(--ez-color-text, #333));
+    margin-bottom: 0.25rem;
+}
+
+.ez-tooltip__rules {
+    margin-top: 0.125rem;
+}
+
+.ez-tooltip__rule {
+    padding-left: 0.75rem;
+    position: relative;
+    color: var(--ez-tooltip-rule-color, var(--ez-color-muted, #555));
+}
+
+.ez-tooltip__rule::before {
+    content: '\2022';
+    position: absolute;
+    left: 0;
+}
+
+/* ── Reduced motion ──────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+    .ez-tooltip {
+        transition: none;
+    }
+}
+
+/* ── High contrast mode (forced-colors) ────────────── */
+@media (forced-colors: active) {
+    .ez-tooltip {
+        border: 2px solid CanvasText;
+        background: Canvas;
+        color: CanvasText;
+        forced-color-adjust: none;
+    }
+    .ez-tooltip__header {
+        color: CanvasText;
+    }
+    .ez-tooltip__heading {
+        color: CanvasText;
+    }
+    .ez-tooltip__body {
+        color: CanvasText;
+    }
+    .ez-tooltip__rule {
+        color: CanvasText;
+    }
+}

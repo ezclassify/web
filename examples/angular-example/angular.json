@@ -1,0 +1,66 @@
+{
+    "$schema": "./node_modules/@angular/cli/lib/config/schema.json",
+    "cli": {
+        "analytics": false,
+        "cache": {
+            "enabled": false
+        }
+    },
+    "newProjectRoot": "projects",
+    "projects": {
+        "angular-example": {
+            "architect": {
+                "build": {
+                    "builder": "@angular/build:application",
+                    "configurations": {
+                        "development": {
+                            "extractLicenses": false,
+                            "optimization": false,
+                            "sourceMap": true
+                        },
+                        "production": {
+                            "budgets": [
+                                {
+                                    "maximumError": "1.5mb",
+                                    "maximumWarning": "1mb",
+                                    "type": "initial"
+                                },
+                                {
+                                    "maximumError": "8kb",
+                                    "maximumWarning": "4kb",
+                                    "type": "anyComponentStyle"
+                                }
+                            ],
+                            "outputHashing": "all"
+                        }
+                    },
+                    "defaultConfiguration": "production",
+                    "options": {
+                        "browser": "src/main.ts",
+                        "index": "src/index.html",
+                        "outputPath": "dist/angular-example",
+                        "styles": ["src/styles.css"],
+                        "tsConfig": "tsconfig.app.json"
+                    }
+                },
+                "serve": {
+                    "builder": "@angular/build:dev-server",
+                    "configurations": {
+                        "development": {
+                            "buildTarget": "angular-example:build:development"
+                        },
+                        "production": {
+                            "buildTarget": "angular-example:build:production"
+                        }
+                    },
+                    "defaultConfiguration": "development"
+                }
+            },
+            "prefix": "app",
+            "projectType": "application",
+            "root": "",
+            "sourceRoot": "src"
+        }
+    },
+    "version": 1
+}

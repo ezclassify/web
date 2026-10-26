@@ -1,0 +1,18 @@
+# Repo-local gitleaks config. Extends the default ruleset; entries below only
+# suppress known non-secrets.
+
+[extend]
+useDefault = true
+
+# why: vendor/spec/MANIFEST.json pins the vendored spec bundle with sha256
+# content hashes (openapiSha256, specBundleSha256), and
+# vendor/spec/replayer-contract/v1/README.md documents the recording lookup-key
+# derivation with a literal sha256 example. Both trip the generic-api-key rule
+# but are content-addressed hash values, not credentials. vendor/ is
+# bot-write-only, so the values cannot be reshaped on this side.
+[[allowlists]]
+targetRules = ["generic-api-key"]
+paths = [
+  '''vendor/spec/MANIFEST\.json''',
+  '''vendor/spec/replayer-contract/v1/README\.md''',
+]

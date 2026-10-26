@@ -1,0 +1,11 @@
+{
+    "compilerOptions": {
+        "allowJs": false,
+        "allowSyntheticDefaultImports": true,
+        "strict": true
+    },
+    "exclude": ["node_modules"],
+    "extends": "../../tsconfig.base.json",
+    "files": [],
+    "include": ["src/**/*.ts"]
+}

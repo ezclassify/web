@@ -1,0 +1,81 @@
+{
+    "name": "@ezclassify/angular",
+    "version": "1.0.0-dev.30",
+    "type": "module",
+    "description": "Angular integration components for the ezclassify classification engine",
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/ezclassify/web.git",
+        "directory": "integrations/angular"
+    },
+    "homepage": "https://github.com/ezclassify/web/tree/main/integrations/angular#readme",
+    "bugs": {
+        "url": "https://github.com/ezclassify/web/issues"
+    },
+    "license": "Apache-2.0",
+    "main": "./dist/ngpkg/fesm2022/ezclassify-angular.mjs",
+    "types": "./dist/ngpkg/index.d.ts",
+    "module": "./dist/ngpkg/fesm2022/ezclassify-angular.mjs",
+    "files": [
+        "dist/ngpkg/fesm2022/",
+        "dist/ngpkg/index.d.ts",
+        "schematics/collection.json",
+        "schematics/ng-add/index.js",
+        "schematics/ng-add/schema.json",
+        "schematics/package.json",
+        "!dist/**/*.map"
+    ],
+    "keywords": [
+        "classification",
+        "angular",
+        "ezclassify",
+        "security-classification"
+    ],
+    "scripts": {
+        "build": "node build-lib.mjs",
+        "build:watch": "node build-lib.mjs --watch",
+        "clean:deep": "node clean.mjs",
+        "lint": "npx eslint src/",
+        "pack:dry": "npm run build && npm pack ./dist/ngpkg --dry-run",
+        "prepublishOnly": "echo 'Do not publish this package directly. Run: npm run publish:lib' && exit 1",
+        "publish:lib": "npm run build && node ../../scripts/check-publish-content.mjs @ezclassify/angular && npm publish ./dist/ngpkg --access public",
+        "test": "cd ../.. && npx vitest run --config vitest.angular.config.ts",
+        "test:verbose": "cd ../.. && npx vitest run --config vitest.angular.config.ts --reporter=verbose --no-file-parallelism",
+        "typecheck": "node ../../scripts/typecheck-specs.mjs integrations/angular",
+        "verify:publish-ready": "npm run build && npm test && cd dist/ngpkg && npm pack --dry-run"
+    },
+    "peerDependencies": {
+        "@angular/common": "^20.3.34 || ^21.0.0 || ^22.0.0",
+        "@angular/core": "^20.3.34 || ^21.0.0 || ^22.0.0",
+        "@angular/forms": "^20.3.34 || ^21.0.0 || ^22.0.0",
+        "@ezclassify/types": "^1.0.0-0",
+        "@ezclassify/ui": "^1.0.0-0",
+        "rxjs": ">=7.0.0"
+    },
+    "devDependencies": {
+        "@angular-devkit/core": "20.3.39",
+        "@angular-devkit/schematics": "20.3.39",
+        "@angular/cli": "20.3.39",
+        "@angular/common": "20.3.34",
+        "@angular/compiler": "20.3.34",
+        "@angular/compiler-cli": "20.3.34",
+        "@angular/core": "20.3.34",
+        "@angular/forms": "20.3.34",
+        "@angular/language-service": "20.3.34",
+        "@angular/platform-browser": "20.3.34",
+        "@angular/router": "20.3.34",
+        "@ezclassify/types": "^1.0.0-0",
+        "@ezclassify/ui": "^1.0.0-0",
+        "@schematics/angular": "20.3.39",
+        "ng-packagr": "20.3.2",
+        "rxjs": "^7.8.2",
+        "typescript": "5.9.3",
+        "zone.js": "^0.15.0"
+    },
+    "publishConfig": {
+        "access": "public",
+        "directory": "dist/ngpkg"
+    },
+    "sideEffects": false,
+    "schematics": "./schematics/collection.json"
+}

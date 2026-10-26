@@ -1,0 +1,474 @@
+/* ── Handbook panel ───────────────────────────────── */
+.ez-handbook {
+    font-family: var(--ez-font-family, inherit);
+    font-size: 0.8125rem;
+    color: var(--ez-color-text, #1a1a2e);
+    line-height: 1.5;
+}
+
+/* ── Profile overview ─────────────────────────────── */
+.ez-handbook__overview {
+    padding: 0.75rem;
+    margin-bottom: 0.75rem;
+    border: 1px solid var(--ez-color-border, #d1d5db);
+    border-radius: var(--ez-border-radius, 0.375rem);
+    background: var(--ez-handbook-overview-bg, rgba(0, 0, 0, 0.02));
+}
+
+.ez-handbook__overview-name {
+    font-weight: 700;
+    font-size: 1rem;
+    color: var(--ez-color-text, #111);
+    margin-bottom: 0.125rem;
+}
+
+.ez-handbook__overview-meta {
+    font-size: 0.6875rem;
+    color: var(--ez-color-muted, #555);
+    margin-bottom: 0.375rem;
+}
+
+.ez-handbook__overview-desc {
+    color: var(--ez-color-text, #333);
+    margin-bottom: 0.25rem;
+}
+
+.ez-handbook__overview-label {
+    font-weight: 600;
+    font-size: 0.6875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--ez-color-muted, #555);
+    margin-top: 0.5rem;
+    margin-bottom: 0.125rem;
+}
+
+.ez-handbook__introduction > summary {
+    cursor: pointer;
+    list-style: none;
+    min-height: 2.75rem;
+}
+.ez-handbook__introduction > summary::-webkit-details-marker {
+    display: none;
+}
+.ez-handbook__introduction > summary:focus-visible {
+    outline: 2px solid currentColor;
+    outline-offset: 2px;
+}
+.ez-handbook__introduction-preview {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
+}
+.ez-handbook__introduction-more,
+.ez-handbook__introduction-less {
+    color: inherit;
+    text-decoration: underline;
+}
+.ez-handbook__introduction-less,
+.ez-handbook__introduction[open] .ez-handbook__introduction-preview,
+.ez-handbook__introduction[open] .ez-handbook__introduction-more {
+    display: none;
+}
+.ez-handbook__introduction[open] .ez-handbook__introduction-less {
+    display: inline;
+}
+
+/* ── Scope tabs ───────────────────────────────────── */
+.ez-handbook__scope-tabs {
+    display: flex;
+    gap: 0;
+    margin-bottom: -1px;
+    flex-wrap: wrap;
+    border-bottom: 1px solid var(--ez-color-border, #d1d5db);
+}
+
+.ez-handbook__scope-tab {
+    padding: 0.5rem 0.75rem;
+    font-family: var(--ez-font-family, inherit);
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--ez-color-muted, #555);
+    background: transparent;
+    border: 1px solid transparent;
+    border-bottom: none;
+    border-radius: var(--ez-border-radius, 0.375rem)
+        var(--ez-border-radius, 0.375rem) 0 0;
+    cursor: pointer;
+    min-height: 2.25rem;
+    box-sizing: border-box;
+    position: relative;
+}
+
+.ez-handbook__scope-tab:hover {
+    color: var(--ez-color-text, #1a1a2e);
+    background: var(--ez-handbook-category-hover, rgba(0, 0, 0, 0.04));
+}
+
+.ez-handbook__scope-tab:focus-visible {
+    outline: 2px solid var(--ez-color-primary, #fdb827);
+    outline-offset: -2px;
+}
+
+.ez-handbook__scope-tab[aria-selected='true'] {
+    font-weight: 700;
+    color: var(--ez-color-text, #1f2937);
+    background: var(--ez-color-background, #fff);
+    border-color: var(--ez-color-border, #d1d5db);
+    border-top: 2px solid var(--ez-color-primary, #fdb827);
+    border-bottom: 1px solid var(--ez-color-background, #fff);
+}
+
+/* ── Tab panel (contains search + categories) ─────────── */
+.ez-handbook__tab-panel {
+    border: 1px solid var(--ez-color-border, #d1d5db);
+    border-radius: 0 var(--ez-border-radius, 0.375rem)
+        var(--ez-border-radius, 0.375rem) var(--ez-border-radius, 0.375rem);
+    padding: 0.5rem;
+}
+
+.ez-handbook__tab-panel:not([role='tabpanel']) {
+    border: none;
+    padding: 0;
+}
+
+/* ── Search ───────────────────────────────────────── */
+.ez-handbook__search {
+    display: flex;
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background: var(--ez-color-background, #fff);
+    padding-bottom: 0.5rem;
+}
+
+.ez-handbook__search-input {
+    width: 100%;
+    padding: 0.5rem 0.75rem;
+    font-family: var(--ez-font-family, inherit);
+    font-size: 0.8125rem;
+    color: var(--ez-color-text, #1a1a2e);
+    background: var(--ez-color-background, #fff);
+    border: 1px solid var(--ez-color-border, #d1d5db);
+    border-radius: var(--ez-border-radius, 0.375rem);
+    outline: none;
+    min-height: 2.75rem;
+    box-sizing: border-box;
+}
+
+.ez-handbook__search-input:focus-visible {
+    border-color: var(--ez-color-primary, #fdb827);
+    box-shadow: 0 0 0 1px var(--ez-color-primary, #fdb827);
+}
+
+.ez-handbook__search-input::placeholder {
+    color: var(--ez-color-placeholder, #767676);
+}
+
+/* ── Category group ──────────────────────────────────── */
+.ez-handbook__category {
+    margin-bottom: 0.75rem;
+}
+
+.ez-handbook__category-header {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.375rem 0.5rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--ez-color-muted, #555);
+    background: var(--ez-handbook-category-bg, rgba(0, 0, 0, 0.04));
+    border-radius: var(--ez-border-radius, 0.375rem);
+    cursor: pointer;
+    user-select: none;
+    min-height: 2.75rem;
+    box-sizing: border-box;
+}
+
+.ez-handbook__category-header:hover {
+    background: var(--ez-handbook-category-hover, rgba(0, 0, 0, 0.07));
+}
+
+.ez-handbook__category-header:focus-visible {
+    outline: 2px solid var(--ez-color-primary, #fdb827);
+    outline-offset: 2px;
+}
+
+.ez-handbook__category-arrow {
+    font-size: 0.8125rem;
+    width: 1rem;
+    text-align: center;
+    flex-shrink: 0;
+    /* Full text color so the disclosure triangle reads as the expander. */
+    color: var(--ez-color-text, #1a1a2e);
+}
+
+.ez-handbook__category-count {
+    font-size: 0.6875rem;
+    font-weight: 400;
+    color: var(--ez-color-muted, #4b5563);
+}
+
+.ez-handbook__category-body {
+    padding: 0.25rem 0;
+}
+
+/* ── Concept entry ────────────────────────────────── */
+.ez-handbook__entry {
+    padding: 0.625rem 0.75rem;
+    border: 1px solid var(--ez-color-border, #d1d5db);
+    border-radius: var(--ez-border-radius, 0.375rem);
+    background: var(--ez-color-background, #fff);
+    margin-top: 0.375rem;
+    /* Depth-based indent. var(--ez-entry-depth) is set per-entry by the
+   * Handbook component (0 = root, 1 = child, ...) so sub-compartments
+   * render nested beneath their parent concept. */
+    margin-left: calc(var(--ez-entry-depth, 0) * 1.25rem);
+}
+
+.ez-handbook__entry--depth-1,
+.ez-handbook__entry--depth-2,
+.ez-handbook__entry--depth-3,
+.ez-handbook__entry--depth-4,
+.ez-handbook__entry--depth-5 {
+    /* A subtle connecting stripe on the left edge signals the nested
+   * relationship in addition to the margin indent. */
+    border-left-width: 3px;
+    border-left-style: solid;
+    border-left-color: var(
+        --ez-entry-category-color,
+        var(--ez-color-border, #d1d5db)
+    );
+}
+
+.ez-handbook__entry:focus-visible {
+    outline: 2px solid var(--ez-color-primary, #fdb827);
+    outline-offset: 2px;
+}
+
+.ez-handbook__entry-name {
+    font-weight: 700;
+    font-size: 0.875rem;
+    color: var(--ez-color-text, #111);
+    margin-bottom: 0.125rem;
+}
+
+.ez-handbook__entry-aliases {
+    font-size: 0.6875rem;
+    color: var(--ez-color-muted, #555);
+    margin-bottom: 0.25rem;
+}
+
+.ez-handbook__section-label {
+    font-weight: 600;
+    font-size: 0.6875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--ez-color-muted, #555);
+    margin-top: 0.5rem;
+    margin-bottom: 0.125rem;
+}
+
+.ez-handbook__section-text {
+    color: var(--ez-color-text, #333);
+    margin-bottom: 0.25rem;
+}
+
+.ez-handbook__rules {
+    margin-top: 0.125rem;
+}
+
+.ez-handbook__rule {
+    padding-left: 0.75rem;
+    position: relative;
+    color: var(--ez-color-muted, #555);
+}
+
+.ez-handbook__rule::before {
+    content: '\2022';
+    position: absolute;
+    left: 0;
+}
+
+.ez-handbook__deprecated {
+    font-size: 0.6875rem;
+    color: var(--ez-color-error, #b91c1c);
+    font-style: italic;
+    margin-top: 0.25rem;
+}
+
+/* ── Notices ──────────────────────────────────────── */
+.ez-handbook__notice {
+    display: flex;
+    gap: 0.375rem;
+    align-items: baseline;
+    font-size: 0.75rem;
+    padding: 0.375rem 0.5rem;
+    margin-top: 0.375rem;
+    border-radius: var(--ez-border-radius, 0.375rem);
+    background: var(--ez-handbook-notice-bg, rgba(0, 0, 0, 0.03));
+    color: var(--ez-color-text, #333);
+}
+
+.ez-handbook__notice--warning {
+    background: var(--ez-handbook-notice-warning-bg, rgba(234, 179, 8, 0.1));
+    color: var(--ez-handbook-notice-warning-text, #854d0e);
+}
+
+.ez-handbook__notice--handling,
+.ez-handbook__notice--admonition {
+    background: var(--ez-handbook-notice-handling-bg, rgba(239, 68, 68, 0.08));
+    color: var(--ez-handbook-notice-handling-text, #991b1b);
+}
+
+.ez-handbook__notice--distribution {
+    background: var(--ez-handbook-notice-dist-bg, rgba(59, 130, 246, 0.08));
+    color: var(--ez-handbook-notice-dist-text, #1e40af);
+}
+
+.ez-handbook__notice--info {
+    background: var(--ez-handbook-notice-info-bg, rgba(0, 0, 0, 0.03));
+    color: var(--ez-color-muted, #555);
+}
+
+.ez-handbook__notice-label {
+    font-weight: 600;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.ez-handbook__notice-text {
+    flex: 1;
+}
+
+/* ── No results ───────────────────────────────────── */
+.ez-handbook__empty {
+    padding: 1rem;
+    text-align: center;
+    color: var(--ez-color-muted, #555);
+    font-style: italic;
+}
+
+/* ── Category color bar on entry ─────────────────────── */
+.ez-handbook__entry[data-category-color] {
+    border-left-width: 3px;
+    border-left-color: var(--ez-entry-category-color);
+}
+
+/* ── Reduced motion ───────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+    .ez-handbook__category-header,
+    .ez-handbook__search-input,
+    .ez-handbook__scope-tab {
+        transition: none;
+    }
+}
+
+/* ── High contrast (forced-colors) ────────────────── */
+@media (forced-colors: active) {
+    .ez-handbook__overview {
+        border: 1px solid ButtonText;
+        background: Canvas;
+        color: CanvasText;
+        forced-color-adjust: none;
+    }
+    .ez-handbook__overview-name {
+        color: CanvasText;
+    }
+    .ez-handbook__overview-meta {
+        color: GrayText;
+    }
+    .ez-handbook__overview-desc {
+        color: CanvasText;
+    }
+    .ez-handbook__overview-label {
+        color: CanvasText;
+    }
+    .ez-handbook__tab-panel[role='tabpanel'] {
+        border: 1px solid ButtonText;
+        background: Canvas;
+    }
+    .ez-handbook__notice {
+        border: 1px solid ButtonText;
+        background: Canvas;
+        color: CanvasText;
+        forced-color-adjust: none;
+    }
+    .ez-handbook__notice--warning,
+    .ez-handbook__notice--handling,
+    .ez-handbook__notice--admonition,
+    .ez-handbook__notice--distribution,
+    .ez-handbook__notice--info {
+        background: Canvas;
+        color: CanvasText;
+    }
+    .ez-handbook__scope-tab {
+        border: 1px solid ButtonText;
+        background: ButtonFace;
+        color: ButtonText;
+        forced-color-adjust: none;
+    }
+    .ez-handbook__scope-tab[aria-selected='true'] {
+        border-color: Highlight;
+        color: Highlight;
+        background: ButtonFace;
+    }
+    .ez-handbook__scope-tab:focus-visible {
+        outline: 2px solid Highlight;
+    }
+    .ez-handbook__search-input {
+        border: 1px solid ButtonText;
+        background: Canvas;
+        color: CanvasText;
+    }
+    .ez-handbook__search-input:focus-visible {
+        outline: 2px solid Highlight;
+        box-shadow: none;
+    }
+    .ez-handbook__category-header {
+        border: 1px solid ButtonText;
+        background: Canvas;
+        color: CanvasText;
+        forced-color-adjust: none;
+    }
+    .ez-handbook__category-header:hover {
+        background: Canvas;
+    }
+    .ez-handbook__category-header:focus-visible {
+        outline: 2px solid Highlight;
+    }
+    .ez-handbook__entry {
+        border: 1px solid ButtonText;
+        background: Canvas;
+        color: CanvasText;
+        forced-color-adjust: none;
+    }
+    .ez-handbook__entry:focus-visible {
+        outline: 2px solid Highlight;
+    }
+    .ez-handbook__entry-name {
+        color: CanvasText;
+    }
+    .ez-handbook__entry-aliases {
+        color: GrayText;
+    }
+    .ez-handbook__section-label {
+        color: CanvasText;
+    }
+    .ez-handbook__section-text {
+        color: CanvasText;
+    }
+    .ez-handbook__rule {
+        color: CanvasText;
+    }
+    .ez-handbook__deprecated {
+        color: LinkText;
+    }
+    .ez-handbook__empty {
+        color: GrayText;
+    }
+}

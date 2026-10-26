@@ -1,0 +1,40 @@
+{
+    "name": "ezclassify-web-e2e",
+    "type": "module",
+    "description": "Browser lanes for the web repository: the README examples against the Cedar Valley replay, and the integration hosts against the golden wire corpus or a licensed deployment",
+    "private": true,
+    "scripts": {
+        "build": "vite build hosts/react --outDir ../../dist/react-host --emptyOutDir && ng build angular-host",
+        "test": "playwright test",
+        "typecheck": "tsc -p hosts/react --noEmit && ngc -p hosts/angular/tsconfig.app.json --noEmit && tsc -p tsconfig.json --noEmit"
+    },
+    "dependencies": {
+        "@angular/common": "22.2.2",
+        "@angular/compiler": "22.2.2",
+        "@angular/core": "22.2.2",
+        "@angular/forms": "22.2.2",
+        "@angular/platform-browser": "22.2.2",
+        "@ezclassify/angular": "^1.0.0-0",
+        "@ezclassify/react": "^1.0.0-0",
+        "@ezclassify/rest-client": "^1.0.0-0",
+        "@ezclassify/ui": "^1.0.0-0",
+        "react": "^19.0.0",
+        "react-dom": "^19.0.0",
+        "rxjs": "^7.8.2",
+        "tslib": "^2.3.0"
+    },
+    "devDependencies": {
+        "@angular/build": "22.2.2",
+        "@angular/cli": "22.2.2",
+        "@angular/compiler-cli": "22.2.2",
+        "@ezclassify/conformance-server": "^1.0.0-0",
+        "@playwright/test": "^1.60.0",
+        "@types/node": "24.10.1",
+        "@types/react": "^19.0.0",
+        "@types/react-dom": "^19.0.0",
+        "@vitejs/plugin-react": "^5.2.0",
+        "playwright": "^1.60.0",
+        "typescript": "6.0.3",
+        "vite": "^8.0.0"
+    }
+}

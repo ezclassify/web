@@ -1,0 +1,30 @@
+{
+    "angularCompilerOptions": {
+        "compilationMode": "partial",
+        "enableI18nLegacyMessageIdFormat": false,
+        "strictInjectionParameters": true,
+        "strictInputAccessModifiers": true,
+        "strictTemplates": true
+    },
+    "compilerOptions": {
+        "declaration": true,
+        "declarationMap": false,
+        "inlineSources": true,
+        "lib": ["es2023", "dom", "dom.iterable"],
+        "module": "es2022",
+        "moduleResolution": "bundler",
+        "noPropertyAccessFromIndexSignature": false,
+        "outDir": "../../dist/out-tsc",
+        "paths": {
+            "@ezclassify/types": ["../../node_modules/@ezclassify/types"],
+            "@ezclassify/ui": ["../../node_modules/@ezclassify/ui"]
+        },
+        "skipLibCheck": true,
+        "sourceMap": false,
+        "target": "es2023",
+        "types": ["node", "vite/client"]
+    },
+    "exclude": ["src/**/*.spec.ts", "src/**/*.test.ts"],
+    "extends": "./tsconfig.json",
+    "include": ["src/**/*.ts"]
+}

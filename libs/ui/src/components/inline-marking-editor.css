@@ -1,0 +1,52 @@
+.inline-editor-wrap {
+    display: inline;
+    position: relative;
+}
+
+.inline-editor-input {
+    font: inherit;
+    color: inherit;
+    background: transparent;
+    border: none;
+    outline: none;
+    padding: 0;
+    margin: 0;
+    width: auto;
+    min-width: 1ch;
+    display: inline;
+    box-sizing: content-box;
+    -webkit-appearance: none;
+    appearance: none;
+    -moz-appearance: textfield;
+}
+
+.inline-editor-input:focus {
+    outline: none;
+}
+
+/* Hidden sizer element: mirrors input text to measure its pixel width */
+.inline-editor-sizer {
+    position: absolute;
+    visibility: hidden;
+    white-space: pre;
+    font: inherit;
+    pointer-events: none;
+    height: 0;
+    overflow: hidden;
+}
+
+@media (pointer: coarse) {
+    /* iOS Safari zooms the page when a focused field's effective font-size is
+       under 16px. The threshold is defined in device px, not rem, so px is
+       correct here; max() keeps larger host fonts intact. The sizer must get
+       the same floor so input width measurement stays in sync. */
+    .inline-editor-input,
+    .inline-editor-sizer {
+        font-size: max(1em, 16px);
+    }
+}
+
+.marked-textarea-picker-mount {
+    display: inline;
+    position: relative;
+}
