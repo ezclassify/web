@@ -152,50 +152,9 @@ jobs:
         run: npm run typecheck
 
       - name: Dependency license compliance
-        # The workspace root is a private shell with no production deps of its
-        # own, so a plain --production run here checks nothing (it passed on
-        # an empty package set). So build the real production closure of the
-        # publishable workspaces from npm, then check exactly those packages
-        # against the allowlist. Examples are private demo
-        # apps and are deliberately out of scope.
-        run: |
-          set -euo pipefail
-          # npm ls exits 1 on advisory ELSPROBLEMS (e.g. extraneous optional
-          # wasm shims) while still printing the full tree; the coverage
-          # assertion below is the real guard, so tolerate that exit code.
-          PKGS=$( (npm ls --omit=dev --all --parseable --long \
-              -w @ezclassify/ui \
-              -w @ezclassify/react -w @ezclassify/vue -w @ezclassify/angular 2>/dev/null || true) \
-            | awk -F: 'NF>1 {print $2}' | grep -v '^@ezclassify/' | sort -u | paste -sd ';' -)
-          test -n "$PKGS"
-          OUT="$(mktemp -d)/licenses.json"
-          # MPL-2.0 is allowed for unmodified, unbundled dependencies only:
-          # its file-level copyleft attaches to nothing when the files ship
-          # untouched from the registry.
-          npx --yes license-checker-rseidelsohn@4.4.2 --includePackages "$PKGS" --json \
-            --onlyAllow "MIT;ISC;Apache-2.0;BSD-2-Clause;BSD-3-Clause;0BSD;CC0-1.0;Unlicense;BlueOak-1.0.0;CC-BY-4.0;Python-2.0;MPL-2.0" \
-            > "$OUT"
-          # --includePackages fails open: when its filter matches nothing the
-          # checker exits 0 having inspected zero packages, so a drift in how
-          # npm ls or the checker spells a package name would silently turn
-          # this gate off rather than break it. Assert every package we asked
-          # about actually came back, and print the licenses that cleared.
-          node -e '
-            const fs = require("node:fs");
-            const found = JSON.parse(fs.readFileSync(process.argv[1], "utf8"));
-            const want = process.argv[2].split(";").filter(Boolean);
-            const missing = want.filter((p) => !(p in found));
-            if (missing.length) {
-              console.error("License gate inspected no entry for: " + missing.join(", "));
-              process.exit(1);
-            }
-            const tally = {};
-            for (const p of want) tally[found[p].licenses] = (tally[found[p].licenses] || 0) + 1;
-            console.log("Checked " + want.length + " third-party packages:");
-            for (const [license, count] of Object.entries(tally).sort()) {
-              console.log("  " + license + ": " + count);
-            }
-          ' "$OUT" "$PKGS"
+        # Validate every publishable workspace before accepting an empty closure;
+        # consumer-provided peers are outside the redistributed production graph.
+        run: node scripts/check-production-licenses.mjs
 
       - name: Third-party notices are current
         # THIRD-PARTY-NOTICES.md is generated from the direct production
