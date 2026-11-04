@@ -180,7 +180,6 @@ function remoteCtx(opts: {
         } as never,
         describeSchemes: () => Promise.resolve([]),
         audit: () => Promise.resolve({} as never),
-        assessDocumentAccess: () => Promise.resolve({} as never),
         checkContextAccess: () => Promise.resolve({} as never),
         accessRequirements: () => Promise.resolve({} as never),
         translate: () => Promise.resolve({} as never),

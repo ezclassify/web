@@ -61,7 +61,6 @@ function context(validate: ReturnType<typeof vi.fn>): ContextAdapter {
         scheme: adapter,
         describeSchemes: async () => [],
         audit: vi.fn(),
-        assessDocumentAccess: vi.fn(),
         checkContextAccess: vi.fn(),
         accessRequirements: vi.fn(),
         translate: vi.fn(),
