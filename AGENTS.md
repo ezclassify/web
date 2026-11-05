@@ -35,7 +35,7 @@ published as an importable library, so declaring it would break `npm install`
 for every outside contributor and would advertise a package nobody can get.
 
 The REST client is not here either. `@ezclassify/rest-client` ships from its own
-repository, [ezclassify/client-js](https://github.com/ezclassify/client-js), alongside the Java, .NET, Python and Go
+repository, [ezclassify/sdk-js](https://github.com/ezclassify/sdk-js), alongside the Java, .NET, Python and Go
 clients. This repository consumes it as an ordinary published dependency,
 which is what an integrator does.
 

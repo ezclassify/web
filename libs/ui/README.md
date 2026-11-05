@@ -33,7 +33,7 @@ npm install @ezclassify/ui @ezclassify/rest-client
 ```
 
 `@ezclassify/rest-client` ships from
-[ezclassify/client-js](https://github.com/ezclassify/client-js). It is a
+[ezclassify/sdk-js](https://github.com/ezclassify/sdk-js). It is a
 separate install, not a dependency of this package, so an application that
 brings its own adapter does not pull it in.
 
@@ -426,4 +426,4 @@ injectDefaultStyles();
 
 The REST client supplies the remote Context adapter. Its complete API includes
 operations beyond those the UI calls; see the
-[REST client guide](https://github.com/ezclassify/client-js).
+[REST client guide](https://github.com/ezclassify/sdk-js).

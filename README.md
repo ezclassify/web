@@ -10,7 +10,7 @@ EzClassify. Add marking inputs, suggestions, validation, and document banners
 to an application connected to an EzClassify REST deployment.
 
 The REST client the examples below import, `@ezclassify/rest-client`, ships from
-[ezclassify/client-js](https://github.com/ezclassify/client-js) with the Java,
+[ezclassify/sdk-js](https://github.com/ezclassify/sdk-js) with the Java,
 .NET, Python and Go clients. Install it alongside these packages.
 
 ## Boundary
@@ -32,7 +32,7 @@ that serves it.
 
 Version compatibility follows the REST client. Its spec-version accessor and
 health-call compatibility warnings are documented in the
-[JavaScript client guide](https://github.com/ezclassify/client-js#version-skew).
+[JavaScript client guide](https://github.com/ezclassify/sdk-js#version-skew).
 
 ## Install
 
