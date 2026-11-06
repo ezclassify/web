@@ -29,16 +29,13 @@ import {
     isContextAdapter,
     type ContextAdapter,
     type ContextMetadata,
-    type RemoteContextSchemeEngineAdapter,
+    type ContextSchemeEngineAdapter,
     type SchemeEngineAdapter,
 } from '@ezclassify/types';
 
 /** The engine argument shape the framework bindings accept. */
 export type EngineArg =
-    | SchemeEngineAdapter
-    | RemoteContextSchemeEngineAdapter
-    | ContextAdapter
-    | null;
+    SchemeEngineAdapter | ContextSchemeEngineAdapter | ContextAdapter | null;
 
 /** Narrow any supported engine argument to a composed context. */
 export function isEngineContext(

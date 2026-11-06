@@ -10,7 +10,7 @@
 
 import {
     type ContextAdapter,
-    type RemoteContextSchemeEngineAdapter,
+    type ContextSchemeEngineAdapter,
     type SchemeEngineAdapter,
     type Assertion,
     type ConceptColor,
@@ -71,7 +71,7 @@ import { getMountHost } from '../mount-host-registry';
  */
 /** Scheme operations available to a component from either supported host mode. */
 export type ComponentSchemeEngine =
-    SchemeEngineAdapter | RemoteContextSchemeEngineAdapter;
+    SchemeEngineAdapter | ContextSchemeEngineAdapter;
 
 export type ComponentEngineSource = ComponentSchemeEngine | ContextAdapter;
 

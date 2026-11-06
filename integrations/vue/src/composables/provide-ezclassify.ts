@@ -23,14 +23,14 @@ import { isEngineContext } from '@ezclassify/ui';
 import type {
     ContextAdapter,
     EzClassifyPresentationOptions,
-    RemoteContextSchemeEngineAdapter,
+    ContextSchemeEngineAdapter,
     SchemeEngineAdapter,
 } from '@ezclassify/ui';
 import { VueRefStore, VueRefStoreKey } from './vue-ref-store';
 
 /** Structural client contract accepted by a marking scope. */
 export type EzClassifyEngine =
-    SchemeEngineAdapter | RemoteContextSchemeEngineAdapter | ContextAdapter;
+    SchemeEngineAdapter | ContextSchemeEngineAdapter | ContextAdapter;
 
 /**
  * Presentation options a scope applies to every marking surface it mounts.

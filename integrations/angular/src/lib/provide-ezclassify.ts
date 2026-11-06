@@ -25,7 +25,6 @@ import { isEngineContext } from '@ezclassify/ui';
 import type {
     ContextAdapter,
     ContextSchemeEngineAdapter,
-    RemoteContextSchemeEngineAdapter,
     EzClassifyPresentationOptions,
     EzClassifyStore,
     SchemeEngineAdapter,
@@ -38,13 +37,11 @@ import {
 
 /** Structural client contract accepted by a marking scope. */
 export type EzClassifyEngine =
-    SchemeEngineAdapter | RemoteContextSchemeEngineAdapter | ContextAdapter;
+    SchemeEngineAdapter | ContextSchemeEngineAdapter | ContextAdapter;
 
 /** The scheme operations available after resolving a bare adapter or Context. */
 export type EzClassifySchemeEngine =
-    | SchemeEngineAdapter
-    | RemoteContextSchemeEngineAdapter
-    | ContextSchemeEngineAdapter;
+    SchemeEngineAdapter | ContextSchemeEngineAdapter;
 
 /**
  * Presentation options a scope applies to every marking surface it mounts.

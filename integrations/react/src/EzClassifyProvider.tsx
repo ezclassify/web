@@ -27,12 +27,9 @@ import {
     sameSignature,
 } from '@ezclassify/ui';
 import type {
-    ContextAdapter,
     EzClassifyState,
     FacetState,
     PublishSource,
-    RemoteContextSchemeEngineAdapter,
-    SchemeEngineAdapter,
 } from '@ezclassify/ui';
 import { ReactEzClassifyStore } from './react-ezclassify-store';
 import { EzClassifyStoreProvider } from './useEzClassify';
@@ -46,11 +43,7 @@ export interface EzClassifyProvision {
      * The default engine, or `null` when the provider was given a store
      * instead.
      */
-    engine:
-        | SchemeEngineAdapter
-        | RemoteContextSchemeEngineAdapter
-        | ContextAdapter
-        | null;
+    engine: EngineArg;
     /** Presentation defaults, overridden per call. */
     options: UseSchemeEngineOptions;
     /**
