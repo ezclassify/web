@@ -196,7 +196,7 @@ jobs:
           node-version: '24'
       # This native inventory reads committed manifests, not an installed tree.
       - name: Generate SBOM
-        run: node scripts/generate-sbom.mjs
+        run: npm run sbom
       - name: Upload SBOM artifact
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
