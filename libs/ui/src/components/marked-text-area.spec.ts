@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
-import type { SchemePublicView } from '@ezclassify/types';
+import type { ScanOutcome, SchemePublicView } from '@ezclassify/types';
 import type { LocalSchemeEngineAdapter } from '@ezclassify/types';
 import { Context } from '@ezclassify/engine';
 import { openContext } from '../../test-fixtures/context-doubles';
@@ -1011,6 +1011,65 @@ describe('MarkedTextArea scan failures', () => {
 
         reported.mockRestore();
         scan.mockRestore();
+        field.destroy();
+    });
+});
+
+describe('MarkedTextArea reads the text the scan found inside a wrapper', () => {
+    // The wrapper shape belongs to the scheme, so the field reads the scan's
+    // `inner` and never strips delimiters from the found marking itself. The
+    // scan here reports a wrapper the field's own pattern cannot unwrap.
+    async function mountWithScan(
+        rewrite: (result: { marking: string; inner?: string }) => object,
+    ) {
+        const container = document.createElement('div');
+        root.appendChild(container);
+        const ta = document.createElement('textarea');
+        container.appendChild(ta);
+        const ctx = createTestContext();
+        const realScan = ctx.scheme.scan.bind(ctx.scheme);
+        vi.spyOn(ctx.scheme, 'scan').mockImplementation((text, options) => {
+            const outcome = realScan(
+                text.replace(/^<(\w+)>/, '($1)'),
+                options,
+            ) as ScanOutcome;
+            return {
+                ...outcome,
+                results: outcome.results.map((r) => ({ ...r, ...rewrite(r) })),
+            };
+        });
+        const process = vi.spyOn(ctx.scheme, 'process');
+        const field = new MarkedTextArea();
+        await field.init(container, ctx, {});
+        ta.value = '<S> One paragraph.';
+        ta.dispatchEvent(new Event('input', { bubbles: true }));
+        await waitFor(() => field.getSegments().length > 0, 1000);
+        await wait(50);
+        return { field, process };
+    }
+
+    it("reads the marking from the scan result's inner text", async () => {
+        const { field, process } = await mountWithScan(() => ({
+            marking: '<S>',
+        }));
+        expect(process.mock.calls.map(([input]) => input)).toContain('S');
+        const [segment] = field.getSegments();
+        expect(segment.marking).toBe('<S>');
+        expect(segment.inner).toBe('S');
+        expect(segment.valid).toBe(true);
+        expect(segment.assertions.map((a) => a.conceptId)).toEqual(['S']);
+        field.destroy();
+    });
+
+    it('shows a read failure for a wrapped result that reports no inner text', async () => {
+        const { field, process } = await mountWithScan(() => ({
+            marking: '<S>',
+            inner: undefined,
+        }));
+        expect(process.mock.calls.map(([input]) => input)).not.toContain('<S>');
+        const [segment] = field.getSegments();
+        expect(segment.valid).toBe(false);
+        expect(segment.readFailure).toContain('without the text inside');
         field.destroy();
     });
 });

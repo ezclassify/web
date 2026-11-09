@@ -106,6 +106,14 @@ export interface MarkedSegment {
     end: number;
     /** The literal marking string including delimiters (e.g. "(U)"). */
     marking: string;
+    /**
+     * The text inside the wrapper as the engine's scan read it
+     * (`ScanResult.inner`). Absent for text the scan did not read, such as an
+     * unrecognized wrapper or a mark still being inserted.
+     *
+     * @internal
+     */
+    inner?: string;
     /** Engine assertions for the marking. */
     assertions: Assertion[];
     /** Rendered marking (format matches scan output). */
@@ -1133,15 +1141,22 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
         const savedAssertions = this._editorAssertions;
         this._editorAssertions = null;
 
-        const readMarking = (marking: string) => {
+        const readMarking = (found: { marking: string; inner?: string }) => {
             // Use saved assertions if they match this marking
             const stated =
                 savedAssertions &&
-                savedAssertions.marking === marking &&
+                savedAssertions.marking === found.marking &&
                 savedAssertions.assertions.length > 0
                     ? savedAssertions.assertions
                     : null;
-            const input = stated ? '' : this.extractInner(marking);
+            // The scan reports what is inside the wrapper; the wrapper shape
+            // is the scheme's, so the field never strips it itself.
+            const input = stated ? '' : found.inner;
+            if (input === undefined) {
+                throw new Error(
+                    `The scan found ${found.marking} without the text inside its wrapper.`,
+                );
+            }
             const options = {
                 outputFormat: this.scanFormat,
                 // The engine takes a whole's values again from `ctx`.
@@ -1169,7 +1184,7 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
             const results = await Promise.all(
                 changedIndices.map(async (idx) => {
                     try {
-                        const result = await readMarking(embedded[idx].marking);
+                        const result = await readMarking(embedded[idx]);
                         return { idx, result };
                     } catch (error) {
                         readFailures.set(
@@ -1250,6 +1265,7 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
                 start: r.start,
                 end: r.end,
                 marking: r.marking,
+                inner: r.inner,
                 assertions: res.assertions,
                 rendered: res.rendered,
                 text: bodyText,
@@ -2273,7 +2289,6 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
         // uncommitted draft: nothing has been stored for it yet.
         const draft = this._pickerDraft;
         this._pickerDraft = undefined;
-        const inner = draft ? '' : this.extractInner(raw);
 
         // Find the segment's existing assertions so the editor can seed from
         // them instead of re-parsing the rendered text. This is critical for
@@ -2282,6 +2297,10 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
             (s) => s.start === start && s.end === end,
         );
         const existingAssertions = seg?.assertions;
+        // A mark the scan read opens on the text the scan found inside its
+        // wrapper. Only text the scan did not read is unwrapped here.
+        const scanned = seg?.marking === raw ? seg.inner : undefined;
+        const inner = draft ? '' : (scanned ?? this.extractInner(raw));
 
         // Create an inline mount: renderDisplay will place it in the text flow
         // where the chip would normally be, between the parentheses
@@ -2506,9 +2525,8 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
                     segment.start === start && segment.pendingFixes?.length,
             );
             if (
-                loadedSegment &&
-                editorContent ===
-                    this.extractInner(loadedSegment.marking).trim()
+                loadedSegment?.inner !== undefined &&
+                editorContent === loadedSegment.inner.trim()
             ) {
                 const repaired = applyRepairsLogic(
                     [{ ...loadedSegment, repaired: true }],
