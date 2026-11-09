@@ -19,9 +19,9 @@ import { SingleSelect } from './single-select';
 import { CategorySelector } from './category-selector';
 import { CategoryChecklist } from './category-checklist';
 import { DecisionFlow } from './decision-flow';
-import { Context } from '@ezclassify/engine';
+import { schemeOnlyContext } from '../../test-fixtures/context-doubles';
 
-const toCtx = (eng: unknown) => Context.fromSchemeEngine(eng as never);
+const toCtx = (eng: unknown) => schemeOnlyContext(eng as never);
 import {
     VanillaEzClassifyStore,
     type EzClassifyStoreEngine,

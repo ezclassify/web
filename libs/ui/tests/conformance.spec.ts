@@ -17,7 +17,7 @@
  *   - check-access.json, access decisions are not a forms-layer concern
  *   - registry.json, the forms library wraps one scheme engine, not a registry
  *
- * This proves the forms library correctly wraps SchemeEngine without mutating
+ * This proves the forms library correctly wraps the scheme operations without mutating
  * it and that engine calls through the forms integration path produce conformant
  * results identical to the Node reference runner.
  */
@@ -26,7 +26,7 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { resolve, dirname, basename } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, it, expect } from 'vitest';
-import { Context, GuideEngine } from '@ezclassify/engine';
+import { Context } from '@ezclassify/engine';
 import type { LocalSchemeEngineAdapter } from '@ezclassify/types';
 import { EzClassifyUI } from '@ezclassify/ui';
 
@@ -116,9 +116,9 @@ function makeForms(engine: LocalSchemeEngineAdapter): {
  * in EzClassifyUI fromLayers, Context.fromComponents({ scheme, layers })
  * wrapped in EzClassifyUI
  *
- * Dispatch: methods called on forms.engine (the SchemeEngine the forms instance
- * holds). This verifies the forms initialization path does not corrupt or
- * replace the engine.
+ * Dispatch: methods called on forms.engine (the scheme operations the forms
+ * instance holds). This verifies the forms initialization path does not corrupt
+ * or replace the engine.
  */
 function runViaForms(
     fixture: string | string[],
@@ -127,44 +127,39 @@ function runViaForms(
     args: unknown[],
     guideFixture?: string,
 ): unknown {
-    let engine: LocalSchemeEngineAdapter;
+    // A guide plan entry composes its guide with the scheme, the way every
+    // guide reaches a caller: through a Context.
+    const guides = guideFixture ? [loadFixture(guideFixture)] : [];
+    let context: Context;
     if (mode === 'fromLayers') {
         const layerNames = Array.isArray(fixture) ? fixture : [fixture];
         const [base, ...layers] = layerNames.map(loadFixture);
-        engine = Context.fromComponents({ scheme: base, layers })
-            .scheme as LocalSchemeEngineAdapter;
+        context = Context.fromComponents({ scheme: base, layers, guides });
     } else {
         const profileData = loadFixture(
             Array.isArray(fixture) ? fixture[0] : fixture,
         );
-        engine = Context.fromComponents({ scheme: profileData })
-            .scheme as LocalSchemeEngineAdapter;
+        context = Context.fromComponents({ scheme: profileData, guides });
     }
+    const engine = context.scheme as LocalSchemeEngineAdapter;
+    const guide = () => {
+        if (!guideFixture || !context.guide)
+            throw new Error(`${method} requires guideFixture in plan entry`);
+        return context.guide;
+    };
 
     if (method === 'evaluateGuide') {
-        if (!guideFixture)
-            throw new Error(
-                'evaluateGuide requires guideFixture in plan entry',
-            );
-        return GuideEngine.fromJSON(loadFixture(guideFixture)).evaluate(
+        const loaded = guide();
+        return loaded.evaluate(
+            loaded.listGuideMeta()[0].id,
             args[0] as string[],
-            engine,
         );
     }
     if (method === 'evaluateMany') {
-        if (!guideFixture)
-            throw new Error('evaluateMany requires guideFixture in plan entry');
-        return GuideEngine.fromJSON(loadFixture(guideFixture)).evaluateMany(
-            args[0] as string[],
-            engine,
-        );
+        return guide().evaluateMany(args[0] as string[]);
     }
     if (method === 'guideScan') {
-        if (!guideFixture)
-            throw new Error('guideScan requires guideFixture in plan entry');
-        const hits = GuideEngine.fromJSON(loadFixture(guideFixture)).scan(
-            args[0] as string,
-        );
+        const hits = guide().scan(args[0] as string);
         return {
             count: hits.length,
             firstRuleId:

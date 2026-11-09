@@ -14,7 +14,7 @@ import { describe, it, expect } from 'vitest';
 import { TestBed } from '@angular/core/testing';
 import { Component } from '@angular/core';
 import { Context } from '@ezclassify/engine';
-import type { SchemeEngine } from '@ezclassify/engine';
+import type { SchemeOperations } from '@ezclassify/engine';
 import type { FavoritesConfig } from '@ezclassify/ui';
 import {
     EzClassifyDirective,
@@ -87,7 +87,7 @@ const noopFavorites: FavoritesConfig = { load: () => [] };
     </div>`,
 })
 class FavoritesHostComponent {
-    engine?: SchemeEngine | null;
+    engine?: SchemeOperations | null;
     options?: EzClassifyDirectiveOptions;
 }
 
@@ -106,7 +106,7 @@ describe('EzClassifyDirective ezClassifyOptions.favorites', () => {
             imports: [FavoritesHostComponent],
         }).compileComponents();
         const engine = Context.fromComponents({ scheme: MINIMAL_SCHEME })
-            .scheme as SchemeEngine;
+            .scheme as SchemeOperations;
         const fixture = TestBed.createComponent(FavoritesHostComponent);
         fixture.componentInstance.engine = engine;
         fixture.componentInstance.options = { favorites: noopFavorites };
@@ -123,7 +123,7 @@ describe('EzClassifyDirective ezClassifyOptions.favorites', () => {
             imports: [FavoritesHostComponent],
         }).compileComponents();
         const engine = Context.fromComponents({ scheme: MINIMAL_SCHEME })
-            .scheme as SchemeEngine;
+            .scheme as SchemeOperations;
         const fixture = TestBed.createComponent(FavoritesHostComponent);
         fixture.componentInstance.engine = engine;
         fixture.detectChanges(false);

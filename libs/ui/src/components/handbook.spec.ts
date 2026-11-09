@@ -11,10 +11,10 @@ import type { ConceptView, Assertion } from '@ezclassify/types';
 // The fixtures are authored schemes (concept documentation blocks), an
 // internal shape; this spec is already engine-bound.
 import type { Category, Concept, Scheme } from '@ezclassify/types/internal';
-import { Context } from '@ezclassify/engine';
+import { schemeOnlyContext } from '../../test-fixtures/context-doubles';
 import { Handbook } from './handbook';
-import { loadPantry } from '@ezclassify/example-schemes/pantry';
-import { loadCedarValley } from '@ezclassify/example-schemes/cedar-valley';
+import { loadPantryContext } from '@ezclassify/example-schemes/pantry';
+import { loadCedarValleyContext } from '@ezclassify/example-schemes/cedar-valley';
 import { mockRenderFormats } from '../render-format-layout-mock';
 
 /** Scheme with scopes and explicit defaultScope */
@@ -327,7 +327,7 @@ function createAsyncEngine(scheme?: Scheme) {
     } as any;
 }
 
-const toCtx = (eng: unknown) => Context.fromSchemeEngine(eng as never);
+const toCtx = (eng: unknown) => schemeOnlyContext(eng as never);
 describe('Handbook', () => {
     let container: HTMLDivElement;
     let handbook: Handbook;
@@ -1123,7 +1123,7 @@ describe('Handbook', () => {
 
     describe('context re-bind', () => {
         it('renders pantry scheme categories and concepts', async () => {
-            const ctxA = toCtx(loadPantry());
+            const ctxA = toCtx(loadPantryContext().scheme);
             await handbook.init(container, ctxA, { expandAll: true });
 
             const headers = [
@@ -1142,7 +1142,7 @@ describe('Handbook', () => {
         });
 
         it('fully re-renders on Context change: cedarValley content appears, pantry content disappears', async () => {
-            const ctxA = toCtx(loadPantry());
+            const ctxA = toCtx(loadPantryContext().scheme);
             await handbook.init(container, ctxA, { expandAll: true });
 
             // Sanity: pantry content visible before re-bind
@@ -1151,7 +1151,7 @@ describe('Handbook', () => {
 
             // Re-bind to cedarValley context
             handbook.destroy();
-            const ctxB = toCtx(loadCedarValley());
+            const ctxB = toCtx(loadCedarValleyContext().scheme);
             await handbook.init(container, ctxB, { expandAll: true });
 
             // CedarValley category and concept must appear

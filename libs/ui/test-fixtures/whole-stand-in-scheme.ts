@@ -1,4 +1,5 @@
 import { Context } from '@ezclassify/engine';
+import { openContext } from './context-doubles';
 
 /**
  * `JOINT ` ahead of a marking with joint owners, and ahead of a part that
@@ -307,5 +308,7 @@ export const JOINT_WHOLE = 'JOINT HIGH NORTH SOUTH//SHARE WITH ALPHA, BRAVO';
 
 /** A Context over {@link WHOLE_STAND_IN_SCHEME}. */
 export function wholeStandInContext() {
-    return Context.fromComponents({ scheme: WHOLE_STAND_IN_SCHEME as never });
+    return openContext(
+        Context.fromComponents({ scheme: WHOLE_STAND_IN_SCHEME as never }),
+    );
 }

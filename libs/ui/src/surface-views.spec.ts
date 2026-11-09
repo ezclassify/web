@@ -6,6 +6,7 @@
  */
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Context } from '@ezclassify/engine';
+import { openContext } from '../test-fixtures/context-doubles';
 import { SURFACES_SCHEME } from '../test-fixtures/surfaces-scheme';
 import { EzClassifyUI } from './ezclassify-ui';
 import { VanillaEzClassifyStore } from './store/ezclassify-store';
@@ -18,7 +19,8 @@ import {
 const wait = (ms = 150) => new Promise((r) => setTimeout(r, ms));
 
 function createEngine() {
-    return Context.fromComponents({ scheme: SURFACES_SCHEME }).scheme;
+    return openContext(Context.fromComponents({ scheme: SURFACES_SCHEME }))
+        .scheme;
 }
 
 describe('a store over a scheme that writes each role in its own view', () => {
@@ -298,7 +300,7 @@ describe('the needed strip of a field that writes one surface', () => {
         const doc = structuredClone(SURFACES_SCHEME);
         const keep = doc.scheme.data.categories.find((c) => c.id === 'keep')!;
         (keep as { required?: boolean }).required = true;
-        return Context.fromComponents({ scheme: doc }).scheme;
+        return openContext(Context.fromComponents({ scheme: doc })).scheme;
     }
 
     it("names what the field's own surface lacks and nothing another surface requires", async () => {

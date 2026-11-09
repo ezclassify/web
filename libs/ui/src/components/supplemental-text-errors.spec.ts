@@ -1,71 +1,80 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Context } from '@ezclassify/engine';
+import {
+    openContext,
+    type OpenContext,
+} from '../../test-fixtures/context-doubles';
 import type {
     Assertion,
     ProcessResult,
-    SchemeEngineAdapter,
+    ContextSchemeEngineAdapter,
 } from '@ezclassify/types';
 import { SingleSelect } from './single-select';
 import { EzClassifyUI } from '../ezclassify-ui';
 
 /** A short warehouse identifier, unrelated to calendar or authority policy. */
-function warehouseContext(): Context {
-    return Context.fromComponents({
-        scheme: {
+function warehouseContext(): OpenContext {
+    return openContext(
+        Context.fromComponents({
             scheme: {
-                id: 'warehouse-entry',
-                version: '1.0.0',
-                name: 'Warehouse Entry',
-                data: {
-                    categories: [
-                        {
-                            id: 'item',
-                            label: 'Item',
-                            single: true,
-                            required: false,
-                            rollup: 'union',
-                        },
-                    ],
-                    concepts: {
-                        inline: [
+                scheme: {
+                    id: 'warehouse-entry',
+                    version: '1.0.0',
+                    name: 'Warehouse Entry',
+                    data: {
+                        categories: [
                             {
-                                id: 'identifier',
-                                name: 'Identifier',
-                                categories: ['item'],
-                                views: {
-                                    default: 'ID:{value}',
-                                    compact: 'ID:{value}',
-                                },
-                                text_input: {
-                                    label: 'Warehouse identifier',
-                                    encoding: { type: 'text', max_length: 3 },
-                                    required: true,
-                                },
+                                id: 'item',
+                                label: 'Item',
+                                single: true,
+                                required: false,
+                                rollup: 'union',
                             },
+                        ],
+                        concepts: {
+                            inline: [
+                                {
+                                    id: 'identifier',
+                                    name: 'Identifier',
+                                    categories: ['item'],
+                                    views: {
+                                        default: 'ID:{value}',
+                                        compact: 'ID:{value}',
+                                    },
+                                    text_input: {
+                                        label: 'Warehouse identifier',
+                                        encoding: {
+                                            type: 'text',
+                                            max_length: 3,
+                                        },
+                                        required: true,
+                                    },
+                                },
+                                {
+                                    id: 'unlabeled',
+                                    name: 'Unlabeled',
+                                    categories: ['item'],
+                                    views: { default: 'NONE', compact: 'NONE' },
+                                },
+                            ],
+                        },
+                    },
+                    rules: [],
+                    render: {
+                        default: 'compact',
+                        formats: [
                             {
-                                id: 'unlabeled',
-                                name: 'Unlabeled',
-                                categories: ['item'],
-                                views: { default: 'NONE', compact: 'NONE' },
+                                id: 'compact',
+                                surface: 'marking',
+                                mode: 'inline',
+                                fields: [{ category: 'item' }],
                             },
                         ],
                     },
                 },
-                rules: [],
-                render: {
-                    default: 'compact',
-                    formats: [
-                        {
-                            id: 'compact',
-                            surface: 'marking',
-                            mode: 'inline',
-                            fields: [{ category: 'item' }],
-                        },
-                    ],
-                },
             },
-        },
-    });
+        }),
+    );
 }
 
 const chosen = (value: string): Assertion => ({
@@ -98,12 +107,10 @@ async function mount(facet = true) {
 
 async function delayedMount(initial: Assertion = chosen('AA')) {
     const context = warehouseContext();
-    const local = context.scheme!;
-    if (!('loadScheme' in local))
-        throw new Error('Fixture requires a local adapter');
+    const local = context.scheme;
     const replies: Array<() => void> = [];
     const requests: unknown[][] = [];
-    const remote = new Proxy(local as SchemeEngineAdapter, {
+    const remote = new Proxy(local as ContextSchemeEngineAdapter, {
         get(target, property) {
             if (property === 'process')
                 return (...args: unknown[]) => {
@@ -282,10 +289,7 @@ describe('supplemental draft canonical errors', () => {
     it('ignores a late rejected reading after a newer correction with exactly one read per edit', async () => {
         const context = warehouseContext();
         const replies: Array<() => void> = [];
-        const local = context.scheme!;
-        if (!('loadScheme' in local))
-            throw new Error('Fixture must supply a local scheme adapter');
-        const transport: SchemeEngineAdapter = local;
+        const transport: ContextSchemeEngineAdapter = context.scheme;
         const remote = new Proxy(transport, {
             get(target, property) {
                 if (property === 'process')
@@ -371,7 +375,7 @@ describe('supplemental draft canonical errors', () => {
             await Promise.resolve();
             expect(component.getAssertions()).toEqual([frozen]);
             expect(replies).toHaveLength(3);
-            expect(requests[2][2]).toMatchObject({ assertions: [frozen] });
+            expect(requests[2][1]).toMatchObject({ assertions: [frozen] });
             replies[2]();
             await vi.waitFor(() =>
                 expect(component.getAssertions()).toEqual([frozen]),

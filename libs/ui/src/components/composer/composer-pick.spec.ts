@@ -11,6 +11,7 @@
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { Context } from '@ezclassify/engine';
+import { openContext } from '../../../test-fixtures/context-doubles';
 import type { Assertion } from '@ezclassify/types';
 import { EzClassifyUI } from '../../ezclassify-ui';
 import {
@@ -37,144 +38,147 @@ function createContext() {
         position,
         rank: position,
     });
-    return Context.fromComponents({
-        scheme: {
+    return openContext(
+        Context.fromComponents({
             scheme: {
-                id: 'composer-pick',
-                version: '1.0.0',
-                name: 'Composer Pick',
-                data: {
-                    concepts: {
-                        inline: [
-                            concept('U', 'UNCLASSIFIED', 'level', 1),
-                            concept('S', 'SECRET', 'level', 2),
-                            concept('SI', 'SI', 'control', 1),
-                            concept('TK', 'TK', 'control', 2),
-                            concept('NF', 'NOFORN', 'dissem', 1),
-                            concept('REL', 'REL TO', 'dissem', 2),
-                            concept('DO', 'DISPLAY ONLY', 'dissem', 3),
-                            concept('USA', 'USA', 'rel', 0),
-                            // Two countries that belong to both lists.
-                            {
-                                ...concept('AUS', 'AUS', 'rel', 1),
-                                categories: ['rel', 'disp'],
-                            },
-                            {
-                                ...concept('CAN', 'CAN', 'rel', 2),
-                                categories: ['rel', 'disp'],
-                            },
-                        ],
-                    },
-                    categories: [
-                        {
-                            id: 'level',
-                            label: 'Level',
-                            required: false,
-                            single: true,
-                            rollup: 'max',
-                            position: 1,
-                        },
-                        {
-                            id: 'control',
-                            label: 'Control system',
-                            required: false,
-                            single: false,
-                            rollup: 'union',
-                            position: 2,
-                        },
-                        {
-                            id: 'dissem',
-                            label: 'Dissemination',
-                            required: false,
-                            single: false,
-                            rollup: 'union',
-                            position: 3,
-                        },
-                        {
-                            id: 'rel',
-                            label: 'Releasable To',
-                            required: false,
-                            single: false,
-                            rollup: 'intersection',
-                            position: 4,
-                        },
-                        {
-                            id: 'disp',
-                            label: 'Display Only To',
-                            required: false,
-                            single: false,
-                            rollup: 'intersection',
-                            position: 5,
-                        },
-                    ],
-                },
-                // The two values of one category that cannot go together.
-                rules: [
-                    {
-                        id: 'nf-excludes-do',
-                        name: 'NOFORN excludes DISPLAY ONLY',
-                        action: 'exclusive',
-                        target: ['NF', 'DO'],
-                        rank: ['NF', 'DO'],
-                        message: 'NOFORN cannot be combined with DISPLAY ONLY.',
-                    },
-                    // A REL TO list starts with USA: the engine infers it.
-                    {
-                        id: 'rel-starts-with-usa',
-                        name: 'REL TO starts with USA',
-                        when: 'REL',
-                        action: 'require',
-                        target: 'USA',
-                        category: 'rel',
-                    },
-                ],
-                parse: { case_sensitive: false, strip_whitespace: true },
-                render: {
-                    default: 'default',
-                    formats: [
-                        {
-                            id: 'default',
-                            surface: 'marking',
-                            mode: 'inline',
-                            separator: '//',
-                            fields: [
-                                { category: 'level', separator: '/' },
-                                { category: 'control', separator: '/' },
+                scheme: {
+                    id: 'composer-pick',
+                    version: '1.0.0',
+                    name: 'Composer Pick',
+                    data: {
+                        concepts: {
+                            inline: [
+                                concept('U', 'UNCLASSIFIED', 'level', 1),
+                                concept('S', 'SECRET', 'level', 2),
+                                concept('SI', 'SI', 'control', 1),
+                                concept('TK', 'TK', 'control', 2),
+                                concept('NF', 'NOFORN', 'dissem', 1),
+                                concept('REL', 'REL TO', 'dissem', 2),
+                                concept('DO', 'DISPLAY ONLY', 'dissem', 3),
+                                concept('USA', 'USA', 'rel', 0),
+                                // Two countries that belong to both lists.
                                 {
-                                    category: 'dissem',
-                                    separator: '/',
-                                    // The country lists are written only
-                                    // under their own dissemination value.
-                                    phrases: [
-                                        {
-                                            head: 'REL',
-                                            separator: ' ',
-                                            fields: [
-                                                {
-                                                    category: 'rel',
-                                                    separator: ', ',
-                                                },
-                                            ],
-                                        },
-                                        {
-                                            head: 'DO',
-                                            separator: ' ',
-                                            fields: [
-                                                {
-                                                    category: 'disp',
-                                                    separator: ', ',
-                                                },
-                                            ],
-                                        },
-                                    ],
+                                    ...concept('AUS', 'AUS', 'rel', 1),
+                                    categories: ['rel', 'disp'],
+                                },
+                                {
+                                    ...concept('CAN', 'CAN', 'rel', 2),
+                                    categories: ['rel', 'disp'],
                                 },
                             ],
                         },
+                        categories: [
+                            {
+                                id: 'level',
+                                label: 'Level',
+                                required: false,
+                                single: true,
+                                rollup: 'max',
+                                position: 1,
+                            },
+                            {
+                                id: 'control',
+                                label: 'Control system',
+                                required: false,
+                                single: false,
+                                rollup: 'union',
+                                position: 2,
+                            },
+                            {
+                                id: 'dissem',
+                                label: 'Dissemination',
+                                required: false,
+                                single: false,
+                                rollup: 'union',
+                                position: 3,
+                            },
+                            {
+                                id: 'rel',
+                                label: 'Releasable To',
+                                required: false,
+                                single: false,
+                                rollup: 'intersection',
+                                position: 4,
+                            },
+                            {
+                                id: 'disp',
+                                label: 'Display Only To',
+                                required: false,
+                                single: false,
+                                rollup: 'intersection',
+                                position: 5,
+                            },
+                        ],
+                    },
+                    // The two values of one category that cannot go together.
+                    rules: [
+                        {
+                            id: 'nf-excludes-do',
+                            name: 'NOFORN excludes DISPLAY ONLY',
+                            action: 'exclusive',
+                            target: ['NF', 'DO'],
+                            rank: ['NF', 'DO'],
+                            message:
+                                'NOFORN cannot be combined with DISPLAY ONLY.',
+                        },
+                        // A REL TO list starts with USA: the engine infers it.
+                        {
+                            id: 'rel-starts-with-usa',
+                            name: 'REL TO starts with USA',
+                            when: 'REL',
+                            action: 'require',
+                            target: 'USA',
+                            category: 'rel',
+                        },
                     ],
+                    parse: { case_sensitive: false, strip_whitespace: true },
+                    render: {
+                        default: 'default',
+                        formats: [
+                            {
+                                id: 'default',
+                                surface: 'marking',
+                                mode: 'inline',
+                                separator: '//',
+                                fields: [
+                                    { category: 'level', separator: '/' },
+                                    { category: 'control', separator: '/' },
+                                    {
+                                        category: 'dissem',
+                                        separator: '/',
+                                        // The country lists are written only
+                                        // under their own dissemination value.
+                                        phrases: [
+                                            {
+                                                head: 'REL',
+                                                separator: ' ',
+                                                fields: [
+                                                    {
+                                                        category: 'rel',
+                                                        separator: ', ',
+                                                    },
+                                                ],
+                                            },
+                                            {
+                                                head: 'DO',
+                                                separator: ' ',
+                                                fields: [
+                                                    {
+                                                        category: 'disp',
+                                                        separator: ', ',
+                                                    },
+                                                ],
+                                            },
+                                        ],
+                                    },
+                                ],
+                            },
+                        ],
+                    },
                 },
             },
-        },
-    });
+        }),
+    );
 }
 
 let root: HTMLDivElement;

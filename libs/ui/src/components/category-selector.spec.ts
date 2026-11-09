@@ -5,7 +5,7 @@ import {
 } from './category-selector';
 import type { SchemeEngineAdapter, Assertion } from '@ezclassify/types';
 import type { SchemePublicView } from '@ezclassify/types';
-import { Context } from '@ezclassify/engine';
+import { schemeOnlyContext } from '../../test-fixtures/context-doubles';
 import { mockRenderFormats } from '../render-format-layout-mock';
 
 /** Create a minimal mock engine with configurable categories and concepts */
@@ -160,7 +160,7 @@ function createMockEngine(
     } as unknown as SchemeEngineAdapter;
 }
 
-const toCtx = (eng: unknown) => Context.fromSchemeEngine(eng as never);
+const toCtx = (eng: unknown) => schemeOnlyContext(eng as never);
 describe('CategorySelector', () => {
     let container: HTMLDivElement;
     let engine: SchemeEngineAdapter;

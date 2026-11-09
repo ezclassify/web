@@ -4,12 +4,13 @@ import type {
     AccessEngineAdapter,
     AccessRuleDescription,
 } from '@ezclassify/types';
+import type {
+    ContextAdapter,
+    LocalSchemeEngineAdapter,
+} from '@ezclassify/types';
 import { Context } from '@ezclassify/engine';
-import type { LocalSchemeEngineAdapter } from '@ezclassify/types';
-import {
-    loadCedarValleyLevels,
-    loadCedarValleyLevelsAccess,
-} from '@ezclassify/example-schemes/cedar-valley-protection';
+import { schemeOnlyContext } from '../../test-fixtures/context-doubles';
+import { loadCedarValleyLevelsContext } from '@ezclassify/example-schemes/cedar-valley-protection';
 
 function makeRule(
     overrides: Partial<AccessRuleDescription> = {},
@@ -112,14 +113,10 @@ function makeAccessEngine(rules: AccessRuleDescription[]): AccessEngineAdapter {
     } as unknown as AccessEngineAdapter;
 }
 
-/**
- * Build a Context backed by a real scheme engine and a mock access engine.
- * Context's constructor is private; we force-assign `access` on the instance
- * (safe at runtime, TypeScript readonly is compile-time only).
- */
-function makeContext(rules: AccessRuleDescription[]): Context {
+/** A Context backed by a real scheme and a mock access policy. */
+function makeContext(rules: AccessRuleDescription[]): ContextAdapter {
     const engine = makeEngine();
-    const ctx = Context.fromSchemeEngine(engine);
+    const ctx = schemeOnlyContext(engine);
     (ctx as unknown as { access: AccessEngineAdapter }).access =
         makeAccessEngine(rules);
     return ctx;
@@ -136,7 +133,7 @@ describe('AccessHandbook', () => {
     });
 
     it('renders an empty-state message when no access engine is bound', async () => {
-        const ctx = Context.fromSchemeEngine(makeEngine());
+        const ctx = schemeOnlyContext(makeEngine());
         await component.init(container, ctx);
         const empty = container.querySelector('.ez-access-handbook__empty');
         expect(empty).not.toBeNull();
@@ -282,8 +279,8 @@ describe('AccessHandbook', () => {
          */
         function makeAsyncContext(
             describeAllAccessRules: () => Promise<AccessRuleDescription[]>,
-        ): Context {
-            const ctx = Context.fromSchemeEngine(makeEngine());
+        ): ContextAdapter {
+            const ctx = schemeOnlyContext(makeEngine());
             (ctx as unknown as { access: AccessEngineAdapter }).access = {
                 schemeId: 'test',
                 describeAllAccessRules: vi.fn(describeAllAccessRules),
@@ -379,11 +376,7 @@ describe('AccessHandbook', () => {
         });
 
         it('uses the generic Access Handbook noun when the policy declares no reference vocabulary', async () => {
-            const schemeEngine = loadCedarValleyLevels();
-            const accessEngine = loadCedarValleyLevelsAccess(schemeEngine);
-            const ctx = Context.fromSchemeEngine(schemeEngine);
-            (ctx as unknown as { access: AccessEngineAdapter }).access =
-                accessEngine;
+            const ctx = loadCedarValleyLevelsContext();
             await component.init(container, ctx);
 
             const region = container.querySelector('[role="region"]');

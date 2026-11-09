@@ -5,7 +5,7 @@
  * marking, and a fix pressed from them would overwrite the new value.
  */
 import { it, expect, vi } from 'vitest';
-import { Context } from '@ezclassify/engine';
+import { schemeOnlyContext } from '../../test-fixtures/context-doubles';
 import type { ValidationError } from '@ezclassify/types';
 import { ComponentBase } from './component-base';
 import { mockRenderFormats } from '../render-format-layout-mock';
@@ -117,7 +117,7 @@ it('drops a judging read of the old value once a new value is set', async () => 
     document.body.appendChild(container);
     await field.init(
         container as HTMLDivElement,
-        Context.fromSchemeEngine(engine as never),
+        schemeOnlyContext(engine as never),
     );
     await field.setValue('a');
 

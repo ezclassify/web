@@ -6,7 +6,7 @@ import type {
     ValidationError,
 } from '@ezclassify/types';
 import type { SchemePublicView } from '@ezclassify/types';
-import { Context } from '@ezclassify/engine';
+import { schemeOnlyContext } from '../../test-fixtures/context-doubles';
 import { mockRenderFormats } from '../render-format-layout-mock';
 
 function createMockEngine(): SchemeEngineAdapter {
@@ -91,7 +91,7 @@ function createMockEngine(): SchemeEngineAdapter {
     } as unknown as SchemeEngineAdapter;
 }
 
-const toCtx = (eng: unknown) => Context.fromSchemeEngine(eng as never);
+const toCtx = (eng: unknown) => schemeOnlyContext(eng as never);
 describe('HiddenAssertionField', () => {
     let container: HTMLDivElement;
     let engine: SchemeEngineAdapter;

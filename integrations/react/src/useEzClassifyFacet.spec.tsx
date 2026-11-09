@@ -6,7 +6,7 @@ import {
     renderHook,
     waitFor,
 } from '@testing-library/react';
-import { loadCedarValley } from '@ezclassify/example-schemes/cedar-valley';
+import { loadCedarValleyContext } from '@ezclassify/example-schemes/cedar-valley';
 import {
     EzClassifyProvider,
     EzClassifyStoreProvider,
@@ -17,10 +17,13 @@ import {
     type UseEzClassifyFacetReturn,
 } from '@ezclassify/react';
 import { publishFacetSelection } from '@ezclassify/ui';
+import { openOperations } from '../../../libs/ui/test-fixtures/context-doubles';
 
 describe('useEzClassifyFacet', () => {
     it('owns one native subscription per cell and releases both on unmount', async () => {
-        const store = new ReactEzClassifyStore(loadCedarValley());
+        const store = new ReactEzClassifyStore(
+            openOperations(loadCedarValleyContext().scheme),
+        );
         const marking = vi.spyOn(store, 'subscribe');
         const facet = vi.spyOn(store, 'subscribeFacet');
         const wrapper = ({ children }: { children: ReactNode }) => (
@@ -43,7 +46,7 @@ describe('useEzClassifyFacet', () => {
     });
 
     it('exposes controlled value, options, validation, and updates', async () => {
-        const store = new ReactEzClassifyStore(loadCedarValley());
+        const store = new ReactEzClassifyStore(loadCedarValleyContext().scheme);
         await store.publishRendered('document', 'INTERNAL');
         const wrapper = ({ children }: { children: ReactNode }) => (
             <EzClassifyStoreProvider store={store}>
@@ -71,7 +74,7 @@ describe('useEzClassifyFacet', () => {
     });
 
     it('projects the store cells rather than holding a copy of them', async () => {
-        const store = new ReactEzClassifyStore(loadCedarValley());
+        const store = new ReactEzClassifyStore(loadCedarValleyContext().scheme);
         const wrapper = ({ children }: { children: ReactNode }) => (
             <EzClassifyStoreProvider store={store}>
                 {children}
@@ -141,7 +144,7 @@ describe('useEzClassifyFacet before the runtime has mounted', () => {
         served,
         pickInEffect,
     }: {
-        engine?: ReturnType<typeof loadCedarValley>;
+        engine?: ReturnType<typeof loadCedarValleyContext>['scheme'];
         served: string;
         pickInEffect: boolean;
     }) {
@@ -173,7 +176,7 @@ describe('useEzClassifyFacet before the runtime has mounted', () => {
         act(() => {
             render(
                 <Form
-                    engine={loadCedarValley()}
+                    engine={loadCedarValleyContext().scheme}
                     served="INTERNAL//DO NOT FORWARD"
                     pickInEffect
                 />,
@@ -239,7 +242,7 @@ describe.each([false, true])(
 
         function mountApp(): void {
             const app = (
-                <EzClassifyProvider engine={loadCedarValley()}>
+                <EzClassifyProvider engine={loadCedarValleyContext().scheme}>
                     <Page />
                 </EzClassifyProvider>
             );

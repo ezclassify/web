@@ -19,6 +19,10 @@ import { AngularSignalStore, EZCLASSIFY_STORE } from './angular-signal-store';
 import { injectEzClassifyFacet } from './inject-ezclassify-facet';
 import { provideEzClassify } from './provide-ezclassify';
 import { EzMarkingLabelComponent } from './ez-marking-label/ez-marking-label.component';
+import {
+    openContext,
+    openOperations,
+} from '../../../../libs/ui/test-fixtures/context-doubles';
 
 const MINIMAL_SCHEME = {
     scheme: {
@@ -76,8 +80,9 @@ const MINIMAL_SCHEME = {
 };
 
 function buildEngine(): SchemeEngineAdapter {
-    return Context.fromComponents({ scheme: MINIMAL_SCHEME })
-        .scheme as SchemeEngineAdapter;
+    return openOperations(
+        Context.fromComponents({ scheme: MINIMAL_SCHEME }).scheme,
+    ) as unknown as SchemeEngineAdapter;
 }
 
 @Component({
@@ -181,7 +186,7 @@ describe('provideEzClassify: app-level defaults', () => {
                 return typeof value === 'function' ? value.bind(target) : value;
             },
         });
-        const remoteContext = new Proxy(local, {
+        const remoteContext = new Proxy(openContext(local), {
             get(target, property, receiver) {
                 if (property === 'scheme') return remoteScheme;
                 const value = Reflect.get(target, property, receiver);

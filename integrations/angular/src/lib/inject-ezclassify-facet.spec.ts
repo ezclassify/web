@@ -14,7 +14,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { TestBed } from '@angular/core/testing';
 import { Component, Input, type Signal } from '@angular/core';
 import { getActiveConsumer } from '@angular/core/primitives/signals';
-import { loadCedarValley } from '@ezclassify/example-schemes/cedar-valley';
+import { loadCedarValleyContext } from '@ezclassify/example-schemes/cedar-valley';
 import { VanillaEzClassifyStore } from '@ezclassify/ui';
 import {
     AngularSignalStore,
@@ -27,6 +27,7 @@ import {
 } from './inject-ezclassify-facet';
 import { EzClassifyDirective } from './ezclassify.directive';
 import { provideEzClassify } from './provide-ezclassify';
+import { openOperations } from '../../../../libs/ui/test-fixtures/context-doubles';
 
 @Component({
     selector: 'test-facet-host',
@@ -52,7 +53,7 @@ describe('injectEzClassifyFacet store contract', () => {
      * facet has to project it.
      */
     it('projects a substituted store that answers the signal accessors', async () => {
-        const backing = new AngularSignalStore(loadCedarValley());
+        const backing = new AngularSignalStore(loadCedarValleyContext().scheme);
         // Object.create(null) as the proxy target so the wrapper carries none of
         // the backing store's prototype: it satisfies the contract by forwarding,
         // which is the whole point.
@@ -99,7 +100,9 @@ describe('injectEzClassifyFacet store contract', () => {
      * the rest of the overridden-store contract.
      */
     it('names the calling facet in the error it raises', async () => {
-        const vanilla = new VanillaEzClassifyStore(loadCedarValley());
+        const vanilla = new VanillaEzClassifyStore(
+            loadCedarValleyContext().scheme,
+        );
         await TestBed.configureTestingModule({
             imports: [FacetHostComponent],
             providers: [{ provide: EZCLASSIFY_STORE, useValue: vanilla }],
@@ -118,7 +121,9 @@ describe('injectEzClassifyFacet', () => {
     let store: AngularSignalStore;
 
     beforeEach(async () => {
-        store = new AngularSignalStore(loadCedarValley());
+        store = new AngularSignalStore(
+            openOperations(loadCedarValleyContext().scheme),
+        );
         await TestBed.configureTestingModule({
             imports: [FacetHostComponent],
             providers: [{ provide: EZCLASSIFY_STORE, useValue: store }],
@@ -305,7 +310,7 @@ class LevelPickerComponent {
     </div>`,
 })
 class RuntimeFormComponent {
-    @Input() engine = loadCedarValley();
+    @Input() engine = loadCedarValleyContext().scheme;
     @Input() served = '';
 }
 
@@ -381,7 +386,9 @@ describe('injectEzClassifyFacet under provideEzClassify, before the runtime has 
     beforeEach(async () => {
         await TestBed.configureTestingModule({
             imports: [AppRuntimeFormComponent],
-            providers: [provideEzClassify({ engine: loadCedarValley() })],
+            providers: [
+                provideEzClassify({ engine: loadCedarValleyContext().scheme }),
+            ],
         }).compileComponents();
     });
 

@@ -13,7 +13,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { defineComponent, h, nextTick } from 'vue';
 import { mount } from '@vue/test-utils';
-import { loadCedarValley } from '@ezclassify/example-schemes/cedar-valley';
+import { loadCedarValleyContext } from '@ezclassify/example-schemes/cedar-valley';
 import { useEzClassify } from './index';
 
 /** Flush the async component-init chain and the rollup debounce behind it. */
@@ -49,7 +49,7 @@ function destroyedStoreErrors(): string[] {
 /** The demo's field shape: one deferred store seam of each kind. */
 const Host = defineComponent({
     setup() {
-        useEzClassify(loadCedarValley(), { root });
+        useEzClassify(loadCedarValleyContext().scheme, { root });
         return () =>
             h('div', [
                 h('input', {

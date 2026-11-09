@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { Context } from '@ezclassify/engine';
+import { schemeOnlyContext } from '../../test-fixtures/context-doubles';
 import { MarkedTextArea } from './marked-text-area';
 import { mockRenderFormats } from '../render-format-layout-mock';
 import type { ScanResult } from '@ezclassify/types';
@@ -141,6 +141,7 @@ function createMockEngine(overrides: Record<string, any> = {}): any {
                     end: m.index + marking.length,
                     marking,
                     wrapped: true,
+                    inner,
                     result: {
                         assertions: [
                             {
@@ -184,7 +185,7 @@ afterEach(() => {
     document.body.innerHTML = '';
 });
 
-const toCtx = (eng: unknown) => Context.fromSchemeEngine(eng as never);
+const toCtx = (eng: unknown) => schemeOnlyContext(eng as never);
 
 describe('MarkedTextArea repair rendering', () => {
     it('maintains chip rendering after syncFromTextarea completes', async () => {
@@ -222,6 +223,7 @@ describe('MarkedTextArea repair rendering', () => {
                         end: 5,
                         marking: '(TSX)',
                         wrapped: true,
+                        inner: 'TSX',
                         result: {
                             assertions: [],
                             rendered: 'TS//OC/NF',
@@ -299,6 +301,7 @@ describe('MarkedTextArea repair rendering', () => {
                         end: m.index + marking.length,
                         marking,
                         wrapped: true,
+                        inner,
                         result: {
                             assertions: [
                                 {
@@ -491,12 +494,14 @@ describe('MarkedTextArea repair rendering', () => {
             }),
             scan: (text: string) => {
                 const marking = text.match(/\(([^)]+)\)/)?.[0] ?? '(S)';
+                const inner = marking.slice(1, -1);
                 return scanned([
                     {
                         start: 0,
                         end: marking.length,
                         marking,
                         wrapped: true,
+                        inner,
                         result: {
                             assertions: authoredAssertions,
                             rendered: marking.slice(1, -1),

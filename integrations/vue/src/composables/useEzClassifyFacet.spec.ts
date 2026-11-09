@@ -9,7 +9,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { defineComponent, h, nextTick, shallowRef } from 'vue';
 import { mount } from '@vue/test-utils';
-import { loadCedarValley } from '@ezclassify/example-schemes/cedar-valley';
+import { loadCedarValleyContext } from '@ezclassify/example-schemes/cedar-valley';
 import { VueRefStore, VueRefStoreKey } from './vue-ref-store';
 import { useEzClassify } from '../index';
 import { provideEzClassify } from './provide-ezclassify';
@@ -17,6 +17,7 @@ import {
     useEzClassifyFacet,
     type UseEzClassifyFacetReturn,
 } from './useEzClassifyFacet';
+import { openOperations } from '../../../../libs/ui/test-fixtures/context-doubles';
 
 async function flush(): Promise<void> {
     for (let i = 0; i < 8; i++) await Promise.resolve();
@@ -47,7 +48,9 @@ function mountFacet(store: VueRefStore): {
 
 describe('useEzClassifyFacet', () => {
     it('retains only facet liveness and releases it without marking snapshots', async () => {
-        const store = new VueRefStore(loadCedarValley());
+        const store = new VueRefStore(
+            openOperations(loadCedarValleyContext().scheme),
+        );
         const marking = vi.spyOn(store, 'subscribe');
         const facetSubscription = vi.spyOn(store, 'subscribeFacet');
         const read = vi.spyOn(store, 'get');
@@ -67,7 +70,7 @@ describe('useEzClassifyFacet', () => {
     });
 
     it('exposes controlled value, options, validation, and updates', async () => {
-        const store = new VueRefStore(loadCedarValley());
+        const store = new VueRefStore(loadCedarValleyContext().scheme);
         await store.publishRendered('document', 'INTERNAL');
         const { facet, unmount } = mountFacet(store);
         await flush();
@@ -86,7 +89,7 @@ describe('useEzClassifyFacet', () => {
     });
 
     it('projects the store cells rather than holding a copy of them', async () => {
-        const store = new VueRefStore(loadCedarValley());
+        const store = new VueRefStore(loadCedarValleyContext().scheme);
         const { facet, unmount } = mountFacet(store);
         await flush();
 
@@ -153,7 +156,7 @@ function mountForm(served: string, pickInSetup = false) {
     });
     const Form = defineComponent({
         setup() {
-            useEzClassify(loadCedarValley(), { root });
+            useEzClassify(loadCedarValleyContext().scheme, { root });
             return () =>
                 h('div', [
                     h('input', {
@@ -226,7 +229,7 @@ describe('useEzClassifyFacet before the runtime has mounted', () => {
         });
         const App = defineComponent({
             setup() {
-                provideEzClassify({ engine: loadCedarValley() });
+                provideEzClassify({ engine: loadCedarValleyContext().scheme });
                 return () => h('div', [h(Picker), h(Form)]);
             },
         });
@@ -271,7 +274,7 @@ describe('useEzClassifyFacet when its runtime is re-created over the same hosts'
         });
         const App = defineComponent({
             setup() {
-                provideEzClassify({ engine: loadCedarValley() });
+                provideEzClassify({ engine: loadCedarValleyContext().scheme });
                 return () =>
                     h('div', [
                         h(Picker),

@@ -11,6 +11,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { EzClassifyUI } from '../ezclassify-ui';
 import { Context } from '@ezclassify/engine';
+import { openContext } from '../../test-fixtures/context-doubles';
 import type { LocalSchemeEngineAdapter } from '@ezclassify/types';
 
 function createTestEngine(): LocalSchemeEngineAdapter {
@@ -74,39 +75,41 @@ function createTestEngine(): LocalSchemeEngineAdapter {
             rank: 1,
         },
     ];
-    return Context.fromComponents({
-        scheme: {
+    return openContext(
+        Context.fromComponents({
             scheme: {
-                id: 'field-family-teardown-test',
-                version: '1.0.0',
-                name: 'Field Family Teardown Test',
-                data: {
-                    concepts: { inline: concepts },
-                    categories,
-                },
-                rules: [],
-                parse: {
-                    case_sensitive: false,
-                    strip_whitespace: true,
-                },
-                render: {
-                    default: 'default',
-                    formats: [
-                        {
-                            id: 'default',
-                            surface: 'marking',
-                            mode: 'inline',
-                            separator: '//',
-                            fields: [
-                                { category: 'level', separator: '/' },
-                                { category: 'caveat', separator: '/' },
-                            ],
-                        },
-                    ],
+                scheme: {
+                    id: 'field-family-teardown-test',
+                    version: '1.0.0',
+                    name: 'Field Family Teardown Test',
+                    data: {
+                        concepts: { inline: concepts },
+                        categories,
+                    },
+                    rules: [],
+                    parse: {
+                        case_sensitive: false,
+                        strip_whitespace: true,
+                    },
+                    render: {
+                        default: 'default',
+                        formats: [
+                            {
+                                id: 'default',
+                                surface: 'marking',
+                                mode: 'inline',
+                                separator: '//',
+                                fields: [
+                                    { category: 'level', separator: '/' },
+                                    { category: 'caveat', separator: '/' },
+                                ],
+                            },
+                        ],
+                    },
                 },
             },
-        },
-    }).scheme as unknown as LocalSchemeEngineAdapter;
+        }),
+    ).scheme as unknown as LocalSchemeEngineAdapter;
 }
 
 /**

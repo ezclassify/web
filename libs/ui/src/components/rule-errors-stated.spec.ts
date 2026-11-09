@@ -9,6 +9,10 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import type { LocalSchemeEngineAdapter } from '@ezclassify/types';
 import { Context } from '@ezclassify/engine';
+import {
+    openContext,
+    schemeOnlyContext,
+} from '../../test-fixtures/context-doubles';
 import { EzClassifyUI } from '../ezclassify-ui';
 import { TagInput } from './tag-input';
 import { VanillaEzClassifyStore } from '../store/ezclassify-store';
@@ -30,80 +34,82 @@ function createEngine(): LocalSchemeEngineAdapter {
         position,
         rank: position,
     });
-    return Context.fromComponents({
-        scheme: {
+    return openContext(
+        Context.fromComponents({
             scheme: {
-                id: 'stated-fix-test',
-                version: '1.0.0',
-                name: 'Stated Fix Test',
-                data: {
-                    concepts: {
-                        inline: [
-                            concept('LOW', 'level', 1),
-                            concept('HIGH', 'level', 2),
-                            concept('A', 'caveat', 1),
-                            concept('B', 'caveat', 2),
-                            concept('C', 'caveat', 3),
-                        ],
-                    },
-                    categories: [
-                        {
-                            id: 'level',
-                            label: 'Level',
-                            required: false,
-                            single: true,
-                            rollup: 'max',
-                            position: 1,
-                        },
-                        {
-                            id: 'caveat',
-                            label: 'Caveat',
-                            required: false,
-                            single: false,
-                            rollup: 'union',
-                            position: 2,
-                        },
-                    ],
-                },
-                rules: [
-                    {
-                        id: RULE,
-                        action: 'exclusive',
-                        target: ['A', 'B'],
-                        rank: ['A', 'B'],
-                        message: 'A and B cannot appear together.',
-                    },
-                    {
-                        id: 'c-requires-high',
-                        action: 'require_any',
-                        when: 'C',
-                        target: ['HIGH'],
-                        phases: ['validate'],
-                        message: 'C requires HIGH.',
-                    },
-                ],
-                parse: { case_sensitive: false, strip_whitespace: true },
-                embedded_marking: [
-                    { pattern: '\\(([^)]+)\\)', template: '({marking}) ' },
-                ],
-                render: {
-                    default: 'default',
-                    formats: [
-                        {
-                            id: 'default',
-                            surface: 'marking',
-                            mode: 'inline',
-                            separator: '//',
-                            fields: [
-                                { category: 'level', separator: '/' },
-                                { category: 'caveat', separator: '/' },
+                scheme: {
+                    id: 'stated-fix-test',
+                    version: '1.0.0',
+                    name: 'Stated Fix Test',
+                    data: {
+                        concepts: {
+                            inline: [
+                                concept('LOW', 'level', 1),
+                                concept('HIGH', 'level', 2),
+                                concept('A', 'caveat', 1),
+                                concept('B', 'caveat', 2),
+                                concept('C', 'caveat', 3),
                             ],
                         },
+                        categories: [
+                            {
+                                id: 'level',
+                                label: 'Level',
+                                required: false,
+                                single: true,
+                                rollup: 'max',
+                                position: 1,
+                            },
+                            {
+                                id: 'caveat',
+                                label: 'Caveat',
+                                required: false,
+                                single: false,
+                                rollup: 'union',
+                                position: 2,
+                            },
+                        ],
+                    },
+                    rules: [
+                        {
+                            id: RULE,
+                            action: 'exclusive',
+                            target: ['A', 'B'],
+                            rank: ['A', 'B'],
+                            message: 'A and B cannot appear together.',
+                        },
+                        {
+                            id: 'c-requires-high',
+                            action: 'require_any',
+                            when: 'C',
+                            target: ['HIGH'],
+                            phases: ['validate'],
+                            message: 'C requires HIGH.',
+                        },
                     ],
+                    parse: { case_sensitive: false, strip_whitespace: true },
+                    embedded_marking: [
+                        { pattern: '\\(([^)]+)\\)', template: '({marking}) ' },
+                    ],
+                    render: {
+                        default: 'default',
+                        formats: [
+                            {
+                                id: 'default',
+                                surface: 'marking',
+                                mode: 'inline',
+                                separator: '//',
+                                fields: [
+                                    { category: 'level', separator: '/' },
+                                    { category: 'caveat', separator: '/' },
+                                ],
+                            },
+                        ],
+                    },
                 },
             },
-        },
-    }).scheme as LocalSchemeEngineAdapter;
+        }),
+    ).scheme as LocalSchemeEngineAdapter;
 }
 
 let root: HTMLDivElement;
@@ -321,7 +327,7 @@ describe('a conflict the author builds in the field', () => {
         container.appendChild(document.createElement('input'));
         root.appendChild(container);
         const field = new TagInput();
-        await field.init(container, Context.fromSchemeEngine(createEngine()));
+        await field.init(container, schemeOnlyContext(createEngine()));
 
         const stated = (conceptId: string, categoryId: string) => ({
             conceptId,

@@ -15,7 +15,7 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { loadCedarValley } from '@ezclassify/example-schemes/cedar-valley';
+import { loadCedarValleyContext } from '@ezclassify/example-schemes/cedar-valley';
 import { EzClassifyUI } from './ezclassify-ui';
 import { VanillaEzClassifyStore } from './store/ezclassify-store';
 
@@ -56,7 +56,7 @@ describe('EzClassifyUI ezclassify:ready event', () => {
             fired.push(e as CustomEvent),
         );
 
-        forms = new EzClassifyUI(loadCedarValley(), { root });
+        forms = new EzClassifyUI(loadCedarValleyContext().scheme, { root });
         // Drain the constructor's Promise.all chain and any chained microtasks
         // the seed/wire/rollup path may have queued.
         for (let i = 0; i < 12; i++) await Promise.resolve();
@@ -74,7 +74,7 @@ describe('EzClassifyUI ezclassify:ready event', () => {
              data-ezclassify-category="level" />
     `;
 
-        forms = new EzClassifyUI(loadCedarValley(), { root });
+        forms = new EzClassifyUI(loadCedarValleyContext().scheme, { root });
 
         let initializingAtFire: boolean | null = null;
         let componentsAtFire = -1;
@@ -110,7 +110,7 @@ describe('EzClassifyUI ezclassify:ready event', () => {
       <input id="ac" data-ezclassify-controller="tags"
              data-ezclassify-bound-to="doc-marking" />
     `;
-        forms = new EzClassifyUI(loadCedarValley(), { root });
+        forms = new EzClassifyUI(loadCedarValleyContext().scheme, { root });
         // Synchronously after construction the runtime is still mid-sweep.
         expect(forms.isReady).toBe(false);
         await waitForReady(root);
@@ -126,7 +126,7 @@ describe('EzClassifyUI ezclassify:ready event', () => {
              data-ezclassify-facet-of="doc-marking"
              data-ezclassify-category="level" />
     `;
-        forms = new EzClassifyUI(loadCedarValley(), { root });
+        forms = new EzClassifyUI(loadCedarValleyContext().scheme, { root });
 
         const event = await waitForReady(root);
         const detail = event.detail as {
@@ -151,7 +151,7 @@ describe('EzClassifyUI ezclassify:ready event', () => {
             fired.push(e as CustomEvent),
         );
 
-        forms = new EzClassifyUI(loadCedarValley(), { root });
+        forms = new EzClassifyUI(loadCedarValleyContext().scheme, { root });
 
         await waitForReady(root);
         expect(fired.length).toBe(1);
@@ -176,7 +176,9 @@ describe('EzClassifyUI ezclassify:ready event', () => {
         const outerFired: Event[] = [];
         outer.addEventListener('ezclassify:ready', (e) => outerFired.push(e));
 
-        forms = new EzClassifyUI(loadCedarValley(), { root: inner });
+        forms = new EzClassifyUI(loadCedarValleyContext().scheme, {
+            root: inner,
+        });
 
         // Wait for the event on the inner root, then assert the outer caught it too.
         await waitForReady(inner);
@@ -184,7 +186,7 @@ describe('EzClassifyUI ezclassify:ready event', () => {
     });
 
     it('does not fire for a runtime destroyed while its seeds are on the wire', async () => {
-        const engine = loadCedarValley();
+        const engine = loadCedarValleyContext().scheme;
         // An engine whose process call never answers, so the seed is still
         // on the wire when the runtime is torn down.
         const stalled = new Proxy(engine, {

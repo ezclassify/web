@@ -9,11 +9,11 @@
 
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import type { SchemeEngineAdapter, SchemePublicView } from '@ezclassify/types';
-import { Context } from '@ezclassify/engine';
+import { schemeOnlyContext } from '../../test-fixtures/context-doubles';
 import { mockRenderFormat } from '../render-format-layout-mock';
 import { mockScanOutcome } from '../engine-result-mock';
 
-const toCtx = (eng: unknown) => Context.fromSchemeEngine(eng as never);
+const toCtx = (eng: unknown) => schemeOnlyContext(eng as never);
 import { TagInput } from './tag-input';
 import { StatusBanner } from './status-banner';
 import { EzClassifyText } from './ezclassify-text';

@@ -28,6 +28,10 @@ import type { LocalSchemeEngineAdapter } from '@ezclassify/types';
 import { EzClassifyUI } from '../ezclassify-ui';
 import { MarkingField } from './marking-field';
 import { Context } from '@ezclassify/engine';
+import {
+    openContext,
+    type OpenContext,
+} from '../../test-fixtures/context-doubles';
 
 function wait(ms = 60): Promise<void> {
     return new Promise((r) => setTimeout(r, ms));
@@ -229,53 +233,55 @@ function createTestEngine(
               ]
             : []),
     ];
-    return Context.fromComponents({
-        scheme: {
+    return openContext(
+        Context.fromComponents({
             scheme: {
-                id: 'mf-test',
-                version: '1.0.0',
-                name: 'MarkingField Test',
-                data: {
-                    concepts: { inline: concepts },
-                    categories,
-                },
-                rules: [],
-                parse: {
-                    case_sensitive: false,
-                    strip_whitespace: true,
-                },
-                render: {
-                    default: 'default',
-                    formats: [
-                        {
-                            id: 'default',
-                            surface: 'marking',
-                            mode: 'inline',
-                            separator: '//',
-                            // Deliberately binds no field to 'branch' when that
-                            // category is present: its concept is
-                            // certain/asserted but never rendered.
-                            fields: [
-                                { category: 'level', separator: '/' },
-                                {
-                                    category: 'caveat',
-                                    separator: '/',
-                                    ...(opts.withEachAffix
-                                        ? {
-                                              each: {
-                                                  prefix: '(',
-                                                  suffix: ')',
-                                              },
-                                          }
-                                        : {}),
-                                },
-                            ],
-                        },
-                    ],
+                scheme: {
+                    id: 'mf-test',
+                    version: '1.0.0',
+                    name: 'MarkingField Test',
+                    data: {
+                        concepts: { inline: concepts },
+                        categories,
+                    },
+                    rules: [],
+                    parse: {
+                        case_sensitive: false,
+                        strip_whitespace: true,
+                    },
+                    render: {
+                        default: 'default',
+                        formats: [
+                            {
+                                id: 'default',
+                                surface: 'marking',
+                                mode: 'inline',
+                                separator: '//',
+                                // Deliberately binds no field to 'branch' when that
+                                // category is present: its concept is
+                                // certain/asserted but never rendered.
+                                fields: [
+                                    { category: 'level', separator: '/' },
+                                    {
+                                        category: 'caveat',
+                                        separator: '/',
+                                        ...(opts.withEachAffix
+                                            ? {
+                                                  each: {
+                                                      prefix: '(',
+                                                      suffix: ')',
+                                                  },
+                                              }
+                                            : {}),
+                                    },
+                                ],
+                            },
+                        ],
+                    },
                 },
             },
-        },
-    }).scheme as LocalSchemeEngineAdapter;
+        }),
+    ).scheme as LocalSchemeEngineAdapter;
 }
 
 /**
@@ -358,80 +364,82 @@ function withUnframedRender(
  * `mountWithFavorites` (and the vanilla-declarative
  * `ezclassify-ui-favorites-option.spec.ts` it mirrors) exercise.
  */
-function createTestContext(): Context {
-    return Context.fromComponents({
-        scheme: {
+function createTestContext(): OpenContext {
+    return openContext(
+        Context.fromComponents({
             scheme: {
-                id: 'mf-fav-test',
-                version: '1.0.0',
-                name: 'MarkingField Favorites Test',
-                data: {
-                    concepts: {
-                        inline: [
+                scheme: {
+                    id: 'mf-fav-test',
+                    version: '1.0.0',
+                    name: 'MarkingField Favorites Test',
+                    data: {
+                        concepts: {
+                            inline: [
+                                {
+                                    id: 'S',
+                                    name: 'Secret',
+                                    views: { default: 'SECRET' },
+                                    categories: ['level'],
+                                    parents: [],
+                                    aliases: [],
+                                    position: 1,
+                                    rank: 2,
+                                },
+                                {
+                                    id: 'NF',
+                                    name: 'No Foreign',
+                                    views: { default: 'NOFORN' },
+                                    categories: ['caveat'],
+                                    parents: [],
+                                    aliases: [],
+                                    position: 1,
+                                    rank: 1,
+                                },
+                            ],
+                        },
+                        categories: [
                             {
-                                id: 'S',
-                                name: 'Secret',
-                                views: { default: 'SECRET' },
-                                categories: ['level'],
-                                parents: [],
-                                aliases: [],
+                                id: 'level',
+                                label: 'Level',
+                                required: false,
+                                single: true,
+                                rollup: 'max',
                                 position: 1,
-                                rank: 2,
                             },
                             {
-                                id: 'NF',
-                                name: 'No Foreign',
-                                views: { default: 'NOFORN' },
-                                categories: ['caveat'],
-                                parents: [],
-                                aliases: [],
-                                position: 1,
-                                rank: 1,
+                                id: 'caveat',
+                                label: 'Caveat',
+                                required: false,
+                                single: false,
+                                rollup: 'union',
+                                position: 2,
                             },
                         ],
                     },
-                    categories: [
-                        {
-                            id: 'level',
-                            label: 'Level',
-                            required: false,
-                            single: true,
-                            rollup: 'max',
-                            position: 1,
-                        },
-                        {
-                            id: 'caveat',
-                            label: 'Caveat',
-                            required: false,
-                            single: false,
-                            rollup: 'union',
-                            position: 2,
-                        },
-                    ],
-                },
-                rules: [],
-                parse: {
-                    case_sensitive: false,
-                    strip_whitespace: true,
-                },
-                render: {
-                    default: 'default',
-                    formats: [
-                        {
-                            id: 'default',
-                            surface: 'marking',
-                            mode: 'inline',
-                            separator: '//',
-                            fields: [
-                                { category: 'level', separator: '/' },
-                                { category: 'caveat', separator: '/' },
-                            ],
-                        },
-                    ],
+                    rules: [],
+                    parse: {
+                        case_sensitive: false,
+                        strip_whitespace: true,
+                    },
+                    render: {
+                        default: 'default',
+                        formats: [
+                            {
+                                id: 'default',
+                                surface: 'marking',
+                                mode: 'inline',
+                                separator: '//',
+                                fields: [
+                                    { category: 'level', separator: '/' },
+                                    { category: 'caveat', separator: '/' },
+                                ],
+                            },
+                        ],
+                    },
                 },
             },
-        },
-    });
+        }),
+    );
 }
 
 /**

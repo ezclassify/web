@@ -5,6 +5,7 @@ import { dirname, join } from 'node:path';
 import type { SchemePublicView } from '@ezclassify/types';
 import type { LocalSchemeEngineAdapter } from '@ezclassify/types';
 import { Context } from '@ezclassify/engine';
+import { openContext } from '../../test-fixtures/context-doubles';
 import { EzClassifyUI } from '../ezclassify-ui';
 import { MarkedTextArea } from './marked-text-area';
 import { HiddenAssertionField } from './hidden-assertion-field';
@@ -80,140 +81,144 @@ function createProfile(): SchemePublicView {
  * (no parens); MTA wraps once via embedded_marking.template → "(U) ".
  */
 function createBareFormatEngine(): LocalSchemeEngineAdapter {
-    return Context.fromComponents({
-        scheme: {
+    return openContext(
+        Context.fromComponents({
             scheme: {
-                id: 'marked-bare',
-                version: '1.0.0',
-                name: 'Marked Test Bare',
-                data: {
-                    concepts: {
-                        inline: [
+                scheme: {
+                    id: 'marked-bare',
+                    version: '1.0.0',
+                    name: 'Marked Test Bare',
+                    data: {
+                        concepts: {
+                            inline: [
+                                {
+                                    id: 'U',
+                                    name: 'Unclassified',
+                                    views: { default: 'U' },
+                                    categories: ['level'],
+                                    parents: [],
+                                    aliases: [],
+                                    position: 1,
+                                    rank: 1,
+                                },
+                                {
+                                    id: 'S',
+                                    name: 'Secret',
+                                    views: { default: 'S' },
+                                    categories: ['level'],
+                                    parents: [],
+                                    aliases: [],
+                                    position: 2,
+                                    rank: 2,
+                                },
+                            ],
+                        },
+                        categories: [
                             {
-                                id: 'U',
-                                name: 'Unclassified',
-                                views: { default: 'U' },
-                                categories: ['level'],
-                                parents: [],
-                                aliases: [],
+                                id: 'level',
+                                label: 'Level',
+                                required: false,
+                                single: true,
+                                rollup: 'max',
                                 position: 1,
-                                rank: 1,
-                            },
-                            {
-                                id: 'S',
-                                name: 'Secret',
-                                views: { default: 'S' },
-                                categories: ['level'],
-                                parents: [],
-                                aliases: [],
-                                position: 2,
-                                rank: 2,
                             },
                         ],
                     },
-                    categories: [
-                        {
-                            id: 'level',
-                            label: 'Level',
-                            required: false,
-                            single: true,
-                            rollup: 'max',
-                            position: 1,
-                        },
+                    rules: [],
+                    embedded_marking: [
+                        { pattern: '\\(([^)]+)\\)', template: '({marking}) ' },
                     ],
-                },
-                rules: [],
-                embedded_marking: [
-                    { pattern: '\\(([^)]+)\\)', template: '({marking}) ' },
-                ],
-                parse: {
-                    case_sensitive: false,
-                    strip_whitespace: true,
-                },
-                render: {
-                    default: 'portion',
-                    formats: [
-                        // Bare format: engine.render() returns "U", never "(U)".
-                        {
-                            id: 'portion',
-                            surface: 'marking',
-                            mode: 'inline',
-                            separator: '//',
-                            fields: [{ category: 'level', separator: '/' }],
-                        },
-                    ],
+                    parse: {
+                        case_sensitive: false,
+                        strip_whitespace: true,
+                    },
+                    render: {
+                        default: 'portion',
+                        formats: [
+                            // Bare format: engine.render() returns "U", never "(U)".
+                            {
+                                id: 'portion',
+                                surface: 'marking',
+                                mode: 'inline',
+                                separator: '//',
+                                fields: [{ category: 'level', separator: '/' }],
+                            },
+                        ],
+                    },
                 },
             },
-        },
-    }).scheme as LocalSchemeEngineAdapter;
+        }),
+    ).scheme as LocalSchemeEngineAdapter;
 }
 
 function createTestEngine(): LocalSchemeEngineAdapter {
-    return Context.fromComponents({
-        scheme: {
+    return openContext(
+        Context.fromComponents({
             scheme: {
-                id: 'marked-test',
-                version: '1.0.0',
-                name: 'Marked Test',
-                data: {
-                    concepts: {
-                        inline: [
+                scheme: {
+                    id: 'marked-test',
+                    version: '1.0.0',
+                    name: 'Marked Test',
+                    data: {
+                        concepts: {
+                            inline: [
+                                {
+                                    id: 'U',
+                                    name: 'Unclassified',
+                                    views: { default: 'U' },
+                                    categories: ['level'],
+                                    parents: [],
+                                    aliases: [],
+                                    position: 1,
+                                    rank: 1,
+                                },
+                                {
+                                    id: 'S',
+                                    name: 'Secret',
+                                    views: { default: 'S' },
+                                    categories: ['level'],
+                                    parents: [],
+                                    aliases: [],
+                                    position: 2,
+                                    rank: 2,
+                                },
+                            ],
+                        },
+                        categories: [
                             {
-                                id: 'U',
-                                name: 'Unclassified',
-                                views: { default: 'U' },
-                                categories: ['level'],
-                                parents: [],
-                                aliases: [],
+                                id: 'level',
+                                label: 'Level',
+                                required: false,
+                                single: true,
+                                rollup: 'max',
                                 position: 1,
-                                rank: 1,
-                            },
-                            {
-                                id: 'S',
-                                name: 'Secret',
-                                views: { default: 'S' },
-                                categories: ['level'],
-                                parents: [],
-                                aliases: [],
-                                position: 2,
-                                rank: 2,
                             },
                         ],
                     },
-                    categories: [
-                        {
-                            id: 'level',
-                            label: 'Level',
-                            required: false,
-                            single: true,
-                            rollup: 'max',
-                            position: 1,
-                        },
+                    rules: [],
+                    embedded_marking: [
+                        { pattern: '\\(([^)]+)\\)', template: '({marking}) ' },
                     ],
-                },
-                rules: [],
-                embedded_marking: [
-                    { pattern: '\\(([^)]+)\\)', template: '({marking}) ' },
-                ],
-                parse: {
-                    case_sensitive: false,
-                    strip_whitespace: true,
-                },
-                render: {
-                    default: 'portion',
-                    formats: [
-                        {
-                            id: 'portion',
-                            surface: 'marking',
-                            mode: 'inline',
-                            separator: '//',
-                            fields: [{ category: 'level', separator: '/' }],
-                        },
-                    ],
+                    parse: {
+                        case_sensitive: false,
+                        strip_whitespace: true,
+                    },
+                    render: {
+                        default: 'portion',
+                        formats: [
+                            {
+                                id: 'portion',
+                                surface: 'marking',
+                                mode: 'inline',
+                                separator: '//',
+                                fields: [{ category: 'level', separator: '/' }],
+                            },
+                        ],
+                    },
                 },
             },
-        },
-    }).scheme as LocalSchemeEngineAdapter;
+        }),
+    ).scheme as LocalSchemeEngineAdapter;
 }
 
 /**
@@ -223,71 +228,73 @@ function createTestEngine(): LocalSchemeEngineAdapter {
  * function with no declarative `data-ezclassify-*` equivalent.
  */
 function createTestContext() {
-    return Context.fromComponents({
-        scheme: {
+    return openContext(
+        Context.fromComponents({
             scheme: {
-                id: 'mta-fav-test',
-                version: '1.0.0',
-                name: 'MarkedTextArea Favorites Test',
-                data: {
-                    concepts: {
-                        inline: [
+                scheme: {
+                    id: 'mta-fav-test',
+                    version: '1.0.0',
+                    name: 'MarkedTextArea Favorites Test',
+                    data: {
+                        concepts: {
+                            inline: [
+                                {
+                                    id: 'U',
+                                    name: 'Unclassified',
+                                    views: { default: 'U' },
+                                    categories: ['level'],
+                                    parents: [],
+                                    aliases: [],
+                                    position: 1,
+                                    rank: 1,
+                                },
+                                {
+                                    id: 'S',
+                                    name: 'Secret',
+                                    views: { default: 'S' },
+                                    categories: ['level'],
+                                    parents: [],
+                                    aliases: [],
+                                    position: 2,
+                                    rank: 2,
+                                },
+                            ],
+                        },
+                        categories: [
                             {
-                                id: 'U',
-                                name: 'Unclassified',
-                                views: { default: 'U' },
-                                categories: ['level'],
-                                parents: [],
-                                aliases: [],
+                                id: 'level',
+                                label: 'Level',
+                                required: false,
+                                single: true,
+                                rollup: 'max',
                                 position: 1,
-                                rank: 1,
-                            },
-                            {
-                                id: 'S',
-                                name: 'Secret',
-                                views: { default: 'S' },
-                                categories: ['level'],
-                                parents: [],
-                                aliases: [],
-                                position: 2,
-                                rank: 2,
                             },
                         ],
                     },
-                    categories: [
-                        {
-                            id: 'level',
-                            label: 'Level',
-                            required: false,
-                            single: true,
-                            rollup: 'max',
-                            position: 1,
-                        },
+                    rules: [],
+                    embedded_marking: [
+                        { pattern: '\\(([^)]+)\\)', template: '({marking}) ' },
                     ],
-                },
-                rules: [],
-                embedded_marking: [
-                    { pattern: '\\(([^)]+)\\)', template: '({marking}) ' },
-                ],
-                parse: {
-                    case_sensitive: false,
-                    strip_whitespace: true,
-                },
-                render: {
-                    default: 'portion',
-                    formats: [
-                        {
-                            id: 'portion',
-                            surface: 'marking',
-                            mode: 'inline',
-                            separator: '//',
-                            fields: [{ category: 'level', separator: '/' }],
-                        },
-                    ],
+                    parse: {
+                        case_sensitive: false,
+                        strip_whitespace: true,
+                    },
+                    render: {
+                        default: 'portion',
+                        formats: [
+                            {
+                                id: 'portion',
+                                surface: 'marking',
+                                mode: 'inline',
+                                separator: '//',
+                                fields: [{ category: 'level', separator: '/' }],
+                            },
+                        ],
+                    },
                 },
             },
-        },
-    });
+        }),
+    );
 }
 
 let root: HTMLDivElement;

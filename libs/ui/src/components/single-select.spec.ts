@@ -1,115 +1,127 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { Context } from '@ezclassify/engine';
+import {
+    openContext,
+    schemeOnlyContext,
+} from '../../test-fixtures/context-doubles';
 import type { Assertion, LocalSchemeEngineAdapter } from '@ezclassify/types';
 import { SingleSelect } from './single-select';
 function makeEngine(
     withTextInput = false,
     calendarValue = false,
 ): LocalSchemeEngineAdapter {
-    return Context.fromComponents({
-        scheme: {
+    return openContext(
+        Context.fromComponents({
             scheme: {
-                id: 'test-select',
-                version: '1.0.0',
-                name: 'Test Select',
-                description: '',
-                data: {
-                    categories: [
-                        {
-                            id: 'level',
-                            label: 'Level',
-                            required: false,
-                            single: true,
-                            rollup: 'max',
-                            position: 0,
-                            hierarchy_root: true,
-                        },
-                    ],
-                    concepts: {
-                        inline: [
+                scheme: {
+                    id: 'test-select',
+                    version: '1.0.0',
+                    name: 'Test Select',
+                    description: '',
+                    data: {
+                        categories: [
                             {
-                                id: 'level-1',
-                                name: 'Level 1',
-                                views: { default: 'L1' },
-                                definition:
-                                    'Choose this level for the first tier.',
-                                aliases: [],
-                                categories: ['level'],
-                                parents: [],
-                                position: 1,
-                                rank: 0,
+                                id: 'level',
+                                label: 'Level',
+                                required: false,
+                                single: true,
+                                rollup: 'max',
+                                position: 0,
+                                hierarchy_root: true,
                             },
-                            {
-                                id: 'level-2',
-                                name: 'Level 2',
-                                views: { default: 'L2' },
-                                aliases: [],
-                                categories: ['level'],
-                                parents: [],
-                                position: 2,
-                                rank: 1,
-                            },
-                            {
-                                id: 'level-3',
-                                name: 'Level 3',
-                                views: {
-                                    default: calendarValue ? '{value}' : 'L3',
+                        ],
+                        concepts: {
+                            inline: [
+                                {
+                                    id: 'level-1',
+                                    name: 'Level 1',
+                                    views: { default: 'L1' },
+                                    definition:
+                                        'Choose this level for the first tier.',
+                                    aliases: [],
+                                    categories: ['level'],
+                                    parents: [],
+                                    position: 1,
+                                    rank: 0,
                                 },
-                                ...(withTextInput
-                                    ? {
-                                          text_input: {
-                                              encoding: calendarValue
-                                                  ? {
-                                                        type: 'calendar-date',
-                                                        canonical: 'YYYY-MM-DD',
-                                                        accepts: [
-                                                            'YYYYMMDD',
-                                                            'YYYY-MM-DD',
-                                                        ],
-                                                        views: {
-                                                            default: 'YYYYMMDD',
+                                {
+                                    id: 'level-2',
+                                    name: 'Level 2',
+                                    views: { default: 'L2' },
+                                    aliases: [],
+                                    categories: ['level'],
+                                    parents: [],
+                                    position: 2,
+                                    rank: 1,
+                                },
+                                {
+                                    id: 'level-3',
+                                    name: 'Level 3',
+                                    views: {
+                                        default: calendarValue
+                                            ? '{value}'
+                                            : 'L3',
+                                    },
+                                    ...(withTextInput
+                                        ? {
+                                              text_input: {
+                                                  encoding: calendarValue
+                                                      ? {
+                                                            type: 'calendar-date',
+                                                            canonical:
+                                                                'YYYY-MM-DD',
+                                                            accepts: [
+                                                                'YYYYMMDD',
+                                                                'YYYY-MM-DD',
+                                                            ],
+                                                            views: {
+                                                                default:
+                                                                    'YYYYMMDD',
+                                                            },
+                                                        }
+                                                      : {
+                                                            type: 'text',
+                                                            pattern: '\\d{8}',
                                                         },
-                                                    }
-                                                  : {
-                                                        type: 'text',
-                                                        pattern: '\\d{8}',
-                                                    },
-                                              placeholder: 'YYYYMMDD',
-                                              label: 'Review date',
-                                              required: true,
-                                          },
-                                      }
-                                    : {}),
-                                aliases: [],
-                                categories: ['level'],
-                                parents: [],
-                                position: 3,
-                                rank: 2,
+                                                  placeholder: 'YYYYMMDD',
+                                                  label: 'Review date',
+                                                  required: true,
+                                              },
+                                          }
+                                        : {}),
+                                    aliases: [],
+                                    categories: ['level'],
+                                    parents: [],
+                                    position: 3,
+                                    rank: 2,
+                                },
+                            ],
+                        },
+                    },
+                    rules: [],
+                    rollup_pipelines: [],
+                    parse: {
+                        case_sensitive: false,
+                        strip_whitespace: true,
+                    },
+                    render: {
+                        default: 'default',
+                        formats: [
+                            {
+                                id: 'default',
+                                surface: 'marking',
+                                mode: 'inline',
+                                separator: '//',
+                                fields: [
+                                    { category: 'level', separator: '//' },
+                                ],
                             },
                         ],
                     },
                 },
-                rules: [],
-                rollup_pipelines: [],
-                parse: {
-                    case_sensitive: false,
-                    strip_whitespace: true,
-                },
-                render: {
-                    default: 'default',
-                    formats: [
-                        {
-                            id: 'default',
-                            surface: 'marking',
-                            mode: 'inline',
-                            separator: '//',
-                            fields: [{ category: 'level', separator: '//' }],
-                        },
-                    ],
-                },
             },
-        },
-    }).scheme as LocalSchemeEngineAdapter;
+        }),
+    ).scheme as LocalSchemeEngineAdapter;
 }
 
 // Same shape as makeEngine, but the level category drives the display color
@@ -121,88 +133,92 @@ function makeColoredEngine(): LocalSchemeEngineAdapter {
         'level-2': { background: '#ff8c00', text: '#000000' },
         'level-3': { background: '#c8102e', text: '#ffffff' },
     };
-    return Context.fromComponents({
-        scheme: {
+    return openContext(
+        Context.fromComponents({
             scheme: {
-                id: 'test-select-colored',
-                version: '1.0.0',
-                name: 'Test Select Colored',
-                description: '',
-                data: {
-                    categories: [
-                        {
-                            id: 'level',
-                            label: 'Level',
-                            required: false,
-                            single: true,
-                            rollup: 'max',
-                            position: 0,
-                            hierarchy_root: true,
+                scheme: {
+                    id: 'test-select-colored',
+                    version: '1.0.0',
+                    name: 'Test Select Colored',
+                    description: '',
+                    data: {
+                        categories: [
+                            {
+                                id: 'level',
+                                label: 'Level',
+                                required: false,
+                                single: true,
+                                rollup: 'max',
+                                position: 0,
+                                hierarchy_root: true,
+                            },
+                        ],
+                        concepts: {
+                            inline: [
+                                {
+                                    id: 'level-1',
+                                    name: 'Level 1',
+                                    views: { default: 'L1' },
+                                    color: colors['level-1'],
+                                    aliases: [],
+                                    categories: ['level'],
+                                    parents: [],
+                                    position: 1,
+                                    rank: 0,
+                                },
+                                {
+                                    id: 'level-2',
+                                    name: 'Level 2',
+                                    views: { default: 'L2' },
+                                    color: colors['level-2'],
+                                    aliases: [],
+                                    categories: ['level'],
+                                    parents: [],
+                                    position: 2,
+                                    rank: 1,
+                                },
+                                {
+                                    id: 'level-3',
+                                    name: 'Level 3',
+                                    views: { default: 'L3' },
+                                    color: colors['level-3'],
+                                    aliases: [],
+                                    categories: ['level'],
+                                    parents: [],
+                                    position: 3,
+                                    rank: 2,
+                                },
+                            ],
                         },
-                    ],
-                    concepts: {
-                        inline: [
+                    },
+                    rules: [],
+                    rollup_pipelines: [],
+                    parse: {
+                        case_sensitive: false,
+                        strip_whitespace: true,
+                    },
+                    render: {
+                        default: 'default',
+                        color_from: 'level',
+                        formats: [
                             {
-                                id: 'level-1',
-                                name: 'Level 1',
-                                views: { default: 'L1' },
-                                color: colors['level-1'],
-                                aliases: [],
-                                categories: ['level'],
-                                parents: [],
-                                position: 1,
-                                rank: 0,
-                            },
-                            {
-                                id: 'level-2',
-                                name: 'Level 2',
-                                views: { default: 'L2' },
-                                color: colors['level-2'],
-                                aliases: [],
-                                categories: ['level'],
-                                parents: [],
-                                position: 2,
-                                rank: 1,
-                            },
-                            {
-                                id: 'level-3',
-                                name: 'Level 3',
-                                views: { default: 'L3' },
-                                color: colors['level-3'],
-                                aliases: [],
-                                categories: ['level'],
-                                parents: [],
-                                position: 3,
-                                rank: 2,
+                                id: 'default',
+                                surface: 'marking',
+                                mode: 'inline',
+                                separator: '//',
+                                fields: [
+                                    { category: 'level', separator: '//' },
+                                ],
                             },
                         ],
                     },
                 },
-                rules: [],
-                rollup_pipelines: [],
-                parse: {
-                    case_sensitive: false,
-                    strip_whitespace: true,
-                },
-                render: {
-                    default: 'default',
-                    color_from: 'level',
-                    formats: [
-                        {
-                            id: 'default',
-                            surface: 'marking',
-                            mode: 'inline',
-                            separator: '//',
-                            fields: [{ category: 'level', separator: '//' }],
-                        },
-                    ],
-                },
             },
-        },
-    }).scheme as LocalSchemeEngineAdapter;
+        }),
+    ).scheme as LocalSchemeEngineAdapter;
 }
 
-const toCtx = (eng: unknown) => Context.fromSchemeEngine(eng as never);
+const toCtx = (eng: unknown) => schemeOnlyContext(eng as never);
 describe('SingleSelect', () => {
     let container: HTMLDivElement;
     let engine: LocalSchemeEngineAdapter;

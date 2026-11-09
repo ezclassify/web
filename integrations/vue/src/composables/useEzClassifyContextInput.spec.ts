@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { defineComponent, h, ref, nextTick } from 'vue';
 import { mount } from '@vue/test-utils';
 import { Context } from '@ezclassify/engine';
+import { schemeOnlyContext } from '../../../../libs/ui/test-fixtures/context-doubles';
 import type { LocalSchemeEngineAdapter } from '@ezclassify/types';
 import { useEzClassify, type UseEzClassifyReturn } from '../index';
 
@@ -104,7 +105,7 @@ describe('useEzClassify(Context)', () => {
         // watch must short-circuit and keep the live EzClassifyUI/store instances.
         const engine = Context.fromComponents({ scheme: testProfile })
             .scheme as LocalSchemeEngineAdapter;
-        const engineRef = ref(Context.fromSchemeEngine(engine));
+        const engineRef = ref(schemeOnlyContext(engine));
         let captured: UseEzClassifyReturn | null = null;
 
         const Host = defineComponent({
@@ -125,7 +126,7 @@ describe('useEzClassify(Context)', () => {
         expect(firstForms).toBeTruthy();
 
         // Fresh wrapper, same underlying engine, wrapper-only churn must be a no-op.
-        engineRef.value = Context.fromSchemeEngine(engine);
+        engineRef.value = schemeOnlyContext(engine);
         await nextTick();
 
         expect(forms.value).toBe(firstForms);

@@ -5,7 +5,7 @@
  * components, end-to-end integration without a real server.
  */
 
-import { Context } from '@ezclassify/engine';
+import { schemeOnlyContext } from '../../test-fixtures/context-doubles';
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { TagInput } from './tag-input';
 import { createAsyncMockEngine } from './async-engine-mock';
@@ -14,7 +14,7 @@ function wait(ms = 50) {
     return new Promise((r) => setTimeout(r, ms));
 }
 
-const toCtx = (eng: unknown) => Context.fromSchemeEngine(eng as never);
+const toCtx = (eng: unknown) => schemeOnlyContext(eng as never);
 let container: HTMLDivElement;
 
 beforeEach(() => {

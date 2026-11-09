@@ -7,7 +7,7 @@
 import { describe, it, expect, afterEach } from 'vitest';
 import { defineComponent, h, nextTick, type ShallowRef } from 'vue';
 import { mount, type VueWrapper } from '@vue/test-utils';
-import { loadCedarValley } from '@ezclassify/example-schemes/cedar-valley';
+import { loadCedarValleyContext } from '@ezclassify/example-schemes/cedar-valley';
 import {
     useEzClassify,
     useEzClassifyFacet,
@@ -49,7 +49,7 @@ describe('useEzClassify with a facet in a child component', () => {
         });
         const Parent = defineComponent({
             setup() {
-                ({ store } = useEzClassify(loadCedarValley(), {
+                ({ store } = useEzClassify(loadCedarValleyContext().scheme, {
                     root: mountRoot,
                 }));
                 return () =>

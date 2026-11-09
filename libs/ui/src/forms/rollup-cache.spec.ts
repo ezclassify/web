@@ -5,7 +5,8 @@
  * format) tuples within a session to avoid repeated engine processing.
  */
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { loadCedarValley } from '@ezclassify/example-schemes/cedar-valley';
+import { loadCedarValleyContext } from '@ezclassify/example-schemes/cedar-valley';
+import { openOperations } from '../../test-fixtures/context-doubles';
 import { clearRollupProcessCache, processRollupMarking } from './rollup';
 import { EzClassifyUI } from '../ezclassify-ui';
 
@@ -146,7 +147,12 @@ describe('forms/rollup process cache', () => {
     it('returns the real scheme result for an empty whole', async () => {
         const root = document.createElement('div');
         document.body.appendChild(root);
-        const forms = new EzClassifyUI(loadCedarValley(), { root });
+        const forms = new EzClassifyUI(
+            openOperations(loadCedarValleyContext().scheme),
+            {
+                root,
+            },
+        );
         try {
             const expected = await Promise.resolve(
                 forms.engine.process('', {
@@ -215,7 +221,12 @@ describe('forms/rollup process cache', () => {
     it('EzClassifyUI.destroy() clears its own engine partition (documented teardown contract)', async () => {
         const root = document.createElement('div');
         document.body.appendChild(root);
-        const forms = new EzClassifyUI(loadCedarValley(), { root });
+        const forms = new EzClassifyUI(
+            openOperations(loadCedarValleyContext().scheme),
+            {
+                root,
+            },
+        );
         const spy = vi.spyOn(forms.engine, 'process').mockResolvedValue({
             valid: true,
             rendered: 'R',

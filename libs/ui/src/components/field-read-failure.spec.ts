@@ -12,6 +12,7 @@
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { Context } from '@ezclassify/engine';
+import { openContext } from '../../test-fixtures/context-doubles';
 import {
     cedarValleyAccessYaml,
     cedarValleyGuideYaml,
@@ -68,11 +69,13 @@ function partOfSent(args: unknown[]): string | undefined {
  * and reads of `failingText` that raise.
  */
 function engineContext() {
-    const ctx = Context.fromComponents({
-        scheme: jsYaml.load(cedarValleySchemeYaml),
-        guides: [jsYaml.load(cedarValleyGuideYaml)],
-        access: jsYaml.load(cedarValleyAccessYaml),
-    });
+    const ctx = openContext(
+        Context.fromComponents({
+            scheme: jsYaml.load(cedarValleySchemeYaml),
+            guides: [jsYaml.load(cedarValleyGuideYaml)],
+            access: jsYaml.load(cedarValleyAccessYaml),
+        }),
+    );
     const scheme = ctx.scheme as unknown as {
         process: (...args: unknown[]) => unknown;
     };

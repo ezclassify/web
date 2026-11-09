@@ -9,6 +9,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { InlineMarkingEditor } from './inline-marking-editor';
 import { Context } from '@ezclassify/engine';
+import { schemeOnlyContext } from '../../test-fixtures/context-doubles';
 import type { Assertion, LocalSchemeEngineAdapter } from '@ezclassify/types';
 import {
     activeRow,
@@ -24,7 +25,7 @@ import {
     wait,
 } from './composer/composer-harness';
 
-const toCtx = (eng: unknown) => Context.fromSchemeEngine(eng as never);
+const toCtx = (eng: unknown) => schemeOnlyContext(eng as never);
 
 function createRealEngine(): LocalSchemeEngineAdapter {
     const concepts = [

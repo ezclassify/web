@@ -7,7 +7,7 @@ import type {
     Assertion,
     ValidationError,
 } from '@ezclassify/types';
-import { Context } from '@ezclassify/engine';
+import { schemeOnlyContext } from '../../test-fixtures/context-doubles';
 import { mockRenderFormats } from '../render-format-layout-mock';
 
 /**
@@ -154,7 +154,7 @@ function createMockEngine(): SchemeEngineAdapter {
     } as unknown as SchemeEngineAdapter;
 }
 
-const toCtx = (eng: unknown) => Context.fromSchemeEngine(eng as never);
+const toCtx = (eng: unknown) => schemeOnlyContext(eng as never);
 
 async function flush(): Promise<void> {
     for (let i = 0; i < 6; i++) await Promise.resolve();
@@ -707,7 +707,7 @@ it('omits outputFormat when the scheme has no default output', async () => {
     host.textContent = 'c1';
     document.body.append(host);
     const component = new EzClassifyText();
-    await component.init(host, Context.fromSchemeEngine(engine as never));
+    await component.init(host, schemeOnlyContext(engine as never));
     expect(validate).toHaveBeenCalledWith('c1', undefined);
     component.destroy();
     host.remove();

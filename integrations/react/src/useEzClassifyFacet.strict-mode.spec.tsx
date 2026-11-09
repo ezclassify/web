@@ -9,7 +9,7 @@
  */
 import React, { Activity, StrictMode, useState } from 'react';
 import { act, cleanup, render, waitFor } from '@testing-library/react';
-import { loadCedarValley } from '@ezclassify/example-schemes/cedar-valley';
+import { loadCedarValleyContext } from '@ezclassify/example-schemes/cedar-valley';
 import {
     EzClassifyProvider,
     EzClassifyStoreProvider,
@@ -23,7 +23,7 @@ afterEach(() => cleanup());
 
 describe('useEzClassifyFacet under StrictMode', () => {
     it('publishes a selection after its effect has been mounted twice', async () => {
-        const store = new ReactEzClassifyStore(loadCedarValley());
+        const store = new ReactEzClassifyStore(loadCedarValleyContext().scheme);
         let field: UseEzClassifyFacetReturn | null = null;
         function Picker() {
             field = useEzClassifyFacet('document', 'level');
@@ -57,7 +57,7 @@ describe('useEzClassifyFacet under StrictMode', () => {
         }
         render(
             <StrictMode>
-                <EzClassifyProvider engine={loadCedarValley()}>
+                <EzClassifyProvider engine={loadCedarValleyContext().scheme}>
                     <Picker />
                 </EzClassifyProvider>
             </StrictMode>,
@@ -82,7 +82,7 @@ describe('useEzClassifyFacet under StrictMode', () => {
             field = useEzClassifyFacet('document', 'level');
             return null;
         }
-        const engine = loadCedarValley();
+        const engine = loadCedarValleyContext().scheme;
         function App() {
             const [mode, set] = useState<'visible' | 'hidden'>('visible');
             setMode = set;
@@ -113,7 +113,7 @@ describe('useEzClassifyFacet under StrictMode', () => {
     });
 
     it('still refuses a subscription to an application store destroyed under the provider', () => {
-        const store = new ReactEzClassifyStore(loadCedarValley());
+        const store = new ReactEzClassifyStore(loadCedarValleyContext().scheme);
         render(
             <EzClassifyProvider store={store}>
                 <></>

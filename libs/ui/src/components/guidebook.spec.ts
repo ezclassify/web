@@ -8,38 +8,15 @@
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { Context } from '@ezclassify/engine';
+import { openContext } from '../../test-fixtures/context-doubles';
 import type {
     GuideEngineAdapter,
     GuideStructuralView,
-    LocalSchemeEngineAdapter,
     RemoteGuideEngineAdapter,
 } from '@ezclassify/types';
 import { Guidebook } from './guidebook';
-import {
-    loadCedarValley,
-    loadCedarValleyGuide,
-} from '@ezclassify/example-schemes/cedar-valley';
-import {
-    loadCedarValleyLevels,
-    loadCedarValleyLevelsGuide,
-} from '@ezclassify/example-schemes/cedar-valley-protection';
-
-/**
- * Build a Context from a real scheme + guide engine pair. Context's guide slot
- * is populated only via `fromComponents` (raw YAML), so for pre-built engine
- * adapters we force-assign it directly, the same pattern
- * access-handbook.spec.ts uses for the access slot: safe at runtime, TypeScript
- * readonly is compile-time only.
- */
-function contextWithGuide(
-    scheme: LocalSchemeEngineAdapter,
-    guide: GuideEngineAdapter,
-): Context {
-    const ctx = Context.fromSchemeEngine(scheme);
-    (ctx as unknown as { guide: GuideEngineAdapter }).guide = guide;
-    return ctx;
-}
+import { loadCedarValleyContext } from '@ezclassify/example-schemes/cedar-valley';
+import { loadCedarValleyLevelsContext } from '@ezclassify/example-schemes/cedar-valley-protection';
 
 describe('Guidebook', () => {
     let container: HTMLDivElement;
@@ -52,7 +29,7 @@ describe('Guidebook', () => {
     });
 
     it('renders a region with rule entries from the loaded guide', async () => {
-        const ctx = contextWithGuide(loadCedarValley(), loadCedarValleyGuide());
+        const ctx = openContext(loadCedarValleyContext());
         await guidebook.init(container, ctx);
 
         const region = container.querySelector('[role="region"]');
@@ -63,10 +40,7 @@ describe('Guidebook', () => {
 
     describe('reference-surface vocabulary', () => {
         it('keeps the generic aria-label when the guide declares no vocabulary (byte-identical default)', async () => {
-            const ctx = contextWithGuide(
-                loadCedarValley(),
-                loadCedarValleyGuide(),
-            );
+            const ctx = openContext(loadCedarValleyContext());
             await guidebook.init(container, ctx);
 
             const region = container.querySelector('[role="region"]');
@@ -80,10 +54,7 @@ describe('Guidebook', () => {
         });
 
         it('uses the generic Guidebook noun when the guide declares no reference vocabulary', async () => {
-            const ctx = contextWithGuide(
-                loadCedarValleyLevels(),
-                loadCedarValleyLevelsGuide(),
-            );
+            const ctx = openContext(loadCedarValleyLevelsContext());
             await guidebook.init(container, ctx);
 
             const region = container.querySelector('[role="region"]');
@@ -101,7 +72,8 @@ describe('Guidebook', () => {
         });
 
         it("prefers the guide engine's own getGuideMeta().referenceSurfaceLabel over re-deriving from the view's raw vocabulary map", async () => {
-            const guideEngine = loadCedarValleyGuide();
+            const ctx = openContext(loadCedarValleyContext());
+            const guideEngine = ctx.guide!;
             // Stub getGuideMeta to report a renamed surface even though the
             // underlying vocabulary the structural view carries declares none.
             // If Guidebook re-derives the label from the view instead of
@@ -122,7 +94,6 @@ describe('Guidebook', () => {
                     : meta;
             }) as typeof guideEngine.getGuideMeta;
 
-            const ctx = contextWithGuide(loadCedarValley(), guideEngine);
             await guidebook.init(container, ctx);
 
             const region = container.querySelector('[role="region"]');
@@ -164,8 +135,9 @@ describe('Guidebook', () => {
         }
 
         it('renders the rule entries once the views resolve', async () => {
-            const { guide, release } = remoteGuide(loadCedarValleyGuide());
-            const ctx = contextWithGuide(loadCedarValley(), guide);
+            const ctx = openContext(loadCedarValleyContext());
+            const { guide, release } = remoteGuide(ctx.guide!);
+            ctx.guide = guide as unknown as typeof ctx.guide;
 
             await guidebook.init(container, ctx);
             expect(container.querySelector('.ez-guidebook__entry')).toBeNull();
@@ -187,8 +159,9 @@ describe('Guidebook', () => {
             const consoleError = vi
                 .spyOn(console, 'error')
                 .mockImplementation(() => {});
-            const { guide, fail } = remoteGuide(loadCedarValleyGuide());
-            const ctx = contextWithGuide(loadCedarValley(), guide);
+            const ctx = openContext(loadCedarValleyContext());
+            const { guide, fail } = remoteGuide(ctx.guide!);
+            ctx.guide = guide as unknown as typeof ctx.guide;
 
             await guidebook.init(container, ctx);
             fail(new Error('guide fetch failed'));
@@ -210,8 +183,9 @@ describe('Guidebook', () => {
         });
 
         it('does not resurrect a panel destroyed while the views were in flight', async () => {
-            const { guide, release } = remoteGuide(loadCedarValleyGuide());
-            const ctx = contextWithGuide(loadCedarValley(), guide);
+            const ctx = openContext(loadCedarValleyContext());
+            const { guide, release } = remoteGuide(ctx.guide!);
+            ctx.guide = guide as unknown as typeof ctx.guide;
 
             await guidebook.init(container, ctx);
             guidebook.destroy();

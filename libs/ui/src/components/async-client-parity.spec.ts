@@ -11,7 +11,7 @@ import type { Assertion, SchemePublicView } from '@ezclassify/types';
 // The fixtures below are resolved schemes with their rules, which the engine
 // reads. That shape is internal, and this spec is already engine-bound.
 import type { Category, Concept, Scheme } from '@ezclassify/types/internal';
-import { Context } from '@ezclassify/engine';
+import { schemeOnlyContext } from '../../test-fixtures/context-doubles';
 import { TagInput } from './tag-input';
 import { SingleSelect } from './single-select';
 import { CategoryChecklist } from './category-checklist';
@@ -111,7 +111,7 @@ function createProfile(): Scheme {
     } as unknown as Scheme;
 }
 
-const toCtx = (eng: unknown) => Context.fromSchemeEngine(eng as never);
+const toCtx = (eng: unknown) => schemeOnlyContext(eng as never);
 function createSyncEngine(scheme?: Scheme) {
     const p = scheme ?? createProfile();
     return {

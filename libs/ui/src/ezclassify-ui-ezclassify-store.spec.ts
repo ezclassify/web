@@ -812,11 +812,13 @@ describe('EzClassifyUI store wireup', () => {
         await flush();
         processCalls = 0;
         const shortView = root5.querySelector<HTMLInputElement>('#short-view')!;
-        const typedAssertion = {
+        const typedAssertion: Assertion = {
             categoryId: 'level',
             conceptId: 'STUDENTS',
             value: '2030-12-31',
-        } as Assertion;
+            source: 'manual',
+            confidence: 'certain',
+        };
 
         await forms.store.publishAssertions('doc-marking', [typedAssertion]);
         await flush();

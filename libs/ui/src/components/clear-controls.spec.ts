@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Context } from '@ezclassify/engine';
+import { openContext } from '../../test-fixtures/context-doubles';
 import type { ComponentInstance, ComponentOptions } from './component-base';
 import { MarkingField } from './marking-field';
 import { TagInput } from './tag-input';
@@ -20,56 +21,58 @@ import {
 } from './composer/composer-harness';
 
 function engine() {
-    return Context.fromComponents({
-        scheme: {
+    return openContext(
+        Context.fromComponents({
             scheme: {
-                id: 'clear-fields',
-                name: 'Field Clear Test',
-                version: '1.0.0',
-                data: {
-                    concepts: {
-                        inline: ['LOW', 'HIGH'].map((id, index) => ({
-                            id,
-                            name: id,
-                            views: { default: id },
-                            categories: ['level'],
-                            parents: [],
-                            aliases: [],
-                            position: index,
-                            rank: index,
-                        })),
+                scheme: {
+                    id: 'clear-fields',
+                    name: 'Field Clear Test',
+                    version: '1.0.0',
+                    data: {
+                        concepts: {
+                            inline: ['LOW', 'HIGH'].map((id, index) => ({
+                                id,
+                                name: id,
+                                views: { default: id },
+                                categories: ['level'],
+                                parents: [],
+                                aliases: [],
+                                position: index,
+                                rank: index,
+                            })),
+                        },
+                        categories: [
+                            {
+                                id: 'level',
+                                label: 'Level',
+                                single: true,
+                                required: false,
+                                rollup: 'max',
+                                position: 0,
+                            },
+                        ],
                     },
-                    categories: [
-                        {
-                            id: 'level',
-                            label: 'Level',
-                            single: true,
-                            required: false,
-                            rollup: 'max',
-                            position: 0,
-                        },
+                    rules: [],
+                    embedded_marking: [
+                        { pattern: '\\(([^)]+)\\)', template: '({marking}) ' },
                     ],
-                },
-                rules: [],
-                embedded_marking: [
-                    { pattern: '\\(([^)]+)\\)', template: '({marking}) ' },
-                ],
-                parse: { case_sensitive: false, strip_whitespace: true },
-                render: {
-                    default: 'portion',
-                    formats: [
-                        {
-                            id: 'portion',
-                            surface: 'marking',
-                            mode: 'inline',
-                            separator: '//',
-                            fields: [{ category: 'level', separator: '/' }],
-                        },
-                    ],
+                    parse: { case_sensitive: false, strip_whitespace: true },
+                    render: {
+                        default: 'portion',
+                        formats: [
+                            {
+                                id: 'portion',
+                                surface: 'marking',
+                                mode: 'inline',
+                                separator: '//',
+                                fields: [{ category: 'level', separator: '/' }],
+                            },
+                        ],
+                    },
                 },
             },
-        },
-    }).scheme;
+        }),
+    ).scheme;
 }
 
 const fields: {

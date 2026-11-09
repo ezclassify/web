@@ -2,8 +2,9 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { TestBed } from '@angular/core/testing';
 import { Component, SimpleChange } from '@angular/core';
 import { Context } from '@ezclassify/engine';
+import { schemeOnlyContext } from '../../../../libs/ui/test-fixtures/context-doubles';
 import type { SchemeEngineAdapter } from '@ezclassify/types';
-import type { SchemeEngine } from '@ezclassify/engine';
+import type { SchemeOperations } from '@ezclassify/engine';
 import { EzClassifyDirective } from './ezclassify.directive';
 
 const MINIMAL_SCHEME = {
@@ -81,7 +82,7 @@ function makeChange(
     template: `<div [ezClassify]="engine"></div>`,
 })
 class SimpleDirectiveHostComponent {
-    engine?: SchemeEngine | SchemeEngineAdapter | Context | null;
+    engine?: SchemeOperations | SchemeEngineAdapter | Context | null;
 }
 
 @Component({
@@ -95,11 +96,11 @@ class ContextHostComponent {
 }
 
 describe('EzClassifyDirective: store lifecycle', () => {
-    let engine: SchemeEngine;
+    let engine: SchemeOperations;
 
     beforeEach(async () => {
         engine = Context.fromComponents({ scheme: MINIMAL_SCHEME })
-            .scheme as SchemeEngine;
+            .scheme as SchemeOperations;
         await TestBed.configureTestingModule({
             imports: [SimpleDirectiveHostComponent, ContextHostComponent],
         }).compileComponents();
@@ -130,7 +131,7 @@ describe('EzClassifyDirective: store lifecycle', () => {
         expect(directive.getEngine()).toBeNull();
     });
 
-    it('getEngine returns the engine adapter for a bare SchemeEngine input', () => {
+    it('getEngine returns the engine adapter for a bare scheme adapter input', () => {
         const fixture = TestBed.createComponent(SimpleDirectiveHostComponent);
         fixture.componentInstance.engine = engine;
         fixture.detectChanges(false);
@@ -225,7 +226,7 @@ describe('EzClassifyDirective: store lifecycle', () => {
         const firstStore = directive.getStore();
 
         const engine2 = Context.fromComponents({ scheme: MINIMAL_SCHEME })
-            .scheme as SchemeEngine;
+            .scheme as SchemeOperations;
         directive.engine = engine2;
         directive.ngOnChanges({ engine: makeChange(engine2, engine) });
         const secondStore = directive.getStore();
@@ -243,8 +244,8 @@ describe('EzClassifyDirective: store lifecycle', () => {
         // Two distinct Context wrappers around the SAME scheme engine instance.
         // contextSignature keys on the components (scheme/guide/access), not the
         // wrapper identity, so the second change must NOT rebuild.
-        const ctx1 = Context.fromSchemeEngine(engine);
-        const ctx2 = Context.fromSchemeEngine(engine);
+        const ctx1 = schemeOnlyContext(engine);
+        const ctx2 = schemeOnlyContext(engine);
         expect(ctx2).not.toBe(ctx1);
 
         directive.engine = ctx1;
@@ -264,8 +265,8 @@ describe('EzClassifyDirective: store lifecycle', () => {
         const directive =
             fixture.debugElement.children[0].injector.get(EzClassifyDirective);
 
-        const ctx1 = Context.fromSchemeEngine(engine);
-        const ctx2 = Context.fromSchemeEngine(engine);
+        const ctx1 = schemeOnlyContext(engine);
+        const ctx2 = schemeOnlyContext(engine);
 
         directive.engine = ctx1;
         directive.ngOnChanges({ engine: makeChange(ctx1) });
@@ -293,7 +294,7 @@ describe('EzClassifyDirective: store lifecycle', () => {
         const firstStore = directive.getStore();
 
         const engine2 = Context.fromComponents({ scheme: MINIMAL_SCHEME })
-            .scheme as SchemeEngine;
+            .scheme as SchemeOperations;
         directive.engine = engine2;
         directive.ngOnChanges({ engine: makeChange(engine2, engine) });
 

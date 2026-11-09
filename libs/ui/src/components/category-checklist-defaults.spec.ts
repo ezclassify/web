@@ -1,10 +1,10 @@
 import { afterEach, describe, expect, it } from 'vitest';
-import { Context, SchemeEngine } from '@ezclassify/engine';
+import { Context } from '@ezclassify/engine';
 import { CategoryChecklist } from './category-checklist';
 
 function context(conditional: boolean) {
-    return Context.fromSchemeEngine(
-        SchemeEngine.fromJSON({
+    return Context.fromComponents({
+        scheme: {
             scheme: {
                 id: 'checklist-defaults',
                 version: '1.0.0',
@@ -72,8 +72,8 @@ function context(conditional: boolean) {
                     ],
                 },
             },
-        }),
-    );
+        },
+    });
 }
 
 describe('category clearing through engine defaults', () => {

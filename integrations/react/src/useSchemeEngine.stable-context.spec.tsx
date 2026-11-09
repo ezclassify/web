@@ -1,10 +1,10 @@
 /**
  * UseSchemeEngine must tolerate an unstable Context argument. A consumer that
  * builds the Context inline in render,
- * `useSchemeEngine(Context.fromSchemeEngine(engine))`, hands a fresh wrapper
- * over every render; an init effect keyed on the argument's object identity
- * would tear down and rebuild the store, call setState, re-render, get another
- * fresh wrapper, and loop until React threw "Maximum update depth exceeded."
+ * `useSchemeEngine(schemeOnlyContext(engine))`, hands a fresh wrapper over
+ * every render; an init effect keyed on the argument's object identity would
+ * tear down and rebuild the store, call setState, re-render, get another fresh
+ * wrapper, and loop until React threw "Maximum update depth exceeded."
  *
  * These tests pin both directions: a fresh-wrapper-but-same-engine argument
  * must NOT re-run the effect (no storm, store reused), while a genuinely
@@ -20,6 +20,7 @@ import { useMemo } from 'react';
 import { describe, it, expect } from 'vitest';
 import { render, act } from '@testing-library/react';
 import { Context } from '@ezclassify/engine';
+import { schemeOnlyContext } from '../../../libs/ui/test-fixtures/context-doubles';
 import type { LocalSchemeEngineAdapter } from '@ezclassify/types';
 import { useSchemeEngine } from './index';
 import type { ReactEzClassifyStore } from './index';
@@ -75,7 +76,7 @@ function FreshContextApp({
         throw new Error(
             'render storm: useSchemeEngine re-initialized in a loop',
         );
-    const ctx = Context.fromSchemeEngine(engine);
+    const ctx = schemeOnlyContext(engine);
     const { ref, store } = useSchemeEngine(ctx, { rollupId });
     if (store) probe.stores.add(store);
     return (
@@ -96,7 +97,7 @@ function MemoizedContextApp({
     probe: Probe;
 }) {
     probe.renders++;
-    const ctx = useMemo(() => Context.fromSchemeEngine(engine), [engine]);
+    const ctx = useMemo(() => schemeOnlyContext(engine), [engine]);
     const { ref, store } = useSchemeEngine(ctx, { rollupId });
     if (store) probe.stores.add(store);
     return (

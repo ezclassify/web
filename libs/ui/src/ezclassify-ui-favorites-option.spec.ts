@@ -10,7 +10,7 @@
  * they read.
  */
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { loadCedarValley } from '@ezclassify/example-schemes/cedar-valley';
+import { loadCedarValleyContext } from '@ezclassify/example-schemes/cedar-valley';
 import { EzClassifyUI } from './ezclassify-ui';
 import type { FavoritesConfig } from './components/favorites-panel';
 
@@ -35,7 +35,7 @@ afterEach(() => {
 describe('EzClassifyUI({ favorites }) threads into scanner-mounted fields', () => {
     it('renders the ★ button on a declaratively-mounted MarkingField when the constructor supplies favorites', async () => {
         root.innerHTML = `<textarea id="mf" data-ezclassify-controller="marking"></textarea>`;
-        forms = new EzClassifyUI(loadCedarValley(), {
+        forms = new EzClassifyUI(loadCedarValleyContext().scheme, {
             root,
             favorites: noopFavorites,
         });
@@ -46,7 +46,7 @@ describe('EzClassifyUI({ favorites }) threads into scanner-mounted fields', () =
 
     it('never renders the ★ button when the constructor omits favorites (default)', async () => {
         root.innerHTML = `<textarea id="mf" data-ezclassify-controller="marking"></textarea>`;
-        forms = new EzClassifyUI(loadCedarValley(), { root });
+        forms = new EzClassifyUI(loadCedarValleyContext().scheme, { root });
         await new Promise((r) => setTimeout(r, 100));
 
         expect(root.querySelector('.ez-favorites-button')).toBeNull();
@@ -54,7 +54,7 @@ describe('EzClassifyUI({ favorites }) threads into scanner-mounted fields', () =
 
     it('renders the ★ button on a declaratively-mounted TagInput too, the same instance-level option covering every scanner-mounted field', async () => {
         root.innerHTML = `<input id="tags" data-ezclassify-controller="tags" />`;
-        forms = new EzClassifyUI(loadCedarValley(), {
+        forms = new EzClassifyUI(loadCedarValleyContext().scheme, {
             root,
             favorites: noopFavorites,
         });

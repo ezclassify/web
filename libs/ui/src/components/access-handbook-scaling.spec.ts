@@ -1,5 +1,5 @@
 import { expect, it, vi } from 'vitest';
-import { Context } from '@ezclassify/engine';
+import { schemeOnlyContext } from '../../test-fixtures/context-doubles';
 import { AccessHandbook } from './access-handbook';
 
 it('searches a large policy without recomputing every rule reference', async () => {
@@ -50,7 +50,7 @@ it('searches a large policy without recomputing every rule reference', async () 
         suggest: () => ({ suggestions: [] }),
         render: () => '',
     };
-    const context = Context.fromSchemeEngine(scheme as never);
+    const context = schemeOnlyContext(scheme as never);
     Object.assign(context, {
         access: { schemeId: 'test', describeAllAccessRules: () => rules },
     });

@@ -29,6 +29,7 @@ import {
     VueRefStoreKey,
     type UseEzClassifyFacetReturn,
 } from '@ezclassify/vue';
+import { openOperations } from '../../../libs/ui/test-fixtures/context-doubles';
 
 const testProfile = {
     scheme: {
@@ -81,8 +82,9 @@ const testProfile = {
 };
 
 function buildEngine(): SchemeEngineAdapter {
-    return Context.fromComponents({ scheme: testProfile })
-        .scheme as SchemeEngineAdapter;
+    return openOperations(
+        Context.fromComponents({ scheme: testProfile }).scheme,
+    ) as unknown as SchemeEngineAdapter;
 }
 
 describe('public API: provision surface', () => {

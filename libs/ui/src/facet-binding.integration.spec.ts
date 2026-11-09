@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { Context } from '@ezclassify/engine';
 import scheme from '@ezclassify/example-schemes/schemes/cedar-valley-handling@1.0.0.json';
-import { loadCedarValley } from '@ezclassify/example-schemes/cedar-valley';
+import { loadCedarValleyContext } from '@ezclassify/example-schemes/cedar-valley';
 import {
     EzClassifyUI,
     VanillaEzClassifyStore,
@@ -191,7 +191,7 @@ function mountPage(served: string, pickFirst = false) {
     const root = document.createElement('div');
     root.appendChild(markingHost(served));
     document.body.appendChild(root);
-    const engine = loadCedarValley();
+    const engine = loadCedarValleyContext().scheme;
     const store = new VanillaEzClassifyStore(engine);
     const binding = createEzClassifyFacetBinding(
         store,
@@ -246,7 +246,7 @@ describe('facet binding before the runtime has seeded the store', () => {
  * document under the same marking id.
  */
 describe('a store shared by one page after another', () => {
-    const engine = loadCedarValley();
+    const engine = loadCedarValleyContext().scheme;
 
     function openPage(store: VanillaEzClassifyStore, served: string) {
         const root = document.createElement('div');

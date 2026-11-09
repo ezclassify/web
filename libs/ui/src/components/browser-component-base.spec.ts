@@ -7,7 +7,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { GENERIC_REFERENCE_SURFACE_NOUNS } from '@ezclassify/engine';
+import { GENERIC_REFERENCE_SURFACE_NOUNS } from '@ezclassify/types';
 import { resolveReferenceSurfaceOverride } from './browser-component-base';
 
 describe('resolveReferenceSurfaceOverride', () => {

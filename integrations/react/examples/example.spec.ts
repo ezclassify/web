@@ -10,7 +10,7 @@
  * section in the README.
  */
 import { describe, it, expect } from 'vitest';
-import { Context, AccessEngine } from '@ezclassify/engine';
+import { Context } from '@ezclassify/engine';
 import type { LocalSchemeEngineAdapter } from '@ezclassify/types';
 
 const profile = {
@@ -221,48 +221,42 @@ describe('4b. Text search: engine.filterConcepts()', () => {
     });
 });
 
-describe('5. Access: AccessEngine.check()', () => {
+describe('5. Access: access.check()', () => {
+    const policy = (access: unknown) =>
+        Context.fromComponents({ scheme: profile, access }).access!;
+
     it('throws a clear error when no access rules configured', () => {
-        const se = Context.fromComponents({ scheme: profile })
-            .scheme as LocalSchemeEngineAdapter;
-        const ae = AccessEngine.fromJSON(
-            {
-                access: {
-                    id: 'example-profile-access',
-                    targetScheme: { id: 'example-profile' },
-                    rules: { inline: [] },
-                },
+        const ae = policy({
+            access: {
+                id: 'example-profile-access',
+                targetScheme: { id: 'example-profile' },
+                rules: { inline: [] },
             },
-            se,
-        );
+        });
         expect(() => ae.check([], {})).toThrow(/no access rules/i);
     });
 
     it('throws when dataAssertions is not an array', () => {
-        const se = Context.fromComponents({ scheme: profile })
-            .scheme as LocalSchemeEngineAdapter;
-        const ae = AccessEngine.fromJSON(
-            {
-                access: {
-                    id: 'example-profile-access',
-                    targetScheme: { id: 'example-profile' },
-                    rules: {
-                        inline: [
-                            {
-                                id: 'level-rule',
-                                attribute: 'level',
-                                categoryId: 'level',
-                                strategy: 'gte',
-                            },
-                        ],
-                    },
+        const ae = policy({
+            access: {
+                id: 'example-profile-access',
+                targetScheme: { id: 'example-profile' },
+                rules: {
+                    inline: [
+                        {
+                            id: 'level-rule',
+                            name: 'Level',
+                            attribute: 'level',
+                            categoryId: 'level',
+                            strategy: 'gte',
+                        },
+                    ],
                 },
             },
-            se,
-        );
+        });
         // @ts-expect-error, deliberately wrong type to test runtime guard
         expect(() => ae.check('HIGH', {})).toThrow(
-            /first argument must be an array/,
+            /`dataAssertions` does not read as the operation's input/,
         );
     });
 });

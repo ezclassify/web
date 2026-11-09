@@ -13,8 +13,8 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { loadCedarValley } from '@ezclassify/example-schemes/cedar-valley';
-import { loadPantry } from '@ezclassify/example-schemes/pantry';
+import { loadCedarValleyContext } from '@ezclassify/example-schemes/cedar-valley';
+import { loadPantryContext } from '@ezclassify/example-schemes/pantry';
 import { EzClassifyUI } from '../ezclassify-ui';
 import { MarkedTextArea } from './marked-text-area';
 
@@ -40,7 +40,9 @@ afterEach(() => {
 });
 
 async function mountTextarea(
-    engine: ReturnType<typeof loadCedarValley> | ReturnType<typeof loadPantry>,
+    engine:
+        | ReturnType<typeof loadCedarValleyContext>['scheme']
+        | ReturnType<typeof loadPantryContext>['scheme'],
     value: string,
 ): Promise<{ ta: HTMLTextAreaElement; comp: MarkedTextArea }> {
     const ta = document.createElement('textarea');
@@ -60,7 +62,10 @@ describe('MarkedTextArea: loaded markings are flagged only for corrections that 
     it('accepts a nonpublic Cedar Valley mark whose derived recipient no format writes', async () => {
         const value =
             '(CONFIDENTIAL//FINANCIAL INFORMATION) Purchasing notes.\n(RESTRICTED//SECURE ASSESSMENTS//KEEP SEALED) Exam packet.';
-        const { ta, comp } = await mountTextarea(loadCedarValley(), value);
+        const { ta, comp } = await mountTextarea(
+            loadCedarValleyContext().scheme,
+            value,
+        );
 
         const segments = comp.getSegments();
         expect(segments.map((s) => s.marking)).toEqual([
@@ -78,7 +83,10 @@ describe('MarkedTextArea: loaded markings are flagged only for corrections that 
 
     it('accepts a mark the engine read tolerantly, in any case or separator', async () => {
         const value = '(internal//oakwood, pinecrest) Bus plan.';
-        const { comp } = await mountTextarea(loadCedarValley(), value);
+        const { comp } = await mountTextarea(
+            loadCedarValleyContext().scheme,
+            value,
+        );
 
         const [segment] = comp.getSegments();
         expect(segment.errors).toEqual([]);
@@ -87,7 +95,10 @@ describe('MarkedTextArea: loaded markings are flagged only for corrections that 
 
     it('accepts Pantry tags whose part view spells the wrapper itself', async () => {
         const value = '(gluten)\n\nCreamy pasta.\n\n(dairy)\n\nButter sauce.';
-        const { ta, comp } = await mountTextarea(loadPantry(), value);
+        const { ta, comp } = await mountTextarea(
+            loadPantryContext().scheme,
+            value,
+        );
 
         const segments = comp.getSegments();
         expect(segments.map((s) => s.marking)).toEqual(['(gluten)', '(dairy)']);
@@ -100,7 +111,7 @@ describe('MarkedTextArea: loaded markings are flagged only for corrections that 
 
     it('still flags a loaded mark the scheme rules refuse', async () => {
         const { comp } = await mountTextarea(
-            loadCedarValley(),
+            loadCedarValleyContext().scheme,
             '(PUBLIC//OAKWOOD) Lunch menu.',
         );
 
@@ -114,7 +125,10 @@ describe('MarkedTextArea: loaded markings are flagged only for corrections that 
 
 describe('MarkedTextArea: a repair writes one wrapper', () => {
     it('keeps a typed Pantry tag single-wrapped', async () => {
-        const { ta, comp } = await mountTextarea(loadPantry(), '');
+        const { ta, comp } = await mountTextarea(
+            loadPantryContext().scheme,
+            '',
+        );
 
         ta.value = '(gluten) Creamy pasta.';
         ta.dispatchEvent(new Event('input', { bubbles: true }));
@@ -127,7 +141,7 @@ describe('MarkedTextArea: a repair writes one wrapper', () => {
     });
 
     it('still normalizes a typed Cedar Valley mark into the field format', async () => {
-        const { ta } = await mountTextarea(loadCedarValley(), '');
+        const { ta } = await mountTextarea(loadCedarValleyContext().scheme, '');
 
         ta.value = '(confidential//financial information) Notes.';
         ta.dispatchEvent(new Event('input', { bubbles: true }));

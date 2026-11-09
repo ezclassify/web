@@ -1,75 +1,79 @@
 import { describe, expect, it, vi } from 'vitest';
-import { SchemeEngine } from '@ezclassify/engine';
+import { Context } from '@ezclassify/engine';
+import { openOperations } from '../../test-fixtures/context-doubles';
 import { VanillaEzClassifyStore } from './ezclassify-store';
 
 function engine(roleAware: boolean, hideValues = false) {
-    return SchemeEngine.fromJSON({
+    const context = Context.fromComponents({
         scheme: {
-            id: 'whole-dependency-test',
-            version: '1.0.0',
-            name: 'Whole dependency test',
-            role_aware: roleAware,
-            data: {
-                categories: [
-                    {
-                        id: 'head',
-                        label: 'Head',
-                        single: true,
-                        required: false,
-                        rollup: 'union',
-                    },
-                    {
-                        id: 'values',
-                        label: 'Values',
-                        single: false,
-                        required: false,
-                        rollup: 'union',
-                    },
-                ],
-                concepts: {
-                    inline: [
+            scheme: {
+                id: 'whole-dependency-test',
+                version: '1.0.0',
+                name: 'Whole dependency test',
+                role_aware: roleAware,
+                data: {
+                    categories: [
                         {
-                            id: 'SAME',
-                            name: 'Same',
-                            categories: ['head'],
-                            stands_for_whole: 'values',
-                            views: { default: 'SAME' },
+                            id: 'head',
+                            label: 'Head',
+                            single: true,
+                            required: false,
+                            rollup: 'union',
                         },
                         {
-                            id: 'A',
-                            name: 'A',
-                            categories: ['values'],
-                            views: { default: 'A' },
+                            id: 'values',
+                            label: 'Values',
+                            single: false,
+                            required: false,
+                            rollup: 'union',
                         },
+                    ],
+                    concepts: {
+                        inline: [
+                            {
+                                id: 'SAME',
+                                name: 'Same',
+                                categories: ['head'],
+                                stands_for_whole: 'values',
+                                views: { default: 'SAME' },
+                            },
+                            {
+                                id: 'A',
+                                name: 'A',
+                                categories: ['values'],
+                                views: { default: 'A' },
+                            },
+                            {
+                                id: 'B',
+                                name: 'B',
+                                categories: ['values'],
+                                views: { default: 'B' },
+                            },
+                        ],
+                    },
+                },
+                parse: { case_sensitive: true },
+                render: {
+                    default: 'default',
+                    formats: [
                         {
-                            id: 'B',
-                            name: 'B',
-                            categories: ['values'],
-                            views: { default: 'B' },
+                            id: 'default',
+                            surface: 'default',
+                            mode: 'inline',
+                            separator: '/',
+                            fields: [
+                                { category: 'head' },
+                                ...(hideValues
+                                    ? []
+                                    : [{ category: 'values', separator: ',' }]),
+                            ],
                         },
                     ],
                 },
             },
-            parse: { case_sensitive: true },
-            render: {
-                default: 'default',
-                formats: [
-                    {
-                        id: 'default',
-                        surface: 'default',
-                        mode: 'inline',
-                        separator: '/',
-                        fields: [
-                            { category: 'head' },
-                            ...(hideValues
-                                ? []
-                                : [{ category: 'values', separator: ',' }]),
-                        ],
-                    },
-                ],
-            },
         },
     });
+    return openOperations(context.scheme);
 }
 async function settle() {
     for (let i = 0; i < 50; i++) await Promise.resolve();

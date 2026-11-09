@@ -1,56 +1,59 @@
 import { afterEach, expect, it, vi } from 'vitest';
 import { Context } from '@ezclassify/engine';
+import { openContext } from '../../test-fixtures/context-doubles';
 import type { LocalSchemeEngineAdapter } from '@ezclassify/types';
 import { MarkedInput } from './marked-input';
 import { MarkedTextArea } from './marked-text-area';
 
 /** An adapter that supplies multiple engine errors to both marked fields. */
 function adapter() {
-    const context = Context.fromComponents({
-        scheme: {
+    const context = openContext(
+        Context.fromComponents({
             scheme: {
-                id: 'error-visibility',
-                version: '1.0.0',
-                name: 'Error visibility',
-                data: {
-                    categories: [
-                        {
-                            id: 'kind',
-                            label: 'Kind',
-                            single: true,
-                            rollup: 'max',
-                        },
-                    ],
-                    concepts: {
-                        inline: [
+                scheme: {
+                    id: 'error-visibility',
+                    version: '1.0.0',
+                    name: 'Error visibility',
+                    data: {
+                        categories: [
                             {
-                                id: 'A',
-                                rank: 1,
-                                name: 'Alpha',
-                                categories: ['kind'],
-                                views: { default: 'A' },
+                                id: 'kind',
+                                label: 'Kind',
+                                single: true,
+                                rollup: 'max',
+                            },
+                        ],
+                        concepts: {
+                            inline: [
+                                {
+                                    id: 'A',
+                                    rank: 1,
+                                    name: 'Alpha',
+                                    categories: ['kind'],
+                                    views: { default: 'A' },
+                                },
+                            ],
+                        },
+                    },
+                    rules: [],
+                    embedded_marking: [
+                        { pattern: '\\(([^)]+)\\)', template: '({marking}) ' },
+                    ],
+                    render: {
+                        default: 'part',
+                        formats: [
+                            {
+                                id: 'part',
+                                surface: 'marking',
+                                mode: 'inline',
+                                fields: [{ category: 'kind' }],
                             },
                         ],
                     },
                 },
-                rules: [],
-                embedded_marking: [
-                    { pattern: '\\(([^)]+)\\)', template: '({marking}) ' },
-                ],
-                render: {
-                    default: 'part',
-                    formats: [
-                        {
-                            id: 'part',
-                            surface: 'marking',
-                            mode: 'inline',
-                            fields: [{ category: 'kind' }],
-                        },
-                    ],
-                },
             },
-        },
-    });
+        }),
+    );
     const engine = context.scheme as LocalSchemeEngineAdapter;
     const process = engine.process.bind(engine);
     vi.spyOn(engine, 'process').mockImplementation((input, options) => ({

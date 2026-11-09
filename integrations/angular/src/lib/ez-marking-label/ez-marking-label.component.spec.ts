@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { TestBed } from '@angular/core/testing';
 import { Component, Input, SimpleChange, signal } from '@angular/core';
 import { Context } from '@ezclassify/engine';
-import type { SchemeEngine } from '@ezclassify/engine';
+import type { SchemeOperations } from '@ezclassify/engine';
 import { EzClassifyDirective } from '../ezclassify.directive';
 import { EzMarkingLabelComponent } from './ez-marking-label.component';
 
@@ -161,17 +161,17 @@ describe('EzMarkingLabelComponent: standalone', () => {
     `,
 })
 class TestHostComponent {
-    engine!: SchemeEngine;
+    engine!: SchemeOperations;
     colorMap = COLOR_MAP;
     @Input() marking = '';
 }
 
 describe('EzMarkingLabelComponent: inside [ezClassify] scope', () => {
-    let engine: SchemeEngine;
+    let engine: SchemeOperations;
 
     beforeEach(async () => {
         engine = Context.fromComponents({ scheme: testSchemeDoc })
-            .scheme as SchemeEngine;
+            .scheme as SchemeOperations;
 
         await TestBed.configureTestingModule({
             imports: [TestHostComponent],
@@ -249,7 +249,7 @@ describe('EzMarkingLabelComponent: inside [ezClassify] scope', () => {
     `,
 })
 class TestOverrideHostComponent {
-    engine!: SchemeEngine;
+    engine!: SchemeOperations;
     marking = 'LOW';
     inheritedMap = { HIGH: { background: '#b91c1c', text: '#ffffff' } };
     overrideMap = { LOW: { background: '#0000ff', text: '#ffffff' } };
@@ -264,7 +264,7 @@ describe('EzMarkingLabelComponent: explicit [colorMap] overrides inherited', () 
 
     it('uses the explicit [colorMap] input instead of the inherited one', async () => {
         const engine = Context.fromComponents({ scheme: testSchemeDoc })
-            .scheme as SchemeEngine;
+            .scheme as SchemeOperations;
         const fixture = TestBed.createComponent(TestOverrideHostComponent);
         fixture.componentInstance.engine = engine;
         fixture.detectChanges(false);
@@ -293,7 +293,7 @@ describe('EzMarkingLabelComponent: explicit [colorMap] overrides inherited', () 
     `,
 })
 class TestLateEngineHostComponent {
-    readonly engine = signal<SchemeEngine | null>(null);
+    readonly engine = signal<SchemeOperations | null>(null);
     colorMap = COLOR_MAP;
     marking = 'HIGH';
 }
@@ -323,7 +323,7 @@ describe('EzMarkingLabelComponent: an engine that arrives late', () => {
 
         fixture.componentInstance.engine.set(
             Context.fromComponents({ scheme: testSchemeDoc })
-                .scheme as SchemeEngine,
+                .scheme as SchemeOperations,
         );
         fixture.detectChanges(false);
         await Promise.resolve();

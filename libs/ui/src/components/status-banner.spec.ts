@@ -7,8 +7,8 @@ import type {
     ConceptView,
     CategoryView,
 } from '@ezclassify/types';
-import { Context } from '@ezclassify/engine';
-import { loadCedarValley } from '@ezclassify/example-schemes/cedar-valley';
+import { schemeOnlyContext } from '../../test-fixtures/context-doubles';
+import { loadCedarValleyContext } from '@ezclassify/example-schemes/cedar-valley';
 import { mockRenderFormats } from '../render-format-layout-mock';
 
 function createMockProfile(): SchemePublicView {
@@ -127,7 +127,7 @@ function createMockEngine(
     } as unknown as SchemeEngineAdapter;
 }
 
-const toCtx = (eng: unknown) => Context.fromSchemeEngine(eng as never);
+const toCtx = (eng: unknown) => schemeOnlyContext(eng as never);
 describe('StatusBanner', () => {
     let container: HTMLDivElement;
     let engine: SchemeEngineAdapter;
@@ -1001,7 +1001,7 @@ describe('StatusBanner: boundary judged by the engine', () => {
     const DATA = 'INTERNAL//OAKWOOD, PINECREST';
 
     async function bannerOver(boundary: string, data: string) {
-        const engine = loadCedarValley();
+        const engine = loadCedarValleyContext().scheme;
         const container = document.createElement('div');
         document.body.appendChild(container);
         const component = new StatusBanner();

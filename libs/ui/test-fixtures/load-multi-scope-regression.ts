@@ -1,11 +1,14 @@
-import { SchemeEngine } from '@ezclassify/engine';
+import { Context } from '@ezclassify/engine';
 import yaml from 'js-yaml';
+import { openOperations } from './context-doubles';
 import source from './multi-scope-regression.yaml?raw';
 
 /**
  * Load the canonical multi-scope fixture for UI state and rendering
- * regressions.
+ * regressions, as scheme operations a spec may replace or spy on.
  */
-export function loadMultiScopeRegression(): SchemeEngine {
-    return SchemeEngine.fromJSON(yaml.load(source) as never);
+export function loadMultiScopeRegression(): Context['scheme'] {
+    return openOperations(
+        Context.fromComponents({ scheme: yaml.load(source) }).scheme,
+    );
 }

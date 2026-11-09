@@ -17,6 +17,7 @@ import {
     type Mock,
 } from 'vitest';
 import { Context } from '@ezclassify/engine';
+import { openContext } from '../../test-fixtures/context-doubles';
 import {
     cedarValleyAccessYaml,
     cedarValleyGuideYaml,
@@ -48,11 +49,13 @@ afterEach(() => {
  * every engine process call recorded.
  */
 async function mount(field: string, partIds: string[]): Promise<HTMLElement> {
-    const ctx = Context.fromComponents({
-        scheme: jsYaml.load(cedarValleySchemeYaml),
-        guides: [jsYaml.load(cedarValleyGuideYaml)],
-        access: jsYaml.load(cedarValleyAccessYaml),
-    });
+    const ctx = openContext(
+        Context.fromComponents({
+            scheme: jsYaml.load(cedarValleySchemeYaml),
+            guides: [jsYaml.load(cedarValleyGuideYaml)],
+            access: jsYaml.load(cedarValleyAccessYaml),
+        }),
+    );
     const scheme = ctx.scheme as unknown as {
         process: (...args: unknown[]) => unknown;
     };
