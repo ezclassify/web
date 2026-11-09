@@ -1159,39 +1159,6 @@ describe('MarkedTextArea scan freshness and document work', () => {
             container.querySelectorAll('[data-marked-textarea-field]'),
         ).toHaveLength(0);
     });
-
-    it('checks line-leading marks with linear segment reads', async () => {
-        const container = document.createElement('div');
-        root.appendChild(container);
-        container.appendChild(document.createElement('textarea'));
-        const field = new MarkedTextArea();
-        await field.init(container, createTestContext(), {});
-
-        const lines = Array.from({ length: 300 }, () => '(S) paragraph.');
-        const text = lines.join('\n');
-        const starts = lines.map((_, index) => index * (lines[0].length + 1));
-        let startReads = 0;
-        const internal = field as unknown as {
-            segments: Array<{ start: number }>;
-            findUnrecognizedLeadingMarks(
-                text: string,
-            ): Array<{ start: number }>;
-        };
-        const originalSegments = internal.segments;
-        internal.segments = starts.map((start) => ({
-            get start() {
-                startReads++;
-                return start;
-            },
-        }));
-
-        expect(internal.findUnrecognizedLeadingMarks(text)).toEqual([]);
-        expect(startReads).toBeGreaterThanOrEqual(lines.length);
-        expect(startReads).toBeLessThanOrEqual(lines.length * 2);
-
-        internal.segments = originalSegments;
-        field.destroy();
-    });
 });
 
 describe('MarkedTextArea favorites', () => {

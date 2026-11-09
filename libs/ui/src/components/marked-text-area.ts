@@ -20,6 +20,7 @@ import type {
     ProcessResult,
     Change,
     ProcessingContext,
+    UnreadMark,
     ValidationError,
 } from '@ezclassify/types';
 import type { ComponentEngineSource } from './component-base-readonly';
@@ -71,8 +72,6 @@ import {
     extractInner as extractInnerLogic,
     applyRepairs as applyRepairsLogic,
     fixesNeedingCorrection,
-    keepLeadingPartMarks,
-    matchLeadingMark,
     markAttention,
     type MarkAttention,
     paragraphNumber,
@@ -138,6 +137,33 @@ export interface MarkedSegment {
      * author opens and commits this marking.
      */
     pendingFixes?: Change[];
+}
+
+/**
+ * The wrapped marks a scan could not read that this field shows, as invalid
+ * segments with no assertions.
+ *
+ * A part mark leads its paragraph, so the field shows the unread marks the
+ * engine says lead theirs. A wrapped token later in a line, such as the "(a)"
+ * of "see section (a) below", stays prose.
+ *
+ * @param unread - The scan's `unread` list, in document order
+ */
+function unreadSegments(unread: readonly UnreadMark[]): MarkedSegment[] {
+    return unread
+        .filter((mark) => mark.leading)
+        .map((mark) => ({
+            start: mark.start,
+            end: mark.end,
+            marking: mark.text,
+            assertions: [],
+            rendered: '',
+            text: '',
+            valid: false,
+            errors: ['Unrecognized marking: not matched to any known concept'],
+            validationErrors: [],
+            repaired: false,
+        }));
 }
 
 /** Caller-facing options for MarkedTextArea. */
@@ -1102,16 +1128,10 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
                   0,
               );
 
-        // Filter to wrapped (embedded) markings only, then drop any that are not a
-        // line-leading part mark. The engine scans the whole field with the
-        // scheme's parenthesis wrapper pattern, so prose citations/abbreviations
-        // (e.g. "see section (a) below") match alongside the field's real leading
-        // "(U)". A marked field carries one leading mark per line; mid-line wrapped
-        // tokens are prose, not markings.
-        const embedded = keepLeadingPartMarks(
-            scanOutcome.results.filter((r) => r.wrapped),
-            text,
-        );
+        // The field shows the part marks the scan read: every wrapped marking it
+        // returned, wherever it stands on its line. Wrapped text the scan could
+        // not read is in `unread`, not here.
+        const embedded = scanOutcome.results.filter((r) => r.wrapped);
 
         // Re-process only markings that changed since the last scan to get
         // repair results (autofixes, validation with context). Unchanged
@@ -1281,17 +1301,13 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
             };
         });
 
-        // Flag line-leading wrapper matches the engine scan did NOT return.
-        // scan() silently drops wrapped text it cannot parse at all (e.g.
-        // "(junkxyz)"), which left junk that READS like a marking rendered as
-        // ordinary unmarked prose: no chip, invisible to validation and
-        // rollup. For a marking product that is the worst kind of silent
-        // state, so surface those spans as invalid assertion-free segments:
-        // the display gives them the invalid-chip treatment and the picker
-        // can open on them for correction.
-        // Past where an incomplete scan stopped, nothing was read, so nothing
-        // there is unrecognized; the field-level error covers it.
-        const unrecognized = this.findUnrecognizedLeadingMarks(text, readTo);
+        // Wrapped marks the scan could not read, such as "(junkxyz)", read like
+        // a marking and carry none. Shown as plain prose they would be
+        // invisible to validation and rollup, so each one that leads its
+        // paragraph is shown as an invalid, assertion-free segment the picker
+        // can open on for correction. The scan lists nothing past where it
+        // stopped; the field-level error covers that text.
+        const unrecognized = unreadSegments(scanOutcome.unread);
         if (unrecognized.length > 0) {
             this.segments = [...this.segments, ...unrecognized].sort(
                 (a, b) => a.start - b.start,
@@ -1585,53 +1601,6 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
         return [...this.segments, ...this.heldPortions].sort(
             (a, b) => a.start - b.start,
         );
-    }
-
-    /**
-     * Find line-leading spans that match the scheme's wrapper pattern but are
-     * not covered by any scanned segment: wrapped text the engine could not
-     * parse as a marking. Returned as invalid, assertion-free segments.
-     *
-     * @param text - The text that was scanned
-     * @param readTo - Where the scan stopped reading; spans starting there or
-     *   later were never offered to recognition
-     */
-    private findUnrecognizedLeadingMarks(
-        text: string,
-        readTo: number,
-    ): MarkedSegment[] {
-        const pattern = this.embeddedStyle?.pattern;
-        if (!pattern || !text) return [];
-        const out: MarkedSegment[] = [];
-        const knownStarts = new Set(this.segments.map((seg) => seg.start));
-        let lineStart = 0;
-        for (;;) {
-            const nl = text.indexOf('\n', lineStart);
-            const lineEnd = nl === -1 ? text.length : nl;
-            const mark = matchLeadingMark(
-                text.slice(lineStart, lineEnd),
-                pattern,
-            );
-            if (mark && lineStart < readTo && !knownStarts.has(lineStart)) {
-                out.push({
-                    start: lineStart,
-                    end: lineStart + mark.length,
-                    marking: mark,
-                    assertions: [],
-                    rendered: '',
-                    text: '',
-                    valid: false,
-                    errors: [
-                        'Unrecognized marking: not matched to any known concept',
-                    ],
-                    validationErrors: [],
-                    repaired: false,
-                });
-            }
-            if (nl === -1) break;
-            lineStart = nl + 1;
-        }
-        return out;
     }
 
     /**
@@ -2601,14 +2570,14 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
     }
 
     /**
-     * Where a brand-new marked line should start, given a raw caret position.
-     * keepLeadingPartMarks only recognizes a part mark when it leads a line, so
-     * a caret sitting inside a line that's already marked can't start the new
-     * mark in place; it has to start a new line. Snapping that new line's start
-     * to the END of the current line (rather than the raw caret) keeps whatever
-     * text is already on that line intact instead of splitting it mid-word.
-     * Shared by the favorites stamp path and the Ctrl+Enter template-insert
-     * path; both walk the same line/segment geometry to decide it.
+     * Where a brand-new marked line should start, given a raw caret position. A
+     * new part mark leads the paragraph it marks, so a caret sitting inside a
+     * line that's already marked can't start the new mark in place; it has to
+     * start a new line. Snapping that new line's start to the END of the
+     * current line (rather than the raw caret) keeps whatever text is already
+     * on that line intact instead of splitting it mid-word. Shared by the
+     * favorites stamp path and the Ctrl+Enter template-insert path; both walk
+     * the same line/segment geometry to decide it.
      */
     private newMarkedLineInsertion(caret: number): {
         insertAt: number;
@@ -2811,12 +2780,8 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
             } else {
                 const insert = template.replace('{marking}', draft);
                 this._pickerDraft = draft || undefined;
-                // Part marks are only recognized when they LEAD a line
-                // (keepLeadingPartMarks); a template dropped mid-line would
-                // be silently discarded by the next scan, so the marking the
-                // user just built would vanish without a chip or an error.
-                // Insert at the start of the caret's line so the new mark
-                // covers that paragraph. When the line already begins with a
+                // A new part mark leads the paragraph it marks, so insert it
+                // at the start of the caret's line rather than mid-line. When the line already begins with a
                 // marking, start a new marked line after it instead of
                 // splitting the current line mid-word.
                 const { insertAt, prefix } = this.newMarkedLineInsertion(caret);

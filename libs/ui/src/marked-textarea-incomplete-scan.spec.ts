@@ -63,6 +63,7 @@ function stoppingEngine() {
                             0,
                             control.mode === 'first' ? 1 : 0,
                         ),
+                        unread: [],
                         limits: {
                             status: 'truncated',
                             regionsFound: outcome.results.length,

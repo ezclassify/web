@@ -901,8 +901,6 @@ export class MarkedInput extends MarkedFieldBase<HTMLTextAreaElement> {
             this.markEnd = 0;
             return;
         }
-        // Minimal leading match: a greedy scheme pattern (e.g. a `\((.+)\)`
-        // wrapper) would otherwise span to a later prose paren like "(a)".
         this.markEnd = matchLeadingMark(v, this.embeddedStyle.pattern).length;
     }
 

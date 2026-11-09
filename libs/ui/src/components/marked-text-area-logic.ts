@@ -21,23 +21,13 @@ export interface RepairSegment {
     repaired: boolean;
 }
 
-/** Minimal scan-result shape needed by {@link keepLeadingPartMarks}. */
-export interface ScannedMarking {
-    /** Character offset of the wrapped marking's opening delimiter. */
-    start: number;
-}
-
 /**
- * Match the genuine leading part mark at the very start of a field value.
+ * Match the wrapped mark at the very start of a field value.
  *
- * A scheme's `embeddedMarking` wrapper pattern is often written with a greedy
- * quantifier (e.g. `\((.+)\)`). Run greedily against a field whose prose
- * contains a later closing delimiter, e.g. "(A) note: see section (b) below."
- * The match spans from the leading "(" all the way to the prose paren, so the
- * marking chip swallows the whole sentence. The leading part mark is only the
- * first wrapped token, so match it minimally: anchor at the start and make the
- * pattern's quantifiers reluctant. Falls back to the unmodified, start-anchored
- * pattern when the reluctant form does not match at index 0.
+ * The scheme's `embeddedMarking` pattern is applied as written, anchored at the
+ * start, the way the engine's scan reads it. A greedy pattern such as
+ * `\((.+)\)` therefore reaches the last closing delimiter on the line, as it
+ * does in the scan.
  *
  * @param value - The field value
  * @param pattern - The scheme's embeddedMarking regex source
@@ -45,53 +35,13 @@ export interface ScannedMarking {
  */
 export function matchLeadingMark(value: string, pattern: string): string {
     if (!value || !pattern) return '';
-    // Anchor at start so we only ever accept a leading mark.
     const anchored = pattern.startsWith('^') ? pattern : `^(?:${pattern})`;
-    // Make greedy quantifiers reluctant so the FIRST closing delimiter wins, not
-    // the last. Only the bare quantifiers are touched (a following '?' means it is
-    // already reluctant/optional and is left alone).
-    const reluctant = anchored.replace(/([.\])])([+*])(?![?])/g, '$1$2?');
-    for (const src of [reluctant, anchored]) {
-        try {
-            const m = new RegExp(src).exec(value);
-            if (m && m.index === 0 && m[0]) return m[0];
-        } catch {
-            /* malformed transform, try the next candidate */
-        }
+    try {
+        const m = new RegExp(anchored).exec(value);
+        return m?.[0] ?? '';
+    } catch {
+        return '';
     }
-    return '';
-}
-
-/**
- * Keep only wrapped markings that sit at the start of a line (a genuine
- * leading/explicit part mark), discarding ones embedded mid-prose.
- *
- * The engine's scan walks the whole field text with the scheme's wrapper
- * pattern (parenthesized tokens), so ordinary prose that happens to contain a
- * parenthesized abbreviation or citation, e.g. "OCA/EO 13526, §1.2(a)", gets
- * matched as a part mark in addition to the field's real leading "(U)". A
- * marked field carries at most one part mark per line/paragraph and it always
- * leads that line; a wrapped token that appears _after_ non-blank text on its
- * line is prose, not a marking.
- *
- * A marking qualifies when everything between the start of its line and the
- * mark's opening delimiter is whitespace. This preserves multi-paragraph fields
- * (each paragraph's leading mark starts its own line) while dropping the
- * citation/abbreviation false positives.
- *
- * @param scanned - Wrapped scan results in document order (each carries
- *   `start`)
- * @param text - The full field text the offsets index into
- */
-export function keepLeadingPartMarks<T extends ScannedMarking>(
-    scanned: T[],
-    text: string,
-): T[] {
-    return scanned.filter((r) => {
-        const lineStart = text.lastIndexOf('\n', r.start - 1) + 1;
-        // Genuine leading mark: only whitespace precedes it on its own line.
-        return text.slice(lineStart, r.start).trim().length === 0;
-    });
 }
 
 /**
@@ -121,8 +71,7 @@ export function extractInner(
  * adds the wrapper. A scheme may instead spell the wrapper in the part view
  * itself, so a concept renders as "(gluten)": that rendering already is one
  * whole embedded mark, and wrapping it again would write "((gluten))". The
- * pattern that belongs to the template decides, read the way a leading mark is
- * read, so a greedy pattern cannot take "(A)//(B)" for a single mark.
+ * pattern that belongs to the template decides, read as a leading mark is.
  *
  * @param rendered - The engine's rendering of the part marking
  * @param template - The embedded marking template (e.g. "({marking}) ")

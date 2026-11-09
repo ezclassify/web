@@ -29,8 +29,11 @@ function wait(ms = 30): Promise<void> {
     return new Promise((r) => setTimeout(r, ms));
 }
 
-/** Engine with an embedded-marking pattern so marked fields can scan segments. */
-function createMarkedEngine(): LocalSchemeEngineAdapter {
+/**
+ * A Context whose scheme has an embedded-marking pattern, so marked fields can
+ * scan segments.
+ */
+function createMarkedContext() {
     return Context.fromComponents({
         scheme: {
             scheme: {
@@ -95,7 +98,12 @@ function createMarkedEngine(): LocalSchemeEngineAdapter {
                 },
             },
         },
-    }).scheme as LocalSchemeEngineAdapter;
+    });
+}
+
+/** The scheme operations of {@link createMarkedContext}. */
+function createMarkedEngine(): LocalSchemeEngineAdapter {
+    return createMarkedContext().scheme as LocalSchemeEngineAdapter;
 }
 
 let root: HTMLDivElement;
@@ -440,8 +448,8 @@ describe('MarkedTextArea: add-marking always yields a recognized segment', () =>
         const comp = forms.components.get(ta) as MarkedTextArea;
 
         // Touch "+ Add marking": caret goes to the END of the unterminated
-        // line; the template must still land at the line START so the scanner
-        // recognizes it (keepLeadingPartMarks drops mid-line marks).
+        // line; the template must still land at the line START, where a part
+        // mark leads the paragraph it marks.
         const touchAdd = root.querySelector(
             '.marked-textarea-touch-add',
         ) as HTMLButtonElement;
@@ -673,6 +681,78 @@ describe('Unrecognized wrapped text is flagged, never silently unmarked', () => 
         );
         expect(segments[1].valid).toBe(false);
         expect(segments[1].marking).toBe('(junkxyz)');
+    });
+
+    it('MarkedTextArea: flags an indented mark the scan could not read', async () => {
+        const engine = createMarkedEngine();
+        root.innerHTML = `<textarea id="indent-ta" data-ezclassify-controller="marked-textarea">(U) one.\n  (zzz) indented.</textarea>`;
+        const forms = new EzClassifyUI(engine as never, { root });
+        activeForms.push(forms);
+        await wait(400);
+
+        const ta = document.getElementById('indent-ta') as HTMLTextAreaElement;
+        const comp = forms.components.get(ta) as MarkedTextArea;
+        const segments = comp.getSegments();
+        // The scan reports "(zzz)" as unread and leading its paragraph.
+        expect(segments.map((s) => [s.marking, s.start, s.valid])).toEqual([
+            ['(U)', 0, true],
+            ['(zzz)', 11, false],
+        ]);
+    });
+
+    it('MarkedTextArea: leaves an unread wrapped token inside a line as prose', async () => {
+        const engine = createMarkedEngine();
+        root.innerHTML = `<textarea id="cite-ta" data-ezclassify-controller="marked-textarea">(S) see section (a) below.</textarea>`;
+        const forms = new EzClassifyUI(engine as never, { root });
+        activeForms.push(forms);
+        await wait(400);
+
+        const ta = document.getElementById('cite-ta') as HTMLTextAreaElement;
+        const comp = forms.components.get(ta) as MarkedTextArea;
+        const segments = comp.getSegments();
+        expect(segments).toHaveLength(1);
+        expect(segments[0].marking).toBe('(S)');
+        expect(segments[0].text).toBe('see section (a) below.');
+        expect(
+            root.querySelectorAll('.marked-textarea-chip--invalid'),
+        ).toHaveLength(0);
+    });
+});
+
+describe('MarkedTextArea shows the part marks the engine reads', () => {
+    it('shows a mid-line mark the scan reads and audit counts as a part', async () => {
+        const context = createMarkedContext();
+        const engine = context.scheme as LocalSchemeEngineAdapter;
+        const text = '(S) see section (U) below.';
+        // The engine reads the mid-line "(U)" in both operations.
+        const scanned = (
+            engine.scan(text) as {
+                results: { marking: string; start: number }[];
+            }
+        ).results;
+        expect(scanned.map((r) => [r.marking, r.start])).toEqual([
+            ['(S)', 0],
+            ['(U)', 16],
+        ]);
+        const audited = context.audit({ text }).result.parts;
+        expect(audited.map((part) => part.marking)).toEqual(['(S)', '(U)']);
+        root.innerHTML = `<textarea id="mid-ta" data-ezclassify-controller="marked-textarea">${text}</textarea>`;
+        const forms = new EzClassifyUI(engine as never, { root });
+        activeForms.push(forms);
+        await wait(400);
+
+        const ta = document.getElementById('mid-ta') as HTMLTextAreaElement;
+        const comp = forms.components.get(ta) as MarkedTextArea;
+        const segments = comp.getSegments();
+        expect(
+            segments.map((s) => [s.marking, s.start, s.end, s.valid, s.text]),
+        ).toEqual([
+            ['(S)', 0, 3, true, 'see section'],
+            ['(U)', 16, 19, true, 'below.'],
+        ]);
+        expect(
+            root.ownerDocument.querySelectorAll('[data-marked-textarea-field]'),
+        ).toHaveLength(2);
     });
 });
 
