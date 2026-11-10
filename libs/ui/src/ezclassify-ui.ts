@@ -1081,6 +1081,10 @@ export class EzClassifyUI {
             const unsubscribe = this.store.subscribe(
                 id,
                 (state: EzClassifyState) => {
+                    // A refused state's text is the engine's marker: this host
+                    // keeps its value, and the fields showing the marking say
+                    // why it could not be written.
+                    if (renderViewRefused(state)) return;
                     if (writableHost.value === state.rendered) return;
                     host.dataset.ezState = 'sync';
                     try {
@@ -3651,7 +3655,11 @@ export class EzClassifyUI {
                 component.setAssertions(promoted);
             } else {
                 if (state.rendered === binding.lastSeenRendered) return;
-                binding.lastSeenRendered = state.rendered;
+                // A refused state's text is the engine's marker. The field
+                // still holds its last value, so that stays the value this
+                // binding has seen and the field's echo of it publishes nothing.
+                if (!renderViewRefused(state))
+                    binding.lastSeenRendered = state.rendered;
                 // Unknown text has no assertion identity. Keep the canonical
                 // reading intact so a receiver cannot echo a shortened or
                 // empty marking over the input the engine refused.

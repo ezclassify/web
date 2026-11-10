@@ -18,6 +18,7 @@
 
 import type { Assertion } from '@ezclassify/types';
 import type { EzClassifyStore } from './store/ezclassify-store';
+import { renderViewRefused } from './render-refusal';
 
 /** Which side of the marking state populates the doc field. */
 export type MarkingBindingMode = 'rendered' | 'assertions';
@@ -320,6 +321,10 @@ export function createDocBinding<T extends object>(
         teardown.push(
             store.subscribe(entry.markingId, (state) => {
                 if (disposed) return;
+                // A refused state's text is the engine's marker: the document
+                // keeps the marking it holds.
+                if (entry.mode === 'rendered' && renderViewRefused(state))
+                    return;
                 const next =
                     entry.mode === 'rendered'
                         ? state.rendered

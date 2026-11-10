@@ -151,6 +151,60 @@ describe('serialization', () => {
         });
     });
 
+    describe('a marking the engine could not write', () => {
+        const refused = {
+            rendered: '[unrepresentable:ambiguous-representation]',
+            assertions: [{ conceptId: 'c1', categoryId: 'f1' }],
+            valid: true,
+            assessment: {
+                emitted: [],
+                omitted: [],
+                collapsed: [],
+                conflicts: [],
+                unrepresentable: [
+                    { output: 'whole', reason: 'ambiguous-representation' },
+                ],
+            },
+        };
+
+        it('captures the text the field holds', async () => {
+            const { forms } = createMockForms({
+                fields: [{ id: 'f1', value: 'held' }],
+            });
+            forms.store.get = () => refused;
+
+            const state = await captureFormState(forms);
+
+            expect(state.fields[0].value).toBe('held');
+        });
+
+        it('restores the saved text', () => {
+            const { forms, fieldElements } = createMockForms({
+                fields: [{ id: 'f1', value: '' }],
+            });
+            forms.store.get = () => refused;
+
+            restoreFormState(forms, {
+                version: 1,
+                fields: [
+                    {
+                        id: 'f1',
+                        value: 'saved',
+                        conceptIds: ['c1'],
+                        assertions: refused.assertions as never,
+                        valid: true,
+                    },
+                ],
+                rollup: '',
+                schemeId: 'p',
+                schemeVersion: '1',
+                timestamp: '',
+            });
+
+            expect(fieldElements[0].value).toBe('saved');
+        });
+    });
+
     describe('restoreFormState', () => {
         it('matches fields by id and sets values', async () => {
             const { forms, fieldElements } = createMockForms({

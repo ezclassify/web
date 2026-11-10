@@ -758,6 +758,60 @@ describe('MarkedInput', () => {
         expect(inputEl.value).toContain('S');
     });
 
+    it('keeps the field value and says why when the engine refuses to write new facts', async () => {
+        const real = createTestEngine();
+        let refusing = false;
+        // The adapter is frozen, so the refusal wraps it from outside.
+        const engine = new Proxy(real, {
+            get(target, key) {
+                const member = Reflect.get(target, key, target) as unknown;
+                if (typeof member !== 'function') return member;
+                if (key !== 'process') return member.bind(target);
+                return async (...args: unknown[]) => {
+                    const result = await Reflect.apply(member, target, args);
+                    if (!refusing) return result;
+                    return {
+                        ...result,
+                        rendered: '[unrepresentable:ambiguous-representation]',
+                        assessment: {
+                            ...result.assessment,
+                            unrepresentable: [
+                                {
+                                    output: 'portion',
+                                    reason: 'ambiguous-representation',
+                                },
+                            ],
+                        },
+                    };
+                };
+            },
+        });
+        root.innerHTML = `
+      <input type="text" id="field" data-ezclassify-controller="marked-input" value="(U) some text">
+    `;
+        const forms = new EzClassifyUI(asContext(engine as never), {});
+        activeForms.push(forms);
+        await wait(80);
+        const inputEl = editingField('field') as HTMLTextAreaElement;
+        const comp = forms.components.get(nativeField(inputEl)) as MarkedInput;
+        const held = inputEl.value;
+        refusing = true;
+
+        comp.setAssertions([
+            {
+                conceptId: 'S',
+                categoryId: 'level',
+                confidence: 'certain',
+                source: 'user',
+            },
+        ]);
+        await wait(80);
+
+        expect(inputEl.value).toBe(held);
+        expect(comp.getRendered()).not.toContain('unrepresentable');
+        expect(document.body.textContent).toContain('ambiguous-representation');
+    });
+
     it('emits ezclassify:change event when mark changes', async () => {
         const engine = createTestEngine();
         root.innerHTML = `

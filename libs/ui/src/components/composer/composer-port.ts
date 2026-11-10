@@ -78,7 +78,7 @@ export interface ComposerPortField {
  * @param surface - The scope id of the surface the field writes
  * @param defaultSurface - The scope id of the scheme's default surface
  */
-function ownedElsewhere(
+export function ownedElsewhere(
     category: { scopes?: readonly string[] },
     surface: string | undefined,
     defaultSurface: string | undefined,

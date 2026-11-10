@@ -29,6 +29,7 @@ import { HiddenAssertionField } from './hidden-assertion-field';
 import { InlineMarkingEditor } from './inline-marking-editor';
 import { accessibleLabel } from './composer/composer-view';
 import { assertionFactKey, withoutTakenFromWhole } from '../assertion-identity';
+import { renderViewRefused } from '../render-refusal';
 import { t } from '../i18n';
 import { createAnnouncer } from './accessibility-helpers';
 import { getMountHost } from '../mount-host-registry';
@@ -819,6 +820,10 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
                 const result = await Promise.resolve(
                     this.engine.render(state.assertions, this.scanFormat),
                 );
+                // A refused write is the engine's marker: the entry keeps
+                // the marking it holds.
+                if (renderViewRefused(result))
+                    return { entryId, marking: previous?.marking ?? '' };
                 return {
                     entryId,
                     marking: this.wrapRendered(result.rendered).trimEnd(),

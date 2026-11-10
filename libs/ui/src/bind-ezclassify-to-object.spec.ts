@@ -165,6 +165,45 @@ describe('readDocPath / writeDocPath', () => {
 });
 
 describe('bindEzClassifyToObject', () => {
+    it('keeps the document value when the engine refuses to write the marking', async () => {
+        const engine = passThroughEngine();
+        const process = engine.process.bind(engine);
+        engine.process = (input, ...rest) => {
+            const result = process(
+                input,
+                ...rest,
+            ) as EzClassifyStoreProcessResult;
+            return Array.isArray(input) && input[0]?.conceptId === 'refused'
+                ? {
+                      ...result,
+                      rendered: '[unrepresentable:ambiguous-representation]',
+                      assessment: {
+                          ...EMPTY_RENDER_ASSESSMENT,
+                          unrepresentable: [
+                              {
+                                  output: 'whole',
+                                  reason: 'ambiguous-representation',
+                              },
+                          ],
+                      },
+                  }
+                : result;
+        };
+        const store = new VanillaEzClassifyStore(engine);
+        const doc: { classification: string } = { classification: '' };
+        const handle = bindEzClassifyToObject(store, doc, {
+            'doc-marking': 'classification',
+        });
+        const fact = (conceptId: string) =>
+            ({ categoryId: 'tier', conceptId }) as Assertion;
+        await store.publishAssertions('doc-marking', [fact('secret')]);
+
+        await store.publishAssertions('doc-marking', [fact('refused')]);
+
+        expect(doc.classification).toBe('tier:secret');
+        handle.dispose();
+    });
+
     it('updates the doc field on rendered-mode commits (dot-notation)', async () => {
         const store = new VanillaEzClassifyStore(passThroughEngine());
         const doc: { classification: string } = { classification: '' };

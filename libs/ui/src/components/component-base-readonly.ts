@@ -23,6 +23,7 @@ import {
     type Fix,
     type ProcessResult,
     type RecognitionResult,
+    type RenderAssessment,
     type ValidateResult,
     type Warning,
 } from '@ezclassify/types';
@@ -56,6 +57,7 @@ import {
     unreadRuns,
     type UnreadRun,
 } from '../loaded-value';
+import { renderViewRefusalMessages } from '../render-refusal';
 import { getMountHost } from '../mount-host-registry';
 
 /**
@@ -877,6 +879,37 @@ export abstract class ReadOnlyComponentBase implements ComponentInstance {
         this.showRuleErrors(
             this.options.facetOf ? NO_RULE_ERRORS : readFailureReport(error),
         );
+    }
+
+    /**
+     * Show why the field's marking could not be written, after the engine's
+     * errors for it. A refused write is the engine's opaque marker, so the
+     * field keeps the value it holds and says why here (see
+     * render-refusal.ts).
+     *
+     * @param write - The refused write
+     * @param errors - The engine's errors from the same result
+     * @param proposedFixes - The ways to fix from the same result
+     * @param warnings - The warnings from the same result
+     */
+    protected showRenderRefusal(
+        write: { assessment?: RenderAssessment },
+        errors: readonly ValidationError[] = [],
+        proposedFixes: readonly Fix[] = [],
+        warnings: readonly Warning[] = [],
+    ): void {
+        if (this.options.facetOf) {
+            this.showRuleErrors(NO_RULE_ERRORS);
+            return;
+        }
+        const report = ruleErrorsFrom(errors, proposedFixes, warnings);
+        this.showRuleErrors({
+            ...report,
+            messages: [
+                ...report.messages,
+                ...renderViewRefusalMessages(this.formatId, write),
+            ],
+        });
     }
 
     private showRuleErrors(report: RuleErrorReport): void {

@@ -1,6 +1,7 @@
 import type { Assertion } from '@ezclassify/types';
 import { EzClassifyUI } from './ezclassify-ui';
 import { getFormat } from './format-resolver';
+import { renderViewRefused } from './render-refusal';
 import { reportPublishFailure } from './store/publish-failure';
 import { SOLE_BUCKET } from './store/store-shared';
 
@@ -80,7 +81,10 @@ export async function captureFormState(
         if (stored && stored.assertions.length > 0) {
             fields.push({
                 id,
-                value: stored.rendered || value,
+                // A refused state's text is the engine's marker, not a value.
+                value: renderViewRefused(stored)
+                    ? value
+                    : stored.rendered || value,
                 conceptIds: stored.assertions
                     .filter((a) => a.source !== 'inferred')
                     .map((a) => a.conceptId),
@@ -160,7 +164,10 @@ export function restoreFormState(forms: EzClassifyUI, state: FormState): void {
             // Reflect the rendered banner into the input so a native form
             // submit / read sees it; the store writeback also does this, but
             // set it here so it is present synchronously.
-            field.value = store.get(storeId).rendered || saved.value;
+            const held = store.get(storeId);
+            field.value = renderViewRefused(held)
+                ? saved.value
+                : held.rendered || saved.value;
             continue;
         }
 

@@ -1232,4 +1232,94 @@ describe('EzClassifyUI store wireup', () => {
         expect(typed.getAttribute('aria-invalid')).toBe('true');
         expect(typed.validationMessage).toContain('value-lossy');
     });
+
+    describe('a marking the engine cannot write', () => {
+        const MARKER = '[unrepresentable:ambiguous-representation]';
+
+        /** Refuses any facts whose first value is REFUSE. */
+        function refusingEngine() {
+            const engine = loadMultiScopeRegression();
+            const originalProcess = engine.process.bind(engine);
+            engine.process = ((
+                input: string | Assertion[],
+                ...rest: unknown[]
+            ) => {
+                const result = Reflect.apply(originalProcess, engine, [
+                    input,
+                    ...rest,
+                ]) as ProcessResult;
+                if (!Array.isArray(input) || input[0]?.value !== 'REFUSE')
+                    return result;
+                return {
+                    ...result,
+                    assertions: input,
+                    rendered: MARKER,
+                    assessment: {
+                        emitted: [],
+                        omitted: [],
+                        collapsed: [],
+                        conflicts: [],
+                        unrepresentable: [
+                            {
+                                output: 'whole',
+                                reason: 'ambiguous-representation',
+                            },
+                        ],
+                    },
+                };
+            }) as typeof engine.process;
+            return engine;
+        }
+
+        const fact = (value: string): Assertion => ({
+            categoryId: 'level',
+            conceptId: 'STUDENTS',
+            value,
+            source: 'manual',
+            confidence: 'certain',
+        });
+
+        it('leaves a hidden host its value', async () => {
+            document.body.innerHTML = '';
+            const root5 = document.createElement('div');
+            root5.innerHTML = `<input type="hidden" id="doc-marking" data-ezclassify-marking value="" />`;
+            document.body.appendChild(root5);
+            forms = await mountReady(root5, refusingEngine());
+            const host = root5.querySelector<HTMLInputElement>('#doc-marking')!;
+            await forms.store.publishRendered(
+                'doc-marking',
+                'DISTRICT COORDINATORS',
+            );
+            await flush();
+            expect(host.value).toBe('DISTRICT COORDINATORS');
+
+            await forms.store.publishAssertions('doc-marking', [
+                fact('REFUSE'),
+            ]);
+            await flush();
+
+            expect(forms.store.get('doc-marking').rendered).toBe(MARKER);
+            expect(host.value).toBe('DISTRICT COORDINATORS');
+        });
+
+        it('does not publish a selector field back over the marking it could not write', async () => {
+            document.body.innerHTML = '';
+            const root5 = document.createElement('div');
+            root5.innerHTML = `<input id="picked" data-ezclassify-controller="selector" data-ezclassify-marking value="" />`;
+            document.body.appendChild(root5);
+            forms = await mountReady(root5, refusingEngine());
+            const host = root5.querySelector<HTMLInputElement>('#picked')!;
+            await forms.store.publishAssertions('picked', [fact('KEEP')]);
+            await flush();
+            const held = host.value;
+            const publishRendered = vi.spyOn(forms.store, 'publishRendered');
+
+            await forms.store.publishAssertions('picked', [fact('REFUSE')]);
+            await flush();
+
+            expect(host.value).toBe(held);
+            expect(host.value).not.toContain('unrepresentable');
+            expect(publishRendered).not.toHaveBeenCalled();
+        });
+    });
 });

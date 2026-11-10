@@ -36,6 +36,7 @@ import { assertionFactKey, takenFromWhole } from '../assertion-identity';
 import type { EzClassifyState } from '../store/ezclassify-store';
 import { createComposerPort } from './composer/composer-port';
 import { judgedAsHeld } from '../loaded-value';
+import { renderViewRefused } from '../render-refusal';
 import {
     replacesStated,
     statedAssertions,
@@ -197,15 +198,20 @@ export abstract class ComponentBase extends ReadOnlyComponentBase {
         this.invalidateValueRead();
         ++this._reprocessSeq;
         if (this._destroyed) return;
-        const replacesValue = state.rendered !== this._lastRendered;
+        // A refused state's text is the engine's marker, not a marking: the
+        // field keeps the value it holds and says why.
+        const refused = renderViewRefused(state);
+        const replacesValue = !refused && state.rendered !== this._lastRendered;
         this.assertions = [...state.assertions];
         this.failedRead = null;
-        this._lastRendered = state.rendered;
+        if (!refused) this._lastRendered = state.rendered;
         // A structured or computed state has no recognition: nothing was read.
-        this.noteReading(state);
+        this.noteReading(refused ? {} : state);
         this.displayColor = state.displayColor;
         this.recordAppliedFixes(state.appliedFixes ?? [], replacesValue);
-        this.updateValidationErrors(state.errors, state.proposedFixes);
+        if (refused)
+            this.showRenderRefusal(state, state.errors, state.proposedFixes);
+        else this.updateValidationErrors(state.errors, state.proposedFixes);
         this.onAssertionsChanged();
     }
 
@@ -504,10 +510,22 @@ export abstract class ComponentBase extends ReadOnlyComponentBase {
                                 : ('inferred' as const),
                     };
                 });
-            this._lastRendered = result.rendered;
-            this.noteReading(result);
+            // The engine could not write this selection, so its text is the
+            // refusal marker. The field keeps the value it holds; the selection
+            // stays visible so the author can change it, and the status says
+            // why it could not be written.
+            const refused = renderViewRefused(result);
+            if (!refused) this._lastRendered = result.rendered;
+            this.noteReading(refused ? {} : result);
             recordAppliedFixes(this._appliedFixes, result.appliedFixes);
-            if (result.errors)
+            if (refused)
+                this.showRenderRefusal(
+                    result,
+                    result.errors,
+                    result.proposedFixes,
+                    result.warnings,
+                );
+            else if (result.errors)
                 this.updateValidationErrors(
                     result.errors,
                     result.proposedFixes,

@@ -15,6 +15,7 @@ import { ComponentBase, type ComponentOptions } from './component-base';
 import { createAnnouncer, announce } from './component-utils';
 import type { CategoryView, ConceptView, Suggestion } from '@ezclassify/types';
 import type { ComponentEngineSource } from './component-base-readonly';
+import { ownedElsewhere } from './composer/composer-port';
 import categorySelectorCss from './category-selector.css?inline';
 
 const CATEGORY_SELECTOR_CSS: string = categorySelectorCss;
@@ -74,11 +75,20 @@ export class CategorySelector extends ComponentBase {
     protected setup(): void {
         const _opts = this.options as CategorySelectorOptions;
 
-        // Build category rows. When a specific categoryId is bound (facet-of usage), scope
-        // to that one category only. Out-of-facet rows are never rendered and never commit.
+        // Build category rows. A bound categoryId (facet-of usage) is that one
+        // category, whose own declared scope decides where it lands. Otherwise
+        // the rows are the categories of the scope the host writes: a category
+        // of another scope has no place in this field's marking. Rows left out
+        // are never rendered and never commit.
         const boundCategoryId = _opts.categoryId;
+        const defaultScope = this.schemeMeta.defaultScope;
+        const scope = _opts.scope ?? defaultScope;
         this.categoryRows = this.scheme.categories
-            .filter((cat) => !boundCategoryId || cat.id === boundCategoryId)
+            .filter((cat) =>
+                boundCategoryId
+                    ? cat.id === boundCategoryId
+                    : !ownedElsewhere(cat, scope, defaultScope),
+            )
             .map((category) => ({
                 category,
                 concepts: this.scheme.concepts

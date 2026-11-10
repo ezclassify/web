@@ -14,6 +14,7 @@ import type {
     ComponentSchemeEngine,
 } from './component-base-readonly';
 import { resolveProfile, resolveSchemeEngine } from './component-base-readonly';
+import { renderViewRefused } from '../render-refusal';
 
 /**
  * Hidden data-only field: stores assertions, emits change events, contributes
@@ -75,13 +76,14 @@ export class HiddenAssertionField implements ComponentInstance {
         const result = this.callRender(this.assertions, {
             format: this.formatId,
         });
+        // A refused write is the engine's marker, never the field's value.
         if ('rendered' in result) {
-            this.rendered = result.rendered;
+            if (!renderViewRefused(result)) this.rendered = result.rendered;
             this.emitChange();
         } else {
             result.then(
                 (r) => {
-                    this.rendered = r.rendered;
+                    if (!renderViewRefused(r)) this.rendered = r.rendered;
                     this.emitChange();
                 },
                 (err) => {

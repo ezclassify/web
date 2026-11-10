@@ -38,6 +38,7 @@ import {
 } from './component-base-readonly';
 import { isMacPlatform } from './dom-helpers';
 import { takenFromWhole } from '../assertion-identity';
+import { renderViewRefused } from '../render-refusal';
 import { t } from '../i18n';
 import { wrapPartMark } from './marked-text-area-logic';
 import { adoptStylesOnce } from '../styles/adopt';
@@ -108,7 +109,8 @@ export abstract class MarkedFieldBase<
         );
         return {
             assertions: result.assertions,
-            rendered: result.rendered,
+            // A refused write is the engine's marker: the saved text stands.
+            rendered: renderViewRefused(result) ? marking : result.rendered,
             appliedFixes: result.appliedFixes,
         };
     }

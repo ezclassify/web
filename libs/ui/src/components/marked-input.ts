@@ -9,6 +9,7 @@ import type {
     Assertion,
     Change,
     Fix,
+    RenderAssessment,
     ValidationError,
     Warning,
 } from '@ezclassify/types';
@@ -21,6 +22,10 @@ import { getMountHost } from '../mount-host-registry';
 import { InlineMarkingEditor } from './inline-marking-editor';
 import { accessibleLabel } from './composer/composer-view';
 import { takenFromWhole, withStatedAssertions } from '../assertion-identity';
+import {
+    renderViewRefusalMessages,
+    renderViewRefused,
+} from '../render-refusal';
 import { t } from '../i18n';
 import { revealClearOfPinned } from './composer/composer-placement';
 import { replacesStated } from './composer/composer-controller';
@@ -631,8 +636,16 @@ export class MarkedInput extends MarkedFieldBase<HTMLTextAreaElement> {
             proposedFixes?: Fix[];
             warnings?: Warning[];
             assertionsBeforeRepair?: Assertion[];
+            assessment?: RenderAssessment;
         }) => {
             if (mySeq !== this.scanSeq) return;
+            // The engine could not write these facts, so its text is the
+            // refusal marker: the host keeps its value and the field says why.
+            if (renderViewRefused(result)) {
+                this.showRefusal(result);
+                this.renderDisplay();
+                return;
+            }
             const r = result.rendered;
             this.rendered = r;
             const partErrors = result.errors ?? [];
@@ -794,6 +807,30 @@ export class MarkedInput extends MarkedFieldBase<HTMLTextAreaElement> {
     }
 
     /**
+     * Mark the field invalid and say why the engine could not write its
+     * marking, after the engine's errors for it.
+     */
+    private showRefusal(write: {
+        errors: readonly ValidationError[];
+        proposedFixes?: readonly Fix[];
+        warnings?: readonly Warning[];
+        assessment?: RenderAssessment;
+    }): void {
+        const report = ruleErrorsFrom(
+            write.errors ?? [],
+            write.proposedFixes ?? [],
+            write.warnings,
+        );
+        const messages = [
+            ...report.messages,
+            ...renderViewRefusalMessages(this.scanFormat, write),
+        ];
+        this.valid = false;
+        this.errors = messages;
+        this.showReport({ ...report, messages });
+    }
+
+    /**
      * Show a report under the field: the rule errors, warnings and fixes of a
      * read, or why the read failed.
      */
@@ -944,6 +981,7 @@ export class MarkedInput extends MarkedFieldBase<HTMLTextAreaElement> {
             proposedFixes?: Fix[];
             warnings?: Warning[];
             assertionsBeforeRepair?: Assertion[];
+            assessment?: RenderAssessment;
         };
         const savedAssertions = this._editorAssertions;
         this._editorAssertions = null;
@@ -983,6 +1021,15 @@ export class MarkedInput extends MarkedFieldBase<HTMLTextAreaElement> {
         }
 
         if (mySeq !== this.scanSeq) return;
+
+        // Nothing is published from a write the engine refused: the mark and
+        // the last published state stand until it can be written.
+        if (renderViewRefused(result)) {
+            this._userEdited = false;
+            this.showRefusal(result);
+            this.renderDisplay();
+            return;
+        }
 
         this.assertions = result.assertions;
         this.rendered = result.rendered;

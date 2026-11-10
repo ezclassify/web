@@ -116,6 +116,7 @@ function createMockEngine(
             defaultRenderFormat: scheme.defaultRenderFormat ?? 'default',
             formats: mockRenderFormats(scheme.formats ?? []),
             scopes: scheme.scopes ?? [],
+            defaultScope: scheme.defaultScope,
         }),
         listCategories: () => scheme.categories ?? [],
         getConceptsInCategory: (catId: string) =>
@@ -746,6 +747,135 @@ describe('CategorySelector', () => {
             await init();
             const rows = container.querySelectorAll('.category-selector-row');
             expect(rows.length).toBe(2);
+        });
+    });
+
+    describe('scope', () => {
+        /** Two categories: f1 on the marking as a whole, f2 in severity. */
+        function scopedEngine(): SchemeEngineAdapter {
+            const base = createMockEngine().getScheme();
+            return createMockEngine({
+                defaultScope: 'default',
+                scopes: [
+                    { id: 'default', label: 'Default' },
+                    { id: 'severity', label: 'Severity' },
+                ],
+                categories: base.categories.map((category) =>
+                    category.id === 'f2'
+                        ? { ...category, scopes: ['severity'] }
+                        : category,
+                ),
+            } as Partial<SchemePublicView>);
+        }
+
+        const rowIds = () =>
+            [
+                ...container.querySelectorAll<HTMLElement>(
+                    '[role="radiogroup"], [role="group"]',
+                ),
+            ].map((row) => row.dataset.categoryId);
+
+        it('lists only the default scope when the host names none', async () => {
+            engine = scopedEngine();
+            await init();
+            expect(rowIds()).toEqual(['f1']);
+        });
+
+        it('lists only the scope the host names', async () => {
+            engine = scopedEngine();
+            await init({ scope: 'severity' });
+            expect(rowIds()).toEqual(['f2']);
+        });
+
+        it('lists a category bound by facet whatever its scope', async () => {
+            engine = scopedEngine();
+            await init({ categoryId: 'f2' });
+            expect(rowIds()).toEqual(['f2']);
+        });
+    });
+
+    describe('a selection the engine cannot write', () => {
+        const MARKER = '[unrepresentable:ambiguous-representation]';
+
+        /** Refuses any selection holding concept c2; writes the rest. */
+        function refusingEngine(): SchemeEngineAdapter {
+            const refusing = createMockEngine();
+            const process = refusing.process as unknown as (
+                input: string,
+                options?: { assertions?: Assertion[] },
+            ) => Record<string, unknown>;
+            refusing.process = vi.fn(
+                (input: string, options?: { assertions?: Assertion[] }) => {
+                    const result = process(input, options);
+                    const refused = options?.assertions?.some(
+                        (a) => a.conceptId === 'c2',
+                    );
+                    return {
+                        ...result,
+                        errors: [],
+                        rendered: refused ? MARKER : result.rendered,
+                        assessment: {
+                            emitted: [],
+                            omitted: [],
+                            collapsed: [],
+                            conflicts: [],
+                            unrepresentable: refused
+                                ? [
+                                      {
+                                          output: 'default',
+                                          reason: 'ambiguous-representation',
+                                      },
+                                  ]
+                                : [],
+                        },
+                    };
+                },
+            ) as unknown as SchemeEngineAdapter['process'];
+            return refusing;
+        }
+
+        const click = (conceptId: string) =>
+            container
+                .querySelector<HTMLButtonElement>(
+                    `[data-concept-id="${conceptId}"]`,
+                )!
+                .click();
+
+        it('keeps the value and says why through the status', async () => {
+            engine = refusingEngine();
+            const onChange = vi.fn();
+            await init({ onChange });
+
+            click('c1');
+            expect(selector.getRendered()).toBe('c1');
+
+            click('c2');
+
+            expect(selector.getRendered()).toBe('c1');
+            expect(onChange).toHaveBeenLastCalledWith(expect.anything(), 'c1');
+            expect(container.hasAttribute('data-ezclassify-invalid')).toBe(
+                true,
+            );
+            expect(document.body.textContent).toContain(
+                'ambiguous-representation',
+            );
+            expect(document.body.textContent).not.toContain(MARKER);
+        });
+
+        it('clears the status once the selection can be written', async () => {
+            engine = refusingEngine();
+            await init();
+            click('c2');
+            expect(container.hasAttribute('data-ezclassify-invalid')).toBe(
+                true,
+            );
+
+            click('c1');
+
+            expect(selector.getRendered()).toBe('c1');
+            expect(container.hasAttribute('data-ezclassify-invalid')).toBe(
+                false,
+            );
         });
     });
 });
