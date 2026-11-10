@@ -358,9 +358,11 @@ describe('contextStoreBuckets', () => {
         const primary = buckets.resolve(bucketKey('', ''));
         const second = buckets.resolve(bucketKey('', 'tier'));
         expect(primary.engine).toBe(context.scheme);
-        expect(primary.format).toBe('primary-format');
         expect(second.engine).toBe(context.schemeView('tier'));
-        expect(second.format).toBe('tier-format');
+        // No host format: each bucket names none, as a store over that scheme
+        // alone, and the store writes in the scheme's own default.
+        expect(primary).not.toHaveProperty('format');
+        expect(second).not.toHaveProperty('format');
     });
 
     it('reads a second scheme under a Context key, with no default bucket', () => {

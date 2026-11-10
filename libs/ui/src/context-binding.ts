@@ -115,9 +115,7 @@ export interface ResolvedContext {
  *   reads the element again once it has.
  */
 export type ContextResolutionCode =
-    | 'context-unresolved'
-    | 'scheme-unresolved'
-    | 'scheme-pending';
+    'context-unresolved' | 'scheme-unresolved' | 'scheme-pending';
 
 /**
  * An element whose Context or scheme cannot be resolved. The element is a host
@@ -455,7 +453,9 @@ export function schemeEngineOf(
  * @param source - One Context, or the Contexts by the key markup names them
  *   with
  * @param options - `format`: the format whole markings are written in, in every
- *   bucket; omitted, each bucket takes its scheme's default
+ *   bucket. Omitted, a bucket names none and the store writes in its scheme's
+ *   default format, so one Context sends what a store over its scheme alone
+ *   sends
  * @returns The store's bucket resolver
  * @throws TypeError when `source` is neither a Context nor a map of Contexts
  */
@@ -481,10 +481,7 @@ export function contextStoreBuckets(
                 schemeSelector === PRIMARY_SCHEME_SELECTOR
                     ? context.scheme
                     : viewOf(context, schemeSelector, null);
-            return {
-                engine,
-                format: format ?? engine.getSchemeMeta().defaultRenderFormat,
-            };
+            return format ? { engine, format } : { engine };
         },
     };
 }
