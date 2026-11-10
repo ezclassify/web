@@ -118,6 +118,23 @@ describe('a page with two Contexts', () => {
         );
     });
 
+    it('labels the one marking the page banner shows while the other Context holds none', async () => {
+        root.innerHTML = `
+            <input id="memo" data-ezclassify-marking value="HIGH">
+            <section data-ezclassify-context="share">
+                <input id="note" data-ezclassify-marking value="">
+            </section>
+            <div id="banner" data-ezclassify-controller="banner" data-ezclassify-aggregate></div>`;
+        mount({ contexts: { ref: reference(), share: second() } });
+        const banner = root.querySelector<HTMLElement>('#banner')!;
+        await expect
+            .poll(() => banner.textContent ?? '')
+            .toMatch(/ref: Reference Scheme 1[\s\S]*HIGH/);
+        expect(
+            banner.querySelector('.status-banner')!.getAttribute('aria-label'),
+        ).toMatch(/^Page marking\. ref: Reference Scheme 1: HIGH/);
+    });
+
     it('refuses an output that names no bucket when the page holds two', async () => {
         root.innerHTML = markup;
         mount({ contexts: { ref: reference(), share: second() } });
@@ -342,5 +359,147 @@ describe('marking ids', () => {
         await expect.poll(hostErrors).toContain('duplicate-marking-id');
         await expect.poll(() => output('ref-page').value).toBe('LOW');
         expect(output('ref-page').getAttribute('aria-invalid')).toBe('true');
+    });
+});
+
+describe('a refused element inside a collection', () => {
+    const folders = (inside: string) => `
+        <input type="hidden" id="page" data-ezclassify-aggregate>
+        <section data-ezclassify-collection="fa">
+            <input type="hidden" id="fa-out" data-ezclassify-aggregate="fa">
+            <input id="m1" data-ezclassify-marking value="LOW">
+            ${inside}
+        </section>
+        <section data-ezclassify-collection="fb">
+            <input id="m2" data-ezclassify-marking value="LOW">
+        </section>`;
+
+    it('leaves its own folder incomplete, not only the page', async () => {
+        root.innerHTML = folders(`
+            <div data-ezclassify-ignore>
+                <input id="hidden-high" data-ezclassify-marking value="HIGH">
+            </div>`);
+        const ui = mount(reference());
+        await expect.poll(hostErrors).toContain('marked-in-ignore');
+        await expect.poll(() => output('fa-out').value).toBe('LOW');
+        await expect.poll(() => levelState(ui.store, 'fa').stale).toBe(true);
+        expect(levelState(ui.store).stale).toBe(true);
+        expect(levelState(ui.store, 'fb').stale).toBeUndefined();
+    });
+
+    it('leaves the folder incomplete for a second host under one id', async () => {
+        root.innerHTML = folders(
+            `<input id="m1" data-ezclassify-marking value="HIGH">`,
+        );
+        const ui = mount(reference());
+        await expect.poll(hostErrors).toContain('duplicate-marking-id');
+        await expect.poll(() => levelState(ui.store, 'fa').stale).toBe(true);
+        expect(levelState(ui.store, 'fb').stale).toBeUndefined();
+    });
+
+    it('refuses a part-of naming no element, and the folder says it is incomplete', async () => {
+        root.innerHTML = folders(
+            `<input id="p1" data-ezclassify-marking data-ezclassify-part-of="typo" value="HIGH">`,
+        );
+        const ui = mount(reference());
+        await expect.poll(hostErrors).toContain('whole-missing');
+        await expect.poll(() => output('fa-out').value).toBe('LOW');
+        await expect.poll(() => levelState(ui.store, 'fa').stale).toBe(true);
+        // The refused part is never rolled up under a whole only it names.
+        expect(output('page').value).toBe('LOW');
+        expect(ui.store.get('p1').rendered).toBe('');
+    });
+
+    it("leaves a whole's own rollup incomplete for a refused part inside it", async () => {
+        root.innerHTML = folders(`
+            <article data-ezclassify-whole="memo1">
+                <input id="memo1" data-ezclassify-marking value="LOW">
+                <input id="memo1-p1" data-ezclassify-marking data-ezclassify-part-of="m2" value="HIGH">
+            </article>`);
+        const ui = mount(reference());
+        await expect.poll(hostErrors).toContain('part-of-disagrees');
+        await expect.poll(() => levelState(ui.store, 'memo1').stale).toBe(true);
+        expect(levelState(ui.store, 'fa').stale).toBe(true);
+    });
+});
+
+describe('markup that names another element', () => {
+    it('reads a part again once the whole it names appears', async () => {
+        root.innerHTML = `
+            <input type="hidden" id="page" data-ezclassify-aggregate>
+            <form id="form" data-ezclassify-whole="doc">
+                <input id="p1" data-ezclassify-marking value="HIGH">
+            </form>`;
+        const ui = mount(reference());
+        await expect.poll(hostErrors).toContain('whole-missing');
+        await expect.poll(() => levelState(ui.store).stale).toBe(true);
+
+        const doc = document.createElement('input');
+        doc.id = 'doc';
+        doc.setAttribute('data-ezclassify-marking', '');
+        doc.value = 'LOW';
+        root.querySelector('#form')!.prepend(doc);
+
+        await expect.poll(() => output('page').value).toBe('HIGH');
+        await expect.poll(() => levelState(ui.store).stale).toBeUndefined();
+        expect(levelState(ui.store, 'doc').rendered).toBe('HIGH');
+    });
+
+    it('refuses a part once the whole it names moves to another Context', async () => {
+        root.setAttribute('data-ezclassify-context', 'ref');
+        root.innerHTML = `
+            <div id="box"><input id="memo" data-ezclassify-marking value="LOW"></div>
+            <input id="stray" data-ezclassify-marking data-ezclassify-part-of="memo" value="HIGH">
+            <input type="hidden" id="ref-page" data-ezclassify-aggregate data-ezclassify-context="ref">`;
+        mount({ contexts: { ref: reference(), share: second() } });
+        await expect.poll(() => output('ref-page').value).toBe('HIGH');
+        expect(hostErrors()).toEqual([]);
+
+        root.querySelector('#box')!.setAttribute(
+            'data-ezclassify-context',
+            'share',
+        );
+        await expect.poll(hostErrors).toContain('part-of-across-contexts');
+    });
+});
+
+describe('a field that selects a scheme', () => {
+    it('is a host error, never a throw, when the Context holds no such scheme', async () => {
+        root.innerHTML = `
+            <input type="hidden" id="page" data-ezclassify-aggregate>
+            <input id="m0" data-ezclassify-marking value="LOW">
+            <div data-ezclassify-scheme="tier">
+                <input id="m1" data-ezclassify-marking value="HIGH">
+            </div>`;
+        const ui = mount(reference());
+        await expect.poll(hostErrors).toContain('context-unresolved');
+        expect(errors.at(-1)!.message).toMatch(
+            /names no scheme the Context holds/,
+        );
+        await expect.poll(() => output('page').value).toBe('LOW');
+        await expect
+            .poll(() => output('page').getAttribute('aria-invalid'))
+            .toBe('true');
+        expect(ui.store.get('m1').rendered).toBe('');
+    });
+
+    it('is a host error under several Contexts, and when the attribute arrives later', async () => {
+        root.setAttribute('data-ezclassify-context', 'a');
+        root.innerHTML = `
+            <input type="hidden" id="pa" data-ezclassify-aggregate data-ezclassify-context="a">
+            <input id="m0" data-ezclassify-marking value="LOW">
+            <div id="section"><input id="m1" data-ezclassify-marking value="HIGH"></div>`;
+        mount({ contexts: { a: reference(), b: reference() } });
+        await expect.poll(() => output('pa').value).toBe('HIGH');
+
+        root.querySelector('#section')!.setAttribute(
+            'data-ezclassify-scheme',
+            'tier',
+        );
+        await expect.poll(hostErrors).toContain('context-unresolved');
+        await expect.poll(() => output('pa').value).toBe('LOW');
+        await expect
+            .poll(() => output('pa').getAttribute('aria-invalid'))
+            .toBe('true');
     });
 });

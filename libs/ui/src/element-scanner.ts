@@ -22,6 +22,7 @@
  */
 
 import {
+    COLLECTION_ATTR,
     CONTROLLER_ATTR,
     isPresent,
     MARKING_ATTR,
@@ -351,6 +352,34 @@ const DERIVING_ATTRS: readonly string[] = [
     ...STRUCTURAL_ATTRS,
 ];
 
+/**
+ * Ids this runtime generates for marking hosts that have none. Assigning one
+ * changes no reference markup can make: nothing names a generated id.
+ */
+const GENERATED_ID_PREFIX = '__ez-';
+
+/**
+ * Whether an element added to or removed from the page can change what other
+ * markup refers to: it, or something inside it, carries an id a whole, part or
+ * marking can be named by, or declares a collection.
+ */
+function carriesReference(el: HTMLElement): boolean {
+    if (
+        (el.id && !el.id.startsWith(GENERATED_ID_PREFIX)) ||
+        el.hasAttribute(COLLECTION_ATTR)
+    )
+        return true;
+    for (const inner of Array.from(
+        el.querySelectorAll<HTMLElement>(`[id], [${COLLECTION_ATTR}]`),
+    ))
+        if (
+            inner.hasAttribute(COLLECTION_ATTR) ||
+            !inner.id.startsWith(GENERATED_ID_PREFIX)
+        )
+            return true;
+    return false;
+}
+
 /** Each observer's record handler, for {@link flushObserver}. */
 const observerHandlers = new WeakMap<
     MutationObserver,
@@ -381,6 +410,10 @@ export function flushObserver(observer: MutationObserver): void {
  *   the caller can derive its subtree again. An element added in the same
  *   batch, or inside another reported element, is not reported: that derivation
  *   already reads it.
+ * - When the batch adds or removes an element that carries an id or declares a
+ *   collection, renames an id or a collection, `onReferencesChange` runs once
+ *   after the rest, so the caller can derive again the markup that names
+ *   another element (a `part-of`, a `whole` container, a `member-of`).
  *
  * A node reported in `removedNodes` that is still connected within `root` was
  * merely RELOCATED (the enhance path moves a keep-visible host into its own
@@ -396,12 +429,26 @@ export function observeNewElements(
     onView: ViewCallback,
     onRemove?: (el: HTMLElement) => void,
     onStructureChange?: (el: HTMLElement) => void,
+    onReferencesChange?: () => void,
 ): MutationObserver {
     const handle = (mutations: MutationRecord[]): void => {
         const added = new Set<Node>();
         const restructured = new Set<HTMLElement>();
+        let references = false;
         for (const m of mutations) {
             if (m.type === 'attributes') {
+                if (m.attributeName === 'id') {
+                    // A generated id given to a host that had none names
+                    // nothing yet.
+                    const value = (m.target as Element).getAttribute('id');
+                    if (
+                        m.oldValue !== null ||
+                        !value?.startsWith(GENERATED_ID_PREFIX)
+                    )
+                        references = true;
+                    continue;
+                }
+                if (m.attributeName === COLLECTION_ATTR) references = true;
                 if (m.target instanceof HTMLElement) restructured.add(m.target);
                 continue;
             }
@@ -409,6 +456,7 @@ export function observeNewElements(
                 const node = m.addedNodes[i];
                 if (!(node instanceof HTMLElement)) continue;
                 added.add(node);
+                if (!references && carriesReference(node)) references = true;
                 emitOne(node, ownerId, onBehavior, onView);
                 scanElements(node, ownerId, onBehavior, onView);
             }
@@ -428,6 +476,8 @@ export function observeNewElements(
                     // subtree; a same-root move keeps its existing enhancement (the
                     // addedNodes dedup guards make the re-observation a no-op).
                     if (root.contains(node)) continue;
+                    if (!references && carriesReference(node))
+                        references = true;
                     // The removed node itself, then every data-ezclassify host beneath
                     // it; a removed subtree must release all of its enhanced hosts, not
                     // just the top node.
@@ -438,33 +488,44 @@ export function observeNewElements(
                 }
             }
         }
-        if (!onStructureChange) return;
-        for (const el of restructured) {
-            if (!el.isConnected || !root.contains(el)) continue;
-            let fresh = false;
-            for (const node of added)
-                if (node.contains(el)) {
-                    fresh = true;
-                    break;
-                }
-            if (fresh) continue;
-            // An enclosing element derived again covers this one.
-            let covered = false;
-            for (const other of restructured)
-                if (other !== el && other.contains(el)) {
-                    covered = true;
-                    break;
-                }
-            if (!covered) onStructureChange(el);
+        if (onStructureChange) {
+            for (const el of restructured) {
+                if (!el.isConnected || !root.contains(el)) continue;
+                let fresh = false;
+                for (const node of added)
+                    if (node.contains(el)) {
+                        fresh = true;
+                        break;
+                    }
+                if (fresh) continue;
+                // An enclosing element derived again covers this one.
+                let covered = false;
+                for (const other of restructured)
+                    if (other !== el && other.contains(el)) {
+                        covered = true;
+                        break;
+                    }
+                if (!covered) onStructureChange(el);
+            }
         }
+        if (references) onReferencesChange?.();
     };
     const observer = new MutationObserver(handle);
     observerHandlers.set(observer, handle);
+    const watchAttributes = !!onStructureChange || !!onReferencesChange;
     observer.observe(root, {
         childList: true,
         subtree: true,
-        attributes: !!onStructureChange,
-        ...(onStructureChange ? { attributeFilter: [...DERIVING_ATTRS] } : {}),
+        attributes: watchAttributes,
+        ...(watchAttributes
+            ? {
+                  attributeFilter: [
+                      ...DERIVING_ATTRS,
+                      ...(onReferencesChange ? ['id'] : []),
+                  ],
+                  attributeOldValue: !!onReferencesChange,
+              }
+            : {}),
     });
     return observer;
 }

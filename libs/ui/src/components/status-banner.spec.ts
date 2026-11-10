@@ -673,6 +673,30 @@ describe('StatusBanner: level views', () => {
         );
     });
 
+    it('keeps a stale bucket with nothing rendered on its labeled line, as not read', async () => {
+        container.setAttribute('data-ezclassify-aggregate', '');
+        await component.init(container, toCtx(createMockEngine()));
+        component.setBuckets([
+            { key: 'a\u001fprimary', label: 'Alpha', rendered: 'ONE' },
+            {
+                key: 'b\u001fprimary',
+                label: 'Bravo',
+                rendered: '',
+                stale: true,
+            },
+        ]);
+        const rows = [
+            ...container.querySelectorAll<HTMLElement>('.status-banner-bucket'),
+        ];
+        expect(rows.map((row) => row.textContent)).toEqual([
+            'AlphaONE',
+            'BravoNot read',
+        ]);
+        expect(banner().getAttribute('aria-label')).toBe(
+            'Page marking. Alpha: ONE; Bravo: Not read',
+        );
+    });
+
     it('says there is no marking when every bucket is empty, and returns to its own marking when cleared', async () => {
         container.setAttribute('data-ezclassify-aggregate', '');
         await component.init(container, toCtx(createMockEngine()));

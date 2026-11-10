@@ -92,11 +92,11 @@ export type BindingKind = 'part' | 'whole' | 'collection' | 'view' | 'ignored';
 
 /** Why an element's markup cannot be read as written. */
 export type HostErrorCode =
-    /** A marked element inside a `data-ezclassify-ignore` subtree. */
+    /** A marked element or a view inside a `data-ezclassify-ignore` subtree. */
     | 'marked-in-ignore'
     /** A `whole` container with an empty value. */
     | 'whole-unnamed'
-    /** A `whole` container names no element on the page. */
+    /** A `whole` container or a `part-of` names no element on the page. */
     | 'whole-missing'
     /** A `whole` container inside another one. */
     | 'whole-nested'
@@ -418,7 +418,15 @@ function placeAsPart(
             ),
         };
     const target = el.ownerDocument.getElementById(wholeId);
-    if (target && root.contains(target)) {
+    if (!target)
+        return {
+            error: hostError(
+                el,
+                'whole-missing',
+                `${describe(el)} declares ${PART_OF_ATTR}="${wholeId}", and no element has that id.`,
+            ),
+        };
+    if (root.contains(target)) {
         const targetContainer = closestPresent(target, WHOLE_ATTR, root);
         const targetIsPart =
             valueOf(target, PART_OF_ATTR) !== null ||
@@ -472,17 +480,19 @@ export function classify(el: HTMLElement, root: HTMLElement): BindingNode {
                     !a.name.startsWith('data-ezclassify-') ||
                     a.name === IGNORE_ATTR,
             );
-        return onlyIgnore
-            ? { ...base, kind: 'ignored' }
-            : {
-                  ...base,
-                  kind: 'ignored',
-                  error: hostError(
-                      el,
-                      'marked-in-ignore',
-                      `${describe(el)} is marked inside a ${IGNORE_ATTR} region, where nothing is read. Move it out of the region or remove its markup.`,
-                  ),
-              };
+        if (onlyIgnore) return { ...base, kind: 'ignored' };
+        const what = viewAttrOf(el)
+            ? `is a view inside a ${IGNORE_ATTR} region, where nothing is shown`
+            : `is marked inside a ${IGNORE_ATTR} region, where nothing is read`;
+        return {
+            ...base,
+            kind: 'ignored',
+            error: hostError(
+                el,
+                'marked-in-ignore',
+                `${describe(el)} ${what}. Move it out of the region or remove its markup.`,
+            ),
+        };
     }
 
     const view = viewAttrOf(el);
@@ -731,6 +741,30 @@ export function placeNestedRoot(
     return {
         collectionId: nestingCollection(childRoot.parentElement, parentRoot),
     };
+}
+
+/**
+ * The levels a refused element leaves incomplete: the collection it sits in
+ * (the page when none), and the whole whose `whole` container encloses it, when
+ * that whole is another element on the page. A host error is carried at both,
+ * so a folder's or a whole's own rollup never reads as complete while markup
+ * inside it is refused.
+ *
+ * @param el - The refused element
+ * @param root - The instance root, the page collection
+ * @returns The enclosing collection id (null for the page) and whole id
+ */
+export function errorLevelOf(
+    el: HTMLElement,
+    root: HTMLElement,
+): { collectionId: string | null; wholeId: string | null } {
+    const container = closestPresent(el, WHOLE_ATTR, root);
+    const named = container ? valueOf(container, WHOLE_ATTR) : null;
+    const wholeId =
+        named && named !== el.id && el.ownerDocument.getElementById(named)
+            ? named
+            : null;
+    return { collectionId: nestingCollection(el, root), wholeId };
 }
 
 /**

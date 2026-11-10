@@ -75,15 +75,18 @@ import {
 import {
     classify,
     describeCollection,
+    errorLevelOf,
     isMarkingController,
     isMarkingHost,
     placeNestedRoot,
     COLLECTION_ATTR,
     CONTEXT_ATTR,
     MARKING_ATTR,
+    PART_OF_ATTR,
     SCHEME_ATTR,
     type BindingNode,
     type HostError,
+    type HostErrorCode,
 } from './binding-model';
 import type { StatusBannerBucket } from './components/status-banner';
 import { bucketKey, bucketParts, type BucketKey } from './store/store-shared';
@@ -158,6 +161,20 @@ function shownBuckets(
                 state.stale === true),
     );
 }
+
+/**
+ * Host errors that refuse an element for what it names elsewhere on the page,
+ * so they can clear, or arise, when that other element comes, goes or is
+ * renamed.
+ */
+const REFERENCE_ERRORS: ReadonlySet<string> = new Set<HostErrorCode>([
+    'whole-missing',
+    'member-of-unknown',
+    'part-of-not-whole',
+    'part-of-across-contexts',
+    'no-rollup-on-whole-with-parts',
+    'duplicate-marking-id',
+]);
 
 /**
  * Warn-once tracking for the scope-mismatch advisory, keyed by the offending
@@ -408,17 +425,23 @@ export class EzClassifyUI {
     private readonly incompleteScans = new Map<string, string | null>();
     /**
      * Elements whose markup the binding model refused, each with the
-     * contributor id that holds the levels above it incomplete in the store.
-     * Such an element stays unenhanced until its markup changes.
+     * contributors that hold the levels above it incomplete in the store: one
+     * in the collection it sits in, and one in the whole that encloses it, if
+     * any. Such an element stays unenhanced until its markup changes.
      */
     private readonly hostErrors = new Map<
         HTMLElement,
         {
             error: HostError | RollupOutputError;
-            contributorId: string;
-            wholeId: string | null;
+            contributors: Array<{ id: string; wholeId: string | null }>;
         }
     >();
+    /**
+     * While markup that names other elements is read again, the message each of
+     * those elements was refused with before, so a refusal that stands
+     * unchanged is not reported twice.
+     */
+    private rereadErrors: ReadonlyMap<HTMLElement, string> | null = null;
     /** Where each scanned element sits in the marking tree, as last derived. */
     private readonly bindingNodes = new Map<HTMLElement, BindingNode>();
     /**
@@ -1042,6 +1065,7 @@ export class EzClassifyUI {
                 }
             },
             (el) => this.rederive(el),
+            () => this.rederiveDependents(),
         );
     }
 
@@ -1122,12 +1146,13 @@ export class EzClassifyUI {
     /**
      * Record a host error: the element stays unenhanced, an
      * `ezclassify:host-error` event says why, and the levels above it read as
-     * incomplete until its markup changes. The roll-up reports the outputs it
-     * refuses to fill the same way.
+     * incomplete until its markup changes: the collection it sits in, and the
+     * whole that encloses it (see {@link errorLevelOf}), with every level above
+     * those. The roll-up reports the outputs it refuses to fill the same way.
      *
      * @param error - What is refused, and on which element
-     * @param wholeId - The whole whose rollup the element would have fed, if
-     *   any
+     * @param wholeId - The whole whose rollup the element would have fed, when
+     *   the markup names one; otherwise the enclosing `whole` container's
      * @internal
      */
     reportHostError(
@@ -1135,9 +1160,27 @@ export class EzClassifyUI {
         wholeId: string | null = null,
     ): void {
         if (this._destroyed || this.hostErrors.has(error.element)) return;
-        const contributorId = `__ez-host-error-${this._textIdSalt}-${this._textIdCounter++}`;
-        this.hostErrors.set(error.element, { error, contributorId, wholeId });
-        this.store.setIncompleteContributor?.(contributorId, wholeId, true);
+        const level = errorLevelOf(error.element, this.root);
+        const whole = wholeId ?? level.wholeId;
+        const next = () =>
+            `__ez-host-error-${this._textIdSalt}-${this._textIdCounter++}`;
+        const contributors: Array<{ id: string; wholeId: string | null }> = [
+            { id: next(), wholeId: null },
+            ...(whole ? [{ id: next(), wholeId: whole }] : []),
+        ];
+        this.hostErrors.set(error.element, { error, contributors });
+        // Placed before it is flagged, so its level is computed once.
+        this.store.setMembership(contributors[0].id, level.collectionId);
+        for (const contributor of contributors)
+            this.store.setIncompleteContributor?.(
+                contributor.id,
+                contributor.wholeId,
+                true,
+            );
+        if (this.rereadErrors?.get(error.element) === error.message) {
+            this.refreshIncomplete();
+            return;
+        }
         console.error(error.message);
         error.element.dispatchEvent(
             new CustomEvent('ezclassify:host-error', {
@@ -1154,12 +1197,21 @@ export class EzClassifyUI {
         const entry = this.hostErrors.get(el);
         if (!entry) return;
         this.hostErrors.delete(el);
-        this.store.setIncompleteContributor?.(
-            entry.contributorId,
-            entry.wholeId,
-            false,
-        );
+        this.releaseErrorContributors(entry.contributors);
         this.refreshIncomplete();
+    }
+
+    /** Clear the store's record of a host error's contributors. */
+    private releaseErrorContributors(
+        contributors: ReadonlyArray<{ id: string; wholeId: string | null }>,
+    ): void {
+        for (const contributor of contributors)
+            this.store.setIncompleteContributor?.(
+                contributor.id,
+                contributor.wholeId,
+                false,
+            );
+        this.store.setMembership(contributors[0].id, null);
     }
 
     /**
@@ -1182,13 +1234,17 @@ export class EzClassifyUI {
 
     /**
      * Place a marking host's marking in the store: a part under its whole, a
-     * whole in its collection, each in the bucket its Context and scheme name.
+     * whole in its collection, each in the bucket its Context and scheme
+     * resolve to.
      */
-    private placeMarking(el: HTMLElement, node: BindingNode): void {
+    private placeMarking(
+        el: HTMLElement,
+        node: BindingNode,
+        bucket: BucketKey,
+    ): void {
         const id = el.id;
         if (!id || !this.validMarkingIds.has(id)) return;
-        const bucket = this.bucketOf(node);
-        if (bucket) this.store.setBucket(id, bucket);
+        this.store.setBucket(id, bucket);
         if (node.kind === 'part') {
             this.store.setPartOf(id, node.wholeId ?? null);
         } else if (node.kind === 'whole') {
@@ -1196,16 +1252,6 @@ export class EzClassifyUI {
             this.store.setMembership(id, node.collectionId ?? null);
             this.store.setNoRollup(id, !node.contributes);
         }
-    }
-
-    /**
-     * The bucket a node names, or undefined when it names neither a Context nor
-     * a scheme, so the store's default bucket applies.
-     */
-    private bucketOf(node: BindingNode): BucketKey | undefined {
-        if (node.contextKey === null && node.schemeSelector === null)
-            return undefined;
-        return bucketKey(node.contextKey ?? '', node.schemeSelector ?? '');
     }
 
     /**
@@ -1235,12 +1281,74 @@ export class EzClassifyUI {
     }
 
     /**
-     * Derive the subtree under `el` again after a structural attribute changed:
-     * tear down what this runtime built there and scan it afresh, so every host
-     * reads its new place in the tree. Hosts keep their DOM and their committed
-     * values; a draft is kept through teardown.
+     * Derive the subtree under `el` again after a structural attribute changed
+     * (see {@link rederiveScope}), and then each part elsewhere on the page that
+     * names a whole inside it: whether that part is accepted depends on where
+     * its whole now sits.
      */
     private rederive(el: HTMLElement): void {
+        if (this._destroyed) return;
+        this.rederiveScope(el);
+        if (!this.root.contains(el)) return;
+        const wholes = new Set<string>();
+        for (const host of [
+            el,
+            ...Array.from(el.querySelectorAll<HTMLElement>('[id]')),
+        ])
+            if (host.id) wholes.add(host.id);
+        for (const part of Array.from(
+            this.root.querySelectorAll<HTMLElement>(`[${PART_OF_ATTR}]`),
+        )) {
+            if (el.contains(part)) continue;
+            const named = part.getAttribute(PART_OF_ATTR)?.trim();
+            if (named && wholes.has(named)) this.rederiveScope(part);
+        }
+    }
+
+    /**
+     * Derive again the markup whose reading depends on other elements, after
+     * elements that carry ids or collections came, went or were renamed: each
+     * element refused for what it names (a missing whole or collection, a whole
+     * of another Context, an id another host holds), and each part whose whole
+     * has left the page.
+     */
+    private rederiveDependents(): void {
+        if (this._destroyed) return;
+        const stale = new Set<HTMLElement>();
+        for (const [el, { error }] of this.hostErrors)
+            if (REFERENCE_ERRORS.has(error.code)) stale.add(el);
+        for (const [el, node] of this.bindingNodes)
+            if (
+                node.kind === 'part' &&
+                !node.error &&
+                node.wholeId &&
+                !el.ownerDocument.getElementById(node.wholeId)
+            )
+                stale.add(el);
+        // Reading an element again that is still refused for the same reason
+        // tells the host nothing new.
+        const before = new Map<HTMLElement, string>();
+        for (const el of stale) {
+            const message = this.hostErrors.get(el)?.error.message;
+            if (message !== undefined) before.set(el, message);
+        }
+        this.rereadErrors = before;
+        try {
+            for (const el of stale)
+                if (el.isConnected && this.root.contains(el))
+                    this.rederiveScope(el);
+        } finally {
+            this.rereadErrors = null;
+        }
+    }
+
+    /**
+     * Derive the subtree under `el` again: tear down what this runtime built
+     * there and scan it afresh, so every host reads its new place in the tree.
+     * Hosts keep their DOM and their committed values; a draft is kept through
+     * teardown.
+     */
+    private rederiveScope(el: HTMLElement): void {
         if (this._destroyed) return;
         const scope = el === this.root || this.root.contains(el) ? el : null;
         if (!scope) return;
@@ -1819,9 +1927,16 @@ export class EzClassifyUI {
         // A part's whole comes from structure: its `whole` container or its
         // `part-of`. A body editor that is not a marking itself routes its
         // portions to the whole it sits in the same way.
-        if (node.wholeId) this.partOfMap.set(el, node.wholeId);
-        if (node.kind === 'part' || node.kind === 'whole')
-            this.placeMarking(el, node);
+        if (node.kind === 'part' || node.kind === 'whole') {
+            // A marking is read in the bucket its Context and scheme resolve
+            // to. Markup that resolves none is a host error on the element,
+            // never a throw out of the scan; one still waiting on its
+            // Context's scheme list is read again once the list is in.
+            const resolved = this.contextForMount(el);
+            if (!resolved) return;
+            if (node.wholeId) this.partOfMap.set(el, node.wholeId);
+            this.placeMarking(el, node, resolved.bucket);
+        } else if (node.wholeId) this.partOfMap.set(el, node.wholeId);
         // A marking host with no controller is mounted by this step, after its
         // placement so its first read already reads it as a part.
         if (
@@ -3208,8 +3323,16 @@ export class EzClassifyUI {
                         }
                     ).setBuckets?.bind(component);
                     const applyLevel = (aggregate: EzClassifyAggregate) => {
-                        const shown = shownBuckets(aggregate, named());
-                        if (shown.length > 1 && showsBuckets) {
+                        const buckets = named();
+                        const shown = shownBuckets(aggregate, buckets);
+                        // A view that can name buckets names each one whenever
+                        // the level could hold more than one, so a lone marking
+                        // never reads as the only Context's.
+                        if (
+                            buckets.length > 1 &&
+                            shown.length > 0 &&
+                            showsBuckets
+                        ) {
                             // Every bucket on its own labeled line, in its own
                             // scheme's colors. Buckets never merge.
                             showsBuckets(
@@ -3218,6 +3341,7 @@ export class EzClassifyUI {
                                     label: this.bucketLabel(key),
                                     rendered: state.rendered,
                                     colors: state.displayColor ?? null,
+                                    stale: state.stale === true,
                                 })),
                             );
                             showIncomplete?.(
@@ -4077,12 +4201,8 @@ export class EzClassifyUI {
                 false,
             );
         this.incompleteScans.clear();
-        for (const { contributorId, wholeId } of this.hostErrors.values())
-            this.store.setIncompleteContributor?.(
-                contributorId,
-                wholeId,
-                false,
-            );
+        for (const { contributors } of this.hostErrors.values())
+            this.releaseErrorContributors(contributors);
         this.hostErrors.clear();
         this.bindingNodes.clear();
         for (const id of this.collections.values())

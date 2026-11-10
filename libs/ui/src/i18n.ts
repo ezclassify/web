@@ -19,6 +19,10 @@ export const defaultLocale = {
         'The scan did not read the whole text, so some markings were not checked.',
     'rollup.incomplete':
         'Some markings were not read, so this marking may be incomplete.',
+    'banner.noMarking': 'No marking',
+    'banner.pageMarking': 'Page marking',
+    'banner.levelMarking': '{name} marking',
+    'banner.bucketNotRead': 'Not read',
 
     'placeholder.searchInput': 'Type to search, \u2191\u2193 to browse',
     'placeholder.searchInputTouch': 'Search\u2026',

@@ -104,8 +104,17 @@ export interface StatusBannerBucket {
     key: string;
     /** What the banner prints beside the marking to name the bucket. */
     label: string;
-    /** The bucket's rendered marking. An empty bucket is not shown. */
+    /**
+     * The bucket's rendered marking. An empty bucket is not shown unless it is
+     * {@link stale}.
+     */
     rendered: string;
+    /**
+     * Whether the bucket may be missing markings. A stale bucket with nothing
+     * rendered is still shown, labeled, as not read, so a Context whose
+     * markings went unread never drops off the banner.
+     */
+    stale?: boolean;
     /**
      * Colors for the bucket's marking, from its own scheme. The banner reads
      * none itself: a bucket of another scheme never wears this banner's
@@ -297,10 +306,12 @@ export class StatusBanner extends ReadOnlyComponentBase {
         if (this.bannerEl) this.render();
     }
 
-    /** Render each non-empty bucket as a labeled line. */
+    /** Render each non-empty or stale bucket as a labeled line. */
     private renderBuckets(buckets: readonly StatusBannerBucket[]): void {
         const size = this.bannerOptions.size ?? 'prominent';
-        const shown = buckets.filter((bucket) => bucket.rendered.trim());
+        const shown = buckets.filter(
+            (bucket) => bucket.rendered.trim() || bucket.stale === true,
+        );
         const level = this.levelLabel();
         this.bannerEl.setAttribute('role', 'status');
         this.bannerEl.setAttribute('aria-live', 'polite');
@@ -312,11 +323,13 @@ export class StatusBanner extends ReadOnlyComponentBase {
             this.bannerEl.className = `status-banner status-banner--${size} status-banner--empty`;
             const label = document.createElement('div');
             label.className = 'status-banner-label';
-            label.textContent = 'No marking';
+            label.textContent = t('banner.noMarking');
             this.bannerEl.appendChild(label);
             this.bannerEl.setAttribute(
                 'aria-label',
-                level ? `${level}: No marking` : 'No marking',
+                level
+                    ? `${level}: ${t('banner.noMarking')}`
+                    : t('banner.noMarking'),
             );
             return;
         }
@@ -341,10 +354,13 @@ export class StatusBanner extends ReadOnlyComponentBase {
             name.textContent = bucket.label;
             const marking = document.createElement('span');
             marking.className = 'status-banner-label';
-            marking.textContent = bucket.rendered;
+            const text = bucket.rendered.trim()
+                ? bucket.rendered
+                : t('banner.bucketNotRead');
+            marking.textContent = text;
             row.append(name, marking);
             this.bannerEl.appendChild(row);
-            lines.push(`${bucket.label}: ${bucket.rendered}`);
+            lines.push(`${bucket.label}: ${text}`);
         }
         const summary = lines.join('; ');
         this.bannerEl.setAttribute(
@@ -365,10 +381,13 @@ export class StatusBanner extends ReadOnlyComponentBase {
         const raw = host.getAttribute('data-ezclassify-aggregate')?.trim();
         // React writes a bare boolean attribute as "true".
         const id = raw === 'true' ? '' : (raw ?? '');
-        if (!id) return 'Page marking';
+        if (!id) return t('banner.pageMarking');
         const doc = host.ownerDocument ?? document;
         const target = doc.getElementById(id);
-        return `${(target && accessibleLabelOf(target)) || id} marking`;
+        return t('banner.levelMarking').replace(
+            '{name}',
+            (target && accessibleLabelOf(target)) || id,
+        );
     }
 
     /** Append the incomplete statement to whatever the mode just rendered. */
@@ -413,13 +432,15 @@ export class StatusBanner extends ReadOnlyComponentBase {
             this.bannerEl.style.removeProperty('--ez-banner-text');
             const label = document.createElement('div');
             label.className = 'status-banner-label';
-            label.textContent = 'No marking';
+            label.textContent = t('banner.noMarking');
             this.bannerEl.appendChild(label);
-            this.appendSubtitle('No marking');
+            this.appendSubtitle(t('banner.noMarking'));
             const level = this.levelLabel();
             this.bannerEl.setAttribute(
                 'aria-label',
-                level ? `${level}: No marking` : 'No marking',
+                level
+                    ? `${level}: ${t('banner.noMarking')}`
+                    : t('banner.noMarking'),
             );
             return;
         }

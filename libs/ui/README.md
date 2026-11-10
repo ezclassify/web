@@ -338,18 +338,9 @@ hidden input that holds a rollup names the one it holds with its own
 
 ### A Context with two schemes
 
-A crosswalk Context holds a second scheme. `data-ezclassify-scheme` selects it
-by the Context's own selector, on the field or an ancestor:
-
-```html
-<div data-ezclassify-scheme="tier">
-    <input id="doc-tier" data-ezclassify-controller="marking" />
-</div>
-<div
-    data-ezclassify-controller="banner"
-    data-ezclassify-aggregate
-    data-ezclassify-scheme="tier"></div>
-```
+A crosswalk Context holds a second scheme. Fields mark in the Context's
+primary scheme; a field whose `data-ezclassify-scheme` selects any other
+scheme is reported as a host error and left unenhanced.
 
 To show a marking translated through the crosswalk, add
 `data-ezclassify-translate` to a view. It takes the crosswalk id, and needs no

@@ -127,7 +127,9 @@ new EzClassifyUI({ contexts: { district, records } });
 
 A marking host takes its Context from `data-ezclassify-context` on itself or
 the nearest ancestor, and its scheme from `data-ezclassify-scheme` the same
-way. With one Context, the attribute is never needed. With several, there is
+way; a host that selects a scheme other than the Context's primary is a host
+error, since a Context marks only in its primary. With one Context, the
+attribute is never needed. With several, there is
 no positional default: a host that resolves no Context is a host error. A
 collection's `context` is a default for the fields inside it, never a filter
 on its members.
@@ -732,7 +734,7 @@ export interface EzClassifyStore {
      * The current rollup of a level, one state per bucket: the page when
      * `nodeId` is omitted, else a collection, or a whole for its parts.
      */
-    getAggregate(nodeId?: string, bucket?: BucketKey): EzClassifyAggregate;
+    getAggregate(nodeId?: string): EzClassifyAggregate;
 
     /** Subscribe to a level's rollup: the page when `nodeId` is omitted. */
     subscribeAggregate(
@@ -1071,7 +1073,7 @@ export interface EzClassifyStore {
     seedAssertions(id: string, assertions: Assertion[]): Promise<void>;
     releaseSeed(id: string): void;
     requestOutput(id: string, output: string): () => void;
-    getAggregate(nodeId?: string, bucket?: BucketKey): EzClassifyAggregate;
+    getAggregate(nodeId?: string): EzClassifyAggregate;
     subscribeAggregate(
         listener: (aggregate: EzClassifyAggregate) => void,
         nodeId?: string,

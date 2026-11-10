@@ -58,7 +58,7 @@ The attributes split into five groups:
 | `data-ezclassify-aggregate`            | `element-scanner` / `forms/rollup`                   | author   | empty (or `"true"`) for the page; a whole id for its parts; a collection id for its members. With no controller, a hidden input holds the value and any other element shows it as text                                                                                                                   | (none)                        |
 | `data-ezclassify-translate`            | `components/translated-view`                         | author   | crosswalk id; on a view, shows its value translated through that crosswalk. Empty when the Context holds exactly one crosswalk from its primary scheme                                                                                                                                                   | (none)                        |
 | `data-ezclassify-context`              | `context-binding`                                    | author   | Context key from the `contexts` map given at initialization. Needed only with several Contexts. A marking host inherits it from the nearest ancestor that sets one; a level view filters by its own attribute only                                                                                       | the only Context              |
-| `data-ezclassify-scheme`               | `context-binding` / `component-factory`              | author   | the Context-local scheme selector, for a crosswalk Context's second scheme. Inherited from the nearest ancestor that sets it                                                                                                                                                                             | the Context's primary scheme  |
+| `data-ezclassify-scheme`               | `context-binding` / `component-factory`              | author   | the Context-local scheme selector. Inherited from the nearest ancestor that sets it. A marking host marks only in the Context's primary scheme; one that selects another is a host error                                                                                                                 | the Context's primary scheme  |
 | `data-ezclassify-format`               | `format-resolver` / `component-factory`              | author   | render-format id; honored on a plain enhanced input and on any controller host. Read from the element itself, never inherited from an ancestor                                                                                                                                                           | context default render format |
 | `data-ezclassify-role`                 | `components/ezclassify-text`                         | author   | `part`, on a `text` host that shows a part with no whole on the page. Every other role comes from structure                                                                                                                                                                                              | (none)                        |
 | `data-ezclassify-scope`                | `element-scanner` / `component-factory`              | author   | scope label, on a whole field that authors a non-default scope. A facet takes its scope from its category's declared scope instead. It never removes a field from a rollup                                                                                                                               | (none)                        |
@@ -111,14 +111,19 @@ store writes the part in.
 
 Where markup contradicts itself, the runtime refuses it instead of guessing.
 The element stays unenhanced, an `ezclassify:host-error` event bubbles from it
-with a `code` and a `message`, and every level above it is flagged incomplete:
-an unread marking is never treated as an absent one. The cases:
+with a `code` and a `message`, and every level above it is flagged incomplete,
+from the collection it sits in and the whole that encloses it up to the page:
+an unread marking is never treated as an absent one. Markup refused for what it
+names elsewhere (a missing whole or collection, a whole of another Context, an
+id another host holds) is read again when that element arrives, leaves or is
+renamed. The cases:
 
-- a marking host inside an `ignore` subtree;
+- a marking host or a view inside an `ignore` subtree;
 - a `whole` container with no value, naming no host, or inside another `whole`
   container;
 - a collection with no value, inside a `whole` container, or on a marking host;
-- a `part-of` that names something other than a whole, disagrees with its
+- a `part-of` that names no element, names something other than a whole,
+  disagrees with its
   enclosing `whole` container, crosses Contexts or schemes, or sits on an
   element that holds no marking;
 - a `member-of` that names no collection, sits on a part, or names its own
@@ -126,8 +131,8 @@ an unread marking is never treated as an absent one. The cases:
 - `no-rollup` on a part or on a whole with parts;
 - `data-ezclassify-marking` together with a view attribute;
 - a nested library instance inside a `whole` container;
-- a marking host that resolves no Context, and one marking id on two marking
-  hosts;
+- a marking host that resolves no Context, or selects a scheme other than its
+  Context's primary, and one marking id on two marking hosts;
 - a `translate` view on a form control or a controller host, or with no
   crosswalk to translate through;
 - a controller-less `aggregate` output that does not name its bucket when its
@@ -136,8 +141,9 @@ an unread marking is never treated as an absent one. The cases:
 ### Rollup outputs and buckets
 
 A rollup is kept per bucket: one Context key and one scheme selector. Buckets
-never merge. A `banner` on a level shows every non-empty bucket, each labeled,
-unless its own `context` or `scheme` attribute picks one. A controller-less
+never merge. A `banner` on a level shows every non-empty bucket, and every
+bucket missing a marking as not read, each labeled whenever the level can hold
+more than one, unless its own `context` or `scheme` attribute picks one. A controller-less
 output holds one value, so when the instance has several Contexts, or the
 Context several schemes, the output names its bucket with its own `context` and
 `scheme` attributes.

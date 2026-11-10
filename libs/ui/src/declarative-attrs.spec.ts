@@ -740,13 +740,17 @@ describe('Declarative attribute system (EzClassifyUI)', () => {
             input.setAttribute('data-ezclassify-marking', '');
             input.setAttribute('data-ezclassify-part-of', 'whole-banner');
             const wrapper = wrap(input);
+            const whole = document.createElement('input');
+            whole.id = 'whole-banner';
+            whole.setAttribute('data-ezclassify-marking', '');
+            wrapper.appendChild(whole);
 
             const forms = await createForms();
 
             expect(forms.partOfMap.get(input)).toBe('whole-banner');
             expect(forms.fields).toContain(input);
             expect(forms.components.has(input)).toBe(false);
-            expect(wrapper.children.length).toBe(1);
+            expect(wrapper.children.length).toBe(2);
 
             forms.destroy();
         });

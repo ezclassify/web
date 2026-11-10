@@ -471,13 +471,17 @@ export function contextStoreBuckets(
                     null,
                 );
             }
-            const engine = schemeEngineOf({
-                contextKey,
-                context,
-                schemeSelector,
-                primary: schemeSelector === PRIMARY_SCHEME_SELECTOR,
-                bucket,
-            });
+            // The runtime places a marking only in a primary bucket; a store
+            // asked for another has not checked the Context holds the scheme.
+            if (schemeSelector !== PRIMARY_SCHEME_SELECTOR) {
+                throw new ContextResolutionError(
+                    'scheme-not-markable',
+                    `No markable scheme '${schemeSelector}' in Context '${contextKey}': ` +
+                        'a Context offers marking operations for its primary scheme only.',
+                    null,
+                );
+            }
+            const engine = context.scheme;
             return {
                 engine,
                 format: format ?? engine.getSchemeMeta().defaultRenderFormat,
