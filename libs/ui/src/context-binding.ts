@@ -438,17 +438,14 @@ export function schemeEngineOf(
 }
 
 /**
- * The Context surfaces a scheme-bound Context leaves out. A Context's guides and
- * access policy each target a scheme of their own, and the component surface
- * does not say which, so a component bound to one of the Context's other
- * schemes gets neither. A guide's rollup copied into a field read in another
- * scheme would be another scheme's marking, and the access handbook would list
- * rules that field's marking may not be judged by.
+ * The Context surfaces a scheme-bound Context leaves out. A Context's guides
+ * and access policy each target a scheme of their own, and the component
+ * surface does not say which, so a component bound to one of the Context's
+ * other schemes gets neither. A guide's rollup copied into a field read in
+ * another scheme would be another scheme's marking, and the access handbook
+ * would list rules that field's marking may not be judged by.
  */
-const UNBOUND_SURFACES: ReadonlySet<PropertyKey> = new Set([
-    'guide',
-    'access',
-]);
+const UNBOUND_SURFACES: ReadonlySet<PropertyKey> = new Set(['guide', 'access']);
 
 /** Contexts bound to one of their non-primary schemes, per selector. */
 const schemeBoundContexts = new WeakMap<

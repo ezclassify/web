@@ -685,24 +685,26 @@ export class EzClassifyUI {
     }
 
     /**
-     * The marking host a view's `data-ezclassify-bound-to` or
-     * `data-ezclassify-facet-of` names, or null when `el` binds none.
+     * The marking host a view's `data-ezclassify-bound-to`,
+     * `data-ezclassify-facet-of` or `data-ezclassify-source` names, or null
+     * when `el` shows none.
      */
     private boundMarkingHostOf(el: Element): Element | null {
         const id =
             el.getAttribute('data-ezclassify-bound-to') ??
-            el.getAttribute('data-ezclassify-facet-of');
+            el.getAttribute('data-ezclassify-facet-of') ??
+            el.getAttribute('data-ezclassify-source');
         if (!id || id === el.id) return null;
         return this.markingHosts.get(id) ?? null;
     }
 
     /**
      * Refuse a bound view whose own markup selects another Context or scheme
-     * than the marking it binds. Markup the view does not declare follows
-     * the marking.
+     * than the marking it binds. Markup the view does not declare follows the
+     * marking.
      *
-     * @throws ContextResolutionError when the view's declared Context or
-     *   scheme disagrees with its marking's
+     * @throws ContextResolutionError when the view's declared Context or scheme
+     *   disagrees with its marking's
      */
     private refuseDisagreeingView(
         el: Element,

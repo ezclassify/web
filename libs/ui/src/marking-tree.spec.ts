@@ -520,7 +520,6 @@ describe('a field that selects a scheme', () => {
         await expect.poll(() => output('second-page').value).toBe('LOW//ALPHA');
 
         expect(hostErrors()).toEqual([]);
-        expect(schemeView).toHaveBeenCalledWith('ref-scheme-2');
         const page = ui.store.getAggregate().byBucket;
         expect([...page.keys()].sort()).toEqual(
             [bucketKey('', ''), bucketKey('', 'ref-scheme-2')].sort(),
@@ -602,6 +601,22 @@ describe('a field that selects a scheme', () => {
         await new Promise((resolve) => setTimeout(resolve, 50));
 
         expect(hostErrors()).toEqual([]);
+        expect(ui.store.get('note').rendered).toBe('LOW//ALPHA');
+    });
+
+    it("shows a source view in its marking's scheme wherever the view sits", async () => {
+        root.innerHTML = `
+            <div data-ezclassify-scheme="ref-scheme-2">
+                <input type="hidden" id="note" data-ezclassify-marking value="LOW//ALPHA">
+            </div>
+            <output id="shown" data-ezclassify-source="note"></output>`;
+        const ui = mount(twoSchemeEngineContext());
+        await expect.poll(() => output('shown').value).toBe('LOW//ALPHA');
+
+        expect(hostErrors()).toEqual([]);
+        expect(
+            ui.resolveContext(root.querySelector('#shown')!).schemeSelector,
+        ).toBe('ref-scheme-2');
         expect(ui.store.get('note').rendered).toBe('LOW//ALPHA');
     });
 

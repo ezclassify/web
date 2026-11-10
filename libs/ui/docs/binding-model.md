@@ -135,7 +135,7 @@ no positional default: a host that resolves no Context is a host error. A
 collection's `context` is a default for the fields inside it, never a filter
 on its members.
 
-A view bound to a marking with `bound-to` or `facet-of` marks in that
+A view of a marking, through `bound-to`, `facet-of` or `source`, reads in that
 marking's Context and scheme, wherever the view sits. A view whose own markup
 selects another Context or scheme than its marking is a host error.
 
