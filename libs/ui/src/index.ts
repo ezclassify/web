@@ -22,6 +22,8 @@
  * halves of that boundary.
  */
 export { EzClassifyUI } from './ezclassify-ui';
+export type { ControllerName } from './element-scanner';
+export type { EzClassifyAttributes } from './added-attributes';
 export {
     getDefaultStyles,
     injectDefaultStyles,

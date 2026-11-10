@@ -214,6 +214,19 @@ name the key on each section with `data-ezclassify-context`:
 app.use(createEzClassify({ contexts: { district, records } }));
 ```
 
+On a page whose markup you can't edit, a component inside `<EzClassify>` marks
+up the elements it finds through the runtime, as the
+[pages you can't edit](https://github.com/ezclassify/web/blob/main/libs/ui/README.md#pages-you-cant-edit) section shows. `useEzClassifyUI()` returns a ref that holds it once
+the root has mounted:
+
+```ts
+const ui = useEzClassifyUI();
+watchEffect(() => {
+    const summary = document.getElementById('summary');
+    if (ui.value && summary) ui.value.add(summary, 'marking');
+});
+```
+
 ## Load, Read, Write, and Save Markings
 
 `store.seedAssertions(id, savedAssertions)` loads a document's marking baseline;

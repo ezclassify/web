@@ -239,6 +239,20 @@ name the key on each section with `data-ezclassify-context`:
 </EzClassifyProvider>
 ```
 
+On a page whose markup you can't edit, a component inside `<EzClassify>` marks
+up the elements it finds through the runtime, as the
+[pages you can't edit](https://github.com/ezclassify/web/blob/main/libs/ui/README.md#pages-you-cant-edit) section shows:
+
+```tsx
+const ui = useEzClassifyUI();
+useEffect(() => {
+    const summary = document.getElementById('summary');
+    if (!ui || !summary) return;
+    ui.add(summary, 'marking');
+    return () => ui.remove(summary);
+}, [ui]);
+```
+
 ## Read, Write, and Save State
 
 `useEzClassify(id)` supplies a marking snapshot and rendered-text setter.
@@ -273,7 +287,7 @@ code seeds or saves needs an `id` on its field.
 with no id it reads the page. A rolled-up state with `stale: true` retains its
 last successful value after a failed refresh; show that uncertainty rather than
 treating it as fresh. `useEzClassifyUI()` returns the mounted instance for code
-that needs it directly.
+that needs it directly, such as `add` and `remove` above.
 
 The store's `valid` and `errors` describe the marking itself; they do not
 include the whole's coverage of its parts. The whole MarkingField's contextual

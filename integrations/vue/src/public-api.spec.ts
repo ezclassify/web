@@ -24,6 +24,7 @@ import {
     useEzClassify,
     useEzClassifyFacet,
     useEzClassifyState,
+    useEzClassifyUI,
     VueRefStore,
     VueRefStoreKey,
     type EzClassifyOptions,
@@ -234,6 +235,45 @@ describe('<EzClassify>', () => {
         );
         facet!.setValue(['A']);
         await vi.waitFor(() => expect(facet!.value.value).toEqual(['A']));
+    });
+
+    it('gives a descendant its runtime, which marks up an element the page did not', async () => {
+        let ui: ReturnType<typeof useEzClassifyUI> | null = null;
+        mountInRoot(
+            defineComponent({
+                setup() {
+                    ui = useEzClassifyUI();
+                    return () => h('input', { id: 'title', value: 'A' });
+                },
+            }),
+        );
+        await nextTick();
+        const runtime = ui!.value!;
+        expect(runtime.root).toBe(wrapper!.element);
+
+        const title = document.getElementById('title') as HTMLInputElement;
+        runtime.add(title, 'marking');
+
+        expect(runtime.components.has(title)).toBe(true);
+        await vi.waitFor(() =>
+            expect(runtime.store.get('title').rendered).toBe('A'),
+        );
+        runtime.remove(title);
+        expect(title.hasAttribute('data-ezclassify-controller')).toBe(false);
+
+        wrapper!.unmount();
+        wrapper = null;
+        expect(ui!.value).toBeNull();
+    });
+
+    it('refuses useEzClassifyUI outside a root', () => {
+        const App = defineComponent({
+            setup() {
+                useEzClassifyUI();
+                return () => h('div');
+            },
+        });
+        expect(() => mount(App)).toThrow(/inside an <EzClassify> root/);
     });
 
     it('builds its own store over the Context scheme and destroys it on unmount', async () => {

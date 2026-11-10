@@ -382,6 +382,45 @@ The `handbook`, `guidebook`, `access-handbook` and `context-reference`
 controllers need only the controller attribute. They read the guides and access
 policy the Context holds.
 
+### Pages you can't edit
+
+On a page whose HTML you don't control, such as a SharePoint or Jira page, a
+script marks up the elements it finds. `ui.add(element, controller,
+attributes)` writes the attributes the markup would have carried and reads the
+element right away. `ui.remove(element)` takes them off again and tears the
+field down:
+
+```ts
+const ui = new EzClassifyUI(context);
+
+const summary = document.querySelector<HTMLInputElement>('#summary');
+const details = document.querySelector<HTMLInputElement>('#details');
+if (summary && details) {
+    ui.add(summary, 'marking');
+    ui.add(details, 'marking', { partOf: 'summary' });
+}
+```
+
+The controller is the `data-ezclassify-controller` value. Attribute keys are
+the names after `data-ezclassify-` in camelCase, so `{ partOf: 'summary' }`
+writes `data-ezclassify-part-of="summary"`, and `true` writes a presence-only
+attribute such as `{ noRollup: true }`. The element then reads exactly as the
+markup would: inside a `whole` container it is a part, and inside an ignored
+region it is a host error. `remove` leaves the page's own attributes alone.
+
+Attributes a script sets directly after initialization are read the same way,
+so a script can also declare a container with
+`form.setAttribute('data-ezclassify-whole', 'issue')`. When the host page
+replaces an element, as single-page apps do, call `add` on the new one.
+
+In the framework integrations the runtime is `useEzClassifyUI()` in React,
+`useEzClassifyUI()` (a ref) in Vue and `injectEzClassifyUI()` (a signal) in
+Angular.
+
+SharePoint Online doesn't run script pasted into a page. Package yours as your
+own SharePoint Framework (SPFx) extension and deploy it through your tenant's
+app catalog.
+
 ## Load, read and save the form's state
 
 Use `await forms.store.seedAssertions(id, savedAssertions)` to load a

@@ -2,7 +2,10 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { TestBed, type ComponentFixture } from '@angular/core/testing';
 import { Component } from '@angular/core';
 import { Context } from '@ezclassify/engine';
-import { EzClassifyDirective } from './ezclassify.directive';
+import {
+    EzClassifyDirective,
+    injectEzClassifyUI,
+} from './ezclassify.directive';
 import { provideEzClassify } from './provide-ezclassify';
 
 const MINIMAL_SCHEME = {
@@ -161,6 +164,72 @@ describe('EzClassifyDirective: a bare root', () => {
             /destroyed/,
         );
         expect(() => nextStore?.subscribe('doc', () => {})).not.toThrow();
+    });
+});
+
+@Component({
+    selector: 'test-runtime-reader',
+    standalone: true,
+    template: `<input id="title" value="HIGH" />`,
+})
+class RuntimeReaderComponent {
+    readonly ui = injectEzClassifyUI();
+}
+
+@Component({
+    selector: 'test-runtime-root',
+    standalone: true,
+    imports: [EzClassifyDirective, RuntimeReaderComponent],
+    template: `<form ezClassify><test-runtime-reader /></form>`,
+})
+class RuntimeRootComponent {}
+
+@Component({
+    selector: 'test-runtime-outside',
+    standalone: true,
+    imports: [RuntimeReaderComponent],
+    template: `<test-runtime-reader />`,
+})
+class RuntimeOutsideComponent {}
+
+describe('injectEzClassifyUI', () => {
+    beforeEach(async () => {
+        await TestBed.configureTestingModule({
+            imports: [RuntimeRootComponent, RuntimeOutsideComponent],
+            providers: [
+                provideEzClassify({
+                    context: Context.fromComponents({ scheme: MINIMAL_SCHEME }),
+                }),
+            ],
+        }).compileComponents();
+    });
+
+    it("gives a descendant its root's runtime, which marks up an element the page did not", async () => {
+        const fixture = TestBed.createComponent(RuntimeRootComponent);
+        fixture.detectChanges(false);
+        const reader = fixture.debugElement.query(
+            (node) => node.componentInstance instanceof RuntimeReaderComponent,
+        ).componentInstance as RuntimeReaderComponent;
+        expect(reader.ui()).toBeNull();
+        await Promise.resolve();
+        const ui = reader.ui()!;
+        expect(ui.root).toBe(fixture.nativeElement.querySelector('form'));
+
+        const title: HTMLInputElement =
+            fixture.nativeElement.querySelector('#title');
+        ui.add(title, 'marking');
+        expect(ui.components.has(title)).toBe(true);
+        await expect.poll(() => ui.store.get('title').rendered).toBe('HIGH');
+
+        fixture.destroy();
+        expect(reader.ui()).toBeNull();
+        expect(title.hasAttribute('data-ezclassify-controller')).toBe(false);
+    });
+
+    it('refuses a caller outside any root', () => {
+        expect(() => TestBed.createComponent(RuntimeOutsideComponent)).toThrow(
+            /inside an ezClassify root/,
+        );
     });
 });
 

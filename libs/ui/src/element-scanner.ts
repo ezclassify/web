@@ -21,7 +21,13 @@
  * engine binding already wired.
  */
 
-import { isPresent, MARKING_ATTR, STRUCTURAL_ATTRS } from './binding-model';
+import {
+    CONTROLLER_ATTR,
+    isPresent,
+    MARKING_ATTR,
+    STRUCTURAL_ATTRS,
+    VIEW_ATTRS,
+} from './binding-model';
 
 /** Recognized controller names: the visual-treatment side of the seam. */
 export const CONTROLLER_NAMES = [
@@ -330,18 +336,50 @@ export function scanElements(
 }
 
 /**
+ * The attributes whose change derives an element again: what it is (its
+ * controller, a marking, the view it is and what that view reads) and where it
+ * sits in the marking tree. A controller's options and the presentation
+ * attributes are read when the element mounts.
+ */
+const DERIVING_ATTRS: readonly string[] = [
+    CONTROLLER_ATTR,
+    MARKING_ATTR,
+    ...VIEW_ATTRS,
+    'data-ezclassify-category',
+    'data-ezclassify-scope',
+    ...STRUCTURAL_ATTRS,
+];
+
+/** Each observer's record handler, for {@link flushObserver}. */
+const observerHandlers = new WeakMap<
+    MutationObserver,
+    (mutations: MutationRecord[]) => void
+>();
+
+/**
+ * Handle the records `observer` has queued now rather than on the next
+ * microtask, so a caller that changed the DOM sees the result synchronously.
+ *
+ * @param observer - An observer {@link observeNewElements} returned
+ */
+export function flushObserver(observer: MutationObserver): void {
+    const records = observer.takeRecords();
+    if (records.length > 0) observerHandlers.get(observer)?.(records);
+}
+
+/**
  * Watch `root` for elements added or removed later that carry
- * `data-ezclassify-*` attributes, and for changes to the structural attributes
- * that place an element in the marking tree.
+ * `data-ezclassify-*` attributes, and for attribute changes that alter what an
+ * element is or where it sits in the marking tree.
  *
  * - Added elements owned by `ownerId` run through the behavior/view callbacks.
  * - Removed elements (and their `data-ezclassify-*` descendants) are reported to
  *   `onRemove` so the caller can tear down the components it created for them.
- * - An element whose structural attribute (`whole`, `part-of`, `collection`,
- *   `member-of`, `context`, `scheme`, `ignore`, `no-rollup`) changed is
- *   reported once per batch to `onStructureChange`, so the caller can derive
- *   its subtree again. An element added in the same batch, or inside another
- *   reported element, is not reported: that derivation already reads it.
+ * - An element whose controller, binding or structural attribute was added,
+ *   changed or removed is reported once per batch to `onStructureChange`, so
+ *   the caller can derive its subtree again. An element added in the same
+ *   batch, or inside another reported element, is not reported: that derivation
+ *   already reads it.
  *
  * A node reported in `removedNodes` that is still connected within `root` was
  * merely RELOCATED (the enhance path moves a keep-visible host into its own
@@ -358,7 +396,7 @@ export function observeNewElements(
     onRemove?: (el: HTMLElement) => void,
     onStructureChange?: (el: HTMLElement) => void,
 ): MutationObserver {
-    const observer = new MutationObserver((mutations) => {
+    const handle = (mutations: MutationRecord[]): void => {
         const added = new Set<Node>();
         const restructured = new Set<HTMLElement>();
         for (const m of mutations) {
@@ -418,14 +456,14 @@ export function observeNewElements(
                 }
             if (!covered) onStructureChange(el);
         }
-    });
+    };
+    const observer = new MutationObserver(handle);
+    observerHandlers.set(observer, handle);
     observer.observe(root, {
         childList: true,
         subtree: true,
         attributes: !!onStructureChange,
-        ...(onStructureChange
-            ? { attributeFilter: [...STRUCTURAL_ATTRS] }
-            : {}),
+        ...(onStructureChange ? { attributeFilter: [...DERIVING_ATTRS] } : {}),
     });
     return observer;
 }

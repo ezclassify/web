@@ -17,7 +17,10 @@ export type {
     EzClassifyOptions,
     EzClassifyProvision,
 } from './lib/provide-ezclassify';
-export { EzClassifyDirective } from './lib/ezclassify.directive';
+export {
+    EzClassifyDirective,
+    injectEzClassifyUI,
+} from './lib/ezclassify.directive';
 export type { EzClassifyDirectiveOptions } from './lib/ezclassify.directive';
 export { bindEzClassifyToSignal } from './lib/bind-ezclassify-to-signal';
 export type { BindMarkingsToSignalOptions } from './lib/bind-ezclassify-to-signal';

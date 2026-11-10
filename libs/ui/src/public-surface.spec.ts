@@ -142,6 +142,8 @@ describe('EzClassifyUI published declaration', () => {
         'isReady',
         'constructor',
         'recalculate',
+        'add',
+        'remove',
         'getAllAssertions',
         'copyMarkingToClipboard',
         'destroy',

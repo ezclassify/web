@@ -17,16 +17,23 @@
  * with UI outside a form, put one root around both, or pass `store` (which then
  * stays the caller's to destroy). A root nested inside another is a member of
  * the enclosing root's nearest collection, as any nested mount root is.
+ *
+ * Code inside the root reaches its runtime with {@link useEzClassifyUI}, for
+ * example to mark up page elements it cannot write markup for with
+ * `ui.add(element, 'marking')`.
  */
 
 import {
     defineComponent,
     h,
+    inject,
     onBeforeUnmount,
     onMounted,
     provide,
     shallowRef,
+    type InjectionKey,
     type PropType,
+    type ShallowRef,
     type SlotsType,
     type VNodeChild,
 } from 'vue';
@@ -34,6 +41,29 @@ import { EzClassifyUI } from '@ezclassify/ui';
 import type { SlottedComponent } from './component-type';
 import { VueRefStoreKey, type VueRefStore } from './composables/vue-ref-store';
 import { injectEzClassifyConfig } from './config';
+
+/** The runtime of the nearest `<EzClassify>` root, `null` until it mounts. */
+const EzClassifyUIKey: InjectionKey<Readonly<ShallowRef<EzClassifyUI | null>>> =
+    Symbol('EzClassifyUI');
+
+/**
+ * The runtime of the enclosing `<EzClassify>` root, for code that has to reach
+ * it directly: `add` and `remove` for page elements it cannot write markup for,
+ * its `root` element, readiness. Marking state is better read through
+ * `useEzClassify(id)` and `useEzClassifyState(id)`.
+ *
+ * @returns A ref holding the runtime, `null` until the root has mounted.
+ * @throws When no `<EzClassify>` root encloses the caller.
+ */
+export function useEzClassifyUI(): Readonly<ShallowRef<EzClassifyUI | null>> {
+    const ui = inject(EzClassifyUIKey, null);
+    if (!ui) {
+        throw new Error(
+            '[ezclassify/vue] useEzClassifyUI() must be called inside an <EzClassify> root',
+        );
+    }
+    return ui;
+}
 
 const ezClassifyProps = {
     /**
@@ -59,11 +89,12 @@ export const EzClassify: SlottedComponent<typeof ezClassifyProps> =
             provide(VueRefStoreKey, store);
 
             const host = shallowRef<HTMLElement | null>(null);
-            let ui: EzClassifyUI | null = null;
+            const ui = shallowRef<EzClassifyUI | null>(null);
+            provide(EzClassifyUIKey, ui);
 
             onMounted(() => {
                 // Children are mounted first, so the slot's markup is in place.
-                ui = new EzClassifyUI(config.contexts, {
+                ui.value = new EzClassifyUI(config.contexts, {
                     ...config.presentation,
                     root: host.value!,
                     store,
@@ -73,8 +104,8 @@ export const EzClassify: SlottedComponent<typeof ezClassifyProps> =
             onBeforeUnmount(() => {
                 // The runtime goes first so nothing it still initializes
                 // reaches a destroyed store.
-                ui?.destroy();
-                ui = null;
+                ui.value?.destroy();
+                ui.value = null;
                 if (!supplied) store.destroy();
             });
 

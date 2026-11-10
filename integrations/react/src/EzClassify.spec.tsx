@@ -115,6 +115,39 @@ describe('<EzClassify> under <EzClassifyProvider context>', () => {
         expect((root as HTMLElement | null)?.hasAttribute('role')).toBe(false);
     });
 
+    it('marks up an element the page did not, through the runtime', async () => {
+        function Page(): ReactElement {
+            const ui = useEzClassifyUI();
+            useEffect(() => {
+                const title = document.getElementById('title');
+                if (!ui || !title) return;
+                ui.add(title, 'marking');
+                return () => ui.remove(title);
+            }, [ui]);
+            return <input id="title" defaultValue="HIGH" />;
+        }
+        let store: ReactEzClassifyStore | undefined;
+        function Store(): null {
+            store = useEzClassifyStore();
+            return null;
+        }
+        render(
+            <EzClassifyProvider context={makeContext()}>
+                <EzClassify>
+                    <Page />
+                    <Store />
+                </EzClassify>
+            </EzClassifyProvider>,
+        );
+        await flush();
+
+        const title = document.getElementById('title')!;
+        expect(title.getAttribute('data-ezclassify-controller')).toBe(
+            'marking',
+        );
+        expect(store!.get('title').rendered).toBe('HIGH');
+    });
+
     it('lets a bound field publish through the root store', async () => {
         // The publisher is skipped on its own commit, so a second component
         // shows what the root store now holds.

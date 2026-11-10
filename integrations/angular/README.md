@@ -273,6 +273,19 @@ provideEzClassify({ contexts: { district, records } });
 A host that needs a store your application already owns, or options for one
 document only, binds them with `[ezClassifyStore]` and `[ezClassifyOptions]`.
 
+On a page whose markup you can't edit, a component inside the root marks up the
+elements it finds through the runtime, as the
+[pages you can't edit](https://github.com/ezclassify/web/blob/main/libs/ui/README.md#pages-you-cant-edit) section shows. `injectEzClassifyUI()` returns a signal that holds it
+once the root has mounted:
+
+```ts
+private readonly ui = injectEzClassifyUI();
+private readonly enhance = effect(() => {
+    const summary = document.getElementById('summary');
+    if (summary) this.ui()?.add(summary, 'marking');
+});
+```
+
 ## Load, Read, Write, and Save Markings
 
 `seedAssertions(id, savedAssertions)` loads a document's marking baseline;

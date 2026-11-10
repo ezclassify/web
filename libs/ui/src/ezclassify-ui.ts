@@ -64,6 +64,7 @@ import {
     type ControllerName,
     scanElements,
     observeNewElements,
+    flushObserver,
     harvestControllerOptions,
     isBehaviorBound,
     isOwnedBy,
@@ -130,6 +131,13 @@ import {
 } from './store/base-ezclassify-store';
 import { clearWholeReadGate, setWholeReadGate } from './whole-read-gate';
 import { createEzClassifyFacetBinding } from './facet-binding';
+import {
+    resolveAddedAttributes,
+    restoreAddedAttributes,
+    writeAddedAttributes,
+    type AddedAttributes,
+    type EzClassifyAttributes,
+} from './added-attributes';
 
 /**
  * The buckets of a level a view shows, in the store's order: those its own
@@ -431,6 +439,8 @@ export class EzClassifyUI {
     private readonly helperInputs = new WeakSet<HTMLElement>();
     /** Whether the outputs last showed an incomplete rollup. */
     private rollupIncompleteShown = false;
+    /** What {@link add} wrote on each element, for {@link remove}. */
+    private readonly addedAttributes = new Map<HTMLElement, AddedAttributes>();
     /** Stops the page-aggregate subscription that refreshes the outputs. */
     private unsubscribeIncomplete: (() => void) | null = null;
     private readonly _textIdSalt = Math.random().toString(36).slice(2, 8);
@@ -1012,6 +1022,9 @@ export class EzClassifyUI {
                 this.teardownElement(el);
                 this.clearHostError(el);
                 this.bindingNodes.delete(el);
+                // An element that left the root is no longer this instance's;
+                // what add wrote on it stays, as its markup.
+                this.addedAttributes.delete(el);
                 const collection = this.collections.get(el);
                 if (collection !== undefined) {
                     this.store.unregisterCollection(collection);
@@ -1221,8 +1234,16 @@ export class EzClassifyUI {
         if (this._destroyed) return;
         const scope = el === this.root || this.root.contains(el) ? el : null;
         if (!scope) return;
+        // The scope itself counts when it still declares a binding, and when it
+        // has stopped declaring one this runtime had read: its enhancement goes.
+        const scopeRead =
+            scope !== this.root &&
+            (isBehaviorBound(scope) ||
+                this.isBuilt(scope) ||
+                this.bindingNodes.has(scope) ||
+                this.hostErrors.has(scope));
         const affected = [
-            ...(isBehaviorBound(scope) && scope !== this.root ? [scope] : []),
+            ...(scopeRead ? [scope] : []),
             ...Array.from(scope.querySelectorAll<HTMLElement>(EZ_SELECTOR)),
         ].filter((host) => isOwnedBy(host, this._instanceId));
         for (const host of affected) {
@@ -1746,9 +1767,15 @@ export class EzClassifyUI {
         if (write) void write.then(releaseStore);
         else releaseStore();
 
-        // Remove the orphan mount sibling if it is still attached.
+        // Remove the orphan mount sibling if it is still attached. A host that
+        // stays on the page (its markup changed, or `remove` was called) is
+        // shown again; a mount that still applies hides it when it remounts.
         const sibling = host.nextElementSibling as HTMLElement | null;
-        if (sibling?.hasAttribute('data-ezclassify-mount')) sibling.remove();
+        if (sibling?.hasAttribute('data-ezclassify-mount')) {
+            sibling.remove();
+            if (host.isConnected && host.style.display === 'none')
+                host.style.display = '';
+        }
 
         clearMountOwner(host);
 
@@ -3902,6 +3929,84 @@ export class EzClassifyUI {
     }
 
     /**
+     * Enhance an element already on the page, for a page whose markup you
+     * cannot edit (a SharePoint or Jira page, say). Writes
+     * `data-ezclassify-controller` and the given attributes onto `element`,
+     * then reads it, so it ends exactly as if the page's HTML had declared
+     * them: a marking inside a `data-ezclassify-whole` container is a part of
+     * that whole, one inside a collection is a member, and one inside a
+     * `data-ezclassify-ignore` region is refused with an
+     * `ezclassify:host-error` event like any marked element there.
+     *
+     * Calling it again on the same element replaces what the earlier call
+     * wrote.
+     *
+     * ```ts
+     * ui.add(titleInput, 'marking');
+     * ui.add(bodyInput, 'marking', { partOf: 'document' });
+     * ```
+     *
+     * @param element - An element inside this instance's root
+     * @param controller - The controller to mount, as
+     *   `data-ezclassify-controller` names it (`'marking'`, `'banner'`, ...)
+     * @param attributes - Further attributes, keyed by name after
+     *   `data-ezclassify-` in camelCase: `{ partOf: 'document' }` writes
+     *   `data-ezclassify-part-of="document"`, `{ noRollup: true }` a
+     *   presence-only one
+     * @throws TypeError when the controller is unknown or an attribute key is
+     *   not one `add` can write
+     * @throws Error when this instance is destroyed, or `element` is not inside
+     *   its root or belongs to a nested instance
+     */
+    add(
+        element: HTMLElement,
+        controller: ControllerName,
+        attributes?: EzClassifyAttributes,
+    ): void {
+        if (this._destroyed)
+            throw new Error(
+                '[ezclassify] add() was called on a destroyed EzClassifyUI.',
+            );
+        if (
+            !(element instanceof HTMLElement) ||
+            element === this.root ||
+            !this.root.contains(element) ||
+            !isOwnedBy(element, this._instanceId)
+        )
+            throw new Error(
+                "[ezclassify] add() takes an element inside this EzClassifyUI's root, outside any nested root.",
+            );
+        const resolved = resolveAddedAttributes(controller, attributes);
+        const previous = this.addedAttributes.get(element);
+        if (previous) restoreAddedAttributes(element, previous);
+        const record: AddedAttributes = new Map();
+        writeAddedAttributes(element, resolved, record);
+        this.addedAttributes.set(element, record);
+        // The observer reads the change the way it reads any script's; flushing
+        // it now makes the element's enhancement synchronous with this call.
+        if (this.domObserver) flushObserver(this.domObserver);
+    }
+
+    /**
+     * Undo {@link add}: take off the attributes it wrote on `element`, put back
+     * any value the page had there, and tear down the enhancement. The element
+     * then reads as its own markup says. An element `add` never touched is left
+     * alone.
+     *
+     * @param element - An element passed to {@link add}
+     */
+    remove(element: HTMLElement): void {
+        const record = this.addedAttributes.get(element);
+        if (!record) return;
+        this.addedAttributes.delete(element);
+        restoreAddedAttributes(element, record);
+        // The observer derives the element again from what is left, which
+        // tears down the enhancement add built. An element that left the root
+        // was torn down when it left, and is no longer recorded.
+        if (this.domObserver) flushObserver(this.domObserver);
+    }
+
+    /**
      * Copy the marking `field` holds to the clipboard, followed by its scheme,
      * format, assertions and validity.
      */
@@ -4019,5 +4124,10 @@ export class EzClassifyUI {
         for (const adopted of this.adoptedStyles) adopted.release();
         this.adoptedStyles = [];
         this.fields = [];
+        // What add wrote goes with the runtime that wrote it. Last, so the
+        // mount cleanup above still finds the controllers it restores.
+        for (const [element, record] of this.addedAttributes)
+            restoreAddedAttributes(element, record);
+        this.addedAttributes.clear();
     }
 }

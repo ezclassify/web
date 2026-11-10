@@ -437,8 +437,8 @@ Notes on shape:
   other element shows the rendered text.
 - A native `<select>` with `facet-of` and `category` and no controller binds
   in place; it needs no other attribute.
-- A `whole`, `collection` or other structure attribute that changes after the
-  first scan re-derives the subtree it sits on.
+- A controller, `marking`, view or structure attribute that is added, changed
+  or removed after the first scan re-derives the subtree it sits on.
 - Hidden inputs as marking declarations are fine and idiomatic:
     ```html
     <input
@@ -1632,7 +1632,8 @@ Things you must not do. Each one has a concrete failure mode.
 - **No wiring in code after initialization.** Membership, parts, Contexts and
   outputs are markup. A page that registers a Context, places a marking in a
   rollup or creates a rollup input from code is working around the model; the
-  attribute for it exists.
+  attribute for it exists. `ui.add`, for pages whose markup the host can't
+  edit, writes those attributes and nothing else.
 
 ## 16. Deferred from the 1.0 surface
 

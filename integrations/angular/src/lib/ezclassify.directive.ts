@@ -136,7 +136,7 @@ export class EzClassifyDirective implements OnInit, OnChanges, OnDestroy {
     private readonly providedOptions = inject(EZCLASSIFY_OPTIONS, {
         optional: true,
     });
-    private forms: EzClassifyUI | null = null;
+    private readonly forms = signal<EzClassifyUI | null>(null);
     private readonly store = signal<EzClassifyStore | null>(null);
     /** True while `store()` holds a store this directive built and must destroy. */
     private ownsStore = false;
@@ -153,6 +153,13 @@ export class EzClassifyDirective implements OnInit, OnChanges, OnDestroy {
      */
     readonly storeSignal: Signal<EzClassifyStore | null> =
         this.store.asReadonly();
+
+    /**
+     * The root's runtime as a signal, `null` until it has mounted (a microtask
+     * after the root's first change detection) and again while a rebuild
+     * replaces it. Read it through {@link injectEzClassifyUI}.
+     */
+    readonly uiSignal: Signal<EzClassifyUI | null> = this.forms.asReadonly();
 
     /**
      * The live store for this root, or `null` before it is built. Used by the
@@ -225,23 +232,45 @@ export class EzClassifyDirective implements OnInit, OnChanges, OnDestroy {
         this.store.set(store);
         Promise.resolve().then(() => {
             if (this.destroyed || token !== this.initToken) return;
-            this.forms = new EzClassifyUI(source, {
-                root: this.el.nativeElement,
-                format: opts.format,
-                colorMap: opts.colorMap,
-                tooltipConceptProperty: opts.tooltipConceptProperty,
-                favorites: opts.favorites,
-                store,
-            });
+            this.forms.set(
+                new EzClassifyUI(source, {
+                    root: this.el.nativeElement,
+                    format: opts.format,
+                    colorMap: opts.colorMap,
+                    tooltipConceptProperty: opts.tooltipConceptProperty,
+                    favorites: opts.favorites,
+                    store,
+                }),
+            );
         });
     }
 
     private teardown(): void {
-        this.forms?.destroy();
-        this.forms = null;
+        this.forms()?.destroy();
+        this.forms.set(null);
         // Only a store this directive built is this directive's to destroy.
         if (this.ownsStore) this.store()?.destroy();
         this.ownsStore = false;
         this.store.set(null);
     }
+}
+
+/**
+ * The runtime of the enclosing `ezClassify` root, for code that has to reach it
+ * directly: `add` and `remove` for page elements it cannot write markup for,
+ * its `root` element, readiness. Marking state is better read through the store
+ * or `injectEzClassifyFacet`. Call it from a component or directive inside the
+ * root.
+ *
+ * @returns A signal holding the runtime, `null` until the root has mounted.
+ * @throws When no `ezClassify` root encloses the caller.
+ */
+export function injectEzClassifyUI(): Signal<EzClassifyUI | null> {
+    const root = inject(EzClassifyDirective, { optional: true });
+    if (!root) {
+        throw new Error(
+            '[ezclassify/angular] injectEzClassifyUI() must be called inside an ezClassify root',
+        );
+    }
+    return root.uiSignal;
 }
