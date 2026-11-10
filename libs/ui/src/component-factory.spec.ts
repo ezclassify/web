@@ -4,8 +4,11 @@ import {
     resolveNativeInput,
     createMountContainer,
     createComponent,
+    createHostComponent,
+    componentNameForHost,
     buildComponentOptions,
 } from './component-factory';
+import { TranslatedView } from './components/translated-view';
 import type { ControllerName } from './element-scanner';
 
 describe('parseComponentOptions', () => {
@@ -271,6 +274,35 @@ describe('createComponent', () => {
     it('returns null for an unknown controller', () => {
         const component = createComponent('not-a-controller' as any);
         expect(component).toBeNull();
+    });
+});
+
+describe('createHostComponent', () => {
+    function translated(): HTMLElement {
+        const el = document.createElement('span');
+        el.setAttribute('data-ezclassify-source', 'memo1');
+        el.setAttribute('data-ezclassify-translate', 'tier-to-label');
+        return el;
+    }
+
+    it('mounts a translated view on a host with data-ezclassify-translate', () => {
+        const el = translated();
+        expect(createHostComponent(el, null)).toBeInstanceOf(TranslatedView);
+        expect(componentNameForHost(el, null)).toBe('TranslatedView');
+    });
+
+    it('mounts a translated view in place', () => {
+        const parent = document.createElement('div');
+        const el = translated();
+        parent.appendChild(el);
+        expect(createMountContainer(el, null)).toBe(el);
+        expect(parent.querySelector('[data-ezclassify-mount]')).toBeNull();
+    });
+
+    it('mounts the controller component on any other host', () => {
+        const el = document.createElement('div');
+        expect(componentNameForHost(el, 'banner')).toBe('StatusBanner');
+        expect(createHostComponent(el, null)).toBeNull();
     });
 });
 

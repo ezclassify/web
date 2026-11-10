@@ -33,6 +33,7 @@ import { MarkedInput } from './components/marked-input';
 import { MarkingField } from './components/marking-field';
 import { EzClassifyText } from './components/ezclassify-text';
 import { EquivalencyMap } from './components/equivalency-map';
+import { TranslatedView, isTranslatedView } from './components/translated-view';
 
 /**
  * Translate a harvested options bag (`data-ezclassify-<controller>-*`) into the
@@ -167,8 +168,14 @@ export function resolveNativeInput(
  */
 export function createMountContainer(
     el: HTMLElement,
-    controller: ControllerName,
+    controller: ControllerName | null,
 ): HTMLDivElement {
+    // A translated view replaces the host's content with the translation, so
+    // its host is its own container, whatever else it carries.
+    if (controller === null || isTranslatedView(el)) {
+        setMountHost(el, el);
+        return el as HTMLDivElement;
+    }
     // 'text' renders no UI of its own; the host element IS the marking surface.
     // 'equivalency' mounts its table in-place inside the host div.
     // 'context-reference' mounts in place because its host-authored custom-tab
@@ -288,6 +295,36 @@ export function createComponent(
     controller: ControllerName,
 ): ComponentInstance | null {
     return COMPONENT_REGISTRY.get(controller)?.create() ?? null;
+}
+
+/** The public component class a translated view mounts. */
+const TRANSLATED_VIEW: ComponentRegistration = {
+    name: 'TranslatedView',
+    create: () => new TranslatedView(),
+};
+
+/**
+ * The component a host mounts. A host carrying `data-ezclassify-translate` is a
+ * translated view and mounts {@link TranslatedView} whatever controller it names
+ * (the view refuses a controller as a host error when it initializes); any
+ * other host mounts its controller's component, and a host with neither mounts
+ * nothing.
+ */
+export function createHostComponent(
+    el: HTMLElement,
+    controller: ControllerName | null,
+): ComponentInstance | null {
+    if (isTranslatedView(el)) return TRANSLATED_VIEW.create();
+    return controller ? createComponent(controller) : null;
+}
+
+/** The public component class name a host mounts; see createHostComponent. */
+export function componentNameForHost(
+    el: HTMLElement,
+    controller: ControllerName | null,
+): string | null {
+    if (isTranslatedView(el)) return TRANSLATED_VIEW.name;
+    return controller ? componentNameForController(controller) : null;
 }
 
 /**
