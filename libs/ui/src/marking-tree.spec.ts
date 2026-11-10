@@ -551,6 +551,32 @@ describe('a field that selects a scheme', () => {
         expect(output('second-page').value).toBe('LOW//ALPHA');
     });
 
+    it('reads a second-scheme marking its bound views edit by that scheme alone', async () => {
+        root.innerHTML = `
+            <div data-ezclassify-scheme="ref-scheme-2">
+                <input type="hidden" id="note" data-ezclassify-marking value="LOW//ALPHA">
+                <fieldset data-ezclassify-controller="selector" data-ezclassify-bound-to="note"></fieldset>
+                <input id="typed-note" data-ezclassify-bound-to="note">
+            </div>`;
+        // The engine's own two-scheme Context.
+        const context = Object.freeze(
+            Context.fromComponents({
+                schemes: [
+                    { key: 'ref-scheme-1', scheme: scheme('ref-scheme-1') },
+                    { key: 'ref-scheme-2', scheme: scheme('ref-scheme-2') },
+                ],
+                primaryScheme: 'ref-scheme-1',
+            } as Parameters<typeof Context.fromComponents>[0]),
+        );
+        const ui = mount(context);
+        await expect.poll(() => output('typed-note').value).toBe('LOW//ALPHA');
+        await new Promise((resolve) => setTimeout(resolve, 50));
+
+        expect(hostErrors()).toEqual([]);
+        expect(ui.store.get('note').rendered).toBe('LOW//ALPHA');
+        expect(output('typed-note').value).toBe('LOW//ALPHA');
+    });
+
     it('refuses a field per element when the store the host gave cannot read its scheme', async () => {
         root.innerHTML = twoSchemes;
         const { context } = crosswalking();

@@ -361,15 +361,21 @@ export class TranslatedView implements ComponentInstance {
     }
 
     /**
-     * Name a source fact by the concept's name when the view's Context reads
-     * the crosswalk's source scheme, and by its id otherwise.
+     * Name a source fact by the concept's name when the view's scheme (the one
+     * `data-ezclassify-scheme` selects, or the Context's primary) is the
+     * crosswalk's source scheme, and by its id otherwise.
      */
     private sourceLabels(
         result: CrosswalkTranslationResult,
     ): (ref: AssertionReference) => string {
         let concepts: ReadonlyMap<string, string> = new Map();
         try {
-            const scheme = this.context.scheme.getScheme();
+            const selector = this.options.schemeSelector;
+            const scheme = (
+                selector
+                    ? this.context.schemeView(selector)
+                    : this.context.scheme
+            ).getScheme();
             if (scheme.id === result.sourceScheme.id) {
                 concepts = new Map(scheme.concepts.map((c) => [c.id, c.name]));
             }

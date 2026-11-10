@@ -437,6 +437,55 @@ export function schemeEngineOf(
     return viewOf(resolved.context, resolved.schemeSelector, element);
 }
 
+/** Contexts bound to one of their non-primary schemes, per selector. */
+const schemeBoundContexts = new WeakMap<
+    ContextAdapter,
+    Map<string, ContextAdapter>
+>();
+
+/**
+ * The Context a component on a resolved element marks with: the element's
+ * Context, whose `scheme` is the scheme the element selects. A component reads
+ * and writes through `context.scheme`, so a field under
+ * `data-ezclassify-scheme` is parsed, rendered and offered choices by that
+ * scheme rather than the primary. Everything else is the Context's own. The
+ * bound Context is built once per Context and selector.
+ *
+ * @param resolved - What {@link ContextSet.resolve} returned for the element
+ * @param element - The element, carried on the error
+ * @throws ContextResolutionError when the Context gives no view for the scheme
+ */
+export function contextForScheme(
+    resolved: ResolvedContext,
+    element: Element | null = null,
+): ContextAdapter {
+    if (resolved.primary) return resolved.context;
+    const { context, schemeSelector } = resolved;
+    let bound = schemeBoundContexts.get(context);
+    if (!bound) {
+        bound = new Map();
+        schemeBoundContexts.set(context, bound);
+    }
+    const known = bound.get(schemeSelector);
+    if (known) return known;
+    const scheme = viewOf(context, schemeSelector, element);
+    // The Context may hold `scheme` as a frozen property, which a proxy over
+    // it could not answer differently, so the proxy stands over an empty
+    // object and forwards everything else to the Context.
+    const view = new Proxy({} as ContextAdapter, {
+        get(_, property) {
+            if (property === 'scheme') return scheme;
+            const value = Reflect.get(context, property, context);
+            return typeof value === 'function' ? value.bind(context) : value;
+        },
+        has(_, property) {
+            return Reflect.has(context, property);
+        },
+    });
+    bound.set(schemeSelector, view);
+    return view;
+}
+
 /**
  * The buckets of a store over the Contexts an `EzClassifyUI` is given, each
  * read by the scheme its key names: a Context's primary scheme through

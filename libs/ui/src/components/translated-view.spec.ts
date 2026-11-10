@@ -227,6 +227,36 @@ describe('TranslatedView', () => {
         expect(view.getRendered()).toBe('RESTRICTED-LABEL');
     });
 
+    it('names what was not carried through the scheme the view selects', async () => {
+        // The view reads the Context's second scheme; the primary is the target.
+        const context = fixtureContext();
+        const tier = context.scheme.getScheme();
+        Object.assign(context, {
+            scheme: { getScheme: () => ({ id: 'label', concepts: [] }) },
+            schemeView: (selector: string) => {
+                if (selector !== 'tier')
+                    throw new Error(`no scheme ${selector}`);
+                return { getScheme: () => tier };
+            },
+        });
+        const view = new TranslatedView();
+        const el = host();
+        await view.init(el, context, {
+            injectStyles: false,
+            schemeSelector: 'tier',
+        });
+
+        view.setAssertions([high, team]);
+        await settle();
+
+        expect(shown(el).items).toEqual([
+            {
+                disposition: 'omit',
+                text: 'Team omitted: The label scheme has no groups.',
+            },
+        ]);
+    });
+
     it('shows no target marking when the crosswalk forbids the translation', async () => {
         const forbidden: CrosswalkTranslationResult = {
             crosswalk: CROSSWALK,

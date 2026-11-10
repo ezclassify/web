@@ -8,7 +8,9 @@ import {
     bucketKey,
     ContextResolutionError,
     ContextSet,
+    contextForScheme,
     contextStoreBuckets,
+    PRIMARY_SCHEME_SELECTOR,
     schemeEngineOf,
 } from './context-binding';
 
@@ -387,5 +389,47 @@ describe('contextStoreBuckets', () => {
         expect(
             resolutionError(() => buckets.resolve(bucketKey('capco', ''))).code,
         ).toBe('context-unresolved');
+    });
+});
+
+describe('contextForScheme', () => {
+    function resolved(context: ContextAdapter, schemeSelector: string) {
+        const primary = schemeSelector === PRIMARY_SCHEME_SELECTOR;
+        return {
+            contextKey: '',
+            context,
+            schemeSelector,
+            primary,
+            bucket: bucketKey('', schemeSelector),
+        };
+    }
+
+    it('is the Context itself for its primary scheme', () => {
+        const context = contextHolding(CROSSWALK_SCHEMES);
+        expect(
+            contextForScheme(resolved(context, PRIMARY_SCHEME_SELECTOR)),
+        ).toBe(context);
+    });
+
+    it('reads through the selected scheme and keeps the rest of the Context', () => {
+        // A frozen Context, as an engine hands one out: its `scheme` cannot
+        // be redefined on the object itself.
+        const context = Object.freeze(contextHolding(CROSSWALK_SCHEMES));
+        const bound = contextForScheme(resolved(context, 'tier'));
+
+        expect(bound.scheme).toBe(context.schemeView('tier'));
+        expect(bound.scheme.getScheme().id).toBe('scheme-b');
+        expect('audit' in bound).toBe(true);
+        expect(bound.describeSchemes).toBeTypeOf('function');
+        expect(contextForScheme(resolved(context, 'tier'))).toBe(bound);
+    });
+
+    it('refuses a scheme the Context gives no view for', () => {
+        const context = contextHolding(CROSSWALK_SCHEMES);
+        expect(
+            resolutionError(() =>
+                contextForScheme(resolved(context, 'missing')),
+            ).code,
+        ).toBe('scheme-unresolved');
     });
 });

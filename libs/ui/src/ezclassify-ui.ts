@@ -33,6 +33,7 @@ import type { ComponentSchemeEngine } from './components/component-base-readonly
 import {
     ContextResolutionError,
     ContextSet,
+    contextForScheme,
     contextStoreBuckets,
     PRIMARY_SCHEME_SELECTOR,
     schemeEngineOf,
@@ -3107,7 +3108,11 @@ export class EzClassifyUI {
                   this.referenceSource(),
                   componentOpts,
               )
-            : component.init(container, resolved!.context, componentOpts);
+            : component.init(
+                  container,
+                  contextForScheme(resolved!, el),
+                  componentOpts,
+              );
 
         if (componentOpts.resolveParts && wholeId) {
             // A part committing changes what the whole has to cover, so the
