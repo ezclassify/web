@@ -127,9 +127,10 @@ new EzClassifyUI({ contexts: { district, records } });
 
 A marking host takes its Context from `data-ezclassify-context` on itself or
 the nearest ancestor, and its scheme from `data-ezclassify-scheme` the same
-way; a host that selects a scheme other than the Context's primary is a host
-error, since a Context marks only in its primary. With one Context, the
-attribute is never needed. With several, there is
+way. A host marks in the scheme it selects, through the Context's view of that
+scheme, and rolls up in that scheme's bucket; a selector the Context does not
+hold is a host error. With one Context, the context attribute is never
+needed. With several, there is
 no positional default: a host that resolves no Context is a host error. A
 collection's `context` is a default for the fields inside it, never a filter
 on its members.

@@ -182,9 +182,10 @@ markup uses. Each marking is read in one bucket, the pair
    attribute it is a host error; no key is a default by position.
 2. The scheme is `data-ezclassify-scheme` on the host or its nearest ancestor:
    the selector the Context's `describeSchemes` and REST `?scheme=` use, not a
-   global scheme id. Without it, the Context's primary scheme. A Context
-   offers marking operations for its primary scheme only, so a marking host
-   that selects another scheme is a host error.
+   global scheme id. Without it, the Context's primary scheme. Each bucket is
+   read by the Context's view of its scheme (`context.scheme` for the
+   primary, `context.schemeView(selector)` for another), and a selector the
+   Context does not hold is a host error.
 3. A part is read in its whole's bucket. A `part-of` that crosses Contexts or
    schemes is a host error.
 4. Every level keeps one rollup per bucket and never produces a merged

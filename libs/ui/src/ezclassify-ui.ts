@@ -34,9 +34,9 @@ import {
     ContextResolutionError,
     ContextSet,
     contextStoreBuckets,
+    PRIMARY_SCHEME_SELECTOR,
     schemeEngineOf,
     SINGLE_CONTEXT_KEY,
-    type EzClassifyContextMap,
     type EzClassifyContexts,
     type ResolvedContext,
 } from './context-binding';
@@ -641,24 +641,17 @@ export class EzClassifyUI {
     }
 
     /**
-     * The store this instance creates when the host passes none: over the only
-     * Context's scheme, or, with several Contexts, one bucket per (Context,
-     * scheme) pair that markup resolves, with no default bucket.
+     * The store this instance creates when the host passes none: one bucket per
+     * (Context, scheme) pair that markup resolves, each read by that scheme's
+     * view. With one Context its primary scheme is the default bucket; with
+     * several there is none.
      */
     private createStore(
         source: EzClassifyContexts,
         format: string | undefined,
     ): EzClassifyStore {
-        if (this.contexts.single) {
-            return new VanillaEzClassifyStore(
-                this.engine,
-                format ? { format } : undefined,
-            );
-        }
         return new VanillaEzClassifyStore({
-            buckets: contextStoreBuckets(source as EzClassifyContextMap, {
-                format,
-            }),
+            buckets: contextStoreBuckets(source, { format }),
         });
     }
 
@@ -764,15 +757,28 @@ export class EzClassifyUI {
 
     /**
      * What a level view prints to name a bucket: its scheme's name, after the
-     * Context key when the instance holds several Contexts, and the scheme
-     * selector for a scheme other than the Context's primary.
+     * Context key when the instance holds several Contexts. A scheme other
+     * than the Context's primary is named by its own view, or by its selector
+     * when that view cannot describe it.
      */
     private bucketLabel(bucket: BucketKey): string {
         const { contextKey, schemeSelector } = bucketParts(bucket);
         const context = this.contexts.get(contextKey);
-        const name = schemeSelector
-            ? schemeSelector
-            : (context?.scheme.getSchemeMeta().name ?? '');
+        let name = schemeSelector;
+        if (context) {
+            try {
+                name =
+                    schemeEngineOf({
+                        contextKey,
+                        context,
+                        schemeSelector,
+                        primary: schemeSelector === PRIMARY_SCHEME_SELECTOR,
+                        bucket,
+                    }).getSchemeMeta().name || schemeSelector;
+            } catch {
+                // A label never fails the view it names.
+            }
+        }
         return contextKey ? `${contextKey}: ${name}` : name;
     }
 
@@ -1244,7 +1250,22 @@ export class EzClassifyUI {
     ): void {
         const id = el.id;
         if (!id || !this.validMarkingIds.has(id)) return;
-        this.store.setBucket(id, bucket);
+        try {
+            this.store.setBucket(id, bucket);
+        } catch (err) {
+            // A store the host built may hold fewer buckets than the markup
+            // names, such as one over a Context's primary scheme alone. The
+            // marking is refused on its element, never read in another bucket.
+            this.reportHostError(
+                {
+                    code: 'context-unresolved',
+                    message: `[ezclassify] marking "${id}" is in a bucket the store cannot read: ${err instanceof Error ? err.message : String(err)}`,
+                    element: el,
+                },
+                null,
+            );
+            return;
+        }
         if (node.kind === 'part') {
             this.store.setPartOf(id, node.wholeId ?? null);
         } else if (node.kind === 'whole') {
@@ -4192,6 +4213,8 @@ export class EzClassifyUI {
         // same page keeps the work it has already done.
         for (const [, context] of this.contexts.entries())
             rollup.clearRollupProcessCache(context.scheme);
+        for (const { adapter } of this.bucketSchemes.values())
+            rollup.clearRollupProcessCache(adapter);
         dom.hideConceptTooltip(this);
         this.releaseSeeds();
         for (const [contributorId, wholeId] of this.incompleteScans)

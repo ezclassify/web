@@ -30,7 +30,8 @@
  * Context holds by its Context-local selector (the key `describeSchemes`
  * reports and REST `?scheme=` takes). Without it an element marks in the
  * Context's primary scheme, and naming the primary's selector is the same as
- * naming nothing.
+ * naming nothing. An element marks in whichever scheme it selects: the primary
+ * through `context.scheme`, any other through `context.schemeView(selector)`.
  *
  * Both attributes are read from the element itself and its ancestors up to the
  * instance root, never beyond it: markup above the root belongs to whatever
@@ -50,7 +51,12 @@ import {
     type ContextSchemeDescriptor,
     type ContextSchemeEngineAdapter,
 } from '@ezclassify/types';
-import { bucketKey, bucketParts, type BucketKey } from './store/store-shared';
+import {
+    bucketKey,
+    bucketParts,
+    SOLE_BUCKET,
+    type BucketKey,
+} from './store/store-shared';
 import type { EzClassifyStoreBuckets } from './store/ezclassify-store';
 
 export { bucketKey, bucketParts, type BucketKey } from './store/store-shared';
@@ -105,15 +111,12 @@ export interface ResolvedContext {
  *   single-Context instance.
  * - `scheme-unresolved`: the selector names no scheme the Context holds, or the
  *   Context could not list its schemes.
- * - `scheme-not-markable`: the selector names a scheme the Context holds but
- *   offers no marking operations for.
  * - `scheme-pending`: the Context has not listed its schemes yet. The runtime
  *   reads the element again once it has.
  */
 export type ContextResolutionCode =
     | 'context-unresolved'
     | 'scheme-unresolved'
-    | 'scheme-not-markable'
     | 'scheme-pending';
 
 /**
@@ -415,52 +418,55 @@ export class ContextSet {
 }
 
 /**
- * The scheme operations for a resolved element.
+ * The scheme operations for a resolved element: the Context's primary view, or
+ * the view `schemeView` binds to the selected scheme. The selector picks the
+ * view; operations on it take none.
  *
- * A Context exposes operations for its primary scheme only; the contract has no
- * scheme view for another selector. An element that selects another scheme of
- * the Context is therefore refused rather than marked in the primary.
+ * {@link ContextSet.resolve} has already checked the selector against the
+ * schemes the Context lists, so a Context that still refuses the view is a
+ * fault in the Context. It is reported as `scheme-unresolved`, never answered
+ * with the primary.
  *
  * @param resolved - What {@link ContextSet.resolve} returned for the element
  * @param element - The element, carried on the error
- * @throws ContextResolutionError for a scheme other than the primary
+ * @throws ContextResolutionError when the Context gives no view for the scheme
  */
 export function schemeEngineOf(
     resolved: ResolvedContext,
     element: Element | null = null,
 ): ContextSchemeEngineAdapter {
-    if (!resolved.primary) {
-        throw new ContextResolutionError(
-            'scheme-not-markable',
-            `${SCHEME_ATTR}="${resolved.schemeSelector}" selects a scheme the Context holds but cannot mark in: ` +
-                'a Context offers marking operations for its primary scheme only.',
-            element,
-        );
-    }
-    return resolved.context.scheme;
+    if (resolved.primary) return resolved.context.scheme;
+    return viewOf(resolved.context, resolved.schemeSelector, element);
 }
 
 /**
- * The buckets of a store over several Contexts, each read by its Context's
- * scheme. A framework root that builds its own store for `{ contexts }` hands
- * it this, so the store reads every bucket the way the runtime resolves it.
+ * The buckets of a store over the Contexts an `EzClassifyUI` is given, each
+ * read by the scheme its key names: a Context's primary scheme through
+ * `context.scheme`, another scheme it holds through
+ * `context.schemeView(selector)`. A framework root that builds its own store
+ * hands it this, so the store reads every bucket the way the runtime resolves
+ * it, including a field marked in a Context's second scheme.
  *
- * There is no default bucket: a marking markup assigns to no Context is refused
- * rather than read by whichever Context comes first.
+ * With one Context the default bucket is its primary scheme, as in a store over
+ * that scheme alone. With several there is no default bucket: a marking markup
+ * assigns to no Context is refused rather than read by whichever Context comes
+ * first.
  *
- * @param source - The Contexts by the key markup names them with
+ * @param source - One Context, or the Contexts by the key markup names them
+ *   with
  * @param options - `format`: the format whole markings are written in, in every
- *   Context; omitted, each bucket takes its scheme's default
+ *   bucket; omitted, each bucket takes its scheme's default
  * @returns The store's bucket resolver
- * @throws TypeError when `source` is not a map of Contexts
+ * @throws TypeError when `source` is neither a Context nor a map of Contexts
  */
 export function contextStoreBuckets(
-    source: EzClassifyContextMap,
+    source: EzClassifyContexts,
     options?: { format?: string },
 ): EzClassifyStoreBuckets {
     const set = ContextSet.from(source);
     const format = options?.format;
     return {
+        ...(set.single ? { defaultBucket: SOLE_BUCKET } : {}),
         resolve: (bucket) => {
             const { contextKey, schemeSelector } = bucketParts(bucket);
             const context = set.get(contextKey);
@@ -471,23 +477,37 @@ export function contextStoreBuckets(
                     null,
                 );
             }
-            // The runtime places a marking only in a primary bucket; a store
-            // asked for another has not checked the Context holds the scheme.
-            if (schemeSelector !== PRIMARY_SCHEME_SELECTOR) {
-                throw new ContextResolutionError(
-                    'scheme-not-markable',
-                    `No markable scheme '${schemeSelector}' in Context '${contextKey}': ` +
-                        'a Context offers marking operations for its primary scheme only.',
-                    null,
-                );
-            }
-            const engine = context.scheme;
+            const engine =
+                schemeSelector === PRIMARY_SCHEME_SELECTOR
+                    ? context.scheme
+                    : viewOf(context, schemeSelector, null);
             return {
                 engine,
                 format: format ?? engine.getSchemeMeta().defaultRenderFormat,
             };
         },
     };
+}
+
+/**
+ * The view a Context binds to one of its non-primary schemes. A Context that
+ * gives none (it does not hold the selector, or cannot bind it) is refused as
+ * `scheme-unresolved`, never answered with the primary.
+ */
+function viewOf(
+    context: ContextAdapter,
+    selector: string,
+    element: Element | null,
+): ContextSchemeEngineAdapter {
+    try {
+        return context.schemeView(selector);
+    } catch (err) {
+        throw new ContextResolutionError(
+            'scheme-unresolved',
+            `${SCHEME_ATTR}="${selector}" has no scheme view in its Context (${err instanceof Error ? err.message : String(err)}).`,
+            element,
+        );
+    }
 }
 
 /** The primary scheme of a Context, resolved. */

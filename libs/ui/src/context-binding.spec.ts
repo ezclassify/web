@@ -8,6 +8,7 @@ import {
     bucketKey,
     ContextResolutionError,
     ContextSet,
+    contextStoreBuckets,
     schemeEngineOf,
 } from './context-binding';
 
@@ -19,11 +20,28 @@ function contextHolding(
     const unavailable = () => {
         throw new Error('not used by Context resolution');
     };
+    const viewOf = (id: string, format: string) =>
+        ({
+            getScheme: () => ({ id }),
+            getSchemeMeta: () => ({ defaultRenderFormat: format }),
+        }) as unknown as ContextSchemeEngineAdapter;
+    const primary = viewOf('primary-id', 'primary-format');
+    // One view per selector the Context holds besides its primary, as a
+    // Context caches them; any other selector is refused.
+    const views = new Map<string, ContextSchemeEngineAdapter>();
     return {
         connected: true,
-        scheme: {
-            getScheme: () => ({ id: 'primary-id' }),
-        } as unknown as ContextSchemeEngineAdapter,
+        scheme: primary,
+        schemeView: (selector: string) => {
+            const listed = Array.isArray(schemes)
+                ? schemes.find((s) => s.selector === selector)
+                : undefined;
+            if (!listed || listed.roles.includes('primary'))
+                throw new Error(`no scheme view '${selector}'`);
+            if (!views.has(selector))
+                views.set(selector, viewOf(listed.id, `${selector}-format`));
+            return views.get(selector)!;
+        },
         describeSchemes:
             typeof schemes === 'function' ? schemes : () => schemes,
         describeCrosswalks: unavailable,
@@ -209,8 +227,9 @@ describe('ContextSet.resolve', () => {
         expect(resolved.bucket).toBe(bucketKey('', ''));
     });
 
-    it('resolves another scheme of the Context to its own bucket, which cannot be marked in', () => {
-        const set = ContextSet.from(contextHolding(CROSSWALK_SCHEMES));
+    it('resolves another scheme of the Context to its own bucket, read by that scheme view', () => {
+        const context = contextHolding(CROSSWALK_SCHEMES);
+        const set = ContextSet.from(context);
         set.load();
         const { root, field } = tree({
             section: { 'data-ezclassify-scheme': 'tier' },
@@ -220,9 +239,31 @@ describe('ContextSet.resolve', () => {
 
         expect(resolved.primary).toBe(false);
         expect(resolved.bucket).toBe(bucketKey('', 'tier'));
-        expect(
-            resolutionError(() => schemeEngineOf(resolved, field)).code,
-        ).toBe('scheme-not-markable');
+        const engine = schemeEngineOf(resolved, field);
+        expect(engine).toBe(context.schemeView('tier'));
+        expect(engine).not.toBe(context.scheme);
+        expect(engine.getScheme().id).toBe('scheme-b');
+    });
+
+    it('refuses a scheme whose view the Context will not give, never reading it as the primary', () => {
+        const context = contextHolding(CROSSWALK_SCHEMES);
+        const { field } = tree({});
+
+        const err = resolutionError(() =>
+            schemeEngineOf(
+                {
+                    contextKey: '',
+                    context,
+                    schemeSelector: 'other',
+                    primary: false,
+                    bucket: bucketKey('', 'other'),
+                },
+                field,
+            ),
+        );
+
+        expect(err.code).toBe('scheme-unresolved');
+        expect(err.element).toBe(field);
     });
 
     it('refuses a selector the Context does not hold, naming the ones it does', () => {
@@ -305,5 +346,44 @@ describe('ContextSet.bucketsNamed', () => {
             bucketKey('capco', 'tier'),
         ]);
         expect(set.bucketsNamed('other', null)).toEqual([]);
+    });
+});
+
+describe('contextStoreBuckets', () => {
+    it('reads one Context in a bucket per scheme, its primary the default', () => {
+        const context = contextHolding(CROSSWALK_SCHEMES);
+        const buckets = contextStoreBuckets(context);
+
+        expect(buckets.defaultBucket).toBe(bucketKey('', ''));
+        const primary = buckets.resolve(bucketKey('', ''));
+        const second = buckets.resolve(bucketKey('', 'tier'));
+        expect(primary.engine).toBe(context.scheme);
+        expect(primary.format).toBe('primary-format');
+        expect(second.engine).toBe(context.schemeView('tier'));
+        expect(second.format).toBe('tier-format');
+    });
+
+    it('reads a second scheme under a Context key, with no default bucket', () => {
+        const capco = contextHolding(CROSSWALK_SCHEMES);
+        const buckets = contextStoreBuckets(
+            { contexts: { capco } },
+            { format: 'host-format' },
+        );
+
+        expect(buckets.defaultBucket).toBeUndefined();
+        const second = buckets.resolve(bucketKey('capco', 'tier'));
+        expect(second.engine).toBe(capco.schemeView('tier'));
+        expect(second.format).toBe('host-format');
+    });
+
+    it('refuses a bucket for a scheme the Context does not hold', () => {
+        const buckets = contextStoreBuckets(contextHolding(CROSSWALK_SCHEMES));
+
+        expect(
+            resolutionError(() => buckets.resolve(bucketKey('', 'other'))).code,
+        ).toBe('scheme-unresolved');
+        expect(
+            resolutionError(() => buckets.resolve(bucketKey('capco', ''))).code,
+        ).toBe('context-unresolved');
     });
 });

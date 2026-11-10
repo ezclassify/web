@@ -14,6 +14,7 @@ import { fileURLToPath } from 'node:url';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { Context } from '@ezclassify/engine';
 import { EzClassifyUI } from './ezclassify-ui';
+import { VanillaEzClassifyStore } from './store/ezclassify-store';
 import { bucketKey, SOLE_BUCKET } from './store/store-shared';
 import { levelState } from './store/page-rollup-harness';
 
@@ -464,6 +465,106 @@ describe('markup that names another element', () => {
 });
 
 describe('a field that selects a scheme', () => {
+    /**
+     * A crosswalk Context: the reference scheme is its primary and the second
+     * reference scheme the crosswalk's target. Both engines are real; the
+     * Context's scheme list and its view of the second scheme are composed
+     * here the way a crosswalk Context reports them.
+     */
+    function crosswalking() {
+        const context = reference();
+        const target = second().scheme;
+        const schemes = [
+            {
+                selector: 'ref-scheme-1',
+                id: 'ref-scheme-1',
+                version: '1.0.0',
+                roles: ['primary', 'crosswalk-source'],
+            },
+            {
+                selector: 'ref-scheme-2',
+                id: 'ref-scheme-2',
+                version: '1.0.0',
+                roles: ['crosswalk-target'],
+            },
+        ];
+        const schemeView = vi.fn((selector: string) => {
+            if (selector === 'ref-scheme-2') return target;
+            throw new Error(`no scheme '${selector}'`);
+        });
+        const proxied = new Proxy(context, {
+            get(on, property, receiver) {
+                if (property === 'describeSchemes') return () => schemes;
+                if (property === 'schemeView') return schemeView;
+                const value = Reflect.get(on, property, receiver);
+                return typeof value === 'function' ? value.bind(on) : value;
+            },
+        });
+        return { context: proxied, schemeView };
+    }
+
+    const twoSchemes = `
+        <input id="memo" data-ezclassify-marking value="HIGH">
+        <div data-ezclassify-scheme="ref-scheme-2">
+            <input id="note" data-ezclassify-marking value="LOW//ALPHA">
+        </div>
+        <div id="banner" data-ezclassify-controller="banner" data-ezclassify-aggregate></div>
+        <input type="hidden" id="first-page" data-ezclassify-aggregate data-ezclassify-scheme="ref-scheme-1">
+        <input type="hidden" id="second-page" data-ezclassify-aggregate data-ezclassify-scheme="ref-scheme-2">`;
+
+    it("marks in the Context's second scheme, in its own bucket", async () => {
+        root.innerHTML = twoSchemes;
+        const { context, schemeView } = crosswalking();
+        const ui = mount(context);
+        await expect.poll(() => output('first-page').value).toBe('HIGH');
+        await expect
+            .poll(() => output('second-page').value)
+            .toBe('LOW//ALPHA');
+
+        expect(hostErrors()).toEqual([]);
+        expect(schemeView).toHaveBeenCalledWith('ref-scheme-2');
+        const page = ui.store.getAggregate().byBucket;
+        expect([...page.keys()].sort()).toEqual(
+            [bucketKey('', ''), bucketKey('', 'ref-scheme-2')].sort(),
+        );
+        expect(page.get(bucketKey('', 'ref-scheme-2'))!.rendered).toBe(
+            'LOW//ALPHA',
+        );
+    });
+
+    it('reads a field by its own scheme, and keeps both on the page banner, labeled', async () => {
+        root.innerHTML = twoSchemes;
+        const { context } = crosswalking();
+        const ui = mount(context);
+        const banner = root.querySelector<HTMLElement>('#banner')!;
+        await expect
+            .poll(() => banner.textContent ?? '')
+            .toMatch(/Reference Scheme 1[\s\S]*HIGH/);
+        expect(banner.textContent).toMatch(
+            /Reference Scheme 2[\s\S]*LOW\/\/ALPHA/,
+        );
+
+        // The second scheme's vocabulary is not the primary's: the same text
+        // reads differently in each bucket.
+        commit('memo', 'LOW//ALPHA');
+        await expect.poll(() => output('first-page').value).toBe('LOW');
+        expect(ui.store.get('memo').rendered).toBe('LOW');
+        expect(ui.store.get('note').rendered).toBe('LOW//ALPHA');
+        expect(output('second-page').value).toBe('LOW//ALPHA');
+    });
+
+    it('refuses a field per element when the store the host gave cannot read its scheme', async () => {
+        root.innerHTML = twoSchemes;
+        const { context } = crosswalking();
+        mount(context, { store: new VanillaEzClassifyStore(context.scheme) });
+        await expect.poll(hostErrors).toContain('context-unresolved');
+        expect(errors.at(-1)!.message).toMatch(/marking "note"/);
+        await expect.poll(() => output('first-page').value).toBe('HIGH');
+        await expect
+            .poll(() => output('first-page').getAttribute('aria-invalid'))
+            .toBe('true');
+    });
+
     it('is a host error, never a throw, when the Context holds no such scheme', async () => {
         root.innerHTML = `
             <input type="hidden" id="page" data-ezclassify-aggregate>
