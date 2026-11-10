@@ -18,6 +18,7 @@ import { AngularSignalStore } from './angular-signal-store';
 import { provideEzClassify } from './provide-ezclassify';
 import { EzMarkingLabelComponent } from './ez-marking-label/ez-marking-label.component';
 import { openContext } from '../../../../libs/ui/test-fixtures/context-doubles';
+import { bucketKey } from '@ezclassify/ui';
 
 const MINIMAL_SCHEME = {
     scheme: {
@@ -117,6 +118,51 @@ describe('provideEzClassify', () => {
                 context: context.scheme as unknown as ContextAdapter,
             }),
         ).toThrow(/needs a connected Context/);
+    });
+
+    it('takes exactly one of { context } or { contexts }', () => {
+        expect(() =>
+            provideEzClassify({
+                context,
+                contexts: { a: context },
+            } as never),
+        ).toThrow(/exactly one of/);
+        expect(() => provideEzClassify({} as never)).toThrow(/exactly one of/);
+        expect(() => provideEzClassify({ contexts: {} })).toThrow(
+            /at least one Context/,
+        );
+        expect(() =>
+            provideEzClassify({
+                contexts: {
+                    a: context.scheme as unknown as ContextAdapter,
+                },
+            }),
+        ).toThrow(/contexts\.a is not a connected Context/);
+    });
+
+    it('lets a bare root mark against several Contexts, one bucket each', async () => {
+        const records = buildContext();
+        await TestBed.configureTestingModule({
+            imports: [BareRootComponent],
+            providers: [
+                provideEzClassify({ contexts: { district: context, records } }),
+            ],
+        }).compileComponents();
+
+        const fixture = TestBed.createComponent(BareRootComponent);
+        fixture.detectChanges(false);
+        const directive =
+            fixture.debugElement.children[0].injector.get(EzClassifyDirective);
+        // No single Context speaks for a page that holds several.
+        expect(directive.getContext()).toBeNull();
+
+        const store = directive.getStore()!;
+        const recordsBucket = bucketKey('records', '');
+        store.setBucket('doc', recordsBucket);
+        await store.publishRendered('doc', 'HIGH');
+        const page = store.getAggregate().byBucket;
+        expect(page.get(recordsBucket)?.rendered).toBe('HIGH');
+        expect(page.has(bucketKey('district', ''))).toBe(false);
     });
 
     it('lets a bare root mark against the provided Context', async () => {

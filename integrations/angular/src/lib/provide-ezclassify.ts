@@ -50,37 +50,91 @@ export const EZCLASSIFY_OPTIONS = new InjectionToken<EzClassifyOptions>(
     'EZCLASSIFY_OPTIONS',
 );
 
+/**
+ * What every root under this injector initializes with: the one provided
+ * Context, or the provided Contexts by key. Internal to the package; the
+ * application names its Contexts through {@link provideEzClassify}.
+ */
+export const EZCLASSIFY_CONTEXTS = new InjectionToken<
+    | ContextAdapter
+    | { readonly contexts: Readonly<Record<string, ContextAdapter>> }
+>('EZCLASSIFY_CONTEXTS');
+
 /** Configuration accepted by {@link provideEzClassify}. */
-export interface EzClassifyProvision {
-    /**
-     * The connected Context, for example the result of `connectContext()`. The
-     * application creates and owns it.
-     */
-    context: ContextAdapter;
+export type EzClassifyProvision = (
+    | {
+          /**
+           * The connected Context, for example the result of
+           * `connectContext()`. The application creates and owns it.
+           */
+          context: ContextAdapter;
+          contexts?: never;
+      }
+    | {
+          /**
+           * Several connected Contexts, each under the key
+           * `data-ezclassify-context` names. Markup outside any
+           * `data-ezclassify-context` ancestor has no Context and is reported
+           * as a host error; there is no implicit first key.
+           */
+          contexts: Readonly<Record<string, ContextAdapter>>;
+          context?: never;
+      }
+) & {
     /** Presentation defaults for every root that does not override them. */
     options?: EzClassifyOptions;
-}
+};
 
 /**
- * Name the connected Context, and optional presentation defaults, for every
- * `ezClassify` root and `<ez-marking-label>` under this injector.
+ * Name the connected Context, or several by key, and optional presentation
+ * defaults, for every `ezClassify` root and `<ez-marking-label>` under this
+ * injector. {@link EZCLASSIFY_CONTEXT} is provided only for one Context: with
+ * several, no single Context speaks for the page.
  *
- * @param provision - The connected Context and optional presentation defaults.
+ * @param provision - `{ context }` or `{ contexts }`, and optional presentation
+ *   defaults.
  * @returns Providers for an application or route injector.
- * @throws TypeError when `context` is not a Context, so a wiring mistake shows
- *   at bootstrap instead of as fields that never mark anything.
+ * @throws TypeError when neither or both are given, `contexts` is empty, or a
+ *   value is not a Context, so a wiring mistake shows at bootstrap instead of
+ *   as fields that never mark anything.
  */
 export function provideEzClassify(
     provision: EzClassifyProvision,
 ): EnvironmentProviders {
-    if (!isContextAdapter(provision?.context)) {
+    const { context, contexts } = provision ?? {};
+    if ((context === undefined) === (contexts === undefined)) {
+        throw new TypeError(
+            '[ezclassify/angular] provideEzClassify() takes exactly one of { context } or { contexts }.',
+        );
+    }
+    if (contexts !== undefined) {
+        const entries = Object.entries(contexts ?? {});
+        if (entries.length === 0) {
+            throw new TypeError(
+                '[ezclassify/angular] provideEzClassify({ contexts }) needs at least one Context.',
+            );
+        }
+        for (const [key, value] of entries) {
+            if (!isContextAdapter(value)) {
+                throw new TypeError(
+                    `[ezclassify/angular] provideEzClassify({ contexts }): contexts.${key} is not a connected Context.`,
+                );
+            }
+        }
+        return makeEnvironmentProviders([
+            { provide: EZCLASSIFY_CONTEXTS, useValue: { contexts } },
+            { provide: EZCLASSIFY_OPTIONS, useValue: provision.options ?? {} },
+        ]);
+    }
+    if (!isContextAdapter(context)) {
         throw new TypeError(
             '[ezclassify/angular] provideEzClassify({ context }) needs a connected Context, ' +
                 'for example the result of connectContext().',
         );
     }
     return makeEnvironmentProviders([
-        { provide: EZCLASSIFY_CONTEXT, useValue: provision.context },
+        { provide: EZCLASSIFY_CONTEXT, useValue: context },
+        { provide: EZCLASSIFY_CONTEXTS, useValue: context },
         { provide: EZCLASSIFY_OPTIONS, useValue: provision.options ?? {} },
     ]);
 }

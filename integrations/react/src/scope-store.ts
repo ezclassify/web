@@ -4,7 +4,7 @@
  */
 
 import { useEffect, useReducer, useRef } from 'react';
-import { contextStoreBuckets, isContextAdapter } from '@ezclassify/ui';
+import { contextStoreBuckets } from '@ezclassify/ui';
 import { ReactEzClassifyStore } from './react-ezclassify-store';
 import type { EzClassifySource } from './use-stable-source';
 
@@ -57,10 +57,12 @@ function buildStore(
     source: EzClassifySource,
     format: string | undefined,
 ): ScopeStore {
-    if (isContextAdapter(source)) {
-        return new ScopeStore(source.scheme, format ? { format } : undefined);
+    if ('contexts' in source) {
+        return new ScopeStore({
+            buckets: contextStoreBuckets(source, { format }),
+        });
     }
-    return new ScopeStore({ buckets: contextStoreBuckets(source, { format }) });
+    return new ScopeStore(source.scheme, format ? { format } : undefined);
 }
 
 /** What a root holds so it can rebuild its own store. */

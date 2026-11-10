@@ -31,8 +31,10 @@ import {
 } from '@angular/core';
 import {
     BaseEzClassifyStore,
+    type EzClassifyAggregate,
     type EzClassifyState,
     type EzClassifyStore,
+    type EzClassifyStoreBuckets,
     type EzClassifyStoreEngine,
     type FacetState,
     type ReactiveCell,
@@ -151,10 +153,10 @@ class SignalCell<T> implements ReactiveCell<T> {
  */
 export class AngularSignalStore extends BaseEzClassifyStore {
     constructor(
-        engine: EzClassifyStoreEngine,
+        engines: EzClassifyStoreEngine | { buckets: EzClassifyStoreBuckets },
         options?: AngularSignalStoreOptions,
     ) {
-        super(engine, options);
+        super(engines, options);
     }
 
     protected createCell<T>(initial: T): ReactiveCell<T> {
@@ -196,12 +198,13 @@ export class AngularSignalStore extends BaseEzClassifyStore {
     }
 
     /**
-     * Expose the aggregate signal for template / effect consumption. Read-only;
-     * see {@link signalFor}.
+     * Expose a level's rollup signal, one state per bucket, for template /
+     * effect consumption: the page when `nodeId` is omitted, else a collection,
+     * or a whole for its parts rollup. Read-only; see {@link signalFor}.
      */
-    aggregateSignalRef(): Signal<EzClassifyState> {
+    aggregateSignalRef(nodeId?: string): Signal<EzClassifyAggregate> {
         return (
-            this.aggregateStateCell() as SignalCell<EzClassifyState>
+            this.aggregateStateCell(nodeId) as SignalCell<EzClassifyAggregate>
         ).signal.asReadonly();
     }
 

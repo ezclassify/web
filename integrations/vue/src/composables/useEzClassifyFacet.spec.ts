@@ -47,9 +47,8 @@ function mountFacet(store: VueRefStore): {
 
 describe('useEzClassifyFacet', () => {
     it('retains only facet liveness and releases it without marking snapshots', async () => {
-        const store = new VueRefStore(
-            openOperations(loadCedarValleyContext().scheme),
-        );
+        const engine = openOperations(loadCedarValleyContext().scheme);
+        const store = new VueRefStore(engine);
         const marking = vi.spyOn(store, 'subscribe');
         const facetSubscription = vi.spyOn(store, 'subscribeFacet');
         const read = vi.spyOn(store, 'get');
@@ -62,7 +61,7 @@ describe('useEzClassifyFacet', () => {
         facetSubscription.mock.calls[0][2](store.getFacet('document', 'level'));
         expect(read).not.toHaveBeenCalled();
         unmount();
-        const suggest = vi.spyOn(store['engine']!, 'suggestForCategories');
+        const suggest = vi.spyOn(engine, 'suggestForCategories');
         await store.publishRendered('document', 'INTERNAL');
         expect(suggest).not.toHaveBeenCalled();
         store.destroy();

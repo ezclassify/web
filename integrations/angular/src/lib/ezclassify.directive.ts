@@ -11,7 +11,11 @@ import {
     type Provider,
     type Signal,
 } from '@angular/core';
-import { EzClassifyUI, mergeProvisionOptions } from '@ezclassify/ui';
+import {
+    EzClassifyUI,
+    contextStoreBuckets,
+    mergeProvisionOptions,
+} from '@ezclassify/ui';
 import type { ContextAdapter, EzClassifyStore } from '@ezclassify/ui';
 import {
     AngularSignalStore,
@@ -20,6 +24,7 @@ import {
 } from './angular-signal-store';
 import {
     EZCLASSIFY_CONTEXT,
+    EZCLASSIFY_CONTEXTS,
     EZCLASSIFY_OPTIONS,
     type EzClassifyOptions,
 } from './provide-ezclassify';
@@ -37,7 +42,8 @@ export type EzClassifyDirectiveOptions = EzClassifyOptions;
  */
 const NO_CONTEXT =
     '[ezclassify/angular] An ezClassify root found no Context. Add ' +
-    'provideEzClassify({ context }) to the application or route providers.';
+    'provideEzClassify({ context }) or provideEzClassify({ contexts }) to the ' +
+    'application or route providers.';
 
 /**
  * Lazy proxy over the directive's live store. The directive rebuilds the store
@@ -126,6 +132,7 @@ export class EzClassifyDirective implements OnInit, OnChanges, OnDestroy {
 
     private readonly el = inject(ElementRef<HTMLElement>);
     private readonly context = inject(EZCLASSIFY_CONTEXT, { optional: true });
+    private readonly contexts = inject(EZCLASSIFY_CONTEXTS, { optional: true });
     private readonly providedOptions = inject(EZCLASSIFY_OPTIONS, {
         optional: true,
     });
@@ -155,7 +162,7 @@ export class EzClassifyDirective implements OnInit, OnChanges, OnDestroy {
         return this.store();
     }
 
-    /** The Context this root marks against. */
+    /** The Context this root marks against; null when it holds several. */
     getContext(): ContextAdapter | null {
         return this.context;
     }
@@ -195,20 +202,30 @@ export class EzClassifyDirective implements OnInit, OnChanges, OnDestroy {
         // no DOM dependency); EzClassifyUI is deferred a microtask so any
         // [(ngModel)] child bindings finish applying before the scanner runs.
         this.teardown();
-        const context = this.context;
-        if (!context) throw new Error(NO_CONTEXT);
+        const source = this.contexts;
+        if (!source) throw new Error(NO_CONTEXT);
         const token = ++this.initToken;
         const opts = this.getOptions();
 
         const provided = this.ezClassifyStore ?? null;
         this.ownsStore = provided === null;
+        // One Context is the store's sole bucket; several are read per bucket,
+        // resolved the way the runtime resolves them.
         const store =
             provided ??
-            new AngularSignalStore(context.scheme, { format: opts.format });
+            ('contexts' in source
+                ? new AngularSignalStore({
+                      buckets: contextStoreBuckets(source, {
+                          format: opts.format,
+                      }),
+                  })
+                : new AngularSignalStore(source.scheme, {
+                      format: opts.format,
+                  }));
         this.store.set(store);
         Promise.resolve().then(() => {
             if (this.destroyed || token !== this.initToken) return;
-            this.forms = new EzClassifyUI(context, {
+            this.forms = new EzClassifyUI(source, {
                 root: this.el.nativeElement,
                 format: opts.format,
                 colorMap: opts.colorMap,

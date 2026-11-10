@@ -19,9 +19,10 @@
  */
 
 import type { App, Plugin } from 'vue';
-import type {
-    ContextAdapter,
-    EzClassifyPresentationOptions,
+import {
+    contextStoreBuckets,
+    type ContextAdapter,
+    type EzClassifyPresentationOptions,
 } from '@ezclassify/ui';
 import { VueRefStore } from './composables/vue-ref-store';
 import {
@@ -91,17 +92,18 @@ function resolveConfig(options: EzClassifyOptions): EzClassifyConfig {
     return {
         contexts: input,
         presentation,
-        createStore: () => {
-            if (context === undefined) {
-                // The store addresses one Context's scheme today. A store over
-                // several Contexts arrives with the bucket-keyed store.
-                throw new Error(
-                    '[ezclassify/vue] <EzClassify> over several Contexts needs a store that addresses each of them',
-                );
-            }
-            return new VueRefStore(context.scheme, {
-                format: presentation.format,
-            });
-        },
+        // One Context is the store's sole bucket; several are read per bucket,
+        // resolved the way the runtime resolves them.
+        createStore: () =>
+            context !== undefined
+                ? new VueRefStore(context.scheme, {
+                      format: presentation.format,
+                  })
+                : new VueRefStore({
+                      buckets: contextStoreBuckets(
+                          { contexts: contexts! },
+                          { format: presentation.format },
+                      ),
+                  }),
     };
 }

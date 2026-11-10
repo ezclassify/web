@@ -162,11 +162,12 @@ describe('injectEzClassifyFacet store contract', () => {
 
 describe('injectEzClassifyFacet', () => {
     let store: AngularSignalStore;
+    /** The scheme operations the store reads by, open for spying. */
+    let engine: ReturnType<typeof loadCedarValleyContext>['scheme'];
 
     beforeEach(async () => {
-        store = new AngularSignalStore(
-            openOperations(loadCedarValleyContext().scheme),
-        );
+        engine = openOperations(loadCedarValleyContext().scheme);
+        store = new AngularSignalStore(engine);
         await configureRoot();
     });
 
@@ -206,7 +207,7 @@ describe('injectEzClassifyFacet', () => {
         facetSubscription.mock.calls[0][2](store.getFacet('document', 'level'));
         expect(read).not.toHaveBeenCalled();
         fixture.destroy();
-        const suggest = vi.spyOn(store['engine']!, 'suggestForCategories');
+        const suggest = vi.spyOn(engine, 'suggestForCategories');
         await store.publishRendered('document', 'INTERNAL');
         expect(suggest).not.toHaveBeenCalled();
         store.destroy();
@@ -234,10 +235,7 @@ describe('injectEzClassifyFacet', () => {
 
     it('binds once and keeps that binding across commits', async () => {
         const subscribeFacet = vi.spyOn(store, 'subscribeFacet');
-        const process = vi.spyOn(
-            store['engine'] as { process: (...args: never[]) => unknown },
-            'process',
-        );
+        const process = vi.spyOn(engine, 'process');
         const fixture = mountFacet(store);
         fixture.detectChanges();
         await flush();
@@ -345,7 +343,7 @@ class LevelPickerComponent {
             id="doc-marking"
             [value]="served"
             type="hidden"
-            data-ezclassify-rendered />
+            data-ezclassify-marking />
         <test-level-picker />
     </div>`,
 })

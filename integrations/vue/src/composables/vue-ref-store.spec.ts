@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import {
+    EMPTY_EZCLASSIFY_AGGREGATE,
     EMPTY_EZCLASSIFY_STATE,
     type EzClassifyStoreEngine,
     type EzClassifyStoreProcessResult,
@@ -564,7 +565,7 @@ describe('VueRefStore: aggregate recompute', () => {
         store.subscribeAggregate(() => {});
         await store.publishRendered('doc', '');
         await flush();
-        expect(store.getAggregate()).toEqual(EMPTY_EZCLASSIFY_STATE);
+        expect(store.getAggregate()).toEqual(EMPTY_EZCLASSIFY_AGGREGATE);
     });
 
     it('stops calling an aggregate listener after it unsubscribes', async () => {
