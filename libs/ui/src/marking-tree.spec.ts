@@ -1,0 +1,330 @@
+/**
+ * The marking tree a page spells in markup, read end to end through the real
+ * engine: Contexts and their buckets, collections of wholes with parts, the
+ * outputs a host places, and the regions markup fences off.
+ *
+ * Each case drives `EzClassifyUI` over a DOM fragment and reads what a host
+ * reads: the outputs it placed, the banner it placed, the store's levels, and
+ * the `ezclassify:host-error` events markup it got wrong raises.
+ */
+
+import { readFileSync } from 'node:fs';
+import { resolve, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { Context } from '@ezclassify/engine';
+import { EzClassifyUI } from './ezclassify-ui';
+import { bucketKey, SOLE_BUCKET } from './store/store-shared';
+import { levelState } from './store/page-rollup-harness';
+
+const fixtures = resolve(
+    dirname(fileURLToPath(import.meta.url)),
+    '../../../vendor/spec/fixtures/v1',
+);
+
+function scheme(name: string): unknown {
+    return JSON.parse(readFileSync(resolve(fixtures, `${name}.json`), 'utf8'));
+}
+
+/** A Context over the reference scheme: `level` rolls up by max. */
+function reference() {
+    return Context.fromComponents({ scheme: scheme('ref-scheme-1') });
+}
+
+/** A Context over the second reference scheme, with its own vocabulary. */
+function second() {
+    return Context.fromComponents({ scheme: scheme('ref-scheme-2') });
+}
+
+let root: HTMLElement;
+const instances: EzClassifyUI[] = [];
+
+function mount(...args: ConstructorParameters<typeof EzClassifyUI>) {
+    const ui = new EzClassifyUI(args[0], { root, ...args[1] });
+    instances.push(ui);
+    return ui;
+}
+
+function output(id: string): HTMLInputElement {
+    return root.querySelector<HTMLInputElement>(`#${id}`)!;
+}
+
+/** Type a marking into a plain marking input and commit it. */
+function commit(id: string, value: string): void {
+    const input = output(id);
+    input.value = value;
+    input.dispatchEvent(new FocusEvent('blur', { bubbles: true }));
+}
+
+/** The host errors raised under the root, by code. */
+function hostErrors(): string[] {
+    return errors.map((e) => e.code);
+}
+
+let errors: Array<{ code: string; message: string }> = [];
+const collect = (e: Event) =>
+    errors.push((e as CustomEvent<{ code: string; message: string }>).detail);
+
+beforeEach(() => {
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    errors = [];
+    root = document.createElement('div');
+    document.body.appendChild(root);
+    root.addEventListener('ezclassify:host-error', collect);
+});
+
+afterEach(() => {
+    for (const ui of instances.splice(0)) ui.destroy();
+    root.remove();
+    vi.restoreAllMocks();
+});
+
+describe('a page with two Contexts', () => {
+    // The page's default Context is markup on an outer element; the CUI-like
+    // section names its own. The page-level views name none, so they see both.
+    beforeEach(() => root.setAttribute('data-ezclassify-context', 'ref'));
+
+    const markup = `
+        <input id="memo" data-ezclassify-marking value="HIGH">
+        <section data-ezclassify-context="share">
+            <input id="note" data-ezclassify-marking value="LOW//ALPHA">
+        </section>
+        <div id="banner" data-ezclassify-controller="banner" data-ezclassify-aggregate></div>
+        <input type="hidden" id="ref-page" data-ezclassify-aggregate data-ezclassify-context="ref">
+        <input type="hidden" id="share-page" data-ezclassify-aggregate data-ezclassify-context="share">
+        <input type="hidden" id="ambiguous" data-ezclassify-aggregate>`;
+
+    it('rolls each Context up in its own bucket and never merges them', async () => {
+        root.innerHTML = markup;
+        const ui = mount({ contexts: { ref: reference(), share: second() } });
+        await expect.poll(() => output('ref-page').value).toBe('HIGH');
+        await expect.poll(() => output('share-page').value).toBe('LOW//ALPHA');
+
+        const page = ui.store.getAggregate().byBucket;
+        expect([...page.keys()].sort()).toEqual(
+            [bucketKey('ref', ''), bucketKey('share', '')].sort(),
+        );
+    });
+
+    it('shows every bucket on the page banner, each labeled', async () => {
+        root.innerHTML = markup;
+        mount({ contexts: { ref: reference(), share: second() } });
+        const banner = root.querySelector<HTMLElement>('#banner')!;
+        await expect
+            .poll(() => banner.textContent ?? '')
+            .toMatch(/ref: Reference Scheme 1[\s\S]*HIGH/);
+        expect(banner.textContent).toMatch(
+            /share: Reference Scheme 2[\s\S]*LOW\/\/ALPHA/,
+        );
+    });
+
+    it('refuses an output that names no bucket when the page holds two', async () => {
+        root.innerHTML = markup;
+        mount({ contexts: { ref: reference(), share: second() } });
+        await expect.poll(hostErrors).toContain('aggregate-bucket-ambiguous');
+        expect(output('ambiguous').value).toBe('');
+        expect(output('ambiguous').getAttribute('aria-invalid')).toBe('true');
+    });
+
+    it('refuses a part whose whole is read in the other Context', async () => {
+        root.innerHTML = `
+            <input id="memo" data-ezclassify-marking value="HIGH">
+            <section data-ezclassify-context="share">
+                <input id="stray" data-ezclassify-marking data-ezclassify-part-of="memo" value="LOW">
+            </section>
+            <input type="hidden" id="ref-page" data-ezclassify-aggregate data-ezclassify-context="ref">`;
+        const ui = mount({ contexts: { ref: reference(), share: second() } });
+        await expect.poll(hostErrors).toContain('part-of-across-contexts');
+        // The refused part is unread, so the page says it may be missing a
+        // marking instead of reading HIGH as complete.
+        await expect.poll(() => output('ref-page').value).toBe('HIGH');
+        await expect
+            .poll(() => output('ref-page').getAttribute('aria-invalid'))
+            .toBe('true');
+        expect(ui.store.get('stray').rendered).toBe('');
+    });
+});
+
+describe('a collection tree with parts', () => {
+    const tree = `
+        <input type="hidden" id="page" data-ezclassify-aggregate>
+        <section data-ezclassify-collection="folder-a">
+            <input type="hidden" id="folder-a-out" data-ezclassify-aggregate="folder-a">
+            <article data-ezclassify-whole="memo1">
+                <input id="memo1" data-ezclassify-marking value="LOW">
+                <input id="memo1-p1" data-ezclassify-marking value="MED">
+            </article>
+            <input id="memo2" data-ezclassify-marking value="LOW">
+        </section>
+        <section data-ezclassify-collection="folder-b">
+            <input type="hidden" id="folder-b-out" data-ezclassify-aggregate="folder-b">
+            <input id="memo3" data-ezclassify-marking value="LOW">
+        </section>`;
+
+    it('rolls a folder up from its wholes, each whole read with its parts', async () => {
+        root.innerHTML = tree;
+        const ui = mount(reference());
+        // memo1 states LOW but its part is MED: the folder reads the whole with
+        // its parts rollup, so MED reaches the folder and the page.
+        await expect.poll(() => output('folder-a-out').value).toBe('MED');
+        await expect.poll(() => output('folder-b-out').value).toBe('LOW');
+        await expect.poll(() => output('page').value).toBe('MED');
+        expect(levelState(ui.store, 'memo1').rendered).toBe('MED');
+    });
+
+    it('reads the same page marking as the same wholes and parts laid out flat', async () => {
+        root.innerHTML = tree;
+        mount(reference());
+        await expect.poll(() => output('page').value).toBe('MED');
+        const nested = output('page').value;
+        for (const ui of instances.splice(0)) ui.destroy();
+
+        root.innerHTML = `
+            <input type="hidden" id="page" data-ezclassify-aggregate>
+            <input id="memo1" data-ezclassify-marking value="LOW">
+            <input id="memo1-p1" data-ezclassify-marking data-ezclassify-part-of="memo1" value="MED">
+            <input id="memo2" data-ezclassify-marking value="LOW">
+            <input id="memo3" data-ezclassify-marking value="LOW">`;
+        mount(reference());
+        await expect.poll(() => output('page').value).toBe(nested);
+    });
+});
+
+describe('an output the host places', () => {
+    it('goes down when a part goes down: it never feeds its own value back', async () => {
+        root.innerHTML = `
+            <form data-ezclassify-whole="doc">
+                <input id="doc" data-ezclassify-marking value="LOW">
+                <input id="part" data-ezclassify-marking value="LOW">
+                <input type="hidden" id="page" name="pageMarking" data-ezclassify-aggregate>
+            </form>`;
+        mount(reference());
+        await expect.poll(() => output('page').value).toBe('LOW');
+
+        commit('part', 'HIGH');
+        await expect.poll(() => output('page').value).toBe('HIGH');
+
+        commit('part', 'LOW');
+        await expect.poll(() => output('page').value).toBe('LOW');
+    });
+});
+
+describe('a region markup fences off', () => {
+    it('fails closed on a marked element inside an ignored subtree', async () => {
+        root.innerHTML = `
+            <input id="memo" data-ezclassify-marking value="LOW">
+            <div data-ezclassify-ignore>
+                <input id="hidden-high" data-ezclassify-marking value="HIGH">
+            </div>
+            <input type="hidden" id="page" data-ezclassify-aggregate>`;
+        const ui = mount(reference());
+        await expect.poll(hostErrors).toContain('marked-in-ignore');
+        // The refused marking is not read, and the page says it may be missing
+        // one rather than reading LOW as complete.
+        await expect.poll(() => output('page').value).toBe('LOW');
+        await expect
+            .poll(() => output('page').getAttribute('aria-invalid'))
+            .toBe('true');
+        expect(ui.store.get('hidden-high').rendered).toBe('');
+    });
+
+    it('reads nothing in a product listing that quotes markings as text', async () => {
+        root.innerHTML = `
+            <input id="memo" data-ezclassify-marking value="LOW">
+            <ul data-ezclassify-ignore>
+                <li>Source: Report 12, marked HIGH/CTRL-A</li>
+                <li>Source: Report 14, marked MED</li>
+            </ul>
+            <input type="hidden" id="page" data-ezclassify-aggregate>`;
+        const ui = mount(reference());
+        await expect.poll(() => output('page').value).toBe('LOW');
+        await new Promise((r) => setTimeout(r, 100));
+        expect(output('page').value).toBe('LOW');
+        expect(output('page').hasAttribute('aria-invalid')).toBe(false);
+        expect(hostErrors()).toEqual([]);
+        expect([...ui.store.getAggregate().byBucket.keys()]).toEqual([
+            SOLE_BUCKET,
+        ]);
+    });
+});
+
+describe('a translated view', () => {
+    /**
+     * The reference Context with a crosswalk out of its scheme. The engine is
+     * real; only the crosswalk's answer is staged, so the case reads what the
+     * runtime hands the crosswalk and what it shows of the answer.
+     */
+    function translating() {
+        const context = reference();
+        const translate = vi.fn(
+            async (input: { crosswalkId: string; marking: unknown }) => ({
+                resolution: {
+                    contextId: 'ref',
+                    resolvedVersion: '1.0.0',
+                    artifacts: [],
+                    sources: [],
+                },
+                result: {
+                    status: 'complete',
+                    crosswalk: {
+                        kind: 'crosswalk',
+                        id: input.crosswalkId,
+                        version: '1.0.0',
+                    },
+                    outcomes: [],
+                    selections: [],
+                    target: {
+                        assertions: [],
+                        rendered: 'TRANSLATED',
+                        valid: true,
+                        errors: [],
+                        notices: [],
+                        appliedFixes: [],
+                    },
+                },
+                operationLimitations: [],
+            }),
+        );
+        const proxied = new Proxy(context, {
+            get(target, property, receiver) {
+                if (property === 'translate') return translate;
+                const value = Reflect.get(target, property, receiver);
+                return typeof value === 'function' ? value.bind(target) : value;
+            },
+        });
+        return { context: proxied, translate };
+    }
+
+    it('translates the page rollup it shows and never contributes to it', async () => {
+        root.innerHTML = `
+            <input id="memo" data-ezclassify-marking value="HIGH">
+            <div id="view" data-ezclassify-aggregate data-ezclassify-translate="ref-to-label"></div>
+            <input type="hidden" id="page" data-ezclassify-aggregate>`;
+        const { context, translate } = translating();
+        const ui = mount(context);
+        const view = root.querySelector<HTMLElement>('#view')!;
+        await expect
+            .poll(
+                () =>
+                    view.querySelector('.ez-translated-view__marking')
+                        ?.textContent,
+            )
+            .toBe('TRANSLATED');
+        const last = translate.mock.calls.at(-1)![0] as {
+            crosswalkId: string;
+            marking: Array<{ conceptId: string }>;
+        };
+        expect(last.crosswalkId).toBe('ref-to-label');
+        expect(last.marking.map((a) => a.conceptId)).toContain('HIGH');
+        expect(output('page').value).toBe('HIGH');
+        expect(ui.store.getAggregate().byBucket.size).toBe(1);
+    });
+
+    it('refuses a translated view on a form control', async () => {
+        root.innerHTML = `
+            <input id="memo" data-ezclassify-marking value="HIGH">
+            <input id="view" data-ezclassify-source="memo" data-ezclassify-translate="ref-to-label">`;
+        mount(translating().context);
+        await expect.poll(hostErrors).toContain('translate-refused');
+    });
+});

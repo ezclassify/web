@@ -24,6 +24,7 @@ import {
 import { getFormat, toFieldAssertions } from './state';
 import { showCopiedIndicator } from './dom';
 import { isOwnedBy } from '../element-scanner';
+import { TRANSLATE_ATTRIBUTE } from '../components/translated-view';
 import { t } from '../i18n';
 import {
     indexCoverageTargets,
@@ -700,9 +701,15 @@ function holdsValue(el: HTMLElement): el is HTMLInputElement {
     return el.tagName === 'INPUT' || el.tagName === 'TEXTAREA';
 }
 
-/** Every output this instance owns: a controller-less aggregate element. */
+/**
+ * Every output this instance owns: an aggregate element with no controller and
+ * no translation, both of which mount a view that shows the level itself.
+ */
 function ownedOutputs(ctx: FormsContext): HTMLElement[] {
-    return ownedMatches(ctx, `[${AGGREGATE_ATTR}]:not([${CONTROLLER_ATTR}])`);
+    return ownedMatches(
+        ctx,
+        `[${AGGREGATE_ATTR}]:not([${CONTROLLER_ATTR}]):not([${TRANSLATE_ATTRIBUTE}])`,
+    );
 }
 
 /**

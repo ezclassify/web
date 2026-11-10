@@ -130,6 +130,11 @@ export type HostErrorCode =
     | 'nested-root-in-whole'
     /** A marking host that resolves no Context. */
     | 'context-unresolved'
+    /**
+     * A translated view the runtime cannot show: on a form control or a
+     * controller host, or with no crosswalk to translate through.
+     */
+    | 'translate-refused'
     /** Two marking hosts with one id in different Contexts. */
     | 'duplicate-marking-id';
 

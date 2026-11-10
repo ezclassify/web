@@ -78,10 +78,13 @@ import {
     isMarkingHost,
     placeNestedRoot,
     COLLECTION_ATTR,
+    CONTEXT_ATTR,
     MARKING_ATTR,
+    SCHEME_ATTR,
     type BindingNode,
     type HostError,
 } from './binding-model';
+import type { StatusBannerBucket } from './components/status-banner';
 import { bucketKey, bucketParts, type BucketKey } from './store/store-shared';
 import { reportPublishFailure } from './store/publish-failure';
 import {
@@ -89,8 +92,14 @@ import {
     resolveNativeInput,
     createMountContainer,
     createComponent,
+    createHostComponent,
     buildComponentOptions,
 } from './component-factory';
+import {
+    TranslateHostError,
+    isTranslatedView,
+    type TranslatedView,
+} from './components/translated-view';
 import {
     defaultSurfaceOf,
     holdsPart,
@@ -123,30 +132,22 @@ import { clearWholeReadGate, setWholeReadGate } from './whole-read-gate';
 import { createEzClassifyFacetBinding } from './facet-binding';
 
 /**
- * The one bucket of a level a single-bucket view shows: the bucket its own
- * `context` / `scheme` attributes name, else the level's only non-empty bucket.
- * Undefined when the view names none and several hold markings.
+ * The buckets of a level a view shows, in the store's order: those its own
+ * `context` / `scheme` attributes name (every bucket when it names neither),
+ * holding a marking or flagged stale. A bucket that misses a contributor stays,
+ * so it never reads as empty.
  */
-function pickBucket(
+function shownBuckets(
     aggregate: EzClassifyAggregate,
-    node: BindingNode | undefined,
-): EzClassifyState | undefined {
-    const entries = Array.from(aggregate.byBucket.entries());
-    const named = entries.filter(([key]) => {
-        const { contextKey, schemeSelector } = bucketParts(key);
-        return (
-            (node?.contextKey == null || node.contextKey === contextKey) &&
-            (node?.schemeSelector == null ||
-                node.schemeSelector === schemeSelector)
-        );
-    });
-    const held = named.filter(
-        ([, state]) => state.rendered || state.assertions.length > 0,
+    named: readonly BucketKey[],
+): Array<[BucketKey, EzClassifyState]> {
+    return Array.from(aggregate.byBucket.entries()).filter(
+        ([key, state]) =>
+            named.includes(key) &&
+            (state.rendered !== '' ||
+                state.assertions.length > 0 ||
+                state.stale === true),
     );
-    if (held.length === 1) return held[0][1];
-    if (held.length === 0)
-        return named[0]?.[1] ?? { ...EMPTY_EZCLASSIFY_STATE };
-    return undefined;
 }
 
 /**
@@ -718,6 +719,20 @@ export class EzClassifyUI {
         schemeSelector: string | null,
     ): readonly BucketKey[] {
         return this.contexts.bucketsNamed(contextKey, schemeSelector);
+    }
+
+    /**
+     * What a level view prints to name a bucket: its scheme's name, after the
+     * Context key when the instance holds several Contexts, and the scheme
+     * selector for a scheme other than the Context's primary.
+     */
+    private bucketLabel(bucket: BucketKey): string {
+        const { contextKey, schemeSelector } = bucketParts(bucket);
+        const context = this.contexts.get(contextKey);
+        const name = schemeSelector
+            ? schemeSelector
+            : (context?.scheme.getSchemeMeta().name ?? '');
+        return contextKey ? `${contextKey}: ${name}` : name;
     }
 
     /**
@@ -1775,6 +1790,10 @@ export class EzClassifyUI {
         // a subscription (storeUnsubscribers would be overwritten without calling
         // the old unsub). The two paths must be mutually exclusive per element.
         const hasController = !!el.getAttribute('data-ezclassify-controller');
+        if (isTranslatedView(el)) {
+            this.attachTranslatedView(el);
+            return;
+        }
         if (
             binding.source &&
             el.tagName !== 'INPUT' &&
@@ -2465,6 +2484,85 @@ export class EzClassifyUI {
      * create its mount container, and wire onChange callbacks. Called after
      * `bindBehavior` so the behavior layer is already in place.
      */
+    /**
+     * Mount a `data-ezclassify-translate` view: the marking it shows (its
+     * `source`) or the level it shows (its `aggregate`), in the bucket the view
+     * resolves, translated through the crosswalk it names. A view never
+     * contributes. Markup it refuses (a form control or controller host, no
+     * Context, no crosswalk to use) is a host error.
+     */
+    private attachTranslatedView(el: HTMLElement): void {
+        if (this.hostErrors.has(el) || this.mounted.has(el)) return;
+        const owner = getMountOwner(el);
+        if (owner && owner !== this._instanceId) return;
+        const resolved = this.contextForMount(el);
+        if (!resolved) return;
+        setMountOwner(el, this._instanceId);
+        const component = createHostComponent(el, null) as TranslatedView;
+        const container = createMountContainer(el, null);
+        this.mounted.set(el, component);
+        const show = (s: EzClassifyState) => {
+            component.setIncomplete(s.stale === true);
+            component.setAssertions(s.assertions);
+        };
+        const wire = () => {
+            if (this._destroyed || this.mounted.get(el) !== component) return;
+            if (el.hasAttribute('data-ezclassify-aggregate')) {
+                const raw =
+                    el.getAttribute('data-ezclassify-aggregate')?.trim() ?? '';
+                const levelId = (raw === 'true' ? '' : raw) || undefined;
+                const apply = (aggregate: EzClassifyAggregate) =>
+                    show(
+                        aggregate.byBucket.get(resolved.bucket) ?? {
+                            ...EMPTY_EZCLASSIFY_STATE,
+                        },
+                    );
+                this.storeUnsubscribers.set(
+                    el,
+                    this.store.subscribeAggregate(apply, levelId),
+                );
+                apply(this.store.getAggregate(levelId));
+                return;
+            }
+            const source = el.getAttribute('data-ezclassify-source');
+            if (source && this.validMarkingIds.has(source)) {
+                this.storeUnsubscribers.set(
+                    el,
+                    this.store.subscribe(source, show),
+                );
+                show(this.store.get(source));
+            }
+        };
+        const init = component
+            .init(container, resolved.context, {
+                schemeSelector: resolved.primary
+                    ? undefined
+                    : resolved.schemeSelector,
+            })
+            .then(wire)
+            .catch((err: unknown) => {
+                if (!(err instanceof TranslateHostError)) {
+                    console.error(
+                        '[ezclassify] A translated view failed to mount on',
+                        el,
+                        err,
+                    );
+                    return;
+                }
+                this.mounted.delete(el);
+                this.destroySafely(component);
+                this.reportHostError(
+                    {
+                        code: 'translate-refused',
+                        message: `[ezclassify] ${err.message}`,
+                        element: el,
+                    },
+                    null,
+                );
+            });
+        this._pendingInits.push(init);
+    }
+
     private attachView(
         el: HTMLElement,
         controller: ControllerName,
@@ -2472,6 +2570,9 @@ export class EzClassifyUI {
     ): void {
         // Markup the binding model refused stays unenhanced.
         if (this.hostErrors.has(el)) return;
+        // A translated view mounts on the behavior pass, whatever controller
+        // its host also names (the view refuses one as a host error).
+        if (isTranslatedView(el)) return;
         // Defense-in-depth claim guard (non-optional): if this host is already
         // owned by a DIFFERENT live instance, do not re-enhance it. The scanner
         // boundary is the primary defense; this guards the residual races (a stale
@@ -3041,24 +3142,43 @@ export class EzClassifyUI {
                     // members'), or the page when the value is empty.
                     const levelId =
                         (rawWhole === 'true' ? '' : rawWhole) || undefined;
-                    const node = this.bindingNodes.get(el);
+                    // A level view filters buckets by its own attributes only:
+                    // a default set on an outer element must not hide a bucket.
+                    const named = () =>
+                        this.bucketsNamed(
+                            el.getAttribute(CONTEXT_ATTR),
+                            el.getAttribute(SCHEME_ATTR),
+                        );
+                    const showsBuckets = (
+                        component as {
+                            setBuckets?: (
+                                buckets: readonly StatusBannerBucket[],
+                            ) => void;
+                        }
+                    ).setBuckets?.bind(component);
                     const applyLevel = (aggregate: EzClassifyAggregate) => {
-                        // A view that shows every bucket, each labeled, takes
-                        // the level whole.
-                        const showsBuckets = (
-                            component as {
-                                setAggregate?: (
-                                    aggregate: EzClassifyAggregate,
-                                ) => void;
-                            }
-                        ).setAggregate;
-                        if (showsBuckets) {
-                            showsBuckets.call(component, aggregate);
+                        const shown = shownBuckets(aggregate, named());
+                        if (shown.length > 1 && showsBuckets) {
+                            // Every bucket on its own labeled line, in its own
+                            // scheme's colors. Buckets never merge.
+                            showsBuckets(
+                                shown.map(([key, state]) => ({
+                                    key,
+                                    label: this.bucketLabel(key),
+                                    rendered: state.rendered,
+                                    colors: state.displayColor ?? null,
+                                })),
+                            );
+                            showIncomplete?.(
+                                shown.some(([, state]) => state.stale === true),
+                            );
                             return;
                         }
-                        const picked = pickBucket(aggregate, node);
-                        if (picked) {
-                            applyState(picked);
+                        showsBuckets?.([]);
+                        if (shown.length <= 1) {
+                            applyState(
+                                shown[0]?.[1] ?? { ...EMPTY_EZCLASSIFY_STATE },
+                            );
                             return;
                         }
                         // Several buckets and a view that shows one: showing
