@@ -1,63 +1,484 @@
 /**
- * Vanilla-DOM binding for a {@link ContextAdapter}. Lets a host page mark a
- * parent element with the `data-ezclassify-context` attribute and have
- * descendant components automatically resolve to that context, analogous to a
- * React context provider, but for plain HTML.
+ * The Contexts one `EzClassifyUI` instance marks with, and how an element in
+ * its tree picks one of them.
  *
- * Usage: the host builds its context however it builds one, in process or bound
- * to a remote runtime, registers it under a key, and names that key on an
- * ancestor element.
+ * A page that marks under one rule set hands the instance that Context:
  *
- * ```html
- * <script>
- *     registerContext('document-form', ctx);
- * </script>
- * <div data-ezclassify-context="document-form">
- *     <div data-ezclassify-mount="tags"></div>
- * </div>
+ * ```ts
+ * new EzClassifyUI(context);
  * ```
  *
- * The component's `init` walks up the DOM looking for the nearest
- * `[data-ezclassify-context]` ancestor, reads the registry key, and pulls the
- * context out of the registry. A direct argument always wins over the
- * DOM-discovered one.
+ * A page that marks under several hands them over by key, and markup names the
+ * key on the nearest ancestor of the elements it governs:
+ *
+ * ```ts
+ * new EzClassifyUI({ contexts: { capco, cui } });
+ * ```
+ *
+ * ```html
+ * <body data-ezclassify-context="capco">
+ *     <section data-ezclassify-context="cui">…</section>
+ * </body>
+ * ```
+ *
+ * There is no implicit default. With several Contexts an element that no
+ * ancestor assigns to one is refused, because guessing would validate it
+ * against a rule set the host never chose. With one Context the attribute has
+ * nothing to choose between, so an element that carries one is refused too.
+ *
+ * Inside a Context, `data-ezclassify-scheme` names one of the schemes the
+ * Context holds by its Context-local selector (the key `describeSchemes`
+ * reports and REST `?scheme=` takes). Without it an element marks in the
+ * Context's primary scheme, and naming the primary's selector is the same as
+ * naming nothing.
+ *
+ * Both attributes are read from the element itself and its ancestors up to the
+ * instance root, never beyond it: markup above the root belongs to whatever
+ * scope encloses it.
+ *
+ * Every element that marks resolves to a {@link BucketKey}, the pair (Context
+ * key, scheme selector). Rollups group by it and never merge across it, so the
+ * same scheme under two Contexts stays two buckets. In a key the only Context
+ * of a single-Context instance and the primary scheme of any Context are both
+ * the empty string, so a page that names neither has the one bucket a store
+ * over one engine holds.
  */
 
-import type { ContextAdapter } from '@ezclassify/types';
+import {
+    isContextAdapter,
+    type ContextAdapter,
+    type ContextSchemeDescriptor,
+    type ContextSchemeEngineAdapter,
+} from '@ezclassify/types';
+import { bucketKey, type BucketKey } from './store/store-shared';
 
-const REGISTRY = new Map<string, ContextAdapter>();
+export { bucketKey, bucketParts, type BucketKey } from './store/store-shared';
+
+/** Attribute naming the Context key an element and its subtree mark with. */
+export const CONTEXT_ATTR = 'data-ezclassify-context';
+
+/** Attribute naming the Context-local scheme selector for a subtree. */
+export const SCHEME_ATTR = 'data-ezclassify-scheme';
+
+/** Several Contexts for one instance, each under the key markup names it by. */
+export interface EzClassifyContextMap {
+    readonly contexts: Readonly<Record<string, ContextAdapter>>;
+}
+
+/** What an `EzClassifyUI` is initialized with: one Context, or several by key. */
+export type EzClassifyContexts = ContextAdapter | EzClassifyContextMap;
 
 /**
- * Register a context under a stable key. The same key may be referenced by
- * multiple `[data-ezclassify-context]` attributes on the page. Re-registering
- * the same key replaces the previous context.
+ * Key of the one Context an instance initialized with a single Context holds.
+ * Markup never names it.
  */
-export function registerContext(key: string, ctx: ContextAdapter): void {
-    REGISTRY.set(key, ctx);
-}
+export const SINGLE_CONTEXT_KEY = '';
 
-/** Remove a context registration. Useful for SPA route teardown. */
-export function unregisterContext(key: string): void {
-    REGISTRY.delete(key);
+/** Selector of a Context's primary scheme in a {@link BucketKey}. */
+export const PRIMARY_SCHEME_SELECTOR = '';
+
+/** Separates the two halves of a bucket key; never valid in a Context key. */
+const BUCKET_SEPARATOR = '\u001f';
+
+/** The Context and scheme an element marks with. */
+export interface ResolvedContext {
+    /** The Context's key on the instance ({@link SINGLE_CONTEXT_KEY} for one). */
+    readonly contextKey: string;
+    /** The Context itself. */
+    readonly context: ContextAdapter;
+    /**
+     * Context-local selector of the scheme, or {@link PRIMARY_SCHEME_SELECTOR}
+     * for the primary scheme, however the markup reached it.
+     */
+    readonly schemeSelector: string;
+    /** Whether that scheme is the Context's primary scheme. */
+    readonly primary: boolean;
+    /** The bucket the element rolls up into. */
+    readonly bucket: BucketKey;
 }
 
 /**
- * Walk up from `el` and return the context registered for the nearest
- * `[data-ezclassify-context]` ancestor, or `null` when none is present (or when
- * the registry has no entry for the key).
+ * Why an element's Context or scheme did not resolve.
+ *
+ * - `context-unresolved`: no Context, an unknown key, or a key on a
+ *   single-Context instance.
+ * - `scheme-unresolved`: the selector names no scheme the Context holds, or the
+ *   Context could not list its schemes.
+ * - `scheme-not-markable`: the selector names a scheme the Context holds but
+ *   offers no marking operations for.
+ * - `scheme-pending`: the Context has not listed its schemes yet. The runtime
+ *   reads the element again once it has.
  */
-export function findContext(
-    el: HTMLElement | null | undefined,
-): ContextAdapter | null {
-    if (!el) return null;
-    const provider = el.closest('[data-ezclassify-context]');
-    if (!provider) return null;
-    const key = provider.getAttribute('data-ezclassify-context');
-    if (!key) return null;
-    return REGISTRY.get(key) ?? null;
+export type ContextResolutionCode =
+    | 'context-unresolved'
+    | 'scheme-unresolved'
+    | 'scheme-not-markable'
+    | 'scheme-pending';
+
+/**
+ * An element whose Context or scheme cannot be resolved. The element is a host
+ * error: it is left unenhanced and never treated as absent from a rollup.
+ */
+export class ContextResolutionError extends Error {
+    override readonly name = 'ContextResolutionError';
+
+    /**
+     * @param code - Why it did not resolve
+     * @param message - What is wrong, and how the markup fixes it
+     * @param element - The element that could not be resolved
+     */
+    constructor(
+        readonly code: ContextResolutionCode,
+        message: string,
+        readonly element: Element | null,
+    ) {
+        super(message);
+    }
 }
 
-/** Drop every registration. Mainly useful for tests. */
-export function clearContextRegistry(): void {
-    REGISTRY.clear();
+/** What loading one Context's scheme list produced. */
+type SchemeList =
+    | { readonly state: 'pending' }
+    | { readonly state: 'loaded'; readonly schemes: ContextSchemeDescriptor[] }
+    | { readonly state: 'failed'; readonly reason: string };
+
+/**
+ * The Contexts of one instance, with the scheme lists their selectors resolve
+ * against.
+ */
+export class ContextSet {
+    /** Whether the instance was given one Context rather than a keyed map. */
+    readonly single: boolean;
+    private readonly byKey: ReadonlyMap<string, ContextAdapter>;
+    private readonly schemeLists = new Map<string, SchemeList>();
+
+    private constructor(single: boolean, byKey: Map<string, ContextAdapter>) {
+        this.single = single;
+        this.byKey = byKey;
+        for (const key of byKey.keys())
+            this.schemeLists.set(key, { state: 'pending' });
+    }
+
+    /**
+     * Read what the host initialized the instance with.
+     *
+     * @param source - One Context, or `{ contexts }` keyed by markup name
+     * @throws TypeError when `source` is neither, a key is empty or holds the
+     *   bucket separator, or a value is not a Context
+     */
+    static from(source: EzClassifyContexts): ContextSet {
+        if (source && typeof source === 'object' && isContext(source)) {
+            return new ContextSet(
+                true,
+                new Map([[SINGLE_CONTEXT_KEY, source]]),
+            );
+        }
+        if (
+            !source ||
+            typeof source !== 'object' ||
+            !('contexts' in source) ||
+            !source.contexts ||
+            typeof source.contexts !== 'object'
+        ) {
+            throw new TypeError(
+                '[@ezclassify/ui] EzClassifyUI takes a Context, or { contexts: { <key>: Context, ... } } for several.',
+            );
+        }
+        const byKey = new Map<string, ContextAdapter>();
+        for (const [key, context] of Object.entries(source.contexts)) {
+            if (key.trim() === '' || key.includes(BUCKET_SEPARATOR)) {
+                throw new TypeError(
+                    `[@ezclassify/ui] Context key ${JSON.stringify(key)} cannot be named in markup; use a non-empty key.`,
+                );
+            }
+            if (
+                !context ||
+                typeof context !== 'object' ||
+                !isContext(context)
+            ) {
+                throw new TypeError(
+                    `[@ezclassify/ui] contexts.${key} is not a Context.`,
+                );
+            }
+            byKey.set(key, context);
+        }
+        if (byKey.size === 0) {
+            throw new TypeError(
+                '[@ezclassify/ui] { contexts } names no Context.',
+            );
+        }
+        return new ContextSet(false, byKey);
+    }
+
+    /** The keys markup can name, in the order the host gave them. */
+    get keys(): readonly string[] {
+        return [...this.byKey.keys()];
+    }
+
+    /** Every Context with its key. */
+    entries(): IterableIterator<[string, ContextAdapter]> {
+        return this.byKey.entries();
+    }
+
+    /**
+     * The Context under a key.
+     *
+     * @param key - A key the host gave, or {@link SINGLE_CONTEXT_KEY}
+     */
+    get(key: string): ContextAdapter | undefined {
+        return this.byKey.get(key);
+    }
+
+    /**
+     * Learn which schemes each Context holds, so declared selectors resolve.
+     * Completes synchronously when every Context answers synchronously (a local
+     * Context), and returns a promise otherwise. A Context that cannot list its
+     * schemes still marks in its primary scheme; only an element that declares
+     * a selector in it is a host error, naming the reason.
+     */
+    load(): void | Promise<void> {
+        const waits: Promise<void>[] = [];
+        for (const [key, context] of this.byKey) {
+            if (this.schemeLists.get(key)?.state !== 'pending') continue;
+            let answer:
+                ContextSchemeDescriptor[] | Promise<ContextSchemeDescriptor[]>;
+            try {
+                answer = context.describeSchemes();
+            } catch (err) {
+                this.schemeLists.set(key, failed(err));
+                continue;
+            }
+            if (Array.isArray(answer)) {
+                this.schemeLists.set(key, loaded(answer));
+                continue;
+            }
+            waits.push(
+                Promise.resolve(answer).then(
+                    (schemes) => {
+                        this.schemeLists.set(key, loaded(schemes));
+                    },
+                    (err: unknown) => {
+                        this.schemeLists.set(key, failed(err));
+                    },
+                ),
+            );
+        }
+        if (waits.length === 0) return;
+        return Promise.all(waits).then(() => undefined);
+    }
+
+    /**
+     * The Context key an element declares, from itself or the nearest ancestor
+     * up to `root`.
+     *
+     * @param el - The element
+     * @param root - The instance root; nothing above it is read
+     */
+    declaredContextKey(el: Element, root: Element): string | null {
+        return declaredWithin(el, root, CONTEXT_ATTR);
+    }
+
+    /**
+     * The scheme selector an element declares, from itself or the nearest
+     * ancestor up to `root`.
+     *
+     * @param el - The element
+     * @param root - The instance root; nothing above it is read
+     */
+    declaredSchemeSelector(el: Element, root: Element): string | null {
+        return declaredWithin(el, root, SCHEME_ATTR);
+    }
+
+    /**
+     * The Context and scheme an element marks with.
+     *
+     * @param el - The element
+     * @param root - The instance root
+     * @throws ContextResolutionError when no Context or no scheme resolves
+     */
+    resolve(el: Element, root: Element): ResolvedContext {
+        const contextKey = this.resolveContextKey(el, root);
+        const context = this.byKey.get(contextKey)!;
+        const declared = this.declaredSchemeSelector(el, root);
+        if (declared === null) {
+            return primaryOf(contextKey, context);
+        }
+        const list = this.schemeLists.get(contextKey)!;
+        const label = this.single ? 'the Context' : `Context '${contextKey}'`;
+        if (list.state === 'pending') {
+            throw new ContextResolutionError(
+                'scheme-pending',
+                `${SCHEME_ATTR}="${declared}" cannot be read yet: ${label} has not reported its schemes.`,
+                el,
+            );
+        }
+        if (list.state === 'failed') {
+            throw new ContextResolutionError(
+                'scheme-unresolved',
+                `${SCHEME_ATTR}="${declared}" cannot be read: ${label} could not list its schemes (${list.reason}).`,
+                el,
+            );
+        }
+        const selected = list.schemes.find((s) => s.selector === declared);
+        if (!selected) {
+            throw new ContextResolutionError(
+                'scheme-unresolved',
+                `${SCHEME_ATTR}="${declared}" names no scheme ${label} holds. ` +
+                    `It holds: ${list.schemes.map((s) => s.selector).join(', ') || 'none'}.`,
+                el,
+            );
+        }
+        if (selected.roles.includes('primary')) {
+            return primaryOf(contextKey, context);
+        }
+        return {
+            contextKey,
+            context,
+            schemeSelector: selected.selector,
+            primary: false,
+            bucket: bucketKey(contextKey, selected.selector),
+        };
+    }
+
+    /**
+     * The buckets a Context key and a scheme selector name, `null` naming any.
+     * A selector naming a Context's primary scheme names its primary bucket.
+     * Selectors other than the primary are known only once the Context's scheme
+     * list has loaded.
+     *
+     * @param contextKey - A Context key, or null for every Context
+     * @param schemeSelector - A Context-local selector, or null for every
+     *   scheme of the Context
+     */
+    bucketsNamed(
+        contextKey: string | null,
+        schemeSelector: string | null,
+    ): BucketKey[] {
+        const named: BucketKey[] = [];
+        for (const key of this.byKey.keys()) {
+            if (contextKey !== null && contextKey !== key) continue;
+            const list = this.schemeLists.get(key);
+            const schemes = list?.state === 'loaded' ? list.schemes : [];
+            const primary = schemes.find((s) => s.roles.includes('primary'));
+            if (
+                schemeSelector === null ||
+                schemeSelector === PRIMARY_SCHEME_SELECTOR ||
+                schemeSelector === primary?.selector
+            ) {
+                named.push(bucketKey(key, PRIMARY_SCHEME_SELECTOR));
+            }
+            for (const scheme of schemes) {
+                if (scheme === primary || scheme.roles.includes('primary'))
+                    continue;
+                if (
+                    schemeSelector === null ||
+                    schemeSelector === scheme.selector
+                )
+                    named.push(bucketKey(key, scheme.selector));
+            }
+        }
+        return named;
+    }
+
+    private resolveContextKey(el: Element, root: Element): string {
+        const declared = this.declaredContextKey(el, root);
+        if (this.single) {
+            if (declared !== null) {
+                throw new ContextResolutionError(
+                    'context-unresolved',
+                    `${CONTEXT_ATTR}="${declared}" has nothing to select: this EzClassifyUI was given one Context. ` +
+                        'Remove the attribute, or initialize with { contexts: { ... } }.',
+                    el,
+                );
+            }
+            return SINGLE_CONTEXT_KEY;
+        }
+        const keys = this.keys.map((k) => `'${k}'`).join(', ');
+        if (declared === null) {
+            throw new ContextResolutionError(
+                'context-unresolved',
+                `No ${CONTEXT_ATTR} on this element or an ancestor, and this EzClassifyUI holds several Contexts (${keys}). ` +
+                    `Name one with ${CONTEXT_ATTR} on the element or an enclosing element.`,
+                el,
+            );
+        }
+        if (!this.byKey.has(declared)) {
+            throw new ContextResolutionError(
+                'context-unresolved',
+                `${CONTEXT_ATTR}="${declared}" names no Context this EzClassifyUI holds (${keys}).`,
+                el,
+            );
+        }
+        return declared;
+    }
+}
+
+/**
+ * The scheme operations for a resolved element.
+ *
+ * A Context exposes operations for its primary scheme only; the contract has no
+ * scheme view for another selector. An element that selects another scheme of
+ * the Context is therefore refused rather than marked in the primary.
+ *
+ * @param resolved - What {@link ContextSet.resolve} returned for the element
+ * @param element - The element, carried on the error
+ * @throws ContextResolutionError for a scheme other than the primary
+ */
+export function schemeEngineOf(
+    resolved: ResolvedContext,
+    element: Element | null = null,
+): ContextSchemeEngineAdapter {
+    if (!resolved.primary) {
+        throw new ContextResolutionError(
+            'scheme-not-markable',
+            `${SCHEME_ATTR}="${resolved.schemeSelector}" selects a scheme the Context holds but cannot mark in: ` +
+                'a Context offers marking operations for its primary scheme only.',
+            element,
+        );
+    }
+    return resolved.context.scheme;
+}
+
+/** The primary scheme of a Context, resolved. */
+function primaryOf(
+    contextKey: string,
+    context: ContextAdapter,
+): ResolvedContext {
+    return {
+        contextKey,
+        context,
+        schemeSelector: PRIMARY_SCHEME_SELECTOR,
+        primary: true,
+        bucket: bucketKey(contextKey, PRIMARY_SCHEME_SELECTOR),
+    };
+}
+
+/** Whether a value carries the composed Context surface. */
+function isContext(value: object): value is ContextAdapter {
+    return isContextAdapter(value as ContextAdapter);
+}
+
+/** The value of `attr` on `el` or its nearest ancestor up to `root`. */
+function declaredWithin(
+    el: Element,
+    root: Element,
+    attr: string,
+): string | null {
+    for (let at: Element | null = el; at; at = at.parentElement) {
+        const value = at.getAttribute(attr);
+        if (value !== null) return value;
+        if (at === root) break;
+    }
+    return null;
+}
+
+function loaded(schemes: ContextSchemeDescriptor[]): SchemeList {
+    return { state: 'loaded', schemes };
+}
+
+function failed(err: unknown): SchemeList {
+    return {
+        state: 'failed',
+        reason: err instanceof Error ? err.message : String(err),
+    };
 }

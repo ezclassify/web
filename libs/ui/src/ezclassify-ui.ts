@@ -18,7 +18,6 @@
  */
 import { acceptedValue, judgedAsHeld } from './loaded-value';
 import {
-    type ContextAdapter,
     type Assertion as EngineAssertion,
     type RenderAssessment,
     type RenderResult,
@@ -31,10 +30,14 @@ import {
 } from './components/teardown-write';
 import type { ComponentInstance } from './components/component-base';
 import {
-    isAddressableSchemeEngine,
-    isComponentContextAdapter,
-    type ComponentSchemeEngine,
-} from './components/component-base-readonly';
+    ContextResolutionError,
+    ContextSet,
+    schemeEngineOf,
+    PRIMARY_SCHEME_SELECTOR,
+    SINGLE_CONTEXT_KEY,
+    type EzClassifyContexts,
+    type ResolvedContext,
+} from './context-binding';
 import type { FavoritesConfig } from './components/favorites-panel';
 import {
     cleanupTooltipForRoot,
@@ -139,20 +142,22 @@ function signAssertions(assertions: EngineAssertion[]): string {
 }
 
 /**
- * Top-level controller that binds an engine adapter to DOM input fields,
+ * Top-level controller that binds one or more Contexts to DOM input fields,
  * managing tag inputs, validation, and rollup.
  *
  * The runtime state the extracted forms modules read and write (`FormsContext`)
  * lives on the instance but is marked internal, so it is stripped from the
- * published declarations. Integrators get the constructor, the bound engine,
- * store and root, readiness, the registered components, rollup recalculation
- * and reads, assertion reads, clipboard copy, and teardown.
+ * published declarations. Integrators get the constructor, the store and root,
+ * readiness, the registered components, rollup recalculation and reads,
+ * assertion reads, clipboard copy, and teardown.
  */
 export class EzClassifyUI {
-    /** The scheme engine this runtime drives, unwrapped from a Context. */
-    engine: ComponentSchemeEngine;
-    /** @internal */
-    schemeAddressing: boolean;
+    /**
+     * The Contexts this runtime marks with, and how an element picks one.
+     *
+     * @internal
+     */
+    readonly contexts: ContextSet;
     /**
      * The element this runtime scans and owns. Events, scoped styles and the
      * mount boundary all hang off it.
@@ -196,6 +201,10 @@ export class EzClassifyUI {
      * The seeds of hosts mounted during the initial sweep, started together
      * once every init has resolved (see {@link seedOnMount}).
      */
+ * Initialize it with the page's Context, or with `{ contexts }` keyed by the
+ * names `data-ezclassify-context` uses when the page marks under several (see
+ * `context-binding.ts`).
+ *
     private initialSeeds: Array<() => Promise<void>> = [];
     /** Per-view subscription cleanup handles, keyed by the host element. */
     private storeUnsubscribers = new Map<HTMLElement, () => void>();
@@ -269,7 +278,13 @@ export class EzClassifyUI {
     partOfMap = new Map<HTMLElement, string>();
     /** @internal */
     targetMap = new Map<HTMLElement, string>();
-    /** @internal */
+    /**
+     * The format whole markings are written in when a field names none: the
+     * host's `format` option, else the only Context's scheme default. With
+     * several Contexts and no host format it is empty; see {@link formatsOf}.
+     *
+     * @internal
+     */
     aggregates = new Map<
         string,
         {
@@ -282,9 +297,16 @@ export class EzClassifyUI {
      * components are ready
      *
      * @internal
+    /** The host's `format` option, applied in every Context. */
+    private readonly hostFormat: string | undefined;
      */
     initializing = true;
-    /** @internal */
+    /**
+     * The format a part is written in when a field names none, by the same
+     * rule as {@link defaultFormat}.
+     *
+     * @internal
+     */
     plainBehaviorCleanups = new Map<HTMLElement, () => void>();
     /**
      * Tracks pending component init promises for batched rollup after all inits
@@ -310,7 +332,6 @@ export class EzClassifyUI {
     isReady = false;
     /** Style elements injected by this instance, tracked for cleanup */
     private adoptedStyles: AdoptedStyles[] = [];
-    private _context: ContextAdapter | null = null;
     /**
      * Per-instance counter for synthetic ids assigned to text controllers whose
      * host element has no `id`. Local to this EzClassifyUI so multiple mounts
@@ -368,7 +389,7 @@ export class EzClassifyUI {
     private _lastChildSig = new Map<string, string>();
 
     constructor(
-        engine: ComponentSchemeEngine | ContextAdapter,
+        contexts: EzClassifyContexts,
         options?: {
             format?: string;
             rollupId?: string;
@@ -385,42 +406,34 @@ export class EzClassifyUI {
             favorites?: FavoritesConfig;
         },
     ) {
-        // Whichever half the host injected is the half the controller holds.
-        // A bare scheme adapter is not promoted into a synthetic context:
-        // wrapping it would claim guide and access surfaces the host never
-        // supplied, and constructing the wrapper needs an engine this package
-        // is not allowed to import.
-        if (isComponentContextAdapter(engine)) {
-            this._context = engine;
-            this.engine = engine.scheme;
-        } else {
-            this.engine = engine;
-            this._context = null;
-        }
-        this.schemeAddressing =
-            this._context === null && isAddressableSchemeEngine(this.engine);
+        this.contexts = ContextSet.from(contexts);
+        // Selectors other than the primary resolve against each Context's
+        // scheme list. A local Context lists synchronously; a remote one
+        // answers from the description it cached when it connected.
+        const listing = this.contexts.load();
         this.root = options?.root ?? document.body;
         // Stamp the ownership boundary marker. Every element whose nearest
         // `data-ezclassify-mount-root` ancestor is THIS id is owned by this
         // instance; the scanner skips the rest. This is what stops an enclosing
         // instance from re-enhancing a field a nested instance already owns.
         this.root.setAttribute(MOUNT_ROOT_ATTR, this._instanceId);
-        const meta = this.engine.getSchemeMeta();
-        this.defaultFormat = options?.format ?? meta.defaultRenderFormat ?? '';
         // The host's format is the one it authors whole markings in. A part is
-        // written in the scheme's part default, as the store writes it.
+        // written in the scheme's part default, as the store writes it. With
+        // several Contexts each bucket takes its scheme's defaults instead
+        // (see formatsOf); the host's format, when given, applies to all.
+        const meta = this.contexts.single
+            ? this.contexts.get(SINGLE_CONTEXT_KEY)!.scheme.getSchemeMeta()
+            : undefined;
+        this.hostFormat = options?.format;
+        this.defaultFormat =
+            options?.format ?? meta?.defaultRenderFormat ?? '';
         this.defaultPartFormat =
-            meta.defaultPartRenderFormat ?? this.defaultFormat;
+            meta?.defaultPartRenderFormat ?? this.defaultFormat;
         if (options?.colorMap) this.colorMap = options.colorMap;
         if (options?.tooltipConceptProperty)
             this.tooltipConceptProperty = options.tooltipConceptProperty;
         if (options?.favorites) this.favorites = options.favorites;
-        this.store =
-            options?.store ??
-            new VanillaEzClassifyStore(
-                this.engine,
-                options?.format ? { format: options.format } : undefined,
-            );
+        this.store = options?.store ?? this.createStore(options?.format);
 
         const rollupId = options?.rollupId ?? 'ezclassify-rollup';
         const existingSink = this.root.querySelector(
@@ -442,6 +455,15 @@ export class EzClassifyUI {
         if (!rollupEl) {
             rollupEl = document.createElement('input');
             rollupEl.type = 'hidden';
+    /**
+     * @param contexts - The page's Context, or `{ contexts }` with each Context
+     *   under the key `data-ezclassify-context` names it by. With several
+     *   Contexts there is no default: markup assigns every marked element to
+     *   one, and an element no ancestor assigns is a host error.
+     * @param options - Presentation defaults, the root to scan (default
+     *   `document.body`) and an optional store.
+     * @throws TypeError when `contexts` is neither shape
+     */
             rollupEl.id = rollupId;
             rollupEl.name = rollupId;
             this.root.appendChild(rollupEl);
@@ -494,7 +516,10 @@ export class EzClassifyUI {
         // Guard: if destroy() was called before inits finish, skip the post-init
         // work, including the ready event, which would otherwise fire on a
         // torn-down instance.
-        Promise.all(this._pendingInits).then(async () => {
+        const mounted = listed
+            ? listed.then(() => Promise.all(this._pendingInits))
+            : Promise.all(this._pendingInits);
+        mounted.then(async () => {
             if (!this.rollupField) return;
             this.initializing = false;
             this._pendingInits = [];
@@ -555,6 +580,17 @@ export class EzClassifyUI {
      * the served value instead of being replaced by it. Every host is seeded,
      * empty or not and whatever the store already holds.
      *
+        // An element that declares a scheme selector waits for its Context's
+        // scheme list (see resolveContext); once every list is in, the tree
+        // is read again so those elements mount. Already-mounted elements are
+        // skipped by the mount guards.
+        const listed =
+            listing instanceof Promise
+                ? listing.then(() => {
+                      if (!this._destroyed) this.enhance();
+                  })
+                : undefined;
+
      * A body editor is seeded from its MARK, not its value. `marked-input` and
      * `marked-textarea` are marking hosts whose `.value` is the author's prose
      * with a marking embedded in it; handing that whole string to
@@ -573,6 +609,182 @@ export class EzClassifyUI {
         mounted?: unknown,
     ): void {
         if (this.seededMarkings.has(id)) return;
+    /**
+     * The scheme view of the instance's only Context.
+     *
+     * An instance with several Contexts has no instance-wide scheme: every
+     * element marks with the Context it resolves (see {@link resolveContext}),
+     * so reading this there is a defect in the caller and throws rather than
+     * answering with one Context's rules for another's markup.
+     *
+     * @internal
+     */
+    get engine(): ComponentSchemeEngine {
+        const only = this.contexts.single
+            ? this.contexts.get(SINGLE_CONTEXT_KEY)
+            : undefined;
+        if (!only) {
+            throw new ContextResolutionError(
+                'context-unresolved',
+                '[ezclassify] This EzClassifyUI holds several Contexts, so it has no single scheme; resolve the element\'s Context instead.',
+                null,
+            );
+        }
+        return only.scheme;
+    }
+
+    /**
+     * The store this instance creates when the host passes none: over the
+     * only Context's scheme, or, with several Contexts, one bucket per
+     * (Context, scheme) pair that markup resolves, with no default bucket.
+     */
+    private createStore(format: string | undefined): EzClassifyStore {
+        if (this.contexts.single) {
+            return new VanillaEzClassifyStore(
+                this.engine,
+                format ? { format } : undefined,
+            );
+        }
+        return new VanillaEzClassifyStore({
+            buckets: {
+                resolve: (bucket) => {
+                    const { contextKey, schemeSelector } = bucketParts(bucket);
+                    const context = this.contexts.get(contextKey);
+                    if (!context) {
+                        throw new ContextResolutionError(
+                            'context-unresolved',
+                            `[ezclassify] No Context '${contextKey}' on this EzClassifyUI.`,
+                            null,
+                        );
+                    }
+                    const engine = schemeEngineOf({
+                        contextKey,
+                        context,
+                        schemeSelector,
+                        primary: schemeSelector === PRIMARY_SCHEME_SELECTOR,
+                        bucket,
+                    });
+                    return {
+                        engine,
+                        format:
+                            format ??
+                            engine.getSchemeMeta().defaultRenderFormat,
+                    };
+                },
+            },
+        });
+    }
+
+    /**
+     * The Context and scheme `el` marks with.
+     *
+     * @internal
+     * @throws ContextResolutionError when markup resolves none
+     */
+    resolveContext(el: Element): ResolvedContext {
+        return this.contexts.resolve(el, this.root);
+    }
+
+    /**
+     * Resolve the Context a component on `el` mounts with, or report `el` as a
+     * host error and answer null. An element waiting on its Context's scheme
+     * list answers null without an error: the tree is read again once the list
+     * is in.
+     */
+    private contextForMount(el: HTMLElement): ResolvedContext | null {
+        try {
+            const resolved = this.resolveContext(el);
+            schemeEngineOf(resolved, el);
+            return resolved;
+        } catch (err) {
+            if (!(err instanceof ContextResolutionError)) throw err;
+            if (err.code === 'scheme-pending') return null;
+            this.reportHostError(
+                {
+                    code: 'context-unresolved',
+                    message: `[ezclassify] ${err.message}`,
+                    element: el,
+                },
+                null,
+            );
+            return null;
+        }
+    }
+
+    /**
+     * The formats a field on `el` writes when it names none: the host's
+     * `format` option for whole markings, else its Context scheme's default,
+     * and that scheme's part default for parts.
+     *
+     * @internal
+     */
+    formatsOf(el: Element): { whole: string; part: string } {
+        const meta = schemeEngineOf(
+            this.resolveContext(el),
+            el,
+        ).getSchemeMeta();
+        const whole = this.hostFormat ?? meta.defaultRenderFormat ?? '';
+        return { whole, part: meta.defaultPartRenderFormat ?? whole };
+    }
+
+    /** Scheme operations per bucket, so each bucket keeps one identity. */
+    private readonly bucketSchemes = new Map<BucketKey, BucketScheme>();
+
+    /**
+     * The scheme operations for the bucket `el` reads in.
+     *
+     * @internal
+     * @throws ContextResolutionError when `el` resolves no markable scheme
+     */
+    schemeOf(el: HTMLElement): BucketScheme {
+        const resolved = this.resolveContext(el);
+        const known = this.bucketSchemes.get(resolved.bucket);
+        if (known) return known;
+        const engine = schemeEngineOf(resolved, el);
+        const scheme: BucketScheme = {
+            bucket: resolved.bucket,
+            adapter: engine,
+            process: (input, options) => engine.process(input, options),
+            validate: (input, options) => engine.validate(input, options),
+            checkCoverage: (children, parent, options) =>
+                engine.checkCoverage(children, parent, options),
+            getSchemeMeta: () => engine.getSchemeMeta(),
+        };
+        this.bucketSchemes.set(resolved.bucket, scheme);
+        return scheme;
+    }
+
+    /**
+     * The buckets a Context key and a scheme selector name, `null` naming any.
+     *
+     * @internal
+     */
+    bucketsNamed(
+        contextKey: string | null,
+        schemeSelector: string | null,
+    ): readonly BucketKey[] {
+        return this.contexts.bucketsNamed(contextKey, schemeSelector);
+    }
+
+    /**
+     * The store's rollup of one level, by bucket: `null` for the instance
+     * root, else a collection's or a whole's id.
+     *
+     * @internal
+     */
+    aggregateOf(levelId: string | null): ReadonlyMap<BucketKey, EzClassifyState> {
+        return this.store.getAggregate(levelId ?? undefined).byBucket;
+    }
+
+    /**
+     * True once this instance has been torn down.
+     *
+     * @internal
+     */
+    get destroyed(): boolean {
+        return this._destroyed;
+    }
+
         this.seededMarkings.add(id);
         const start = (): Promise<void> => {
             // Released, or replaced by another host under the same id, while
@@ -1408,11 +1620,12 @@ export class EzClassifyUI {
         // sibling commits in this format. An input bound to a marking shows the
         // store's committed state, so its spelling is resolved to the output
         // the store's publishes can write.
-        const renderedIn = holdsPart(input)
-            ? this.defaultPartFormat
-            : this.defaultFormat;
+        const formats = this.formatsOf(input);
+        const renderedIn = holdsPart(input) ? formats.part : formats.whole;
         const spelled = resolveFormatAttr(input) || renderedIn;
-        const output = storeBinding ? this.outputNamed(spelled) : undefined;
+        const output = storeBinding
+            ? this.outputNamed(input, spelled)
+            : undefined;
         const fmt = output ?? spelled;
         // While this input commits, the store's answer to its own publish is
         // painted by the commit, which announces it the way a host form expects.
@@ -1436,14 +1649,8 @@ export class EzClassifyUI {
                 ? { rendered: s.rendered, assessment: s.assessment }
                 : s.renders[fmt];
         /** Write a committed state's facts in this input's format. */
-        const writeFacts = (s: EzClassifyState): Promise<RenderResult> =>
-            Promise.resolve(
-                this.schemeAddressing &&
-                    binding.scheme &&
-                    isAddressableSchemeEngine(this.engine)
-                    ? this.engine.render(s.assertions, fmt, binding.scheme)
-                    : this.engine.render(s.assertions, fmt),
-            );
+        const writeFacts = async (s: EzClassifyState): Promise<RenderResult> =>
+            engineOf().render(s.assertions, fmt);
         /**
          * Commit typed text as the marking's state: one publish, which is the
          * read every view of the marking shares, then that state as this input
@@ -1475,13 +1682,7 @@ export class EzClassifyUI {
         };
 
         const processText = (text: string) =>
-            this.schemeAddressing &&
-            binding.scheme &&
-            isAddressableSchemeEngine(this.engine)
-                ? this.engine.process(text, binding.scheme, {
-                      outputFormat: fmt,
-                  })
-                : this.engine.process(text, { outputFormat: fmt });
+            engineOf().process(text, { outputFormat: fmt });
 
         const commitValue = async (): Promise<void> => {
             const raw = input.value;
@@ -1724,8 +1925,11 @@ export class EzClassifyUI {
      * that is one of a view's forms: such a field writes the committed facts
      * itself.
      */
-    private outputNamed(spelling: string): string | undefined {
-        const meta = this.engine.getSchemeMeta();
+    private outputNamed(el: HTMLElement, spelling: string): string | undefined {
+        const meta = schemeEngineOf(
+            this.resolveContext(el),
+            el,
+        ).getSchemeMeta();
         const outputs = meta.formats ?? [];
         return resolveOutput(
             outputs,
@@ -1771,6 +1975,9 @@ export class EzClassifyUI {
             `[ezclassify] "${controller}" failed to mount on`,
             el,
             `-- the field is left unenhanced (native element only). ${message}`,
+        /** The scheme view of the Context this input resolves. */
+        const engineOf = () =>
+            schemeEngineOf(this.resolveContext(input), input);
         );
     }
 
@@ -1852,7 +2059,8 @@ export class EzClassifyUI {
         if (typeof categoryId !== 'string' || !categoryId) return;
         if (warnedScopeMismatch.has(el)) return;
 
-        const category = this.engine
+        const engine = schemeEngineOf(this.resolveContext(el), el);
+        const category = engine
             .listCategories()
             .find((c) => c.id === categoryId);
         // An unknown category is a different mistake, and the components report
@@ -1860,7 +2068,7 @@ export class EzClassifyUI {
         if (!category) return;
         if (category.scopes?.includes(declaredScope)) return;
 
-        const defaultScope = this.engine.getSchemeMeta().defaultScope;
+        const defaultScope = engine.getSchemeMeta().defaultScope;
         if (declaredScope === defaultScope) return;
 
         warnedScopeMismatch.add(el);
@@ -2059,6 +2267,9 @@ export class EzClassifyUI {
         if (facetOfId && facetCategory && storeEligible) {
             componentOpts.resolveFacetSiblings = () =>
                 this.store
+     *
+     * @param el - The field, whose Context's scheme lists the outputs
+     * @param spelling - The format the field names
                     .get(facetOfId)
                     .assertions.filter((a) => a.categoryId !== facetCategory);
         }
@@ -2232,6 +2443,14 @@ export class EzClassifyUI {
                     // First-part-binding: the first hidden field binds directly to the
                     // designated marking id. Later parts stay standalone; they don't
                     // contribute to that marking (no part-of, no bound-to to sharedId).
+        // The Context the component marks with, from the nearest
+        // `data-ezclassify-context` (or the only Context) and the nearest
+        // `data-ezclassify-scheme` (or the primary scheme). An element that
+        // resolves none stays unenhanced as a host error.
+        if (this.mounted.has(el)) return;
+        const resolved = this.contextForMount(el);
+        if (!resolved) return;
+
                     if (firstPartBindingId && !firstPartEl) {
                         hiddenEl.setAttribute(
                             'data-ezclassify-bound-to',
@@ -2304,11 +2523,10 @@ export class EzClassifyUI {
         if (storeBinding && !facetOfId && storeMarkingId)
             this.draftHosts.set(component, storeMarkingId);
 
-        // Hand the component the same source the host injected: the composed
-        // context when there is one, the bare scheme adapter otherwise.
+        // The component marks with the Context its element resolved.
         const initPromise = component.init(
             container,
-            this._context ?? this.engine,
+            resolved.context,
             componentOpts,
         );
 
@@ -3346,9 +3564,10 @@ export class EzClassifyUI {
         // The cache is keyed by schemeId, so a live-edit host that mutates a
         // scheme under the same id (for example a live scheme editor) would otherwise get
         // stale coverage/process results carried across an unmount/remount.
-        // Only this instance's engine partition goes: a peer context on the
+        // Only this instance's Context partitions go: a peer instance on the
         // same page keeps the work it has already done.
-        rollup.clearRollupProcessCache(this.engine);
+        for (const [, context] of this.contexts.entries())
+            rollup.clearRollupProcessCache(context.scheme);
         dom.hideConceptTooltip(this);
         this.releaseSeeds();
         for (const [contributorId, wholeId] of this.incompleteScans)

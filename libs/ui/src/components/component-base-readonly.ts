@@ -11,7 +11,6 @@
 import {
     type ContextAdapter,
     type ContextSchemeEngineAdapter,
-    type SchemeEngineAdapter,
     type Assertion,
     type ConceptColor,
     type SchemePublicView,
@@ -40,7 +39,6 @@ import { COMPONENT_CSS } from './component-utils';
 import { revealClearOfPinned } from './composer/composer-placement';
 import { injectDefaultStyles } from '../styles';
 import { adoptStylesOnce } from '../styles/adopt';
-import { findContext } from '../context-binding';
 import type { FavoritesConfig } from './favorites-panel';
 import type { EzClassifyState } from '../store/ezclassify-store';
 import {
@@ -61,47 +59,19 @@ import {
 import { getMountHost } from '../mount-host-registry';
 
 /**
- * Engine binding accepted by every UI component.
+ * Scheme operations a component marks with: a Context's scheme view.
  *
- * A {@link ContextAdapter} funnels scheme, guide, and access through one handle;
- * a bare {@link SchemeEngineAdapter} is the marking surface alone. Components
- * take either, and take it from whoever mounts them: the host injects a
- * concrete adapter, and nothing in this package knows or asks whether that
- * adapter runs in process or over HTTP.
+ * The view is bound to one Context and its primary scheme, so no operation
+ * takes a scheme selector. Nothing in this package knows or asks whether the
+ * view runs in process or over HTTP.
  */
-/** Scheme operations available to a component from either supported host mode. */
-export type ComponentSchemeEngine =
-    SchemeEngineAdapter | ContextSchemeEngineAdapter;
+export type ComponentSchemeEngine = ContextSchemeEngineAdapter;
 
+/**
+ * What a component is mounted with: a Context, which also brings its guides and
+ * access policy, or a Context's scheme view alone.
+ */
 export type ComponentEngineSource = ComponentSchemeEngine | ContextAdapter;
-
-/**
- * The scheme an engine has marked as its default, when it has one.
- *
- * Only an adapter that manages a scheme registry has a default. A Context-bound
- * adapter has exactly one scheme, named by `getScheme()`, so it answers
- * `undefined` here and callers fall back to that.
- */
-export function defaultSchemeOf(
-    engine: ComponentSchemeEngine,
-): { id: string } | null | undefined {
-    return 'getDefaultScheme' in engine
-        ? engine.getDefaultScheme?.()
-        : undefined;
-}
-
-/**
- * Whether a scheme surface accepts an explicit scheme selector.
- *
- * Context-bound remote adapters deliberately omit composition lifecycle. That
- * omission is the capability boundary; `listSchemes` is only introspection and
- * must not be used as a proxy for addressed operations.
- */
-export function isAddressableSchemeEngine(
-    engine: ComponentSchemeEngine,
-): engine is SchemeEngineAdapter {
-    return 'loadScheme' in engine && typeof engine.loadScheme === 'function';
-}
 
 /** Narrow a component source to the composed Context surface. */
 export function isComponentContextAdapter(
@@ -139,9 +109,8 @@ export interface ComponentInstance {
      */
     pendingDraft?(): string | null;
     /**
-     * Render the UI into the container. Accepts a Context adapter or scheme
-     * adapter. When the Context is omitted, the component looks for a
-     * `[data-ezclassify-context]` ancestor on `container`.
+     * Render the UI into the container, marking with the Context (or the
+     * Context's scheme view) it is given. There is no other way to find one.
      */
     init(
         container: HTMLDivElement,
@@ -214,12 +183,6 @@ export interface ComponentOptions {
     holdsPart?: boolean;
     categoryId?: string;
     scope?: string;
-    /**
-     * Which loaded scheme id this component targets. Resolution order:
-     * `data-ezclassify-scheme` attribute on container → this option → engine's
-     * default-scheme slot → throw.
-     */
-    schemeId?: string;
     onChange?: (assertions: Assertion[], rendered: string) => void;
     /**
      * Id of the parent field that holds the complete marking this component is
@@ -409,10 +372,7 @@ export abstract class ReadOnlyComponentBase implements ComponentInstance {
      * layout helpers rather than re-asking the adapter per render.
      */
     protected schemeMeta!: SchemeMetaView;
-    /**
-     * Resolved scheme id for this component instance. Threaded into every
-     * engine call.
-     */
+    /** Id of the scheme this component marks in: its Context's primary. */
     protected schemeId!: string;
     protected container!: HTMLDivElement;
     protected options: ComponentOptions = {};
@@ -485,11 +445,6 @@ export abstract class ReadOnlyComponentBase implements ComponentInstance {
     /** The original <input> element being progressively enhanced (if any) */
     protected enhancedInput: HTMLInputElement | null = null;
 
-    /** Whether calls from this component may include an explicit scheme id. */
-    protected get schemeAddressing(): boolean {
-        return this.context === null && isAddressableSchemeEngine(this.engine);
-    }
-
     /**
      * Refuse an engine missing a capability this component needs, once, where
      * it binds. The base needs nothing beyond the adapter contract's reads.
@@ -504,29 +459,14 @@ export abstract class ReadOnlyComponentBase implements ComponentInstance {
         options?: ComponentOptions,
     ): Promise<void> {
         const componentLabel = this.constructor?.name ?? 'EzClassifyComponent';
-        this.engine = resolveSchemeEngine(
-            container,
-            engineOrContext,
-            componentLabel,
-        );
+        this.engine = resolveSchemeEngine(engineOrContext, componentLabel);
         this.assertEngineCapabilities(componentLabel);
-        this.context = resolveContextSource(container, engineOrContext);
+        this.context = resolveContextSource(engineOrContext);
         this.container = container;
         this.options = options ?? {};
-        this.schemeId = resolveProfile(
-            container,
-            this.engine,
-            options,
-            this.schemeAddressing,
-        );
-        const addressScheme =
-            this.context === null && isAddressableSchemeEngine(this.engine);
-        this.scheme = addressScheme
-            ? this.engine.getScheme(this.schemeId)
-            : this.engine.getScheme();
-        const schemeMeta = addressScheme
-            ? this.engine.getSchemeMeta(this.schemeId)
-            : this.engine.getSchemeMeta();
+        this.schemeId = resolveProfile(this.engine);
+        this.scheme = this.engine.getScheme();
+        const schemeMeta = this.engine.getSchemeMeta();
         this.schemeMeta = schemeMeta;
         this.formatId =
             options?.formatId ??
@@ -794,10 +734,9 @@ export abstract class ReadOnlyComponentBase implements ComponentInstance {
     }
 
     /**
-     * Engine.process shim. Threads `this.schemeId` when the adapter exposes
-     * multi-profile introspection (`listSchemes`); falls back to the 2-arg form
-     * so adapters predating multi-scheme support keep working without
-     * modification.
+     * Engine.process with what every call from this field carries: its scope as
+     * the surface, the parts a whole must cover, and only the facts the field
+     * states (facts taken from a whole go back through the whole).
      */
     protected callProcess(
         input: string | Assertion[],
@@ -814,9 +753,6 @@ export abstract class ReadOnlyComponentBase implements ComponentInstance {
         );
         const read =
             typeof input === 'string' ? input : withoutTakenFromWhole(input);
-        if (this.schemeAddressing && isAddressableSchemeEngine(this.engine)) {
-            return this.engine.process(read, this.schemeId, withParts);
-        }
         return this.engine.process(read, withParts);
     }
 
@@ -832,9 +768,6 @@ export abstract class ReadOnlyComponentBase implements ComponentInstance {
                 ? { ...options, surface: this.options.scope }
                 : options,
         );
-        if (this.schemeAddressing && isAddressableSchemeEngine(this.engine)) {
-            return this.engine.validate(input, this.schemeId, withParts);
-        }
         return this.engine.validate(input, withParts);
     }
 
@@ -882,37 +815,27 @@ export abstract class ReadOnlyComponentBase implements ComponentInstance {
         return (this._resolveParts?.() ?? []).some((part) => part.trim());
     }
 
-    /** Engine.render shim: see callProcess for the rationale. */
+    /** Engine.render in the given format. */
     protected callRender(
         assertions: Assertion[],
         options?: { format?: string },
     ) {
-        const format = options?.format;
-        if (this.schemeAddressing && isAddressableSchemeEngine(this.engine)) {
-            return this.engine.render(assertions, format, this.schemeId);
-        }
-        return this.engine.render(assertions, format);
+        return this.engine.render(assertions, options?.format);
     }
 
-    /** Engine.suggest shim: see callProcess for the rationale. */
+    /** Engine.suggest, with only the facts the field states. */
     protected callSuggest(
         input: string | Assertion[],
         options?: SuggestOptions,
     ) {
         const read =
             typeof input === 'string' ? input : withoutTakenFromWhole(input);
-        if (this.schemeAddressing && isAddressableSchemeEngine(this.engine)) {
-            return this.engine.suggest(read, this.schemeId, options);
-        }
         return this.engine.suggest(read, options);
     }
 
-    /** Engine.applyPreset shim: see callProcess for the rationale. */
+    /** Engine.applyPreset, in the given output format. */
     protected callApplyPreset(presetId: string, outputFormat?: string) {
         const options = outputFormat ? { outputFormat } : undefined;
-        if (this.schemeAddressing && isAddressableSchemeEngine(this.engine)) {
-            return this.engine.applyPreset(presetId, this.schemeId, options);
-        }
         return this.engine.applyPreset(presetId, options);
     }
 
@@ -1167,121 +1090,55 @@ export abstract class ReadOnlyComponentBase implements ComponentInstance {
 }
 
 /**
- * Resolve which loaded scheme a component instance targets.
+ * The id of the scheme a component marks in: its scheme view's, which is the
+ * Context's primary scheme.
  *
- * Resolution order:
+ * Which Context and which of its schemes an element marks with is markup the
+ * runtime reads (`data-ezclassify-context`, `data-ezclassify-scheme`; see
+ * `context-binding.ts`) before it mounts the component. A component mounted
+ * directly is handed its Context by the host and reads neither attribute.
  *
- * 1. `data-ezclassify-scheme` attribute on the container (or its closest ancestor)
- * 2. `options.schemeId`
- * 3. The engine's default-scheme slot (`getDefaultScheme()?.id`)
- *
- * Throws with a useful message when no scheme is loaded, or when the engine has
- * multiple schemes loaded with no default set and no attribute/option
- * provided.
- *
- * When optional multi-scheme introspection is absent, the required `getScheme`
- * method names the adapter's bound scheme.
+ * @param engine - The component's scheme view
+ * @throws Error when the view cannot name its scheme
  */
-export function resolveProfile(
-    container: HTMLElement,
-    engine: ComponentSchemeEngine,
-    options?: { schemeId?: string },
-    schemeAddressing = isAddressableSchemeEngine(engine),
-): string {
-    const attr =
-        container.getAttribute('data-ezclassify-scheme') ??
-        container
-            .closest('[data-ezclassify-scheme]')
-            ?.getAttribute('data-ezclassify-scheme');
-    const requested = attr ?? options?.schemeId;
-    if (typeof engine.getScheme !== 'function') {
-        throw new Error('Scheme adapter must implement getScheme().');
+export function resolveProfile(engine: ComponentSchemeEngine): string {
+    if (typeof engine?.getScheme !== 'function') {
+        throw new Error('A Context scheme view must implement getScheme().');
     }
-    if (!schemeAddressing) {
-        const primary = engine.getScheme();
-        if (requested && requested !== primary.id) {
-            throw new Error(
-                `Context-bound scheme operations target '${primary.id}'; '${requested}' cannot be selected from this adapter.`,
-            );
-        }
-        return primary.id;
-    }
-    if (requested) return requested;
-
-    const def = defaultSchemeOf(engine);
-    if (def) return def.id;
-
-    // The contract permits a bound adapter without listing methods.
-    if (!('listSchemes' in engine) || !engine.listSchemes) {
-        return engine.getScheme().id;
-    }
-
-    const loaded = engine.listSchemes();
-    if (loaded.length === 0) {
-        throw new Error(
-            'Engine has no schemes loaded. Call engine.loadScheme(data) before mounting components.',
-        );
-    }
-    if (loaded.length === 1) {
-        return loaded[0].id;
-    }
-    throw new Error(
-        `Engine has multiple schemes loaded (${loaded.map((p) => p.id).join(', ')}) with no default set; ` +
-            `specify data-ezclassify-scheme attribute, options.schemeId, or call engine.setDefaultScheme(id).`,
-    );
+    return engine.getScheme().id;
 }
 
 /**
- * Discover the engine adapter that backs a component instance.
+ * The scheme view behind what a component was mounted with: a Context's
+ * `scheme`, or the view itself.
  *
- * Resolution order:
- *
- * 1. Direct argument: a composed context contributes `ctx.scheme`, a bare scheme
- *    adapter is itself the answer.
- * 2. No argument: walk up `container` to find a `[data-ezclassify-context]`
- *    provider and pull `ctx.scheme` from the registered context.
- *
- * Throws when neither produces an engine.
+ * @param source - What the host or runtime mounted the component with
+ * @param componentLabel - Names the component in the error
+ * @throws Error when nothing was supplied
  */
 export function resolveSchemeEngine(
-    container: HTMLElement,
     source: ComponentEngineSource | null | undefined,
     componentLabel: string,
 ): ComponentSchemeEngine {
     if (source) {
         return isComponentContextAdapter(source) ? source.scheme : source;
     }
-    const ctx = findContext(container);
-    if (ctx) {
-        return ctx.scheme;
-    }
     throw new Error(
-        `[@ezclassify/ui] ${componentLabel}: no engine available. Pass an engine or context to init(), or wrap the container in an [data-ezclassify-context] provider.`,
+        `[@ezclassify/ui] ${componentLabel}: no Context available. Mount it through EzClassifyUI, or pass a Context to init().`,
     );
 }
 
 /**
- * Return the composed context the component was mounted with: directly via the
- * source argument or via an ancestor `[data-ezclassify-context]` provider.
- * Returns `null` when the source was a bare scheme adapter and no provider
- * exists; subclasses that need `ctx.guide` / `ctx.access` should handle that
- * case (typically: empty state).
+ * The Context a component was mounted with, or `null` when it was given a
+ * scheme view alone. Components that need `guide` or `access` show their empty
+ * state then.
  *
- * A directly injected bare scheme adapter is only paired with a discovered
- * context composed around that same adapter. Any other registered context would
- * give the component a guide and access surface belonging to a different
- * composition than the engine it renders from, and the mismatch would show as
- * wrong content rather than as an error.
+ * @param source - What the host or runtime mounted the component with
  */
 export function resolveContextSource(
-    container: HTMLElement,
     source: ComponentEngineSource | null | undefined,
 ): ContextAdapter | null {
-    if (source && isComponentContextAdapter(source)) return source;
-    const discovered = findContext(container);
-    if (!discovered) return null;
-    if (source && discovered.scheme !== source) return null;
-    return discovered;
+    return source && isComponentContextAdapter(source) ? source : null;
 }
 
 /**

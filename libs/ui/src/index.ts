@@ -43,12 +43,7 @@ export type {
     ComponentLocator,
     ComponentLocatorOptions,
 } from './component-locator';
-export {
-    contextSignature,
-    isEngineContext,
-    sameSignature,
-} from './engine-signature';
-export type { EngineArg } from './engine-signature';
+export { contextSignature, sameSignature } from './engine-signature';
 export * from './render-colors';
 export * from './token-tree';
 export { AssertionCard } from './components';
@@ -96,9 +91,13 @@ export type { FavoriteEntry, FavoritesConfig } from './components';
 export { EquivalencyMap } from './components';
 export type { EquivalencyEntry } from './components';
 export { defaultLocale, setLocale, resetLocale, t } from './i18n';
-export type { ContributionDescriptor } from './forms/rollup';
 export { buildCategoryColorMap } from './color-resolver';
-export { registerContext, unregisterContext } from './context-binding';
+export { bucketParts } from './context-binding';
+export type {
+    BucketKey,
+    EzClassifyContextMap,
+    EzClassifyContexts,
+} from './context-binding';
 export {
     assembleWithConcept,
     findUnambiguousMatch,
@@ -150,17 +149,15 @@ export type {
 } from './bind-ezclassify-to-object';
 export type { Assertion } from '@ezclassify/types';
 // Re-exported, not re-implemented. The framework integrations declare
-// `@ezclassify/ui` as their only EzClassify peer, and every one of them has to
-// tell a composed context from a bare scheme adapter before handing an engine
-// to the store. Routing that one runtime symbol through here keeps
-// `@ezclassify/types` out of their dependency surface instead of leaving three
-// packages with an undeclared runtime import.
+// `@ezclassify/ui` as their only EzClassify peer, and each checks that what a
+// host provides is a Context before it initializes. Routing that one runtime
+// symbol through here keeps `@ezclassify/types` out of their dependency
+// surface instead of leaving three packages with an undeclared runtime import.
 export { isContextAdapter } from '@ezclassify/types';
 export type {
     ContextAdapter,
     ContextSchemeEngineAdapter,
     RemoteContextSchemeEngineAdapter,
-    SchemeEngineAdapter,
 } from '@ezclassify/types';
 export {
     createEzClassifyFacetBinding,

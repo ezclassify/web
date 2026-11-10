@@ -1,16 +1,15 @@
 import { describe, expect, it } from 'vitest';
-import type { ContextAdapter, SchemeEngineAdapter } from '@ezclassify/types';
+import type {
+    ContextAdapter,
+    ContextSchemeEngineAdapter,
+} from '@ezclassify/types';
 import { contextSignature, sameSignature } from './engine-signature';
 
 describe('contextSignature', () => {
-    it('unwraps any composed context, whoever built it', () => {
-        // The discrimination is structural: an object exposing the composed
-        // surface qualifies whether it came from an in-process engine, an HTTP
-        // client, or a host's own implementation. No brand to set, nothing to
-        // register, and no dependency on the package that minted it.
+    it('signs a Context by its views and identity, not its wrapper', () => {
         const scheme = {
             process: () => undefined,
-        } as unknown as SchemeEngineAdapter;
+        } as unknown as ContextSchemeEngineAdapter;
         const context = {
             scheme,
             guide: undefined,
@@ -32,16 +31,7 @@ describe('contextSignature', () => {
         ]);
     });
 
-    it('does not unwrap a scheme adapter that merely has a scheme property', () => {
-        const adapter = {
-            scheme: {},
-            getResolution: () => undefined,
-        } as unknown as SchemeEngineAdapter;
-
-        expect(contextSignature(adapter)).toEqual([adapter]);
-    });
-
-    it('reports a null engine as its own signature', () => {
+    it('reports a missing Context as its own signature', () => {
         expect(contextSignature(null)).toEqual([null]);
     });
 });
@@ -50,7 +40,7 @@ describe('Context resolution identity in UI signatures', () => {
     it('refreshes for a new concrete version while preserving alias-only identity', () => {
         const scheme = {
             process: () => undefined,
-        } as unknown as SchemeEngineAdapter;
+        } as unknown as ContextSchemeEngineAdapter;
         const context = {
             scheme,
             audit: () => undefined,

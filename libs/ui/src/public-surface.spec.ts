@@ -136,7 +136,6 @@ describe('EzClassifyUI published declaration', () => {
     // host applications load a value through a mounted field's own `setValue`
     // (see docs/binding-model.md).
     const publicMembers = [
-        'engine',
         'root',
         'store',
         'components',
