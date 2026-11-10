@@ -13,9 +13,16 @@
  * server's environment configuration never lands in a worker running specs that
  * did not ask for a server.
  *
- * Reach it from a spec with `inject('restApiBaseUrl')`.
+ * The server authenticates every Context request the way a deployment does, so
+ * the run registers one backend application whose broker credential is a
+ * disposable key minted here. Specs connect with that application's signed
+ * identity header and a signed Context token for the Context they bind to.
+ *
+ * Reach it from a spec with `inject('restApiBaseUrl')`,
+ * `inject('restApiApplicationHeaders')` and `inject('restApiContextTokens')`.
  */
 import * as http from 'node:http';
+import { generateKeyPairSync, sign } from 'node:crypto';
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { createRequire } from 'node:module';
@@ -89,6 +96,71 @@ export function paritySchemeJson(
 }
 
 /**
+ * A disposable backend application and the broker credential it presents.
+ *
+ * The REST API never executes an anonymous request: it verifies the caller's
+ * identity token against its configured broker key, then requires that the
+ * caller is a registered application allowed to reach the Context. So the run
+ * configures a broker verifier over a fresh RSA key, signs one identity token
+ * for the application, and registers that application with the signed
+ * deployment `installTestContextTokens` installs. `org_id` is the organization
+ * that deployment belongs to.
+ */
+function parityApplication() {
+    const issuer = 'https://parity-fixture.invalid/gateway';
+    const audience = 'web-adapter-parity';
+    const subject = 'web-parity-backend';
+    const keys = generateKeyPairSync('rsa', { modulusLength: 2048 });
+    const now = Math.floor(Date.now() / 1000);
+    const encode = (value: object) =>
+        Buffer.from(JSON.stringify(value)).toString('base64url');
+    const signed = `${encode({ alg: 'RS256', typ: 'JWT' })}.${encode({
+        iss: issuer,
+        aud: audience,
+        sub: subject,
+        org_id: 'anonymous',
+        iat: now,
+        exp: now + 3600,
+    })}`;
+    const token = `${signed}.${sign('RSA-SHA256', Buffer.from(signed), keys.privateKey).toString('base64url')}`;
+    return {
+        environment: {
+            EZCLASSIFY_BROKER_ISSUER: issuer,
+            EZCLASSIFY_BROKER_AUDIENCE: audience,
+            EZCLASSIFY_BROKER_PUBLIC_KEY: keys.publicKey.export({
+                type: 'spki',
+                format: 'pem',
+            }) as string,
+        },
+        application: {
+            definition: {
+                applicationId: 'web-parity',
+                clientId: 'web-parity-backend',
+                purpose: 'backend' as const,
+                enabled: true,
+                interfaces: ['rest'] as ['rest'],
+                credentials: [{ kind: 'broker' as const, issuer, subject }],
+                userPolicy: {
+                    mode: 'asserted' as const,
+                    required: false,
+                    authentication: 'web parity fixture user',
+                    subject: {
+                        kind: 'context' as const,
+                        pointer: '/audit/userId',
+                    },
+                    attributes: {},
+                },
+                auditMapping: {
+                    subject: { kind: 'actor' as const },
+                    resourcePointer: '/audit/resourceId',
+                },
+            },
+            headers: { 'x-ezclassify-identity-token': token },
+        },
+    };
+}
+
+/**
  * Fail loudly, and with the fix, when the private packages are not installed.
  * The tier is opt-in, so a silent skip would let it look like it ran.
  */
@@ -128,16 +200,17 @@ export default async function setup(project: TestProject) {
             })),
         }),
     );
+    const gateway = parityApplication();
+    Object.assign(process.env, gateway.environment);
     // The REST API refuses to start without signed Runtime rights, so it runs
     // under an ephemeral development license and trust root.
     const runtime = await installLicensedRuntime();
     Object.assign(process.env, runtime.environment);
     process.env['EZCLASSIFY_ARTIFACT_PATH'] = developmentDir;
     process.env['EZCLASSIFY_ARTIFACT_PATH_WATCH'] = '0';
-    process.env['EZCLASSIFY_AUTH'] = 'none';
     process.env['LOG_SILENT'] = '1';
     process.env['REST_API_LOG_SOURCE'] = '0';
-    // Every spec is one unauthenticated principal, so the whole run shares one
+    // Every spec is the one registered application, so the whole run shares one
     // rate-limit bucket. The default per-minute ceiling is sized for a
     // deployment, not for a suite that replays the full operation table per
     // scheme within a second.
@@ -145,19 +218,21 @@ export default async function setup(project: TestProject) {
     process.env['RATE_LIMIT_MAX_SUGGEST'] = '100000';
 
     const app = await import('@ezclassify/rest-api');
-    await app.initializeServer();
     const contextTokens = installTestContextTokens(
         app,
         PARITY_SCHEME_IDS.map((contextId) => ({
             contextId,
             versions: ['1.0.0'],
         })),
+        gateway.application,
     );
+    await app.initializeServer();
     const server = http.createServer(app.handleRequest);
     await new Promise<void>((ready) => server.listen(0, '127.0.0.1', ready));
     const { port } = server.address() as { port: number };
 
     project.provide('restApiBaseUrl', `http://127.0.0.1:${port}`);
+    project.provide('restApiApplicationHeaders', gateway.application.headers);
     project.provide(
         'restApiContextTokens',
         Object.fromEntries(

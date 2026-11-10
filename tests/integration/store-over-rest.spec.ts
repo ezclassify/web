@@ -18,7 +18,6 @@ import { describe, it, expect, beforeAll, afterAll, inject } from 'vitest';
 import {
     VanillaEzClassifyStore,
     createEzClassifyFacetBinding,
-    type EzClassifyStoreEngine,
     type FacetState,
 } from '@ezclassify/ui';
 import { EzClassifyClient } from '@ezclassify/rest-client';
@@ -40,14 +39,13 @@ describe('EzClassifyStore over a REST deployment', () => {
             contextId: SCHEME_ID,
             contextVersion: '1.0.0',
             contextToken: inject('restApiContextTokens')[SCHEME_ID],
+            headers: inject('restApiApplicationHeaders'),
         });
-        // The client IS the store's engine: this is the supported deployment
-        // shape, `@ezclassify/ui` pointed at the REST API.
-        store = new VanillaEzClassifyStore(
-            client as unknown as EzClassifyStoreEngine,
-        );
+        // The client's scheme operations are the store's engine: this is the
+        // supported deployment shape, `@ezclassify/ui` pointed at the REST API.
+        store = new VanillaEzClassifyStore(client.scheme);
 
-        const ranked = [...client.getConceptsInCategory(CATEGORY)].sort(
+        const ranked = [...client.scheme.getConceptsInCategory(CATEGORY)].sort(
             (a, b) => (a.rank ?? 0) - (b.rank ?? 0),
         );
         low = ranked[0]!.id;

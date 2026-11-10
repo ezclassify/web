@@ -1,19 +1,22 @@
 /**
- * Contract-parity suite: `LocalSchemeEngineAdapter` vs `EzClassifyClient`.
+ * Contract-parity suite: a local Context's scheme operations vs a REST
+ * client's.
  *
  * The two adapters are meant to be interchangeable behind one interface. Every
  * UI surface in this repo, the store, the forms controller, and all three
- * framework bindings, is written against `SchemeEngineAdapter` and is supposed
- * to behave the same whether the host wired up a local engine or pointed the
- * same code at a REST deployment. A fetch mock cannot catch a wrong assumption
- * about the wire, because the mock is written from the same assumption, so each
- * adapter tested only against itself proves nothing about parity.
+ * framework bindings, is written against the Context-bound scheme adapter and
+ * is supposed to behave the same whether the host composed a local Context or
+ * pointed the same code at a REST deployment. A fetch mock cannot catch a wrong
+ * assumption about the wire, because the mock is written from the same
+ * assumption, so each adapter tested only against itself proves nothing about
+ * parity.
  *
  * So this suite runs one operation set against BOTH adapters and requires the
- * same answer, with the client driven over real HTTP against a real
- * `@ezclassify/rest-api` (see `rest-api-server.ts`). Every operation covered
- * here is one the store, the forms controller, or a framework binding actually
- * calls.
+ * same answer: `Context.fromComponents({ scheme }).scheme` on one side and
+ * `EzClassifyClient.scheme` on the other, with the client driven over real HTTP
+ * against a real `@ezclassify/rest-api` (see `rest-api-server.ts`). Every
+ * operation covered here is one the store, the forms controller, or a framework
+ * binding actually calls.
  *
  * Comparisons use `toEqual`, which ignores keys whose value is `undefined`: a
  * projection that sets a key to `undefined` and one that omits it are the same
@@ -21,21 +24,35 @@
  * other is a failure.
  *
  * Where the adapters differ, the difference has its own test in the `documented
- * asymmetries` block below. Some are the contract's own: a Context-bound client
- * has no scheme selection, for one. The rest pin current behavior and name what
- * has to change to remove it; when such a gap closes, its pin fails and the
- * operation moves into the parity table.
+ * asymmetries` block below, observed against the running server. When such a
+ * gap closes, its pin fails and the operation moves into the parity table.
  */
 import { describe, it, expect, beforeAll, afterAll, inject } from 'vitest';
-import { createLocalEngine } from '@ezclassify/engine';
+import { Context } from '@ezclassify/engine';
 import type {
     Assertion,
-    LocalSchemeEngineAdapter,
-    SchemeEngineAdapter,
+    LocalContextSchemeEngineAdapter,
     RemoteContextSchemeEngineAdapter,
 } from '@ezclassify/types';
 import { EzClassifyClient } from '@ezclassify/rest-client';
 import { PARITY_SCHEME_IDS, paritySchemeJson } from './rest-api-server';
+
+/** Either side of the comparison, under its own Context-bound contract. */
+type ContextSchemeAdapter =
+    LocalContextSchemeEngineAdapter | RemoteContextSchemeEngineAdapter;
+
+/** Connect a client to one parity Context as the registered application. */
+function connectClient(
+    contextId: string,
+    contextToken: string,
+): Promise<EzClassifyClient> {
+    return EzClassifyClient.connect(inject('restApiBaseUrl'), {
+        contextId,
+        contextVersion: '1.0.0',
+        contextToken,
+        headers: inject('restApiApplicationHeaders'),
+    });
+}
 
 /**
  * One operation, run identically against both adapters. `run` receives the
@@ -45,7 +62,7 @@ import { PARITY_SCHEME_IDS, paritySchemeJson } from './rest-api-server';
 interface ParityOperation {
     name: string;
     run(
-        adapter: SchemeEngineAdapter | RemoteContextSchemeEngineAdapter,
+        adapter: ContextSchemeAdapter,
         fixture: SchemeFixture,
     ): unknown | Promise<unknown>;
 }
@@ -84,7 +101,7 @@ const user = (
 
 /** Build the operand fixture by reading the scheme through the local adapter. */
 function buildFixture(
-    engine: LocalSchemeEngineAdapter,
+    engine: LocalContextSchemeEngineAdapter,
     schemeId: string,
 ): SchemeFixture {
     const categories = engine.listCategories();
@@ -125,13 +142,17 @@ const byId = <T extends { id: string }>(views: T[]): T[] =>
 
 /**
  * The operation set. Every entry is a call the store, the forms controller, or
- * a framework binding makes against `SchemeEngineAdapter`.
+ * a framework binding makes against the Context-bound scheme adapter.
  */
 const PARITY_OPERATIONS: ParityOperation[] = [
     // ── Profile reads ────────────────────────────────────────────────────────
     {
         name: 'connected',
         run: (a) => a.connected,
+    },
+    {
+        name: 'getScheme()',
+        run: (a) => a.getScheme(),
     },
     {
         name: 'getSchemeMeta()',
@@ -307,36 +328,39 @@ const PARITY_OPERATIONS: ParityOperation[] = [
 ];
 
 describe.each(PARITY_SCHEME_IDS)('adapter parity: %s', (schemeId) => {
-    let local: LocalSchemeEngineAdapter;
+    let context: Context;
+    let local: LocalContextSchemeEngineAdapter;
     let client: EzClassifyClient;
+    let remote: RemoteContextSchemeEngineAdapter;
     let fixture: SchemeFixture;
 
     beforeAll(async () => {
-        local = createLocalEngine();
-        await local.loadScheme(JSON.parse(paritySchemeJson(schemeId)));
-
-        // The server loaded the identical document at startup, so any
-        // difference below is the adapter, not the input.
-        client = await EzClassifyClient.connect(inject('restApiBaseUrl'), {
-            contextId: schemeId,
-            contextVersion: '1.0.0',
-            contextToken: inject('restApiContextTokens')[schemeId],
+        // The server composed its Context from the identical document at
+        // startup, so any difference below is the adapter, not the input.
+        context = Context.fromComponents({
+            scheme: paritySchemeJson(schemeId),
         });
+        local = context.scheme;
+        client = await connectClient(
+            schemeId,
+            inject('restApiContextTokens')[schemeId]!,
+        );
+        remote = client.scheme;
 
         fixture = buildFixture(local, schemeId);
     });
 
     afterAll(() => {
         client?.destroy();
-        local?.destroy();
+        context?.destroy();
     });
 
     it.each(PARITY_OPERATIONS.map((op) => [op.name, op] as const))(
         '%s answers the same on both adapters',
         async (_name, op) => {
             const localResult = await op.run(local, fixture);
-            const clientResult = await op.run(client, fixture);
-            expect(clientResult).toEqual(localResult);
+            const remoteResult = await op.run(remote, fixture);
+            expect(remoteResult).toEqual(localResult);
         },
     );
 
@@ -347,14 +371,12 @@ describe.each(PARITY_SCHEME_IDS)('adapter parity: %s', (schemeId) => {
         // answers exactly what the joined list answers, on either adapter.
         const handed = [user(fixture.highConceptId, fixture.primaryCategoryId)];
         const chosen = [user(fixture.lowConceptId, fixture.primaryCategoryId)];
-        const settle = async (
-            a: LocalSchemeEngineAdapter | EzClassifyClient,
-        ) => ({
+        const settle = async (a: ContextSchemeAdapter) => ({
             both: await a.process(handed, { assertions: chosen }),
             joined: await a.process([...handed, ...chosen]),
         });
         const l = await settle(local);
-        const c = await settle(client);
+        const c = await settle(remote);
 
         expect(l.both).toEqual(l.joined);
         expect(c.both).toEqual(c.joined);
@@ -365,87 +387,14 @@ describe.each(PARITY_SCHEME_IDS)('adapter parity: %s', (schemeId) => {
     });
 
     describe('documented asymmetries', () => {
-        it('getScheme() agrees on the public view, and only the local adapter adds internal scheme fields', () => {
-            // The contract types getScheme() as SchemePublicView. The client
-            // returns exactly that; SchemeEngine returns its internal Scheme,
-            // a superset whose concepts are raw Concepts rather than
-            // ConceptViews. Narrowing SchemeEngine.getScheme() is a core-side
-            // change: pin the fields both are required to agree on.
-            const l = local.getScheme() as unknown as Record<string, unknown>;
-            const c = client.getScheme() as unknown as Record<string, unknown>;
-            for (const field of [
-                'id',
-                'version',
-                'name',
-                'description',
-                'mode',
-                'colorFrom',
-                'defaultScope',
-                'roleAware',
-                'definition',
-                'guidance',
-            ]) {
-                expect(c[field], field).toEqual(l[field]);
-            }
-            expect(
-                (c['concepts'] as Array<{ id: string }>).map((x) => x.id),
-            ).toEqual(
-                (l['concepts'] as Array<{ id: string }>).map((x) => x.id),
-            );
-            expect(
-                (c['categories'] as Array<{ id: string }>).map((x) => x.id),
-            ).toEqual(
-                (l['categories'] as Array<{ id: string }>).map((x) => x.id),
-            );
-        });
-
-        it('scheme selection is local-only: a Context-bound client serves the one scheme its Context names', () => {
-            // RemoteContextSchemeEngineAdapter omits listSchemes() and
-            // getDefaultScheme(): the Context chosen at connect owns the
-            // composition, so there is nothing to list or select. What the
-            // local adapter reports as its default is the scheme the client
-            // serves.
-            const listed = local.listSchemes?.() ?? [];
-            expect(listed.map((s) => s.id)).toEqual([schemeId]);
-            expect(local.getDefaultScheme?.()?.id).toBe(schemeId);
-            const bound = client as unknown as Record<string, unknown>;
-            expect(bound['listSchemes']).toBeUndefined();
-            expect(bound['getDefaultScheme']).toBeUndefined();
-            const served = client.getScheme();
-            const fallback = local.getDefaultScheme?.();
-            expect({
-                id: served.id,
-                version: served.version,
-                name: served.name,
-                description: served.description,
-            }).toEqual({
-                id: fallback?.id,
-                version: fallback?.version,
-                name: fallback?.name,
-                description: fallback?.description,
-            });
-        });
-
         it('getFormatCoverage() is local-only', () => {
-            // Declared optional on SchemeEngineAdapter: remote support waits on
-            // the wire workstream. A UI that needs to know whether a format is
-            // lossless has no answer over REST, so it must treat `undefined` as
-            // "unknown" rather than "lossy".
+            // Optional on the remote Context contract, and the client does not
+            // implement it: the REST contract has no format-coverage route. A
+            // UI that needs to know whether a format is lossless has no answer
+            // over REST, so it must treat `undefined` as "unknown" rather than
+            // "lossy".
             expect(local.getFormatCoverage).toBeTypeOf('function');
-            expect(
-                (client as unknown as SchemeEngineAdapter).getFormatCoverage,
-            ).toBeUndefined();
-        });
-
-        it('neither scheme adapter offers an access check at all', () => {
-            // Access checks belong to AccessEngine.check and Context.checkContextAccess.
-            // Neither scheme adapter exposes checkAccess.
-            expect(
-                (local as unknown as Record<string, unknown>).checkAccess,
-            ).toBeUndefined();
-            expect(
-                (client as unknown as Record<string, unknown>).checkAccess,
-            ).toBeUndefined();
+            expect(remote.getFormatCoverage).toBeUndefined();
         });
 
         it('applyPreset() refuses an unknown preset on both adapters, one synchronously', async () => {
@@ -454,9 +403,7 @@ describe.each(PARITY_SCHEME_IDS)('adapter parity: %s', (schemeId) => {
             // returns a rejected promise, which is the practical consequence of
             // the `MaybePromise` return type: a caller must wrap the call
             // itself, not just await it, or the local path escapes the handler.
-            const refusal = async (
-                a: SchemeEngineAdapter | RemoteContextSchemeEngineAdapter,
-            ) => {
+            const refusal = async (a: ContextSchemeAdapter) => {
                 try {
                     await Promise.resolve(a.applyPreset('no-such-preset'));
                     return null;
@@ -465,25 +412,26 @@ describe.each(PARITY_SCHEME_IDS)('adapter parity: %s', (schemeId) => {
                 }
             };
             expect(await refusal(local)).toMatch(/no-such-preset/);
-            expect(await refusal(client)).toMatch(/no-such-preset/);
+            expect(await refusal(remote)).toMatch(/no-such-preset/);
             expect(() => local.applyPreset('no-such-preset')).toThrow();
-            const remote = client.applyPreset('no-such-preset');
-            expect(remote).toBeInstanceOf(Promise);
-            await expect(remote).rejects.toThrow();
+            const pending = remote.applyPreset('no-such-preset');
+            expect(pending).toBeInstanceOf(Promise);
+            await expect(pending).rejects.toThrow();
         });
 
-        it('refuses an unknown local scheme or a remote Context outside its token', async () => {
-            expect(() => local.getScheme('no-such-scheme')).toThrow();
-            // A remote client is Context-bound: getScheme() accepts no id.
-            // Exercise the unsupported selection through its connection API.
+        it('a remote client refuses a Context its token does not name', async () => {
+            // A local Context is composed from its documents and has nothing
+            // to select. A remote client binds to the Context it names at
+            // connect, and the server answers a Context the presented token
+            // does not authorize as not found, so the bound client keeps
+            // serving its own. An authentication failure would be a 401.
             await expect(
-                EzClassifyClient.connect(inject('restApiBaseUrl'), {
-                    contextId: 'no-such-context',
-                    contextVersion: '1.0.0',
-                    contextToken: inject('restApiContextTokens')[schemeId],
-                }),
-            ).rejects.toThrow();
-            expect(client.getScheme().id).toBe(schemeId);
+                connectClient(
+                    'no-such-context',
+                    inject('restApiContextTokens')[schemeId]!,
+                ),
+            ).rejects.toThrow(/API error 404 /);
+            expect(remote.getScheme().id).toBe(schemeId);
         });
     });
 });
