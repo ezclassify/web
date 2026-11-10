@@ -343,8 +343,10 @@ paths:
           in: query
           required: false
           description: >-
-            Context-local key, or unambiguous artifact id, of the scheme to read. Defaults to the context's primary
-            scheme; a crosswalk's source or target scheme is named here. A key the context does not hold answers 404.
+            Context-local key of the scheme the request is answered in, as `GET /v1/ctx/{ctxId}/{version}` lists it.
+            Without it the context's primary scheme answers. Any scheme the context holds may be named, a crosswalk's
+            source or target among them. A key the context does not hold answers 404 with code `scheme_not_found`; it
+            never falls back to the primary. Name it once: a repeated selector answers 400.
           schema:
             type: string
       responses:
@@ -399,8 +401,10 @@ paths:
           in: query
           required: false
           description: >-
-            Context-local key, or unambiguous artifact id, of the scheme to read. Defaults to the context's primary
-            scheme; a crosswalk's source or target scheme is named here. A key the context does not hold answers 404.
+            Context-local key of the scheme the request is answered in, as `GET /v1/ctx/{ctxId}/{version}` lists it.
+            Without it the context's primary scheme answers. Any scheme the context holds may be named, a crosswalk's
+            source or target among them. A key the context does not hold answers 404 with code `scheme_not_found`; it
+            never falls back to the primary. Name it once: a repeated selector answers 400.
           schema:
             type: string
       responses:
@@ -457,8 +461,10 @@ paths:
           in: query
           required: false
           description: >-
-            Context-local key, or unambiguous artifact id, of the scheme to read. Defaults to the context's primary
-            scheme; a crosswalk's source or target scheme is named here. A key the context does not hold answers 404.
+            Context-local key of the scheme the request is answered in, as `GET /v1/ctx/{ctxId}/{version}` lists it.
+            Without it the context's primary scheme answers. Any scheme the context holds may be named, a crosswalk's
+            source or target among them. A key the context does not hold answers 404 with code `scheme_not_found`; it
+            never falls back to the primary. Name it once: a repeated selector answers 400.
           schema:
             type: string
       responses:
@@ -515,8 +521,10 @@ paths:
           in: query
           required: false
           description: >-
-            Context-local key, or unambiguous artifact id, of the scheme to read. Defaults to the context's primary
-            scheme; a crosswalk's source or target scheme is named here. A key the context does not hold answers 404.
+            Context-local key of the scheme the request is answered in, as `GET /v1/ctx/{ctxId}/{version}` lists it.
+            Without it the context's primary scheme answers. Any scheme the context holds may be named, a crosswalk's
+            source or target among them. A key the context does not hold answers 404 with code `scheme_not_found`; it
+            never falls back to the primary. Name it once: a repeated selector answers 400.
           schema:
             type: string
       responses:
@@ -573,8 +581,10 @@ paths:
           in: query
           required: false
           description: >-
-            Context-local key, or unambiguous artifact id, of the scheme to read. Defaults to the context's primary
-            scheme; a crosswalk's source or target scheme is named here. A key the context does not hold answers 404.
+            Context-local key of the scheme the request is answered in, as `GET /v1/ctx/{ctxId}/{version}` lists it.
+            Without it the context's primary scheme answers. Any scheme the context holds may be named, a crosswalk's
+            source or target among them. A key the context does not hold answers 404 with code `scheme_not_found`; it
+            never falls back to the primary. Name it once: a repeated selector answers 400.
           schema:
             type: string
       responses:
@@ -628,8 +638,10 @@ paths:
           in: query
           required: false
           description: >-
-            Context-local key, or unambiguous artifact id, of the scheme to read. Defaults to the context's primary
-            scheme; a crosswalk's source or target scheme is named here. A key the context does not hold answers 404.
+            Context-local key of the scheme the request is answered in, as `GET /v1/ctx/{ctxId}/{version}` lists it.
+            Without it the context's primary scheme answers. Any scheme the context holds may be named, a crosswalk's
+            source or target among them. A key the context does not hold answers 404 with code `scheme_not_found`; it
+            never falls back to the primary. Name it once: a repeated selector answers 400.
           schema:
             type: string
       responses:
@@ -659,11 +671,10 @@ paths:
       operationId: ctxSchemeLabelPresets
       summary: List the label presets in a context
       description: >-
-        Returns the label presets of the context's primary scheme, the scheme apply-preset expands them in, as preset
-        views: id, label, description, and scope. Empty when the scheme declares none. The marking string and tag list
-        stay server-side; expand a preset with POST /v1/ctx/{ctxId}/{version}/scheme/apply-preset. The :version segment
-        may be omitted to default to "latest"; the resolved version is returned in the X-EzClassify-Resolved-Version
-        response header.
+        Returns the label presets of the selected scheme as preset views: id, label, description, and scope. Empty when
+        the scheme declares none. The marking string and tag list stay server-side; expand a preset with POST
+        /v1/ctx/{ctxId}/{version}/scheme/apply-preset under the same selector. The :version segment may be omitted to
+        default to "latest"; the resolved version is returned in the X-EzClassify-Resolved-Version response header.
       tags:
         - context
         - scheme
@@ -679,6 +690,16 @@ paths:
           description: >-
             A concrete semver version, or `latest`. The version served is reported in the X-EzClassify-Resolved-Version
             response header. The segment may also be left out of the URL, which the server reads as `latest`.
+          schema:
+            type: string
+        - name: scheme
+          in: query
+          required: false
+          description: >-
+            Context-local key of the scheme the request is answered in, as `GET /v1/ctx/{ctxId}/{version}` lists it.
+            Without it the context's primary scheme answers. Any scheme the context holds may be named, a crosswalk's
+            source or target among them. A key the context does not hold answers 404 with code `scheme_not_found`; it
+            never falls back to the primary. Name it once: a repeated selector answers 400.
           schema:
             type: string
       responses:
@@ -731,6 +752,16 @@ paths:
           description: >-
             A concrete semver version, or `latest`. The version served is reported in the X-EzClassify-Resolved-Version
             response header. The segment may also be left out of the URL, which the server reads as `latest`.
+          schema:
+            type: string
+        - name: scheme
+          in: query
+          required: false
+          description: >-
+            Context-local key of the scheme the request is answered in, as `GET /v1/ctx/{ctxId}/{version}` lists it.
+            Without it the context's primary scheme answers. Any scheme the context holds may be named, a crosswalk's
+            source or target among them. A key the context does not hold answers 404 with code `scheme_not_found`; it
+            never falls back to the primary. Name it once: a repeated selector answers 400.
           schema:
             type: string
       requestBody:
@@ -789,6 +820,16 @@ paths:
           description: >-
             A concrete semver version, or `latest`. The version served is reported in the X-EzClassify-Resolved-Version
             response header. The segment may also be left out of the URL, which the server reads as `latest`.
+          schema:
+            type: string
+        - name: scheme
+          in: query
+          required: false
+          description: >-
+            Context-local key of the scheme the request is answered in, as `GET /v1/ctx/{ctxId}/{version}` lists it.
+            Without it the context's primary scheme answers. Any scheme the context holds may be named, a crosswalk's
+            source or target among them. A key the context does not hold answers 404 with code `scheme_not_found`; it
+            never falls back to the primary. Name it once: a repeated selector answers 400.
           schema:
             type: string
       requestBody:
@@ -854,6 +895,16 @@ paths:
             response header. The segment may also be left out of the URL, which the server reads as `latest`.
           schema:
             type: string
+        - name: scheme
+          in: query
+          required: false
+          description: >-
+            Context-local key of the scheme the request is answered in, as `GET /v1/ctx/{ctxId}/{version}` lists it.
+            Without it the context's primary scheme answers. Any scheme the context holds may be named, a crosswalk's
+            source or target among them. A key the context does not hold answers 404 with code `scheme_not_found`; it
+            never falls back to the primary. Name it once: a repeated selector answers 400.
+          schema:
+            type: string
       requestBody:
         required: true
         content:
@@ -915,6 +966,16 @@ paths:
             response header. The segment may also be left out of the URL, which the server reads as `latest`.
           schema:
             type: string
+        - name: scheme
+          in: query
+          required: false
+          description: >-
+            Context-local key of the scheme the request is answered in, as `GET /v1/ctx/{ctxId}/{version}` lists it.
+            Without it the context's primary scheme answers. Any scheme the context holds may be named, a crosswalk's
+            source or target among them. A key the context does not hold answers 404 with code `scheme_not_found`; it
+            never falls back to the primary. Name it once: a repeated selector answers 400.
+          schema:
+            type: string
       requestBody:
         required: true
         content:
@@ -974,6 +1035,16 @@ paths:
             response header. The segment may also be left out of the URL, which the server reads as `latest`.
           schema:
             type: string
+        - name: scheme
+          in: query
+          required: false
+          description: >-
+            Context-local key of the scheme the request is answered in, as `GET /v1/ctx/{ctxId}/{version}` lists it.
+            Without it the context's primary scheme answers. Any scheme the context holds may be named, a crosswalk's
+            source or target among them. A key the context does not hold answers 404 with code `scheme_not_found`; it
+            never falls back to the primary. Name it once: a repeated selector answers 400.
+          schema:
+            type: string
       requestBody:
         required: true
         content:
@@ -1027,6 +1098,16 @@ paths:
           description: >-
             A concrete semver version, or `latest`. The version served is reported in the X-EzClassify-Resolved-Version
             response header. The segment may also be left out of the URL, which the server reads as `latest`.
+          schema:
+            type: string
+        - name: scheme
+          in: query
+          required: false
+          description: >-
+            Context-local key of the scheme the request is answered in, as `GET /v1/ctx/{ctxId}/{version}` lists it.
+            Without it the context's primary scheme answers. Any scheme the context holds may be named, a crosswalk's
+            source or target among them. A key the context does not hold answers 404 with code `scheme_not_found`; it
+            never falls back to the primary. Name it once: a repeated selector answers 400.
           schema:
             type: string
       requestBody:
@@ -1083,6 +1164,16 @@ paths:
             response header. The segment may also be left out of the URL, which the server reads as `latest`.
           schema:
             type: string
+        - name: scheme
+          in: query
+          required: false
+          description: >-
+            Context-local key of the scheme the request is answered in, as `GET /v1/ctx/{ctxId}/{version}` lists it.
+            Without it the context's primary scheme answers. Any scheme the context holds may be named, a crosswalk's
+            source or target among them. A key the context does not hold answers 404 with code `scheme_not_found`; it
+            never falls back to the primary. Name it once: a repeated selector answers 400.
+          schema:
+            type: string
       requestBody:
         required: true
         content:
@@ -1135,6 +1226,16 @@ paths:
           description: >-
             A concrete semver version, or `latest`. The version served is reported in the X-EzClassify-Resolved-Version
             response header. The segment may also be left out of the URL, which the server reads as `latest`.
+          schema:
+            type: string
+        - name: scheme
+          in: query
+          required: false
+          description: >-
+            Context-local key of the scheme the request is answered in, as `GET /v1/ctx/{ctxId}/{version}` lists it.
+            Without it the context's primary scheme answers. Any scheme the context holds may be named, a crosswalk's
+            source or target among them. A key the context does not hold answers 404 with code `scheme_not_found`; it
+            never falls back to the primary. Name it once: a repeated selector answers 400.
           schema:
             type: string
       requestBody:
@@ -1191,6 +1292,16 @@ paths:
             response header. The segment may also be left out of the URL, which the server reads as `latest`.
           schema:
             type: string
+        - name: scheme
+          in: query
+          required: false
+          description: >-
+            Context-local key of the scheme the request is answered in, as `GET /v1/ctx/{ctxId}/{version}` lists it.
+            Without it the context's primary scheme answers. Any scheme the context holds may be named, a crosswalk's
+            source or target among them. A key the context does not hold answers 404 with code `scheme_not_found`; it
+            never falls back to the primary. Name it once: a repeated selector answers 400.
+          schema:
+            type: string
       requestBody:
         required: true
         content:
@@ -1243,6 +1354,16 @@ paths:
             response header. The segment may also be left out of the URL, which the server reads as `latest`.
           schema:
             type: string
+        - name: scheme
+          in: query
+          required: false
+          description: >-
+            Context-local key of the scheme the request is answered in, as `GET /v1/ctx/{ctxId}/{version}` lists it.
+            Without it the context's primary scheme answers. Any scheme the context holds may be named, a crosswalk's
+            source or target among them. A key the context does not hold answers 404 with code `scheme_not_found`; it
+            never falls back to the primary. Name it once: a repeated selector answers 400.
+          schema:
+            type: string
       requestBody:
         required: true
         content:
@@ -1293,6 +1414,16 @@ paths:
           description: >-
             A concrete semver version, or `latest`. The version served is reported in the X-EzClassify-Resolved-Version
             response header. The segment may also be left out of the URL, which the server reads as `latest`.
+          schema:
+            type: string
+        - name: scheme
+          in: query
+          required: false
+          description: >-
+            Context-local key of the scheme the request is answered in, as `GET /v1/ctx/{ctxId}/{version}` lists it.
+            Without it the context's primary scheme answers. Any scheme the context holds may be named, a crosswalk's
+            source or target among them. A key the context does not hold answers 404 with code `scheme_not_found`; it
+            never falls back to the primary. Name it once: a repeated selector answers 400.
           schema:
             type: string
       requestBody:
@@ -1352,6 +1483,16 @@ paths:
           description: >-
             A concrete semver version, or `latest`. The version served is reported in the X-EzClassify-Resolved-Version
             response header. The segment may also be left out of the URL, which the server reads as `latest`.
+          schema:
+            type: string
+        - name: scheme
+          in: query
+          required: false
+          description: >-
+            Context-local key of the scheme the request is answered in, as `GET /v1/ctx/{ctxId}/{version}` lists it.
+            Without it the context's primary scheme answers. Any scheme the context holds may be named, a crosswalk's
+            source or target among them. A key the context does not hold answers 404 with code `scheme_not_found`; it
+            never falls back to the primary. Name it once: a repeated selector answers 400.
           schema:
             type: string
       requestBody:
@@ -1414,6 +1555,16 @@ paths:
             response header. The segment may also be left out of the URL, which the server reads as `latest`.
           schema:
             type: string
+        - name: scheme
+          in: query
+          required: false
+          description: >-
+            Context-local key of the scheme the request is answered in, as `GET /v1/ctx/{ctxId}/{version}` lists it.
+            Without it the context's primary scheme answers. Any scheme the context holds may be named, a crosswalk's
+            source or target among them. A key the context does not hold answers 404 with code `scheme_not_found`; it
+            never falls back to the primary. Name it once: a repeated selector answers 400.
+          schema:
+            type: string
       requestBody:
         required: true
         content:
@@ -1474,6 +1625,16 @@ paths:
             response header. The segment may also be left out of the URL, which the server reads as `latest`.
           schema:
             type: string
+        - name: scheme
+          in: query
+          required: false
+          description: >-
+            Context-local key of the scheme the request is answered in, as `GET /v1/ctx/{ctxId}/{version}` lists it.
+            Without it the context's primary scheme answers. Any scheme the context holds may be named, a crosswalk's
+            source or target among them. A key the context does not hold answers 404 with code `scheme_not_found`; it
+            never falls back to the primary. Name it once: a repeated selector answers 400.
+          schema:
+            type: string
       requestBody:
         required: true
         content:
@@ -1532,6 +1693,16 @@ paths:
           description: >-
             A concrete semver version, or `latest`. The version served is reported in the X-EzClassify-Resolved-Version
             response header. The segment may also be left out of the URL, which the server reads as `latest`.
+          schema:
+            type: string
+        - name: scheme
+          in: query
+          required: false
+          description: >-
+            Context-local key of the scheme the request is answered in, as `GET /v1/ctx/{ctxId}/{version}` lists it.
+            Without it the context's primary scheme answers. Any scheme the context holds may be named, a crosswalk's
+            source or target among them. A key the context does not hold answers 404 with code `scheme_not_found`; it
+            never falls back to the primary. Name it once: a repeated selector answers 400.
           schema:
             type: string
       requestBody:
@@ -1608,6 +1779,16 @@ paths:
           in: query
           required: false
           description: "The view to name the concept in: a key of the concept's `views`. Omitted, its default view."
+          schema:
+            type: string
+        - name: scheme
+          in: query
+          required: false
+          description: >-
+            Context-local key of the scheme the request is answered in, as `GET /v1/ctx/{ctxId}/{version}` lists it.
+            Without it the context's primary scheme answers. Any scheme the context holds may be named, a crosswalk's
+            source or target among them. A key the context does not hold answers 404 with code `scheme_not_found`; it
+            never falls back to the primary. Name it once: a repeated selector answers 400.
           schema:
             type: string
       responses:
@@ -2217,6 +2398,55 @@ paths:
         "422":
           $ref: "#/components/responses/UnprocessableEntity"
           description: Context has no crosswalks attached.
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/InternalError"
+      security:
+        - bearerAuth: []
+          contextToken: []
+        - applicationCredential: []
+  /v1/ctx/{ctxId}/{version}/crosswalk/describe:
+    get:
+      operationId: ctxCrosswalkDescribe
+      summary: Describe every crosswalk in a context
+      description: >-
+        Returns every crosswalk the context holds, in declaration order: its id and the concrete version that answers,
+        its name, guidance and citation, the source and target schemes as the selectors the context description lists
+        under `schemes`, and the mappings and selections a translation applies, each with its disposition and reason. A
+        context that declares no crosswalk answers with an empty list. The :version segment may be omitted to default to
+        "latest".
+      tags:
+        - context
+        - crosswalk
+      parameters:
+        - name: ctxId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: version
+          in: path
+          required: true
+          description: >-
+            A concrete semver version, or `latest`. The version served is reported in the X-EzClassify-Resolved-Version
+            response header. The segment may also be left out of the URL, which the server reads as `latest`.
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Every crosswalk in the context
+          headers:
+            X-EzClassify-Resolved-Version:
+              $ref: "#/components/headers/ResolvedVersion"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CtxCrosswalkDescribeResponseBody"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
         "429":
           $ref: "#/components/responses/TooManyRequests"
         "500":
@@ -3639,6 +3869,136 @@ components:
         - result
         - operationLimitations
       description: Context envelope returned by access-rule description.
+    ContextCrosswalkCandidate:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Stable candidate identifier within its selection.
+        disposition:
+          $ref: "#/components/schemas/CrosswalkDisposition"
+          description: Treatment applied when this candidate is selected.
+        when:
+          $ref: "#/components/schemas/CrosswalkSelectionCondition"
+          description: Predicate used by a `first-match` selection; omission makes this the fallback.
+        score:
+          type: array
+          items:
+            $ref: "#/components/schemas/AssertionReference"
+          description: Assertions counted by a `most-matches` selection.
+        sources:
+          type: array
+          items:
+            $ref: "#/components/schemas/AssertionReference"
+          description: Source assertions covered when this candidate is selected.
+        mappings:
+          type: array
+          items:
+            $ref: "#/components/schemas/CrosswalkMapping"
+          description: Per-assertion mappings activated when this candidate is selected.
+        targets:
+          type: array
+          items:
+            $ref: "#/components/schemas/CrosswalkTarget"
+          description: Targets emitted once when this candidate is selected.
+        reason:
+          type: string
+          description: Human-readable basis for selecting and applying this candidate.
+        authority:
+          type: string
+          description: Authority behind the candidate decision, when one exists.
+        guidance:
+          type: string
+          description: Operator guidance for the candidate decision.
+        citation:
+          type: string
+          description: Citation supporting the candidate decision.
+      required:
+        - disposition
+        - id
+        - reason
+      description: >-
+        One candidate of a cross-field decision a Context's crosswalk applies.
+
+
+        A candidate document may leave its disposition out to mean `carry`. The description always states it, so a
+        reader never applies that default itself.
+    ContextCrosswalkDescriptor:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Crosswalk id, from the crosswalk document; what `translate` takes.
+        version:
+          type: string
+          description: Concrete crosswalk version that answers in this Context.
+        name:
+          type: string
+          description: Human-readable crosswalk name.
+        source:
+          type: string
+          description: Selector of the scheme this crosswalk translates from.
+        target:
+          type: string
+          description: Selector of the scheme this crosswalk translates to.
+        guidance:
+          type: string
+          description: General usage and review guidance, when the crosswalk declares it.
+        citation:
+          type: string
+          description: Primary citation for the crosswalk, when it declares one.
+        mappings:
+          type: array
+          items:
+            $ref: "#/components/schemas/CrosswalkMapping"
+          description: How each source assertion translates, in declared order.
+        selections:
+          type: array
+          items:
+            $ref: "#/components/schemas/ContextCrosswalkSelection"
+          description: Cross-field decisions, in declared order. Empty when there are none.
+      required:
+        - id
+        - version
+        - name
+        - source
+        - target
+        - mappings
+        - selections
+      description: >-
+        One crosswalk a Context holds, with the reviewed decisions it applies.
+
+
+        Read it as a sentence: this Context translates markings from the scheme `source` selects to the scheme `target`
+        selects with crosswalk `id` at `version`, and these are its mappings and selections.
+
+
+        `source` and `target` are scheme selectors, the `selector` values `describeSchemes` reports, not scheme ids. A
+        view bound to one of the Context's schemes finds the crosswalk that reads from it by comparing selectors. The
+        mappings and selections are the effective set after any crosswalk layer the Context stacks, which is the set a
+        translation applies.
+    ContextCrosswalkSelection:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Selection id, as reviewed.
+        strategy:
+          $ref: "#/components/schemas/CrosswalkSelectionStrategy"
+          description: How one candidate is chosen.
+        candidates:
+          type: array
+          items:
+            $ref: "#/components/schemas/ContextCrosswalkCandidate"
+          description: Candidates in declared order; order breaks ties, a fallback is last.
+      required:
+        - id
+        - strategy
+        - candidates
+      description: |-
+        One cross-field decision a Context's crosswalk applies.
+
+        The document form of a selection, with every candidate's treatment written out.
     ContextCrosswalkTranslationResult:
       type: object
       properties:
@@ -3922,9 +4282,9 @@ components:
         plays these `roles`.
 
 
-        `selector` is the whole point. A Context keys its schemes locally, and an operation that addresses one takes
-        that key, so a caller that cannot enumerate the keys cannot reach anything but the primary. On the REST surface
-        the same value is what `?scheme=` takes.
+        `selector` is the whole point. A Context keys its schemes locally, and a caller reaches a scheme by its key: an
+        adapter's `schemeView` takes it, and so does `?scheme=` on the REST surface. A caller that cannot enumerate the
+        keys cannot reach anything but the primary.
     ContextSchemeDiffResult:
       type: object
       properties:
@@ -4324,6 +4684,43 @@ components:
         - status
         - targetScheme
       description: Translation aborted before target processing by one or more prohibitions.
+    CrosswalkMapping:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Stable identifier for audit and review.
+        source:
+          $ref: "#/components/schemas/AssertionReference"
+          description: Source assertion matched by this mapping.
+        targets:
+          type: array
+          items:
+            $ref: "#/components/schemas/CrosswalkTarget"
+          description: >-
+            Target assertions. `carry` mappings emit these automatically; `review` mappings expose them only as
+            proposals. `omit` and `forbid` mappings have no targets.
+        disposition:
+          $ref: "#/components/schemas/CrosswalkDisposition"
+          description: Whether the value is carried, reviewed, omitted, or forbids translation.
+        reason:
+          type: string
+          description: Human-readable basis for the decision.
+        authority:
+          type: string
+          description: Authority or reviewed source behind the mapping, when one exists.
+        guidance:
+          type: string
+          description: Operator guidance for applying or reviewing this mapping.
+        citation:
+          type: string
+          description: Citation supporting this mapping decision.
+      required:
+        - id
+        - source
+        - disposition
+        - reason
+      description: Reviewed treatment of one source assertion in a directional crosswalk.
     CrosswalkMappingForbidMatch:
       type: object
       properties:
@@ -4393,6 +4790,25 @@ components:
         - targets
         - reason
       description: Per-assertion decision produced by a crosswalk translation.
+    CrosswalkSelectionCondition:
+      type: object
+      properties:
+        any:
+          type: array
+          items:
+            $ref: "#/components/schemas/AssertionReference"
+          description: At least one referenced assertion must be present.
+        all:
+          type: array
+          items:
+            $ref: "#/components/schemas/AssertionReference"
+          description: Every referenced assertion must be present.
+        none:
+          type: array
+          items:
+            $ref: "#/components/schemas/AssertionReference"
+          description: None of the referenced assertions may be present.
+      description: Boolean test over source assertions used to choose a crosswalk candidate.
     CrosswalkSelectionForbidMatch:
       type: object
       properties:
@@ -4466,6 +4882,12 @@ components:
         - targets
         - reason
       description: Selected branch of one cross-field crosswalk decision.
+    CrosswalkSelectionStrategy:
+      type: string
+      enum:
+        - first-match
+        - most-matches
+      description: Strategy for choosing one candidate from a reviewed cross-field decision.
     CrosswalkTarget:
       type: object
       properties:
@@ -4589,6 +5011,22 @@ components:
         - version
         - resolvedVersion
       description: Component reference echoed in a `CtxDescribeResponseBody`.
+    CtxCrosswalkDescribeResponseBody:
+      type: object
+      properties:
+        crosswalks:
+          type: array
+          items:
+            $ref: "#/components/schemas/ContextCrosswalkDescriptor"
+          description: Every crosswalk in the context, in declaration order.
+      required:
+        - crosswalks
+      description: >-
+        Response body for GET /v1/ctx/{ctxId}/{version?}/crosswalk/describe: every crosswalk the context holds.
+
+
+        A dedicated read rather than a member of the context description, because a crosswalk's reviewed mappings run to
+        tens of kilobytes and every client reads the description when it connects, translating or not.
     CtxCrosswalkTranslateRequestBody:
       type: object
       properties:
@@ -4657,7 +5095,8 @@ components:
             $ref: "#/components/schemas/CtxComponentDescriptor"
           description: >-
             Crosswalk components in declaration order, or omitted when the context declares none. A crosswalk the
-            context follows at `latest` reports here the concrete version that answered.
+            context follows at `latest` reports here the concrete version that answered. This is provenance; the source
+            and target schemes and the reviewed mappings are on `crosswalk/describe`.
       required:
         - id
         - version
@@ -5627,18 +6066,19 @@ components:
           description: >-
             Stable machine-readable classification of the failure, present whenever the server can name one. Set to
             `INVALID_INPUT` when the failure originated in engine input or the request carried something the operation
-            does not declare, and to `route_not_found` on a 404 that reached routing and matched no route. A request
-            refused before routing carries the constant refusal body instead, which has no `code` at all by design, so
-            the absence of a code on a 404 is itself uninformative.
+            does not declare, to `route_not_found` on a 404 that reached routing and matched no route, and to
+            `scheme_not_found` on a 404 for a `?scheme=` key the Context does not hold. A request refused before routing
+            carries the constant refusal body instead, which has no `code` at all by design, so the absence of a code on
+            a 404 is itself uninformative.
         detail:
           type: string
           description: >-
             What the failure is about, beside `code`: a stable operation-specific detail used to classify it. For a
             request that names a format, a concept or a category the scheme does not declare, it is the request field
             and the id it named, written `field: id`, such as `outputFormat: nope` or `conceptId: NOPE`. For a request
-            that carries a query parameter the operation does not declare, it is `query: ` and the parameter's name; for
-            an undeclared body field, `body`, the JSON pointer of the object that holds it, `: ` and the field, such as
-            `body: extra` or `body/context: extra`. Never a scheme's internals.
+            that carries a query parameter the operation does not declare, or names a declared one twice, it is `query:
+            ` and the parameter's name; for an undeclared body field, `body`, the JSON pointer of the object that holds
+            it, `: ` and the field, such as `body: extra` or `body/context: extra`. Never a scheme's internals.
       required:
         - error
       description: Response body for error responses (4xx / 5xx).
@@ -9420,8 +9860,9 @@ components:
     NotFound:
       description: >
         Context or resource not found. A request that reached routing and matched no route carries `code:
-        route_not_found`; a request refused before routing carries the constant refusal body, which has no `code` by
-        design. Branch on the code, never on the message. See the API description for why the two bodies differ.
+        route_not_found`, and a `?scheme=` key the Context does not hold carries `code: scheme_not_found`; a request
+        refused before routing carries the constant refusal body, which has no `code` by design. Branch on the code,
+        never on the message. See the API description for why the two bodies differ.
       content:
         application/json:
           schema:
@@ -9431,6 +9872,11 @@ components:
               summary: The route exists and the resource does not
               value:
                 error: "Context not found: nonexistent-context"
+            schemeAbsent:
+              summary: The Context holds no scheme under the `?scheme=` key
+              value:
+                error: "Scheme not found in context: no-such-scheme"
+                code: scheme_not_found
             routeAbsent:
               summary: The request reached routing and matched no route
               value:
