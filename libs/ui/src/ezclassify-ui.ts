@@ -1041,6 +1041,21 @@ export class EzClassifyUI {
             }
             const node = this.nodeOf(el);
             if (node.error) return;
+            // A marking id names one marking. A second host under an id a
+            // live host already holds would write another Context's (or
+            // another field's) value into it, so it is refused.
+            const holder = this.markingHosts.get(el.id);
+            if (holder && holder !== el && holder.isConnected) {
+                this.reportHostError(
+                    {
+                        code: 'duplicate-marking-id',
+                        message: `[ezclassify] Two marking hosts use the id "${el.id}". A marking id names one marking; give each host its own id.`,
+                        element: el,
+                    },
+                    null,
+                );
+                return;
+            }
             this.hostEpochs.set(el, (this.hostEpochs.get(el) ?? 0) + 1);
             this.validMarkingIds.add(el.id);
             this.markingHosts.set(el.id, el);
@@ -1754,6 +1769,8 @@ export class EzClassifyUI {
      */
     private bindBehavior(el: HTMLElement, binding: BehaviorBinding): void {
         if (el.hasAttribute(COLLECTION_ATTR)) this.registerCollectionOf(el);
+        // Markup already refused (a duplicate marking id) stays unenhanced.
+        if (this.hostErrors.has(el)) return;
         const node = this.nodeOf(el);
         if (node.error) return;
         // A newly inserted sibling view can precede its host in the observer's

@@ -135,7 +135,7 @@ export type HostErrorCode =
      * controller host, or with no crosswalk to translate through.
      */
     | 'translate-refused'
-    /** Two marking hosts with one id in different Contexts. */
+    /** Two marking hosts with one id. */
     | 'duplicate-marking-id';
 
 /** A host error: the element stays unenhanced and its levels incomplete. */

@@ -328,3 +328,19 @@ describe('a translated view', () => {
         await expect.poll(hostErrors).toContain('translate-refused');
     });
 });
+
+describe('marking ids', () => {
+    it('refuses a second marking host under an id another one holds', async () => {
+        root.setAttribute('data-ezclassify-context', 'ref');
+        root.innerHTML = `
+            <input id="memo" data-ezclassify-marking value="LOW">
+            <section data-ezclassify-context="share">
+                <input id="memo" data-ezclassify-marking value="HIGH">
+            </section>
+            <input type="hidden" id="ref-page" data-ezclassify-aggregate data-ezclassify-context="ref">`;
+        mount({ contexts: { ref: reference(), share: second() } });
+        await expect.poll(hostErrors).toContain('duplicate-marking-id');
+        await expect.poll(() => output('ref-page').value).toBe('LOW');
+        expect(output('ref-page').getAttribute('aria-invalid')).toBe('true');
+    });
+});
