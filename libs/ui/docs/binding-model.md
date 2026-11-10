@@ -138,8 +138,8 @@ attribute, so a `<body data-ezclassify-context="district">` default cannot hide
 the records bucket from the page banner. An output that holds one value, a
 hidden input with `aggregate`, names its bucket with its own attributes when
 the level has several. The `ezclassify:rollup` event fires on a level's element
-and carries `detail.level` and `detail.byContext`, keyed by Context key and
-then scheme selector.
+and carries `detail.level` and `detail.buckets`, one entry per bucket with its
+Context key and scheme selector.
 
 ### 1.3 Subscribing: three ways
 

@@ -106,8 +106,10 @@ an unread marking is never treated as an absent one. The cases:
 - `no-rollup` on a part or on a whole with parts;
 - `data-ezclassify-marking` together with a view attribute;
 - a nested library instance inside a `whole` container;
-- a marking host that resolves no Context, and one marking id used in two
-  Contexts;
+- a marking host that resolves no Context, and one marking id on two marking
+  hosts;
+- a `translate` view on a form control or a controller host, or with no
+  crosswalk to translate through;
 - a controller-less `aggregate` output that does not name its bucket when its
   level has several (see below).
 
@@ -118,8 +120,14 @@ never merge. A `banner` on a level shows every non-empty bucket, each labeled,
 unless its own `context` or `scheme` attribute picks one. A controller-less
 output holds one value, so when the instance has several Contexts, or the
 Context several schemes, the output names its bucket with its own `context` and
-`scheme` attributes. Each output also carries its value as
-`data-rendered-<context key>-<scheme selector>`.
+`scheme` attributes.
+
+Each change to a level fires `ezclassify:rollup` on the level's element (the
+instance root for the page, a collection's container, a whole's host).
+`detail.level` names the level, `null` for the page, and `detail.buckets` lists
+each bucket that holds a marking or misses one as
+`{ context, scheme, rendered, assertions, stale }`. `context` and `scheme` are
+`null` for the only Context and for a Context's primary scheme.
 
 ## Runtime-stamped attributes (do not author)
 

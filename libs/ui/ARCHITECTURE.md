@@ -161,14 +161,13 @@ render-suppressed assertions and captured values survive aggregation.
 - `no-rollup` keeps a live non-content control, such as a filter picker, out of
   every level. It is refused on a part and on a whole with parts.
 - Each output the host placed (a controller-less `aggregate` element) gets its
-  level's value in its bucket: a hidden input holds it, any other element shows
-  it as text, and both carry it as
-  `data-rendered-<context key>-<scheme selector>`. The library adds no input of
-  its own.
+  level's value in its bucket: a hidden input holds it and any other element
+  shows it as text. The library adds no input of its own.
 - Each change emits `ezclassify:rollup` on the level's element (the instance
   root for the page, a collection's container, a whole's host). `detail.level`
-  names the level (`null` for the page) and `detail.byContext` maps each Context
-  key to its scheme selectors and each one's `{ rendered, assertions, stale }`.
+  names the level (`null` for the page) and `detail.buckets` lists each bucket
+  as `{ context, scheme, rendered, assertions, stale }`, with `null` for the
+  only Context and for a Context's primary scheme.
 
 #### Multi-Context rollup contract
 

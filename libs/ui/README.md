@@ -594,7 +594,6 @@ injectDefaultStyles();
 | -------------------------------------- | ------------------------------------------------------------------- |
 | Parse, validate, and fix marking edits | `process`, `validate`                                               |
 | Store page/whole rollups               | `aggregateAssertions`                                               |
-| Native rendered-string rollups         | `aggregate`                                                         |
 | Interactive choices                    | `suggest`, with optional `suggestForCategories` batching for facets |
 | Output views                           | `render` and scheme format metadata                                 |
 | Inline markings in MarkedTextArea      | `scan`                                                              |
