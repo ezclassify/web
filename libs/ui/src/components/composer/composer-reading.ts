@@ -69,6 +69,11 @@ export interface ComposerEngineBinding {
      * or repairing it (see ComposerPort.write).
      */
     write?(assertions: readonly Assertion[]): Promise<string>;
+    /**
+     * Whether the field reads its marking as a part of a whole it names, so the
+     * engine may take values from that whole for what the part states.
+     */
+    readsInWhole?(): boolean;
 }
 
 /**

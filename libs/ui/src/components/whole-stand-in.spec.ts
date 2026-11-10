@@ -124,6 +124,25 @@ function fieldAssertions(host: HTMLTextAreaElement): Assertion[] {
     return (component as MarkedInput).getAssertions();
 }
 
+/**
+ * The errors the field shows for its marking: a MarkedInput lists them under
+ * the field, a MarkedTextArea on its mark's chip, marked invalid.
+ */
+function shownErrors(host: HTMLTextAreaElement): string {
+    const component = forms!.components.get(host);
+    if (component instanceof MarkedTextArea) {
+        const chip = root.querySelector('.marked-textarea-chip');
+        const invalid = chip?.classList.contains(
+            'marked-textarea-chip--invalid',
+        );
+        return invalid
+            ? (component.getSegments()[0]?.errors ?? []).join('\n')
+            : '';
+    }
+    const list = root.querySelector<HTMLElement>('.ez-validation-errors');
+    return list && !list.hidden ? (list.textContent ?? '') : '';
+}
+
 /** Open the editor on the leading mark the way a keyboard user does. */
 async function openEditor(
     host: HTMLTextAreaElement,
@@ -707,6 +726,88 @@ describe('a whole that stops sharing: the store reads its part again (R-1)', () 
         expect(partners(part.assertions)).toEqual(TAKEN);
         store.destroy();
     });
+
+    /** What the engine says against a part that has no valid whole. */
+    const NEEDS_WHOLE = [
+        "SHARE stands for the whole's Partners, so this part needs a valid whole to take them from.",
+        "JOINT stands for the whole's Owners, so this part needs a valid whole to take them from.",
+    ];
+
+    /** The engine's refusals of a part's stand-ins for want of a valid whole. */
+    const needsWhole = (
+        errors: readonly { constraintId: string; message: string }[],
+    ) =>
+        errors
+            .filter((one) => one.constraintId === '_stand_in_requires_whole')
+            .map((one) => one.message);
+
+    it.each([
+        ['does not read', 'JOINT HIGH NORTH WEST//SHARE WITH ALPHA, BRAVO'],
+        ['reads but is invalid', 'JOINT HIGH NORTH SOUTH'],
+    ])(
+        'a joint part whose whole %s is refused, and reads again once the whole is valid',
+        async (_why, whole) => {
+            const store = new VanillaEzClassifyStore(
+                wholeStandInContext().scheme as never,
+            );
+            await store.publishRendered('doc', JOINT_WHOLE);
+            store.setPartOf('p', 'doc');
+            await store.publishRendered('p', 'JOINT H//SHARE');
+            expect(store.get('p').valid).toBe(true);
+
+            await store.publishRendered('doc', whole);
+            await wait(100);
+            let part = store.get('p');
+            expect(part.rendered).toBe('JOINT H//SHARE');
+            expect(part.valid).toBe(false);
+            expect(needsWhole(part.errors)).toEqual(NEEDS_WHOLE);
+            expect(owners(part.assertions)).toEqual([]);
+            expect(partners(part.assertions)).toEqual([]);
+
+            await store.publishRendered('doc', JOINT_WHOLE);
+            await wait(100);
+            part = store.get('p');
+            expect(part.valid).toBe(true);
+            expect(part.errors).toEqual([]);
+            expect(owners(part.assertions)).toEqual([
+                'NORTH:context',
+                'SOUTH:context',
+            ]);
+            expect(partners(part.assertions)).toEqual(TAKEN);
+            store.destroy();
+        },
+    );
+
+    it.each(['marked-input', 'marked-textarea'] as const)(
+        '%s: a joint part with no whole shows the engine refusal until a valid whole arrives',
+        async (kind) => {
+            const host = await mountPart(
+                kind,
+                '(JOINT H//SHARE) Quarterly notes',
+                wholeStandInContext(),
+                '',
+            );
+            let [part] = partStates(host);
+            expect(part.valid).toBe(false);
+            expect(needsWhole(part.errors)).toEqual(NEEDS_WHOLE);
+            for (const message of NEEDS_WHOLE) {
+                expect(shownErrors(host)).toContain(message);
+            }
+
+            const doc = document.getElementById('doc') as HTMLInputElement;
+            doc.value = JOINT_WHOLE;
+            await forms!.store.publishRendered('doc', JOINT_WHOLE);
+            await wait(600);
+            [part] = partStates(host);
+            expect(part.valid).toBe(true);
+            expect(owners(part.assertions)).toEqual([
+                'NORTH:context',
+                'SOUTH:context',
+            ]);
+            expect(host.value).toBe('(JOINT H//SHARE) Quarterly notes');
+            expect(shownErrors(host)).toBe('');
+        },
+    );
 
     it.each(['marked-input', 'marked-textarea'] as const)(
         '%s: the field keeps the word and the store refuses the part',

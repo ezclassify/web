@@ -404,6 +404,8 @@ export class InlineMarkingEditor {
                             ),
                         )
                     ).rendered,
+                readsInWhole: () =>
+                    this.options.resolveContext?.()?.partOf !== undefined,
             },
             scheme: () => this.engine.getScheme(this.schemeId),
             meta: () => this.callGetProfile(),

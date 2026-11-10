@@ -135,8 +135,10 @@ export interface ComposerPort {
     /**
      * The text an assertion set is written as in the field's format, as it is:
      * a set that breaks a rule is written with everything in it (no repair), so
-     * reading the text back reports the rule. Without it, a pick is written as
-     * `render` gives it.
+     * reading the text back reports the rule. A part read in its whole is
+     * written with the values the engine takes from that whole in hand, which a
+     * format needs to write a word that stands for them. Without it, a pick is
+     * written as `render` gives it.
      */
     write?(assertions: readonly Assertion[]): Promise<string>;
     /**

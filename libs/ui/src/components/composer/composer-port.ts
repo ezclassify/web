@@ -27,6 +27,7 @@ import {
     type ComposerEngineBinding,
 } from './composer-reading';
 import { addUserAssertion } from '../assertion-addition';
+import { takenFromWhole } from '../../assertion-identity';
 import { removeAssertionCascade } from '../assertion-removal';
 import {
     getPublicFormatSeparators,
@@ -130,6 +131,21 @@ export function createComposerPort(field: ComposerPortField): ComposerPort {
             proposedFixes: (whole.proposedFixes ?? []) as Fix[],
         };
     };
+    /**
+     * The facts a write hands the engine: what the author stated and, for a
+     * part read in its whole, the values the engine takes from that whole for
+     * them. A format that writes one word for a whole's values needs those
+     * values in hand to write it. The engine decides which values it takes,
+     * none without a valid whole, and the format leaves them out of the text.
+     */
+    const writable = async (
+        assertions: readonly Assertion[],
+    ): Promise<Assertion[]> => {
+        const stated = statedAssertions(assertions);
+        if (!field.binding.readsInWhole?.()) return stated;
+        const read = await field.binding.process('', { chosen: stated });
+        return [...stated, ...read.assertions.filter(takenFromWhole)];
+    };
     /** What a facet stores: its own category only. */
     const owned = (reading: ComposerReading): ComposerReading => {
         const category = field.ownCategory?.();
@@ -165,7 +181,8 @@ export function createComposerPort(field: ComposerPortField): ComposerPort {
                       ),
             ),
         write: field.binding.write
-            ? (assertions) => field.binding.write!(statedAssertions(assertions))
+            ? async (assertions) =>
+                  field.binding.write!(await writable(assertions))
             : undefined,
         render: async (assertions) =>
             judged(await renderAssertions(field.binding, assertions)),

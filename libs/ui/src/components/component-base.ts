@@ -821,6 +821,8 @@ export abstract class ComponentBase extends ReadOnlyComponentBase {
                             }),
                         )
                     ).rendered,
+                readsInWhole: () =>
+                    this.getProcessingContext()?.partOf !== undefined,
             },
             scheme: () => this.scheme,
             meta: () => this.schemeMeta,

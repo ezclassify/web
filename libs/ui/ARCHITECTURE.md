@@ -424,8 +424,11 @@ It only means the part cannot be compared with the whole.
 - While the whole is not a valid marking the engine returns each part's
   result with a warning (reserved rule id `_whole_unverified`). A part with
   no whole at all reads the same way: a rule that asks about the whole is
-  unresolved, so the part is valid and carries the warning. Engine
-  warnings show after the rule errors in the warning color, set
+  unresolved, so the part is valid and carries the warning. A part that
+  writes a stand-in for its whole's values is the exception: without a valid
+  whole the engine refuses it (`_stand_in_requires_whole`), the field shows
+  that error like any other, and the part reads again once a valid whole
+  arrives. Engine warnings show after the rule errors in the warning color, set
   `data-ezclassify-warning` on the field, and never set
   `data-ezclassify-invalid` or offer a fix. In MarkedTextArea the chip is
   underlined in the warning color and the caret tooltip gives the reason.
