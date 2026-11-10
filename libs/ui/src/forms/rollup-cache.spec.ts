@@ -1,23 +1,38 @@
 /**
  * Forms/rollup process-cache behavior.
  *
- * The LRU cache reuses identical (schemeId, rendered, role, partOfRendered,
+ * The LRU cache reuses identical (bucket, rendered, role, partOfRendered,
  * format) tuples within a session to avoid repeated engine processing.
  */
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { loadCedarValleyContext } from '@ezclassify/example-schemes/cedar-valley';
-import { openOperations } from '../../test-fixtures/context-doubles';
+import { openContext } from '../../test-fixtures/context-doubles';
 import { clearRollupProcessCache, processRollupMarking } from './rollup';
 import { EzClassifyUI } from '../ezclassify-ui';
+import { bucketKey } from '../store/store-shared';
+import type { BucketScheme } from './types';
 
 function mockCtx(processSpy: ReturnType<typeof vi.fn>) {
     return {
         defaultFormat: 'default',
-        engine: {
-            listSchemes: undefined,
-            process: processSpy,
-        },
+        engine: { process: processSpy },
     } as any;
+}
+
+/** The bucket of scheme `selector`, answered by the context's engine. */
+function schemeIn(
+    ctx: { engine: { process: (...args: unknown[]) => any } },
+    selector: string,
+): BucketScheme {
+    return {
+        bucket: bucketKey('', selector),
+        adapter: ctx.engine,
+        process: (input: string, options: unknown) =>
+            ctx.engine.process(input, options),
+        validate: vi.fn(),
+        checkCoverage: vi.fn(),
+        getSchemeMeta: vi.fn(),
+    } as unknown as BucketScheme;
 }
 
 describe('forms/rollup process cache', () => {
@@ -35,9 +50,15 @@ describe('forms/rollup process cache', () => {
         });
         const ctx = mockCtx(spy);
 
-        await processRollupMarking(ctx, 'p1', 'INPUT', { role: 'whole' });
-        await processRollupMarking(ctx, 'p1', 'INPUT', { role: 'whole' });
-        await processRollupMarking(ctx, 'p1', 'INPUT', { role: 'whole' });
+        await processRollupMarking(ctx, schemeIn(ctx, 'p1'), 'INPUT', {
+            role: 'whole',
+        });
+        await processRollupMarking(ctx, schemeIn(ctx, 'p1'), 'INPUT', {
+            role: 'whole',
+        });
+        await processRollupMarking(ctx, schemeIn(ctx, 'p1'), 'INPUT', {
+            role: 'whole',
+        });
 
         expect(spy).toHaveBeenCalledTimes(1);
     });
@@ -52,10 +73,10 @@ describe('forms/rollup process cache', () => {
         const spy = vi.fn().mockReturnValue(pending);
         const ctx = mockCtx(spy);
 
-        const first = processRollupMarking(ctx, 'p1', 'INPUT', {
+        const first = processRollupMarking(ctx, schemeIn(ctx, 'p1'), 'INPUT', {
             role: 'whole',
         });
-        const second = processRollupMarking(ctx, 'p1', 'INPUT', {
+        const second = processRollupMarking(ctx, schemeIn(ctx, 'p1'), 'INPUT', {
             role: 'whole',
         });
         const callsBeforeResolution = spy.mock.calls.length;
@@ -76,8 +97,12 @@ describe('forms/rollup process cache', () => {
         });
         const ctx = mockCtx(spy);
 
-        await processRollupMarking(ctx, 'p1', 'INPUT', { role: 'whole' });
-        await processRollupMarking(ctx, 'p1', 'INPUT', { role: 'part' });
+        await processRollupMarking(ctx, schemeIn(ctx, 'p1'), 'INPUT', {
+            role: 'whole',
+        });
+        await processRollupMarking(ctx, schemeIn(ctx, 'p1'), 'INPUT', {
+            role: 'part',
+        });
 
         expect(spy).toHaveBeenCalledTimes(2);
     });
@@ -92,11 +117,11 @@ describe('forms/rollup process cache', () => {
         });
         const ctx = mockCtx(spy);
 
-        await processRollupMarking(ctx, 'p1', 'CHILD', {
+        await processRollupMarking(ctx, schemeIn(ctx, 'p1'), 'CHILD', {
             role: 'part',
             partOf: { rendered: 'A' },
         });
-        await processRollupMarking(ctx, 'p1', 'CHILD', {
+        await processRollupMarking(ctx, schemeIn(ctx, 'p1'), 'CHILD', {
             role: 'part',
             partOf: { rendered: 'B' },
         });
@@ -104,7 +129,7 @@ describe('forms/rollup process cache', () => {
         expect(spy).toHaveBeenCalledTimes(2);
     });
 
-    it('different schemeIds are separate cache entries', async () => {
+    it('different buckets are separate cache entries', async () => {
         const spy = vi.fn().mockResolvedValue({
             valid: true,
             rendered: 'R',
@@ -114,8 +139,12 @@ describe('forms/rollup process cache', () => {
         });
         const ctx = mockCtx(spy);
 
-        await processRollupMarking(ctx, 'p1', 'INPUT', { role: 'whole' });
-        await processRollupMarking(ctx, 'p2', 'INPUT', { role: 'whole' });
+        await processRollupMarking(ctx, schemeIn(ctx, 'p1'), 'INPUT', {
+            role: 'whole',
+        });
+        await processRollupMarking(ctx, schemeIn(ctx, 'p2'), 'INPUT', {
+            role: 'whole',
+        });
 
         expect(spy).toHaveBeenCalledTimes(2);
     });
@@ -132,9 +161,14 @@ describe('forms/rollup process cache', () => {
         });
         const ctx = mockCtx(spy);
 
-        const result = await processRollupMarking(ctx, 'p1', '', {
-            role: 'whole',
-        });
+        const result = await processRollupMarking(
+            ctx,
+            schemeIn(ctx, 'p1'),
+            '',
+            {
+                role: 'whole',
+            },
+        );
 
         expect(spy).toHaveBeenCalledTimes(1);
         expect(result.valid).toBe(false);
@@ -147,12 +181,9 @@ describe('forms/rollup process cache', () => {
     it('returns the real scheme result for an empty whole', async () => {
         const root = document.createElement('div');
         document.body.appendChild(root);
-        const forms = new EzClassifyUI(
-            openOperations(loadCedarValleyContext().scheme),
-            {
-                root,
-            },
-        );
+        const forms = new EzClassifyUI(openContext(loadCedarValleyContext()), {
+            root,
+        });
         try {
             const expected = await Promise.resolve(
                 forms.engine.process('', {
@@ -160,9 +191,10 @@ describe('forms/rollup process cache', () => {
                     context: { role: 'whole' },
                 }),
             );
+            const ctx = { defaultFormat: 'long', engine: forms.engine } as any;
             const observed = await processRollupMarking(
-                { defaultFormat: 'long', engine: forms.engine } as any,
-                'cedar-valley',
+                ctx,
+                schemeIn(ctx, ''),
                 '',
                 { role: 'whole' },
             );
@@ -188,13 +220,20 @@ describe('forms/rollup process cache', () => {
 
         for (let rollupTick = 0; rollupTick < 10; rollupTick++) {
             // 1 parent process
-            await processRollupMarking(ctx, 'p1', 'PARENT', { role: 'whole' });
+            await processRollupMarking(ctx, schemeIn(ctx, 'p1'), 'PARENT', {
+                role: 'whole',
+            });
             // 5 child processes
             for (let i = 1; i <= 5; i++) {
-                await processRollupMarking(ctx, 'p1', `CHILD${i}`, {
-                    role: 'part',
-                    partOf: { rendered: 'PARENT' },
-                });
+                await processRollupMarking(
+                    ctx,
+                    schemeIn(ctx, 'p1'),
+                    `CHILD${i}`,
+                    {
+                        role: 'part',
+                        partOf: { rendered: 'PARENT' },
+                    },
+                );
             }
         }
 
@@ -211,9 +250,13 @@ describe('forms/rollup process cache', () => {
         });
         const ctx = mockCtx(spy);
 
-        await processRollupMarking(ctx, 'p1', 'INPUT', { role: 'whole' });
+        await processRollupMarking(ctx, schemeIn(ctx, 'p1'), 'INPUT', {
+            role: 'whole',
+        });
         clearRollupProcessCache();
-        await processRollupMarking(ctx, 'p1', 'INPUT', { role: 'whole' });
+        await processRollupMarking(ctx, schemeIn(ctx, 'p1'), 'INPUT', {
+            role: 'whole',
+        });
 
         expect(spy).toHaveBeenCalledTimes(2);
     });
@@ -221,12 +264,9 @@ describe('forms/rollup process cache', () => {
     it('EzClassifyUI.destroy() clears its own engine partition (documented teardown contract)', async () => {
         const root = document.createElement('div');
         document.body.appendChild(root);
-        const forms = new EzClassifyUI(
-            openOperations(loadCedarValleyContext().scheme),
-            {
-                root,
-            },
-        );
+        const forms = new EzClassifyUI(openContext(loadCedarValleyContext()), {
+            root,
+        });
         const spy = vi.spyOn(forms.engine, 'process').mockResolvedValue({
             valid: true,
             rendered: 'R',
@@ -236,16 +276,22 @@ describe('forms/rollup process cache', () => {
         } as never);
         const ctx = { defaultFormat: 'default', engine: forms.engine } as any;
 
-        await processRollupMarking(ctx, 'p1', 'INPUT', { role: 'whole' });
+        await processRollupMarking(ctx, schemeIn(ctx, 'p1'), 'INPUT', {
+            role: 'whole',
+        });
         expect(spy).toHaveBeenCalledTimes(1);
-        await processRollupMarking(ctx, 'p1', 'INPUT', { role: 'whole' });
+        await processRollupMarking(ctx, schemeIn(ctx, 'p1'), 'INPUT', {
+            role: 'whole',
+        });
         expect(spy).toHaveBeenCalledTimes(1); // cache hit
 
         forms.destroy();
         root.remove();
 
         // Same tuple now misses and re-hits the engine.
-        await processRollupMarking(ctx, 'p1', 'INPUT', { role: 'whole' });
+        await processRollupMarking(ctx, schemeIn(ctx, 'p1'), 'INPUT', {
+            role: 'whole',
+        });
         expect(spy).toHaveBeenCalledTimes(2);
         spy.mockRestore();
     });
@@ -268,16 +314,24 @@ describe('forms/rollup process cache', () => {
         const ctxA = mockCtx(first);
         const ctxB = mockCtx(second);
 
-        await processRollupMarking(ctxA, 'p1', 'INPUT', { role: 'whole' });
-        await processRollupMarking(ctxB, 'p1', 'INPUT', { role: 'whole' });
+        await processRollupMarking(ctxA, schemeIn(ctxA, 'p1'), 'INPUT', {
+            role: 'whole',
+        });
+        await processRollupMarking(ctxB, schemeIn(ctxB, 'p1'), 'INPUT', {
+            role: 'whole',
+        });
         // Same scheme id and same tuple, different engine: no borrowed answer.
         expect(first).toHaveBeenCalledTimes(1);
         expect(second).toHaveBeenCalledTimes(1);
 
         clearRollupProcessCache(ctxA.engine);
 
-        await processRollupMarking(ctxA, 'p1', 'INPUT', { role: 'whole' });
-        await processRollupMarking(ctxB, 'p1', 'INPUT', { role: 'whole' });
+        await processRollupMarking(ctxA, schemeIn(ctxA, 'p1'), 'INPUT', {
+            role: 'whole',
+        });
+        await processRollupMarking(ctxB, schemeIn(ctxB, 'p1'), 'INPUT', {
+            role: 'whole',
+        });
         expect(first).toHaveBeenCalledTimes(2);
         expect(second).toHaveBeenCalledTimes(1); // untouched by the peer's clear
     });
@@ -294,7 +348,7 @@ describe('forms/rollup process cache', () => {
 
         // 300 unique (rendered) tuples, one each
         for (let i = 0; i < 300; i++) {
-            await processRollupMarking(ctx, 'p1', `INPUT_${i}`, {
+            await processRollupMarking(ctx, schemeIn(ctx, 'p1'), `INPUT_${i}`, {
                 role: 'whole',
             });
         }
@@ -302,11 +356,15 @@ describe('forms/rollup process cache', () => {
 
         // The first 44 should be evicted (256 cap). Re-request the very first one:
         // should miss the cache and hit the engine again.
-        await processRollupMarking(ctx, 'p1', 'INPUT_0', { role: 'whole' });
+        await processRollupMarking(ctx, schemeIn(ctx, 'p1'), 'INPUT_0', {
+            role: 'whole',
+        });
         expect(spy).toHaveBeenCalledTimes(301);
 
         // A recently-added one is still cached.
-        await processRollupMarking(ctx, 'p1', 'INPUT_299', { role: 'whole' });
+        await processRollupMarking(ctx, schemeIn(ctx, 'p1'), 'INPUT_299', {
+            role: 'whole',
+        });
         expect(spy).toHaveBeenCalledTimes(301);
     });
 });

@@ -11,6 +11,7 @@ import type {
 } from '@ezclassify/types';
 import { EzClassifyUI } from '../ezclassify-ui';
 import { mockRenderFormats } from '../render-format-layout-mock';
+import { schemeOnlyContext } from '../../test-fixtures/context-doubles';
 
 function createProfile(): SchemePublicView {
     const concepts: ConceptView[] = [
@@ -125,44 +126,15 @@ describe('EzClassifyUI', () => {
         document.body.innerHTML = '';
     });
 
-    it('creates a hidden rollup field in the root', () => {
-        forms = new EzClassifyUI(createEngine(), { root });
-        const rollup = root.querySelector(
-            '#ezclassify-rollup',
-        ) as HTMLInputElement;
-        expect(rollup).toBeTruthy();
-        expect(rollup.type).toBe('hidden');
+    it('adds no rollup field of its own: a page submits a rollup only through an output it places', () => {
+        forms = new EzClassifyUI(schemeOnlyContext(createEngine()), { root });
+        expect(root.querySelector('input[type="hidden"]')).toBeNull();
     });
 
-    it('uses a custom rollupId when provided', () => {
-        forms = new EzClassifyUI(createEngine(), {
-            root,
-            rollupId: 'my-rollup',
-        });
-        const rollup = root.querySelector('#my-rollup') as HTMLInputElement;
-        expect(rollup).toBeTruthy();
-    });
-
-    it('reuses an existing rollup element if found', () => {
-        const existing = document.createElement('input');
-        existing.type = 'hidden';
-        existing.id = 'ezclassify-rollup';
-        existing.value = 'pre-existing';
-        root.appendChild(existing);
-
-        forms = new EzClassifyUI(createEngine(), { root });
-        const rollupEls = root.querySelectorAll('#ezclassify-rollup');
-        expect(rollupEls.length).toBe(1);
-    });
-
-    it('destroy removes rollup field and clears fields array', () => {
-        forms = new EzClassifyUI(createEngine(), { root });
-        expect(root.querySelector('#ezclassify-rollup')).toBeTruthy();
-
+    it('destroy clears the fields array', () => {
+        forms = new EzClassifyUI(schemeOnlyContext(createEngine()), { root });
         forms.destroy();
-        expect(root.querySelector('#ezclassify-rollup')).toBeNull();
         expect(forms.fields).toEqual([]);
-        expect(forms.rollupField).toBeNull();
         forms = null;
     });
 
@@ -183,14 +155,14 @@ describe('EzClassifyUI', () => {
             appliedFixes: [],
             notices: [],
         });
-        forms = new EzClassifyUI(engine, { root });
+        forms = new EzClassifyUI(schemeOnlyContext(engine), { root });
 
         const result = forms.recalculate();
         expect(typeof result).toBe('string');
     });
 
     it('getRollup returns rollup value without recalculating', () => {
-        forms = new EzClassifyUI(createEngine(), { root });
+        forms = new EzClassifyUI(schemeOnlyContext(createEngine()), { root });
         const rollup = root.querySelector(
             '#ezclassify-rollup',
         ) as HTMLInputElement;
@@ -200,7 +172,7 @@ describe('EzClassifyUI', () => {
     });
 
     it('getAllAssertions returns deduplicated assertions from all fields', () => {
-        forms = new EzClassifyUI(createEngine(), { root });
+        forms = new EzClassifyUI(schemeOnlyContext(createEngine()), { root });
 
         const field1 = document.createElement('input');
         const field2 = document.createElement('input');
@@ -219,7 +191,7 @@ describe('EzClassifyUI', () => {
     });
 
     it('getAllAssertions includes assertions from components', () => {
-        forms = new EzClassifyUI(createEngine(), { root });
+        forms = new EzClassifyUI(schemeOnlyContext(createEngine()), { root });
 
         const el = document.createElement('div');
         const mockComp = {
@@ -243,7 +215,7 @@ describe('EzClassifyUI', () => {
     });
 
     it('getAssertionsByTarget groups assertions by ezclassify-for target', () => {
-        forms = new EzClassifyUI(createEngine(), { root });
+        forms = new EzClassifyUI(schemeOnlyContext(createEngine()), { root });
 
         const field1 = document.createElement('input');
         const field2 = document.createElement('input');
@@ -264,18 +236,24 @@ describe('EzClassifyUI', () => {
     });
 
     it('constructor sets defaultFormat from profile when not provided', () => {
-        forms = new EzClassifyUI(createEngine(), { root });
+        forms = new EzClassifyUI(schemeOnlyContext(createEngine()), { root });
         expect(forms.defaultFormat).toBe('default');
     });
 
     it('constructor uses provided format over profile default', () => {
-        forms = new EzClassifyUI(createEngine(), { root, format: 'custom' });
+        forms = new EzClassifyUI(schemeOnlyContext(createEngine()), {
+            root,
+            format: 'custom',
+        });
         expect(forms.defaultFormat).toBe('custom');
     });
 
     it('constructor sets colorMap when provided', () => {
         const colorMap = { f1: { background: '#ff0000', text: '#ffffff' } };
-        forms = new EzClassifyUI(createEngine(), { root, colorMap });
+        forms = new EzClassifyUI(schemeOnlyContext(createEngine()), {
+            root,
+            colorMap,
+        });
         expect(forms.colorMap).toEqual(colorMap);
     });
 });
