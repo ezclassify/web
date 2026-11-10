@@ -481,6 +481,7 @@
                         "plural": "Handbooks",
                         "singular": "Handbook"
                     },
+                    "roleAware": false,
                     "version": "1.0.0"
                 },
                 "headers": {
@@ -567,6 +568,7 @@
                     {
                         "id": "level",
                         "label": "Level",
+                        "position": 0,
                         "required": true,
                         "rollup": "max",
                         "scopes": [
@@ -608,6 +610,7 @@
                         "plural": "Handbooks",
                         "singular": "Handbook"
                     },
+                    "roleAware": false,
                     "version": "1.0.0"
                 },
                 "headers": {
@@ -704,6 +707,7 @@
                     {
                         "id": "level",
                         "label": "Level",
+                        "position": 0,
                         "required": true,
                         "rollup": "max",
                         "single": true
@@ -711,6 +715,7 @@
                     {
                         "id": "caveats",
                         "label": "Caveats",
+                        "position": 1,
                         "required": false,
                         "rollup": "union",
                         "single": false
@@ -1025,6 +1030,7 @@
                         "plural": "Handbooks",
                         "singular": "Handbook"
                     },
+                    "roleAware": false,
                     "version": "1.0.0"
                 },
                 "headers": {
@@ -1108,6 +1114,7 @@
                     {
                         "id": "level",
                         "label": "Level",
+                        "position": 0,
                         "required": true,
                         "rollup": "max",
                         "single": true
@@ -1964,7 +1971,7 @@
                             },
                             {
                                 "action": "recognize",
-                                "detail": "Recognition: complete as `default`; 6 transitions, 1 lookups",
+                                "detail": "Recognition: complete as `default`; 20 transitions, 2 lookups",
                                 "stage": "parse"
                             },
                             {
@@ -2357,12 +2364,12 @@
                                         "categories": [
                                             "level"
                                         ],
+                                        "citation": "Example source section 3",
                                         "id": "OPEN",
                                         "name": "Open",
                                         "parents": [],
                                         "position": 0,
                                         "rank": -100,
-                                        "rulesReferencing": [],
                                         "views": {
                                             "default": "OPEN"
                                         }
@@ -2377,7 +2384,6 @@
                                         "parents": [],
                                         "position": 0,
                                         "rank": 100,
-                                        "rulesReferencing": [],
                                         "views": {
                                             "default": "SENSITIVE"
                                         }
@@ -2668,7 +2674,8 @@
                             "regionsFound": 1,
                             "status": "complete"
                         },
-                        "results": []
+                        "results": [],
+                        "unread": []
                     }
                 },
                 "headers": {
@@ -5367,8 +5374,7 @@
                                     "categoryId": "level",
                                     "conceptId": "OPEN",
                                     "confidence": "inferred",
-                                    "source": "crosswalk:ez-test-to-ez-gated",
-                                    "sourceRule": "open"
+                                    "source": "crosswalk:ez-test-to-ez-gated"
                                 }
                             ],
                             "assessment": {

@@ -3092,10 +3092,9 @@ components:
             $ref: "#/components/schemas/Assertion"
           description: >-
             Concepts the parent carries that the children do not account for, judged per category as described on this
-            type. In a `symmetric_difference`, `exclusive_or` or `complement` category that means values the parent
-            states beyond the set the children roll up to. In a `pipeline` category whose findings are not narrowed it
-            means every parent value the rollup of parent and children drops, which can include values the children
-            carry. Everywhere else it means values the children do not allow.
+            type. In a `pipeline` category whose findings are not narrowed it means every parent value the rollup of
+            parent and children drops, which can include values the children carry. Everywhere else it means values the
+            children do not allow.
 
 
             Concepts appear as the author wrote them. When a written value brought others with it, such as a group that
@@ -3195,16 +3194,10 @@ components:
         parent states beyond the picked one are not reported.
 
 
-        In a `symmetric_difference`, `exclusive_or` or `complement` category the children roll up to a set and the
-        rollup has no restrictive direction, so the parent must state exactly that set. Rolled-up values the parent does
-        not state are missing. Values the parent states beyond that set are excess: stated, but not what the children
-        roll up to. Neither side is more restrictive than the other here.
-
-
         In a category where the scheme has an `expand_group` rule, a parent that carries every member a group declares
         in that category states the group, and the group is not missing from it. This does not apply to a category whose
-        rollup has no restrictive direction (`first`, `last`, `symmetric_difference`, `exclusive_or`, `complement`),
-        where the parent must state what the children roll up to as it is.
+        rollup has no restrictive direction (`first`, `last`), where the parent must state what the children roll up to
+        as it is.
 
 
         In a `union` or `pipeline` category the scheme marks as a hierarchy root, a parent value ranked at or above a
@@ -5577,7 +5570,7 @@ components:
         pattern:
           type: string
           description: >-
-            RegExp source (no flags) whose first capture group is the raw marking text. Example: `\((.+)\)` for a
+            RegExp source (no flags) whose first capture group is the raw marking text. Example: `\(([^)]+)\)` for a
             marking in parentheses.
         template:
           type: string
@@ -7941,9 +7934,6 @@ components:
         - min
         - union
         - intersection
-        - symmetric_difference
-        - exclusive_or
-        - complement
         - first
         - last
         - least_upper_bound
@@ -8194,11 +8184,20 @@ components:
           items:
             $ref: "#/components/schemas/ScanResult"
           description: The markings the scan found, in document order.
+        unread:
+          type: array
+          items:
+            $ref: "#/components/schemas/UnreadMark"
+          description: >-
+            The wrapped marks the scan found but could not read, in document order. Empty when every wrapped mark it
+            reached was read. Text past where the scan stopped was never offered to recognition, so none of it is
+            listed.
         limits:
           $ref: "#/components/schemas/ScanLimits"
           description: How far the scan got, and what stopped it.
       required:
         - results
+        - unread
         - limits
       description: >-
         What a scan answers on the wire.
@@ -8821,6 +8820,60 @@ components:
         Validation issue recorded in an explanation trace: the constraint that failed and its message, and nothing else.
         The category, severity and concepts of the error it came from belong to the error, which a validate or process
         result reports in `errors`.
+    UnreadMark:
+      type: object
+      properties:
+        text:
+          type: string
+          description: The wrapped text as found in the document, wrapper included.
+        start:
+          type: integer
+          description: Start position in the input text
+        end:
+          type: integer
+          description: End position in the input text
+        inner:
+          type: string
+          description: "The text inside the wrapper: the capture group of the scheme's `embeddedMarking` pattern."
+        leading:
+          type: boolean
+          description: >-
+            Whether the mark stands where a part mark goes: at the start of its paragraph. Both of these hold for a
+            leading mark.
+
+
+            Its line starts a paragraph. The line starts at the beginning of the text or just after the last line feed
+            before `start`. It starts a paragraph when it is the first line, when the line before it is blank or ends in
+            `.`, `!`, `?`, `:` or `;`, or when the line before it holds nothing but a marking read in the whole role,
+            such as a banner.
+
+
+            Only whitespace and outline labels come before it on its line: at most three labels, each followed by
+            whitespace, in no more than 64 UTF-16 code units after the line's leading whitespace. A line feed is not
+            whitespace here. An outline label is one or more groups of one to four letters or digits, each closed by `.`
+            or `)` and optionally opened by `(` (`1.`, `a)`, `(1)`, `iv.`, `1.a.`, `(a)(1)`); a dotted numeral (`1.2`,
+            `1.2.3.`); one bullet (`-`, `*`, `•`, `‣`, `⁃`, `◦`, `▪` or `–`); or one to six `#`. So the mark in `(QQ)
+            text`, `1. (QQ) text` and `a) 2. (QQ) text` leads, and the one in `See (QQ) text` does not.
+
+
+            A mark that follows another mark on its line does not lead, whether the earlier mark was read or not: in
+            `(S)(QQ)` and in `(S) (QQ)` only `(S)` leads. Wrapped text before a mark is a label rather than a mark when
+            its text is one lowercase letter, that letter two or three times, one to three digits, or a lowercase roman
+            numeral, so the mark in `(a) (QQ) text` leads.
+      required:
+        - text
+        - start
+        - end
+        - inner
+        - leading
+      description: >-
+        A wrapped mark a scan found but could not read.
+
+
+        The text matched the scheme's `embeddedMarking` pattern, which is how a part marking is written, but recognition
+        read no marking in it, and it has no entry in `ScanOutcome.results`. Text that looks like a marking and carries
+        none is reported rather than dropped, so a reader can see it and correct it. `start`/`end` are offsets in UTF-16
+        code units in the input text, as on `ScanResult`.
     UnrepresentableFact:
       type: object
       properties:
