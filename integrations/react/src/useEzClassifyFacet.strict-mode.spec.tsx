@@ -2,17 +2,16 @@
  * `useEzClassifyFacet` under StrictMode, which mounts every effect, cleans it
  * up, and mounts it again. A field has to keep working after that sequence: its
  * change callback must still publish, and its facet must still be computed,
- * whether its store comes from a store provider or is owned by an application
- * provider. An `<Activity>` that hides and shows the provider runs the same
- * sequence with commits in between, and the provider must hand down a live
- * store again.
+ * whether its store is one the application passes or one its root owns. An
+ * `<Activity>` that hides and shows the root runs the same sequence with
+ * commits in between, and the root must hand down a live store again.
  */
 import React, { Activity, StrictMode, useState } from 'react';
 import { act, cleanup, render, waitFor } from '@testing-library/react';
 import { loadCedarValleyContext } from '@ezclassify/example-schemes/cedar-valley';
 import {
+    EzClassify,
     EzClassifyProvider,
-    EzClassifyStoreProvider,
     ReactEzClassifyStore,
     useEzClassifyFacet,
     useEzClassifyStore,
@@ -23,7 +22,8 @@ afterEach(() => cleanup());
 
 describe('useEzClassifyFacet under StrictMode', () => {
     it('publishes a selection after its effect has been mounted twice', async () => {
-        const store = new ReactEzClassifyStore(loadCedarValleyContext().scheme);
+        const context = loadCedarValleyContext();
+        const store = new ReactEzClassifyStore(context.scheme);
         let field: UseEzClassifyFacetReturn | null = null;
         function Picker() {
             field = useEzClassifyFacet('document', 'level');
@@ -31,9 +31,11 @@ describe('useEzClassifyFacet under StrictMode', () => {
         }
         render(
             <StrictMode>
-                <EzClassifyStoreProvider store={store}>
-                    <Picker />
-                </EzClassifyStoreProvider>
+                <EzClassifyProvider context={context}>
+                    <EzClassify store={store}>
+                        <Picker />
+                    </EzClassify>
+                </EzClassifyProvider>
             </StrictMode>,
         );
         await waitFor(() => {
@@ -49,7 +51,7 @@ describe('useEzClassifyFacet under StrictMode', () => {
         store.destroy();
     });
 
-    it('publishes a selection under an application provider after its effects have been mounted twice', async () => {
+    it('publishes a selection to the store its root owns after its effects have been mounted twice', async () => {
         let field: UseEzClassifyFacetReturn | null = null;
         function Picker() {
             field = useEzClassifyFacet('document', 'level');
@@ -57,8 +59,10 @@ describe('useEzClassifyFacet under StrictMode', () => {
         }
         render(
             <StrictMode>
-                <EzClassifyProvider engine={loadCedarValleyContext().scheme}>
-                    <Picker />
+                <EzClassifyProvider context={loadCedarValleyContext()}>
+                    <EzClassify>
+                        <Picker />
+                    </EzClassify>
                 </EzClassifyProvider>
             </StrictMode>,
         );
@@ -73,7 +77,7 @@ describe('useEzClassifyFacet under StrictMode', () => {
         });
     });
 
-    it('keeps an application provider and its fields working after an Activity hides and shows them', async () => {
+    it('keeps a root and its fields working after an Activity hides and shows them', async () => {
         let field: UseEzClassifyFacetReturn | null = null;
         let store: ReturnType<typeof useEzClassifyStore> | null = null;
         let setMode: (mode: 'visible' | 'hidden') => void = () => {};
@@ -82,14 +86,16 @@ describe('useEzClassifyFacet under StrictMode', () => {
             field = useEzClassifyFacet('document', 'level');
             return null;
         }
-        const engine = loadCedarValleyContext().scheme;
+        const context = loadCedarValleyContext();
         function App() {
             const [mode, set] = useState<'visible' | 'hidden'>('visible');
             setMode = set;
             return (
                 <Activity mode={mode}>
-                    <EzClassifyProvider engine={engine}>
-                        <Picker />
+                    <EzClassifyProvider context={context}>
+                        <EzClassify>
+                            <Picker />
+                        </EzClassify>
                     </EzClassifyProvider>
                 </Activity>
             );
@@ -112,11 +118,12 @@ describe('useEzClassifyFacet under StrictMode', () => {
         });
     });
 
-    it('still refuses a subscription to an application store destroyed under the provider', () => {
-        const store = new ReactEzClassifyStore(loadCedarValleyContext().scheme);
+    it('still refuses a subscription to an application store destroyed under its root', () => {
+        const context = loadCedarValleyContext();
+        const store = new ReactEzClassifyStore(context.scheme);
         render(
-            <EzClassifyProvider store={store}>
-                <></>
+            <EzClassifyProvider context={context}>
+                <EzClassify store={store} />
             </EzClassifyProvider>,
         );
         store.destroy();

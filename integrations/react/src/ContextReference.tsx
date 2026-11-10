@@ -6,8 +6,7 @@
  * carrying the `data-ezclassify-*` attributes and `--ez-context-ref-*` CSS
  * variables the vanilla controller reads (mapped by the shared
  * `contextReferenceHostAttributes`), and passes its children straight through.
- * The ambient scanner from `<EzClassifyProvider>` /
- * `useSchemeEngine().Container` enhances the host; the vanilla
+ * The enclosing `<EzClassify>` root enhances the host; the vanilla
  * `ContextReference` controller does all the work: deriving built-in tabs from
  * the loaded context and hoisting custom tabs.
  *
@@ -81,9 +80,8 @@ interface ContextReferenceComponent {
 }
 
 /**
- * The docked reference drawer. Place it inside a `useSchemeEngine().Container`
- * (or under an `<EzClassifyProvider>` scan root); the controller derives its
- * built-in tabs from the loaded context.
+ * The docked reference drawer. Place it inside an `<EzClassify>` root; the
+ * controller derives its built-in tabs from the loaded Context.
  */
 export const ContextReference = ((props: ContextReferenceProps): ReactNode => {
     const { children, className, style, id, ...presentation } = props;

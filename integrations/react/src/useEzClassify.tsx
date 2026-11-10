@@ -4,11 +4,8 @@
  * through the store. Tracks subscriptions via `useSyncExternalStore` so
  * concurrent rendering stays consistent.
  *
- * Pulls the active `ReactEzClassifyStore` from `EzClassifyStoreContext`, which
- * is provided either by `EzClassifyProvider` or by an explicit
- * `<EzClassifyStoreProvider store={…}>` wrapping the subtree. Per
- * binding-model.md §8, the store IS the framework's view of state; no bridge,
- * no mirroring.
+ * Pulls the store of the enclosing `<EzClassify>` root. Per binding-model.md
+ * §8, the store IS the framework's view of state; no bridge, no mirroring.
  *
  * Cycle protection: every call to this hook installs a stable per-component
  * `PublishSource` token. When `setRendered` publishes, the store's commit skips
@@ -36,6 +33,10 @@ import { ReactEzClassifyStore } from './react-ezclassify-store';
 
 const EzClassifyStoreContext = createContext<ReactEzClassifyStore | null>(null);
 
+/**
+ * Hand a store to the hooks below. `<EzClassify>` places this around its
+ * children; it is not part of the package's public surface.
+ */
 export function EzClassifyStoreProvider({
     store,
     children,
@@ -51,14 +52,14 @@ export function EzClassifyStoreProvider({
 }
 
 /**
- * Read the active store without subscribing. Throws when no provider sits
- * above.
+ * The store of the enclosing `<EzClassify>` root, without subscribing to it.
+ * Throws when no root encloses the caller.
  */
 export function useEzClassifyStore(): ReactEzClassifyStore {
     const store = useContext(EzClassifyStoreContext);
     if (!store) {
         throw new Error(
-            '[ezclassify/react] useEzClassifyStore must be used under <EzClassifyStoreProvider>',
+            '[ezclassify/react] this hook must be used inside <EzClassify>',
         );
     }
     return store;

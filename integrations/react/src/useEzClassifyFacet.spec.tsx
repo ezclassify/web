@@ -8,22 +8,21 @@ import {
 } from '@testing-library/react';
 import { loadCedarValleyContext } from '@ezclassify/example-schemes/cedar-valley';
 import {
+    EzClassify,
     EzClassifyProvider,
-    EzClassifyStoreProvider,
     ReactEzClassifyStore,
     useEzClassifyFacet,
     useEzClassifyStore,
-    useSchemeEngine,
     type UseEzClassifyFacetReturn,
 } from '@ezclassify/react';
+import { EzClassifyStoreProvider } from './useEzClassify';
 import { publishFacetSelection } from '@ezclassify/ui';
 import { openOperations } from '../../../libs/ui/test-fixtures/context-doubles';
 
 describe('useEzClassifyFacet', () => {
     it('owns one native subscription per cell and releases both on unmount', async () => {
-        const store = new ReactEzClassifyStore(
-            openOperations(loadCedarValleyContext().scheme),
-        );
+        const engine = openOperations(loadCedarValleyContext().scheme);
+        const store = new ReactEzClassifyStore(engine);
         const marking = vi.spyOn(store, 'subscribe');
         const facet = vi.spyOn(store, 'subscribeFacet');
         const wrapper = ({ children }: { children: ReactNode }) => (
@@ -39,7 +38,7 @@ describe('useEzClassifyFacet', () => {
         expect(marking).toHaveBeenCalledTimes(1);
         expect(facet).toHaveBeenCalledTimes(1);
         unmount();
-        const suggest = vi.spyOn(store['engine']!, 'suggestForCategories');
+        const suggest = vi.spyOn(engine, 'suggestForCategories');
         await store.publishRendered('document', 'INTERNAL');
         expect(suggest).not.toHaveBeenCalled();
         store.destroy();
@@ -132,7 +131,7 @@ describe('useEzClassifyFacet before the runtime has mounted', () => {
         facet = field;
         useEffect(() => {
             // A child's effect runs before its parent's, so this pick is made
-            // before useSchemeEngine has even constructed the runtime.
+            // before its root has even constructed the runtime.
             if (pickInEffect) field.setValue(['CONFIDENTIAL']);
             // eslint-disable-next-line react-hooks/exhaustive-deps
         }, []);
@@ -140,25 +139,24 @@ describe('useEzClassifyFacet before the runtime has mounted', () => {
     }
 
     function Form({
-        engine,
         served,
         pickInEffect,
     }: {
-        engine?: ReturnType<typeof loadCedarValleyContext>['scheme'];
         served: string;
         pickInEffect: boolean;
     }) {
-        const { Container } = useSchemeEngine(engine);
         return (
-            <Container>
-                <input
-                    type="hidden"
-                    id="doc-marking"
-                    data-ezclassify-rendered=""
-                    defaultValue={served}
-                />
-                <Picker pickInEffect={pickInEffect} />
-            </Container>
+            <EzClassifyProvider context={loadCedarValleyContext()}>
+                <EzClassify>
+                    <input
+                        type="hidden"
+                        id="doc-marking"
+                        data-ezclassify-marking=""
+                        defaultValue={served}
+                    />
+                    <Picker pickInEffect={pickInEffect} />
+                </EzClassify>
+            </EzClassifyProvider>
         );
     }
 
@@ -174,13 +172,7 @@ describe('useEzClassifyFacet before the runtime has mounted', () => {
             }),
         );
         act(() => {
-            render(
-                <Form
-                    engine={loadCedarValleyContext().scheme}
-                    served="INTERNAL//DO NOT FORWARD"
-                    pickInEffect
-                />,
-            );
+            render(<Form served="INTERNAL//DO NOT FORWARD" pickInEffect />);
         });
         await settleRuntime(ready);
 
@@ -190,13 +182,13 @@ describe('useEzClassifyFacet before the runtime has mounted', () => {
 });
 
 /**
- * An application-level provider owns the store, a toolbar outside the form
- * picks a level, and the form whose runtime seeds the marking mounts later.
- * Under StrictMode that runtime is mounted, torn down and mounted again over
- * the same host before it seeds.
+ * The application passes one store to two roots: a toolbar's, which picks a
+ * level, and a form's, whose runtime seeds the marking and mounts later. Under
+ * StrictMode that runtime is mounted, torn down and mounted again over the same
+ * host before it seeds.
  */
 describe.each([false, true])(
-    'a pick made before the form mounts, under an application provider (StrictMode %s)',
+    'a pick made before the form mounts, in a store two roots share (StrictMode %s)',
     (strict) => {
         let toolbar: {
             store: ReturnType<typeof useEzClassifyStore>;
@@ -216,34 +208,37 @@ describe.each([false, true])(
             };
             return null;
         }
-        function Form() {
-            const { Container } = useSchemeEngine();
+        function Form({ store }: { store: ReactEzClassifyStore }) {
             return (
-                <Container>
+                <EzClassify store={store}>
                     <input
                         type="hidden"
                         id="doc-marking"
-                        data-ezclassify-rendered=""
+                        data-ezclassify-marking=""
                         defaultValue="INTERNAL//DO NOT FORWARD"
                     />
-                </Container>
+                </EzClassify>
             );
         }
-        function Page() {
+        function Page({ store }: { store: ReactEzClassifyStore }) {
             const [show, setShow] = useState(false);
             showForm = setShow;
             return (
                 <>
-                    <Toolbar />
-                    {show ? <Form /> : null}
+                    <EzClassify store={store}>
+                        <Toolbar />
+                    </EzClassify>
+                    {show ? <Form store={store} /> : null}
                 </>
             );
         }
 
         function mountApp(): void {
+            const context = loadCedarValleyContext();
+            const store = new ReactEzClassifyStore(context.scheme);
             const app = (
-                <EzClassifyProvider engine={loadCedarValleyContext().scheme}>
-                    <Page />
+                <EzClassifyProvider context={context}>
+                    <Page store={store} />
                 </EzClassifyProvider>
             );
             act(() => {
