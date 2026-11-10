@@ -93,6 +93,62 @@ describe('EzClassifyUI Contexts', () => {
         expect(errors[0].message).toContain("'first', 'second'");
     });
 
+    describe('a level view on a page with two Contexts and no wrapper', () => {
+        const MARKING = 'CONFIDENTIAL';
+        const contexts = () => ({
+            contexts: {
+                first: loadCedarValleyContext(),
+                second: loadCedarValleyContext(),
+            },
+        });
+
+        /** Mount `first` and `second` sections with a view beside them. */
+        async function mountBeside(view: string) {
+            const errors: Array<{ code: string; message: string }> = [];
+            root.addEventListener('ezclassify:host-error', (e) =>
+                errors.push((e as CustomEvent).detail),
+            );
+            root.innerHTML = `
+                ${view}
+                <section data-ezclassify-context="first">
+                    <input id="a" data-ezclassify-marking value="${MARKING}">
+                </section>
+                <section data-ezclassify-context="second">
+                    <input id="b" data-ezclassify-marking value="${MARKING}">
+                </section>`;
+            const ready = waitForReady(root);
+            forms = new EzClassifyUI(contexts(), { root });
+            await ready;
+            return errors;
+        }
+
+        it('shows every bucket on a bare banner, each labeled', async () => {
+            const errors = await mountBeside(
+                '<div id="banner" data-ezclassify-controller="banner" data-ezclassify-aggregate></div>',
+            );
+            const banner = root.querySelector<HTMLElement>('#banner')!;
+
+            await expect
+                .poll(() => banner.textContent?.split(MARKING).length)
+                .toBe(3);
+            expect(errors).toEqual([]);
+            expect(forms!.components.has(banner)).toBe(true);
+            expect(banner.textContent).toContain('first');
+            expect(banner.textContent).toContain('second');
+        });
+
+        it('still needs a Context for a view that holds one value', async () => {
+            const errors = await mountBeside(
+                '<code id="one" data-ezclassify-controller="text" data-ezclassify-aggregate></code>',
+            );
+
+            expect(errors.map((e) => e.code)).toEqual(['context-unresolved']);
+            expect(
+                forms!.components.has(root.querySelector<HTMLElement>('#one')!),
+            ).toBe(false);
+        });
+    });
+
     it('mounts every field with the only Context when given one', async () => {
         const context = loadCedarValleyContext();
         const only = field(root, 'only');

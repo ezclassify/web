@@ -3,6 +3,8 @@ import {
     classify,
     describeCollection,
     isMarkingHost,
+    isStandalonePart,
+    listsBuckets,
     partWholeOf,
     placeNestedRoot,
 } from './binding-model';
@@ -23,6 +25,126 @@ function el(id: string): HTMLElement {
     if (!found) throw new Error(`no #${id}`);
     return found;
 }
+
+describe('classify: a part whose whole is not on the page', () => {
+    it.each([
+        '<input id="p" data-ezclassify-marking data-ezclassify-role="part">',
+        '<input id="p" data-ezclassify-controller="marking" data-ezclassify-role="part">',
+        '<input id="p" data-ezclassify-controller="tags" data-ezclassify-role="part">',
+        '<input id="p" data-ezclassify-controller="marked-input" data-ezclassify-role="part">',
+        '<code id="p" data-ezclassify-controller="text" data-ezclassify-role="part"></code>',
+    ])('reads %s as a part that contributes to nothing', (markup) => {
+        root.innerHTML = markup;
+
+        const node = classify(el('p'), root);
+
+        expect(node).toMatchObject({
+            kind: 'part',
+            id: 'p',
+            contributes: false,
+        });
+        expect(node.wholeId).toBeUndefined();
+        expect(node.error).toBeUndefined();
+        expect(isStandalonePart(el('p'))).toBe(true);
+    });
+
+    it('lets structure name the whole when there is one', () => {
+        root.innerHTML = `
+            <input id="doc" data-ezclassify-marking>
+            <input id="p" data-ezclassify-marking data-ezclassify-part-of="doc" data-ezclassify-role="part">`;
+
+        expect(classify(el('p'), root)).toMatchObject({
+            kind: 'part',
+            wholeId: 'doc',
+            contributes: true,
+        });
+        expect(isStandalonePart(el('p'))).toBe(false);
+    });
+
+    it('reads any other role as no role', () => {
+        root.innerHTML =
+            '<input id="p" data-ezclassify-marking data-ezclassify-role="whole">';
+
+        expect(classify(el('p'), root)).toMatchObject({
+            kind: 'whole',
+            contributes: true,
+        });
+    });
+
+    it.each([
+        [
+            'the whole its container names',
+            '<form data-ezclassify-whole="p"><input id="p" data-ezclassify-marking data-ezclassify-role="part"></form>',
+        ],
+        [
+            'a member of a collection',
+            '<div data-ezclassify-collection="f"></div><input id="p" data-ezclassify-marking data-ezclassify-member-of="f" data-ezclassify-role="part">',
+        ],
+        [
+            'a body editor that is a marking',
+            '<textarea id="p" data-ezclassify-controller="marked-textarea" data-ezclassify-marking data-ezclassify-role="part"></textarea>',
+        ],
+        [
+            'a body editor',
+            '<textarea id="p" data-ezclassify-controller="marked-textarea" data-ezclassify-role="part"></textarea>',
+        ],
+    ])('refuses the part role on %s', (_what, markup) => {
+        root.innerHTML = markup;
+
+        expect(classify(el('p'), root).error?.code).toBe('part-role-refused');
+    });
+
+    it('refuses a part of one, which is itself a part', () => {
+        root.innerHTML = `
+            <input id="p" data-ezclassify-marking data-ezclassify-role="part">
+            <input id="c" data-ezclassify-marking data-ezclassify-part-of="p">`;
+
+        expect(classify(el('c'), root).error?.code).toBe('part-of-not-whole');
+    });
+
+    it.each(['bound-to', 'facet-of', 'source'])(
+        'refuses a %s view of one',
+        (attr) => {
+            root.innerHTML = `
+                <input id="p" data-ezclassify-marking data-ezclassify-role="part">
+                <input id="v" data-ezclassify-${attr}="p">`;
+
+            expect(classify(el('v'), root).error?.code).toBe(
+                'view-of-standalone-part',
+            );
+        },
+    );
+});
+
+describe('listsBuckets', () => {
+    it.each([
+        [
+            '<div id="v" data-ezclassify-controller="banner" data-ezclassify-aggregate></div>',
+            true,
+        ],
+        [
+            '<div id="v" data-ezclassify-controller="banner" data-ezclassify-aggregate="doc"></div>',
+            true,
+        ],
+        [
+            '<code id="v" data-ezclassify-controller="text" data-ezclassify-aggregate></code>',
+            false,
+        ],
+        ['<input id="v" type="hidden" data-ezclassify-aggregate>', false],
+        [
+            '<div id="v" data-ezclassify-controller="banner" data-ezclassify-source="doc"></div>',
+            false,
+        ],
+        [
+            '<div id="v" data-ezclassify-controller="banner" data-ezclassify-aggregate data-ezclassify-translate="x"></div>',
+            false,
+        ],
+    ])('reads %s as %s', (markup, expected) => {
+        root.innerHTML = markup;
+
+        expect(listsBuckets(el('v'))).toBe(expected);
+    });
+});
 
 describe('classify: wholes and parts', () => {
     it('reads the hosts in a whole container as parts of the whole it names', () => {

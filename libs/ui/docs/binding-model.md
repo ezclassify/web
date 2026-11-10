@@ -55,8 +55,16 @@ Every marking host is one of two things, by where it sits:
 | ------------------------------------------------------ | ----------------------------------------- |
 | Inside a `whole` container, other than the named whole | a part of that whole                      |
 | Anywhere, with `part-of`                               | a part of the named whole                 |
+| Anywhere, with `role="part"` and no whole              | a part with no whole on the page          |
 | Inside a collection, outside any `whole` container     | a whole, member of the nearest collection |
 | In neither                                             | a whole, member of the page               |
+
+`role="part"` is for a part whose whole lives somewhere else: a field that
+edits one paragraph of a document the page does not show. It works on any
+marking host. The host reads in the part role, so whole-only rules never judge
+it and rules that ask about the whole stay unresolved. It is read by its own
+field and is not in the store, so it feeds no level, and a view of it is a host
+error.
 
 Views attach to a marking or a level and never contribute to one:
 
@@ -142,9 +150,11 @@ selects another Context or scheme than its marking is a host error.
 A level view shows every non-empty bucket, each labeled, unless its own
 `context` or `scheme` attribute picks one. It never filters by an inherited
 attribute, so a `<body data-ezclassify-context="district">` default cannot hide
-the records bucket from the page banner. An output that holds one value, a
-hidden input with `aggregate`, names its bucket with its own attributes when
-the level has several. The `ezclassify:rollup` event fires on a level's element
+the records bucket from the page banner. A banner on a level needs no Context
+around it, on a page with several Contexts or one: each line is written by its
+own bucket's Context. An output that holds one value, a hidden input with
+`aggregate`, names its bucket with its own attributes when the level has
+several. The `ezclassify:rollup` event fires on a level's element
 and carries `detail.level` and `detail.buckets`, one entry per bucket with its
 Context key and scheme selector.
 

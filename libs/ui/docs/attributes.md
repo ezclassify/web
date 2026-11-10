@@ -60,7 +60,7 @@ The attributes split into five groups:
 | `data-ezclassify-context`              | `context-binding`                                    | author   | Context key from the `contexts` map given at initialization. Needed only with several Contexts. A marking host inherits it from the nearest ancestor that sets one; a level view filters by its own attribute only                                                                                       | the only Context              |
 | `data-ezclassify-scheme`               | `context-binding` / `component-factory`              | author   | the Context-local scheme selector: a marking host marks in that scheme of its Context, in its own bucket. Inherited from the nearest ancestor that sets it. A selector the Context does not hold is a host error                                                                                         | the Context's primary scheme  |
 | `data-ezclassify-format`               | `format-resolver` / `component-factory`              | author   | render-format id; honored on a plain enhanced input and on any controller host. Read from the element itself, never inherited from an ancestor                                                                                                                                                           | context default render format |
-| `data-ezclassify-role`                 | `components/ezclassify-text`                         | author   | `part`, on a `text` host that shows a part with no whole on the page. Every other role comes from structure                                                                                                                                                                                              | (none)                        |
+| `data-ezclassify-role`                 | `binding-model`                                      | author   | `part`, on any marking host that holds a part with no whole on the page. The host reads in the part role, stays out of the store and feeds no level, so no view can show it. Every other role comes from structure                                                                                       | (none)                        |
 | `data-ezclassify-scope`                | `element-scanner` / `component-factory`              | author   | scope label, on a whole field that authors a non-default scope. A facet takes its scope from its category's declared scope instead. It never removes a field from a rollup                                                                                                                               | (none)                        |
 | `data-ezclassify-show-when-parent-has` | `forms/rollup`                                       | author   | `parentId:CONCEPT1,CONCEPT2`; element is shown only when the parent holds one of the listed concepts                                                                                                                                                                                                     | (none)                        |
 | `data-ezclassify-hide-when-parent-has` | `forms/rollup`                                       | author   | `parentId:CONCEPT1,CONCEPT2`; element is hidden when the parent holds one of the listed concepts                                                                                                                                                                                                         | (none)                        |
@@ -131,6 +131,9 @@ renamed. The cases:
 - `no-rollup` on a part or on a whole with parts;
 - `data-ezclassify-marking` together with a view attribute;
 - a nested library instance inside a `whole` container;
+- `role="part"` on the whole its container names, on a member of a collection,
+  or on a `marked-textarea`, whose portions are parts;
+- a `bound-to`, `facet-of` or `source` view of a part with no whole on the page;
 - a marking host that resolves no Context, or selects a scheme its Context
   does not hold, and one marking id on two marking hosts;
 - a `translate` view on a form control or a controller host, or with no
@@ -145,7 +148,8 @@ renamed. The cases:
 ### Rollup outputs and buckets
 
 A rollup is kept per bucket: one Context key and one scheme selector. Buckets
-never merge. A `banner` on a level shows every non-empty bucket, and every
+never merge. A `banner` on a level needs no Context around it. It shows every
+non-empty bucket, and every
 bucket missing a marking as not read, each labeled whenever the level can hold
 more than one, unless its own `context` or `scheme` attribute picks one. A controller-less
 output holds one value, so when the instance has several Contexts, or the

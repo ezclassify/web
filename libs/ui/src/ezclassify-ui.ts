@@ -79,6 +79,8 @@ import {
     errorLevelOf,
     isMarkingController,
     isMarkingHost,
+    isStandalonePart,
+    listsBuckets,
     placeNestedRoot,
     COLLECTION_ATTR,
     CONTEXT_ATTR,
@@ -174,6 +176,7 @@ const REFERENCE_ERRORS: ReadonlySet<string> = new Set<HostErrorCode>([
     'part-of-not-whole',
     'part-of-across-contexts',
     'no-rollup-on-whole-with-parts',
+    'view-of-standalone-part',
     'duplicate-marking-id',
 ]);
 
@@ -674,7 +677,10 @@ export class EzClassifyUI {
      */
     resolveContext(el: Element): ResolvedContext {
         const host = this.boundMarkingHostOf(el);
-        if (!host) return this.contexts.resolve(el, this.root);
+        if (!host)
+            return listsBuckets(el)
+                ? this.contexts.resolveBucketList(el, this.root)
+                : this.contexts.resolve(el, this.root);
         // A view bound to a marking marks in that marking's Context and
         // scheme, wherever the view sits. Read by its own placement, a view
         // outside the marking's data-ezclassify-scheme subtree would parse
@@ -1174,8 +1180,11 @@ export class EzClassifyUI {
                 return;
             }
             this.hostEpochs.set(el, (this.hostEpochs.get(el) ?? 0) + 1);
-            this.validMarkingIds.add(el.id);
             this.markingHosts.set(el.id, el);
+            // A part with no whole on the page is read by its own field. The
+            // store holds what levels roll up, and this feeds none of them.
+            if (isStandalonePart(el)) this.validMarkingIds.delete(el.id);
+            else this.validMarkingIds.add(el.id);
         };
         index(root);
         root.querySelectorAll<HTMLElement>(
@@ -2029,6 +2038,7 @@ export class EzClassifyUI {
         if (
             el.id &&
             this.markingHosts.get(el.id) === el &&
+            this.validMarkingIds.has(el.id) &&
             !el.hasAttribute('data-ezclassify-controller')
         )
             this.seedOnMount(el.id, el);
@@ -2265,7 +2275,9 @@ export class EzClassifyUI {
         // store's committed state, so its spelling is resolved to the output
         // the store's publishes can write.
         const formats = this.formatsOf(input);
-        const renderedIn = holdsPart(input) ? formats.part : formats.whole;
+        const standalonePart = isStandalonePart(input);
+        const renderedIn =
+            holdsPart(input) || standalonePart ? formats.part : formats.whole;
         const spelled = resolveFormatAttr(input) || renderedIn;
         const output = storeBinding
             ? this.outputNamed(input, spelled)
@@ -2329,7 +2341,12 @@ export class EzClassifyUI {
         };
 
         const processText = (text: string) =>
-            engineOf().process(text, { outputFormat: fmt });
+            engineOf().process(text, {
+                outputFormat: fmt,
+                ...(standalonePart
+                    ? { context: { role: 'part' as const } }
+                    : {}),
+            });
 
         const commitValue = async (): Promise<void> => {
             const raw = input.value;
@@ -2416,6 +2433,10 @@ export class EzClassifyUI {
             void commitValue();
         };
         input.addEventListener('blur', handleBlur);
+        // No store seeds a part with no whole on the page, so its field reads
+        // the value it was served.
+        if (standalonePart && input.value.trim())
+            this._pendingInits.push(commitValue());
 
         let storeUnsub: (() => void) | undefined;
         if (storeBinding) {
@@ -2990,7 +3011,8 @@ export class EzClassifyUI {
                     | undefined) ?? this.colorMap,
             favorites: this.favorites,
         });
-        if (holdsPart(el)) componentOpts.holdsPart = true;
+        const standalonePart = isStandalonePart(el);
+        if (holdsPart(el) || standalonePart) componentOpts.holdsPart = true;
 
         // A field that holds a whole marking judges it against the parts that
         // name it: every process call carries their current markings (see
@@ -3034,6 +3056,10 @@ export class EzClassifyUI {
                 }
                 return { role: 'part' };
             };
+        } else if (standalonePart) {
+            // With no whole on the page, rules that ask about the whole stay
+            // unresolved and the whole's own rules never judge the part.
+            componentOpts.resolveContext = () => ({ role: 'part' });
         }
 
         // TagInput-specific options. The explicit render format is not among

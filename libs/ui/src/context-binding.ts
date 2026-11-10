@@ -343,6 +343,28 @@ export class ContextSet {
     }
 
     /**
+     * The Context a view that lists its level's buckets mounts with. Such a
+     * view filters by its own attributes and reads no marking itself: each line
+     * is written by its own bucket's Context. So it needs no Context from
+     * markup, and with none the first Context supplies only what the view draws
+     * around the lines. Markup that does name one is read as usual.
+     *
+     * @param el - The view
+     * @param root - The instance root
+     * @throws ContextResolutionError when markup names a Context that does not
+     *   resolve
+     */
+    resolveBucketList(el: Element, root: Element): ResolvedContext {
+        if (this.single || this.declaredContextKey(el, root) !== null)
+            return this.resolve(el, root);
+        const [contextKey, context] = this.byKey.entries().next().value as [
+            string,
+            ContextAdapter,
+        ];
+        return primaryOf(contextKey, context);
+    }
+
+    /**
      * The buckets a Context key and a scheme selector name, `null` naming any.
      * A selector naming a Context's primary scheme names its primary bucket.
      * Selectors other than the primary are known only once the Context's scheme

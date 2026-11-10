@@ -191,6 +191,21 @@ describe('ContextSet.resolve', () => {
         expect(err.message).toContain("'capco', 'cui'");
     });
 
+    it('mounts a bucket list with no Context in markup, and honors one that is named', () => {
+        const capco = contextHolding(CROSSWALK_SCHEMES);
+        const cui = contextHolding(CROSSWALK_SCHEMES);
+        const set = ContextSet.from({ contexts: { capco, cui } });
+        const bare = tree({});
+        const named = tree({ section: { 'data-ezclassify-context': 'cui' } });
+
+        expect(set.resolveBucketList(bare.field, bare.root).context).toBe(
+            capco,
+        );
+        expect(set.resolveBucketList(named.field, named.root).context).toBe(
+            cui,
+        );
+    });
+
     it('refuses a key the instance does not hold', () => {
         const set = ContextSet.from({
             contexts: { capco: contextHolding(CROSSWALK_SCHEMES) },

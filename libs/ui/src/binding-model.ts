@@ -39,6 +39,8 @@ export const MEMBER_OF_ATTR = 'data-ezclassify-member-of';
 export const IGNORE_ATTR = 'data-ezclassify-ignore';
 /** On a host: processed and validated, but kept out of every roll-up. */
 export const NO_ROLLUP_ATTR = 'data-ezclassify-no-rollup';
+/** A marking host read in the part role with no whole on the page. */
+export const ROLE_ATTR = 'data-ezclassify-role';
 /** Inherited: the key of the Context a host is read in. */
 export const CONTEXT_ATTR = 'data-ezclassify-context';
 /** Inherited: the Context-local scheme selector a host is read in. */
@@ -55,6 +57,13 @@ export const VIEW_ATTRS = [
     'data-ezclassify-translate',
 ] as const;
 
+/** The view attributes that name one marking to show. */
+const SHOWN_MARKING_ATTRS = [
+    'data-ezclassify-bound-to',
+    'data-ezclassify-facet-of',
+    'data-ezclassify-source',
+] as const;
+
 /**
  * Attributes whose change re-derives the subtree they sit on: each one moves a
  * host between levels, Contexts or buckets, or in or out of the tree.
@@ -68,6 +77,7 @@ export const STRUCTURAL_ATTRS = [
     SCHEME_ATTR,
     IGNORE_ATTR,
     NO_ROLLUP_ATTR,
+    ROLE_ATTR,
 ] as const;
 
 /**
@@ -86,6 +96,9 @@ const MARKING_CONTROLLERS: ReadonlySet<string> = new Set([
  * the element itself (unless the element is also declared a marking).
  */
 const BODY_CONTROLLER = 'marked-textarea';
+
+/** The controller that shows a level's buckets on labeled lines. */
+const BUCKET_LIST_CONTROLLER = 'banner';
 
 /** Where an element sits in the marking tree. */
 export type BindingKind = 'part' | 'whole' | 'collection' | 'view' | 'ignored';
@@ -128,6 +141,13 @@ export type HostErrorCode =
     | 'marking-on-view'
     /** A nested library instance mounted inside a `whole` container. */
     | 'nested-root-in-whole'
+    /**
+     * `role="part"` on what cannot be a part with no whole: the whole its
+     * container names, a member of a collection, or a body editor.
+     */
+    | 'part-role-refused'
+    /** A view of a marking host that holds a part with no whole on the page. */
+    | 'view-of-standalone-part'
     /** A marking host that resolves no Context. */
     | 'context-unresolved'
     /**
@@ -156,8 +176,9 @@ export interface BindingNode {
      */
     id: string | null;
     /**
-     * For a part: the whole it is a part of. For a body editor that is not a
-     * marking itself: the whole its portions are parts of, when it has one.
+     * For a part: the whole it is a part of, absent for a part whose whole is
+     * not on the page (`role="part"`). For a body editor that is not a marking
+     * itself: the whole its portions are parts of, when it has one.
      */
     wholeId?: string;
     /**
@@ -260,6 +281,39 @@ export function isMarkingController(el: Element): boolean {
         controller !== null &&
         MARKING_CONTROLLERS.has(controller) &&
         !viewAttrOf(el)
+    );
+}
+
+/**
+ * Whether a marking host holds a part whose whole is not on the page: it
+ * declares `role="part"` and structure names no whole. It reads in the part
+ * role and stays outside the store, so it feeds no level.
+ *
+ * @param el - Element to read
+ * @returns True for a part with no whole on the page
+ */
+export function isStandalonePart(el: Element): boolean {
+    return (
+        isMarkingHost(el) &&
+        valueOf(el, ROLE_ATTR) === 'part' &&
+        partWholeOf(el) === null
+    );
+}
+
+/**
+ * Whether a view lists a level bucket by bucket: a banner on
+ * `data-ezclassify-aggregate`. Each line is written by its own bucket's
+ * Context, so such a view reads no marking itself. Any other view on a level
+ * holds one value and has to read it in one Context.
+ *
+ * @param el - Element to read
+ * @returns True for a view that lists its level's buckets
+ */
+export function listsBuckets(el: Element): boolean {
+    return (
+        el.hasAttribute('data-ezclassify-aggregate') &&
+        el.getAttribute(CONTROLLER_ATTR) === BUCKET_LIST_CONTROLLER &&
+        !el.hasAttribute('data-ezclassify-translate')
     );
 }
 
@@ -430,6 +484,7 @@ function placeAsPart(
         const targetContainer = closestPresent(target, WHOLE_ATTR, root);
         const targetIsPart =
             valueOf(target, PART_OF_ATTR) !== null ||
+            valueOf(target, ROLE_ATTR) === 'part' ||
             (targetContainer !== null &&
                 valueOf(targetContainer, WHOLE_ATTR) !== target.id);
         if (targetIsPart)
@@ -507,12 +562,29 @@ export function classify(el: HTMLElement, root: HTMLElement): BindingNode {
                     `${describe(el)} declares ${MARKING_ATTR} and ${view}. A view shows a marking; it is not one.`,
                 ),
             };
+        const shown = shownStandalonePart(el);
+        if (shown)
+            return {
+                ...base,
+                kind: 'view',
+                error: hostError(
+                    el,
+                    'view-of-standalone-part',
+                    `${describe(el)} shows "${shown}", a part with no whole on the page. Such a part is read by its own field alone; name its whole, or remove ${ROLE_ATTR}.`,
+                ),
+            };
         return { ...base, kind: 'view' };
     }
 
     if (isMarkingHost(el)) return classifyHost(el, root, bucket);
 
     if (isBodyEditor(el)) {
+        if (valueOf(el, ROLE_ATTR) === 'part')
+            return {
+                ...base,
+                kind: 'view',
+                error: bodyEditorPartRole(el),
+            };
         const placed = placeAsPart(el, root, bucket);
         if (placed.error) return { ...base, kind: 'view', error: placed.error };
         return {
@@ -544,6 +616,52 @@ export function classify(el: HTMLElement, root: HTMLElement): BindingNode {
     return { ...base, kind: 'view' };
 }
 
+/** The refusal for `role="part"` on a body editor. */
+function bodyEditorPartRole(el: HTMLElement): HostError {
+    return hostError(
+        el,
+        'part-role-refused',
+        `${describe(el)} declares ${ROLE_ATTR}="part" on a ${BODY_CONTROLLER}. Its portions are parts, and a part cannot hold parts of its own.`,
+    );
+}
+
+/** The refusal for a marking host that cannot read in the part role, if any. */
+function refusePartRole(
+    el: HTMLElement,
+    isWhole: boolean,
+    memberOf: string | null,
+): HostError | undefined {
+    if (el.getAttribute(CONTROLLER_ATTR) === BODY_CONTROLLER)
+        return bodyEditorPartRole(el);
+    if (isWhole)
+        return hostError(
+            el,
+            'part-role-refused',
+            `${describe(el)} is the whole its ${WHOLE_ATTR} container names, and it declares ${ROLE_ATTR}="part".`,
+        );
+    if (memberOf && partWholeOf(el) === null)
+        return hostError(
+            el,
+            'part-role-refused',
+            `${describe(el)} declares ${ROLE_ATTR}="part" and ${MEMBER_OF_ATTR}="${memberOf}". A collection holds wholes.`,
+        );
+    return undefined;
+}
+
+/**
+ * The id of the part with no whole on the page a view shows, or null. Such a
+ * part holds no state a view could read (see {@link isStandalonePart}).
+ */
+function shownStandalonePart(el: HTMLElement): string | null {
+    for (const attr of SHOWN_MARKING_ATTRS) {
+        const id = valueOf(el, attr);
+        if (!id || id === el.id) continue;
+        const target = el.ownerDocument.getElementById(id);
+        if (target && isStandalonePart(target)) return id;
+    }
+    return null;
+}
+
 /** Classify a marking host: a part, or a whole in a collection. */
 function classifyHost(
     el: HTMLElement,
@@ -564,6 +682,12 @@ function classifyHost(
     const placed = placeAsPart(el, root, bucket);
     const noRollup = isPresent(el, NO_ROLLUP_ATTR);
     const memberOf = valueOf(el, MEMBER_OF_ATTR);
+
+    if (valueOf(el, ROLE_ATTR) === 'part' && !placed.error) {
+        const refused = refusePartRole(el, placed.isWhole === true, memberOf);
+        if (refused) return { ...base, kind: 'part', error: refused };
+        if (placed.wholeId === undefined) return { ...base, kind: 'part' };
+    }
 
     if (placed.wholeId !== undefined || placed.error) {
         if (placed.error) return { ...base, kind: 'part', error: placed.error };
