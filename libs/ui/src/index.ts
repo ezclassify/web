@@ -73,7 +73,7 @@ export type {
     ContextReferenceOffsets,
 } from './components';
 export { GuideChecklist } from './components';
-export type { GuideChecklistOptions } from './components';
+export type { GuideChecklistOptions, GuideRuleSelection } from './components';
 export { DecisionFlow } from './components';
 export { HiddenAssertionField } from './components';
 export { EzClassifyText } from './components';

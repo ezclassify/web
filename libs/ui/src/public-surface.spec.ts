@@ -17,8 +17,9 @@
  */
 import * as path from 'node:path';
 import ts from 'typescript';
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, expectTypeOf } from 'vitest';
 import * as ui from './index';
+import type { GuideRuleSelection } from './index';
 
 describe('@ezclassify/ui public surface', () => {
     const intendedPublicComponents = [
@@ -61,6 +62,21 @@ describe('@ezclassify/ui public surface', () => {
 
     it.each(internalSymbols)('does not expose internal symbol %s', (name) => {
         expect((ui as Record<string, unknown>)[name]).toBeUndefined();
+    });
+
+    // A host that seeds a guide checklist names each rule by its guide, so the
+    // selection type the checklist takes and returns is part of the entry.
+    it('names the guide rule selection a host seeds a guide checklist with', () => {
+        expectTypeOf<GuideRuleSelection>().toEqualTypeOf<{
+            guideId: string;
+            ruleId: string;
+        }>();
+        expectTypeOf<
+            Parameters<ui.GuideChecklist['setSelections']>[0]
+        >().toEqualTypeOf<readonly GuideRuleSelection[]>();
+        expectTypeOf<
+            ReturnType<ui.GuideChecklist['getSelections']>
+        >().toEqualTypeOf<GuideRuleSelection[]>();
     });
 });
 

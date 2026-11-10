@@ -36,7 +36,11 @@ export {
     type ContextReferencePlacement,
     type ContextReferenceOffsets,
 } from './context-reference-binding';
-export { GuideChecklist, type GuideChecklistOptions } from './guide-helper';
+export {
+    GuideChecklist,
+    type GuideChecklistOptions,
+    type GuideRuleSelection,
+} from './guide-helper';
 export { DecisionFlow } from './decision-flow';
 export { HiddenAssertionField } from './hidden-assertion-field';
 export { EzClassifyText, type EzClassifyTextOptions } from './ezclassify-text';
