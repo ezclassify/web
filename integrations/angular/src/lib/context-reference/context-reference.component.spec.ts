@@ -1,10 +1,9 @@
 /**
  * Tests for the Angular ContextReference binding. Proves the component stamps
  * the controller's declarative attributes and CSS variables onto its host (a
- * thin map, not a re-implementation) and that, inside an [ezClassify] scope,
- * the ambient scanner enhances it into a tabbed drawer with the host's
- * projected custom tab hoisted: the same behavior the React and Vue bindings
- * produce.
+ * thin map, not a re-implementation) and that, inside an ezClassify root, the
+ * ambient scanner enhances it into a tabbed drawer with the host's projected
+ * custom tab hoisted: the same behavior the React and Vue bindings produce.
  */
 
 import { describe, it, expect, beforeEach } from 'vitest';
@@ -19,6 +18,7 @@ import {
     cedarValleyAccessYaml,
 } from '@ezclassify/example-schemes/cedar-valley';
 import { EzClassifyDirective } from '../ezclassify.directive';
+import { provideEzClassify } from '../provide-ezclassify';
 import { EzContextReferenceComponent } from './context-reference.component';
 import { EzContextReferenceTabComponent } from './context-reference-tab.component';
 
@@ -98,7 +98,7 @@ describe('EzContextReferenceComponent: markup', () => {
         EzContextReferenceTabComponent,
     ],
     template: `
-        <div [ezClassify]="engine">
+        <div ezClassify>
             <ez-context-reference [open]="true" placement="left">
                 <ez-context-reference-tab id="developers" label="Developers">
                     <p>dev content</p>
@@ -107,14 +107,13 @@ describe('EzContextReferenceComponent: markup', () => {
         </div>
     `,
 })
-class TestHostComponent {
-    engine = fullContext();
-}
+class TestHostComponent {}
 
-describe('EzContextReferenceComponent: inside an [ezClassify] scope', () => {
+describe('EzContextReferenceComponent: inside an ezClassify root', () => {
     beforeEach(async () => {
         await TestBed.configureTestingModule({
             imports: [TestHostComponent],
+            providers: [provideEzClassify({ context: fullContext() })],
         }).compileComponents();
     });
 
@@ -156,7 +155,7 @@ interface CustomTab {
         EzContextReferenceTabComponent,
     ],
     template: `
-        <div [ezClassify]="engine">
+        <div ezClassify>
             <ez-context-reference [open]="true">
                 <ez-context-reference-tab
                     *ngFor="let t of customs(); trackBy: trackId"
@@ -169,7 +168,6 @@ interface CustomTab {
     `,
 })
 class ReactiveHostComponent {
-    engine = fullContext();
     readonly customs = signal<CustomTab[]>([
         { id: 'developers', label: 'Developers', content: 'dev content' },
     ]);
@@ -184,6 +182,7 @@ describe('EzContextReferenceComponent reactive lifecycle', () => {
     beforeEach(async () => {
         await TestBed.configureTestingModule({
             imports: [ReactiveHostComponent],
+            providers: [provideEzClassify({ context: fullContext() })],
         }).compileComponents();
         fixture = TestBed.createComponent(ReactiveHostComponent);
     });

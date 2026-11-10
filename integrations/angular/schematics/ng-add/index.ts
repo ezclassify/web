@@ -41,9 +41,9 @@ interface NgAddOptions {
 /**
  * Add @ezclassify/ui and @ezclassify/angular to package.json.
  *
- * The engine is not one of them. Which runtime the application talks to, the
- * REST client or a licensed in-process engine, is its own decision, and
- * installing one here would make that decision for it.
+ * The Context client is not one of them. How the application connects its
+ * Context is its own decision, and installing a client here would make that
+ * decision for it.
  */
 function addDependencies(): Rule {
     return (tree: Tree, context: SchematicContext) => {
@@ -280,28 +280,28 @@ function printGettingStarted(): Rule {
         context.logger.info('');
         context.logger.info('Quick start:');
         context.logger.info('');
-        context.logger.info('  1. Name your engine once in the app config:');
+        context.logger.info(
+            '  1. Connect your Context and name it once in the app config:',
+        );
         context.logger.info('');
         context.logger.info(
             `     import { provideEzClassify } from '@ezclassify/angular'`,
         );
         context.logger.info('');
         context.logger.info(
-            '     // engine: the runtime your app connects to, a REST client',
+            '     // context: your connected Context, for example from connectContext()',
         );
-        context.logger.info(
-            '     // or a licensed in-process engine. This package builds none.',
-        );
-        context.logger.info(`     providers: [provideEzClassify({ engine })]`);
-        context.logger.info('');
-        context.logger.info('  2. Use the component in your templates:');
+        context.logger.info(`     providers: [provideEzClassify({ context })]`);
         context.logger.info('');
         context.logger.info(
-            '     <input data-ezclassify-controller="tags" data-ezclassify-format="" [(ngModel)]="marking" />',
+            '  2. Mark a form as a root and declare its fields:',
         );
+        context.logger.info('');
+        context.logger.info('     <form ezClassify>');
         context.logger.info(
-            '     <div data-ezclassify-controller="banner"></div>',
+            '       <input name="marking" data-ezclassify-controller="marking" />',
         );
+        context.logger.info('     </form>');
         context.logger.info('');
         context.logger.info(
             '  Documentation: https://github.com/ezclassify/web/tree/main/integrations/angular#readme',

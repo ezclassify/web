@@ -1,28 +1,23 @@
 /**
- * Provision defaults for `@ezclassify/angular`.
+ * Provision for `@ezclassify/angular`.
  *
- * The contract under test: an application names its engine once with
- * `provideEzClassify({ engine })`, and after that a host is `<div ezClassify>`
- * with nothing bound, a facet injects a working store with no host above it at
- * all, and a marking label finds an engine on its own. Inputs stay available as
- * overrides, including an overridden store, and a facet arms itself when the
- * engine turns up late instead of failing silently forever.
+ * The contract under test: an application names its Context once with
+ * `provideEzClassify({ context })`, and after that a root is a bare `<form
+ * ezClassify>` that builds its own store against that Context, and a marking
+ * label colors itself with no root above it. The two root inputs stay available
+ * for the complex cases: options merged over the provided ones, and a store the
+ * host owns.
  */
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { TestBed } from '@angular/core/testing';
-import { Component, signal } from '@angular/core';
+import { Component } from '@angular/core';
 import { Context } from '@ezclassify/engine';
-import type { ContextAdapter, SchemeEngineAdapter } from '@ezclassify/types';
-import { VanillaEzClassifyStore } from '@ezclassify/ui';
+import type { ContextAdapter } from '@ezclassify/types';
 import { EzClassifyDirective } from './ezclassify.directive';
-import { AngularSignalStore, EZCLASSIFY_STORE } from './angular-signal-store';
-import { injectEzClassifyFacet } from './inject-ezclassify-facet';
+import { AngularSignalStore } from './angular-signal-store';
 import { provideEzClassify } from './provide-ezclassify';
 import { EzMarkingLabelComponent } from './ez-marking-label/ez-marking-label.component';
-import {
-    openContext,
-    openOperations,
-} from '../../../../libs/ui/test-fixtures/context-doubles';
+import { openContext } from '../../../../libs/ui/test-fixtures/context-doubles';
 
 const MINIMAL_SCHEME = {
     scheme: {
@@ -79,37 +74,26 @@ const MINIMAL_SCHEME = {
     },
 };
 
-function buildEngine(): SchemeEngineAdapter {
-    return openOperations(
-        Context.fromComponents({ scheme: MINIMAL_SCHEME }).scheme,
-    ) as unknown as SchemeEngineAdapter;
+function buildContext(): ContextAdapter {
+    return openContext(Context.fromComponents({ scheme: MINIMAL_SCHEME }));
 }
 
 @Component({
-    selector: 'test-inherited-host',
+    selector: 'test-bare-root',
     standalone: true,
     imports: [EzClassifyDirective],
-    template: `<div ezClassify></div>`,
+    template: `<form ezClassify></form>`,
 })
-class InheritedHostComponent {}
+class BareRootComponent {}
 
 @Component({
-    selector: 'test-store-override-host',
+    selector: 'test-store-override-root',
     standalone: true,
     imports: [EzClassifyDirective],
-    template: `<div [ezClassifyStore]="store" ezClassify></div>`,
+    template: `<form [ezClassifyStore]="store" ezClassify></form>`,
 })
-class StoreOverrideHostComponent {
+class StoreOverrideRootComponent {
     store!: AngularSignalStore;
-}
-
-@Component({
-    selector: 'test-standalone-facet',
-    standalone: true,
-    template: `<span>{{ facet.rendered() }}</span>`,
-})
-class StandaloneFacetComponent {
-    readonly facet = injectEzClassifyFacet('doc', 'level');
 }
 
 @Component({
@@ -120,68 +104,54 @@ class StandaloneFacetComponent {
 })
 class LabelHostComponent {}
 
-describe('provideEzClassify: app-level defaults', () => {
-    let engine: SchemeEngineAdapter;
+describe('provideEzClassify', () => {
+    let context: ContextAdapter;
 
     beforeEach(() => {
-        engine = buildEngine();
+        context = buildContext();
     });
 
-    it('lets a host inherit the engine with nothing bound', async () => {
+    it('refuses anything that is not a Context', () => {
+        expect(() =>
+            provideEzClassify({
+                context: context.scheme as unknown as ContextAdapter,
+            }),
+        ).toThrow(/needs a connected Context/);
+    });
+
+    it('lets a bare root mark against the provided Context', async () => {
         await TestBed.configureTestingModule({
-            imports: [InheritedHostComponent],
-            providers: [provideEzClassify({ engine })],
+            imports: [BareRootComponent],
+            providers: [provideEzClassify({ context })],
         }).compileComponents();
 
-        const fixture = TestBed.createComponent(InheritedHostComponent);
+        const fixture = TestBed.createComponent(BareRootComponent);
         fixture.detectChanges(false);
         const directive =
             fixture.debugElement.children[0].injector.get(EzClassifyDirective);
-        expect(directive.getEngine()).toBe(engine);
-        expect(directive.getStore()).toBeInstanceOf(AngularSignalStore);
-    });
+        expect(directive.getContext()).toBe(context);
 
-    it('takes a composed context and binds the store to its scheme surface', async () => {
-        const context = Context.fromComponents({ scheme: MINIMAL_SCHEME });
-        await TestBed.configureTestingModule({
-            imports: [InheritedHostComponent],
-            providers: [provideEzClassify({ engine: context })],
-        }).compileComponents();
-
-        const fixture = TestBed.createComponent(InheritedHostComponent);
-        fixture.detectChanges(false);
-        const directive =
-            fixture.debugElement.children[0].injector.get(EzClassifyDirective);
-        expect(directive.getEngine()).toBe(context.scheme);
-
-        const store = TestBed.inject(EZCLASSIFY_STORE);
+        const store = directive.getStore()!;
+        expect(store).toBeInstanceOf(AngularSignalStore);
         await store.publishRendered('doc', 'HIGH');
         expect(store.get('doc').rendered).toBe('HIGH');
     });
 
     it('binds a remote Context scheme without addressed lifecycle methods', async () => {
         const local = Context.fromComponents({ scheme: MINIMAL_SCHEME });
+        const addressed = new Set([
+            'loadScheme',
+            'loadLayer',
+            'unloadScheme',
+            'unloadLayer',
+        ]);
         const remoteScheme = new Proxy(local.scheme, {
             has(target, property) {
-                if (
-                    property === 'loadScheme' ||
-                    property === 'loadLayer' ||
-                    property === 'unloadScheme' ||
-                    property === 'unloadLayer'
-                ) {
-                    return false;
-                }
+                if (addressed.has(property as string)) return false;
                 return Reflect.has(target, property);
             },
             get(target, property, receiver) {
-                if (
-                    property === 'loadScheme' ||
-                    property === 'loadLayer' ||
-                    property === 'unloadScheme' ||
-                    property === 'unloadLayer'
-                ) {
-                    return undefined;
-                }
+                if (addressed.has(property as string)) return undefined;
                 const value = Reflect.get(target, property, receiver);
                 return typeof value === 'function' ? value.bind(target) : value;
             },
@@ -195,95 +165,78 @@ describe('provideEzClassify: app-level defaults', () => {
         }) as unknown as ContextAdapter;
 
         await TestBed.configureTestingModule({
-            imports: [InheritedHostComponent],
-            providers: [provideEzClassify({ engine: remoteContext })],
+            imports: [BareRootComponent],
+            providers: [provideEzClassify({ context: remoteContext })],
         }).compileComponents();
 
-        const fixture = TestBed.createComponent(InheritedHostComponent);
+        const fixture = TestBed.createComponent(BareRootComponent);
         fixture.detectChanges(false);
         const directive =
             fixture.debugElement.children[0].injector.get(EzClassifyDirective);
-        expect(directive.getEngine()).toBe(remoteScheme);
-        expect('loadScheme' in directive.getEngine()!).toBe(false);
 
-        const store = TestBed.inject(EZCLASSIFY_STORE);
+        const store = directive.getStore()!;
         await store.publishRendered('doc', 'HIGH');
         expect(store.get('doc').rendered).toBe('HIGH');
     });
 
-    it('merges the host options over the app-level options', async () => {
+    it('merges the root options over the provided options', async () => {
         @Component({
-            selector: 'test-options-host',
+            selector: 'test-options-root',
             standalone: true,
             imports: [EzClassifyDirective],
-            template: `<div
+            template: `<form
                 [ezClassifyOptions]="{ format: 'default' }"
-                ezClassify></div>`,
+                ezClassify></form>`,
         })
-        class OptionsHostComponent {}
+        class OptionsRootComponent {}
 
+        const colorMap = { HIGH: { background: '#900', text: '#fff' } };
         await TestBed.configureTestingModule({
-            imports: [OptionsHostComponent],
+            imports: [OptionsRootComponent],
             providers: [
                 provideEzClassify({
-                    engine,
-                    options: { rollupId: 'app-rollup', format: 'other' },
+                    context,
+                    options: { colorMap, format: 'other' },
                 }),
             ],
         }).compileComponents();
 
-        const fixture = TestBed.createComponent(OptionsHostComponent);
+        const fixture = TestBed.createComponent(OptionsRootComponent);
         fixture.detectChanges(false);
         const directive =
             fixture.debugElement.children[0].injector.get(EzClassifyDirective);
         expect(directive.getOptions()).toEqual({
-            rollupId: 'app-rollup',
+            colorMap,
             format: 'default',
         });
     });
 
     it('takes an overridden store and leaves its lifetime to the owner', async () => {
         await TestBed.configureTestingModule({
-            imports: [StoreOverrideHostComponent],
-            providers: [provideEzClassify({ engine })],
+            imports: [StoreOverrideRootComponent],
+            providers: [provideEzClassify({ context })],
         }).compileComponents();
 
-        const owned = new AngularSignalStore(engine);
-        const fixture = TestBed.createComponent(StoreOverrideHostComponent);
+        const owned = new AngularSignalStore(context.scheme);
+        const fixture = TestBed.createComponent(StoreOverrideRootComponent);
         fixture.componentInstance.store = owned;
         fixture.detectChanges(false);
         const directive =
             fixture.debugElement.children[0].injector.get(EzClassifyDirective);
         expect(directive.getStore()).toBe(owned);
 
-        // Destroying the host must not destroy a store it did not build.
+        // Destroying the root must not destroy a store it did not build.
         fixture.destroy();
         expect(() => owned.subscribe('doc', () => {})).not.toThrow();
         owned.destroy();
     });
 
-    it('gives a component outside any host a working store', async () => {
-        await TestBed.configureTestingModule({
-            imports: [StandaloneFacetComponent],
-            providers: [provideEzClassify({ engine })],
-        }).compileComponents();
-
-        const fixture = TestBed.createComponent(StandaloneFacetComponent);
-        fixture.detectChanges();
-        const store = TestBed.inject(EZCLASSIFY_STORE);
-        await store.publishRendered('doc', 'HIGH');
-        fixture.detectChanges();
-
-        expect(fixture.componentInstance.facet.rendered()).toBe('HIGH');
-        expect(fixture.componentInstance.facet.value()).toEqual(['HIGH']);
-    });
-
-    it('resolves the label engine from the token, with no host above it', async () => {
+    it('colors a label from the provided Context with no root above it', async () => {
         await TestBed.configureTestingModule({
             imports: [LabelHostComponent],
             providers: [
                 provideEzClassify({
-                    engine,
+                    context,
                     options: {
                         colorMap: {
                             HIGH: { background: '#900', text: '#fff' },
@@ -293,36 +246,37 @@ describe('provideEzClassify: app-level defaults', () => {
             ],
         }).compileComponents();
 
+        const read = vi.spyOn(context.scheme, 'validate');
         const fixture = TestBed.createComponent(LabelHostComponent);
+        fixture.detectChanges();
+        await Promise.resolve();
         fixture.detectChanges();
         const span: HTMLElement =
             fixture.nativeElement.querySelector('.ez-marking-label');
         expect(span.classList).toContain('ez-marking-label--colored');
+        expect(read).toHaveBeenCalledWith('HIGH');
     });
 
-    it('lets a host shadow the app engine and color map for a label inside it', async () => {
+    it('lets a root shadow the provided color map for a label inside it', async () => {
         @Component({
-            selector: 'test-label-override-host',
+            selector: 'test-label-override-root',
             standalone: true,
             imports: [EzClassifyDirective, EzMarkingLabelComponent],
             template: `<div
-                [ezClassify]="hostEngine"
                 [ezClassifyOptions]="{
                     colorMap: { HIGH: { background: '#111111', text: '#fff' } },
-                }">
+                }"
+                ezClassify>
                 <ez-marking-label [marking]="'HIGH'" />
             </div>`,
         })
-        class LabelOverrideHostComponent {
-            hostEngine!: SchemeEngineAdapter;
-        }
+        class LabelOverrideRootComponent {}
 
-        const hostEngine = buildEngine();
         await TestBed.configureTestingModule({
-            imports: [LabelOverrideHostComponent],
+            imports: [LabelOverrideRootComponent],
             providers: [
                 provideEzClassify({
-                    engine,
+                    context,
                     options: {
                         colorMap: {
                             HIGH: { background: '#eeeeee', text: '#000' },
@@ -332,101 +286,13 @@ describe('provideEzClassify: app-level defaults', () => {
             ],
         }).compileComponents();
 
-        const fixture = TestBed.createComponent(LabelOverrideHostComponent);
-        fixture.componentInstance.hostEngine = hostEngine;
-        const read = vi.spyOn(hostEngine, 'validate');
+        const fixture = TestBed.createComponent(LabelOverrideRootComponent);
+        fixture.detectChanges();
+        await Promise.resolve();
         fixture.detectChanges();
 
         const span: HTMLElement =
             fixture.nativeElement.querySelector('.ez-marking-label');
         expect(span.style.getPropertyValue('--ez-marking-bg')).toBe('#111111');
-        expect(read).toHaveBeenCalled();
-    });
-});
-
-describe('injectEzClassifyFacet: a late engine', () => {
-    it('arms itself when the host engine arrives after the first pass', async () => {
-        @Component({
-            selector: 'test-late-facet-child',
-            standalone: true,
-            template: `<span>{{ facet.rendered() }}</span>`,
-        })
-        class LateFacetChildComponent {
-            readonly facet = injectEzClassifyFacet('doc', 'level');
-        }
-
-        @Component({
-            selector: 'test-late-engine-host',
-            standalone: true,
-            imports: [EzClassifyDirective, LateFacetChildComponent],
-            template: `<div [ezClassify]="engine()">
-                <test-late-facet-child />
-            </div>`,
-        })
-        class LateEngineHostComponent {
-            readonly engine = signal<SchemeEngineAdapter | null>(null);
-        }
-
-        await TestBed.configureTestingModule({
-            imports: [LateEngineHostComponent],
-        }).compileComponents();
-
-        const errors = vi.spyOn(console, 'error').mockImplementation(() => {});
-        const fixture = TestBed.createComponent(LateEngineHostComponent);
-        // First pass with no engine: the child is constructed and must not throw.
-        fixture.detectChanges();
-        // Drain the microtask queue so a one-shot deferral would have spent its
-        // only attempt here, on a scope that has no store yet.
-        for (let i = 0; i < 4; i++) await Promise.resolve();
-        const child = fixture.debugElement.children[0].children[0]
-            .componentInstance as LateFacetChildComponent;
-        expect(child.facet.rendered()).toBe('');
-
-        // The engine arrives, the way a REST-backed adapter would.
-        fixture.componentInstance.engine.set(buildEngine());
-        fixture.detectChanges();
-        await Promise.resolve();
-
-        const directive =
-            fixture.debugElement.children[0].injector.get(EzClassifyDirective);
-        await directive.getStore()!.publishRendered('doc', 'HIGH');
-        fixture.detectChanges();
-
-        expect(child.facet.rendered()).toBe('HIGH');
-        expect(errors).not.toHaveBeenCalled();
-        errors.mockRestore();
-    });
-
-    /**
-     * A store the facet cannot project is a wiring mistake, and it has to read
-     * like one. Falling back to empty options and a blank value would leave the
-     * field looking like a marking with nothing allowable on it, forever, with
-     * nothing in the console to say why.
-     */
-    it('says so when the scope binds a store it cannot project', async () => {
-        @Component({
-            selector: 'test-foreign-store-facet',
-            standalone: true,
-            template: `<span>{{ facet.loading() }}</span>`,
-        })
-        class ForeignStoreFacetComponent {
-            readonly facet = injectEzClassifyFacet('doc', 'level');
-        }
-
-        await TestBed.configureTestingModule({
-            imports: [ForeignStoreFacetComponent],
-            providers: [
-                provideEzClassify({ engine: buildEngine() }),
-                {
-                    provide: EZCLASSIFY_STORE,
-                    useValue: new VanillaEzClassifyStore(buildEngine()),
-                },
-            ],
-        }).compileComponents();
-
-        const fixture = TestBed.createComponent(ForeignStoreFacetComponent);
-        expect(() => fixture.componentInstance.facet.loading()).toThrow(
-            /does not implement signalFor or facetSignalRef/,
-        );
     });
 });

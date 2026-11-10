@@ -1,23 +1,19 @@
 /**
- * Angular marking controls for a connected EzClassify REST client.
+ * Angular marking controls for a connected EzClassify Context.
  *
- * Initialize one client at application startup and share it through Angular DI.
- * Each feature injects that same client and binds `[ezClassify]="client"` on
- * its container. The directive owns its local UI scanner and store; removing a
- * feature does not destroy the application-owned client.
- *
- * `provideEzClassify` additionally registers shared marking state and optional
- * presentation defaults. It is not needed merely to share a network client. See
- * the package README for initialization, injection, mounting, and teardown.
+ * Name the Context once with `provideEzClassify({ context })` in the
+ * application or route providers, then mark a root with a bare `ezClassify`
+ * attribute: `<form ezClassify>`. Each root builds and owns its store. The
+ * application owns the Context; removing a feature does not dispose of it. See
+ * the package README for mounting, injection and teardown.
  */
 
-export { provideEzClassify } from './lib/provide-ezclassify';
 export {
-    EZCLASSIFY_ENGINE,
+    provideEzClassify,
+    EZCLASSIFY_CONTEXT,
     EZCLASSIFY_OPTIONS,
 } from './lib/provide-ezclassify';
 export type {
-    EzClassifyEngine,
     EzClassifyOptions,
     EzClassifyProvision,
 } from './lib/provide-ezclassify';

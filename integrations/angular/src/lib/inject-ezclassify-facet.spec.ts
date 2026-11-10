@@ -6,19 +6,18 @@
  * inject function.
  *
  * They also pin that a pick made before the enclosing runtime has seeded the
- * store from its hosts survives that seed.
- *
- * The late-engine and no-host cases live in `provide-ezclassify.spec.ts`.
+ * store from its hosts survives that seed, and that a facet outside any root
+ * says what is missing.
  */
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { TestBed } from '@angular/core/testing';
+import { TestBed, type ComponentFixture } from '@angular/core/testing';
 import { Component, Input, type Signal } from '@angular/core';
+import { By } from '@angular/platform-browser';
 import { getActiveConsumer } from '@angular/core/primitives/signals';
 import { loadCedarValleyContext } from '@ezclassify/example-schemes/cedar-valley';
-import { VanillaEzClassifyStore } from '@ezclassify/ui';
+import { VanillaEzClassifyStore, type EzClassifyStore } from '@ezclassify/ui';
 import {
     AngularSignalStore,
-    EZCLASSIFY_STORE,
     type SignalBackedEzClassifyStore,
 } from './angular-signal-store';
 import {
@@ -41,16 +40,53 @@ class FacetHostComponent {
     );
 }
 
+/** A root handed a store it does not own, with one facet inside it. */
+@Component({
+    selector: 'test-store-root',
+    standalone: true,
+    imports: [EzClassifyDirective, FacetHostComponent],
+    template: `<div [ezClassifyStore]="store" ezClassify>
+        <test-facet-host />
+    </div>`,
+})
+class StoreRootComponent {
+    @Input() store!: EzClassifyStore;
+}
+
+function mountFacet(
+    store: EzClassifyStore,
+): ComponentFixture<StoreRootComponent> {
+    const fixture = TestBed.createComponent(StoreRootComponent);
+    fixture.componentInstance.store = store;
+    return fixture;
+}
+
+function facetOf(
+    fixture: ComponentFixture<StoreRootComponent>,
+): InjectEzClassifyFacetReturn {
+    return (
+        fixture.debugElement.query(By.directive(FacetHostComponent))
+            .componentInstance as FacetHostComponent
+    ).facet;
+}
+
 async function flush(): Promise<void> {
     for (let i = 0; i < 8; i++) await Promise.resolve();
 }
 
+function configureRoot(): Promise<unknown> {
+    return TestBed.configureTestingModule({
+        imports: [StoreRootComponent],
+        providers: [provideEzClassify({ context: loadCedarValleyContext() })],
+    }).compileComponents();
+}
+
 describe('injectEzClassifyFacet store contract', () => {
     /**
-     * A decorator around the scope's store: an application wrapping it to add
-     * logging or scoping keeps every accessor and shares no constructor. This
-     * is the substitution `[ezClassifyStore]` has always accepted, and the
-     * facet has to project it.
+     * A decorator around a root's store: an application wrapping it to add
+     * logging keeps every accessor and shares no constructor.
+     * `[ezClassifyStore]` accepts that substitution, and the facet has to
+     * project it.
      */
     it('projects a substituted store that answers the signal accessors', async () => {
         const backing = new AngularSignalStore(loadCedarValleyContext().scheme);
@@ -72,18 +108,14 @@ describe('injectEzClassifyFacet store contract', () => {
             },
         );
         expect(wrapped instanceof AngularSignalStore).toBe(false);
-
-        await TestBed.configureTestingModule({
-            imports: [FacetHostComponent],
-            providers: [{ provide: EZCLASSIFY_STORE, useValue: wrapped }],
-        }).compileComponents();
+        await configureRoot();
 
         await wrapped.publishRendered('document', 'INTERNAL');
-        const fixture = TestBed.createComponent(FacetHostComponent);
+        const fixture = mountFacet(wrapped);
         fixture.detectChanges();
         await flush();
         fixture.detectChanges();
-        const { facet } = fixture.componentInstance;
+        const facet = facetOf(fixture);
 
         expect(facet.value()).toContain('INTERNAL');
         expect(facet.options().length).toBeGreaterThan(0);
@@ -94,26 +126,37 @@ describe('injectEzClassifyFacet store contract', () => {
     });
 
     /**
-     * The message has to name the field as well as the gap; a page with several
-     * facet-backed inputs otherwise gives no clue which one is misprovisioned.
-     * The behavior itself is pinned in `provide-ezclassify.spec.ts`, next to
-     * the rest of the overridden-store contract.
+     * A store the facet cannot project is a wiring mistake, and it has to read
+     * like one, naming the field: falling back to empty options would leave the
+     * field looking like a marking with nothing allowable on it, and a page
+     * with several facet-backed inputs would give no clue which one is wrong.
      */
-    it('names the calling facet in the error it raises', async () => {
+    it('names the calling facet when the root binds a store it cannot project', async () => {
         const vanilla = new VanillaEzClassifyStore(
             loadCedarValleyContext().scheme,
         );
-        await TestBed.configureTestingModule({
-            imports: [FacetHostComponent],
-            providers: [{ provide: EZCLASSIFY_STORE, useValue: vanilla }],
-        }).compileComponents();
+        await configureRoot();
 
-        const fixture = TestBed.createComponent(FacetHostComponent);
-        expect(() => fixture.componentInstance.facet.options()).toThrow(
-            /injectEzClassifyFacet\('document', 'level'\)/,
+        const fixture = mountFacet(vanilla);
+        expect(() => fixture.detectChanges()).toThrow(
+            /injectEzClassifyFacet\('document', 'level'\).*does not implement signalFor or facetSignalRef/,
         );
 
+        fixture.destroy();
         vanilla.destroy();
+    });
+
+    it('says it needs a root when called outside one', async () => {
+        await TestBed.configureTestingModule({
+            imports: [FacetHostComponent],
+            providers: [
+                provideEzClassify({ context: loadCedarValleyContext() }),
+            ],
+        }).compileComponents();
+
+        expect(() => TestBed.createComponent(FacetHostComponent)).toThrow(
+            /injectEzClassifyFacet\('document', 'level'\) must be called from a component inside an ezClassify root/,
+        );
     });
 });
 
@@ -124,19 +167,16 @@ describe('injectEzClassifyFacet', () => {
         store = new AngularSignalStore(
             openOperations(loadCedarValleyContext().scheme),
         );
-        await TestBed.configureTestingModule({
-            imports: [FacetHostComponent],
-            providers: [{ provide: EZCLASSIFY_STORE, useValue: store }],
-        }).compileComponents();
+        await configureRoot();
     });
 
     it('exposes controlled value, options, validation, and updates', async () => {
         await store.publishRendered('document', 'INTERNAL');
-        const fixture = TestBed.createComponent(FacetHostComponent);
+        const fixture = mountFacet(store);
         fixture.detectChanges();
         await flush();
         fixture.detectChanges();
-        const { facet } = fixture.componentInstance;
+        const facet = facetOf(fixture);
 
         expect(facet.options().length).toBeGreaterThan(0);
         expect(facet.value()).toContain('INTERNAL');
@@ -156,10 +196,10 @@ describe('injectEzClassifyFacet', () => {
         const marking = vi.spyOn(store, 'subscribe');
         const facetSubscription = vi.spyOn(store, 'subscribeFacet');
         const read = vi.spyOn(store, 'get');
-        const fixture = TestBed.createComponent(FacetHostComponent);
+        const fixture = mountFacet(store);
         fixture.detectChanges();
         await flush();
-        expect(fixture.componentInstance.facet.loading()).toBe(false);
+        expect(facetOf(fixture).loading()).toBe(false);
         expect(facetSubscription).toHaveBeenCalledTimes(1);
         expect(marking).not.toHaveBeenCalled();
         read.mockClear();
@@ -173,10 +213,10 @@ describe('injectEzClassifyFacet', () => {
     });
 
     it('projects the store cells rather than holding a copy of them', async () => {
-        const fixture = TestBed.createComponent(FacetHostComponent);
+        const fixture = mountFacet(store);
         fixture.detectChanges();
         await flush();
-        const { facet } = fixture.componentInstance;
+        const facet = facetOf(fixture);
 
         await store.publishRendered('document', 'INTERNAL');
         await flush();
@@ -198,7 +238,7 @@ describe('injectEzClassifyFacet', () => {
             store['engine'] as { process: (...args: never[]) => unknown },
             'process',
         );
-        const fixture = TestBed.createComponent(FacetHostComponent);
+        const fixture = mountFacet(store);
         fixture.detectChanges();
         await flush();
         expect(subscribeFacet).toHaveBeenCalledTimes(1);
@@ -242,7 +282,7 @@ describe('injectEzClassifyFacet', () => {
             );
         });
 
-        const fixture = TestBed.createComponent(FacetHostComponent);
+        const fixture = mountFacet(store);
         fixture.detectChanges();
         await flush();
 
@@ -253,9 +293,9 @@ describe('injectEzClassifyFacet', () => {
     });
 
     it('hands out read-only signals', () => {
-        const fixture = TestBed.createComponent(FacetHostComponent);
+        const fixture = mountFacet(store);
         fixture.detectChanges();
-        const { facet } = fixture.componentInstance;
+        const facet = facetOf(fixture);
         // A computed carries no `set`; displayed marking state changes only by
         // publishing through the store.
         for (const accessor of [
@@ -300,24 +340,6 @@ class LevelPickerComponent {
     selector: 'test-runtime-form',
     standalone: true,
     imports: [EzClassifyDirective, LevelPickerComponent],
-    template: `<div [ezClassify]="engine">
-        <input
-            id="doc-marking"
-            [value]="served"
-            type="hidden"
-            data-ezclassify-rendered />
-        <test-level-picker />
-    </div>`,
-})
-class RuntimeFormComponent {
-    @Input() engine = loadCedarValleyContext().scheme;
-    @Input() served = '';
-}
-
-@Component({
-    selector: 'test-app-runtime-form',
-    standalone: true,
-    imports: [EzClassifyDirective, LevelPickerComponent],
     template: `<div ezClassify>
         <input
             id="doc-marking"
@@ -327,7 +349,7 @@ class RuntimeFormComponent {
         <test-level-picker />
     </div>`,
 })
-class AppRuntimeFormComponent {
+class RuntimeFormComponent {
     @Input() served = '';
 }
 
@@ -341,11 +363,7 @@ async function settleRuntime(ready: Promise<void>): Promise<void> {
     await new Promise<void>((tick) => setTimeout(tick, 0));
 }
 
-function mountRuntimeForm(
-    component: typeof RuntimeFormComponent | typeof AppRuntimeFormComponent,
-    served: string,
-    pickInConstructor = false,
-) {
+function mountRuntimeForm(served: string, pickInConstructor = false) {
     mounted.facet = null;
     mounted.pickInConstructor = pickInConstructor;
     // The runtime's ready event bubbles to the document.
@@ -354,7 +372,7 @@ function mountRuntimeForm(
             once: true,
         }),
     );
-    const fixture = TestBed.createComponent(component);
+    const fixture = TestBed.createComponent(RuntimeFormComponent);
     fixture.componentInstance.served = served;
     fixture.detectChanges();
     return { fixture, ready, facet: () => mounted.facet! };
@@ -364,12 +382,14 @@ describe('injectEzClassifyFacet before the runtime has mounted', () => {
     beforeEach(async () => {
         await TestBed.configureTestingModule({
             imports: [RuntimeFormComponent],
+            providers: [
+                provideEzClassify({ context: loadCedarValleyContext() }),
+            ],
         }).compileComponents();
     });
 
     it('keeps a pick made in the constructor, before the store exists, on top of the served value', async () => {
         const { fixture, ready, facet } = mountRuntimeForm(
-            RuntimeFormComponent,
             'INTERNAL//DO NOT FORWARD',
             true,
         );
@@ -380,23 +400,9 @@ describe('injectEzClassifyFacet before the runtime has mounted', () => {
         expect(facet().rendered()).toBe('CONFIDENTIAL//DO NOT FORWARD');
         fixture.destroy();
     });
-});
 
-describe('injectEzClassifyFacet under provideEzClassify, before the runtime has mounted', () => {
-    beforeEach(async () => {
-        await TestBed.configureTestingModule({
-            imports: [AppRuntimeFormComponent],
-            providers: [
-                provideEzClassify({ engine: loadCedarValleyContext().scheme }),
-            ],
-        }).compileComponents();
-    });
-
-    it('keeps a pick over the value the host was served with', async () => {
-        const { fixture, ready, facet } = mountRuntimeForm(
-            AppRuntimeFormComponent,
-            'INTERNAL',
-        );
+    it('keeps a pick over the value the root was served with', async () => {
+        const { fixture, ready, facet } = mountRuntimeForm('INTERNAL');
         facet().setValue(['CONFIDENTIAL']);
         await settleRuntime(ready);
         fixture.detectChanges();

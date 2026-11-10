@@ -3,7 +3,6 @@ import {
     computed,
     effect,
     inject,
-    signal,
     untracked,
     type Signal,
 } from '@angular/core';
@@ -19,7 +18,6 @@ import {
 } from '@ezclassify/ui';
 import type { Suggestion, ValidationError } from '@ezclassify/types';
 import {
-    EZCLASSIFY_STORE,
     EZCLASSIFY_STORE_SIGNAL,
     requireSignalBackedStore,
     type SignalBackedEzClassifyStore,
@@ -39,9 +37,8 @@ export interface InjectEzClassifyFacetReturn {
  * Signal adapter for Angular Material and other controlled Angular fields.
  *
  * Use the returned signals with the component library's ordinary `[value]` and
- * change output. Initialization and teardown follow the surrounding
- * `[ezClassify]` directive, or the app-level `provideEzClassify()`, whichever
- * is in scope.
+ * change output. Call it from a component inside an `ezClassify` root;
+ * initialization and teardown follow that root.
  *
  * Nothing here mirrors store state. Every signal is a `computed` projection
  * over the store's own cells: `options` and `loading` read the facet cell, the
@@ -49,11 +46,11 @@ export interface InjectEzClassifyFacetReturn {
  * decides what either one holds. Selection changes use the shared publisher in
  * `@ezclassify/ui`; one facet subscription keeps the native cell current.
  *
- * The engine may not exist yet. A component is constructed during its host's
- * create pass, before `[ezClassify]` has applied, and an engine fetched over
- * the wire arrives later still. This arms itself from the scope's store signal,
- * so a late engine, or a rebuild on a changed engine, re-binds the facet
- * instead of leaving it stuck on its initial values.
+ * The store may not exist yet. A component is constructed during its root's
+ * create pass, before the root has built its store. This arms itself from the
+ * root's store signal, so the first build, or a rebuild on changed options or a
+ * changed store, binds the facet instead of leaving it stuck on its initial
+ * values.
  *
  * @param markingId - The marking this field is one facet of.
  * @param categoryId - The category this field controls.
@@ -63,12 +60,12 @@ export function injectEzClassifyFacet(
     markingId: string,
     categoryId: string,
 ): InjectEzClassifyFacetReturn {
-    const storeSignal = injectStoreSignal();
+    const storeSignal = injectStoreSignal(markingId, categoryId);
     const destroyRef = inject(DestroyRef);
 
     // The store the facet projects, derived rather than assigned. `null` means
-    // the scope has no store yet, which is the ordinary state before an engine
-    // arrives. A store that is present but cannot be projected is a different
+    // the root has not built its store yet, the ordinary state before its
+    // first change detection. A store that is present but cannot be projected is a different
     // thing entirely, and it says so: see requireSignalBackedStore.
     //
     // Deriving it also keeps the effect below free of signal writes, which
@@ -161,19 +158,23 @@ export function injectEzClassifyFacet(
 }
 
 /**
- * The scope's store as a signal.
+ * The enclosing root's store as a signal.
  *
- * `provideEzClassify()` and `EzClassifyDirective` both supply
- * {@link EZCLASSIFY_STORE_SIGNAL}. An application that wires
- * {@link EZCLASSIFY_STORE} by hand, which the package has always supported,
- * supplies only the store; read that as a store that is already there and will
- * not change. Neither one present is a wiring mistake, and the injector says so
- * in its own words.
+ * Only an `ezClassify` root provides one; there is no application-wide store.
+ * Called anywhere else, this fails with a message that names the fix rather
+ * than Angular's bare missing-provider error.
  *
- * @returns The scope's store, `null` while it has none.
+ * @returns The root's store, `null` until the root has built it.
+ * @throws Error when no `ezClassify` root encloses the caller.
  */
-function injectStoreSignal(): Signal<EzClassifyStore | null> {
+function injectStoreSignal(
+    markingId: string,
+    categoryId: string,
+): Signal<EzClassifyStore | null> {
     const provided = inject(EZCLASSIFY_STORE_SIGNAL, { optional: true });
     if (provided) return provided;
-    return signal(inject(EZCLASSIFY_STORE)).asReadonly();
+    throw new Error(
+        `[ezclassify/angular] injectEzClassifyFacet('${markingId}', '${categoryId}') ` +
+            'must be called from a component inside an ezClassify root.',
+    );
 }

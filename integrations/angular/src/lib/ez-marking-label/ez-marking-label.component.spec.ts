@@ -1,9 +1,9 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { TestBed } from '@angular/core/testing';
-import { Component, Input, SimpleChange, signal } from '@angular/core';
+import { Component, Input, SimpleChange } from '@angular/core';
 import { Context } from '@ezclassify/engine';
-import type { SchemeOperations } from '@ezclassify/engine';
 import { EzClassifyDirective } from '../ezclassify.directive';
+import { provideEzClassify } from '../provide-ezclassify';
 import { EzMarkingLabelComponent } from './ez-marking-label.component';
 
 // Raw JSON document in canonical nested form, passed directly to Context.fromComponents.
@@ -102,9 +102,9 @@ function makeChange(
     } as SimpleChange;
 }
 
-// ─── standalone (no directive) ───────────────────────────────────────────────
+// ─── no Context provided ─────────────────────────────────────────────────────
 
-describe('EzMarkingLabelComponent: standalone', () => {
+describe('EzMarkingLabelComponent: with no Context provided', () => {
     beforeEach(async () => {
         await TestBed.configureTestingModule({
             imports: [EzMarkingLabelComponent],
@@ -119,7 +119,7 @@ describe('EzMarkingLabelComponent: standalone', () => {
         expect(fixture.nativeElement.textContent.trim()).toBe('HIGH');
     });
 
-    it('renders without color when there is no engine or colorMap', () => {
+    it('renders without color when there is no Context or colorMap', () => {
         const fixture = TestBed.createComponent(EzMarkingLabelComponent);
         fixture.componentInstance.marking = 'HIGH';
         fixture.componentInstance.ngOnChanges({ marking: makeChange('HIGH') });
@@ -131,7 +131,7 @@ describe('EzMarkingLabelComponent: standalone', () => {
         );
     });
 
-    it('renders without color when colorMap has entries but no engine for processing', () => {
+    it('renders without color when colorMap has entries but no Context to read the marking', () => {
         const fixture = TestBed.createComponent(EzMarkingLabelComponent);
         fixture.componentInstance.marking = 'HIGH';
         fixture.componentInstance.colorMap = COLOR_MAP;
@@ -141,46 +141,44 @@ describe('EzMarkingLabelComponent: standalone', () => {
         });
         fixture.detectChanges(false);
         const span = fixture.nativeElement.querySelector('.ez-marking-label');
-        // No engine → cannot process → no color
+        // No Context, nothing to read the marking with, so no color.
         expect(span.classList.contains('ez-marking-label--colored')).toBe(
             false,
         );
     });
 });
 
-// ─── inside an [ezClassify] scope ─────────────────────────────────────────────
+// ─── inside an ezClassify root ───────────────────────────────────────────────
 
 @Component({
     selector: 'test-host',
     standalone: true,
     imports: [EzClassifyDirective, EzMarkingLabelComponent],
     template: `
-        <div [ezClassify]="engine" [ezClassifyOptions]="{ colorMap: colorMap }">
+        <div [ezClassifyOptions]="{ colorMap: colorMap }" ezClassify>
             <ez-marking-label [marking]="marking" />
         </div>
     `,
 })
 class TestHostComponent {
-    engine!: SchemeOperations;
     colorMap = COLOR_MAP;
     @Input() marking = '';
 }
 
-describe('EzMarkingLabelComponent: inside [ezClassify] scope', () => {
-    let engine: SchemeOperations;
-
+describe('EzMarkingLabelComponent: inside an ezClassify root', () => {
     beforeEach(async () => {
-        engine = Context.fromComponents({ scheme: testSchemeDoc })
-            .scheme as SchemeOperations;
-
         await TestBed.configureTestingModule({
             imports: [TestHostComponent],
+            providers: [
+                provideEzClassify({
+                    context: Context.fromComponents({ scheme: testSchemeDoc }),
+                }),
+            ],
         }).compileComponents();
     });
 
     function createHost(marking: string) {
         const fixture = TestBed.createComponent(TestHostComponent);
-        fixture.componentInstance.engine = engine;
         fixture.componentInstance.marking = marking;
         // EzClassifyDirective initializes via a microtask, flush before detecting
         fixture.detectChanges(false);
@@ -241,15 +239,12 @@ describe('EzMarkingLabelComponent: inside [ezClassify] scope', () => {
     standalone: true,
     imports: [EzClassifyDirective, EzMarkingLabelComponent],
     template: `
-        <div
-            [ezClassify]="engine"
-            [ezClassifyOptions]="{ colorMap: inheritedMap }">
+        <div [ezClassifyOptions]="{ colorMap: inheritedMap }" ezClassify>
             <ez-marking-label [marking]="marking" [colorMap]="overrideMap" />
         </div>
     `,
 })
 class TestOverrideHostComponent {
-    engine!: SchemeOperations;
     marking = 'LOW';
     inheritedMap = { HIGH: { background: '#b91c1c', text: '#ffffff' } };
     overrideMap = { LOW: { background: '#0000ff', text: '#ffffff' } };
@@ -259,14 +254,16 @@ describe('EzMarkingLabelComponent: explicit [colorMap] overrides inherited', () 
     beforeEach(async () => {
         await TestBed.configureTestingModule({
             imports: [TestOverrideHostComponent],
+            providers: [
+                provideEzClassify({
+                    context: Context.fromComponents({ scheme: testSchemeDoc }),
+                }),
+            ],
         }).compileComponents();
     });
 
     it('uses the explicit [colorMap] input instead of the inherited one', async () => {
-        const engine = Context.fromComponents({ scheme: testSchemeDoc })
-            .scheme as SchemeOperations;
         const fixture = TestBed.createComponent(TestOverrideHostComponent);
-        fixture.componentInstance.engine = engine;
         fixture.detectChanges(false);
         await Promise.resolve();
         fixture.detectChanges(false);
@@ -275,61 +272,5 @@ describe('EzMarkingLabelComponent: explicit [colorMap] overrides inherited', () 
         expect(span.classList.contains('ez-marking-label--colored')).toBe(true);
         // Should use the override map's LOW color, not the inherited HIGH-only map
         expect(span.style.getPropertyValue('--ez-marking-bg')).toBe('#0000ff');
-    });
-});
-
-// ─── an engine that arrives after the label is on screen ─────────────────────
-
-@Component({
-    selector: 'test-late-engine-host',
-    standalone: true,
-    imports: [EzClassifyDirective, EzMarkingLabelComponent],
-    template: `
-        <div
-            [ezClassify]="engine()"
-            [ezClassifyOptions]="{ colorMap: colorMap }">
-            <ez-marking-label [marking]="marking" />
-        </div>
-    `,
-})
-class TestLateEngineHostComponent {
-    readonly engine = signal<SchemeOperations | null>(null);
-    colorMap = COLOR_MAP;
-    marking = 'HIGH';
-}
-
-describe('EzMarkingLabelComponent: an engine that arrives late', () => {
-    beforeEach(async () => {
-        await TestBed.configureTestingModule({
-            imports: [TestLateEngineHostComponent],
-        }).compileComponents();
-    });
-
-    /**
-     * A REST-backed adapter is fetched, so the host binds an engine that is
-     * null for the first frames. The pill must resolve its color when the
-     * engine arrives, even when the label's own inputs have not changed.
-     */
-    it('colors the pill once the scope resolves an engine', async () => {
-        const fixture = TestBed.createComponent(TestLateEngineHostComponent);
-        fixture.detectChanges(false);
-        await Promise.resolve();
-        fixture.detectChanges(false);
-
-        const span = fixture.nativeElement.querySelector('.ez-marking-label');
-        expect(span.classList.contains('ez-marking-label--colored')).toBe(
-            false,
-        );
-
-        fixture.componentInstance.engine.set(
-            Context.fromComponents({ scheme: testSchemeDoc })
-                .scheme as SchemeOperations,
-        );
-        fixture.detectChanges(false);
-        await Promise.resolve();
-        fixture.detectChanges(false);
-
-        expect(span.classList.contains('ez-marking-label--colored')).toBe(true);
-        expect(span.style.getPropertyValue('--ez-marking-bg')).toBe('#b91c1c');
     });
 });

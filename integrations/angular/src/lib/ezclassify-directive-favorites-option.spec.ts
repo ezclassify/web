@@ -1,25 +1,19 @@
 /**
- * Regression coverage for `EzClassifyDirective`'s `favorites` option.
- *
- * `docs/attributes.md` in `@ezclassify/ui` claims framework integrations
- * "accept and forward the same option" as the vanilla `EzClassifyUI`
- * constructor's `favorites` config. Before this test existed that claim was
- * false for Angular too: `EzClassifyDirectiveOptions` had no `favorites` field
- * and the `new EzClassifyUI(...)` call never threaded one through, so an
- * Angular host had no way to turn the ★ surface on (mirrors
- * `use-scheme-engine-favorites-option.spec.tsx` in `@ezclassify/react` and
- * `use-ez-classify-favorites-option.spec.ts` in `@ezclassify/vue`).
+ * `[ezClassifyOptions]` forwards `favorites` to the UI runtime, the same option
+ * the vanilla `EzClassifyUI` constructor takes. A root that sets it shows the
+ * favorites button on its scanner-mounted fields; one that does not, shows
+ * none.
  */
 import { describe, it, expect } from 'vitest';
 import { TestBed } from '@angular/core/testing';
 import { Component } from '@angular/core';
 import { Context } from '@ezclassify/engine';
-import type { SchemeOperations } from '@ezclassify/engine';
 import type { FavoritesConfig } from '@ezclassify/ui';
 import {
     EzClassifyDirective,
     type EzClassifyDirectiveOptions,
 } from './ezclassify.directive';
+import { provideEzClassify } from './provide-ezclassify';
 
 const MINIMAL_SCHEME = {
     scheme: {
@@ -82,12 +76,11 @@ const noopFavorites: FavoritesConfig = { load: () => [] };
     selector: 'test-favorites-host',
     standalone: true,
     imports: [EzClassifyDirective],
-    template: `<div [ezClassify]="engine" [ezClassifyOptions]="options">
+    template: `<div [ezClassifyOptions]="options" ezClassify>
         <input data-ezclassify-controller="tags" />
     </div>`,
 })
 class FavoritesHostComponent {
-    engine?: SchemeOperations | null;
     options?: EzClassifyDirectiveOptions;
 }
 
@@ -104,11 +97,13 @@ describe('EzClassifyDirective ezClassifyOptions.favorites', () => {
     it('forwards favorites through to EzClassifyUI: the ★ button renders on a scanner-mounted field', async () => {
         await TestBed.configureTestingModule({
             imports: [FavoritesHostComponent],
+            providers: [
+                provideEzClassify({
+                    context: Context.fromComponents({ scheme: MINIMAL_SCHEME }),
+                }),
+            ],
         }).compileComponents();
-        const engine = Context.fromComponents({ scheme: MINIMAL_SCHEME })
-            .scheme as SchemeOperations;
         const fixture = TestBed.createComponent(FavoritesHostComponent);
-        fixture.componentInstance.engine = engine;
         fixture.componentInstance.options = { favorites: noopFavorites };
         fixture.detectChanges(false);
         await flush();
@@ -121,11 +116,13 @@ describe('EzClassifyDirective ezClassifyOptions.favorites', () => {
     it('renders no ★ button when favorites is omitted (default, unchanged)', async () => {
         await TestBed.configureTestingModule({
             imports: [FavoritesHostComponent],
+            providers: [
+                provideEzClassify({
+                    context: Context.fromComponents({ scheme: MINIMAL_SCHEME }),
+                }),
+            ],
         }).compileComponents();
-        const engine = Context.fromComponents({ scheme: MINIMAL_SCHEME })
-            .scheme as SchemeOperations;
         const fixture = TestBed.createComponent(FavoritesHostComponent);
-        fixture.componentInstance.engine = engine;
         fixture.detectChanges(false);
         await flush();
 

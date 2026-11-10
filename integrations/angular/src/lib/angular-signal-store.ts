@@ -39,9 +39,9 @@ import {
 } from '@ezclassify/ui';
 
 /**
- * DI token holding the active `EzClassifyStore` for the current scope.
- * `EzClassifyDirective` provides one per host; descendants pull it via
- * `inject(EZCLASSIFY_STORE)`.
+ * DI token holding the enclosing root's `EzClassifyStore`. Each
+ * `EzClassifyDirective` provides its own; descendants pull it via
+ * `inject(EZCLASSIFY_STORE)`. There is no application-wide store.
  */
 export const EZCLASSIFY_STORE = new InjectionToken<EzClassifyStore>(
     'EZCLASSIFY_STORE',
@@ -49,18 +49,14 @@ export const EZCLASSIFY_STORE = new InjectionToken<EzClassifyStore>(
 
 /**
  * The same store as {@link EZCLASSIFY_STORE}, as a signal that reads `null`
- * until the scope has one.
+ * until the root has built it.
  *
  * `EZCLASSIFY_STORE` hands back a usable handle, which is what a binding wants
- * once the engine is in place. It cannot express "not yet": a descendant is
- * constructed during the host's create pass, before the directive's inputs are
- * applied, and an engine fetched over the wire may not arrive for another
- * second after that. A binding that needs to arm itself when the store shows up
- * reads this signal instead of guessing at a microtask.
- *
- * `provideEzClassify` supplies a constant signal (the application store exists
- * as soon as anything asks for it); `EzClassifyDirective` supplies its own, so
- * a rebuild on a changed engine re-arms every binding in its scope.
+ * once the store exists. It cannot express "not yet": a descendant is
+ * constructed during the root's create pass, before the directive's first
+ * change detection builds the store. A binding that needs to arm itself when
+ * the store shows up reads this signal instead of guessing at a microtask, and
+ * a rebuild re-arms every binding in the root.
  */
 export const EZCLASSIFY_STORE_SIGNAL = new InjectionToken<
     Signal<EzClassifyStore | null>

@@ -1,22 +1,19 @@
 /**
  * EzMarkingLabelComponent: static marking pill with scheme-driven coloring.
  *
- * Displays a marking string as a styled pill. Color comes from the nearest
- * [ezClassify] host, or from the application's own provision when there is no
- * host above the label; no manual assertion inspection needed at the call
- * site.
+ * Displays a marking string as a styled pill, colored from the Context and
+ * options named by `provideEzClassify()`. Inside an `ezClassify` root the
+ * root's `[ezClassifyOptions]` color map wins over the provided one. A label in
+ * a search-results list or a table cell needs no root above it.
  *
- * Usage anywhere under `provideEzClassify()`, or inside an [ezClassify] scope:
  * <ez-marking-label [marking]="hit.marking" />
  *
- * The component resolves the color by running the marking through the scope's
- * engine, then finding the first assertion whose conceptId has an entry in the
- * colorMap. If no match is found (or no engine/colorMap is present), the label
- * renders without a background color.
+ * The component runs the marking through the Context's scheme, then takes the
+ * first assertion whose conceptId has an entry in the colorMap. With no match,
+ * no Context or no colorMap, the label renders without a background color.
  *
- * The colorMap can also be passed explicitly: useful outside an [ezClassify]
- * scope or when you need to override the inherited map: <ez-marking-label
- * [marking]="hit.marking" [colorMap]="myMap" />
+ * The colorMap can also be passed explicitly, to override the inherited map:
+ * <ez-marking-label [marking]="hit.marking" [colorMap]="myMap" />
  */
 
 import {
@@ -26,24 +23,14 @@ import {
     Input,
     OnChanges,
     SimpleChanges,
-    effect,
     inject,
-    untracked,
 } from '@angular/core';
 import type { Assertion } from '@ezclassify/types';
 import type { RenderColorMap } from '@ezclassify/ui';
 import { EzClassifyDirective } from '../ezclassify.directive';
-import {
-    EZCLASSIFY_ENGINE,
-    EZCLASSIFY_OPTIONS,
-    resolveSchemeAdapter,
-    type EzClassifySchemeEngine,
-} from '../provide-ezclassify';
+import { EZCLASSIFY_CONTEXT, EZCLASSIFY_OPTIONS } from '../provide-ezclassify';
 
-/**
- * A static marking pill that picks up scheme-driven color from the nearest
- * [ezClassify] root.
- */
+/** A static marking pill colored from the provided Context. */
 @Component({
     selector: 'ez-marking-label',
     standalone: true,
@@ -77,15 +64,7 @@ import {
     ],
 })
 export class EzMarkingLabelComponent implements OnChanges {
-    /**
-     * The app-level engine, used when no `[ezClassify]` host sits above this
-     * label. A label is often rendered in a search-results list or a table cell
-     * outside any host, which is why the token is injected at all; a host that
-     * bound its own engine still wins for its descendants.
-     */
-    private readonly providedEngine = inject(EZCLASSIFY_ENGINE, {
-        optional: true,
-    });
+    private readonly context = inject(EZCLASSIFY_CONTEXT, { optional: true });
     private readonly providedOptions = inject(EZCLASSIFY_OPTIONS, {
         optional: true,
     });
@@ -95,9 +74,8 @@ export class EzMarkingLabelComponent implements OnChanges {
     /** The raw marking string to display. */
     @Input() marking = '';
     /**
-     * Color map keyed by conceptId. When provided, overrides the colorMap from
-     * the nearest [ezClassify] root. Shape: `{ conceptId: { background, text,
-     * border? } }`.
+     * Color map keyed by conceptId. When provided, overrides the inherited
+     * colorMap. Shape: `{ conceptId: { background, text, border? } }`.
      */
     @Input() colorMap?: RenderColorMap;
 
@@ -110,63 +88,17 @@ export class EzMarkingLabelComponent implements OnChanges {
     /** @internal: public only for template binding */
     hasColor = false;
 
-    /**
-     * The engine the last color resolution ran against. `undefined` means no
-     * resolution has happened yet, which is distinct from having resolved
-     * against no engine at all.
-     */
-    private resolvedAgainst: EzClassifySchemeEngine | null | undefined =
-        undefined;
-
-    constructor() {
-        // The inputs are what ngOnChanges covers. The engine is not an input:
-        // a host's `[ezClassify]` may be bound to an engine fetched over the
-        // wire, and until that lands there is nothing to run the marking
-        // through. Without this the label would color itself once, against no
-        // engine, and never look again. Same re-arming the facet injectable
-        // does, off the same directive's signals.
-        effect(() => {
-            this.dir?.engineSignal();
-            untracked(() => {
-                if (this.resolveEngine() === this.resolvedAgainst) return;
-                this.resolveColor();
-                this.cdr.markForCheck();
-            });
-        });
-    }
-
     ngOnChanges(changes: SimpleChanges): void {
         if (changes['marking'] || changes['colorMap']) {
             this.resolveColor();
         }
     }
 
-    /**
-     * The engine this label runs its marking through: the nearest
-     * `[ezClassify]` host's, otherwise the app-level one.
-     *
-     * Host first, deliberately. `[ezClassify]` shadows the app engine for a
-     * host and its descendants, and a label is a descendant like any other. The
-     * directive does not provide {@link EZCLASSIFY_ENGINE} in its own node
-     * injector, so reading the token here reaches past the host to the app;
-     * asking the directive is what respects the override. `getEngine()` already
-     * falls back to the app-level engine when the host bound none, so the token
-     * only answers for a label with no host above it at all.
-     */
-    private resolveEngine(): EzClassifySchemeEngine | null {
-        const fromHost = this.dir?.getEngine();
-        if (fromHost) return fromHost;
-        return this.providedEngine
-            ? resolveSchemeAdapter(this.providedEngine)
-            : null;
-    }
-
     private resolveColor(): void {
-        const engine = this.resolveEngine();
-        this.resolvedAgainst = engine;
-        // Same precedence, for the same reason: the explicit input, then the
-        // host's options (already merged over the app-level ones by the
-        // directive), then the app-level options for a label with no host.
+        const engine = this.context?.scheme ?? null;
+        // The explicit input, then the root's options (already merged over the
+        // provided ones by the directive), then the provided options for a
+        // label with no root above it.
         const map =
             this.colorMap ??
             this.dir?.getOptions().colorMap ??
