@@ -757,9 +757,9 @@ export class EzClassifyUI {
 
     /**
      * What a level view prints to name a bucket: its scheme's name, after the
-     * Context key when the instance holds several Contexts. A scheme other
-     * than the Context's primary is named by its own view, or by its selector
-     * when that view cannot describe it.
+     * Context key when the instance holds several Contexts. A scheme other than
+     * the Context's primary is named by its own view, or by its selector when
+     * that view cannot describe it.
      */
     private bucketLabel(bucket: BucketKey): string {
         const { contextKey, schemeSelector } = bucketParts(bucket);

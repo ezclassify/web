@@ -468,8 +468,8 @@ describe('a field that selects a scheme', () => {
     /**
      * A crosswalk Context: the reference scheme is its primary and the second
      * reference scheme the crosswalk's target. Both engines are real; the
-     * Context's scheme list and its view of the second scheme are composed
-     * here the way a crosswalk Context reports them.
+     * Context's scheme list and its view of the second scheme are composed here
+     * the way a crosswalk Context reports them.
      */
     function crosswalking() {
         const context = reference();
@@ -517,9 +517,7 @@ describe('a field that selects a scheme', () => {
         const { context, schemeView } = crosswalking();
         const ui = mount(context);
         await expect.poll(() => output('first-page').value).toBe('HIGH');
-        await expect
-            .poll(() => output('second-page').value)
-            .toBe('LOW//ALPHA');
+        await expect.poll(() => output('second-page').value).toBe('LOW//ALPHA');
 
         expect(hostErrors()).toEqual([]);
         expect(schemeView).toHaveBeenCalledWith('ref-scheme-2');

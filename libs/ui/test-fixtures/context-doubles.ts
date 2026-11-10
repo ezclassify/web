@@ -43,6 +43,7 @@ export function schemeOnlyContext(scheme: unknown): ContextAdapter {
     return {
         connected: true,
         scheme: scheme as ContextSchemeEngineAdapter,
+        schemeView: unavailable('open a view of another scheme'),
         describeSchemes: unavailable('describe its schemes'),
         describeCrosswalks: () => [],
         audit: unavailable('audit a document'),
