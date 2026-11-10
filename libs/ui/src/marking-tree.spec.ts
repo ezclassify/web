@@ -520,6 +520,7 @@ describe('a field that selects a scheme', () => {
         await expect.poll(() => output('second-page').value).toBe('LOW//ALPHA');
 
         expect(hostErrors()).toEqual([]);
+        expect(schemeView).toHaveBeenCalledWith('ref-scheme-2');
         const page = ui.store.getAggregate().byBucket;
         expect([...page.keys()].sort()).toEqual(
             [bucketKey('', ''), bucketKey('', 'ref-scheme-2')].sort(),
