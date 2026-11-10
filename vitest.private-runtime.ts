@@ -71,21 +71,6 @@ export const SIBLING_TESTING_UTILS = path.resolve(
     '../runtime/packages/testing-utils/src/index.ts',
 );
 
-/**
- * The engine's internal surface in the sibling runtime checkout.
- *
- * Testing-utils imports `@ezclassify/engine/internal`. That subpath is
- * deliberately not a published package export, so first-party consumers inline
- * it with a build-time alias to the engine source, the same thing the runtime
- * repository's own vite configs do. Resolving testing-utils from source here
- * means this repository needs that alias too, or the conformance specs fail to
- * load with "./internal is not exported from @ezclassify/engine".
- */
-export const SIBLING_ENGINE_INTERNAL = path.resolve(
-    import.meta.dirname,
-    '../runtime/libs/engine/src/internal.ts',
-);
-
 /** Whether the sibling runtime checkout is present next to this repository. */
 export const hasSiblingRuntime = existsSync(SIBLING_TESTING_UTILS);
 
@@ -154,7 +139,6 @@ export const siblingRuntimeAliases: Record<string, string> = hasSiblingRuntime
               'licensed-runtime.ts',
           ),
           '@ezclassify/testing-utils': SIBLING_TESTING_UTILS,
-          '@ezclassify/engine/internal': SIBLING_ENGINE_INTERNAL,
       }
     : {};
 

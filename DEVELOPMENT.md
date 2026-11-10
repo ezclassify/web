@@ -231,8 +231,8 @@ publish, rollup, or capture fails in CI, on a pull request, for anybody.
 
 The `EzClassifyStore` conformance suite in `@ezclassify/testing-utils` covers
 more of the contract than the parity suite does, and it cannot come here: it
-imports an engine subpath that is deliberately not a published export. Its
-specs run only in the maintainer integration environment described above:
+drives the engine, and `@ezclassify/testing-utils` is not on a public registry.
+Its specs run only in the maintainer integration environment described above:
 
 - [`libs/ui/src/store/ezclassify-store.spec.ts`](libs/ui/src/store/ezclassify-store.spec.ts)
 - [`integrations/react/src/react-ezclassify-store.spec.ts`](integrations/react/src/react-ezclassify-store.spec.ts)

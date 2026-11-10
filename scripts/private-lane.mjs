@@ -36,8 +36,8 @@ const REPO_ROOT = path.resolve(__dirname, '..');
  * Packages the private lane needs from a registry.
  *
  * `@ezclassify/testing-utils` is deliberately absent: it resolves from the
- * sibling `../runtime` checkout through a source alias, because its specs
- * import an engine subpath that is not a published export.
+ * sibling `../runtime` checkout through a source alias, so an edit to the suite
+ * is visible here without a publish.
  */
 const PRIVATE_PACKAGES = [
     '@ezclassify/engine',
