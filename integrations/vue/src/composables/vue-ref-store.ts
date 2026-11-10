@@ -19,11 +19,11 @@
  * See `libs/ui/docs/binding-model.md` §8 for the state-adapter pattern.
  */
 
-import { ref as vueRef, type InjectionKey, type Ref } from 'vue';
+import { inject, ref as vueRef, type InjectionKey, type Ref } from 'vue';
 import {
     BaseEzClassifyStore,
+    type EzClassifyAggregate,
     type EzClassifyState,
-    type EzClassifyStoreEngine,
     type FacetState,
     type ReactiveCell,
 } from '@ezclassify/ui';
@@ -46,9 +46,17 @@ class VueCell<T> implements ReactiveCell<T> {
     }
 }
 
+/** What a store is built over: the engine(s) `BaseEzClassifyStore` takes. */
+type StoreEngines = ConstructorParameters<typeof BaseEzClassifyStore>[0];
+
 export class VueRefStore extends BaseEzClassifyStore {
-    constructor(engine: EzClassifyStoreEngine, options?: VueRefStoreOptions) {
-        super(engine, options);
+    /**
+     * @param engines - The engine markings are read by, or the buckets of an
+     *   instance over several Contexts, as `BaseEzClassifyStore` takes them.
+     * @param options - The whole-marking format, for a store over one engine.
+     */
+    constructor(engines: StoreEngines, options?: VueRefStoreOptions) {
+        super(engines, options);
     }
 
     protected createCell<T>(initial: T): ReactiveCell<T> {
@@ -64,9 +72,13 @@ export class VueRefStore extends BaseEzClassifyStore {
         return (this.markingCell(id) as VueCell<EzClassifyState>).ref;
     }
 
-    /** Live ref for the page-level aggregate. */
-    aggregateRef(): Ref<EzClassifyState> {
-        return (this.aggregateStateCell() as VueCell<EzClassifyState>).ref;
+    /**
+     * Live ref for a level's rollup, one state per bucket: the page when
+     * `nodeId` is omitted, else that collection or whole.
+     */
+    aggregateRef(nodeId?: string): Ref<EzClassifyAggregate> {
+        return (this.aggregateStateCell(nodeId) as VueCell<EzClassifyAggregate>)
+            .ref;
     }
 
     /** Live ref for a per-whole rollup. Templates can `v-bind` it directly. */
@@ -91,9 +103,25 @@ export class VueRefStore extends BaseEzClassifyStore {
 }
 
 /**
- * Vue `provide` / `inject` key for the active `VueRefStore`. The runtime
- * initializer (`useEzClassify(engine, options)`) calls `provide()` with it; the
- * binding composable (`useEzClassify(id)`) calls `inject()`.
+ * Vue `provide` / `inject` key for the active `VueRefStore`. `<EzClassify>`
+ * provides its root's store under it; the binding composables inject it. A host
+ * that owns a store outside any root can provide it under this key too.
  */
 export const VueRefStoreKey: InjectionKey<VueRefStore> =
     Symbol('EzClassifyStore');
+
+/**
+ * The store of the nearest `<EzClassify>` root, for a binding composable.
+ *
+ * @param caller - The composable's name, for the error.
+ * @throws When no root (or host-provided store) is above the caller.
+ */
+export function injectRootStore(caller: string): VueRefStore {
+    const store = inject(VueRefStoreKey, null);
+    if (!store) {
+        throw new Error(
+            `[ezclassify/vue] ${caller} must be called inside an <EzClassify> root`,
+        );
+    }
+    return store;
+}

@@ -1,23 +1,18 @@
 /**
- * Regression coverage for `useEzClassify`'s `favorites` option.
+ * `createEzClassify({ favorites })` reaches every scanner-mounted field.
  *
- * `docs/attributes.md` in `@ezclassify/ui` claims framework integrations
- * "accept and forward the same option" as the vanilla `EzClassifyUI`
- * constructor's `favorites` config. Before this test existed that claim was
- * false for Vue too: `UseEzClassifyOptions` had no `favorites` field and the
- * `new EzClassifyUI(...)` call never threaded one through, so a Vue host had no
- * way to turn the ★ surface on (mirrors
- * `use-scheme-engine-favorites-option.spec.tsx` in `@ezclassify/react` and
- * `libs/ui/src/ezclassify-ui-favorites-option.spec.ts` for the vanilla
- * declarative case).
+ * `docs/attributes.md` in `@ezclassify/ui` says framework integrations accept
+ * and forward the same `favorites` option as the vanilla `EzClassifyUI`
+ * constructor. Favorites persistence is host-fed and has no `data-ezclassify-*`
+ * equivalent, so the plugin option is a Vue host's only way to turn the ★
+ * surface on.
  */
 import { describe, it, expect, afterEach } from 'vitest';
 import { defineComponent, h, nextTick } from 'vue';
 import { mount, type VueWrapper } from '@vue/test-utils';
 import { Context } from '@ezclassify/engine';
-import type { LocalContextSchemeEngineAdapter } from '@ezclassify/types';
 import type { FavoritesConfig } from '@ezclassify/ui';
-import { useEzClassify } from './index';
+import { createEzClassify, EzClassify } from './index';
 
 const MINIMAL_SCHEME = {
     scheme: {
@@ -89,20 +84,20 @@ afterEach(() => {
 function mountTagsField(favorites?: FavoritesConfig): HTMLDivElement {
     root = document.createElement('div');
     document.body.appendChild(root);
-    const engine = Context.fromComponents({ scheme: MINIMAL_SCHEME })
-        .scheme as LocalContextSchemeEngineAdapter;
-    const localRoot = root;
+    const context = Context.fromComponents({ scheme: MINIMAL_SCHEME });
     const App = defineComponent({
         setup() {
-            useEzClassify(engine, { root: localRoot, favorites });
-            return () => h('div');
+            return () =>
+                h(EzClassify, null, () =>
+                    h('input', { 'data-ezclassify-controller': 'tags' }),
+                );
         },
     });
-    const el = document.createElement('div');
-    document.body.appendChild(el);
-    localRoot.innerHTML = '<input data-ezclassify-controller="tags" />';
-    wrapper = mount(App, { attachTo: el });
-    return localRoot;
+    wrapper = mount(App, {
+        attachTo: root,
+        global: { plugins: [createEzClassify({ context, favorites })] },
+    });
+    return root;
 }
 
 async function flush(): Promise<void> {
@@ -112,8 +107,8 @@ async function flush(): Promise<void> {
     }
 }
 
-describe('useEzClassify({ favorites })', () => {
-    it('forwards favorites through to EzClassifyUI: the ★ button renders on a scanner-mounted field', async () => {
+describe('createEzClassify({ favorites })', () => {
+    it('forwards favorites to every root: the ★ button renders on a scanner-mounted field', async () => {
         const mountedRoot = mountTagsField(noopFavorites);
         await flush();
 
@@ -122,7 +117,7 @@ describe('useEzClassify({ favorites })', () => {
         ).not.toBeNull();
     });
 
-    it('renders no ★ button when favorites is omitted (default, unchanged)', async () => {
+    it('renders no ★ button when favorites is omitted', async () => {
         const mountedRoot = mountTagsField();
         await flush();
 

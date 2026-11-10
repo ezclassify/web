@@ -1,6 +1,5 @@
 import {
     computed,
-    inject,
     onBeforeUnmount,
     type ComputedRef,
     type WritableComputedRef,
@@ -11,7 +10,7 @@ import {
     type EzClassifyFacetSelectionInput,
 } from '@ezclassify/ui';
 import type { Suggestion, ValidationError } from '@ezclassify/types';
-import { VueRefStoreKey } from './vue-ref-store';
+import { injectRootStore } from './vue-ref-store';
 
 export interface UseEzClassifyFacetReturn {
     /** Bind directly with `v-model`. */
@@ -42,12 +41,7 @@ export function useEzClassifyFacet(
     markingId: string,
     categoryId: string,
 ): UseEzClassifyFacetReturn {
-    const store = inject(VueRefStoreKey);
-    if (!store) {
-        throw new Error(
-            '[ezclassify/vue] useEzClassifyFacet requires useEzClassify() higher in the tree, or provideEzClassify({ engine }) at the app root',
-        );
-    }
+    const store = injectRootStore('useEzClassifyFacet');
 
     // The store writes the native ref before notifying listeners. This
     // subscription retains computation; computed refs read the cell directly.

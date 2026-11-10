@@ -4,15 +4,14 @@
  * select consumes, and the fact that a publish made straight against the store
  * moves the returned refs without anything routing through the composable. They
  * also pin that a pick made before a runtime has seeded the store survives that
- * seed, wherever the picker sits relative to the runtime.
+ * seed, wherever the picker sits inside the root.
  */
 import { describe, it, expect, vi } from 'vitest';
-import { defineComponent, h, nextTick, shallowRef } from 'vue';
+import { defineComponent, h, nextTick } from 'vue';
 import { mount } from '@vue/test-utils';
 import { loadCedarValleyContext } from '@ezclassify/example-schemes/cedar-valley';
 import { VueRefStore, VueRefStoreKey } from './vue-ref-store';
-import { useEzClassify } from '../index';
-import { provideEzClassify } from './provide-ezclassify';
+import { createEzClassify, EzClassify } from '../index';
 import {
     useEzClassifyFacet,
     type UseEzClassifyFacetReturn,
@@ -113,7 +112,7 @@ describe('useEzClassifyFacet', () => {
                 return () => h('div');
             },
         });
-        expect(() => mount(Child)).toThrow(/provideEzClassify|useEzClassify/);
+        expect(() => mount(Child)).toThrow(/inside an <EzClassify> root/);
     });
 });
 
@@ -156,13 +155,12 @@ function mountForm(served: string, pickInSetup = false) {
     });
     const Form = defineComponent({
         setup() {
-            useEzClassify(loadCedarValleyContext().scheme, { root });
             return () =>
-                h('div', [
+                h(EzClassify, null, () => [
                     h('input', {
                         'type': 'hidden',
                         'id': 'doc-marking',
-                        'data-ezclassify-rendered': '',
+                        'data-ezclassify-marking': '',
                         'value': served,
                     }),
                     h(Picker),
@@ -170,13 +168,23 @@ function mountForm(served: string, pickInSetup = false) {
         },
     });
     const ready = runtimeReady(root);
-    const wrapper = mount(Form, { attachTo: root });
+    const wrapper = mount(Form, withPlugin(root));
     return {
         ready,
         facet: () => facet,
         unmount: () => {
             wrapper.unmount();
             root.remove();
+        },
+    };
+}
+
+/** Mount options: attached under `root`, with the plugin installed. */
+function withPlugin(root: HTMLElement) {
+    return {
+        attachTo: root,
+        global: {
+            plugins: [createEzClassify({ context: loadCedarValleyContext() })],
         },
     };
 }
@@ -202,10 +210,9 @@ describe('useEzClassifyFacet before the runtime has mounted', () => {
         form.unmount();
     });
 
-    it('keeps a pick from a picker beside the runtime that shares the app store', async () => {
-        // A picker in a toolbar and the form the runtime scans further down:
-        // siblings under one provideEzClassify, so the picker is not inside
-        // the subtree of the useEzClassify() that mounts the runtime.
+    it('keeps a pick from a picker in a toolbar beside the form, under one root', async () => {
+        // A picker in a toolbar and the form further down: siblings, not
+        // parent and child, sharing state because one root holds both.
         const root = document.createElement('div');
         document.body.appendChild(root);
         let facet!: UseEzClassifyFacetReturn;
@@ -217,84 +224,26 @@ describe('useEzClassifyFacet before the runtime has mounted', () => {
         });
         const Form = defineComponent({
             setup() {
-                useEzClassify(undefined, { root });
                 return () =>
-                    h('input', {
-                        'type': 'hidden',
-                        'id': 'doc-marking',
-                        'data-ezclassify-rendered': '',
-                        'value': 'INTERNAL//DO NOT FORWARD',
-                    });
-            },
-        });
-        const App = defineComponent({
-            setup() {
-                provideEzClassify({ engine: loadCedarValleyContext().scheme });
-                return () => h('div', [h(Picker), h(Form)]);
-            },
-        });
-        const ready = runtimeReady(root);
-        const wrapper = mount(App, { attachTo: root });
-        facet.setValue(['CONFIDENTIAL']);
-        await settleRuntime(ready);
-
-        expect(facet.value.value).toEqual(['CONFIDENTIAL']);
-        expect(facet.rendered.value).toBe('CONFIDENTIAL//DO NOT FORWARD');
-        wrapper.unmount();
-        root.remove();
-    });
-});
-
-describe('useEzClassifyFacet when its runtime is re-created over the same hosts', () => {
-    it('keeps a pick made under the first runtime', async () => {
-        // The hosts live outside the component that mounts the runtime, so the
-        // second runtime seeds the same hosts from the same store.
-        const root = document.createElement('div');
-        const host = document.createElement('input');
-        host.type = 'hidden';
-        host.id = 'doc-marking';
-        host.setAttribute('data-ezclassify-rendered', '');
-        host.value = 'INTERNAL//DO NOT FORWARD';
-        const mountPoint = document.createElement('div');
-        root.append(host, mountPoint);
-        document.body.appendChild(root);
-        const showRuntime = shallowRef(true);
-        let facet!: UseEzClassifyFacetReturn;
-        const Picker = defineComponent({
-            setup() {
-                facet = useEzClassifyFacet('doc-marking', 'level');
-                return () => h('div');
-            },
-        });
-        const Runtime = defineComponent({
-            setup() {
-                useEzClassify(undefined, { root });
-                return () => h('div');
-            },
-        });
-        const App = defineComponent({
-            setup() {
-                provideEzClassify({ engine: loadCedarValleyContext().scheme });
-                return () =>
-                    h('div', [
-                        h(Picker),
-                        showRuntime.value ? h(Runtime) : null,
+                    h('form', [
+                        h('input', {
+                            'type': 'hidden',
+                            'id': 'doc-marking',
+                            'data-ezclassify-marking': '',
+                            'value': 'INTERNAL//DO NOT FORWARD',
+                        }),
                     ]);
             },
         });
-        const firstReady = runtimeReady(root);
-        const wrapper = mount(App, { attachTo: mountPoint });
-        await settleRuntime(firstReady);
+        const App = defineComponent({
+            setup() {
+                return () => h(EzClassify, null, () => [h(Picker), h(Form)]);
+            },
+        });
+        const ready = runtimeReady(root);
+        const wrapper = mount(App, withPlugin(root));
         facet.setValue(['CONFIDENTIAL']);
-        await settleRuntime(Promise.resolve());
-        expect(facet.rendered.value).toBe('CONFIDENTIAL//DO NOT FORWARD');
-
-        showRuntime.value = false;
-        await nextTick();
-        const secondReady = runtimeReady(root);
-        showRuntime.value = true;
-        await nextTick();
-        await settleRuntime(secondReady);
+        await settleRuntime(ready);
 
         expect(facet.value.value).toEqual(['CONFIDENTIAL']);
         expect(facet.rendered.value).toBe('CONFIDENTIAL//DO NOT FORWARD');

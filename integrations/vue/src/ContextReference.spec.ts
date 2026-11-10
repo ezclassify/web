@@ -22,7 +22,7 @@ import {
     cedarValleyGuideYaml,
     cedarValleyAccessYaml,
 } from '@ezclassify/example-schemes/cedar-valley';
-import { useEzClassify } from './index';
+import { createEzClassify, EzClassify } from './index';
 import { ContextReference, ContextReferenceTab } from './ContextReference';
 
 if (typeof window !== 'undefined' && !window.matchMedia) {
@@ -121,14 +121,13 @@ describe('Vue <ContextReference> reactive lifecycle', () => {
         root = document.createElement('div');
         document.body.appendChild(root);
         const localRoot = root;
-        const engine = fullContext();
+        const context = fullContext();
         const App = defineComponent({
             setup() {
                 showDev = ref(true);
                 showOps = ref(false);
                 swap = ref(false);
                 label = ref('dev content');
-                useEzClassify(engine, { root: localRoot });
                 return () => {
                     const dev = showDev.value
                         ? h(
@@ -151,15 +150,21 @@ describe('Vue <ContextReference> reactive lifecycle', () => {
                     const kids: VNodeChild[] = swap.value
                         ? [ops, dev]
                         : [dev, ops];
-                    return h(
-                        ContextReference,
-                        { open: true },
-                        { default: () => kids },
-                    );
+                    return h(EzClassify, null, {
+                        default: () =>
+                            h(
+                                ContextReference,
+                                { open: true },
+                                { default: () => kids },
+                            ),
+                    });
                 };
             },
         });
-        wrapper = mount(App, { attachTo: localRoot });
+        wrapper = mount(App, {
+            attachTo: localRoot,
+            global: { plugins: [createEzClassify({ context })] },
+        });
         return localRoot;
     }
 

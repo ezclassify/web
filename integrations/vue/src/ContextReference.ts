@@ -6,8 +6,8 @@
  * carrying the `data-ezclassify-*` attributes and `--ez-context-ref-*` CSS
  * variables the vanilla controller reads (mapped by the shared
  * `contextReferenceHostAttributes`), and passes its default slot straight
- * through. The ambient scanner from `useEzClassify()` enhances the host; the
- * vanilla controller does all the work.
+ * through. The enclosing `<EzClassify>` root enhances the host; the vanilla
+ * controller does all the work.
  *
  * A custom tab is `<ContextReferenceTab label="...">`, which renders the
  * `data-ezclassify-tab` marker element the controller scans for. The slot IS
@@ -26,14 +26,6 @@ import {
     defineComponent,
     h,
     type PropType,
-    type AllowedComponentProps,
-    type ComponentCustomProps,
-    type ComponentObjectPropsOptions,
-    type ComponentOptionsMixin,
-    type DefineComponent,
-    type ExtractDefaultPropTypes,
-    type ExtractPropTypes,
-    type VNodeProps,
     type SlotsType,
     type VNodeChild,
 } from 'vue';
@@ -43,26 +35,7 @@ import {
     type ContextReferenceOffsets,
     type ContextReferencePlacement,
 } from '@ezclassify/ui';
-
-// Keep emitted component declarations on the Vue 3.3 public type surface.
-// Newer inferred DefineComponent signatures add generic parameters unavailable
-// to a consumer using our minimum supported Vue version.
-type ReferenceComponent<Props extends ComponentObjectPropsOptions> =
-    DefineComponent<
-        Props,
-        {},
-        {},
-        {},
-        {},
-        ComponentOptionsMixin,
-        ComponentOptionsMixin,
-        {},
-        string,
-        VNodeProps & AllowedComponentProps & ComponentCustomProps,
-        Readonly<ExtractPropTypes<Props>>,
-        ExtractDefaultPropTypes<Props>,
-        SlotsType<{ default?: () => VNodeChild }>
-    >;
+import type { SlottedComponent } from './component-type';
 
 const contextReferenceProps = {
     placement: {
@@ -95,33 +68,31 @@ const contextReferenceProps = {
 } as const;
 
 /**
- * The docked reference drawer. Use inside a tree initialized with
- * `useEzClassify()`; the controller derives its built-in tabs from the loaded
- * context.
+ * The docked reference drawer. Use inside an `<EzClassify>` root; the
+ * controller derives its built-in tabs from the loaded Context.
  */
-export const ContextReference: ReferenceComponent<
-    typeof contextReferenceProps
-> = defineComponent({
-    name: 'ContextReference',
-    props: contextReferenceProps,
-    slots: Object as SlotsType<{ default?: () => VNodeChild }>,
-    setup(props, { slots }) {
-        return () => {
-            const { attributes, style } = contextReferenceHostAttributes({
-                placement: props.placement,
-                size: props.size,
-                offset: props.offset,
-                open: props.open,
-                tabs: props.tabs,
-                theme: props.theme,
-                colorScheme: props.colorScheme,
-                tabLabels: props.tabLabels,
-                tabIcons: props.tabIcons,
-            });
-            return h('div', { ...attributes, style }, [slots.default?.()]);
-        };
-    },
-});
+export const ContextReference: SlottedComponent<typeof contextReferenceProps> =
+    defineComponent({
+        name: 'ContextReference',
+        props: contextReferenceProps,
+        slots: Object as SlotsType<{ default?: () => VNodeChild }>,
+        setup(props, { slots }) {
+            return () => {
+                const { attributes, style } = contextReferenceHostAttributes({
+                    placement: props.placement,
+                    size: props.size,
+                    offset: props.offset,
+                    open: props.open,
+                    tabs: props.tabs,
+                    theme: props.theme,
+                    colorScheme: props.colorScheme,
+                    tabLabels: props.tabLabels,
+                    tabIcons: props.tabIcons,
+                });
+                return h('div', { ...attributes, style }, [slots.default?.()]);
+            };
+        },
+    });
 
 const contextReferenceTabProps = {
     id: { type: String, default: undefined },
@@ -134,7 +105,7 @@ const contextReferenceTabProps = {
  * A declarative custom tab. Renders the marker element the controller hoists
  * into the tab strip; its default slot becomes the tab's panel content.
  */
-export const ContextReferenceTab: ReferenceComponent<
+export const ContextReferenceTab: SlottedComponent<
     typeof contextReferenceTabProps
 > = defineComponent({
     name: 'ContextReferenceTab',

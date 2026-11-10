@@ -65,12 +65,15 @@ describe('VueRefStore: live refs for template binding', () => {
         expect(r.value.rendered).toBe('tier:secret');
     });
 
-    it('aggregateRef returns a ref that updates when any contributor commits', async () => {
+    it('aggregateRef returns a ref of the page rollup that updates when a whole commits', async () => {
         const store = new VueRefStore(passThrough());
         const r = store.aggregateRef();
-        expect(r.value).toBe(EMPTY_EZCLASSIFY_STATE);
+        expect(r.value.byBucket.size).toBe(0);
         await store.publishRendered('doc', 'tier:secret');
-        expect(r.value.rendered).toBe('tier:secret');
+        // One engine, so one bucket.
+        const buckets = [...r.value.byBucket.values()];
+        expect(buckets).toHaveLength(1);
+        expect(buckets[0].rendered).toBe('tier:secret');
     });
 
     it('wholeRollupRef returns a ref that updates when one of the whole’s parts commits', async () => {
