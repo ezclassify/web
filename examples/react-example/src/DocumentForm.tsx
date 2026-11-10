@@ -1,37 +1,10 @@
-import { useSyncExternalStore } from 'react';
-import {
-    useEzClassify,
-    useEzClassifyStore,
-    useSchemeEngine,
-} from '@ezclassify/react';
-
-function DocumentSummary() {
-    const [document, setDocument] = useEzClassify('document');
-    const store = useEzClassifyStore();
-    const parts = useSyncExternalStore(
-        (notify) => store.subscribeWholeRollup('document', () => notify()),
-        () => store.getWholeRollup('document'),
-        () => store.getWholeRollup('document'),
-    );
-    return (
-        <aside aria-label="Document marking state">
-            <p>Authored document: {document.rendered || 'Not marked'}</p>
-            <p>
-                Computed parts: {parts.rendered || 'No marked parts'}
-                {parts.stale ? ' (refresh failed)' : ''}
-            </p>
-            <button type="button" onClick={() => setDocument('CONFIDENTIAL')}>
-                Set document to CONFIDENTIAL
-            </button>
-        </aside>
-    );
-}
+import { EzClassify } from '@ezclassify/react';
+import { DocumentState } from './DocumentState';
 
 export function DocumentForm() {
-    const { Container } = useSchemeEngine();
     return (
-        <Container>
-            <form>
+        <EzClassify>
+            <form data-ezclassify-whole="document">
                 <label htmlFor="document">Document marking</label>
                 <input
                     type="text"
@@ -50,7 +23,6 @@ export function DocumentForm() {
                     name="attachmentMarking"
                     defaultValue="PUBLIC"
                     data-ezclassify-controller="marking"
-                    data-ezclassify-part-of="document"
                 />
                 <label htmlFor="summary">Summary marking (TagInput)</label>
                 <input
@@ -58,7 +30,6 @@ export function DocumentForm() {
                     name="summaryMarking"
                     defaultValue="CONFIDENTIAL"
                     data-ezclassify-controller="tags"
-                    data-ezclassify-part-of="document"
                 />
                 <label htmlFor="title">Title (MarkedInput)</label>
                 <input
@@ -67,7 +38,6 @@ export function DocumentForm() {
                     name="title"
                     defaultValue="(PUBLIC) District report"
                     data-ezclassify-controller="marked-input"
-                    data-ezclassify-part-of="document"
                 />
                 <label htmlFor="body">Body (MarkedTextArea)</label>
                 <textarea
@@ -77,7 +47,6 @@ export function DocumentForm() {
                         '(INTERNAL) Planning notes.\n(PUBLIC) Published background.'
                     }
                     data-ezclassify-controller="marked-textarea"
-                    data-ezclassify-part-of="document"
                 />
 
                 <p>Document preview</p>
@@ -90,8 +59,8 @@ export function DocumentForm() {
                     data-ezclassify-controller="banner"
                     data-ezclassify-aggregate="document"
                 />
-                <DocumentSummary />
+                <DocumentState />
             </form>
-        </Container>
+        </EzClassify>
     );
 }

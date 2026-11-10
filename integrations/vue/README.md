@@ -8,11 +8,39 @@ Vue 3.3+ marking controls backed by a shared EzClassify REST client.
 npm install @ezclassify/vue @ezclassify/ui @ezclassify/rest-client
 ```
 
+## Mark One Field
+
+Install the plugin once, with the client:
+
+```ts
+createApp(App)
+    .use(createEzClassify({ context: client }))
+    .mount('#app');
+```
+
+Wrap each document in `<EzClassify>` and mark its fields with attributes:
+
+```vue
+<EzClassify>
+    <form>
+        <input name="marking" data-ezclassify-controller="marking" />
+    </form>
+</EzClassify>
+```
+
+Each `<EzClassify>` owns the store for the fields inside it, provides it to its
+descendants, and releases it when it unmounts.
+
 ## Mark a Document and Its Parts
 
-This form connects one document marking to the parts inside it through one form
-store. `connectContext` loads public vocabulary and UI metadata before
-returning. Rule evaluation stays on the REST deployment.
+`data-ezclassify-whole="document"` on the form says the form holds the
+`document` marking and its parts. The field with `id="document"` is the whole.
+Every other marked field inside the form is a part: the attachment
+MarkingField, the summary TagInput, the title MarkedInput and each portion in
+the body MarkedTextArea. A `source` banner shows the authored whole, and an
+`aggregate` banner shows what the parts require. `connectContext` loads public
+vocabulary and UI metadata before returning. Rule evaluation stays on the REST
+deployment.
 
 Start the Cedar Valley replay server first. It answers recorded requests for
 Cedar Valley, a fictional school district's teaching policy, over real HTTP, so
@@ -25,34 +53,24 @@ npx @ezclassify/conformance-server --scenario cedar-valley --port 4010 \
 ```
 
 The complete app is in [`examples/vue-example`](https://github.com/ezclassify/web/tree/main/examples/vue-example).
-
-Create one client at application startup and share it through an application
-injection key. This complete form uses the full `cedar-valley@1.0.0` Context,
-which declares parenthesized inline markings for its title/body fields.
-
-```ts
-// src/client-key.ts
-import type { InjectionKey } from 'vue';
-import type { EzClassifyClient } from '@ezclassify/rest-client';
-export const ClientKey: InjectionKey<EzClassifyClient> =
-    Symbol('EzClassify client');
-```
+It uses the full `cedar-valley@1.0.0` Context, which declares parenthesized
+inline markings for its title and body fields.
 
 ```ts
 // src/main.ts
 import { createApp } from 'vue';
 import { connectContext } from '@ezclassify/rest-client';
-import App from './App.vue';
-import { ClientKey } from './client-key';
+import { createEzClassify } from '@ezclassify/vue';
+import DocumentForm from './DocumentForm.vue';
 
 const client = await connectContext({
     baseUrl: import.meta.env.VITE_EZCLASSIFY_URL ?? 'http://127.0.0.1:4010',
     contextId: 'cedar-valley',
     contextVersion: '1.0.0',
 });
-const app = createApp(App);
-app.provide(ClientKey, client);
-app.mount('#app');
+createApp(DocumentForm)
+    .use(createEzClassify({ context: client }))
+    .mount('#app');
 ```
 
 The page contains `<div id="app"></div>`. Show startup failures through your
@@ -61,123 +79,101 @@ then destroy the shared client. `VITE_EZCLASSIFY_URL` names the server when you
 start Vite; without it, the app connects to the replay server above.
 
 ```vue
-<!-- src/App.vue -->
-<script setup lang="ts">
-import DocumentEditor from './DocumentEditor.vue';
-</script>
-<template><DocumentEditor /></template>
-```
-
-Each document editor scopes one `VueRefStore` to its controls through
-`provideEzClassify`. A child mounts the scanner after the actual root exists.
-The provider destroys this document's store when it closes, leaving the
-application client available to other features.
-
-```vue
-<!-- src/DocumentEditor.vue -->
-<script setup lang="ts">
-import { inject, ref } from 'vue';
-import { provideEzClassify } from '@ezclassify/vue';
-import { ClientKey } from './client-key';
-import DocumentForm from './DocumentForm.vue';
-const client = inject(ClientKey);
-if (!client) throw new Error('Missing EzClassify client');
-provideEzClassify({ engine: client });
-const host = ref<HTMLElement | null>(null);
-</script>
-<template>
-    <section ref="host"><DocumentForm v-if="host" :root="host" /></section>
-</template>
-```
-
-```vue
 <!-- src/DocumentForm.vue -->
 <script setup lang="ts">
-import { useEzClassify, useEzClassifyProvision } from '@ezclassify/vue';
-const props = defineProps<{ root: HTMLElement }>();
-useEzClassify(undefined, { root: props.root });
-const whole = useEzClassify('document');
-const store = useEzClassifyProvision()?.store;
-if (!store) throw new Error('Missing document store');
-const parts = store.wholeRollupRef('document');
+import { EzClassify } from '@ezclassify/vue';
+import DocumentState from './DocumentState.vue';
 </script>
 <template>
-    <form id="document-form">
-        <label for="document">Document marking</label>
-        <input
-            id="document"
-            type="text"
-            name="documentMarking"
-            value="INTERNAL"
-            data-ezclassify-controller="marking" />
+    <EzClassify>
+        <form data-ezclassify-whole="document">
+            <label for="document">Document marking</label>
+            <input
+                id="document"
+                type="text"
+                name="documentMarking"
+                value="INTERNAL"
+                data-ezclassify-controller="marking" />
 
-        <label for="attachment">Attachment marking (MarkingField)</label>
-        <input
-            id="attachment"
-            name="attachmentMarking"
-            type="text"
-            data-ezclassify-controller="marking"
-            data-ezclassify-part-of="document"
-            value="PUBLIC" />
-        <label for="summary">Summary marking (TagInput)</label>
-        <input
-            id="summary"
-            name="summaryMarking"
-            value="CONFIDENTIAL"
-            data-ezclassify-controller="tags"
-            data-ezclassify-part-of="document" />
-        <label for="title">Title (MarkedInput)</label>
-        <input
-            id="title"
-            name="title"
-            type="text"
-            data-ezclassify-controller="marked-input"
-            data-ezclassify-part-of="document"
-            value="(PUBLIC) District report" />
-        <label for="body">Body (MarkedTextArea)</label>
-        <textarea
-            id="body"
-            name="body"
-            data-ezclassify-controller="marked-textarea"
-            data-ezclassify-part-of="document">
+            <label for="attachment">Attachment marking (MarkingField)</label>
+            <input
+                id="attachment"
+                name="attachmentMarking"
+                type="text"
+                value="PUBLIC"
+                data-ezclassify-controller="marking" />
+            <label for="summary">Summary marking (TagInput)</label>
+            <input
+                id="summary"
+                name="summaryMarking"
+                value="CONFIDENTIAL"
+                data-ezclassify-controller="tags" />
+            <label for="title">Title (MarkedInput)</label>
+            <input
+                id="title"
+                name="title"
+                type="text"
+                value="(PUBLIC) District report"
+                data-ezclassify-controller="marked-input" />
+            <label for="body">Body (MarkedTextArea)</label>
+            <textarea
+                id="body"
+                name="body"
+                data-ezclassify-controller="marked-textarea">
 (INTERNAL) Planning notes.
 (PUBLIC) Published background.</textarea>
 
-        <p>Document preview</p>
-        <div
-            data-ezclassify-controller="banner"
-            data-ezclassify-source="document"></div>
-        <p>Computed parts</p>
-        <div
-            data-ezclassify-controller="banner"
-            data-ezclassify-aggregate="document"></div>
-        <aside aria-label="Document marking state">
-            <p>Authored document: {{ whole || 'Not marked' }}</p>
-            <p>
-                Computed parts: {{ parts.rendered || 'No marked parts'
-                }}{{ parts.stale ? ' (refresh failed)' : '' }}
-            </p>
-            <button type="button" @click="whole = 'CONFIDENTIAL'">
-                Set document to CONFIDENTIAL
-            </button>
-        </aside>
-    </form>
+            <p>Document preview</p>
+            <div
+                data-ezclassify-controller="banner"
+                data-ezclassify-source="document"></div>
+            <p>Computed parts</p>
+            <div
+                data-ezclassify-controller="banner"
+                data-ezclassify-aggregate="document"></div>
+            <DocumentState />
+        </form>
+    </EzClassify>
 </template>
 ```
-
-The document MarkingField authors the whole. The other MarkingField, TagInput,
-MarkedInput and the portions in MarkedTextArea are parts of that whole through
-`data-ezclassify-part-of="document"`. A `source` banner reads the authored whole;
-`aggregate="document"` reads only its computed parts. A bare `aggregate` reads
-all markings in this store, including the whole itself: the page aggregate
-answers a different question.
 
 The initial whole is INTERNAL while the summary part is CONFIDENTIAL. The
 whole field shows the engine's coverage error and proposed fix. Editing a
 part changes what the whole must cover without silently replacing its authored
-value. The custom button writes the same store as the whole field and preview.
-MarkedInput enhances a text input for one logical line; MarkedTextArea registers
-its individual portions beneath the whole.
+value. MarkedInput enhances a text input for one logical line; MarkedTextArea
+registers its individual portions beneath the whole.
+
+### Read and Write the State in Code
+
+The form needs no code. `DocumentState` shows how a component inside
+`<EzClassify>` reads and writes the same store the controls use.
+`useEzClassify(id)` returns a writable ref of the marking's rendered text:
+
+```vue
+<!-- src/DocumentState.vue -->
+<script setup lang="ts">
+import { inject } from 'vue';
+import { useEzClassify, VueRefStoreKey } from '@ezclassify/vue';
+const whole = useEzClassify('document');
+const store = inject(VueRefStoreKey);
+if (!store) throw new Error('DocumentState belongs inside <EzClassify>');
+const parts = store.wholeRollupRef('document');
+</script>
+<template>
+    <aside aria-label="Document marking state">
+        <p>Authored document: {{ whole || 'Not marked' }}</p>
+        <p>
+            Computed parts: {{ parts.rendered || 'No marked parts'
+            }}{{ parts.stale ? ' (refresh failed)' : '' }}
+        </p>
+        <button type="button" @click="whole = 'CONFIDENTIAL'">
+            Set document to CONFIDENTIAL
+        </button>
+    </aside>
+</template>
+```
+
+The button writes the same store as the whole field and preview.
 
 The replay records this form used as written: focus each control, browse each
 picker, open the marking popup in the title and body (Ctrl+Enter, or Cmd+Enter
@@ -204,23 +200,37 @@ const client = await connectContext({
 });
 ```
 
+## Larger Pages
+
+Folders, several Contexts, a crosswalk's second scheme, a part outside its
+whole's container and a submitted page marking are all attributes. The
+[`@ezclassify/ui` README](https://github.com/ezclassify/web/blob/main/libs/ui/README.md#larger-pages)
+shows each one; the markup is the same in Vue.
+
+For several Contexts, pass them all to the plugin under keys you choose, and
+name the key on each section with `data-ezclassify-context`:
+
+```ts
+app.use(createEzClassify({ contexts: { district, records } }));
+```
+
 ## Load, Read, Write, and Save Markings
 
 `store.seedAssertions(id, savedAssertions)` loads a document's marking baseline;
 `publishRendered` and `publishAssertions` apply user/application edits on top.
-Use `get(id)` for a snapshot and `subscribe(id, listener)` for committed changes;
-subscriptions return an unsubscribe function. `getWholeRollup(wholeId)` and
-`subscribeWholeRollup` read the parts only; `getAggregate` and
-`subscribeAggregate` read the page aggregate. Show a rolled-up state's `stale`
-flag as unresolved after a failed refresh.
+`useEzClassify(id)` and `useEzClassifyState(id)` read a marking reactively
+inside `<EzClassify>`. On the store, use `get(id)` for a snapshot and
+`subscribe(id, listener)` for committed changes; subscriptions return an
+unsubscribe function. `wholeRollupRef(wholeId)` reads the parts only. Show a
+rolled-up state's `stale` flag as unresolved after a failed refresh.
 
 Persist structured assertions with your document, for example
 `JSON.stringify(store.get('document').assertions)`. A display format may omit
 alternate-scope categories or captured values. Save native title/body values
-too, preserving their prose and inline markings. The store's `valid` and
-`errors` describe the marking itself, not whole-versus-parts coverage. The
-whole MarkingField owns that contextual comparison and displays its errors
-and proposed fixes.
+too, preserving their prose and inline markings. A marking that code seeds or
+saves needs an `id` on its field. The store's `valid` and `errors` describe the
+marking itself, not whole-versus-parts coverage. The whole MarkingField owns
+that contextual comparison and displays its errors and proposed fixes.
 
 ## Presentation
 

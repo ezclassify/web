@@ -1,7 +1,7 @@
 import { Component, inject, signal } from '@angular/core';
 import { EZCLASSIFY_STORE_SIGNAL } from '@ezclassify/angular';
 @Component({
-    selector: 'app-document-summary',
+    selector: 'app-document-state',
     template: `
         @if (store(); as current) {
             <p>
@@ -27,7 +27,7 @@ import { EZCLASSIFY_STORE_SIGNAL } from '@ezclassify/angular';
         <p role="status">{{ error() }}</p>
     `,
 })
-export class DocumentSummaryComponent {
+export class DocumentStateComponent {
     readonly store = inject(EZCLASSIFY_STORE_SIGNAL);
     readonly error = signal('');
     setDocument() {

@@ -7,7 +7,7 @@
         <link rel="stylesheet" href="/src/styles.css" />
     </head>
     <body>
-        <form id="document-form">
+        <form data-ezclassify-whole="document">
             <label for="document">Document marking</label>
             <input
                 id="document"
@@ -21,30 +21,26 @@
                 id="attachment"
                 name="attachmentMarking"
                 type="text"
-                data-ezclassify-controller="marking"
-                data-ezclassify-part-of="document"
-                value="PUBLIC" />
+                value="PUBLIC"
+                data-ezclassify-controller="marking" />
             <label for="summary">Summary marking (TagInput)</label>
             <input
                 id="summary"
                 name="summaryMarking"
                 value="CONFIDENTIAL"
-                data-ezclassify-controller="tags"
-                data-ezclassify-part-of="document" />
+                data-ezclassify-controller="tags" />
             <label for="title">Title (MarkedInput)</label>
             <input
                 id="title"
                 name="title"
                 type="text"
-                data-ezclassify-controller="marked-input"
-                data-ezclassify-part-of="document"
-                value="(PUBLIC) District report" />
+                value="(PUBLIC) District report"
+                data-ezclassify-controller="marked-input" />
             <label for="body">Body (MarkedTextArea)</label>
             <textarea
                 id="body"
                 name="body"
-                data-ezclassify-controller="marked-textarea"
-                data-ezclassify-part-of="document">
+                data-ezclassify-controller="marked-textarea">
 (INTERNAL) Planning notes.
 (PUBLIC) Published background.</textarea>
 
@@ -56,6 +52,7 @@
             <div
                 data-ezclassify-controller="banner"
                 data-ezclassify-aggregate="document"></div>
+
             <button id="set-document" type="button">
                 Set document to CONFIDENTIAL
             </button>
