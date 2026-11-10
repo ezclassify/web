@@ -717,6 +717,27 @@ describe('Unrecognized wrapped text is flagged, never silently unmarked', () => 
             root.querySelectorAll('.marked-textarea-chip--invalid'),
         ).toHaveLength(0);
     });
+
+    it('MarkedTextArea: an unread mark after another mark on its line stays prose', async () => {
+        const engine = createMarkedEngine();
+        root.innerHTML = `<textarea id="after-ta" data-ezclassify-controller="marked-textarea">(S)(QQ) first.\n(S) (QQ) second.</textarea>`;
+        const forms = new EzClassifyUI(engine as never, { root });
+        activeForms.push(forms);
+        await wait(400);
+
+        const ta = document.getElementById('after-ta') as HTMLTextAreaElement;
+        const comp = forms.components.get(ta) as MarkedTextArea;
+        const segments = comp.getSegments();
+        // The scan reports both "(QQ)" marks as unread and not leading: only
+        // the "(S)" before each one stands where a part mark goes.
+        expect(segments.map((s) => [s.marking, s.start, s.valid])).toEqual([
+            ['(S)', 0, true],
+            ['(S)', 15, true],
+        ]);
+        expect(
+            root.querySelectorAll('.marked-textarea-chip--invalid'),
+        ).toHaveLength(0);
+    });
 });
 
 describe('MarkedTextArea shows the part marks the engine reads', () => {
