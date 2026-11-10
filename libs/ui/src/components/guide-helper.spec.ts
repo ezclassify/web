@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { GuideChecklist, type GuideRuleSelection } from './guide-helper';
 import type { SchemeEngineAdapter } from '@ezclassify/types';
 import type { GuideStructuralView, GuideRuleView } from '@ezclassify/types';
@@ -6,6 +6,8 @@ import type { EvaluationResult } from '@ezclassify/types';
 import { schemeOnlyContext } from '../../test-fixtures/context-doubles';
 import { mockRenderFormat } from '../render-format-layout-mock';
 import { setMountHost } from '../mount-host-registry';
+import { parseComponentOptions } from '../component-factory';
+import { harvestControllerOptions } from '../element-scanner';
 
 const toCtx = (eng: unknown) => schemeOnlyContext(eng as never);
 
@@ -246,7 +248,7 @@ describe('GuideChecklist', () => {
         };
         await checklist.init(container, toCtx(engine), {
             guides: [first, second],
-            textInput: true,
+            editor: '',
         });
         const scan = vi.fn((text: string) =>
             text === 'none' ? [] : [{ rule: { id: 'shared' }, guideId: text }],
@@ -538,7 +540,7 @@ describe('GuideChecklist', () => {
     });
 
     it('reports a failed text scan without leaving stale nominations', async () => {
-        await init({ textInput: true });
+        await init({ editor: '' });
         const mockGuideAdapter = {
             scan: vi
                 .fn()
@@ -1087,6 +1089,244 @@ describe('GuideChecklist', () => {
             expect(
                 container.querySelector('.ezc-guide-result-value')?.textContent,
             ).toBe('MARK-1');
+        });
+    });
+
+    describe('declared in markup', () => {
+        const SEED = JSON.stringify(inTestGuide('rule-a', 'rule-c'));
+        const COMPUTED_GUIDE: GuideStructuralView = {
+            ...TEST_GUIDE_VIEW,
+            categories: [
+                {
+                    id: '_compound',
+                    label: 'Compound',
+                    items: [makeRule('auto', 'Auto', { isComputed: true })],
+                },
+                ...TEST_GUIDE_VIEW.categories,
+            ],
+        };
+
+        /**
+         * Mount from a host's attributes, through the same harvest and parse
+         * the runtime gives every controller.
+         */
+        async function mountFromMarkup(
+            attributes: Record<string, string>,
+            guides: GuideStructuralView = TEST_GUIDE_VIEW,
+        ) {
+            const host = document.createElement('div');
+            host.setAttribute('data-ezclassify-controller', 'guide-checklist');
+            for (const [option, value] of Object.entries(attributes))
+                host.setAttribute(
+                    `data-ezclassify-guide-checklist-${option}`,
+                    value,
+                );
+            container.before(host);
+            setMountHost(container, host);
+            const guide = {
+                buildGuideViews: () => [guides],
+                evaluateMany: vi.fn(() => makeEvaluation('MARK-1')),
+                scan: vi.fn(() => []),
+            };
+            const errors: { code: string; message: string }[] = [];
+            host.addEventListener('ezclassify:host-error', (event) =>
+                errors.push((event as CustomEvent).detail),
+            );
+            const changes: EvaluationResult[] = [];
+            container.addEventListener('ezclassify:guide-change', (event) =>
+                changes.push((event as CustomEvent).detail),
+            );
+            await checklist.init(
+                container,
+                { ...toCtx(engine), guide } as never,
+                parseComponentOptions(
+                    host,
+                    harvestControllerOptions(host, 'guide-checklist'),
+                ),
+            );
+            return { guide, errors, changes };
+        }
+
+        /** Add an element to the page for a checklist option to name. */
+        function onPage<K extends keyof HTMLElementTagNameMap>(
+            tag: K,
+            id: string,
+        ): HTMLElementTagNameMap[K] {
+            const element = document.createElement(tag);
+            element.id = id;
+            document.body.appendChild(element);
+            return element;
+        }
+
+        let logged: ReturnType<typeof vi.spyOn>;
+        beforeEach(() => {
+            logged = vi.spyOn(console, 'error').mockImplementation(() => {});
+        });
+        afterEach(() => {
+            logged.mockRestore();
+            document.body.innerHTML = '';
+        });
+
+        it('opens on the selections the markup declares', async () => {
+            const { guide } = await mountFromMarkup({ selected: SEED });
+
+            expect(guide.evaluateMany).toHaveBeenCalledWith(
+                inTestGuide('rule-a', 'rule-c'),
+            );
+            expect(
+                [
+                    ...container.querySelectorAll<HTMLInputElement>(
+                        'input[type="checkbox"]:checked',
+                    ),
+                ].map((box) => box.value),
+            ).toEqual(['rule-a', 'rule-c']);
+            expect(
+                container.querySelector('.ezc-guide-result-value')?.textContent,
+            ).toBe('MARK-1');
+        });
+
+        it('tells the host what the declared selections evaluate to', async () => {
+            const { changes } = await mountFromMarkup({ selected: SEED });
+            await Promise.resolve();
+            expect(changes.map((c) => c.aggregatedMarking)).toEqual(['MARK-1']);
+        });
+
+        it('stays silent about the opening selection after teardown', async () => {
+            // Not awaited: the teardown has to land in the tick the checklist
+            // opened in, ahead of the deferred event.
+            const mounted = mountFromMarkup({ selected: SEED });
+            checklist.destroy();
+            const { changes } = await mounted;
+            await Promise.resolve();
+            expect(changes).toEqual([]);
+        });
+
+        it('reaches a listener attached in the tick the checklist opened in', async () => {
+            const mounted = mountFromMarkup({ selected: SEED });
+            const heard = vi.fn();
+            container.addEventListener('ezclassify:guide-change', heard);
+            await mounted;
+            await Promise.resolve();
+            expect(heard).toHaveBeenCalledTimes(1);
+        });
+
+        it.each([
+            ['malformed JSON', '[{'],
+            ['a value that is not a list', '{"guideId":"test-guide"}'],
+            ['an entry with no guide', '[{"ruleId":"rule-a"}]'],
+            ['a null entry', '[null]'],
+            [
+                'a rule the guide does not hold',
+                '[{"guideId":"test-guide","ruleId":"rule-a"},{"guideId":"test-guide","ruleId":"nope"}]',
+            ],
+            [
+                'a guide the Context does not hold',
+                '[{"guideId":"other","ruleId":"rule-a"}]',
+            ],
+            ['a computed rule', '[{"guideId":"test-guide","ruleId":"auto"}]'],
+        ])('refuses %s and evaluates nothing', async (_name, selected) => {
+            const { guide, errors } = await mountFromMarkup(
+                { selected },
+                COMPUTED_GUIDE,
+            );
+
+            expect(errors.map((e) => e.code)).toEqual([
+                'guide-selection-refused',
+            ]);
+            expect(guide.evaluateMany).not.toHaveBeenCalled();
+            expect(container.querySelector('.ezc-guide-result')).toBeNull();
+            expect(
+                container.querySelector('.ezc-guide-unavailable')?.textContent,
+            ).toMatch(/no marking is shown/);
+        });
+
+        it('analyzes the text a page textarea was written with', async () => {
+            const textarea = onPage('textarea', 'page-text');
+            textarea.textContent = 'text from the markup';
+            const { guide } = await mountFromMarkup({ editor: 'page-text' });
+
+            expect(textarea.value).toBe('text from the markup');
+            expect(container.querySelector('textarea')).toBeNull();
+            expect(
+                container.querySelector('.ezc-guide-nomination-status'),
+            ).not.toBeNull();
+            (textarea.nextElementSibling as HTMLButtonElement).click();
+            expect(guide.scan).toHaveBeenCalledWith('text from the markup');
+        });
+
+        it('takes its analyze button back and leaves the page textarea', async () => {
+            const textarea = onPage('textarea', 'page-text');
+            textarea.textContent = 'kept';
+            await mountFromMarkup({ editor: 'page-text' });
+
+            checklist.destroy();
+
+            expect(textarea.nextElementSibling).toBeNull();
+            expect(textarea.isConnected).toBe(true);
+            expect(textarea.value).toBe('kept');
+        });
+
+        it.each(['', 'true'])(
+            'renders the built-in editor when editor is %j',
+            async (editor) => {
+                await mountFromMarkup({ editor });
+                expect(
+                    container.querySelector('textarea.ezc-guide-textarea'),
+                ).not.toBeNull();
+            },
+        );
+
+        it('has no editor without the attribute or with "false"', async () => {
+            await mountFromMarkup({ editor: 'false' });
+            expect(container.querySelector('textarea')).toBeNull();
+            expect(
+                container.querySelector('.ezc-guide-analyze-btn'),
+            ).toBeNull();
+        });
+
+        it('shows the marking, its breakdown and its failure notice in the named element', async () => {
+            const target = onPage('div', 'page-result');
+            await mountFromMarkup({ result: 'page-result', selected: SEED });
+
+            for (const selector of [
+                '.ezc-guide-result',
+                '.ezc-guide-breakdown',
+                '.ezc-guide-error',
+            ]) {
+                expect(target.querySelector(selector)).not.toBeNull();
+                expect(container.querySelector(selector)).toBeNull();
+            }
+            expect(
+                target.querySelector('.ezc-guide-result-value')?.textContent,
+            ).toBe('MARK-1');
+            expect(
+                target
+                    .querySelector('.ezc-guide-result')
+                    ?.closest('[data-ezclassify]'),
+            ).not.toBeNull();
+        });
+
+        it('empties the named result element on teardown', async () => {
+            const target = onPage('div', 'page-result');
+            await mountFromMarkup({ result: 'page-result' });
+            checklist.destroy();
+            expect(target.childElementCount).toBe(0);
+        });
+
+        it.each([
+            ['an editor naming no element', { editor: 'absent' }],
+            ['an editor naming something else', { editor: 'not-a-textarea' }],
+            ['a result naming no element', { result: 'absent' }],
+            ['a result with no id', { result: '' }],
+        ])('refuses %s', async (_name, attributes) => {
+            onPage('div', 'not-a-textarea');
+            const { guide, errors } = await mountFromMarkup({
+                ...attributes,
+                selected: SEED,
+            });
+            expect(errors.map((e) => e.code)).toEqual(['guide-target-missing']);
+            expect(guide.evaluateMany).not.toHaveBeenCalled();
+            expect(container.querySelector('.ezc-guide-result')).toBeNull();
         });
     });
 

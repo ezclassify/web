@@ -136,7 +136,11 @@ renamed. The cases:
 - a `translate` view on a form control or a controller host, or with no
   crosswalk to translate through;
 - a controller-less `aggregate` output that does not name its bucket when its
-  level has several (see below).
+  level has several (see below);
+- a `guide-checklist` with a `selected` that is not a list of selectable rules
+  in its guides (`guide-selection-refused`), or an `editor` or `result` naming
+  no such element (`guide-target-missing`). See
+  [Declaring a guide checklist](#declaring-a-guide-checklist).
 
 ### Rollup outputs and buckets
 
@@ -246,11 +250,47 @@ verbatim and have no effect unless the controller reads them.
 | `data-ezclassify-equivalency-source-label`        | `equivalency`        | author   | header label for the source column                                                                                                | (none)                           |
 | `data-ezclassify-equivalency-target-label`        | `equivalency`        | author   | header label for the target column                                                                                                | (none)                           |
 | `data-ezclassify-crosswalk-handbook-crosswalk-id` | `crosswalk-handbook` | author   | crosswalk id; which of the Context's crosswalks to show. Needed only when the Context holds several                               | the Context's only crosswalk     |
+| `data-ezclassify-guide-checklist-selected`        | `guide-checklist`    | author   | JSON array of `{ guideId, ruleId }`; the rules selected when the checklist opens                                                  | none selected                    |
+| `data-ezclassify-guide-checklist-editor`          | `guide-checklist`    | author   | empty or `"true"` for a built-in textarea; else the id of a `<textarea>` on the page; `"false"` for none                          | no text analysis                 |
+| `data-ezclassify-guide-checklist-result`          | `guide-checklist`    | author   | id of the element that shows the computed marking and its breakdown                                                               | the checklist panel              |
 
 > Shared options harvested off the host (not under the controller prefix):
 > `data-ezclassify-format`, `data-ezclassify-scope`, `data-ezclassify-scheme`
 > and `data-ezclassify-category` are read once on the host, and no controller
 > has a prefixed copy of them; see `component-factory.parseComponentOptions`.
+
+### Declaring a guide checklist
+
+A guide checklist can open on a selection and show its parts anywhere on the
+page, with no code:
+
+```html
+<label for="notes">Text to analyze</label>
+<textarea id="notes">The server at 10.42.0.1 is in Building 7.</textarea>
+
+<div
+    data-ezclassify-controller="guide-checklist"
+    data-ezclassify-guide-checklist-editor="notes"
+    data-ezclassify-guide-checklist-result="marking"
+    data-ezclassify-guide-checklist-selected='[{"guideId":"data-guide","ruleId":"ip_addr"}]'></div>
+
+<div id="marking"></div>
+```
+
+`editor` names your own `<textarea>`. Its text, label and styling stay yours, so
+the starting text is whatever you wrote in it, and the checklist adds an Analyze
+Text button right after it. `result` fills the named element with the computed
+marking, the rules behind it, and the notice that appears when the marking
+cannot be computed. Both elements have to exist when the checklist opens.
+
+Every selection names its guide, and has to be a rule a reviewer could check.
+When the checklist opens on a selection it fires `ezclassify:guide-change` with
+the evaluation, so a page showing the marking elsewhere starts out correct.
+
+These options are read once. Anything the checklist cannot honor refuses the
+whole checklist: it shows that it is unavailable, evaluates nothing, and fires
+`ezclassify:host-error`. On a `guide-helper` host the prefix is
+`data-ezclassify-guide-helper-`.
 
 ## Context reference drawer
 
