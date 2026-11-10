@@ -27,7 +27,7 @@ import { resolve, dirname, basename } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, it, expect } from 'vitest';
 import { Context } from '@ezclassify/engine';
-import type { LocalSchemeEngineAdapter } from '@ezclassify/types';
+import type { LocalContextSchemeEngineAdapter } from '@ezclassify/types';
 import { EzClassifyUI } from '@ezclassify/ui';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -95,7 +95,7 @@ function loadFixture(name: string): unknown {
  * div is mounted in jsdom so DOM ops inside EzClassifyUI succeed. Returns both
  * the forms instance and the root div for cleanup.
  */
-function makeForms(engine: LocalSchemeEngineAdapter): {
+function makeForms(engine: LocalContextSchemeEngineAdapter): {
     forms: EzClassifyUI;
     root: HTMLDivElement;
 } {
@@ -141,7 +141,7 @@ function runViaForms(
         );
         context = Context.fromComponents({ scheme: profileData, guides });
     }
-    const engine = context.scheme as LocalSchemeEngineAdapter;
+    const engine = context.scheme as LocalContextSchemeEngineAdapter;
     const guide = () => {
         if (!guideFixture || !context.guide)
             throw new Error(`${method} requires guideFixture in plan entry`);
@@ -185,7 +185,7 @@ function runViaForms(
 
     try {
         return dispatchOnEngine(
-            forms.engine as LocalSchemeEngineAdapter,
+            forms.engine as LocalContextSchemeEngineAdapter,
             method,
             args,
         );
@@ -195,9 +195,12 @@ function runViaForms(
     }
 }
 
-/** Dispatch a method call directly on a LocalSchemeEngineAdapter instance. */
+/**
+ * Dispatch a method call directly on a LocalContextSchemeEngineAdapter
+ * instance.
+ */
 function dispatchOnEngine(
-    engine: LocalSchemeEngineAdapter,
+    engine: LocalContextSchemeEngineAdapter,
     method: string,
     args: unknown[],
 ): unknown {
@@ -214,14 +217,16 @@ function dispatchOnEngine(
             return (engine.suggest as (...a: unknown[]) => unknown)(...args);
         case 'scan': {
             // The same projection the reference runner records: the count and
-            // the first region's position next to the regions themselves.
-            const { results: regions } = (
+            // the first region's position next to the regions themselves, and
+            // the wrapped marks the scan could not read.
+            const { results: regions, unread } = (
                 engine.scan as (...a: unknown[]) => {
                     results: Array<{
                         marking?: string;
                         start?: number;
                         result?: { rendered?: string };
                     }>;
+                    unread: unknown[];
                 }
             )(...args);
             return {
@@ -230,6 +235,7 @@ function dispatchOnEngine(
                 firstStart: regions[0]?.start ?? null,
                 firstRendered: regions[0]?.result?.rendered ?? null,
                 results: regions,
+                unread,
             };
         }
         case 'validate':
