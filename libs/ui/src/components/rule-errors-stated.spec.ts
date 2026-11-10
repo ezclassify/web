@@ -6,6 +6,7 @@
  * resulting value and the engine's proposed choices, and applying a choice uses
  * that resulting value as its basis.
  */
+import { asContext } from '../../test-fixtures/as-context';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import type { LocalContextSchemeEngineAdapter } from '@ezclassify/types';
 import { Context } from '@ezclassify/engine';
@@ -130,7 +131,7 @@ afterEach(() => {
 
 async function mount(markup: string): Promise<void> {
     root.innerHTML = markup;
-    forms = new EzClassifyUI(createEngine() as never, { root });
+    forms = new EzClassifyUI(asContext(createEngine() as never), { root });
     await wait(120);
 }
 
@@ -229,7 +230,7 @@ describe.each(FIELDS)('$name holds author-stated conflicts', (field) => {
         const ready = new Promise((resolve) =>
             root.addEventListener('ezclassify:ready', resolve, { once: true }),
         );
-        forms = new EzClassifyUI(engine as never, { root, store });
+        forms = new EzClassifyUI(asContext(engine as never), { root, store });
         try {
             await vi.waitFor(() => expect(seed).toHaveBeenCalled());
             fixButton('Remove C');
@@ -252,13 +253,13 @@ describe.each(FIELDS)('$name holds author-stated conflicts', (field) => {
 });
 
 it('offers the same ways to fix in every field bound to an invalid marking', async () => {
-    root.innerHTML = `<input type="hidden" id="doc" data-ezclassify-rendered>
+    root.innerHTML = `<input type="hidden" id="doc" data-ezclassify-marking>
         <div class="mf"><input id="mf" data-ezclassify-controller="marking" data-ezclassify-bound-to="doc"></div>
         <div class="ti"><input id="ti" data-ezclassify-controller="tags" data-ezclassify-bound-to="doc"></div>`;
     const ready = new Promise((resolve) =>
         root.addEventListener('ezclassify:ready', resolve, { once: true }),
     );
-    forms = new EzClassifyUI(createEngine() as never, { root });
+    forms = new EzClassifyUI(asContext(createEngine() as never), { root });
     await ready;
     // A publish from outside the fields: each one takes the store's reading,
     // which is of the marking the engine settled on.
@@ -422,7 +423,7 @@ function boundEngine(): object {
 describe.each(FIELDS)('$name over a context-bound engine', (field) => {
     it('applies a fix to the marking it holds', async () => {
         root.innerHTML = field.markup('LOW//A/B/C');
-        forms = new EzClassifyUI(boundEngine() as never, { root });
+        forms = new EzClassifyUI(asContext(boundEngine() as never), { root });
         await wait(120);
 
         expect(host().value).toBe('LOW//A/B/C');
@@ -436,7 +437,7 @@ describe.each(FIELDS)('$name over a context-bound engine', (field) => {
 
 it('MarkedInput over a context-bound engine applies the fix to the text it holds', async () => {
     root.innerHTML = MARKED_INPUT('LOW//A/B');
-    forms = new EzClassifyUI(boundEngine() as never, { root });
+    forms = new EzClassifyUI(asContext(boundEngine() as never), { root });
     await wait(120);
 
     fixButton('Remove A').click();

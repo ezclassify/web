@@ -9,6 +9,7 @@
  * shaped like a classification banner: one level, a multi-choice control system
  * category and a multi-choice dissemination category.
  */
+import { asContext } from '../../../test-fixtures/as-context';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { Context } from '@ezclassify/engine';
 import { openContext } from '../../../test-fixtures/context-doubles';
@@ -201,8 +202,8 @@ const START = 'SECRET//SI/TK//NOFORN';
 /** Mount a field holding START and open its list, browsing. */
 async function open(kind: 'marking' | 'tags') {
     const tag = kind === 'tags' ? 'input' : 'textarea';
-    root.innerHTML = `<input type="hidden" id="doc" data-ezclassify-rendered /><label for="f">Marking</label><${tag} id="f" data-ezclassify-controller="${kind}" data-ezclassify-bound-to="doc"></${tag}>`;
-    forms = new EzClassifyUI(createContext() as never, { root });
+    root.innerHTML = `<input type="hidden" id="doc" data-ezclassify-marking /><label for="f">Marking</label><${tag} id="f" data-ezclassify-controller="${kind}" data-ezclassify-bound-to="doc"></${tag}>`;
+    forms = new EzClassifyUI(asContext(createContext() as never), { root });
     await wait();
     await forms.store.publishRendered('doc', START);
     await wait();

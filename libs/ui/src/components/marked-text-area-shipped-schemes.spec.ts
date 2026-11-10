@@ -12,6 +12,7 @@
  * the field says, and a repair writes the part mark with exactly one wrapper.
  */
 
+import { asContext } from '../../test-fixtures/as-context';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { loadCedarValleyContext } from '@ezclassify/example-schemes/cedar-valley';
 import { loadPantryContext } from '@ezclassify/example-schemes/pantry';
@@ -50,7 +51,7 @@ async function mountTextarea(
     ta.setAttribute('data-ezclassify-controller', 'marked-textarea');
     ta.value = value;
     root.appendChild(ta);
-    const forms = new EzClassifyUI(engine as never, { root });
+    const forms = new EzClassifyUI(asContext(engine as never), { root });
     activeForms.push(forms);
     await wait(400);
     const comp = forms.components.get(ta) as MarkedTextArea;

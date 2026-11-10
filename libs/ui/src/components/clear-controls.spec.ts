@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { asContext } from '../../test-fixtures/as-context';
 import { Context } from '@ezclassify/engine';
 import { openContext } from '../../test-fixtures/context-doubles';
 import type { ComponentInstance, ComponentOptions } from './component-base';
@@ -262,8 +263,8 @@ it('clears both bound views through the normal store path', async () => {
     const root = document.createElement('div');
     document.body.appendChild(root);
     root.innerHTML =
-        '<input id="doc" value="LOW" data-ezclassify-rendered><input data-ezclassify-controller="marking" data-ezclassify-bound-to="doc"><input data-ezclassify-controller="tags" data-ezclassify-bound-to="doc">';
-    const forms = new EzClassifyUI(engine() as never, { root });
+        '<input id="doc" value="LOW" data-ezclassify-marking><input data-ezclassify-controller="marking" data-ezclassify-bound-to="doc"><input data-ezclassify-controller="tags" data-ezclassify-bound-to="doc">';
+    const forms = new EzClassifyUI(asContext(engine() as never), { root });
     try {
         await vi.waitFor(() =>
             expect(root.querySelectorAll('.ez-clear-button').length).toBe(2),

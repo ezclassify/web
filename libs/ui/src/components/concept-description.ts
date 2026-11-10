@@ -9,10 +9,7 @@
  */
 
 import type { ConceptDescription } from '@ezclassify/types';
-import {
-    isAddressableSchemeEngine,
-    type ComponentSchemeEngine,
-} from './component-base-readonly';
+import { type ComponentSchemeEngine } from './component-base-readonly';
 
 /**
  * The engine surface this module reads: any component scheme engine, local or
@@ -52,13 +49,6 @@ export function assertDescribesConcepts(
  */
 export interface ConceptDescriptionSource {
     engine: ConceptDescriptionEngine;
-    /**
-     * Threaded into the multi-profile `describeConcept` call when the engine
-     * supports it.
-     */
-    schemeId?: string;
-    /** Whether the engine accepts an explicit scheme selector. */
-    schemeAddressing?: boolean;
     /** Concept view key to request (e.g. a scheme's `description` view). */
     tooltipConceptProperty?: string;
     /**
@@ -156,15 +146,7 @@ export function resolveConceptDescription(
         : undefined;
     let result;
     try {
-        result =
-            source.schemeAddressing && isAddressableSchemeEngine(engine)
-                ? engine.describeConcept(
-                      conceptId,
-                      categoryId,
-                      source.schemeId ?? '',
-                      opts,
-                  )
-                : engine.describeConcept(conceptId, categoryId, opts);
+        result = engine.describeConcept(conceptId, categoryId, opts);
     } catch {
         failed.set(cacheKey, Date.now());
         return undefined;
@@ -213,18 +195,16 @@ export interface ConceptDescriber {
 
 /**
  * Everything {@link createConceptDescriber} reads to answer a resolve/enabled
- * call. Accessors, not plain fields: `engine`/`schemeId`/`options` live on the
- * calling field instance and are assigned during its async `init()`, typically
- * after the describer itself is constructed as a class field, so each accessor
- * must read the current value at call time rather than one captured at
- * construction. Accessors also let a caller hand over `() => this.engine`
- * without exposing `this` itself, which would otherwise fail structurally on
- * any `protected`/`private` field of the same name.
+ * call. Accessors, not plain fields: `engine` and `options` live on the calling
+ * field instance and are assigned during its async `init()`, typically after
+ * the describer itself is constructed as a class field, so each accessor must
+ * read the current value at call time rather than one captured at construction.
+ * Accessors also let a caller hand over `() => this.engine` without exposing
+ * `this` itself, which would otherwise fail structurally on any
+ * `protected`/`private` field of the same name.
  */
 export interface ConceptDescriberHost {
     engine: () => ConceptDescriptionEngine;
-    schemeId?: () => string | undefined;
-    schemeAddressing?: () => boolean;
     options: () => {
         tooltipConceptProperty?: string;
         tooltips?: boolean;
@@ -244,8 +224,6 @@ export function createConceptDescriber(
         resolve: (conceptId, categoryId) =>
             resolveConceptDescription(conceptId, categoryId, {
                 engine: host.engine(),
-                schemeId: host.schemeId?.(),
-                schemeAddressing: host.schemeAddressing?.(),
                 tooltipConceptProperty: host.options().tooltipConceptProperty,
                 cache,
             }),

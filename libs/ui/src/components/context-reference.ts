@@ -242,23 +242,12 @@ export class ContextReference
         engineOrContext?: ComponentEngineSource | null,
         options?: ComponentOptions,
     ): Promise<void> {
-        this.engine = resolveSchemeEngine(
-            container,
-            engineOrContext,
-            'ContextReference',
-        );
-        this.context = resolveContextSource(container, engineOrContext);
+        this.engine = resolveSchemeEngine(engineOrContext, 'ContextReference');
+        this.context = resolveContextSource(engineOrContext);
         this.container = container;
         this.options = options ?? {};
-        this.schemeId = resolveProfile(
-            container,
-            this.engine,
-            options,
-            this.schemeAddressing,
-        );
-        this.scheme = this.schemeAddressing
-            ? this.engine.getScheme(this.schemeId)
-            : this.engine.getScheme();
+        this.schemeId = resolveProfile(this.engine);
+        this.scheme = this.engine.getScheme();
 
         injectDefaultStyles(this.options.root);
 
@@ -923,7 +912,6 @@ export class ContextReference
             categoryColors: this.options.categoryColors,
             colorMap: this.options.colorMap,
             tooltipConceptProperty: this.options.tooltipConceptProperty,
-            schemeId: this.options.schemeId,
         };
         const result = child.init(
             panel,

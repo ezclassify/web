@@ -14,19 +14,18 @@
  * would be a lot of churn).
  */
 
-import type { Assertion, ValidationError } from '@ezclassify/types';
+import type {
+    Assertion,
+    ProcessingContext,
+    ValidationError,
+} from '@ezclassify/types';
 import type {
     ComponentInstance,
     ComponentOptions,
     ComponentEngineSource,
     ComponentSchemeEngine,
 } from './component-base-readonly';
-import {
-    isAddressableSchemeEngine,
-    resolveContextSource,
-    resolveProfile,
-    resolveSchemeEngine,
-} from './component-base-readonly';
+import { resolveProfile, resolveSchemeEngine } from './component-base-readonly';
 import textCss from './ezclassify-text.css?inline';
 import { adoptStyles, type AdoptedStyles } from '../styles/adopt';
 
@@ -71,12 +70,12 @@ type AnyOnChange = (
  */
 export class EzClassifyText implements ComponentInstance {
     private engine!: ComponentSchemeEngine;
-    private schemeAddressing = false;
     private host!: HTMLElement;
     private options: EzClassifyTextOptions = {};
     private formatId!: string;
     private schemeId!: string;
-    private roleContext: { role: 'whole' | 'part' } | undefined;
+    /** The part context every read carries; undefined for a whole. */
+    private resolveRoleContext: (() => ProcessingContext) | undefined;
     private assertions: Assertion[] = [];
     private rendered = '';
     private valid = true;
@@ -89,42 +88,30 @@ export class EzClassifyText implements ComponentInstance {
         engineOrContext?: ComponentEngineSource | null,
         options?: ComponentOptions,
     ): Promise<void> {
-        this.engine = resolveSchemeEngine(
-            container,
-            engineOrContext,
-            'EzClassifyText',
-        );
-        this.schemeAddressing =
-            resolveContextSource(container, engineOrContext) === null &&
-            isAddressableSchemeEngine(this.engine);
+        this.engine = resolveSchemeEngine(engineOrContext, 'EzClassifyText');
         this.host = container;
         this.options = (options ?? {}) as EzClassifyTextOptions;
-        this.schemeId = resolveProfile(
-            container,
-            this.engine,
-            options,
-            this.schemeAddressing,
-        );
+        this.schemeId = resolveProfile(this.engine);
 
-        const role = container.getAttribute('data-ezclassify-role');
-        if (role === 'whole' || role === 'part') this.roleContext = { role };
+        // Roles come from structure: a host inside a whole, or one naming its
+        // whole with `data-ezclassify-part-of`, holds a part. `role="part"`
+        // remains only for a part whose whole is not on the page. Any other
+        // host reads with no role, which the engine reads as a whole.
+        const readsAsPart =
+            container.getAttribute('data-ezclassify-role') === 'part' ||
+            options?.holdsPart === true;
+        this.resolveRoleContext = options?.resolveContext
+            ? () => options.resolveContext?.() ?? { role: 'part' }
+            : readsAsPart
+              ? () => ({ role: 'part' })
+              : undefined;
 
-        const schemeMeta = this.schemeAddressing
-            ? this.engine.getSchemeMeta(this.schemeId)
-            : this.engine.getSchemeMeta();
+        const schemeMeta = this.engine.getSchemeMeta();
         if (options?.formatId) {
             this.formatId = options.formatId;
-        } else if (
-            role === 'part' ||
-            (role !== 'whole' && options?.holdsPart)
-        ) {
+        } else if (readsAsPart) {
             this.formatId =
                 schemeMeta.defaultPartRenderFormat ??
-                schemeMeta.defaultRenderFormat ??
-                '';
-        } else if (role === 'whole') {
-            this.formatId =
-                schemeMeta.defaultWholeRenderFormat ??
                 schemeMeta.defaultRenderFormat ??
                 '';
         } else {
@@ -352,25 +339,17 @@ export class EzClassifyText implements ComponentInstance {
     }
 
     /**
-     * Engine.validate with the host's role, addressed to this host's scheme
-     * where it can be. The host displays a marking and corrects nothing, so it
-     * asks the reader's call.
+     * Engine.validate with the host's role. The host displays a marking and
+     * corrects nothing, so it asks the reader's call.
      */
     private callValidate(input: string, options?: { outputFormat?: string }) {
-        const merged = this.roleContext
-            ? { ...options, context: this.roleContext }
-            : options;
-        if (this.schemeAddressing && isAddressableSchemeEngine(this.engine)) {
-            return this.engine.validate(input, this.schemeId, merged);
-        }
+        const context = this.resolveRoleContext?.();
+        const merged = context ? { ...options, context } : options;
         return this.engine.validate(input, merged);
     }
 
     private callRender(assertions: Assertion[], options?: { format?: string }) {
         const format = options?.format;
-        if (this.schemeAddressing) {
-            return this.engine.render(assertions, format, this.schemeId);
-        }
         return this.engine.render(assertions, format);
     }
 

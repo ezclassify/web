@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { asContext } from '../../test-fixtures/as-context';
 import { openSurface, press, rowFor } from './composer/composer-harness';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -389,7 +390,7 @@ describe('MarkedInput', () => {
         root.innerHTML = `
       <input type="text" id="field" data-ezclassify-controller="marked-input">
     `;
-        const forms = new EzClassifyUI(engine as never, {});
+        const forms = new EzClassifyUI(asContext(engine as never), {});
         activeForms.push(forms);
         await wait(50);
 
@@ -475,7 +476,9 @@ describe('MarkedInput', () => {
             });
 
         try {
-            const forms = new EzClassifyUI(engine as never, { root });
+            const forms = new EzClassifyUI(asContext(engine as never), {
+                root,
+            });
             activeForms.push(forms);
             await wait(50);
             // The re-read is deferred one requestAnimationFrame tick past mount.
@@ -555,7 +558,9 @@ describe('MarkedInput', () => {
                 });
             });
         try {
-            const forms = new EzClassifyUI(engine as never, { root });
+            const forms = new EzClassifyUI(asContext(engine as never), {
+                root,
+            });
             activeForms.push(forms);
             await wait(50);
             await new Promise<void>((resolve) =>
@@ -588,7 +593,7 @@ describe('MarkedInput', () => {
     it("draws the native input's edge, focused or not, like the rest of the field family", async () => {
         const engine = createTestEngine();
         root.innerHTML = `<input type="text" id="field" data-ezclassify-controller="marked-input" value="(U) title" style="border: 3px dashed rgb(1, 2, 3); border-radius: 5px">`;
-        const forms = new EzClassifyUI(engine as never, { root });
+        const forms = new EzClassifyUI(asContext(engine as never), { root });
         activeForms.push(forms);
         await wait(50);
         await new Promise<void>((resolve) =>
@@ -619,7 +624,7 @@ describe('MarkedInput', () => {
         root.innerHTML = `
       <input type="text" id="field" data-ezclassify-controller="marked-input">
     `;
-        const forms = new EzClassifyUI(engine as never, {});
+        const forms = new EzClassifyUI(asContext(engine as never), {});
         await wait(50);
 
         const inputEl = editingField('field') as HTMLTextAreaElement;
@@ -646,7 +651,7 @@ describe('MarkedInput', () => {
       <input type="text" id="a" data-ezclassify-controller="marked-input" value="(S) alpha">
       <input type="text" id="b" data-ezclassify-controller="marked-input" value="(U) bravo">
     `;
-        const forms = new EzClassifyUI(engine as never, {});
+        const forms = new EzClassifyUI(asContext(engine as never), {});
         activeForms.push(forms);
         await wait(100);
 
@@ -687,7 +692,7 @@ describe('MarkedInput', () => {
         root.innerHTML = `
       <input type="text" id="field" data-ezclassify-controller="marked-input" value="(U) report title">
     `;
-        const forms = new EzClassifyUI(engine as never, {});
+        const forms = new EzClassifyUI(asContext(engine as never), {});
         activeForms.push(forms);
         await wait(80);
 
@@ -709,7 +714,7 @@ describe('MarkedInput', () => {
         root.innerHTML = `
       <input type="text" id="field" data-ezclassify-controller="marked-input">
     `;
-        const forms = new EzClassifyUI(engine as never, {});
+        const forms = new EzClassifyUI(asContext(engine as never), {});
         activeForms.push(forms);
         await wait(50);
 
@@ -729,7 +734,7 @@ describe('MarkedInput', () => {
         root.innerHTML = `
       <input type="text" id="field" data-ezclassify-controller="marked-input" value="(U) some text">
     `;
-        const forms = new EzClassifyUI(engine as never, {});
+        const forms = new EzClassifyUI(asContext(engine as never), {});
         activeForms.push(forms);
         await wait(80);
 
@@ -757,7 +762,7 @@ describe('MarkedInput', () => {
         root.innerHTML = `
       <input type="text" id="field" data-ezclassify-controller="marked-input">
     `;
-        const forms = new EzClassifyUI(engine as never, {});
+        const forms = new EzClassifyUI(asContext(engine as never), {});
         activeForms.push(forms);
         await wait(50);
 
@@ -784,7 +789,7 @@ describe('MarkedInput', () => {
         root.innerHTML = `
       <input type="text" id="field" data-ezclassify-controller="marked-input" value="(U) memo text">
     `;
-        const forms = new EzClassifyUI(engine as never, {});
+        const forms = new EzClassifyUI(asContext(engine as never), {});
         activeForms.push(forms);
         await wait(50);
 
@@ -802,7 +807,7 @@ describe('MarkedInput', () => {
         root.innerHTML = `
       <input type="text" id="field" data-ezclassify-controller="marked-input" value="(U) memo text">
     `;
-        const forms = new EzClassifyUI(engine as never, {});
+        const forms = new EzClassifyUI(asContext(engine as never), {});
         activeForms.push(forms);
         await wait(50);
 
@@ -834,7 +839,7 @@ describe('MarkedInput', () => {
         root.innerHTML = `
       <input type="text" id="field" data-ezclassify-controller="marked-input" value="(U) memo text">
     `;
-        const forms = new EzClassifyUI(engine as never, {});
+        const forms = new EzClassifyUI(asContext(engine as never), {});
         await wait(50);
 
         const inputEl = editingField('field') as HTMLTextAreaElement;
@@ -863,7 +868,7 @@ describe('MarkedInput', () => {
         root.innerHTML = `
       <input type="text" id="field" data-ezclassify-controller="marked-input" data-ezclassify-no-tooltips value="(U) memo text">
     `;
-        const forms = new EzClassifyUI(engine as never, {});
+        const forms = new EzClassifyUI(asContext(engine as never), {});
         activeForms.push(forms);
         await wait(50);
 
@@ -884,7 +889,7 @@ describe('MarkedInput', () => {
         root.innerHTML = `
       <input type="text" id="field" data-ezclassify-controller="marked-input" value="(U) memo">
     `;
-        const forms = new EzClassifyUI(engine as never, {});
+        const forms = new EzClassifyUI(asContext(engine as never), {});
         activeForms.push(forms);
         await wait(80);
 
@@ -906,7 +911,7 @@ describe('MarkedInput', () => {
         root.innerHTML = `
       <input type="text" id="field" data-ezclassify-controller="marked-input">
     `;
-        const forms = new EzClassifyUI(engine as never, {});
+        const forms = new EzClassifyUI(asContext(engine as never), {});
         activeForms.push(forms);
         await wait(50);
 
@@ -949,7 +954,7 @@ describe('MarkedInput', () => {
         root.innerHTML = `
       <input type="text" id="field" data-ezclassify-controller="marked-input">
     `;
-        const forms = new EzClassifyUI(engine as never, {});
+        const forms = new EzClassifyUI(asContext(engine as never), {});
         activeForms.push(forms);
         await wait(50);
 
@@ -997,7 +1002,7 @@ describe('MarkedInput', () => {
         root.innerHTML = `
       <input type="text" id="field" data-ezclassify-controller="marked-input" value="(U) memo text">
     `;
-        const forms = new EzClassifyUI(engine as never, {});
+        const forms = new EzClassifyUI(asContext(engine as never), {});
         activeForms.push(forms);
         await wait(50);
 
@@ -1055,7 +1060,7 @@ describe('MarkedInput', () => {
         root.innerHTML = `
       <input type="text" id="field" data-ezclassify-controller="marked-input" value="(U)">
     `;
-        const forms = new EzClassifyUI(engine as never, {});
+        const forms = new EzClassifyUI(asContext(engine as never), {});
         activeForms.push(forms);
         await wait(50);
 
@@ -1141,7 +1146,7 @@ describe('MarkedInput', () => {
         root.innerHTML = `
       <input type="text" id="field" data-ezclassify-controller="marked-input" value="(U) memo text">
     `;
-        const forms = new EzClassifyUI(engine as never, {});
+        const forms = new EzClassifyUI(asContext(engine as never), {});
         activeForms.push(forms);
         await wait(50);
 
@@ -1194,7 +1199,7 @@ describe('MarkedInput', () => {
         root.innerHTML = `
       <input type="text" id="field" data-ezclassify-controller="marked-input" value="(U) memo text">
     `;
-        const forms = new EzClassifyUI(engine as never, {});
+        const forms = new EzClassifyUI(asContext(engine as never), {});
         activeForms.push(forms);
         await wait(50);
 
@@ -1242,7 +1247,7 @@ describe('MarkedInput', () => {
       <input type="text" id="field" data-ezclassify-controller="marked-input" value="(U) memo text">
       <textarea id="body" data-ezclassify-controller="marked-textarea"></textarea>
     `;
-        const forms = new EzClassifyUI(engine as never, {});
+        const forms = new EzClassifyUI(asContext(engine as never), {});
         activeForms.push(forms);
         await wait(50);
 
@@ -1272,7 +1277,7 @@ describe('MarkedInput', () => {
       <input type="text" id="field" data-ezclassify-controller="marked-input" value="(U) memo text">
       <textarea id="body" data-ezclassify-controller="marked-textarea"></textarea>
     `;
-        const forms = new EzClassifyUI(engine as never, {});
+        const forms = new EzClassifyUI(asContext(engine as never), {});
         activeForms.push(forms);
         await wait(50);
 
@@ -1296,7 +1301,7 @@ describe('MarkedInput', () => {
         root.innerHTML = `
       <input type="text" id="field" data-ezclassify-controller="marked-input" value="(U) memo text">
     `;
-        const forms = new EzClassifyUI(engine as never, {});
+        const forms = new EzClassifyUI(asContext(engine as never), {});
         activeForms.push(forms);
         await wait(80);
 
@@ -1343,7 +1348,7 @@ describe('MarkedInput', () => {
         root.innerHTML = `
       <input type="text" id="field" data-ezclassify-controller="marked-input">
     `;
-        const forms = new EzClassifyUI(engine as never, {});
+        const forms = new EzClassifyUI(asContext(engine as never), {});
         activeForms.push(forms);
         await wait(50);
 
@@ -1408,7 +1413,7 @@ describe('MarkedInput', () => {
         root.innerHTML = `
       <input type="text" id="field" data-ezclassify-controller="marked-input">
     `;
-        const forms = new EzClassifyUI(engine as never, {});
+        const forms = new EzClassifyUI(asContext(engine as never), {});
         activeForms.push(forms);
         await wait(50);
 
@@ -1435,7 +1440,7 @@ describe('MarkedInput', () => {
         root.innerHTML = `
       <input type="text" id="field" data-ezclassify-controller="marked-input">
     `;
-        const forms = new EzClassifyUI(engine as never, {});
+        const forms = new EzClassifyUI(asContext(engine as never), {});
         activeForms.push(forms);
         await wait(50);
 
@@ -1465,7 +1470,7 @@ describe('MarkedInput', () => {
         root.innerHTML = `
       <input type="text" id="field" data-ezclassify-controller="marked-input" data-ezclassify-no-hints>
     `;
-        const forms = new EzClassifyUI(engine as never, {});
+        const forms = new EzClassifyUI(asContext(engine as never), {});
         activeForms.push(forms);
         await wait(50);
 
@@ -1482,7 +1487,7 @@ describe('MarkedInput', () => {
         root.innerHTML = `
       <input type="text" id="field" data-ezclassify-controller="marked-input" value="(U) title text">
     `;
-        const forms = new EzClassifyUI(engine as never, {});
+        const forms = new EzClassifyUI(asContext(engine as never), {});
         activeForms.push(forms);
         await wait(100);
 
@@ -1519,7 +1524,7 @@ describe('MarkedInput', () => {
         root.innerHTML = `
       <input type="text" id="field" data-ezclassify-controller="marked-input" value="(U) quarterly report">
     `;
-        const forms = new EzClassifyUI(engine as never, {});
+        const forms = new EzClassifyUI(asContext(engine as never), {});
         activeForms.push(forms);
         await wait(100);
 
@@ -1544,12 +1549,12 @@ describe('MarkedInput', () => {
         const engine = createTestEngine();
         // Marking host + MI bound to it, mirrors the demo's doc-marking pattern.
         root.innerHTML = `
-      <input type="hidden" id="doc-marking" data-ezclassify-rendered />
+      <input type="hidden" id="doc-marking" data-ezclassify-marking />
       <input type="text" id="mi-field"
              data-ezclassify-controller="marked-input"
              data-ezclassify-bound-to="doc-marking" value="(U) report title">
     `;
-        const forms = new EzClassifyUI(engine as never, { root });
+        const forms = new EzClassifyUI(asContext(engine as never), { root });
         activeForms.push(forms);
         await wait(150);
 
@@ -1578,12 +1583,12 @@ describe('MarkedInput', () => {
         // its invalid parse state, keeping the chip consistent with its marking.
         const engine = createTestEngine();
         root.innerHTML = `
-      <input type="hidden" id="doc-marking" data-ezclassify-rendered />
+      <input type="hidden" id="doc-marking" data-ezclassify-marking />
       <input type="text" id="mi-field"
              data-ezclassify-controller="marked-input"
              data-ezclassify-bound-to="doc-marking" value="(X) quarterly report">
     `;
-        const forms = new EzClassifyUI(engine as never, { root });
+        const forms = new EzClassifyUI(asContext(engine as never), { root });
         activeForms.push(forms);
         await wait(150);
 
@@ -1613,7 +1618,7 @@ describe('MarkedInput', () => {
     it('picker on empty input: renderDisplay attaches the picker mount as an editing chip', async () => {
         const engine = createTestEngine();
         root.innerHTML = `<input type="text" id="field" data-ezclassify-controller="marked-input">`;
-        const forms = new EzClassifyUI(engine as never, {});
+        const forms = new EzClassifyUI(asContext(engine as never), {});
         activeForms.push(forms);
         await wait(50);
 
@@ -1641,12 +1646,12 @@ describe('MarkedInput', () => {
         // that rendering into a store which parses the default format.
         const engine = createTestEngine();
         root.innerHTML = `
-      <input type="hidden" id="doc-marking" data-ezclassify-rendered />
+      <input type="hidden" id="doc-marking" data-ezclassify-marking />
       <input type="text" id="mi-field"
              data-ezclassify-controller="marked-input"
              data-ezclassify-bound-to="doc-marking" value="(U) quarterly report">
     `;
-        const forms = new EzClassifyUI(engine as never, { root });
+        const forms = new EzClassifyUI(asContext(engine as never), { root });
         activeForms.push(forms);
         await wait(150);
 
@@ -1676,7 +1681,7 @@ describe('MarkedInput', () => {
         root.innerHTML = `
       <input type="text" id="field" data-ezclassify-controller="marked-input">
     `;
-        const forms = new EzClassifyUI(engine as never, {});
+        const forms = new EzClassifyUI(asContext(engine as never), {});
         activeForms.push(forms);
         await wait(80);
 
@@ -1704,12 +1709,12 @@ describe('MarkedInput', () => {
         // that republishes the part-formatted marking into the default-format store.
         const engine = createMultiCategoryEngine();
         root.innerHTML = `
-      <input type="hidden" id="doc-marking" data-ezclassify-rendered />
+      <input type="hidden" id="doc-marking" data-ezclassify-marking />
       <input type="text" id="mi-field"
              data-ezclassify-controller="marked-input"
              data-ezclassify-bound-to="doc-marking">
     `;
-        const forms = new EzClassifyUI(engine as never, { root });
+        const forms = new EzClassifyUI(asContext(engine as never), { root });
         activeForms.push(forms);
         await wait(150);
 
@@ -1788,7 +1793,7 @@ describe('MarkedInput', () => {
         root.innerHTML = `
       <input type="text" id="field" data-ezclassify-controller="marked-input">
     `;
-        const forms = new EzClassifyUI(engine as never, {});
+        const forms = new EzClassifyUI(asContext(engine as never), {});
         activeForms.push(forms);
         await wait(50);
 
@@ -1820,7 +1825,9 @@ describe('MarkedInput native input ownership', () => {
         const native = root.querySelector<HTMLInputElement>('#title')!;
         const body = root.querySelector<HTMLTextAreaElement>('#body')!;
         const form = root.querySelector('form')!;
-        const forms = new EzClassifyUI(createTestEngine() as never, { root });
+        const forms = new EzClassifyUI(asContext(createTestEngine() as never), {
+            root,
+        });
         activeForms.push(forms);
         await wait(80);
         const editor = root.querySelector<HTMLTextAreaElement>(
@@ -1864,7 +1871,9 @@ describe('MarkedInput native input ownership', () => {
         native.setCustomValidity('Host error');
         const focus = native.focus;
         const validity = native.setCustomValidity;
-        const forms = new EzClassifyUI(createTestEngine() as never, { root });
+        const forms = new EzClassifyUI(asContext(createTestEngine() as never), {
+            root,
+        });
         activeForms.push(forms);
         await wait(80);
         const editor = root.querySelector<HTMLTextAreaElement>(
@@ -1930,7 +1939,7 @@ describe('MarkedInput: wrapping owned textarea editor', () => {
     it('a plain Enter never inserts a newline into the value (keeps Ctrl/Cmd+Enter accept semantics)', async () => {
         const engine = createTestEngine();
         root.innerHTML = `<input type="text" id="field" data-ezclassify-controller="marked-input" value="(U) memo">`;
-        const forms = new EzClassifyUI(engine as never, { root });
+        const forms = new EzClassifyUI(asContext(engine as never), { root });
         activeForms.push(forms);
         await wait(50);
 
@@ -1986,7 +1995,7 @@ describe('MarkedInput: wrapping owned textarea editor', () => {
     it('pasting multi-line text strips the newlines instead of inserting them', async () => {
         const engine = createTestEngine();
         root.innerHTML = `<input type="text" id="field" data-ezclassify-controller="marked-input" value="(U) ">`;
-        const forms = new EzClassifyUI(engine as never, { root });
+        const forms = new EzClassifyUI(asContext(engine as never), { root });
         activeForms.push(forms);
         await wait(50);
 
@@ -2023,7 +2032,7 @@ describe('MarkedInput: wrapping owned textarea editor', () => {
     it('a paste with no newlines is left to the browser default (not intercepted)', async () => {
         const engine = createTestEngine();
         root.innerHTML = `<input type="text" id="field" data-ezclassify-controller="marked-input" value="(U) ">`;
-        const forms = new EzClassifyUI(engine as never, { root });
+        const forms = new EzClassifyUI(asContext(engine as never), { root });
         activeForms.push(forms);
         await wait(50);
 
@@ -2072,7 +2081,7 @@ describe('MarkedInput: wrapping owned textarea editor', () => {
         const engine = createTestEngine();
 
         root.innerHTML = `<input type="text" id="field" data-ezclassify-controller="marked-input" value="(S) report">`;
-        const forms = new EzClassifyUI(engine as never, { root });
+        const forms = new EzClassifyUI(asContext(engine as never), { root });
         activeForms.push(forms);
         await wait(50);
 
@@ -2112,7 +2121,7 @@ describe('MarkedInput: wrapping owned textarea editor', () => {
       <label for="field">Title</label>
       <input type="text" id="field" data-ezclassify-controller="marked-input" value="(U) memo">
     `;
-        const forms = new EzClassifyUI(engine as never, { root });
+        const forms = new EzClassifyUI(asContext(engine as never), { root });
         activeForms.push(forms);
         await wait(50);
 
@@ -2125,7 +2134,7 @@ describe('MarkedInput: wrapping owned textarea editor', () => {
     it('form submit value is unchanged: still the flat "(U) title" string, no embedded newline', async () => {
         const engine = createTestEngine();
         root.innerHTML = `<form id="f"><input type="text" id="field" data-ezclassify-controller="marked-input" value="(U) report title"></form>`;
-        const forms = new EzClassifyUI(engine as never, { root });
+        const forms = new EzClassifyUI(asContext(engine as never), { root });
         activeForms.push(forms);
         await wait(50);
 
@@ -2147,7 +2156,7 @@ describe('MarkedInput: wrapping owned textarea editor', () => {
         root.innerHTML = `
       <input type="text" id="field" data-ezclassify-controller="marked-input" value="(U) ${longTail}">
     `;
-        const forms = new EzClassifyUI(engine as never, { root });
+        const forms = new EzClassifyUI(asContext(engine as never), { root });
         activeForms.push(forms);
         await wait(50);
 
@@ -2209,7 +2218,7 @@ describe('MarkedInput: standalone self-publish to the page aggregate', () => {
     it('auto-assigns a synthetic marking id when the host has none', async () => {
         const engine = createTestEngine();
         root.innerHTML = `<input type="text" data-ezclassify-controller="marked-input" value="(U) memo">`;
-        const forms = new EzClassifyUI(engine as never, {});
+        const forms = new EzClassifyUI(asContext(engine as never), {});
         activeForms.push(forms);
         await wait(80);
 
@@ -2228,7 +2237,7 @@ describe('MarkedInput: standalone self-publish to the page aggregate', () => {
       <div class="field"><input type="text" id="mi-a" data-ezclassify-controller="marked-input"></div>
       <div class="field"><input type="text" id="mi-b" data-ezclassify-controller="marked-input"></div>
     `;
-        const forms = new EzClassifyUI(engine as never, {});
+        const forms = new EzClassifyUI(asContext(engine as never), {});
         activeForms.push(forms);
         await wait(80);
 
@@ -2273,7 +2282,7 @@ describe('MarkedInput: standalone self-publish to the page aggregate', () => {
         root.innerHTML = `
       <input type="text" id="mi-only" data-ezclassify-controller="marked-input" value="(S) classified title">
     `;
-        const forms = new EzClassifyUI(engine as never, {});
+        const forms = new EzClassifyUI(asContext(engine as never), {});
         activeForms.push(forms);
         await wait(80);
 
@@ -2297,11 +2306,11 @@ describe('MarkedInput: standalone self-publish to the page aggregate', () => {
         // the condition that self-registration only kicks in without bound-to/facet-of.
         const engine = createTestEngine();
         root.innerHTML = `
-      <input type="hidden" id="doc-marking" data-ezclassify-rendered />
+      <input type="hidden" id="doc-marking" data-ezclassify-marking />
       <input type="text" id="bound-mi" data-ezclassify-controller="marked-input"
              data-ezclassify-bound-to="doc-marking" value="(U) memo">
     `;
-        const forms = new EzClassifyUI(engine as never, { root });
+        const forms = new EzClassifyUI(asContext(engine as never), { root });
         activeForms.push(forms);
         await wait(80);
 

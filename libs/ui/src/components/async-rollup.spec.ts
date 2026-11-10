@@ -4,6 +4,7 @@
  * aggregate call. The async path must produce the same rollup as the sync one.
  */
 
+import { asContext } from '../../test-fixtures/as-context';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import type {
     CategoryView,
@@ -112,7 +113,7 @@ describe('Async rollup integration', () => {
       <input type="hidden" id="test-rollup">
     `;
 
-        new EzClassifyUI(engine as never, {
+        new EzClassifyUI(asContext(engine as never), {
             rollupId: 'test-rollup',
         });
 
@@ -141,7 +142,7 @@ describe('Async rollup integration', () => {
       <input type="hidden" id="test-rollup">
     `;
 
-        new EzClassifyUI(engine as never, {
+        new EzClassifyUI(asContext(engine as never), {
             rollupId: 'test-rollup',
         });
         await waitUntil(
@@ -167,7 +168,7 @@ describe('Async rollup integration', () => {
       <input type="hidden" id="test-rollup">
     `;
 
-        new EzClassifyUI(engine as never, {
+        new EzClassifyUI(asContext(engine as never), {
             rollupId: 'test-rollup',
         });
         await waitUntil(() => engine._callCount('aggregate') > 0);
@@ -188,7 +189,7 @@ describe('Async rollup integration', () => {
       <input type="hidden" id="test-rollup">
     `;
 
-        new EzClassifyUI(engine as never, {
+        new EzClassifyUI(asContext(engine as never), {
             rollupId: 'test-rollup',
         });
         await waitUntil(() =>

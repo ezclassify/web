@@ -22,6 +22,7 @@
  * The scheme is the engine's own stand-in shape (see the fixture), so nothing
  * here depends on one scheme's vocabulary.
  */
+import { asContext } from '../../test-fixtures/as-context';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Assertion } from '@ezclassify/types';
 import { EzClassifyUI } from '../ezclassify-ui';
@@ -106,11 +107,11 @@ async function mountPart(
     whole: string = STAND_IN_WHOLE,
 ): Promise<HTMLTextAreaElement> {
     root.innerHTML = [
-        `<input type="hidden" id="doc" data-ezclassify-rendered value="${whole}" />`,
+        `<input type="hidden" id="doc" data-ezclassify-marking value="${whole}" />`,
         `<label for="f">Title</label>`,
         partMarkup(kind, value),
     ].join('');
-    forms = new EzClassifyUI(context as never, { root });
+    forms = new EzClassifyUI(asContext(context as never), { root });
     await wait(450);
     return document.getElementById('f') as HTMLTextAreaElement;
 }
@@ -484,11 +485,14 @@ describe('the store reads parts against their whole', () => {
         '%s: a part is read again when its whole arrives after it',
         async (kind) => {
             root.innerHTML = [
-                `<input type="hidden" id="doc" data-ezclassify-rendered value="" />`,
+                `<input type="hidden" id="doc" data-ezclassify-marking value="" />`,
                 `<label for="f">Title</label>`,
                 partMarkup(kind, '(L//SHARE) Quarterly notes'),
             ].join('');
-            forms = new EzClassifyUI(wholeStandInContext() as never, { root });
+            forms = new EzClassifyUI(
+                asContext(wholeStandInContext() as never),
+                { root },
+            );
             await wait(450);
             const host = document.getElementById('f') as HTMLTextAreaElement;
             const part = () => {
@@ -539,11 +543,13 @@ describe('a mark the field cannot read whole', () => {
 describe('MarkingField: an editable field that holds a part', () => {
     it('keeps the whole partners as taken through an edit, and never offers them as held', async () => {
         root.innerHTML = [
-            `<input type="hidden" id="doc" data-ezclassify-rendered value="${STAND_IN_WHOLE}" />`,
+            `<input type="hidden" id="doc" data-ezclassify-marking value="${STAND_IN_WHOLE}" />`,
             `<label for="f">Part marking</label>`,
             `<textarea id="f" data-ezclassify-controller="marking" data-ezclassify-part-of="doc" data-ezclassify-format="portion">L//SHARE</textarea>`,
         ].join('');
-        forms = new EzClassifyUI(wholeStandInContext() as never, { root });
+        forms = new EzClassifyUI(asContext(wholeStandInContext() as never), {
+            root,
+        });
         await wait(450);
         const host = document.getElementById('f') as HTMLTextAreaElement;
         const field = forms.components.get(host)!;
@@ -913,11 +919,13 @@ describe.each([
 
     it('MarkingField: reads and commits a pick as written', async () => {
         root.innerHTML = [
-            `<input type="hidden" id="doc" data-ezclassify-rendered value="${JOINT_WHOLE}" />`,
+            `<input type="hidden" id="doc" data-ezclassify-marking value="${JOINT_WHOLE}" />`,
             `<label for="f">Part marking</label>`,
-            `<textarea id="f" data-ezclassify-controller="marking" data-ezclassify-rendered data-ezclassify-part-of="doc" data-ezclassify-format="portion">${form.mark}</textarea>`,
+            `<textarea id="f" data-ezclassify-controller="marking" data-ezclassify-marking data-ezclassify-part-of="doc" data-ezclassify-format="portion">${form.mark}</textarea>`,
         ].join('');
-        forms = new EzClassifyUI(wholeStandInContext() as never, { root });
+        forms = new EzClassifyUI(asContext(wholeStandInContext() as never), {
+            root,
+        });
         await wait(450);
         const host = document.getElementById('f') as HTMLTextAreaElement;
         const field = forms.components.get(host)!;

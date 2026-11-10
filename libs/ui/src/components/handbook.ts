@@ -23,7 +23,6 @@ import type {
     ConceptView,
 } from '@ezclassify/types';
 import {
-    isAddressableSchemeEngine,
     ReadOnlyComponentBase,
     type ComponentEngineSource,
     type ComponentOptions,
@@ -638,19 +637,11 @@ export class Handbook extends ReadOnlyComponentBase {
         for (const entry of entries) {
             if (entry.rules !== null) continue;
 
-            const result =
-                this.schemeAddressing && isAddressableSchemeEngine(this.engine)
-                    ? this.engine.describeConcept(
-                          entry.concept.id,
-                          entry.category.id,
-                          this.schemeId,
-                          conceptProp,
-                      )
-                    : this.engine.describeConcept(
-                          entry.concept.id,
-                          entry.category.id,
-                          conceptProp,
-                      );
+            const result = this.engine.describeConcept(
+                entry.concept.id,
+                entry.category.id,
+                conceptProp,
+            );
 
             if (result && typeof result === 'object' && !('then' in result)) {
                 // Sync engine: populate immediately

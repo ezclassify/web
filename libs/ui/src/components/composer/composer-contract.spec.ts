@@ -8,6 +8,7 @@
  * Enter, Tab, blur, a row press or Escape fails here, next to the other three
  * that did not.
  */
+import { asContext } from '../../../test-fixtures/as-context';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { Context } from '@ezclassify/engine';
 import type { Assertion } from '@ezclassify/types';
@@ -130,7 +131,7 @@ function ids(assertions: readonly Assertion[]): string[] {
 async function mountField(kind: Kind): Promise<Field> {
     const tag = kind === 'marked-textarea' ? 'textarea' : 'input';
     root.innerHTML = `<label for="f">Marking</label><${tag} id="f" data-ezclassify-controller="${kind}"></${tag}>`;
-    forms = new EzClassifyUI(createContext() as never, { root });
+    forms = new EzClassifyUI(asContext(createContext() as never), { root });
     await wait();
     const host = document.getElementById('f') as
         HTMLInputElement | HTMLTextAreaElement;

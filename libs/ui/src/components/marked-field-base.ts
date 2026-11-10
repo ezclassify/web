@@ -32,7 +32,6 @@ import type {
 } from './component-base-readonly';
 import { teardownAfterWrite } from './teardown-write';
 import {
-    isAddressableSchemeEngine,
     resolveProfile,
     resolveSchemeEngine,
     resolveContextSource,
@@ -103,13 +102,9 @@ export abstract class MarkedFieldBase<
         appliedFixes: Change[];
     }> {
         const result = await Promise.resolve(
-            this.schemeAddressing && isAddressableSchemeEngine(this.engine)
-                ? this.engine.validate(marking, this.schemeId, {
-                      outputFormat: this.scanFormat,
-                  })
-                : this.engine.validate(marking, {
-                      outputFormat: this.scanFormat,
-                  }),
+            this.engine.validate(marking, {
+                outputFormat: this.scanFormat,
+            }),
         );
         return {
             assertions: result.assertions,
@@ -120,9 +115,6 @@ export abstract class MarkedFieldBase<
     /** Expand a named scheme preset through the bound adapter. */
     protected callApplyPreset(presetId: string, outputFormat?: string) {
         const options = outputFormat ? { outputFormat } : undefined;
-        if (this.schemeAddressing && isAddressableSchemeEngine(this.engine)) {
-            return this.engine.applyPreset(presetId, this.schemeId, options);
-        }
         return this.engine.applyPreset(presetId, options);
     }
     /**
@@ -133,13 +125,6 @@ export abstract class MarkedFieldBase<
      */
     protected engineSource!: ComponentEngineSource;
 
-    /** Whether calls from this bare adapter may include an explicit scheme id. */
-    protected get schemeAddressing(): boolean {
-        return (
-            !('scheme' in this.engineSource) &&
-            isAddressableSchemeEngine(this.engine)
-        );
-    }
     protected container!: HTMLDivElement;
     protected options: ComponentOptions = {};
     protected schemeId!: string;
@@ -239,24 +224,16 @@ export abstract class MarkedFieldBase<
         requestedFormat: string | undefined,
     ): void {
         const resolvedEngine = resolveSchemeEngine(
-            container,
             engineOrContext,
             this.componentLabel,
         );
         assertDescribesConcepts(resolvedEngine, this.componentLabel);
         this.engine = resolvedEngine;
         this.engineSource =
-            resolveContextSource(container, engineOrContext) ?? resolvedEngine;
+            resolveContextSource(engineOrContext) ?? resolvedEngine;
         this.container = container;
-        this.schemeId = resolveProfile(
-            container,
-            resolvedEngine,
-            this.options,
-            this.schemeAddressing,
-        );
-        const resolvedScheme = this.schemeAddressing
-            ? resolvedEngine.getScheme(this.schemeId)
-            : resolvedEngine.getScheme();
+        this.schemeId = resolveProfile(resolvedEngine);
+        const resolvedScheme = resolvedEngine.getScheme();
         this.scheme = resolvedScheme;
         this.embeddedStyle =
             (
@@ -546,10 +523,7 @@ export abstract class MarkedFieldBase<
      * @returns The format id, or undefined when the scheme declares none
      */
     protected pickPartFormat(): string | undefined {
-        return (
-            this.engine.getSchemeMeta(this.schemeId).defaultPartRenderFormat ??
-            undefined
-        );
+        return this.engine.getSchemeMeta().defaultPartRenderFormat ?? undefined;
     }
 
     /**
@@ -801,8 +775,6 @@ export abstract class MarkedFieldBase<
      */
     private readonly _conceptDescriber = createConceptDescriber({
         engine: () => this.engine,
-        schemeId: () => this.schemeId,
-        schemeAddressing: () => this.schemeAddressing,
         options: () => this.options,
     });
 

@@ -261,7 +261,6 @@ async function open(
     editor = new InlineMarkingEditor();
     await editor.init(container, toCtx(createRealEngine()), initial, {
         formatId: 'default',
-        schemeId: 'ime-test',
         assertions: ids.length ? assertionsFor(ids) : undefined,
         root,
         ...options,
@@ -424,7 +423,6 @@ describe('InlineMarkingEditor', () => {
             editor = late;
             await late.init(container, toCtx(createRealEngine()), '', {
                 formatId: 'default',
-                schemeId: 'ime-test',
                 root,
                 openList: false,
             });

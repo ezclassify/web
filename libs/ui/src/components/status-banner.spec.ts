@@ -581,6 +581,135 @@ function createEngineWithCoverage(
     } as unknown as SchemeEngineAdapter;
 }
 
+describe('StatusBanner: level views', () => {
+    let container: HTMLDivElement;
+    let component: StatusBanner;
+
+    beforeEach(() => {
+        document.body.innerHTML = '';
+        container = document.createElement('div');
+        document.body.appendChild(container);
+        component = new StatusBanner();
+    });
+
+    const banner = () => container.querySelector('.status-banner')!;
+
+    it('names the page in the accessible name of a bare aggregate view', async () => {
+        container.setAttribute('data-ezclassify-aggregate', '');
+        await component.init(container, toCtx(createMockEngine()));
+        await component.setValue('level-high');
+        expect(banner().getAttribute('aria-label')).toBe(
+            'Page marking: level-high',
+        );
+        expect(
+            container.querySelector('.status-banner-label')?.textContent,
+        ).toBe('level-high');
+    });
+
+    it('reads React\'s "true" as the page as well', async () => {
+        container.setAttribute('data-ezclassify-aggregate', 'true');
+        await component.init(container, toCtx(createMockEngine()));
+        expect(banner().getAttribute('aria-label')).toBe(
+            'Page marking: No marking',
+        );
+    });
+
+    it('names a collection by its own label, and falls back to its id', async () => {
+        const folder = document.createElement('section');
+        folder.id = 'folderA';
+        folder.setAttribute('aria-label', 'Folder A');
+        document.body.appendChild(folder);
+        container.setAttribute('data-ezclassify-aggregate', 'folderA');
+        await component.init(container, toCtx(createMockEngine()));
+        await component.setValue('level-low');
+        expect(banner().getAttribute('aria-label')).toBe(
+            'Folder A marking: level-low',
+        );
+
+        folder.removeAttribute('aria-label');
+        await component.setValue('level-high');
+        expect(banner().getAttribute('aria-label')).toBe(
+            'folderA marking: level-high',
+        );
+    });
+
+    it('keeps a one-marking view named by its marking alone', async () => {
+        container.setAttribute('data-ezclassify-source', 'doc');
+        await component.init(container, toCtx(createMockEngine()));
+        await component.setValue('level-high');
+        expect(banner().getAttribute('aria-label')).toBe('level-high');
+    });
+
+    it('shows every non-empty bucket on its own labeled line and hides none', async () => {
+        container.setAttribute('data-ezclassify-aggregate', '');
+        await component.init(container, toCtx(createMockEngine()));
+        component.setBuckets([
+            {
+                key: 'a\u001fprimary',
+                label: 'Alpha',
+                rendered: 'ONE',
+                colors: { background: '#111111', text: '#eeeeee' },
+            },
+            { key: 'b\u001fprimary', label: 'Bravo', rendered: '' },
+            { key: 'c\u001fprimary', label: 'Charlie', rendered: 'THREE' },
+        ]);
+        const rows = [
+            ...container.querySelectorAll<HTMLElement>('.status-banner-bucket'),
+        ];
+        expect(rows.map((row) => row.textContent)).toEqual([
+            'AlphaONE',
+            'CharlieTHREE',
+        ]);
+        expect(rows[0].style.getPropertyValue('--ez-banner-bg')).toBe(
+            '#111111',
+        );
+        // A bucket without colors of its own stays neutral rather than
+        // wearing this banner's scheme's colors.
+        expect(rows[1].classList.contains('status-banner--colored')).toBe(
+            false,
+        );
+        expect(banner().getAttribute('aria-label')).toBe(
+            'Page marking. Alpha: ONE; Charlie: THREE',
+        );
+    });
+
+    it('says there is no marking when every bucket is empty, and returns to its own marking when cleared', async () => {
+        container.setAttribute('data-ezclassify-aggregate', '');
+        await component.init(container, toCtx(createMockEngine()));
+        component.setBuckets([
+            { key: 'a\u001fprimary', label: 'Alpha', rendered: '' },
+            { key: 'b\u001fprimary', label: 'Bravo', rendered: '' },
+        ]);
+        expect(banner().classList.contains('status-banner--empty')).toBe(true);
+        expect(banner().getAttribute('aria-label')).toBe(
+            'Page marking: No marking',
+        );
+
+        component.setBuckets([]);
+        await component.setValue('level-high');
+        expect(container.querySelector('.status-banner-bucket')).toBeNull();
+        expect(banner().getAttribute('aria-label')).toBe(
+            'Page marking: level-high',
+        );
+    });
+
+    it('states an incomplete rollup over the buckets too', async () => {
+        container.setAttribute('data-ezclassify-aggregate', '');
+        await component.init(container, toCtx(createMockEngine()));
+        component.setBuckets([
+            { key: 'a\u001fprimary', label: 'Alpha', rendered: 'ONE' },
+            { key: 'b\u001fprimary', label: 'Bravo', rendered: 'TWO' },
+        ]);
+        component.setIncomplete(true);
+        expect(
+            container.querySelector('.status-banner-incomplete'),
+        ).not.toBeNull();
+        expect(banner().getAttribute('aria-label')).toMatch(
+            /^Page marking\. Alpha: ONE; Bravo: TWO\. /,
+        );
+    });
+});
+
 describe('StatusBanner: boundary mode', () => {
     let container: HTMLDivElement;
     let component: StatusBanner;

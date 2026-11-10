@@ -16,11 +16,7 @@ import type {
     ComponentOptions,
     ComponentEngineSource,
 } from './component-base-readonly';
-import {
-    isAddressableSchemeEngine,
-    returnToField,
-    partsOption,
-} from './component-base-readonly';
+import { returnToField, partsOption } from './component-base-readonly';
 import { getMountHost } from '../mount-host-registry';
 import { InlineMarkingEditor } from './inline-marking-editor';
 import { accessibleLabel } from './composer/composer-view';
@@ -670,23 +666,13 @@ export class MarkedInput extends MarkedFieldBase<HTMLTextAreaElement> {
             // the shared marking's valid flag.
         };
 
-        const result =
-            this.schemeAddressing && isAddressableSchemeEngine(this.engine)
-                ? this.engine.process(
-                      '',
-                      this.schemeId,
-                      this.markOptions({
-                          outputFormat: this.scanFormat,
-                          assertions,
-                      }),
-                  )
-                : this.engine.process(
-                      '',
-                      this.markOptions({
-                          outputFormat: this.scanFormat,
-                          assertions,
-                      }),
-                  );
+        const result = this.engine.process(
+            '',
+            this.markOptions({
+                outputFormat: this.scanFormat,
+                assertions,
+            }),
+        );
 
         void Promise.resolve(result)
             .then(apply)
@@ -970,41 +956,22 @@ export class MarkedInput extends MarkedFieldBase<HTMLTextAreaElement> {
         try {
             if (usedSavedAssertions) {
                 result = await Promise.resolve(
-                    this.schemeAddressing &&
-                        isAddressableSchemeEngine(this.engine)
-                        ? this.engine.process(
-                              '',
-                              this.schemeId,
-                              this.markOptions({
-                                  outputFormat: this.scanFormat,
-                                  assertions: savedAssertions!.assertions,
-                              }),
-                          )
-                        : this.engine.process(
-                              '',
-                              this.markOptions({
-                                  outputFormat: this.scanFormat,
-                                  assertions: savedAssertions!.assertions,
-                              }),
-                          ),
+                    this.engine.process(
+                        '',
+                        this.markOptions({
+                            outputFormat: this.scanFormat,
+                            assertions: savedAssertions!.assertions,
+                        }),
+                    ),
                 );
             } else {
                 result = await Promise.resolve(
-                    this.schemeAddressing &&
-                        isAddressableSchemeEngine(this.engine)
-                        ? this.engine.process(
-                              inner,
-                              this.schemeId,
-                              this.markOptions({
-                                  outputFormat: this.scanFormat,
-                              }),
-                          )
-                        : this.engine.process(
-                              inner,
-                              this.markOptions({
-                                  outputFormat: this.scanFormat,
-                              }),
-                          ),
+                    this.engine.process(
+                        inner,
+                        this.markOptions({
+                            outputFormat: this.scanFormat,
+                        }),
+                    ),
                 );
             }
         } catch (error) {
@@ -1387,7 +1354,6 @@ export class MarkedInput extends MarkedFieldBase<HTMLTextAreaElement> {
                 assertions:
                     this.assertions.length > 0 ? this.assertions : undefined,
                 draft,
-                schemeId: this.schemeId,
                 tooltips: this.options.tooltips,
                 tooltipConceptProperty: this.options.tooltipConceptProperty,
                 onChange: () => this.onPickerChange(),

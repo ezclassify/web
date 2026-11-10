@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { asContext } from '../../test-fixtures/as-context';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
@@ -357,9 +358,12 @@ describe('masked host theme paint', () => {
                 });
             });
         try {
-            const forms = new EzClassifyUI(createTestEngine() as never, {
-                root,
-            });
+            const forms = new EzClassifyUI(
+                asContext(createTestEngine() as never),
+                {
+                    root,
+                },
+            );
             activeForms.push(forms);
             await wait(50);
             themeRead = true;
@@ -394,10 +398,12 @@ describe('HiddenAssertionField', () => {
             scheme: createProfile(),
         });
         root.innerHTML = `
-      <div id="hidden-a" data-ezclassify-controller="hidden" data-ezclassify-hidden-format="portion"></div>
+      <div id="hidden-a" data-ezclassify-controller="hidden" data-ezclassify-format="portion"></div>
       <input type="hidden" id="rollup">
     `;
-        const forms = new EzClassifyUI(engine as never, { rollupId: 'rollup' });
+        const forms = new EzClassifyUI(asContext(engine as never), {
+            rollupId: 'rollup',
+        });
         activeForms.push(forms);
         await wait(30);
 
@@ -430,7 +436,7 @@ describe('MarkedTextArea', () => {
         root.innerHTML = `
       <textarea id="body" data-ezclassify-controller="marked-textarea"></textarea>
     `;
-        const forms = new EzClassifyUI(engine as never, { root });
+        const forms = new EzClassifyUI(asContext(engine as never), { root });
         activeForms.push(forms);
         await wait(80);
 
@@ -455,7 +461,7 @@ describe('MarkedTextArea', () => {
         root.innerHTML = `
       <textarea id="body" data-ezclassify-controller="marked-textarea"></textarea>
     `;
-        const forms = new EzClassifyUI(engine as never, { root });
+        const forms = new EzClassifyUI(asContext(engine as never), { root });
         activeForms.push(forms);
         await wait(80);
 
@@ -483,7 +489,7 @@ describe('MarkedTextArea', () => {
         root.innerHTML = `
       <textarea id="body" data-ezclassify-controller="marked-textarea" data-ezclassify-no-hints></textarea>
     `;
-        const forms = new EzClassifyUI(engine as never, { root });
+        const forms = new EzClassifyUI(asContext(engine as never), { root });
         activeForms.push(forms);
         await wait(80);
 
@@ -508,7 +514,7 @@ describe('MarkedTextArea', () => {
         <textarea id="body" data-ezclassify-controller="marked-textarea">(U) Para one.</textarea>
       </div>
     `;
-        const forms = new EzClassifyUI(engine as never, { root });
+        const forms = new EzClassifyUI(asContext(engine as never), { root });
         activeForms.push(forms);
         await wait(50);
 
@@ -530,10 +536,12 @@ describe('MarkedTextArea', () => {
     it('scans the textarea, produces one segment per wrapped marking, and feeds rollup via hidden children', async () => {
         const engine = createTestEngine();
         root.innerHTML = `
-      <textarea id="body" data-ezclassify-controller="marked-textarea" data-ezclassify-marked-textarea-format="portion">(U) Para one.\n\n(S) Para two.</textarea>
+      <textarea id="body" data-ezclassify-controller="marked-textarea" data-ezclassify-format="portion">(U) Para one.\n\n(S) Para two.</textarea>
       <input type="hidden" id="rollup">
     `;
-        const forms = new EzClassifyUI(engine as never, { rollupId: 'rollup' });
+        const forms = new EzClassifyUI(asContext(engine as never), {
+            rollupId: 'rollup',
+        });
         activeForms.push(forms);
         await wait(50);
 
@@ -561,7 +569,7 @@ describe('MarkedTextArea', () => {
     it('emits ezclassify:marked-change carrying per-segment assertions and rendered form', async () => {
         const engine = createTestEngine();
         root.innerHTML = `
-      <textarea id="body" data-ezclassify-controller="marked-textarea" data-ezclassify-marked-textarea-format="portion">(U) Para one.\n\n(S) Para two.</textarea>
+      <textarea id="body" data-ezclassify-controller="marked-textarea" data-ezclassify-format="portion">(U) Para one.\n\n(S) Para two.</textarea>
       <input type="hidden" id="rollup">
     `;
         // Attach before construction so the initial scan's emit is captured.
@@ -572,7 +580,7 @@ describe('MarkedTextArea', () => {
             details.push((e as CustomEvent).detail as (typeof details)[number]);
         document.addEventListener('ezclassify:marked-change', onMarkedChange);
         try {
-            const forms = new EzClassifyUI(engine as never, {
+            const forms = new EzClassifyUI(asContext(engine as never), {
                 rollupId: 'rollup',
             });
             activeForms.push(forms);
@@ -597,10 +605,12 @@ describe('MarkedTextArea', () => {
     it('emits ezclassify:text-change on a body edit with the per-segment text slices', async () => {
         const engine = createTestEngine();
         root.innerHTML = `
-      <textarea id="body" data-ezclassify-controller="marked-textarea" data-ezclassify-marked-textarea-format="portion">(U) Para one.</textarea>
+      <textarea id="body" data-ezclassify-controller="marked-textarea" data-ezclassify-format="portion">(U) Para one.</textarea>
       <input type="hidden" id="rollup">
     `;
-        const forms = new EzClassifyUI(engine as never, { rollupId: 'rollup' });
+        const forms = new EzClassifyUI(asContext(engine as never), {
+            rollupId: 'rollup',
+        });
         activeForms.push(forms);
         await wait(50);
 
@@ -632,12 +642,12 @@ describe('MarkedTextArea', () => {
         const engine = createTestEngine();
         const body = '(U) Para one.\n\n(S) Para two.';
         root.innerHTML = `
-      <input type="hidden" id="doc-marking" data-ezclassify-rendered />
+      <input type="hidden" id="doc-marking" data-ezclassify-marking />
       <textarea id="body"
                 data-ezclassify-controller="marked-textarea"
                 data-ezclassify-bound-to="doc-marking">${body}</textarea>
     `;
-        const forms = new EzClassifyUI(engine as never, { root });
+        const forms = new EzClassifyUI(asContext(engine as never), { root });
         activeForms.push(forms);
         await wait(150);
 
@@ -664,7 +674,7 @@ describe('MarkedTextArea', () => {
         root.innerHTML = `
       <textarea id="body" data-ezclassify-controller="marked-textarea"></textarea>
     `;
-        const forms = new EzClassifyUI(engine as never, { root });
+        const forms = new EzClassifyUI(asContext(engine as never), { root });
         activeForms.push(forms);
         await wait(80);
 
@@ -725,10 +735,12 @@ describe('MarkedTextArea', () => {
     it('resyncs hidden fields when the textarea changes', async () => {
         const engine = createTestEngine();
         root.innerHTML = `
-      <textarea id="body" data-ezclassify-controller="marked-textarea" data-ezclassify-marked-textarea-format="portion">(U) Just one paragraph.</textarea>
+      <textarea id="body" data-ezclassify-controller="marked-textarea" data-ezclassify-format="portion">(U) Just one paragraph.</textarea>
       <input type="hidden" id="rollup">
     `;
-        const forms = new EzClassifyUI(engine as never, { rollupId: 'rollup' });
+        const forms = new EzClassifyUI(asContext(engine as never), {
+            rollupId: 'rollup',
+        });
         activeForms.push(forms);
         await wait(30);
 
@@ -761,7 +773,7 @@ describe('MarkedTextArea', () => {
         // template. The temp segment must be pruned so the display shows no chip.
         const engine = createTestEngine();
         root.innerHTML = `<textarea id="body" data-ezclassify-controller="marked-textarea"></textarea>`;
-        const forms = new EzClassifyUI(engine as never, { root });
+        const forms = new EzClassifyUI(asContext(engine as never), { root });
         activeForms.push(forms);
         await wait(80);
 
@@ -805,7 +817,7 @@ describe('MarkedTextArea', () => {
 
         const engine = createTestEngine();
         root.innerHTML = `<textarea id="body" data-ezclassify-controller="marked-textarea"></textarea>`;
-        const forms = new EzClassifyUI(engine as never, { root });
+        const forms = new EzClassifyUI(asContext(engine as never), { root });
         activeForms.push(forms);
         await wait(80);
 
@@ -842,7 +854,7 @@ describe('MarkedTextArea', () => {
         // fresh empty template or a reopened marking.
         const engine = createTestEngine();
         root.innerHTML = `<textarea id="body" data-ezclassify-controller="marked-textarea"></textarea>`;
-        const forms = new EzClassifyUI(engine as never, { root });
+        const forms = new EzClassifyUI(asContext(engine as never), { root });
         activeForms.push(forms);
         await wait(80);
 
@@ -903,7 +915,7 @@ describe('MarkedTextArea', () => {
     it('shows a concept dwell tooltip on hover over a valid marking segment', async () => {
         const engine = createTestEngine();
         root.innerHTML = `<textarea id="body" data-ezclassify-controller="marked-textarea">(S) Para one.</textarea>`;
-        const forms = new EzClassifyUI(engine as never, { root });
+        const forms = new EzClassifyUI(asContext(engine as never), { root });
         activeForms.push(forms);
         await wait(80);
 
@@ -933,7 +945,7 @@ describe('MarkedTextArea', () => {
         // not only a pending dwell timer.
         const engine = createTestEngine();
         root.innerHTML = `<textarea id="body" data-ezclassify-controller="marked-textarea">(S) Para one.</textarea>`;
-        const forms = new EzClassifyUI(engine as never, { root });
+        const forms = new EzClassifyUI(asContext(engine as never), { root });
         await wait(80);
 
         const display = root.querySelector('.marked-textarea-display');
@@ -959,7 +971,7 @@ describe('MarkedTextArea', () => {
     it('honors the data-ezclassify-no-tooltips opt-out for marking segments', async () => {
         const engine = createTestEngine();
         root.innerHTML = `<textarea id="body" data-ezclassify-controller="marked-textarea" data-ezclassify-no-tooltips>(S) Para one.</textarea>`;
-        const forms = new EzClassifyUI(engine as never, { root });
+        const forms = new EzClassifyUI(asContext(engine as never), { root });
         activeForms.push(forms);
         await wait(80);
 
@@ -1480,13 +1492,13 @@ describe('MarkedTextArea registered mount hosts in mixed forms', () => {
     it('keeps each marked body on its own textarea beside the whole MarkingField', async () => {
         const root = document.createElement('form');
         root.innerHTML = `
-            <input id="mixed-whole" type="hidden" value="U" data-ezclassify-rendered />
+            <input id="mixed-whole" type="hidden" value="U" data-ezclassify-marking />
             <textarea id="mixed-whole-editor" data-ezclassify-controller="marking" data-ezclassify-bound-to="mixed-whole"></textarea>
             <textarea id="mixed-body-one" data-ezclassify-controller="marked-textarea" data-ezclassify-part-of="mixed-whole">(U) First body.</textarea>
             <textarea id="mixed-body-two" data-ezclassify-controller="marked-textarea" data-ezclassify-part-of="mixed-whole">(S) Second body.</textarea>
         `;
         document.body.appendChild(root);
-        const forms = new EzClassifyUI(createTestEngine(), { root });
+        const forms = new EzClassifyUI(asContext(createTestEngine()), { root });
         try {
             await waitFor(() => forms.isReady, 2000);
             for (const id of ['mixed-body-one', 'mixed-body-two']) {

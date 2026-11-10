@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { asContext } from '../../test-fixtures/as-context';
 import { Context } from '@ezclassify/engine';
 import {
     openContext,
@@ -229,9 +230,9 @@ describe('supplemental draft canonical errors', () => {
         const refused = await context.scheme!.process([chosen('TOOLONG')]);
         const root = document.createElement('div');
         root.innerHTML =
-            '<input type="hidden" id="warehouse" data-ezclassify-rendered><input id="item" data-ezclassify-controller="select" data-ezclassify-facet-of="warehouse" data-ezclassify-category="item">';
+            '<input type="hidden" id="warehouse" data-ezclassify-marking><input id="item" data-ezclassify-controller="select" data-ezclassify-facet-of="warehouse" data-ezclassify-category="item">';
         document.body.append(root);
-        const forms = new EzClassifyUI(context, { root });
+        const forms = new EzClassifyUI(asContext(context), { root });
         try {
             await vi.waitFor(() => expect(forms.isReady).toBe(true));
             await forms.store.publishAssertions('warehouse', [chosen('ABC')]);

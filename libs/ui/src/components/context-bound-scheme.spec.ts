@@ -19,7 +19,6 @@ import {
     type ComponentSchemeEngine,
 } from './component-base-readonly';
 import { mockValidateResult } from '../engine-result-mock';
-import type { EngineArg } from '../engine-signature';
 
 class BoundComponent extends ReadOnlyComponentBase {
     protected setup(): void {}
@@ -76,7 +75,6 @@ function context(validate: ReturnType<typeof vi.fn>): ContextAdapter {
 describe('Context-bound scheme operations', () => {
     it('accepts the canonical local Context query contract without mutable lifecycle', () => {
         expectTypeOf<LocalContextSchemeEngineAdapter>().toMatchTypeOf<ComponentSchemeEngine>();
-        expectTypeOf<LocalContextSchemeEngineAdapter>().toMatchTypeOf<EngineArg>();
     });
 
     it('mounts a selected synchronous bound scheme view without a Context wrapper', async () => {
@@ -113,15 +111,23 @@ describe('Context-bound scheme operations', () => {
         });
     });
 
-    it('rejects an attempt to select a different scheme', async () => {
-        const validate = vi.fn();
+    it('marks with the view it was given whatever scheme markup sits on its container', async () => {
+        const validate = vi.fn(async (): Promise<ValidateResult> =>
+            mockValidateResult({ rendered: 'A' }),
+        );
         const container = document.createElement('div');
+        // Which scheme markup names is the runtime's to read before mounting;
+        // a component mounted directly marks in the view it is handed.
         container.dataset.ezclassifyScheme = 'secondary';
         const component = new BoundComponent();
 
-        await expect(
-            component.init(container, context(validate)),
-        ).rejects.toThrow(/Context-bound scheme operations target 'primary'/);
-        expect(validate).not.toHaveBeenCalled();
+        await component.init(container, context(validate), {
+            initialValue: 'A',
+        });
+
+        expect(validate).toHaveBeenCalledWith('A', {
+            outputFormat: 'default',
+            context: undefined,
+        });
     });
 });

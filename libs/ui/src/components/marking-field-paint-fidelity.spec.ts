@@ -15,6 +15,7 @@
  * paint is compared against that, which is exactly the relationship the
  * invariant is about.
  */
+import { asContext } from '../../test-fixtures/as-context';
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import type { LocalContextSchemeEngineAdapter } from '@ezclassify/types';
 import { EzClassifyUI } from '../ezclassify-ui';
@@ -318,7 +319,7 @@ async function mount(
 ): Promise<{ input: HTMLTextAreaElement; field: MarkingField }> {
     root.innerHTML =
         '<textarea id="mf" data-ezclassify-controller="marking"></textarea>';
-    forms = new EzClassifyUI(engine as never, { root });
+    forms = new EzClassifyUI(asContext(engine as never), { root });
     await wait();
     const input = document.getElementById('mf') as HTMLTextAreaElement;
     const field = forms.components.get(input) as MarkingField;

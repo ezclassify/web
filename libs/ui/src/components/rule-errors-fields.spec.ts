@@ -9,6 +9,7 @@
  * through what `ProcessResult.proposedFixes` carries and this scheme's rule
  * proposes none of its own.
  */
+import { asContext } from '../../test-fixtures/as-context';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import type {
     Fix,
@@ -159,7 +160,7 @@ afterEach(() => {
 
 async function mount(markup: string): Promise<void> {
     root.innerHTML = '<label for="f">Customer marking</label>' + markup;
-    forms = new EzClassifyUI(createEngine() as never, { root });
+    forms = new EzClassifyUI(asContext(createEngine() as never), { root });
     await wait(120);
 }
 

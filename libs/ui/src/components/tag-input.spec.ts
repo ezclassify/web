@@ -8,6 +8,7 @@
  * markup), the same path every real consumer uses; this also exercises the
  * "tags" controller registration in component-factory/element-scanner.
  */
+import { asContext } from '../../test-fixtures/as-context';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import {
     allSurfaces,
@@ -331,7 +332,7 @@ async function mountTagInput(
     initialValue = '',
 ): Promise<{ input: HTMLInputElement; tags: TagInput }> {
     root.innerHTML = `<input id="ti" type="text" data-ezclassify-controller="tags" value="${initialValue}" />`;
-    forms = new EzClassifyUI(createTestEngine() as never, { root });
+    forms = new EzClassifyUI(asContext(createTestEngine() as never), { root });
     await wait();
     const input = document.getElementById('ti') as HTMLInputElement;
     const tags = (
@@ -353,7 +354,7 @@ async function mountTagInputWith(
     initialValue = '',
 ): Promise<{ input: HTMLInputElement; tags: TagInput }> {
     root.innerHTML = `<input id="ti" type="text" ${controllerAttrs} value="${initialValue}" />`;
-    forms = new EzClassifyUI(createTestEngine() as never, { root });
+    forms = new EzClassifyUI(asContext(createTestEngine() as never), { root });
     await wait();
     const input = document.getElementById('ti') as HTMLInputElement;
     const tags = (
@@ -400,7 +401,9 @@ describe('TagInput', () => {
             <input style="background-color: pink" />
             <input id="ti" type="text" data-ezclassify-controller="tags"
                 style="background-color: rgb(242, 244, 246); color: rgb(20, 30, 40); border: 2px solid rgb(60, 70, 80); border-radius: 9px; font: 18px Georgia; min-height: 48px" />`;
-        forms = new EzClassifyUI(createTestEngine() as never, { root });
+        forms = new EzClassifyUI(asContext(createTestEngine() as never), {
+            root,
+        });
         await wait();
         const wrap = root.querySelector<HTMLElement>('.tag-input-wrap')!;
         expect(wrap.style.backgroundColor).toBe('rgb(242, 244, 246)');

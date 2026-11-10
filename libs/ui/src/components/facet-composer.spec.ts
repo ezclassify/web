@@ -4,6 +4,7 @@
  * marking the draft stores into: the other categories count as they stand. And
  * a closed composer leaves none of what it said behind in the document.
  */
+import { asContext } from '../../test-fixtures/as-context';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { Context } from '@ezclassify/engine';
 import { EzClassifyUI } from '../ezclassify-ui';
@@ -105,11 +106,11 @@ afterEach(() => {
 
 async function mount(): Promise<HTMLInputElement> {
     root.innerHTML = [
-        '<input type="hidden" id="doc" data-ezclassify-rendered />',
+        '<input type="hidden" id="doc" data-ezclassify-marking />',
         '<label for="caveats">Caveats</label>',
         '<input id="caveats" data-ezclassify-controller="tags" data-ezclassify-category="caveat" data-ezclassify-facet-of="doc" />',
     ].join('');
-    forms = new EzClassifyUI(createContext() as never, { root });
+    forms = new EzClassifyUI(asContext(createContext() as never), { root });
     await wait();
     await forms.store.publishRendered('doc', 'SECRET');
     await wait();

@@ -137,8 +137,6 @@ export abstract class ComponentBase extends ReadOnlyComponentBase {
      */
     private readonly _conceptDescriber = createConceptDescriber({
         engine: () => this.engine,
-        schemeId: () => this.schemeId,
-        schemeAddressing: () => this.schemeAddressing,
         options: () => this.options,
     });
 
@@ -807,7 +805,6 @@ export abstract class ComponentBase extends ReadOnlyComponentBase {
                 coveredCategories: () => {
                     const coverage = this.engine.getFormatCoverage?.(
                         this.formatId,
-                        this.schemeId,
                     );
                     return coverage
                         ? new Set(coverage.coveredCategories)
@@ -872,7 +869,7 @@ export abstract class ComponentBase extends ReadOnlyComponentBase {
                                   context,
                                   assertions: [...(live ?? [])],
                                   suggestFor: this.engine
-                                      .getScheme(this.schemeId)
+                                      .getScheme()
                                       .categories.map(
                                           (category) => category.id,
                                       ),

@@ -25,7 +25,6 @@ import type {
 } from '@ezclassify/types';
 import type { ComponentEngineSource } from './component-base-readonly';
 import type { ComponentOptions } from './component-base-readonly';
-import { isAddressableSchemeEngine } from './component-base-readonly';
 import { HiddenAssertionField } from './hidden-assertion-field';
 import { InlineMarkingEditor } from './inline-marking-editor';
 import { accessibleLabel } from './composer/composer-view';
@@ -172,13 +171,6 @@ export interface MarkedTextAreaOptions extends ComponentOptions {
     entryStoreManaged?: boolean;
     /** Resolve the whole/banner marking at call time for part-of context. */
     resolveContext?: () => ProcessingContext | undefined;
-    /** Format identifier used by engine.scan for part parsing. */
-    scanFormat?: string;
-    /**
-     * Format identifier applied to each hidden child field. Defaults to
-     * scanFormat.
-     */
-    hiddenFormat?: string;
     /**
      * Marking id the hidden part fields declare themselves part-of. Per
      * binding-model §16, each hidden field is its own marking object with
@@ -281,7 +273,6 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
      * scan format. It stays an empty string until then; the constructor never
      * sets it.
      */
-    private hiddenFormat = '';
     private partOfId: string | undefined;
     private targetIdPrefix = 'para-';
 
@@ -369,8 +360,10 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
         options?: MarkedTextAreaOptions,
     ): Promise<void> {
         this.options = options ?? {};
-        this.bindEngine(container, engineOrContext, options?.scanFormat);
-        this.hiddenFormat = options?.hiddenFormat ?? this.scanFormat;
+        // `data-ezclassify-format` names the format the field reads its marks
+        // in and writes each one back in; without it, the scheme's part
+        // default.
+        this.bindEngine(container, engineOrContext, options?.formatId);
         this.partOfId = options?.partOfId;
 
         this.injectStyle();
@@ -814,18 +807,11 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
                     // succeeded. A replacement must actually read in this
                     // textarea's current whole context before its token changes.
                     const options = {
-                        outputFormat: this.hiddenFormat,
+                        outputFormat: this.scanFormat,
                         context: this.options.resolveContext?.(),
                     };
                     const read = await Promise.resolve(
-                        this.schemeAddressing &&
-                            isAddressableSchemeEngine(this.engine)
-                            ? this.engine.process(
-                                  state.assertions,
-                                  this.schemeId,
-                                  options,
-                              )
-                            : this.engine.process(state.assertions, options),
+                        this.engine.process(state.assertions, options),
                     );
                     successfulReads.set(entryId, read);
                 }
@@ -837,17 +823,7 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
                     return { entryId, marking: previous?.marking ?? '' };
                 if (!state.assertions.length) return { entryId, marking: '' };
                 const result = await Promise.resolve(
-                    this.schemeAddressing &&
-                        isAddressableSchemeEngine(this.engine)
-                        ? this.engine.render(
-                              state.assertions,
-                              this.hiddenFormat,
-                              this.schemeId,
-                          )
-                        : this.engine.render(
-                              state.assertions,
-                              this.hiddenFormat,
-                          ),
+                    this.engine.render(state.assertions, this.scanFormat),
                 );
                 return {
                     entryId,
@@ -1085,13 +1061,9 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
         let scanOutcome;
         try {
             scanOutcome = await Promise.resolve(
-                this.schemeAddressing && isAddressableSchemeEngine(this.engine)
-                    ? this.engine.scan(text, this.schemeId, {
-                          outputFormat: this.scanFormat,
-                      })
-                    : this.engine.scan(text, {
-                          outputFormat: this.scanFormat,
-                      }),
+                this.engine.scan(text, {
+                    outputFormat: this.scanFormat,
+                }),
             );
         } catch (error) {
             // The scan never landed, so the display still shows the previous
@@ -1185,11 +1157,7 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
                     : {}),
                 context: ctx,
             };
-            return Promise.resolve(
-                this.schemeAddressing && isAddressableSchemeEngine(this.engine)
-                    ? this.engine.process(input, this.schemeId, options)
-                    : this.engine.process(input, options),
-            );
+            return Promise.resolve(this.engine.process(input, options));
         };
 
         const processedResults = new Map<
@@ -2106,12 +2074,9 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
             const box = reused?.box ?? document.createElement('div');
             if (!reused) {
                 box.setAttribute('data-ezclassify-controller', 'hidden');
-                box.setAttribute(
-                    'data-ezclassify-hidden-format',
-                    this.hiddenFormat,
-                );
+                box.setAttribute('data-ezclassify-format', this.scanFormat);
                 box.id = seg.entryId;
-                box.setAttribute('data-ezclassify-rendered', '');
+                box.setAttribute('data-ezclassify-marking', '');
                 if (this.partOfId)
                     box.setAttribute('data-ezclassify-part-of', this.partOfId);
                 box.setAttribute('data-marked-textarea-field', '');
@@ -2289,7 +2254,6 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
                 draft,
                 openList,
                 resolveContext: this.options.resolveContext,
-                schemeId: this.schemeId,
                 tooltips: this.options.tooltips,
                 tooltipConceptProperty: this.options.tooltipConceptProperty,
                 onChange: () => this.onPickerChange(),

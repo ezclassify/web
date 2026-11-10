@@ -464,8 +464,7 @@ export class DecisionFlow extends ComponentBase {
         // Default: all categories that belong to the active scope.
         // Active scope = options.scope → scheme defaultScope → no filter.
         const activeScope =
-            this.options.scope ??
-            this.engine.getSchemeMeta(this.schemeId).defaultScope;
+            this.options.scope ?? this.engine.getSchemeMeta().defaultScope;
         const inScope = activeScope
             ? this.scheme.categories.filter(
                   (c) =>

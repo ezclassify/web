@@ -7,6 +7,7 @@
  * then, so the part is valid and carries the engine's `_whole_unverified`
  * warning. The whole's own rules never judge it.
  */
+import { asContext } from '../../test-fixtures/as-context';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { Context } from '@ezclassify/engine';
 import { EzClassifyUI } from '../ezclassify-ui';
@@ -149,11 +150,11 @@ afterEach(() => {
 describe('a TagInput bound to a part whose whole holds nothing', () => {
     it('reads the part as valid with the unverified-whole warning, never by the whole rules', async () => {
         root.innerHTML = [
-            '<input type="hidden" id="whole" data-ezclassify-rendered />',
-            '<input type="hidden" id="part" data-ezclassify-rendered data-ezclassify-part-of="whole" />',
+            '<input type="hidden" id="whole" data-ezclassify-marking />',
+            '<input type="hidden" id="part" data-ezclassify-marking data-ezclassify-part-of="whole" />',
             '<input id="f" data-ezclassify-controller="tags" data-ezclassify-bound-to="part" />',
         ].join('');
-        forms = new EzClassifyUI(createEngine() as never, { root });
+        forms = new EzClassifyUI(asContext(createEngine() as never), { root });
         await wait(150);
 
         const field = document.getElementById('f') as HTMLInputElement;

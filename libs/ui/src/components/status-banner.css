@@ -188,3 +188,23 @@
         opacity: 1;
     }
 }
+
+/* ── Several buckets: one labeled line each ──────── */
+.status-banner--buckets {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    padding: 0;
+}
+
+.status-banner-bucket {
+    border-radius: 0.375rem;
+    padding: 0.375rem 1rem;
+}
+
+.status-banner-bucket-label {
+    margin-inline-end: 0.5rem;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    opacity: 0.85;
+}

@@ -25,6 +25,13 @@ export interface CategoryChecklistOptions extends ComponentOptions {
     showSearch?: boolean;
     /** Show a "select all / clear all" toggle. Default: true */
     showToggleAll?: boolean;
+    /**
+     * Show only the category's concepts that list this concept id among their
+     * parents, for a checklist of one branch of a category tree. Set from
+     * `data-ezclassify-checklist-parent-concept="<concept id>"`. Default: every
+     * concept in the category.
+     */
+    parentConcept?: string;
 }
 
 /**
@@ -80,8 +87,7 @@ export class CategoryChecklist extends ComponentBase {
         }
 
         // Build concept list for this category, optionally filtered by parent concept
-        const parentFilter = (opts as unknown as Record<string, unknown>)
-            .parentConcept as string | undefined;
+        const parentFilter = opts.parentConcept;
         this.categoryConcepts = this.scheme.concepts
             .filter((c) => {
                 if (!c.categories.includes(this.categoryId)) return false;

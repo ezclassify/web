@@ -7,6 +7,7 @@
  *
  * Driven through MarkingField over a real engine.
  */
+import { asContext } from '../../../test-fixtures/as-context';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { Context } from '@ezclassify/engine';
 import { EzClassifyUI } from '../../ezclassify-ui';
@@ -105,8 +106,8 @@ afterEach(() => {
 
 it('lists a concept its parent calls for once the parent is in the draft, in a category the catalog already lists', async () => {
     root.innerHTML =
-        '<input type="hidden" id="doc" data-ezclassify-rendered /><label for="f">Marking</label><textarea id="f" data-ezclassify-controller="marking" data-ezclassify-bound-to="doc"></textarea>';
-    forms = new EzClassifyUI(createContext() as never, { root });
+        '<input type="hidden" id="doc" data-ezclassify-marking /><label for="f">Marking</label><textarea id="f" data-ezclassify-controller="marking" data-ezclassify-bound-to="doc"></textarea>';
+    forms = new EzClassifyUI(asContext(createContext() as never), { root });
     await wait();
     await forms.store.publishRendered('doc', 'SECRET//SI');
     await wait();

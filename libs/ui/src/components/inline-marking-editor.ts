@@ -33,7 +33,6 @@ import type {
     ComponentSchemeEngine,
 } from './component-base-readonly';
 import {
-    isAddressableSchemeEngine,
     isComponentContextAdapter,
     partsOption,
 } from './component-base-readonly';
@@ -111,8 +110,6 @@ export interface InlineMarkingEditorOptions {
      * committed value, so the result row reads it and Enter stores it.
      */
     draft?: string;
-    /** The loaded profile id this editor targets. */
-    schemeId?: string;
     /** False disables the active row's definition line. */
     tooltips?: boolean;
     /** Concept view property to use for row detail. */
@@ -122,12 +119,10 @@ export interface InlineMarkingEditorOptions {
 /** Inline marking editor: an input plus the shared composer. */
 export class InlineMarkingEditor {
     private engine!: ComponentSchemeEngine;
-    private schemeAddressing = false;
     private container!: HTMLDivElement;
     private input!: HTMLInputElement;
     private sizer!: HTMLSpanElement;
     private options!: InlineMarkingEditorOptions;
-    private schemeId: string | undefined;
     private assertions: Assertion[] = [];
     private rendered = '';
     private destroyed = false;
@@ -137,8 +132,6 @@ export class InlineMarkingEditor {
     private _appliedFixes = new Map<string, Change>();
     private readonly _conceptDescriber = createConceptDescriber({
         engine: () => this.engine,
-        schemeId: () => this.schemeId,
-        schemeAddressing: () => this.schemeAddressing,
         options: () => this.options,
     });
 
@@ -152,12 +145,8 @@ export class InlineMarkingEditor {
             ? engineOrContext.scheme
             : engineOrContext;
         assertDescribesConcepts(this.engine, 'InlineMarkingEditor');
-        this.schemeAddressing =
-            !isComponentContextAdapter(engineOrContext) &&
-            isAddressableSchemeEngine(this.engine);
         this.container = container;
         this.options = options;
-        this.schemeId = options.schemeId;
 
         adoptStylesOnce(inlineEditorCss, options.root ?? container);
 
@@ -389,7 +378,6 @@ export class InlineMarkingEditor {
                 coveredCategories: () => {
                     const coverage = this.engine.getFormatCoverage?.(
                         this.options.formatId,
-                        this.schemeId,
                     );
                     return coverage
                         ? new Set(coverage.coveredCategories)
@@ -407,7 +395,7 @@ export class InlineMarkingEditor {
                 readsInWhole: () =>
                     this.options.resolveContext?.()?.partOf !== undefined,
             },
-            scheme: () => this.engine.getScheme(this.schemeId),
+            scheme: () => this.engine.getScheme(),
             meta: () => this.callGetProfile(),
             formatId: () => this.options.formatId,
             scope: () => this.options.scope,
@@ -427,7 +415,7 @@ export class InlineMarkingEditor {
                                           context,
                                           assertions: [...(live ?? [])],
                                           suggestFor: this.engine
-                                              .getScheme(this.schemeId)
+                                              .getScheme()
                                               .categories.map(
                                                   (category) => category.id,
                                               ),
@@ -490,47 +478,23 @@ export class InlineMarkingEditor {
         this.options.onChange?.(this.rendered, this.assertions);
     }
 
-    /** Engine.render, addressed to this editor's scheme where it can be. */
+    /** Engine.render in the given format. */
     private callRender(assertions: Assertion[], format: string) {
-        if (
-            this.schemeAddressing &&
-            this.schemeId &&
-            isAddressableSchemeEngine(this.engine)
-        ) {
-            return this.engine.render(assertions, format, this.schemeId);
-        }
         return this.engine.render(assertions, format);
     }
 
     private callProcess(input: string, opts: ProcessOptions) {
         const withParts = partsOption(this.options.resolveParts, opts) ?? opts;
-        if (
-            this.schemeAddressing &&
-            this.schemeId &&
-            isAddressableSchemeEngine(this.engine)
-        ) {
-            return this.engine.process(input, this.schemeId, withParts);
-        }
         return this.engine.process(input, withParts);
     }
 
     private callSuggest(input: string | Assertion[], options: SuggestOptions) {
         const read =
             typeof input === 'string' ? input : statedAssertions(input);
-        if (
-            this.schemeAddressing &&
-            this.schemeId &&
-            isAddressableSchemeEngine(this.engine)
-        ) {
-            return this.engine.suggest(read, this.schemeId, options);
-        }
         return this.engine.suggest(read, options);
     }
 
     private callGetProfile() {
-        if (this.schemeAddressing && this.schemeId) {
-            return this.engine.getSchemeMeta(this.schemeId);
-        }
         return this.engine.getSchemeMeta();
     }
 }

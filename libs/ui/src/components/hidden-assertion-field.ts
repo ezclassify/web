@@ -13,12 +13,7 @@ import type {
     ComponentEngineSource,
     ComponentSchemeEngine,
 } from './component-base-readonly';
-import {
-    isAddressableSchemeEngine,
-    resolveContextSource,
-    resolveProfile,
-    resolveSchemeEngine,
-} from './component-base-readonly';
+import { resolveProfile, resolveSchemeEngine } from './component-base-readonly';
 
 /**
  * Hidden data-only field: stores assertions, emits change events, contributes
@@ -26,7 +21,6 @@ import {
  */
 export class HiddenAssertionField implements ComponentInstance {
     private engine!: ComponentSchemeEngine;
-    private schemeAddressing = false;
     private container!: HTMLDivElement;
     private options: ComponentOptions = {};
     private formatId!: string;
@@ -40,25 +34,14 @@ export class HiddenAssertionField implements ComponentInstance {
         options?: ComponentOptions,
     ): Promise<void> {
         const resolved = resolveSchemeEngine(
-            container,
             engineOrContext,
             'HiddenAssertionField',
         );
         this.engine = resolved;
-        this.schemeAddressing =
-            resolveContextSource(container, engineOrContext) === null &&
-            isAddressableSchemeEngine(resolved);
         this.container = container;
         this.options = options ?? {};
-        this.schemeId = resolveProfile(
-            container,
-            resolved,
-            options,
-            this.schemeAddressing,
-        );
-        const scheme = this.schemeAddressing
-            ? resolved.getScheme(this.schemeId)
-            : resolved.getScheme();
+        this.schemeId = resolveProfile(resolved);
+        const scheme = resolved.getScheme();
         this.formatId =
             options?.formatId ??
             (options?.holdsPart ? scheme.defaultPartRenderFormat : undefined) ??
@@ -136,22 +119,15 @@ export class HiddenAssertionField implements ComponentInstance {
     }
 
     /**
-     * Engine.validate, addressed to this field's scheme where it can be. The
-     * field holds a marking for its owner and corrects nothing, so it asks the
-     * reader's call.
+     * Engine.validate. The field holds a marking for its owner and corrects
+     * nothing, so it asks the reader's call.
      */
     private callValidate(input: string, options?: { outputFormat?: string }) {
-        if (this.schemeAddressing && isAddressableSchemeEngine(this.engine)) {
-            return this.engine.validate(input, this.schemeId, options);
-        }
         return this.engine.validate(input, options);
     }
 
     private callRender(assertions: Assertion[], options?: { format?: string }) {
         const format = options?.format;
-        if (this.schemeAddressing) {
-            return this.engine.render(assertions, format, this.schemeId);
-        }
         return this.engine.render(assertions, format);
     }
 

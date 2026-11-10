@@ -7,6 +7,7 @@
  * field read its value again. A whole with no marked parts sends no `parts` key
  * at all.
  */
+import { asContext } from '../../test-fixtures/as-context';
 import {
     afterEach,
     beforeEach,
@@ -65,14 +66,14 @@ async function mount(field: string, partIds: string[]): Promise<HTMLElement> {
     );
     scheme.process = process;
     root.innerHTML = [
-        '<input type="hidden" id="doc" data-ezclassify-rendered />',
+        '<input type="hidden" id="doc" data-ezclassify-marking />',
         ...partIds.map(
             (id) =>
-                `<input type="hidden" id="${id}" data-ezclassify-rendered data-ezclassify-part-of="doc" />`,
+                `<input type="hidden" id="${id}" data-ezclassify-marking data-ezclassify-part-of="doc" />`,
         ),
         field,
     ].join('');
-    forms = new EzClassifyUI(ctx, { root });
+    forms = new EzClassifyUI(asContext(ctx), { root });
     await wait();
     return root.querySelector<HTMLElement>('#host')!;
 }

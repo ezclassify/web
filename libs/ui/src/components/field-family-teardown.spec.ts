@@ -8,6 +8,7 @@
  * a future timer/observer/listener leak in any field component shows up here as
  * a failing `expect` or an actual timeout.
  */
+import { asContext } from '../../test-fixtures/as-context';
 import { describe, it, expect, vi } from 'vitest';
 import { EzClassifyUI } from '../ezclassify-ui';
 import { Context } from '@ezclassify/engine';
@@ -303,12 +304,15 @@ describe('field family: repeated mount/destroy leaves no teardown residue', () =
                 <textarea id="mta-${i}" data-ezclassify-controller="marked-textarea" data-ezclassify-format="default"></textarea>
                 <textarea id="mf-${i}" data-ezclassify-controller="marking" data-ezclassify-format="default"></textarea>
             `;
-            const forms = new EzClassifyUI(createTestEngine() as never, {
-                root,
-                favorites: {
-                    load: () => [{ marking: 'SECRET/NOFORN' }],
+            const forms = new EzClassifyUI(
+                asContext(createTestEngine() as never),
+                {
+                    root,
+                    favorites: {
+                        load: () => [{ marking: 'SECRET/NOFORN' }],
+                    },
                 },
-            });
+            );
             // Let async init (suggest/process round trips) settle before tearing
             // down, so destroy() races nothing still in flight.
             await new Promise((resolve) => setTimeout(resolve, 30));
@@ -362,7 +366,9 @@ describe('field family: repeated mount/destroy leaves no teardown residue', () =
                 <textarea id="churn-mf-${i}" data-ezclassify-controller="marking" data-ezclassify-format="default"></textarea>
             `;
             const forms = new EzClassifyUI(
-                answersLate(createTestEngine(), ENGINE_LATENCY_MS) as never,
+                asContext(
+                    answersLate(createTestEngine(), ENGINE_LATENCY_MS) as never,
+                ),
                 {
                     root,
                     favorites: {

@@ -9,6 +9,7 @@
  * markup), the same path every real consumer uses; this also exercises the
  * "marking" controller registration in component-factory/element-scanner.
  */
+import { asContext } from '../../test-fixtures/as-context';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import {
     activeRow,
@@ -78,6 +79,12 @@ function createTestEngine(
          * it as undecorated text beside the token it belongs to.
          */
         withEachAffix?: boolean;
+        /**
+         * Adds a second output, `caveat-first`, that writes the caveats ahead
+         * of the level: "NOFORN//SECRET". Lets a test tell which format a field
+         * writes in.
+         */
+        withCaveatFirstFormat?: boolean;
     } = {},
 ): LocalContextSchemeEngineAdapter {
     const hasBranchCategory =
@@ -276,6 +283,26 @@ function createTestEngine(
                                     },
                                 ],
                             },
+                            ...(opts.withCaveatFirstFormat
+                                ? [
+                                      {
+                                          id: 'caveat-first',
+                                          surface: 'marking',
+                                          mode: 'inline',
+                                          separator: '//',
+                                          fields: [
+                                              {
+                                                  category: 'caveat',
+                                                  separator: '/',
+                                              },
+                                              {
+                                                  category: 'level',
+                                                  separator: '/',
+                                              },
+                                          ],
+                                      },
+                                  ]
+                                : []),
                         ],
                     },
                 },
@@ -493,7 +520,7 @@ async function mount(
     initialValue = '',
 ): Promise<{ input: HTMLTextAreaElement; field: MarkingField }> {
     root.innerHTML = `<textarea id="mf" data-ezclassify-controller="marking">${initialValue}</textarea>`;
-    forms = new EzClassifyUI(createTestEngine() as never, { root });
+    forms = new EzClassifyUI(asContext(createTestEngine() as never), { root });
     await wait();
     const input = document.getElementById('mf') as HTMLTextAreaElement;
     const field = forms.components.get(input) as MarkingField;
@@ -544,7 +571,9 @@ describe('MarkingField native text input', () => {
         root.innerHTML = `<form><label for="native-mark">Marking label</label><input id="native-mark" name="marking" type="text" value="SECRET" data-ezclassify-controller="marking" ${extra}></form>`;
         const input = root.querySelector<HTMLInputElement>('#native-mark')!;
         input.setCustomValidity(hostValidity);
-        forms = new EzClassifyUI(createTestEngine() as never, { root });
+        forms = new EzClassifyUI(asContext(createTestEngine() as never), {
+            root,
+        });
         await wait();
         const editor = input
             .closest('.marking-field-wrap')
@@ -774,7 +803,9 @@ describe('MarkingField native text input', () => {
         const inputs = Array.from(root.querySelectorAll('input'));
         const nativeInput = vi.fn();
         inputs.forEach((input) => input.addEventListener('input', nativeInput));
-        forms = new EzClassifyUI(createTestEngine() as never, { root });
+        forms = new EzClassifyUI(asContext(createTestEngine() as never), {
+            root,
+        });
         await wait(120);
         expect(inputs.map((input) => input.value)).toEqual([
             'SECRET',
@@ -819,7 +850,9 @@ describe('MarkingField native text input', () => {
         await wait(200);
         expect(input.value).toBe('UNCLASSIFIED');
         expect(root.contains(editor)).toBe(false);
-        forms = new EzClassifyUI(createTestEngine() as never, { root });
+        forms = new EzClassifyUI(asContext(createTestEngine() as never), {
+            root,
+        });
         await wait(120);
         expect(
             root.querySelectorAll('textarea.marking-field-host'),
@@ -857,7 +890,9 @@ describe('MarkingField native text input', () => {
         expect(input.getAttribute('style')).toBe('color: red');
         expect(input.value).toBe('UNCLASSIFIED');
         forms!.destroy();
-        forms = new EzClassifyUI(createTestEngine() as never, { root });
+        forms = new EzClassifyUI(asContext(createTestEngine() as never), {
+            root,
+        });
         await wait();
         expect(
             root.querySelectorAll('textarea.marking-field-host'),
@@ -866,11 +901,43 @@ describe('MarkingField native text input', () => {
     });
 });
 
+describe('MarkingField format', () => {
+    it('writes its committed marking in the format data-ezclassify-format names', async () => {
+        root.innerHTML = `<textarea id="mf" data-ezclassify-controller="marking" data-ezclassify-format="caveat-first"></textarea>`;
+        forms = new EzClassifyUI(
+            asContext(createTestEngine({ withCaveatFirstFormat: true })),
+            { root },
+        );
+        await wait();
+        const input = document.getElementById('mf') as HTMLTextAreaElement;
+        input.focus();
+        await typeIn(input, 'SECRET//NOFORN');
+        await commit(input);
+        expect(input.value).toBe('NOFORN//SECRET');
+    });
+
+    it("writes the scheme's whole default when no format is named", async () => {
+        root.innerHTML = `<textarea id="mf" data-ezclassify-controller="marking"></textarea>`;
+        forms = new EzClassifyUI(
+            asContext(createTestEngine({ withCaveatFirstFormat: true })),
+            { root },
+        );
+        await wait();
+        const input = document.getElementById('mf') as HTMLTextAreaElement;
+        input.focus();
+        await typeIn(input, 'NOFORN//SECRET');
+        await commit(input);
+        expect(input.value).toBe('SECRET//NOFORN');
+    });
+});
+
 describe('MarkingField', () => {
     it('keeps host block margins in the resting display and attached drawer', async () => {
         root.innerHTML =
             '<textarea id="mf" style="margin-top: 6px; margin-bottom: 8px" data-ezclassify-controller="marking">SECRET</textarea>';
-        forms = new EzClassifyUI(createTestEngine() as never, { root });
+        forms = new EzClassifyUI(asContext(createTestEngine() as never), {
+            root,
+        });
         await wait();
         const display = root.querySelector<HTMLElement>(
             '.marking-field-display',
@@ -933,7 +1000,9 @@ describe('MarkingField', () => {
         // onto the display. Explicit host styles make the assertions check copied
         // values without relying on jsdom's incomplete textarea defaults.
         root.innerHTML = `<textarea id="mf" data-ezclassify-controller="marking" style="border: 3px solid rgb(10, 20, 30); background-color: rgb(40, 50, 60); padding: 7px;">SECRET</textarea>`;
-        forms = new EzClassifyUI(createTestEngine() as never, { root });
+        forms = new EzClassifyUI(asContext(createTestEngine() as never), {
+            root,
+        });
         await wait();
         const display = root.querySelector(
             '.marking-field-display',
@@ -1057,7 +1126,9 @@ describe('MarkingField', () => {
     it('scopes the suggestion dropdown to the bound category', async () => {
         // A category-bound mount must offer only concepts accepted by that facet.
         root.innerHTML = `<textarea id="mf" data-ezclassify-controller="marking" data-ezclassify-category="caveat"></textarea>`;
-        forms = new EzClassifyUI(createTestEngine() as never, { root });
+        forms = new EzClassifyUI(asContext(createTestEngine() as never), {
+            root,
+        });
         await wait();
         const input = document.getElementById('mf') as HTMLTextAreaElement;
         await openPicker(input);
@@ -1200,7 +1271,9 @@ describe('MarkingField', () => {
         // the value the user had.
         root.innerHTML = `<textarea id="mf" data-ezclassify-controller="marking">SECRET</textarea>`;
         forms = new EzClassifyUI(
-            createTestEngine({ withOverlappingCaveat: true }) as never,
+            asContext(
+                createTestEngine({ withOverlappingCaveat: true }) as never,
+            ),
             { root },
         );
         await wait();
@@ -1458,7 +1531,7 @@ describe('MarkingField', () => {
         // tooltip does not cover it.
         root.innerHTML = `<textarea id="mf" data-ezclassify-controller="marking"></textarea>`;
         forms = new EzClassifyUI(
-            createTestEngine({ withEachAffix: true }) as never,
+            asContext(createTestEngine({ withEachAffix: true }) as never),
             { root },
         );
         await wait();
@@ -1520,9 +1593,11 @@ describe('MarkingField', () => {
         // affix is decoration the paint takes only when it is really there.
         root.innerHTML = `<textarea id="mf" data-ezclassify-controller="marking"></textarea>`;
         forms = new EzClassifyUI(
-            withUnframedRender(
-                createTestEngine({ withEachAffix: true }),
-            ) as never,
+            asContext(
+                withUnframedRender(
+                    createTestEngine({ withEachAffix: true }),
+                ) as never,
+            ),
             { root },
         );
         await wait();
@@ -1656,7 +1731,9 @@ describe('MarkingField', () => {
 
     it('honors the data-ezclassify-no-tooltips opt-out for painted tokens', async () => {
         root.innerHTML = `<div data-ezclassify-no-tooltips><textarea id="mf" data-ezclassify-controller="marking">SECRET</textarea></div>`;
-        forms = new EzClassifyUI(createTestEngine() as never, { root });
+        forms = new EzClassifyUI(asContext(createTestEngine() as never), {
+            root,
+        });
         await wait();
         const input = document.getElementById('mf') as HTMLTextAreaElement;
         expect(input).not.toBeNull();
@@ -1815,7 +1892,9 @@ describe('MarkingField', () => {
     it('keeps a render-suppressed certain assertion across a keystroke instead of dropping it', async () => {
         root.innerHTML = `<textarea id="mf" data-ezclassify-controller="marking"></textarea>`;
         forms = new EzClassifyUI(
-            createTestEngine({ withSuppressedCategory: true }) as never,
+            asContext(
+                createTestEngine({ withSuppressedCategory: true }) as never,
+            ),
             { root },
         );
         await wait();
@@ -1888,7 +1967,9 @@ describe('MarkingField', () => {
     it('does not resurrect deleted concepts when a new one is accepted after a partial delete', async () => {
         root.innerHTML = `<textarea id="mf" data-ezclassify-controller="marking">SECRET//SI/TK/NOFORN</textarea>`;
         forms = new EzClassifyUI(
-            createTestEngine({ withReleasabilityConcepts: true }) as never,
+            asContext(
+                createTestEngine({ withReleasabilityConcepts: true }) as never,
+            ),
             { root },
         );
         await wait();
@@ -1926,7 +2007,9 @@ describe('MarkingField', () => {
     it('does not resurrect deleted concepts when the survivor is removed via checked-row toggle-off after a partial delete', async () => {
         root.innerHTML = `<textarea id="mf" data-ezclassify-controller="marking">SECRET//SI/TK/NOFORN</textarea>`;
         forms = new EzClassifyUI(
-            createTestEngine({ withReleasabilityConcepts: true }) as never,
+            asContext(
+                createTestEngine({ withReleasabilityConcepts: true }) as never,
+            ),
             { root },
         );
         await wait();
@@ -1953,10 +2036,12 @@ describe('MarkingField', () => {
     it('carries a render-suppressed certain concept through an accept that follows a partial delete', async () => {
         root.innerHTML = `<textarea id="mf" data-ezclassify-controller="marking"></textarea>`;
         forms = new EzClassifyUI(
-            createTestEngine({
-                withSuppressedCategory: true,
-                withReleasabilityConcepts: true,
-            }) as never,
+            asContext(
+                createTestEngine({
+                    withSuppressedCategory: true,
+                    withReleasabilityConcepts: true,
+                }) as never,
+            ),
             { root },
         );
         await wait();
@@ -2031,7 +2116,11 @@ describe('MarkingField', () => {
         }> {
             root.innerHTML = `<textarea id="mf" data-ezclassify-controller="marking">UNCLASSIFIED//ORCON</textarea>`;
             forms = new EzClassifyUI(
-                createTestEngine({ withReleasabilityConcepts: true }) as never,
+                asContext(
+                    createTestEngine({
+                        withReleasabilityConcepts: true,
+                    }) as never,
+                ),
                 { root },
             );
             await wait();
@@ -2128,7 +2217,9 @@ describe('MarkingField', () => {
     it('reads the text as typed when a row is pressed an instant after a keystroke', async () => {
         root.innerHTML = `<textarea id="mf" data-ezclassify-controller="marking">SECRET//SI/TK/NOFORN</textarea>`;
         forms = new EzClassifyUI(
-            createTestEngine({ withReleasabilityConcepts: true }) as never,
+            asContext(
+                createTestEngine({ withReleasabilityConcepts: true }) as never,
+            ),
             { root },
         );
         await wait();
@@ -2161,7 +2252,9 @@ describe('MarkingField', () => {
     it('keeps a render-suppressed certain concept checked in the list across an unrelated keystroke', async () => {
         root.innerHTML = `<textarea id="mf" data-ezclassify-controller="marking"></textarea>`;
         forms = new EzClassifyUI(
-            createTestEngine({ withSuppressedCategory: true }) as never,
+            asContext(
+                createTestEngine({ withSuppressedCategory: true }) as never,
+            ),
             { root },
         );
         await wait();
@@ -2198,7 +2291,11 @@ describe('MarkingField', () => {
     it('keeps a default-only, render-suppressed concept checked through an unrelated accept', async () => {
         root.innerHTML = `<textarea id="mf" data-ezclassify-controller="marking">SECRET</textarea>`;
         forms = new EzClassifyUI(
-            createTestEngine({ withSuppressedCategoryDefault: true }) as never,
+            asContext(
+                createTestEngine({
+                    withSuppressedCategoryDefault: true,
+                }) as never,
+            ),
             { root },
         );
         await wait();
@@ -2267,7 +2364,9 @@ describe('MarkingField', () => {
         const eventsOnB: Event[] = [];
         inputB.addEventListener('input', (e) => eventsOnB.push(e));
 
-        forms = new EzClassifyUI(createTestEngine() as never, { root });
+        forms = new EzClassifyUI(asContext(createTestEngine() as never), {
+            root,
+        });
         await wait();
 
         const fieldA = forms.components.get(inputA) as MarkingField;
@@ -2290,9 +2389,12 @@ describe('MarkingField', () => {
 
     it('accepting and committing through an async (remote-shaped) engine reaches the same end state as a local one', async () => {
         root.innerHTML = `<textarea id="mf" data-ezclassify-controller="marking"></textarea>`;
-        forms = new EzClassifyUI(toAsyncAdapter(createTestEngine()) as never, {
-            root,
-        });
+        forms = new EzClassifyUI(
+            asContext(toAsyncAdapter(createTestEngine()) as never),
+            {
+                root,
+            },
+        );
         await wait();
         const input = document.getElementById('mf') as HTMLTextAreaElement;
         const field = forms.components.get(input) as MarkingField;
@@ -2313,7 +2415,9 @@ describe('MarkingField', () => {
         const real = createTestEngine();
         const suggestSpy = vi.spyOn(real, 'suggest');
         root.innerHTML = `<textarea id="mf" data-ezclassify-controller="marking"></textarea>`;
-        forms = new EzClassifyUI(toAsyncAdapter(real) as never, { root });
+        forms = new EzClassifyUI(asContext(toAsyncAdapter(real) as never), {
+            root,
+        });
         await wait(60);
         const input = document.getElementById('mf') as HTMLTextAreaElement;
 
@@ -2365,7 +2469,7 @@ describe('MarkingField', () => {
             },
         });
         root.innerHTML = `<textarea id="mf" data-ezclassify-controller="marking"></textarea>`;
-        forms = new EzClassifyUI(engine as never, { root });
+        forms = new EzClassifyUI(asContext(engine as never), { root });
         await wait();
         const input = document.getElementById('mf') as HTMLTextAreaElement;
         input.focus();
@@ -2397,7 +2501,9 @@ describe('MarkingField', () => {
         // Setup applies the JS-sized rows floor while enhanced. Destroy must
         // restore the authored rows attribute when returning the plain textarea.
         root.innerHTML = `<textarea id="mf" rows="4" data-ezclassify-controller="marking">SECRET</textarea>`;
-        forms = new EzClassifyUI(createTestEngine() as never, { root });
+        forms = new EzClassifyUI(asContext(createTestEngine() as never), {
+            root,
+        });
         await wait();
         const input = document.getElementById('mf') as HTMLTextAreaElement;
         const field = forms.components.get(input) as MarkingField;
@@ -2490,7 +2596,7 @@ async function mountWithFavorites(
     forms: EzClassifyUI;
 }> {
     root.innerHTML = `<textarea id="mf-fav" data-ezclassify-controller="marking">${initialValue}</textarea>`;
-    const forms = new EzClassifyUI(createTestContext(), {
+    const forms = new EzClassifyUI(asContext(createTestContext()), {
         root,
         favorites,
     });

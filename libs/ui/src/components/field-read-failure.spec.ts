@@ -10,6 +10,7 @@
  * as exceeding a whole that is not valid, and the report returns once the whole
  * is fixed.
  */
+import { asContext } from '../../test-fixtures/as-context';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { Context } from '@ezclassify/engine';
 import { openContext } from '../../test-fixtures/context-doubles';
@@ -118,10 +119,10 @@ function engineContext() {
 /** Mount `markup` beside the whole `doc`, which holds `whole`. */
 async function mount(markup: string, whole = ''): Promise<void> {
     root.innerHTML = [
-        `<input type="hidden" id="doc" data-ezclassify-rendered value="${whole}" />`,
+        `<input type="hidden" id="doc" data-ezclassify-marking value="${whole}" />`,
         markup,
     ].join('');
-    forms = new EzClassifyUI(engineContext(), { root });
+    forms = new EzClassifyUI(asContext(engineContext()), { root });
     await wait();
 }
 
@@ -439,7 +440,7 @@ describe('a MarkedTextArea part', () => {
 
 describe('a part exceeding its whole', () => {
     const MARKUP = [
-        '<input type="hidden" id="p1" data-ezclassify-rendered data-ezclassify-part-of="doc" />',
+        '<input type="hidden" id="p1" data-ezclassify-marking data-ezclassify-part-of="doc" />',
         '<div class="ez-test-field"><textarea id="part" data-ezclassify-controller="marking" data-ezclassify-bound-to="p1"></textarea></div>',
     ].join('');
 

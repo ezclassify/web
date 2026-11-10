@@ -7,11 +7,19 @@
  *
  * Supports text analysis: paste a paragraph to surface lexical nominations for
  * review. Scanning never accepts a rule or changes the evaluated selection.
+ *
+ * Every rule is tracked by its guide and its id together. A Context's guides
+ * sit side by side, so two guides that use the same rule id show two rows, and
+ * the selection sent to `evaluateMany` names each rule's guide.
+ *
+ * With `data-ezclassify-bound-to="<marking id>"` on its host, copying the
+ * computed marking also writes it to that marking through the store.
  */
 
 import {
     resolveVocabulary,
     describeOutcome,
+    type Assertion,
     type EvaluationResult,
     type ResolvedVocabulary,
     type GuideScanResult,
@@ -28,6 +36,7 @@ import {
 } from './component-base-readonly';
 import { createAnnouncer, announce } from './component-utils';
 import { EMPTY_VALUE } from '../text-utils';
+import { getMountHost } from '../mount-host-registry';
 import guideHelperCss from './guide-helper.css?inline';
 
 const GUIDE_HELPER_DEFAULTS = {
@@ -53,6 +62,23 @@ function appendOutcomeText(element: HTMLElement, text: string): void {
         if (index > 0) element.append('_', document.createElement('wbr'));
         element.append(part);
     }
+}
+
+/**
+ * One selected rule, named by the guide that holds it. A Context holds its
+ * guides side by side, and two guides may use the same rule id for two
+ * different rules, so a rule id alone does not say which rule was selected.
+ */
+export interface GuideRuleSelection {
+    /** Id of the guide that holds the rule. */
+    guideId: string;
+    /** Id of the rule within that guide. */
+    ruleId: string;
+}
+
+/** The key a rule is tracked under: its guide and its id within that guide. */
+function selectionKey(guideId: string, ruleId: string): string {
+    return `${guideId}\u001f${ruleId}`;
 }
 
 /** Options specific to the GuideChecklist component. */
@@ -90,11 +116,17 @@ export class GuideChecklist extends ReadOnlyComponentBase {
     private views: GuideStructuralView[] = [];
     private ruleByRow = new WeakMap<HTMLElement, GuideRuleView>();
     private rulesByGuide = new Map<string, Map<string, GuideRuleView>>();
-    private activeGuideByRuleId = new Map<string, string>();
+    /** The guide each rendered row belongs to. */
+    private guideByRow = new WeakMap<HTMLElement, string>();
     private guideAdapter: GuideEngineAdapter | null = null;
     private activeGuideIndex = 0;
-    private selectedRuleIds = new Set<string>();
-    private nominatedRuleIds = new Set<string>();
+    /**
+     * The selected rules, keyed by {@link selectionKey}, in the order the
+     * reviewer selected them.
+     */
+    private selectedRules = new Map<string, GuideRuleSelection>();
+    /** Nominated rules, keyed by {@link selectionKey}. */
+    private nominatedRules = new Set<string>();
     private lastScanResults: GuideScanResult[] | null = null;
     private filterText = '';
     private lastEvaluation: EvaluationResult | null = null;
@@ -226,12 +258,6 @@ export class GuideChecklist extends ReadOnlyComponentBase {
                 return [view.id, rules];
             }),
         );
-        this.activeGuideByRuleId.clear();
-        for (const [guideId, rules] of this.rulesByGuide) {
-            for (const ruleId of rules.keys()) {
-                this.activeGuideByRuleId.set(ruleId, guideId);
-            }
-        }
         if (this.lastScanResults !== null)
             this.updateScanNominations(this.lastScanResults);
         const opts = this.options as GuideChecklistOptions;
@@ -278,7 +304,7 @@ export class GuideChecklist extends ReadOnlyComponentBase {
 
         this.container.appendChild(root);
         this.panelBuilt = true;
-        if (this.selectedRuleIds.size > 0) this.applySelection(false);
+        if (this.selectedRules.size > 0) this.applySelection(false);
         else this.render();
         this.paintScanStatus();
     }
@@ -299,20 +325,20 @@ export class GuideChecklist extends ReadOnlyComponentBase {
         this.guideAdapter = null;
         this.views = [];
         this.ruleByRow = new WeakMap();
+        this.guideByRow = new WeakMap();
         this.rulesByGuide.clear();
-        this.activeGuideByRuleId.clear();
         this.panelBuilt = false;
-        this.selectedRuleIds.clear();
+        this.selectedRules.clear();
         this.lastScanResults = null;
-        this.nominatedRuleIds.clear();
+        this.nominatedRules.clear();
         this.lastEvaluation = null;
         this.pendingScanStatus = null;
         this.container.innerHTML = '';
     }
 
-    /** Get currently selected (checked) rule IDs. */
-    getSelectedRuleIds(): string[] {
-        return [...this.selectedRuleIds];
+    /** The selected (checked) rules, each named by its guide. */
+    getSelections(): GuideRuleSelection[] {
+        return [...this.selectedRules.values()].map((s) => ({ ...s }));
     }
 
     /** Get the last evaluation result. */
@@ -320,15 +346,24 @@ export class GuideChecklist extends ReadOnlyComponentBase {
         return this.lastEvaluation;
     }
 
-    /** Programmatically set selected rules and re-evaluate. */
-    setSelectedRuleIds(ids: string[]): void {
-        this.selectedRuleIds = new Set(ids);
+    /**
+     * Programmatically set the selected rules and re-evaluate.
+     *
+     * @param selections - The rules to select, each named by its guide.
+     */
+    setSelections(selections: readonly GuideRuleSelection[]): void {
+        this.selectedRules = new Map(
+            selections.map(({ guideId, ruleId }) => [
+                selectionKey(guideId, ruleId),
+                { guideId, ruleId },
+            ]),
+        );
         if (this.panelBuilt) this.applySelection(false);
     }
 
     /** Clear all selections. */
     clearSelection(): void {
-        this.selectedRuleIds.clear();
+        this.selectedRules.clear();
         if (this.panelBuilt) this.applySelection(false);
     }
 
@@ -361,7 +396,7 @@ export class GuideChecklist extends ReadOnlyComponentBase {
             if (token !== this.scanToken || this._destroyed) return [];
             console.error('[GuideChecklist] analyzing text failed:', error);
             this.lastScanResults = null;
-            this.nominatedRuleIds.clear();
+            this.nominatedRules.clear();
             const message =
                 'Unable to analyze text. Your selections are unchanged.';
             this.pendingScanStatus = { status: message, announcement: message };
@@ -381,25 +416,26 @@ export class GuideChecklist extends ReadOnlyComponentBase {
         return results;
     }
 
+    /**
+     * Nominate each hit's rule in the guide that holds it. A hit names its
+     * guide when the scan covered several; with one guide loaded, an untagged
+     * hit is that guide's. A hit no loaded guide holds nominates nothing, so a
+     * rule id two guides share never nominates the other guide's rule.
+     */
     private updateScanNominations(results: GuideScanResult[]): void {
-        const activeResults =
-            this.views.length === 0
-                ? results
-                : results.filter((result) => {
-                      const activeGuideId = this.activeGuideByRuleId.get(
-                          result.rule.id,
-                      );
-                      return (
-                          activeGuideId !== undefined &&
-                          (result.guideId === activeGuideId ||
-                              (this.views.length === 1 &&
-                                  result.guideId === undefined))
-                      );
-                  });
-        this.nominatedRuleIds = new Set(
-            activeResults.map((result) => result.rule.id),
-        );
-        const count = this.nominatedRuleIds.size;
+        const soleGuideId =
+            this.views.length === 1 ? this.views[0].id : undefined;
+        this.nominatedRules = new Set();
+        for (const result of results) {
+            const guideId = result.guideId ?? soleGuideId;
+            if (
+                !guideId ||
+                !this.rulesByGuide.get(guideId)?.has(result.rule.id)
+            )
+                continue;
+            this.nominatedRules.add(selectionKey(guideId, result.rule.id));
+        }
+        const count = this.nominatedRules.size;
         if (count > 0) {
             this.pendingScanStatus = {
                 status: `${count} rule${count === 1 ? '' : 's'} nominated. Review the highlighted rows and select the ones that apply.`,
@@ -421,6 +457,7 @@ export class GuideChecklist extends ReadOnlyComponentBase {
     }
 
     protected render(): void {
+        if (!this.panelBuilt) return;
         this.renderCheckboxes();
         this.renderBreakdown();
         this.renderResultValue();
@@ -557,11 +594,7 @@ export class GuideChecklist extends ReadOnlyComponentBase {
                 v.categories
                     .filter((c) => c.id !== '_compound')
                     .flatMap((c) => c.items)
-                    .concat(v.uncategorized)
-                    .filter(
-                        (rule) =>
-                            this.activeGuideByRuleId.get(rule.id) === v.id,
-                    ),
+                    .concat(v.uncategorized),
             );
             const visible = this.filterText
                 ? checkable.filter((r) => this.ruleMatchesFilter(r)).length
@@ -617,16 +650,12 @@ export class GuideChecklist extends ReadOnlyComponentBase {
         const showOutcomes = opts.showOutcomes !== false;
         const multiGuide = this.views.length > 1;
 
-        for (const view of this.views) {
-            const active = (rules: readonly GuideRuleView[]) =>
-                rules.filter(
-                    (rule) => this.activeGuideByRuleId.get(rule.id) === view.id,
-                );
+        for (const [viewIndex, view] of this.views.entries()) {
             if (
                 !view.categories.some(
-                    (category) => active(category.items).length > 0,
+                    (category) => category.items.length > 0,
                 ) &&
-                active(view.uncategorized).length === 0
+                view.uncategorized.length === 0
             )
                 continue;
             if (multiGuide) {
@@ -638,7 +667,7 @@ export class GuideChecklist extends ReadOnlyComponentBase {
 
             for (const cat of view.categories) {
                 if (cat.id === '_compound') continue;
-                const items = active(cat.items);
+                const items = cat.items;
                 if (items.length === 0) continue;
 
                 const group = document.createElement('div');
@@ -654,22 +683,31 @@ export class GuideChecklist extends ReadOnlyComponentBase {
 
                 for (const rule of items) {
                     group.appendChild(
-                        this.buildCheckboxRow(rule, showOutcomes),
+                        this.buildCheckboxRow(
+                            view.id,
+                            viewIndex,
+                            rule,
+                            showOutcomes,
+                        ),
                     );
                 }
 
                 container.appendChild(group);
             }
 
-            for (const rule of active(view.uncategorized)) {
+            for (const rule of view.uncategorized) {
                 container.appendChild(
-                    this.buildCheckboxRow(rule, showOutcomes),
+                    this.buildCheckboxRow(
+                        view.id,
+                        viewIndex,
+                        rule,
+                        showOutcomes,
+                    ),
                 );
             }
 
-            const compoundItems = active(
-                view.categories.find((c) => c.id === '_compound')?.items ?? [],
-            );
+            const compoundItems =
+                view.categories.find((c) => c.id === '_compound')?.items ?? [];
             if (compoundItems.length > 0) {
                 const group = document.createElement('div');
                 group.setAttribute('role', 'group');
@@ -684,7 +722,7 @@ export class GuideChecklist extends ReadOnlyComponentBase {
 
                 for (const rule of compoundItems) {
                     group.appendChild(
-                        this.buildComputedRow(rule, showOutcomes),
+                        this.buildComputedRow(view.id, rule, showOutcomes),
                     );
                 }
 
@@ -708,30 +746,36 @@ export class GuideChecklist extends ReadOnlyComponentBase {
     }
 
     private buildCheckboxRow(
+        guideId: string,
+        viewIndex: number,
         rule: GuideRuleView,
         showOutcomes: boolean,
     ): HTMLDivElement {
+        const key = selectionKey(guideId, rule.id);
+        // The guide's position, not its id, keeps the detail id a valid,
+        // unique token when two guides share a rule id.
+        const detailId = `rule-${viewIndex}-${rule.id}-detail-${this.uid}`;
         const row = document.createElement('div');
         row.className = 'ezc-guide-rule';
         row.dataset.ruleId = rule.id;
+        row.dataset.guideId = guideId;
         this.ruleByRow.set(row, rule);
-        row.dataset.nominated = String(this.nominatedRuleIds.has(rule.id));
+        this.guideByRow.set(row, guideId);
+        row.dataset.nominated = String(this.nominatedRules.has(key));
 
         const label = document.createElement('label');
 
         const checkbox = document.createElement('input');
         checkbox.type = 'checkbox';
         checkbox.value = rule.id;
-        checkbox.checked = this.selectedRuleIds.has(rule.id);
-        checkbox.setAttribute(
-            'aria-describedby',
-            `rule-${rule.id}-detail-${this.uid}`,
-        );
+        checkbox.checked = this.selectedRules.has(key);
+        if (rule.description)
+            checkbox.setAttribute('aria-describedby', detailId);
         checkbox.addEventListener('change', () => {
             if (checkbox.checked) {
-                this.selectedRuleIds.add(rule.id);
+                this.selectedRules.set(key, { guideId, ruleId: rule.id });
             } else {
-                this.selectedRuleIds.delete(rule.id);
+                this.selectedRules.delete(key);
             }
             this.applySelection(true);
         });
@@ -745,7 +789,7 @@ export class GuideChecklist extends ReadOnlyComponentBase {
         const badge = document.createElement('span');
         badge.className = 'ezc-guide-nominated-badge';
         badge.textContent = 'Nominated';
-        badge.hidden = !this.nominatedRuleIds.has(rule.id);
+        badge.hidden = !this.nominatedRules.has(key);
         label.appendChild(badge);
 
         if (showOutcomes && rule.outcomeText) {
@@ -763,7 +807,7 @@ export class GuideChecklist extends ReadOnlyComponentBase {
 
         if (rule.description) {
             const detailWrap = document.createElement('div');
-            detailWrap.id = `rule-${rule.id}-detail-${this.uid}`;
+            detailWrap.id = detailId;
             detailWrap.className = 'ezc-guide-rule-detail';
             detailWrap.textContent = rule.description;
             row.appendChild(detailWrap);
@@ -773,6 +817,7 @@ export class GuideChecklist extends ReadOnlyComponentBase {
     }
 
     private buildComputedRow(
+        guideId: string,
         rule: GuideRuleView,
         showOutcomes: boolean,
     ): HTMLDivElement {
@@ -780,7 +825,9 @@ export class GuideChecklist extends ReadOnlyComponentBase {
         row.className =
             'ezc-guide-rule ezc-guide-rule--auto ezc-guide-rule--inactive';
         row.dataset.ruleId = rule.id;
+        row.dataset.guideId = guideId;
         this.ruleByRow.set(row, rule);
+        this.guideByRow.set(row, guideId);
 
         const label = document.createElement('label');
 
@@ -814,9 +861,7 @@ export class GuideChecklist extends ReadOnlyComponentBase {
 
     private renderCheckboxes(): void {
         const filter = this.filterText.toLowerCase();
-        const activeComputed = new Set(
-            this.lastEvaluation?.activeComputedRules.map((rule) => rule.id),
-        );
+        const activeComputed = this.activeComputedKeys();
 
         const rows =
             this.rulesContainer.querySelectorAll<HTMLDivElement>(
@@ -827,10 +872,12 @@ export class GuideChecklist extends ReadOnlyComponentBase {
             if (!ruleId) continue;
 
             const ruleView = this.ruleByRow.get(row);
-            if (!ruleView) continue;
+            const guideId = this.guideByRow.get(row);
+            if (!ruleView || guideId === undefined) continue;
+            const key = selectionKey(guideId, ruleId);
 
             if (ruleView.isComputed) {
-                const isActive = activeComputed.has(ruleId);
+                const isActive = activeComputed.has(key);
                 row.classList.toggle('ezc-guide-rule--inactive', !isActive);
                 const cb = row.querySelector<HTMLInputElement>(
                     'input[type="checkbox"]',
@@ -840,9 +887,8 @@ export class GuideChecklist extends ReadOnlyComponentBase {
                 const checkbox = row.querySelector<HTMLInputElement>(
                     'input[type="checkbox"]',
                 );
-                if (checkbox)
-                    checkbox.checked = this.selectedRuleIds.has(ruleId);
-                const nominated = this.nominatedRuleIds.has(ruleId);
+                if (checkbox) checkbox.checked = this.selectedRules.has(key);
+                const nominated = this.nominatedRules.has(key);
                 row.dataset.nominated = String(nominated);
                 row.classList.toggle('ezc-guide-rule--nominated', nominated);
                 const badge = row.querySelector<HTMLElement>(
@@ -942,6 +988,28 @@ export class GuideChecklist extends ReadOnlyComponentBase {
         }
     }
 
+    /**
+     * The computed rules the last evaluation activated, keyed by guide. The
+     * breakdown names each rule's guide; a single loaded guide also owns every
+     * rule the result lists without one.
+     */
+    private activeComputedKeys(): Set<string> {
+        const keys = new Set<string>();
+        const evaluation = this.lastEvaluation;
+        if (!evaluation) return keys;
+        for (const entry of evaluation.breakdown) {
+            if (entry.isComputed)
+                keys.add(
+                    selectionKey(entry.rule.artifact.id, entry.rule.ruleId),
+                );
+        }
+        if (this.views.length === 1) {
+            for (const rule of evaluation.activeComputedRules)
+                keys.add(selectionKey(this.views[0].id, rule.id));
+        }
+        return keys;
+    }
+
     private renderResult(): HTMLDivElement {
         const wrap = document.createElement('div');
         wrap.className = 'ezc-guide-result';
@@ -999,7 +1067,7 @@ export class GuideChecklist extends ReadOnlyComponentBase {
             this.settleEvaluation(token, null, false);
             return null;
         }
-        const selection = [...this.selectedRuleIds];
+        const selection = this.getSelections();
 
         let outcome: MaybePromise<EvaluationResult>;
         try {
@@ -1089,21 +1157,11 @@ export class GuideChecklist extends ReadOnlyComponentBase {
             );
         }
 
-        const forId =
-            this.container
-                .closest('[data-ezclassify-target]')
-                ?.getAttribute('data-ezclassify-target') ??
-            this.container.getAttribute('data-ezclassify-target');
-        if (forId) {
-            const target = document.getElementById(
-                forId,
-            ) as HTMLInputElement | null;
-            if (target) {
-                target.value = marking;
-                target.dispatchEvent(new Event('input', { bubbles: true }));
-                target.dispatchEvent(new Event('change', { bubbles: true }));
-            }
-        }
+        // `data-ezclassify-bound-to` makes the checklist a second editor of
+        // the named marking. The runtime wires the binding; the checklist
+        // hands it the computed marking, and the store reads it like any
+        // other edit, so every view of that marking follows.
+        if (this.isBound()) this.options.onChange?.([], marking);
 
         this.container.dispatchEvent(
             new CustomEvent('ezclassify:guide-copy', {
@@ -1111,6 +1169,21 @@ export class GuideChecklist extends ReadOnlyComponentBase {
                 detail: { marking },
             }),
         );
+    }
+
+    /** Whether the host names a marking with `data-ezclassify-bound-to`. */
+    private isBound(): boolean {
+        const host = getMountHost(this.container) ?? this.container;
+        return !!host.getAttribute('data-ezclassify-bound-to');
+    }
+
+    /**
+     * The checklist writes its bound marking and never displays it: a store
+     * commit of that marking keeps the held value current and leaves the
+     * selection and its evaluation as they are.
+     */
+    override setAssertions(assertions: Assertion[]): void {
+        this.assertions = [...assertions];
     }
 
     private dispatchChangeEvent(): void {
