@@ -12,7 +12,11 @@
  */
 
 import type { Assertion, Suggestion } from '@ezclassify/types';
-import type { EzClassifyState, FacetState } from './ezclassify-store';
+import type {
+    EzClassifyAggregate,
+    EzClassifyState,
+    FacetState,
+} from './ezclassify-store';
 
 /**
  * Canonical empty `EzClassifyState`. Identity is not stable across calls; copy
@@ -75,3 +79,66 @@ export function facetStateEqual(
     }
     return true;
 }
+
+/**
+ * Separates the two halves of a {@link BucketKey}. A unit separator cannot
+ * appear in a Context key or a scheme selector a host writes in markup.
+ */
+const BUCKET_SEPARATOR = '\u001f';
+
+/**
+ * The key of one rollup bucket: a Context and a scheme selector within it.
+ * Rollups combine markings of one bucket only and never merge two buckets,
+ * because two Contexts can carry the same scheme id under different guides or
+ * access policies, and two schemes of one Context are read by different rules.
+ *
+ * Built with {@link bucketKey}; read back with {@link bucketParts}.
+ */
+export type BucketKey = `${string}\u001f${string}`;
+
+/**
+ * The bucket of the markings read in Context `contextKey` under its scheme
+ * `schemeSelector`.
+ *
+ * @param contextKey - The instance's key for the Context. Empty for the only
+ *   Context of an instance built from one Context.
+ * @param schemeSelector - The Context-local scheme selector. Empty for the
+ *   Context's primary scheme.
+ */
+export function bucketKey(
+    contextKey: string,
+    schemeSelector: string,
+): BucketKey {
+    if (
+        contextKey.includes(BUCKET_SEPARATOR) ||
+        schemeSelector.includes(BUCKET_SEPARATOR)
+    ) {
+        throw new Error(
+            '[ezclassify] A Context key or scheme selector cannot contain a unit separator.',
+        );
+    }
+    return `${contextKey}${BUCKET_SEPARATOR}${schemeSelector}`;
+}
+
+/** The Context key and scheme selector a {@link BucketKey} was built from. */
+export function bucketParts(key: BucketKey): {
+    contextKey: string;
+    schemeSelector: string;
+} {
+    const at = key.indexOf(BUCKET_SEPARATOR);
+    return {
+        contextKey: key.slice(0, at),
+        schemeSelector: key.slice(at + 1),
+    };
+}
+
+/**
+ * The bucket of a store built over one engine: the only Context's primary
+ * scheme.
+ */
+export const SOLE_BUCKET: BucketKey = bucketKey('', '');
+
+/** The aggregate of a level with no contributor in any bucket. */
+export const EMPTY_EZCLASSIFY_AGGREGATE: EzClassifyAggregate = Object.freeze({
+    byBucket: new Map<BucketKey, EzClassifyState>(),
+});

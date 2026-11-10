@@ -21,6 +21,7 @@ import {
 } from '../bind-ezclassify-to-object';
 import type { Assertion, Suggestion } from '@ezclassify/types';
 import { EMPTY_RENDER_ASSESSMENT } from '../engine-result-mock';
+import { onLevelState } from './page-rollup-harness';
 
 /**
  * A complete {@link Suggestion} for a concept, so a case can name the two fields
@@ -629,13 +630,13 @@ describe('VanillaEzClassifyStore: destroy idempotence', () => {
 });
 
 // ---------------------------------------------------------------------------
-// 7. destroyed-during-flight guards in refreshFacets and recomputeAggregate
+// 7. destroyed-during-flight guards in refreshFacets and the level rollups
 //
 // These tests use the void+destroy pattern:
 //   void store.publishRendered(...) , starts async, suspends at `await engine.process`
 //   store.destroy()                 , sets destroyed=true synchronously before the microtask resumes
 //   await flush()                   , when publishRendered resumes, commit fires void refreshFacets /
-//                                      void recomputeAggregate; both hit `if (this.destroyed) return`
+//                                      void recomputeLevel; both hit `if (this.destroyed) return`
 //
 // This is the only way to cover those guards: the AWAIT+destroy pattern arrives too late
 // because by then commit() has already started the void tasks and they've already passed
@@ -660,16 +661,16 @@ describe('VanillaEzClassifyStore: destroyed-during-flight guards', () => {
         expect(cb).not.toHaveBeenCalled();
     });
 
-    it('recomputeAggregate destroyed check fires when store is destroyed mid-flight', async () => {
+    it('the page rollup tells no one once the store is destroyed mid-flight', async () => {
         const store = new VanillaEzClassifyStore(passThroughEngine());
         const aggCb = vi.fn();
-        store.subscribeAggregate(aggCb);
+        onLevelState(store, aggCb);
 
         void store.publishRendered('m1', 'level:S');
         store.destroy();
 
         await flush(10);
-        // recomputeAggregate exited at `if (this.destroyed) return`; also aggregateListeners was cleared.
+        // recomputeLevel exited at `if (this.destroyed) return`; its listeners were cleared too.
         expect(aggCb).not.toHaveBeenCalled();
     });
 
@@ -695,7 +696,7 @@ describe('VanillaEzClassifyStore: destroyed-during-flight guards', () => {
 });
 
 // ---------------------------------------------------------------------------
-// 8. recomputeAggregate/recomputeWholeRollup with format option
+// 8. level and whole rollups with format option
 // ---------------------------------------------------------------------------
 
 describe('VanillaEzClassifyStore: format option propagation in aggregate paths', () => {
@@ -703,7 +704,7 @@ describe('VanillaEzClassifyStore: format option propagation in aggregate paths',
         for (let i = 0; i < 8; i++) await Promise.resolve();
     };
 
-    it('recomputeAggregate passes format to aggregateAssertions', async () => {
+    it('the page rollup passes format to aggregateAssertions', async () => {
         const aggSpy = vi.fn().mockReturnValue({
             rendered: 'R',
             assertions: [],

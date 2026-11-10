@@ -26,6 +26,7 @@ import {
 } from './ezclassify-store';
 import type { Assertion, Suggestion } from '@ezclassify/types';
 import { EMPTY_RENDER_ASSESSMENT, mockAssertion } from '../engine-result-mock';
+import { levelState, onLevelState } from './page-rollup-harness';
 
 function passThroughEngine(
     extra?: Partial<EzClassifyStoreEngine>,
@@ -301,7 +302,7 @@ describe('BaseEzClassifyStore', () => {
         await flushMicrotasks();
 
         expect(store.get('doc').displayColor).toEqual(markingColor);
-        expect(store.getAggregate().displayColor).toEqual(rollupColor);
+        expect(levelState(store).displayColor).toEqual(rollupColor);
         expect(store.getWholeRollup('whole').displayColor).toEqual(rollupColor);
     });
 
@@ -406,12 +407,12 @@ describe('BaseEzClassifyStore', () => {
     it('recomputes the page aggregate from contributor assertions', async () => {
         const store = new TestStore(passThroughEngine());
         const agg: EzClassifyState[] = [];
-        store.subscribeAggregate((s) => agg.push(s));
+        onLevelState(store, (s) => agg.push(s));
         await store.publishRendered('a', 'cat:x');
         await store.publishRendered('b', 'cat:y');
         await flushMicrotasks();
         expect(agg.length).toBeGreaterThan(0);
-        expect(store.getAggregate().assertions).toEqual([
+        expect(levelState(store).assertions).toEqual([
             { categoryId: 'cat', conceptId: 'x' },
             { categoryId: 'cat', conceptId: 'y' },
         ]);
@@ -522,10 +523,11 @@ describe('BaseEzClassifyStore', () => {
 
         await store.publishRendered('p1', 'cat:x');
         await store.publishRendered('p2', 'cat:y');
-        expect(pending).toHaveLength(4);
+        // Only whole rollups: the page waits for the rollup it reads as facts.
+        expect(pending).toHaveLength(2);
 
-        const olderWhole = pending[1];
-        const newestWhole = pending[3];
+        const olderWhole = pending[0];
+        const newestWhole = pending[1];
         newestWhole.resolve({
             rendered: 'cat:x cat:y',
             assessment: EMPTY_RENDER_ASSESSMENT,
