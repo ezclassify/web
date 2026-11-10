@@ -101,6 +101,7 @@ import {
     isTranslatedView,
     type TranslatedView,
 } from './components/translated-view';
+import type { ContextReference } from './components/context-reference';
 import {
     defaultSurfaceOf,
     holdsPart,
@@ -646,6 +647,15 @@ export class EzClassifyUI {
      */
     resolveContext(el: Element): ResolvedContext {
         return this.contexts.resolve(el, this.root);
+    }
+
+    /**
+     * Every Context this instance holds, as a reference drawer takes them: the
+     * only Context, or each under the key markup names it by.
+     */
+    private referenceSource(): EzClassifyContexts {
+        if (this.contexts.single) return this.contexts.get(SINGLE_CONTEXT_KEY)!;
+        return { contexts: Object.fromEntries(this.contexts.entries()) };
     }
 
     /**
@@ -2622,10 +2632,13 @@ export class EzClassifyUI {
         // The Context the component marks with, from the nearest
         // `data-ezclassify-context` (or the only Context) and the nearest
         // `data-ezclassify-scheme` (or the primary scheme). An element that
-        // resolves none stays unenhanced as a host error.
+        // resolves none stays unenhanced as a host error. A reference drawer
+        // shows every Context the instance holds and marks in none, so it
+        // resolves no Context of its own.
         if (this.mounted.has(el)) return;
-        const resolved = this.contextForMount(el);
-        if (!resolved) return;
+        const drawer = controller === 'context-reference';
+        const resolved = drawer ? null : this.contextForMount(el);
+        if (!drawer && !resolved) return;
 
         // Skip duplicates
         if (controller === 'tags') {
@@ -2952,11 +2965,13 @@ export class EzClassifyUI {
             this.draftHosts.set(component, storeMarkingId);
 
         // The component marks with the Context its element resolved.
-        const initPromise = component.init(
-            container,
-            resolved.context,
-            componentOpts,
-        );
+        const initPromise = drawer
+            ? (component as ContextReference).init(
+                  container,
+                  this.referenceSource(),
+                  componentOpts,
+              )
+            : component.init(container, resolved!.context, componentOpts);
 
         if (componentOpts.resolveParts && wholeId) {
             // A part committing changes what the whole has to cover, so the

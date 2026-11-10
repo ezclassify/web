@@ -9,10 +9,10 @@ import {
 } from './element-scanner';
 
 describe('CONTROLLER_NAMES', () => {
-    it('contains all 20 recognized controllers', () => {
+    it('contains all 21 recognized controllers', () => {
         // 2 framework/GRC controllers (scorecard, matrix) are deferred
         // from the 1.0 surface.
-        expect(CONTROLLER_NAMES).toHaveLength(20);
+        expect(CONTROLLER_NAMES).toHaveLength(21);
     });
 
     it('starts with tags', () => {

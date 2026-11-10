@@ -1,14 +1,22 @@
 /**
  * ContextReference Component
  *
- * A reference drawer that docks the loaded context's reference material to a
- * viewport edge as a tabbed panel. The built-in tabs are derived from the
- * context's RESOLVED COMPOSITION (a scheme yields a handbook tab, one or more
- * loaded guides yield a single guidebook tab, a loaded access policy yields an
- * access tab) and each built-in tab COMPOSES the existing reference component
- * ({@link Handbook}, {@link Guidebook}, {@link AccessHandbook}). Those three
- * already resolve the local synchronous adapter and the remote `MaybePromise`
- * adapter themselves, so both-modes support is inherited, not rebuilt here.
+ * A reference drawer that docks the reference material of every Context the
+ * page's instance loaded to a viewport edge as a tabbed panel. The built-in
+ * tabs are derived from each Context's RESOLVED COMPOSITION (a scheme yields a
+ * handbook tab, one or more loaded guides yield a single guidebook tab, a
+ * loaded access policy yields an access tab, one or more crosswalks yield a
+ * crosswalk tab) and each built-in tab COMPOSES the existing reference
+ * component ({@link Handbook}, {@link Guidebook}, {@link AccessHandbook},
+ * {@link CrosswalkHandbook}). Those already resolve the local synchronous
+ * adapter and the remote `MaybePromise` adapter themselves, so both-modes
+ * support is inherited, not rebuilt here.
+ *
+ * With several Contexts the drawer shows each Context's tabs together, in the
+ * order the host gave the Contexts, each tab labeled with the Context's key and
+ * its id prefixed by it (`<key>-handbook`). Mounted through EzClassifyUI, the
+ * drawer is handed every Context the instance holds; it marks in none of them,
+ * so it needs no `data-ezclassify-context`.
  *
  * Presence is read from what the composition actually loaded, not from whether
  * an ops object happens to exist: the remote `EzClassifyClient` always exposes
@@ -37,7 +45,11 @@
  * artifact into the context (or not mounting the drawer at all).
  */
 
-import type { ContextAdapter } from '@ezclassify/types';
+import type {
+    ContextAdapter,
+    ContextCrosswalkDescriptor,
+    ReferenceSurfaceLabel,
+} from '@ezclassify/types';
 import {
     ReadOnlyComponentBase,
     resolveSchemeEngine,
@@ -46,10 +58,13 @@ import {
     type ComponentEngineSource,
     type ComponentOptions,
     type ComponentInstance,
+    type ComponentSchemeEngine,
 } from './component-base-readonly';
 import { Handbook } from './handbook';
 import { Guidebook } from './guidebook';
 import { AccessHandbook } from './access-handbook';
+import { CrosswalkHandbook } from './crosswalk-handbook';
+import { ContextSet, type EzClassifyContextMap } from '../context-binding';
 import { resolveReferenceSurfaceOverride } from './browser-component-base';
 import { injectDefaultStyles } from '../styles';
 import { adoptStyles, type AdoptedStyles } from '../styles/adopt';
@@ -91,8 +106,10 @@ export interface ContextReferenceOptions extends ComponentOptions {
     /**
      * Ordered id allowlist. When set, only these tab ids render, in this order;
      * an omitted id is hidden. This is presentation only: hiding a tab is not
-     * an access decision. Built-in ids are `handbook`, `guidebook`, `access`;
-     * custom-tab ids come from each tab's `data-ezclassify-tab-id`.
+     * an access decision. Built-in ids are `handbook`, `guidebook`, `access`
+     * and `crosswalk`, each prefixed `<Context key>-` when the drawer shows
+     * several Contexts; custom-tab ids come from each tab's
+     * `data-ezclassify-tab-id`.
      */
     tabs?: string[];
     /** Per-tab label overrides keyed by tab id. */
@@ -101,21 +118,29 @@ export interface ContextReferenceOptions extends ComponentOptions {
     tabIcons?: Record<string, string>;
 }
 
-/** Canonical built-in tab ids, in their default (pre-allowlist) order. */
+/**
+ * What the drawer shows: one Context or scheme view, or `{ contexts }` keyed
+ * the way the page's EzClassifyUI keys them.
+ */
+export type ContextReferenceSource =
+    ComponentEngineSource | EzClassifyContextMap;
+
+/** Canonical built-in tab kinds, in their default (pre-allowlist) order. */
 const BUILTIN_HANDBOOK = 'handbook';
 const BUILTIN_GUIDEBOOK = 'guidebook';
 const BUILTIN_ACCESS = 'access';
-
-/**
- * Built-in ids are reserved: a custom tab may not claim one, because the tab id
- * is also the DOM id stem and the key of the button/panel maps, and a collision
- * would corrupt the ARIA tab model.
- */
-const RESERVED_TAB_IDS: ReadonlySet<string> = new Set([
+const BUILTIN_CROSSWALK = 'crosswalk';
+type BuiltinKind =
+    | typeof BUILTIN_HANDBOOK
+    | typeof BUILTIN_GUIDEBOOK
+    | typeof BUILTIN_ACCESS
+    | typeof BUILTIN_CROSSWALK;
+const BUILTIN_KINDS: readonly BuiltinKind[] = [
     BUILTIN_HANDBOOK,
     BUILTIN_GUIDEBOOK,
     BUILTIN_ACCESS,
-]);
+    BUILTIN_CROSSWALK,
+];
 
 /**
  * Stable tab-id grammar. An id becomes a DOM id (`ez-context-ref-tab-<id>` /
@@ -131,11 +156,34 @@ const TAB_ID_GRAMMAR_TEXT =
  * Generic tab labels, used when the artifact declares no reference-surface
  * noun.
  */
-const DEFAULT_TAB_LABELS: Record<string, string> = {
+const DEFAULT_TAB_LABELS: Record<BuiltinKind, string> = {
     [BUILTIN_HANDBOOK]: 'Handbook',
     [BUILTIN_GUIDEBOOK]: 'Guidebook',
     [BUILTIN_ACCESS]: 'Access',
+    [BUILTIN_CROSSWALK]: 'Crosswalk',
 };
+
+/**
+ * One Context the drawer shows, with what its composition loaded. `key` is the
+ * key the host gave it, or null when the drawer shows one Context.
+ */
+interface ShownContext {
+    key: string | null;
+    /** The Context, or null for a bare scheme view (handbook only). */
+    context: ContextAdapter | null;
+    engine: ComponentSchemeEngine;
+    guidePresent: boolean;
+    accessPresent: boolean;
+    /** The crosswalks it holds; empty until a remote Context answers. */
+    crosswalks: ContextCrosswalkDescriptor[];
+}
+
+/** One component a built-in panel mounts, with what it mounts on. */
+interface PanelChild {
+    child: ComponentInstance;
+    source: ComponentEngineSource;
+    options?: Record<string, unknown>;
+}
 
 /** One resolved tab: its identity plus how to fill its panel. */
 interface TabEntry {
@@ -143,10 +191,12 @@ interface TabEntry {
     label: string;
     icon?: string;
     kind: 'builtin' | 'custom';
+    /** The key of the Context a built-in tab belongs to, with several. */
+    contextKey?: string | null;
     /** Sort key for custom tabs (built-ins keep their canonical order). */
     order: number;
-    /** The built-in component to mount, when `kind` is `builtin`. */
-    make?: () => ComponentInstance;
+    /** The built-in components to mount, when `kind` is `builtin`. */
+    make?: () => PanelChild[];
     /** The host-owned node to project in place, when `kind` is `custom`. */
     node?: HTMLElement;
 }
@@ -163,7 +213,12 @@ interface CustomTabDescriptor {
 /** A built-in panel already created and mounted; reused across rebuilds. */
 interface MountedBuiltin {
     panel: HTMLDivElement;
-    child: ComponentInstance;
+    children: ComponentInstance[];
+}
+
+/** A tab id spelled so it can stand in a DOM id and an ARIA id reference. */
+function domStemOf(id: string): string {
+    return id.replace(/[^A-Za-z0-9_-]/g, '_');
 }
 
 /**
@@ -188,8 +243,9 @@ function isCustomTabNode(node: Node): node is HTMLElement {
 }
 
 /**
- * Docked, tabbed reference drawer composing a context's Handbook, Guidebook,
- * and AccessHandbook surfaces plus host-authored custom tabs.
+ * Docked, tabbed reference drawer composing each shown Context's Handbook,
+ * Guidebook, AccessHandbook and CrosswalkHandbook surfaces plus host-authored
+ * custom tabs.
  */
 export class ContextReference
     extends ReadOnlyComponentBase
@@ -214,8 +270,17 @@ export class ContextReference
     private tabOrder: string[] = [];
     private activeTabId: string | null = null;
     private _destroyed = false;
-    private guidePresent = false;
-    private accessPresent = false;
+    /** Every Context the drawer shows, in the order the host gave them. */
+    private shown: ShownContext[] = [];
+    /**
+     * Ids a custom tab may not claim: every built-in id the shown Contexts
+     * could produce, present or not, because the tab id is also the DOM id stem
+     * and the key of the button/panel maps, and a collision would corrupt the
+     * ARIA tab model.
+     */
+    private reservedIds = new Set<string>();
+    /** The DOM id stem each tab id was given, unique within the drawer. */
+    private domStems = new Map<string, string>();
     private customObserver?: MutationObserver;
 
     /**
@@ -230,8 +295,10 @@ export class ContextReference
      *
      * @param container - The host element the drawer builds into. The host IS
      *   the drawer root; its host-authored custom-tab children stay in place.
-     * @param engineOrContext - The composed context, or a bare scheme adapter.
+     * @param engineOrContext - The composed Context, `{ contexts }` for
+     *   several, or a bare scheme adapter.
      * @param options - Presentation and per-tab options.
+     * @throws TypeError when `{ contexts }` is malformed
      */
     // The body is synchronous by design through the first paint: the frame, the
     // handle, and every synchronously-known tab are built before the returned
@@ -239,11 +306,12 @@ export class ContextReference
     // while preserving the base component's Promise<void> contract.
     override async init(
         container: HTMLDivElement,
-        engineOrContext?: ComponentEngineSource | null,
+        engineOrContext?: ContextReferenceSource | null,
         options?: ComponentOptions,
     ): Promise<void> {
-        this.engine = resolveSchemeEngine(engineOrContext, 'ContextReference');
-        this.context = resolveContextSource(engineOrContext);
+        this.shown = resolveShownContexts(engineOrContext);
+        this.engine = this.shown[0].engine;
+        this.context = this.shown[0].context;
         this.container = container;
         this.options = options ?? {};
         this.schemeId = resolveProfile(this.engine);
@@ -300,6 +368,11 @@ export class ContextReference
         // scanner logs it without corrupting the page. Runtime-introduced
         // collisions (a later reactive render) are additionally skipped
         // defensively in syncTabs(), where a throw could not be caught.
+        this.reservedIds = new Set(
+            this.shown.flatMap((shown) =>
+                BUILTIN_KINDS.map((kind) => this.builtinId(shown, kind)),
+            ),
+        );
         const initialCustomTabs = this.collectCustomTabs();
         const allowlist = this.resolveTabsAllowlist(opts);
         const errors = this.validateTabIdentities(initialCustomTabs, allowlist);
@@ -370,14 +443,7 @@ export class ContextReference
         );
         this.insertChrome(this.tablist);
 
-        // Presence comes from the resolved composition when the adapter reports
-        // it, never from whether an ops object exists or whether a policy
-        // happens to contain rules. `compositionPresence` is optional in the
-        // contract; without it, the guide and access surfaces decide.
-        const presence = this.context?.compositionPresence;
-        this.guidePresent = presence?.guides ?? this.resolveGuidePresence();
-        this.accessPresent = presence?.access ?? Boolean(this.context?.access);
-
+        this.loadCrosswalks();
         this.syncTabs();
         this.applyOpenState();
 
@@ -431,13 +497,8 @@ export class ContextReference
         this.customObserver?.disconnect();
         this.customObserver = undefined;
 
-        for (const { child, panel } of this.builtins.values()) {
-            try {
-                child.destroy();
-            } catch {
-                /* one child's teardown must not abort the rest */
-            }
-            panel.remove();
+        for (const mounted of this.builtins.values()) {
+            this.retirePanel(mounted);
         }
         this.builtins.clear();
 
@@ -465,28 +526,55 @@ export class ContextReference
         this.container.removeAttribute('data-ez-context-ref-open');
     }
 
-    // ── Built-in presence (resolved composition) ────────────────────────────
-
-    /**
-     * True when the composition actually loaded at least one guide. Reads the
-     * generic, synchronous `listGuideMeta()` inventory, which is populated in
-     * both modes (locally from the loaded guides, remotely from the context
-     * description at connect). This is why a scheme-only remote context (whose
-     * client still exposes a `guide` ops object) shows no guidebook tab: the
-     * inventory is empty. Falls back to bare presence only for a hand-rolled
-     * adapter that does not implement the inventory accessor.
-     */
-    private resolveGuidePresence(): boolean {
-        const guide = this.context?.guide;
-        if (!guide) return false;
-        if (typeof guide.listGuideMeta === 'function') {
+    /** Destroy a built-in panel's components and remove the panel. */
+    private retirePanel(mounted: MountedBuiltin): void {
+        for (const child of mounted.children) {
             try {
-                return guide.listGuideMeta().length > 0;
+                child.destroy();
             } catch {
-                return false;
+                /* one child's teardown must not abort the rest */
             }
         }
-        return true;
+        mounted.panel.remove();
+    }
+
+    // ── Crosswalks ──────────────────────────────────────────────────────────
+
+    /**
+     * Learn which crosswalks each shown Context holds. A local Context answers
+     * at once, before the first tab strip is built; a remote one answers from
+     * the description its client cached, and its tab joins the strip when it
+     * does. A Context that cannot list its crosswalks shows none, and says why
+     * on the console.
+     */
+    private loadCrosswalks(): void {
+        for (const shown of this.shown) {
+            const context = shown.context;
+            if (!context) continue;
+            const failed = (err: unknown) =>
+                console.error(
+                    `[ContextReference] ${shown.key === null ? 'the Context' : `Context '${shown.key}'`} could not list its crosswalks:`,
+                    err,
+                );
+            let answer:
+                | ContextCrosswalkDescriptor[]
+                | Promise<ContextCrosswalkDescriptor[]>;
+            try {
+                answer = context.describeCrosswalks();
+            } catch (err) {
+                failed(err);
+                continue;
+            }
+            if (Array.isArray(answer)) {
+                shown.crosswalks = answer;
+                continue;
+            }
+            Promise.resolve(answer).then((crosswalks) => {
+                if (this._destroyed) return;
+                shown.crosswalks = crosswalks;
+                if (crosswalks.length > 0) this.syncTabs();
+            }, failed);
+        }
     }
 
     // ── Custom tabs ─────────────────────────────────────────────────────────
@@ -541,7 +629,7 @@ export class ContextReference
                 .getAttribute('data-ezclassify-tab-id')
                 ?.trim();
             if (explicit) {
-                if (RESERVED_TAB_IDS.has(explicit)) {
+                if (this.reservedIds.has(explicit)) {
                     errors.push(
                         `custom tab id "${explicit}" is reserved for a built-in tab; choose a different data-ezclassify-tab-id`,
                     );
@@ -613,12 +701,7 @@ export class ContextReference
         // that dropped the tab during a reconciliation).
         for (const [id, mounted] of this.builtins) {
             if (!wantedBuiltinIds.has(id)) {
-                try {
-                    mounted.child.destroy();
-                } catch {
-                    /* keep tearing the rest down */
-                }
-                mounted.panel.remove();
+                this.retirePanel(mounted);
                 this.builtins.delete(id);
             }
         }
@@ -629,9 +712,11 @@ export class ContextReference
         this.tabOrder = entries.map((e) => e.id);
         const wantedIds = new Set(entries.map((e) => e.id));
 
+        let previousContext: string | null | undefined;
         entries.forEach((entry) => {
-            const tabDomId = `${ROOT_CLASS}-tab-${entry.id}`;
-            const panelDomId = `${ROOT_CLASS}-panel-${entry.id}`;
+            const stem = this.domStemFor(entry.id);
+            const tabDomId = `${ROOT_CLASS}-tab-${stem}`;
+            const panelDomId = `${ROOT_CLASS}-panel-${stem}`;
 
             const tab = document.createElement('button');
             tab.type = 'button';
@@ -642,6 +727,30 @@ export class ContextReference
             tab.setAttribute('aria-selected', 'false');
             tab.tabIndex = -1;
             tab.dataset.tabId = entry.id;
+            if (entry.contextKey != null) {
+                // Several Contexts: each tab names its Context, and the first
+                // tab of each Context after the first opens a new group.
+                tab.dataset.contextKey = entry.contextKey;
+                if (
+                    previousContext !== undefined &&
+                    previousContext !== entry.contextKey
+                ) {
+                    tab.classList.add(`${ROOT_CLASS}__tab--context-start`);
+                }
+                previousContext = entry.contextKey;
+                const contextEl = document.createElement('span');
+                contextEl.className = `${ROOT_CLASS}__tab-context`;
+                contextEl.textContent = entry.contextKey;
+                tab.appendChild(contextEl);
+                // The two texts sit side by side; the accessible name keeps
+                // them apart.
+                tab.setAttribute(
+                    'aria-label',
+                    `${entry.contextKey}: ${entry.label}`,
+                );
+            } else if (entry.kind === 'custom') {
+                previousContext = undefined;
+            }
             if (entry.icon) {
                 const iconEl = document.createElement('span');
                 iconEl.className = `${ROOT_CLASS}__tab-icon`;
@@ -685,13 +794,27 @@ export class ContextReference
                 const panel = document.createElement('div');
                 panel.className = TABPANEL_CLASS;
                 panel.id = panelDomId;
+                panel.dataset.tabId = entry.id;
                 panel.setAttribute('role', 'tabpanel');
                 panel.setAttribute('aria-labelledby', tabDomId);
                 panel.tabIndex = 0;
                 this.container.appendChild(panel);
-                const child = entry.make!();
-                this.builtins.set(entry.id, { panel, child });
-                this.mountChild(child, panel);
+                const parts = entry.make!();
+                this.builtins.set(entry.id, {
+                    panel,
+                    children: parts.map((p) => p.child),
+                });
+                // One component fills the panel; several (a Context's
+                // crosswalks) each take a section of it.
+                for (const part of parts) {
+                    let into = panel;
+                    if (parts.length > 1) {
+                        into = document.createElement('div');
+                        into.className = `${TABPANEL_CLASS}-section`;
+                        panel.appendChild(into);
+                    }
+                    this.mountChild(part, into);
+                }
             }
             return;
         }
@@ -745,37 +868,9 @@ export class ContextReference
      */
     private resolveTabEntries(): TabEntry[] {
         const opts = this.options as ContextReferenceOptions;
-        const builtins: TabEntry[] = [];
-
-        // Scheme is always present (the engine IS the scheme surface).
-        builtins.push({
-            id: BUILTIN_HANDBOOK,
-            label: this.resolveBuiltinLabel(BUILTIN_HANDBOOK),
-            icon: this.resolveTabIcon(BUILTIN_HANDBOOK),
-            kind: 'builtin',
-            order: 0,
-            make: () => new Handbook(),
-        });
-        if (this.guidePresent) {
-            builtins.push({
-                id: BUILTIN_GUIDEBOOK,
-                label: this.resolveBuiltinLabel(BUILTIN_GUIDEBOOK),
-                icon: this.resolveTabIcon(BUILTIN_GUIDEBOOK),
-                kind: 'builtin',
-                order: 1,
-                make: () => new Guidebook(),
-            });
-        }
-        if (this.accessPresent) {
-            builtins.push({
-                id: BUILTIN_ACCESS,
-                label: this.resolveBuiltinLabel(BUILTIN_ACCESS),
-                icon: this.resolveTabIcon(BUILTIN_ACCESS),
-                kind: 'builtin',
-                order: 2,
-                make: () => new AccessHandbook(),
-            });
-        }
+        const builtins = this.shown.flatMap((shown) =>
+            this.builtinEntries(shown),
+        );
 
         const custom: TabEntry[] = [];
         const seen = new Set<string>(builtins.map((b) => b.id));
@@ -786,7 +881,7 @@ export class ContextReference
                 .getAttribute('data-ezclassify-tab-id')
                 ?.trim();
             if (
-                (explicit && RESERVED_TAB_IDS.has(explicit)) ||
+                (explicit && this.reservedIds.has(explicit)) ||
                 (explicit && !TAB_ID_GRAMMAR.test(explicit)) ||
                 seen.has(t.id)
             ) {
@@ -843,39 +938,115 @@ export class ContextReference
     }
 
     /**
+     * The built-in tabs one shown Context yields, in canonical order: the
+     * handbook always (the engine IS the scheme surface), the guidebook when
+     * the composition loaded a guide, the access handbook when it loaded an
+     * access policy, the crosswalk handbook when it holds a crosswalk.
+     */
+    private builtinEntries(shown: ShownContext): TabEntry[] {
+        const source: ComponentEngineSource = shown.context ?? shown.engine;
+        const kinds: Array<[BuiltinKind, () => PanelChild[]]> = [
+            [BUILTIN_HANDBOOK, () => [{ child: new Handbook(), source }]],
+        ];
+        if (shown.guidePresent) {
+            kinds.push([
+                BUILTIN_GUIDEBOOK,
+                () => [{ child: new Guidebook(), source }],
+            ]);
+        }
+        if (shown.accessPresent) {
+            kinds.push([
+                BUILTIN_ACCESS,
+                () => [{ child: new AccessHandbook(), source }],
+            ]);
+        }
+        if (shown.crosswalks.length > 0) {
+            const crosswalkIds = shown.crosswalks.map((c) => c.id);
+            kinds.push([
+                BUILTIN_CROSSWALK,
+                () =>
+                    crosswalkIds.map((crosswalkId) => ({
+                        child: new CrosswalkHandbook(),
+                        source,
+                        options: { crosswalkId },
+                    })),
+            ]);
+        }
+        return kinds.map(([kind, make], order) => {
+            const id = this.builtinId(shown, kind);
+            return {
+                id,
+                label: this.resolveBuiltinLabel(id, kind, shown),
+                icon: this.resolveTabIcon(id),
+                kind: 'builtin',
+                contextKey: shown.key,
+                order,
+                make,
+            };
+        });
+    }
+
+    /** A built-in tab's id: its kind, after the Context key with several. */
+    private builtinId(shown: ShownContext, kind: BuiltinKind): string {
+        return shown.key === null ? kind : `${shown.key}-${kind}`;
+    }
+
+    /**
+     * The DOM id stem for a tab id. The same id keeps its stem across rebuilds;
+     * two ids that spell the same stem (Context keys differing only in
+     * characters a DOM id cannot carry) get distinct ones.
+     */
+    private domStemFor(id: string): string {
+        const known = this.domStems.get(id);
+        if (known) return known;
+        const taken = new Set(this.domStems.values());
+        const base = domStemOf(id);
+        let stem = base;
+        for (let n = 2; taken.has(stem); n++) stem = `${base}-${n}`;
+        this.domStems.set(id, stem);
+        return stem;
+    }
+
+    /**
      * Label for a built-in tab: a per-tab override wins, then the artifact's
      * own reference-surface noun through the shared chokepoint, then the
      * generic default. This is why a scheme that names its handbook the "IC
      * Markings System Register and Manual" labels its tab that, with no domain
      * word here.
      */
-    private resolveBuiltinLabel(id: string): string {
+    private resolveBuiltinLabel(
+        id: string,
+        kind: BuiltinKind,
+        shown: ShownContext,
+    ): string {
         const override =
             (this.options as ContextReferenceOptions).tabLabels?.[id] ??
             this.rawTabLabel(id);
         if (override) return override;
 
-        if (id === BUILTIN_HANDBOOK) {
+        if (kind === BUILTIN_HANDBOOK) {
             const surface = resolveReferenceSurfaceOverride(
-                this.scheme.referenceSurfaceLabel,
+                shown.engine.getScheme().referenceSurfaceLabel,
                 'handbook',
             );
-            return surface?.singular ?? DEFAULT_TAB_LABELS[id];
+            return surface?.singular ?? DEFAULT_TAB_LABELS[kind];
         }
-        if (id === BUILTIN_GUIDEBOOK) {
-            const label = readGuideSurfaceLabel(this.context);
+        if (kind === BUILTIN_GUIDEBOOK) {
+            const label = readGuideSurfaceLabel(shown.context);
             const surface = resolveReferenceSurfaceOverride(label, 'guidebook');
-            return surface?.singular ?? DEFAULT_TAB_LABELS[id];
+            return surface?.singular ?? DEFAULT_TAB_LABELS[kind];
         }
-        if (id === BUILTIN_ACCESS) {
-            const label = readAccessSurfaceLabel(this.context);
+        if (kind === BUILTIN_ACCESS) {
+            const label = readAccessSurfaceLabel(shown.context);
             const surface = resolveReferenceSurfaceOverride(
                 label,
                 'accessHandbook',
             );
-            return surface?.singular ?? DEFAULT_TAB_LABELS[id];
+            return surface?.singular ?? DEFAULT_TAB_LABELS[kind];
         }
-        return DEFAULT_TAB_LABELS[id] ?? id;
+        return shown.crosswalks.length > 1
+            ? 'Crosswalks'
+            : DEFAULT_TAB_LABELS[kind];
     }
 
     /** Read a declarative per-tab label override: `-tab-label-<id>`. */
@@ -903,8 +1074,10 @@ export class ContextReference
      * inheritable presentation options. The child owns its own local/remote
      * resolution.
      */
-    private mountChild(child: ComponentInstance, panel: HTMLDivElement): void {
-        const childOptions: ComponentOptions = {
+    private mountChild(part: PanelChild, panel: HTMLDivElement): void {
+        const { child, source } = part;
+        const childOptions: ComponentOptions & Record<string, unknown> = {
+            ...part.options,
             root: this.options.root,
             colorScheme: this.options.colorScheme,
             tooltips: this.options.tooltips,
@@ -913,11 +1086,7 @@ export class ContextReference
             colorMap: this.options.colorMap,
             tooltipConceptProperty: this.options.tooltipConceptProperty,
         };
-        const result = child.init(
-            panel,
-            this.context ?? this.engine,
-            childOptions,
-        );
+        const result = child.init(panel, source, childOptions);
         if (result instanceof Promise) {
             result.catch((err) => {
                 if (this._destroyed) return;
@@ -945,8 +1114,7 @@ export class ContextReference
             button.setAttribute('aria-selected', selected ? 'true' : 'false');
             button.tabIndex = selected ? 0 : -1;
         }
-        for (const { panel } of this.builtins.values()) {
-            const id = panel.id.replace(`${ROOT_CLASS}-panel-`, '');
+        for (const [id, { panel }] of this.builtins) {
             panel.hidden = id !== this.activeTabId;
         }
         for (const node of this.projectedCustomNodes) {
@@ -1068,7 +1236,7 @@ export class ContextReference
  */
 function readGuideSurfaceLabel(
     context: ContextAdapter | null,
-): import('@ezclassify/types').ReferenceSurfaceLabel | undefined {
+): ReferenceSurfaceLabel | undefined {
     const guide = context?.guide;
     if (!guide || typeof guide.listGuideMeta !== 'function') return undefined;
     try {
@@ -1085,11 +1253,95 @@ function readGuideSurfaceLabel(
  */
 function readAccessSurfaceLabel(
     context: ContextAdapter | null,
-): import('@ezclassify/types').ReferenceSurfaceLabel | undefined {
+): ReferenceSurfaceLabel | undefined {
     const access = context?.access as
         | {
-              referenceSurfaceLabel?: import('@ezclassify/types').ReferenceSurfaceLabel;
+              referenceSurfaceLabel?: ReferenceSurfaceLabel;
           }
         | undefined;
     return access?.referenceSurfaceLabel;
+}
+
+// ── Shown Contexts ─────────────────────────────────────────────────────────
+
+/**
+ * Read what the drawer was handed into the Contexts it shows: one Context (or a
+ * bare scheme view) under no key, or each Context of `{ contexts }` under its
+ * key, in the order the host gave them.
+ *
+ * @throws Error when nothing was handed; TypeError when `{ contexts }` is
+ *   malformed
+ */
+function resolveShownContexts(
+    source: ContextReferenceSource | null | undefined,
+): ShownContext[] {
+    if (source && !isEngineSource(source)) {
+        const set = ContextSet.from(source);
+        return [...set.entries()].map(([key, context]) =>
+            shownContext(key, context),
+        );
+    }
+    const engine = resolveSchemeEngine(source, 'ContextReference');
+    const context = resolveContextSource(source);
+    if (context) return [shownContext(null, context)];
+    return [
+        {
+            key: null,
+            context: null,
+            engine,
+            guidePresent: false,
+            accessPresent: false,
+            crosswalks: [],
+        },
+    ];
+}
+
+/** Whether a drawer source is one Context or scheme view, not `{ contexts }`. */
+function isEngineSource(
+    source: ContextReferenceSource,
+): source is ComponentEngineSource {
+    return !('contexts' in source);
+}
+
+/**
+ * What one Context's composition loaded. Presence comes from the resolved
+ * composition when the adapter reports it, never from whether an ops object
+ * exists or whether a policy happens to contain rules. `compositionPresence` is
+ * optional in the contract; without it, the guide and access surfaces decide.
+ */
+function shownContext(
+    key: string | null,
+    context: ContextAdapter,
+): ShownContext {
+    const presence = context.compositionPresence;
+    return {
+        key,
+        context,
+        engine: context.scheme,
+        guidePresent: presence?.guides ?? hasGuides(context),
+        accessPresent: presence?.access ?? Boolean(context.access),
+        crosswalks: [],
+    };
+}
+
+/**
+ * True when the composition actually loaded at least one guide. Reads the
+ * generic, synchronous `listGuideMeta()` inventory, which is populated in both
+ * modes (locally from the loaded guides, remotely from the context description
+ * at connect). This is why a scheme-only remote context (whose client still
+ * exposes a `guide` ops object) shows no guidebook tab: the inventory is empty.
+ * Falls back to bare presence only for a hand-rolled adapter that does not
+ * implement the inventory accessor.
+ */
+function hasGuides(context: ContextAdapter): boolean {
+    const guide = context.guide;
+    if (!guide) return false;
+    if (typeof guide.listGuideMeta === 'function') {
+        try {
+            return guide.listGuideMeta().length > 0;
+        } catch {
+            return false;
+        }
+    }
+    return true;
 }

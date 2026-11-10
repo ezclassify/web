@@ -376,11 +376,21 @@ region with `data-ezclassify-ignore`:
 
 A marked field inside an ignored region is a host error, not a silent skip.
 
-### Guides and access policies
+### Guides, access policies and crosswalks
 
-The `handbook`, `guidebook`, `access-handbook` and `context-reference`
-controllers need only the controller attribute. They read the guides and access
-policy the Context holds.
+The `handbook`, `guidebook`, `access-handbook`, `crosswalk-handbook` and
+`context-reference` controllers need only the controller attribute. They read
+the guides, access policy and crosswalks the Context holds. A Context with
+several crosswalks needs the one to show named:
+
+```html
+<div
+    data-ezclassify-controller="crosswalk-handbook"
+    data-ezclassify-crosswalk-handbook-crosswalk-id="cvss-31-to-40"></div>
+```
+
+The `context-reference` drawer shows every Context the page loaded, each with
+its own handbook tabs, so it never needs `data-ezclassify-context`.
 
 ### Pages you can't edit
 

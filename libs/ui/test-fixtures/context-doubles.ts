@@ -27,9 +27,9 @@ type Operations = object;
 /**
  * A Context holding one scheme and nothing else, around any scheme adapter.
  *
- * It has no guide and no access policy, and the operations that compose
- * artifacts are not available: the UI never calls them, and a spec that does
- * fails loudly instead of reading an answer nobody computed.
+ * It has no guide, no access policy and no crosswalk, and the operations that
+ * compose artifacts are not available: the UI never calls them, and a spec that
+ * does fails loudly instead of reading an answer nobody computed.
  *
  * @param scheme - The scheme adapter the Context exposes as `scheme`
  * @returns A Context whose `scheme` is `scheme` itself
@@ -44,7 +44,7 @@ export function schemeOnlyContext(scheme: unknown): ContextAdapter {
         connected: true,
         scheme: scheme as ContextSchemeEngineAdapter,
         describeSchemes: unavailable('describe its schemes'),
-        describeCrosswalks: unavailable('describe its crosswalks'),
+        describeCrosswalks: () => [],
         audit: unavailable('audit a document'),
         checkContextAccess: unavailable('check access'),
         accessRequirements: unavailable('describe access requirements'),

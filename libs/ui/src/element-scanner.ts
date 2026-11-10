@@ -41,6 +41,7 @@ export const CONTROLLER_NAMES = [
     'handbook',
     'guidebook',
     'access-handbook',
+    'crosswalk-handbook',
     'context-reference',
     'guide-helper',
     'guide-checklist',

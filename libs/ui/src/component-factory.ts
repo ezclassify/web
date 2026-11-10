@@ -24,6 +24,7 @@ import { DualPane } from './components/dual-pane';
 import { Handbook } from './components/handbook';
 import { Guidebook } from './components/guidebook';
 import { AccessHandbook } from './components/access-handbook';
+import { CrosswalkHandbook } from './components/crosswalk-handbook';
 import { ContextReference } from './components/context-reference';
 import { GuideChecklist } from './components/guide-helper';
 import { DecisionFlow } from './components/decision-flow';
@@ -228,6 +229,10 @@ const COMPONENT_REGISTRY: ReadonlyMap<string, ComponentRegistration> = new Map([
     [
         'access-handbook',
         { name: 'AccessHandbook', create: () => new AccessHandbook() },
+    ],
+    [
+        'crosswalk-handbook',
+        { name: 'CrosswalkHandbook', create: () => new CrosswalkHandbook() },
     ],
     [
         'context-reference',

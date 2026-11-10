@@ -171,6 +171,19 @@
     font-size: 1em;
     line-height: 1;
 }
+/* With several Contexts each built-in tab names its Context ahead of its
+ * label, and the first tab of each later Context opens a new group. */
+.ez-context-ref__tab-context {
+    font-size: 0.75em;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--ez-context-ref-tab-text, var(--ez-color-muted, #6b7280));
+}
+.ez-context-ref__tab--context-start {
+    border-left: var(--ez-border-width, 1px) solid
+        var(--ez-context-ref-border, var(--ez-color-border, #d1d5db));
+}
 
 /* ── Panels: built-in and custom alike are direct children of the root. Only
  * the active one is shown; the rest are hidden via the `hidden` attribute, so
@@ -183,6 +196,14 @@
     overflow: auto;
     padding: var(--ez-spacing-sm, 0.5rem);
     box-sizing: border-box;
+}
+/* A panel showing several components (a Context's crosswalks) sets each
+ * apart from the one before it. */
+.ez-context-ref__tabpanel-section + .ez-context-ref__tabpanel-section {
+    margin-top: var(--ez-spacing-md, 0.75rem);
+    padding-top: var(--ez-spacing-md, 0.75rem);
+    border-top: var(--ez-border-width, 1px) solid
+        var(--ez-context-ref-border, var(--ez-color-border, #d1d5db));
 }
 .ez-context-ref__tabpanel[hidden],
 .ez-context-ref > [data-ez-context-ref-panel][hidden] {
