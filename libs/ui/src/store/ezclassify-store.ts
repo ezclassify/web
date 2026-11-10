@@ -624,10 +624,9 @@ export interface EzClassifyStore extends Partial<MarkingEntriesStore> {
      * @param nodeId - A collection, or a whole for its parts rollup (the same
      *   state as {@link getWholeRollup}, under the whole's bucket). Omitted for
      *   the page. An id that is neither has no contributors.
-     * @param bucket - Only this bucket's state, when given.
      * @returns The same object until the level's rollup changes.
      */
-    getAggregate(nodeId?: string, bucket?: BucketKey): EzClassifyAggregate;
+    getAggregate(nodeId?: string): EzClassifyAggregate;
 
     /**
      * Subscribe to a level's rollup: the page when `nodeId` is omitted. Fires

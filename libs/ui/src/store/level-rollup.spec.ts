@@ -12,7 +12,7 @@ import {
     type EzClassifyStoreEngine,
     type EzClassifyStoreProcessResult,
 } from './ezclassify-store';
-import { SOLE_BUCKET, bucketKey, type BucketKey } from './store-shared';
+import { bucketKey, type BucketKey } from './store-shared';
 import { bucketState, levelState } from './page-rollup-harness';
 import { EMPTY_RENDER_ASSESSMENT } from '../engine-result-mock';
 
@@ -139,6 +139,35 @@ describe('page rollup', () => {
         expect(store.getWholeRollup('doc').rendered).toBe('level:high');
         expect(store.getWholeRollup('doc').stale).toBe(true);
         expect(levelState(store).stale).toBe(true);
+    });
+});
+
+describe('whole rollup', () => {
+    it('reads the parts of a whole that holds nothing as parts, never as wholes', async () => {
+        const engine = recordingEngine();
+        const store = new VanillaEzClassifyStore(engine);
+        store.setPartOf('p1', 'doc');
+        await store.publishRendered('p1', 'level:high');
+        await settle();
+
+        const partsCall = engine.calls.find(
+            (call) => call.context !== undefined,
+        );
+        expect(partsCall?.sets).toEqual([['level:high']]);
+        expect(partsCall?.context).toEqual({ role: 'part' });
+
+        // Once the whole holds a value, its parts are read against it.
+        engine.calls.length = 0;
+        await store.publishRendered('doc', 'level:low');
+        await store.publishRendered('p1', 'origin:a');
+        await settle();
+        const against = engine.calls.filter(
+            (call) => call.context !== undefined,
+        );
+        expect(against.at(-1)?.context).toMatchObject({
+            role: 'part',
+            partOf: { rendered: 'level:low' },
+        });
     });
 });
 
@@ -338,7 +367,6 @@ describe('buckets', () => {
         expect(bucketState(store.getAggregate(), cui).rendered).toBe(
             'level:high',
         );
-        expect(store.getAggregate(undefined, cui).byBucket.size).toBe(1);
     });
 
     it('leaves a part of another bucket out of its whole rollup and says so', async () => {
@@ -455,9 +483,6 @@ describe('reading a level', () => {
         await settle();
         expect(store.getAggregate()).toBe(store.getAggregate());
         expect(store.getAggregate('doc')).toBe(store.getAggregate('doc'));
-        expect(store.getAggregate(undefined, SOLE_BUCKET)).toBe(
-            store.getAggregate(undefined, SOLE_BUCKET),
-        );
     });
 
     it('tells a level listener only when its rollup changes', async () => {

@@ -578,11 +578,6 @@ export abstract class BaseEzClassifyStore implements EzClassifyStore {
         LevelId,
         Set<(aggregate: EzClassifyAggregate) => void>
     >();
-    /** One bucket's view of a level, kept so a reader gets a stable object. */
-    private readonly bucketViews = new WeakMap<
-        EzClassifyAggregate,
-        Map<BucketKey, EzClassifyAggregate>
-    >();
     private readonly partOfByMarking = new Map<string, string>();
     /**
      * Observed context provenance is positive evidence of dependence, including
@@ -1391,11 +1386,8 @@ export abstract class BaseEzClassifyStore implements EzClassifyStore {
         };
     }
 
-    getAggregate(nodeId?: string, bucket?: BucketKey): EzClassifyAggregate {
-        const aggregate = this.ensureLevelCell(nodeId ?? null).get();
-        return bucket === undefined
-            ? aggregate
-            : this.bucketView(aggregate, bucket);
+    getAggregate(nodeId?: string): EzClassifyAggregate {
+        return this.ensureLevelCell(nodeId ?? null).get();
     }
 
     subscribeAggregate(
@@ -2511,27 +2503,6 @@ export abstract class BaseEzClassifyStore implements EzClassifyStore {
         return cell;
     }
 
-    /** One bucket of a level, the same object while the level is unchanged. */
-    private bucketView(
-        aggregate: EzClassifyAggregate,
-        bucket: BucketKey,
-    ): EzClassifyAggregate {
-        let views = this.bucketViews.get(aggregate);
-        if (!views) {
-            views = new Map();
-            this.bucketViews.set(aggregate, views);
-        }
-        let view = views.get(bucket);
-        if (!view) {
-            const state = aggregate.byBucket.get(bucket);
-            view = state
-                ? { byBucket: new Map([[bucket, state]]) }
-                : EMPTY_EZCLASSIFY_AGGREGATE;
-            views.set(bucket, view);
-        }
-        return view;
-    }
-
     /** Commit a level's rollup and tell its listeners. */
     private writeLevel(level: LevelId, aggregate: EzClassifyAggregate): void {
         const cell = this.ensureLevelCell(level);
@@ -2806,7 +2777,10 @@ export abstract class BaseEzClassifyStore implements EzClassifyStore {
             : this.rollupResult(
                   this.resolveBucket(bucket),
                   sets,
-                  this.wholeContext(wholeId),
+                  // Parts of a whole that holds nothing yet are still parts:
+                  // read by the part rules, as each one is on its own (see
+                  // wholeContextOf), never as wholes.
+                  this.wholeContext(wholeId) ?? { role: 'part' },
               ));
         if (
             revision !== this.wholeRollupRevisions.get(wholeId) ||
