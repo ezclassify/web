@@ -10,7 +10,6 @@
 
 export {
     provideEzClassify,
-    EZCLASSIFY_CONTEXT,
     EZCLASSIFY_OPTIONS,
 } from './lib/provide-ezclassify';
 export type {

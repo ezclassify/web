@@ -94,7 +94,11 @@ export function useEzClassifyState(id: string): Readonly<Ref<EzClassifyState>> {
 }
 
 export { createEzClassify } from './plugin';
-export type { EzClassifyContexts, EzClassifyOptions } from './plugin';
+export type {
+    EzClassifyContexts,
+    EzClassifyOptions,
+    EzClassifyProvision,
+} from './plugin';
 export { EzClassify, useEzClassifyUI } from './EzClassify';
 export { bindEzClassifyToReactiveDoc } from './composables/bindEzClassifyToReactiveDoc';
 export type { VueReactiveDoc } from './composables/bindEzClassifyToReactiveDoc';

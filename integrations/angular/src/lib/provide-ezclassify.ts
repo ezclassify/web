@@ -34,8 +34,9 @@ import type {
 export type EzClassifyOptions = EzClassifyPresentationOptions;
 
 /**
- * The connected Context that marking roots and labels in this injector use.
- * Inject it to call the Context directly, for example to explain a marking.
+ * The one provided Context, for the labels and roots that need a single scheme;
+ * unset under `{ contexts }`. Internal to the package: the application already
+ * holds the Context it provided.
  */
 export const EZCLASSIFY_CONTEXT = new InjectionToken<ContextAdapter>(
     'EZCLASSIFY_CONTEXT',
@@ -88,8 +89,7 @@ export type EzClassifyProvision = (
 /**
  * Name the connected Context, or several by key, and optional presentation
  * defaults, for every `ezClassify` root and `<ez-marking-label>` under this
- * injector. {@link EZCLASSIFY_CONTEXT} is provided only for one Context: with
- * several, no single Context speaks for the page.
+ * injector.
  *
  * @param provision - `{ context }` or `{ contexts }`, and optional presentation
  *   defaults.

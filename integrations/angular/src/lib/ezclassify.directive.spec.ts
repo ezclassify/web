@@ -1,12 +1,13 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { TestBed, type ComponentFixture } from '@angular/core/testing';
-import { Component } from '@angular/core';
+import { Component, ErrorHandler } from '@angular/core';
 import { Context } from '@ezclassify/engine';
 import {
     EzClassifyDirective,
     injectEzClassifyUI,
 } from './ezclassify.directive';
 import { provideEzClassify } from './provide-ezclassify';
+import { AngularSignalStore } from './angular-signal-store';
 
 const MINIMAL_SCHEME = {
     scheme: {
@@ -243,5 +244,47 @@ describe('EzClassifyDirective: no Context', () => {
         expect(() => fixture.detectChanges(false)).toThrow(
             /found no Context.*provideEzClassify\(\{ context \}\)/,
         );
+    });
+});
+
+@Component({
+    selector: 'test-destroyed-store-root',
+    standalone: true,
+    imports: [EzClassifyDirective],
+    template: `<form [ezClassifyStore]="store" ezClassify></form>`,
+})
+class DestroyedStoreRootComponent {
+    readonly store = (() => {
+        const store = new AngularSignalStore(
+            Context.fromComponents({ scheme: MINIMAL_SCHEME }).scheme,
+        );
+        store.destroy();
+        return store;
+    })();
+}
+
+describe('EzClassifyDirective: a runtime that cannot start', () => {
+    it("reports it to the application's ErrorHandler", async () => {
+        const handled: unknown[] = [];
+        await TestBed.configureTestingModule({
+            imports: [DestroyedStoreRootComponent],
+            providers: [
+                provideEzClassify({
+                    context: Context.fromComponents({ scheme: MINIMAL_SCHEME }),
+                }),
+                {
+                    provide: ErrorHandler,
+                    useValue: { handleError: (e: unknown) => handled.push(e) },
+                },
+            ],
+        }).compileComponents();
+
+        const fixture = TestBed.createComponent(DestroyedStoreRootComponent);
+        fixture.detectChanges(false);
+        await Promise.resolve();
+        await Promise.resolve();
+        expect(handled).toHaveLength(1);
+        expect(String(handled[0])).toMatch(/store has been destroyed/);
+        expect(rootDirective(fixture).getStore()).not.toBeNull();
     });
 });

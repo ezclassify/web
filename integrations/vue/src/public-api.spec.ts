@@ -27,7 +27,7 @@ import {
     useEzClassifyUI,
     VueRefStore,
     VueRefStoreKey,
-    type EzClassifyOptions,
+    type EzClassifyProvision,
     type UseEzClassifyFacetReturn,
 } from '@ezclassify/vue';
 import * as entry from '@ezclassify/vue';
@@ -98,7 +98,7 @@ afterEach(() => {
 /** Mount `child` inside one `<EzClassify>` root of an app using the plugin. */
 function mountInRoot(
     child: Component,
-    options: EzClassifyOptions = { context: buildContext() },
+    options: EzClassifyProvision = { context: buildContext() },
     rootProps: Record<string, unknown> = {},
 ): VueWrapper {
     const App = defineComponent({
@@ -131,7 +131,7 @@ describe('public API: entry points', () => {
 describe('createEzClassify', () => {
     it('refuses options naming neither one Context nor several', () => {
         expect(() =>
-            createEzClassify({} as unknown as EzClassifyOptions),
+            createEzClassify({} as unknown as EzClassifyProvision),
         ).toThrow(/exactly one of \{ context \} or \{ contexts \}/);
     });
 
@@ -141,7 +141,7 @@ describe('createEzClassify', () => {
             createEzClassify({
                 context,
                 contexts: { main: context },
-            } as unknown as EzClassifyOptions),
+            } as unknown as EzClassifyProvision),
         ).toThrow(/exactly one of/);
     });
 

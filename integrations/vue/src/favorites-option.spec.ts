@@ -1,5 +1,6 @@
 /**
- * `createEzClassify({ favorites })` reaches every scanner-mounted field.
+ * `createEzClassify({ options: { favorites } })` reaches every scanner-mounted
+ * field.
  *
  * `docs/attributes.md` in `@ezclassify/ui` says framework integrations accept
  * and forward the same `favorites` option as the vanilla `EzClassifyUI`
@@ -95,7 +96,9 @@ function mountTagsField(favorites?: FavoritesConfig): HTMLDivElement {
     });
     wrapper = mount(App, {
         attachTo: root,
-        global: { plugins: [createEzClassify({ context, favorites })] },
+        global: {
+            plugins: [createEzClassify({ context, options: { favorites } })],
+        },
     });
     return root;
 }
@@ -107,7 +110,7 @@ async function flush(): Promise<void> {
     }
 }
 
-describe('createEzClassify({ favorites })', () => {
+describe('createEzClassify({ options: { favorites } })', () => {
     it('forwards favorites to every root: the ★ button renders on a scanner-mounted field', async () => {
         const mountedRoot = mountTagsField(noopFavorites);
         await flush();

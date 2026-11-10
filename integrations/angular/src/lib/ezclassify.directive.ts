@@ -1,6 +1,7 @@
 import {
     Directive,
     ElementRef,
+    ErrorHandler,
     Input,
     OnDestroy,
     OnChanges,
@@ -131,6 +132,7 @@ export class EzClassifyDirective implements OnInit, OnChanges, OnDestroy {
     @Input() ezClassifyStore?: EzClassifyStore | null;
 
     private readonly el = inject(ElementRef<HTMLElement>);
+    private readonly errors = inject(ErrorHandler);
     private readonly context = inject(EZCLASSIFY_CONTEXT, { optional: true });
     private readonly contexts = inject(EZCLASSIFY_CONTEXTS, { optional: true });
     private readonly providedOptions = inject(EZCLASSIFY_OPTIONS, {
@@ -232,16 +234,24 @@ export class EzClassifyDirective implements OnInit, OnChanges, OnDestroy {
         this.store.set(store);
         Promise.resolve().then(() => {
             if (this.destroyed || token !== this.initToken) return;
-            this.forms.set(
-                new EzClassifyUI(source, {
-                    root: this.el.nativeElement,
-                    format: opts.format,
-                    colorMap: opts.colorMap,
-                    tooltipConceptProperty: opts.tooltipConceptProperty,
-                    favorites: opts.favorites,
-                    store,
-                }),
-            );
+            // A runtime that cannot start leaves the document without its
+            // marking controls. It goes to the application's ErrorHandler, the
+            // way any other failed Angular step does, rather than out of a
+            // microtask as an unhandled rejection.
+            try {
+                this.forms.set(
+                    new EzClassifyUI(source, {
+                        root: this.el.nativeElement,
+                        format: opts.format,
+                        colorMap: opts.colorMap,
+                        tooltipConceptProperty: opts.tooltipConceptProperty,
+                        favorites: opts.favorites,
+                        store,
+                    }),
+                );
+            } catch (error) {
+                this.errors.handleError(error);
+            }
         });
     }
 

@@ -247,6 +247,12 @@ that contextual comparison and displays its errors and proposed fixes.
 
 ## Presentation
 
+Presentation defaults go under `options`:
+
+```ts
+app.use(createEzClassify({ context: client, options: { colorMap } }));
+```
+
 Omit `format` to use the Context's whole and part defaults. A control may use
 another Context-defined format through `data-ezclassify-format`. Options also
 choose colors, tooltips and favorites. See the

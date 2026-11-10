@@ -50,22 +50,29 @@ export type EzClassifyContexts =
           context?: never;
       };
 
-/** What `createEzClassify` takes: the Contexts plus presentation defaults. */
-export type EzClassifyOptions = EzClassifyContexts &
-    EzClassifyPresentationOptions;
+/**
+ * Presentation defaults every root applies: `format`, `colorMap`,
+ * `tooltipConceptProperty` and `favorites`.
+ */
+export type EzClassifyOptions = EzClassifyPresentationOptions;
+
+/** What `createEzClassify` takes: the Contexts, and presentation defaults. */
+export type EzClassifyProvision = EzClassifyContexts & {
+    /** Presentation defaults for every root. */
+    options?: EzClassifyOptions;
+};
 
 /**
  * Create the plugin that configures EzClassify for a Vue application.
  *
- * @param options - `{ context }` for one Context or `{ contexts }` for several,
- *   plus presentation defaults (`format`, `colorMap`, `tooltipConceptProperty`,
- *   `favorites`) applied to every root.
+ * @param provision - `{ context }` for one Context or `{ contexts }` for
+ *   several, and optional presentation `options` applied to every root.
  * @returns A plugin for `app.use()`.
  * @throws When neither or both of `context` and `contexts` are given, or
  *   `contexts` is empty.
  */
-export function createEzClassify(options: EzClassifyOptions): Plugin {
-    const config = resolveConfig(options);
+export function createEzClassify(provision: EzClassifyProvision): Plugin {
+    const config = resolveConfig(provision);
     return {
         install(app: App) {
             app.provide(EzClassifyConfigKey, config);
@@ -74,8 +81,9 @@ export function createEzClassify(options: EzClassifyOptions): Plugin {
     };
 }
 
-function resolveConfig(options: EzClassifyOptions): EzClassifyConfig {
-    const { context, contexts, ...presentation } = options ?? {};
+function resolveConfig(provision: EzClassifyProvision): EzClassifyConfig {
+    const { context, contexts } = provision ?? {};
+    const presentation: EzClassifyOptions = provision?.options ?? {};
     if ((context === undefined) === (contexts === undefined)) {
         throw new Error(
             '[ezclassify/vue] createEzClassify() takes exactly one of { context } or { contexts }',
