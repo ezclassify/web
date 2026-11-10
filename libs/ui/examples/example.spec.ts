@@ -402,47 +402,44 @@ describe('5. Rollup: EzClassifyUI multi-field', () => {
         root.remove();
     });
 
-    it('creates a hidden rollup field on construction', () => {
-        const engine = Context.fromComponents({ scheme: PROFILE })
-            .scheme as LocalSchemeEngineAdapter;
-        forms = new EzClassifyUI(engine, { root });
-        expect(root.querySelector('#ezclassify-rollup')).toBeTruthy();
+    it('adds no input the host did not place', () => {
+        forms = new EzClassifyUI(Context.fromComponents({ scheme: PROFILE }), {
+            root,
+        });
+        expect(root.querySelector('input')).toBeNull();
+    });
+
+    it('shows the page rollup in a hidden output the host places', async () => {
+        root.innerHTML = `
+            <input id="a" data-ezclassify-marking value="LOW">
+            <input id="b" data-ezclassify-marking value="HIGH/CTRL-B">
+            <input type="hidden" name="pageMarking" data-ezclassify-aggregate>`;
+        const output = root.querySelector<HTMLInputElement>(
+            'input[name="pageMarking"]',
+        )!;
+        forms = new EzClassifyUI(Context.fromComponents({ scheme: PROFILE }), {
+            root,
+        });
+        await expect
+            .poll(async () => {
+                await forms!.recalculate();
+                return output.value;
+            })
+            .toBe('HIGH/CTRL-B');
         expect(
-            (root.querySelector('#ezclassify-rollup') as HTMLInputElement).type,
-        ).toBe('hidden');
+            forms.store.getAggregate().byBucket.values().next().value?.rendered,
+        ).toBe('HIGH/CTRL-B');
     });
 
-    it('recalculate() returns empty string when no fields are registered', () => {
-        const engine = Context.fromComponents({ scheme: PROFILE })
-            .scheme as LocalSchemeEngineAdapter;
-        forms = new EzClassifyUI(engine, { root });
-        const rollup = forms.recalculate();
-        expect(typeof rollup).toBe('string');
-    });
-
-    it('getRollup() returns same value as recalculate() without extra calculation', () => {
-        const engine = Context.fromComponents({ scheme: PROFILE })
-            .scheme as LocalSchemeEngineAdapter;
-        forms = new EzClassifyUI(engine, { root });
-        const a = forms.recalculate();
-        const b = forms.getRollup();
-        expect(a).toBe(b);
-    });
-
-    it('destroy() removes the rollup sink it created', () => {
-        const engine = Context.fromComponents({ scheme: PROFILE })
-            .scheme as LocalSchemeEngineAdapter;
-        forms = new EzClassifyUI(engine, { root });
+    it('destroy() leaves the output the host placed in the page', () => {
+        root.innerHTML =
+            '<input type="hidden" name="pageMarking" data-ezclassify-aggregate>';
+        forms = new EzClassifyUI(Context.fromComponents({ scheme: PROFILE }), {
+            root,
+        });
         forms.destroy();
-        expect(root.querySelector('#ezclassify-rollup')).toBeNull();
+        expect(root.querySelector('input[name="pageMarking"]')).toBeTruthy();
         forms = null;
-    });
-
-    it('supports custom rollupId', () => {
-        const engine = Context.fromComponents({ scheme: PROFILE })
-            .scheme as LocalSchemeEngineAdapter;
-        forms = new EzClassifyUI(engine, { root, rollupId: 'my-banner-field' });
-        expect(root.querySelector('#my-banner-field')).toBeTruthy();
     });
 });
 
@@ -502,18 +499,18 @@ describe('7. Serialization: captureFormState / restoreFormState', () => {
     });
 
     it('captureFormState returns an object with a fields array', async () => {
-        const engine = Context.fromComponents({ scheme: PROFILE })
-            .scheme as LocalSchemeEngineAdapter;
-        forms = new EzClassifyUI(engine, { root });
+        forms = new EzClassifyUI(Context.fromComponents({ scheme: PROFILE }), {
+            root,
+        });
         const state = await captureFormState(forms);
         expect(state).toHaveProperty('fields');
         expect(Array.isArray(state.fields)).toBe(true);
     });
 
     it('exportFormState returns valid JSON', async () => {
-        const engine = Context.fromComponents({ scheme: PROFILE })
-            .scheme as LocalSchemeEngineAdapter;
-        forms = new EzClassifyUI(engine, { root });
+        forms = new EzClassifyUI(Context.fromComponents({ scheme: PROFILE }), {
+            root,
+        });
         const json = await exportFormState(forms);
         expect(() => JSON.parse(json)).not.toThrow();
         const parsed = JSON.parse(json);
@@ -521,17 +518,17 @@ describe('7. Serialization: captureFormState / restoreFormState', () => {
     });
 
     it('importFormState round-trips without throwing', async () => {
-        const engine = Context.fromComponents({ scheme: PROFILE })
-            .scheme as LocalSchemeEngineAdapter;
-        forms = new EzClassifyUI(engine, { root });
+        forms = new EzClassifyUI(Context.fromComponents({ scheme: PROFILE }), {
+            root,
+        });
         const json = await exportFormState(forms);
         expect(() => importFormState(forms!, json)).not.toThrow();
     });
 
     it('restoreFormState with an empty state does not throw', () => {
-        const engine = Context.fromComponents({ scheme: PROFILE })
-            .scheme as LocalSchemeEngineAdapter;
-        forms = new EzClassifyUI(engine, { root });
+        forms = new EzClassifyUI(Context.fromComponents({ scheme: PROFILE }), {
+            root,
+        });
         expect(() =>
             restoreFormState(forms!, {
                 version: 1,

@@ -398,12 +398,10 @@ describe('HiddenAssertionField', () => {
             scheme: createProfile(),
         });
         root.innerHTML = `
-      <div id="hidden-a" data-ezclassify-controller="hidden" data-ezclassify-format="portion"></div>
-      <input type="hidden" id="rollup">
+      <div id="hidden-a" data-ezclassify-controller="hidden" data-ezclassify-marking data-ezclassify-format="portion"></div>
+      <input type="hidden" id="rollup" data-ezclassify-aggregate>
     `;
-        const forms = new EzClassifyUI(asContext(engine as never), {
-            rollupId: 'rollup',
-        });
+        const forms = new EzClassifyUI(asContext(engine as never));
         activeForms.push(forms);
         await wait(30);
 
@@ -537,11 +535,9 @@ describe('MarkedTextArea', () => {
         const engine = createTestEngine();
         root.innerHTML = `
       <textarea id="body" data-ezclassify-controller="marked-textarea" data-ezclassify-format="portion">(U) Para one.\n\n(S) Para two.</textarea>
-      <input type="hidden" id="rollup">
+      <input type="hidden" id="rollup" data-ezclassify-aggregate>
     `;
-        const forms = new EzClassifyUI(asContext(engine as never), {
-            rollupId: 'rollup',
-        });
+        const forms = new EzClassifyUI(asContext(engine as never));
         activeForms.push(forms);
         await wait(50);
 
@@ -570,7 +566,7 @@ describe('MarkedTextArea', () => {
         const engine = createTestEngine();
         root.innerHTML = `
       <textarea id="body" data-ezclassify-controller="marked-textarea" data-ezclassify-format="portion">(U) Para one.\n\n(S) Para two.</textarea>
-      <input type="hidden" id="rollup">
+      <input type="hidden" id="rollup" data-ezclassify-aggregate>
     `;
         // Attach before construction so the initial scan's emit is captured.
         const details: Array<{
@@ -580,9 +576,7 @@ describe('MarkedTextArea', () => {
             details.push((e as CustomEvent).detail as (typeof details)[number]);
         document.addEventListener('ezclassify:marked-change', onMarkedChange);
         try {
-            const forms = new EzClassifyUI(asContext(engine as never), {
-                rollupId: 'rollup',
-            });
+            const forms = new EzClassifyUI(asContext(engine as never));
             activeForms.push(forms);
 
             await waitFor(() => details.length > 0, 1000);
@@ -606,11 +600,9 @@ describe('MarkedTextArea', () => {
         const engine = createTestEngine();
         root.innerHTML = `
       <textarea id="body" data-ezclassify-controller="marked-textarea" data-ezclassify-format="portion">(U) Para one.</textarea>
-      <input type="hidden" id="rollup">
+      <input type="hidden" id="rollup" data-ezclassify-aggregate>
     `;
-        const forms = new EzClassifyUI(asContext(engine as never), {
-            rollupId: 'rollup',
-        });
+        const forms = new EzClassifyUI(asContext(engine as never));
         activeForms.push(forms);
         await wait(50);
 
@@ -736,11 +728,9 @@ describe('MarkedTextArea', () => {
         const engine = createTestEngine();
         root.innerHTML = `
       <textarea id="body" data-ezclassify-controller="marked-textarea" data-ezclassify-format="portion">(U) Just one paragraph.</textarea>
-      <input type="hidden" id="rollup">
+      <input type="hidden" id="rollup" data-ezclassify-aggregate>
     `;
-        const forms = new EzClassifyUI(asContext(engine as never), {
-            rollupId: 'rollup',
-        });
+        const forms = new EzClassifyUI(asContext(engine as never));
         activeForms.push(forms);
         await wait(30);
 

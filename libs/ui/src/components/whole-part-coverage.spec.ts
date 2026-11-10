@@ -223,17 +223,18 @@ describe('a whole field owns its coverage finding', () => {
         expect(forms!.store.get('doc').valid).toBe(true);
     });
 
-    it('judges the parts the rollup compares, a plain field with no marking id included', async () => {
-        // A plain input that names the whole is a part the rollup compares
-        // with it, though it holds no marking of its own in the store.
+    it('judges the parts the rollup compares, a plain marking input included', async () => {
+        // A plain marking input that names the whole is a part the rollup
+        // compares with it.
         const host = await mount(
             FIELD +
-                '<input type="text" data-ezclassify-part-of="doc" value="RESTRICTED" />',
+                '<input type="text" data-ezclassify-marking data-ezclassify-part-of="doc" value="RESTRICTED" />',
             [],
         );
         await component(host).setValue('INTERNAL//FINANCIAL INFORMATION');
         await wait(150);
-        expect(partsSent()).toContainEqual(['RESTRICTED']);
+        // The store writes a part in the scheme's part format.
+        expect(partsSent()).toContainEqual(['R']);
         expect(fixButton('Replace INTERNAL with RESTRICTED')).toBeDefined();
     });
 

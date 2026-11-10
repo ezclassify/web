@@ -15,6 +15,7 @@ import {
     press,
     typeText,
 } from './components/composer/composer-harness';
+import { asContext } from '../test-fixtures/as-context';
 
 const wait = (ms = 150) => new Promise((r) => setTimeout(r, ms));
 
@@ -87,7 +88,7 @@ describe('plain inputs bound to a marking on that scheme', () => {
             <input id="plain" data-ezclassify-bound-to="doc" />`;
         document.body.appendChild(root);
         const engine = createEngine();
-        forms = new EzClassifyUI(engine as never, { root });
+        forms = new EzClassifyUI(asContext(engine as never), { root });
         await wait();
         return {
             engine,
@@ -196,7 +197,7 @@ describe('a marked field that names a bare view on that scheme', () => {
                       data-ezclassify-format="full" value="(CONF // PARTNERS) Report">`;
         document.body.appendChild(root);
 
-        forms = new EzClassifyUI(engine as never, { root });
+        forms = new EzClassifyUI(asContext(engine as never), { root });
         await wait();
 
         // The scheme marks its default surface on its scope list and names no
@@ -230,7 +231,7 @@ describe('fields that show a part on that scheme and name no format', () => {
             ${fields}`;
         document.body.appendChild(root);
         const engine = createEngine();
-        forms = new EzClassifyUI(engine as never, { root });
+        forms = new EzClassifyUI(asContext(engine as never), { root });
         await wait();
         return {
             engine,
@@ -310,7 +311,9 @@ describe('the needed strip of a field that writes one surface', () => {
             <label for="overall">Overall</label>
             <textarea id="overall" data-ezclassify-controller="marking"></textarea>`;
         document.body.appendChild(root);
-        forms = new EzClassifyUI(retentionRequired() as never, { root });
+        forms = new EzClassifyUI(asContext(retentionRequired() as never), {
+            root,
+        });
         await wait();
         const host = root.querySelector<HTMLTextAreaElement>('#overall')!;
 

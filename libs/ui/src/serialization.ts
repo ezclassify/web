@@ -2,6 +2,7 @@ import type { Assertion } from '@ezclassify/types';
 import { EzClassifyUI } from './ezclassify-ui';
 import { getFormat } from './format-resolver';
 import { reportPublishFailure } from './store/publish-failure';
+import { SOLE_BUCKET } from './store/store-shared';
 
 /** Serialized shape version. Bump when the field shape changes incompatibly. */
 const FORM_STATE_VERSION = 1;
@@ -33,6 +34,7 @@ export interface FormState {
         assertions: Assertion[];
         valid: boolean;
     }>;
+    /** The page's rollup as the store last computed it, for readable diffs. */
     rollup: string;
     schemeId: string;
     schemeVersion: string;
@@ -108,7 +110,9 @@ export async function captureFormState(
         fields.push({ id, value, conceptIds, assertions, valid });
     }
 
-    const rollup = forms.getRollup();
+    const rollup = store
+        ? (store.getAggregate().byBucket.get(SOLE_BUCKET)?.rendered ?? '')
+        : '';
 
     return {
         version: FORM_STATE_VERSION,
@@ -166,7 +170,7 @@ export function restoreFormState(forms: EzClassifyUI, state: FormState): void {
         field.dispatchEvent(new Event('blur', { bubbles: true }));
     }
 
-    forms.recalculate();
+    void forms.recalculate();
 }
 
 /** Serialize the current form state to a pretty-printed JSON string. */

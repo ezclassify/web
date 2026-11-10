@@ -6,6 +6,7 @@ import {
     importFormState,
     FormState,
 } from './serialization';
+import { SOLE_BUCKET } from './store/store-shared';
 
 function createMockForms(
     options: {
@@ -61,7 +62,16 @@ function createMockForms(
         engine,
         fields: fieldElements,
         defaultFormat,
-        getRollup: vi.fn().mockReturnValue('rollup-value'),
+        store: {
+            // A marking the store holds nothing for reads as the empty state.
+            get: () => ({ rendered: '', assertions: [], valid: true }),
+            publishAssertions: vi.fn(() => Promise.resolve()),
+            getAggregate: () => ({
+                byBucket: new Map([
+                    [SOLE_BUCKET, { rendered: 'rollup-value' }],
+                ]),
+            }),
+        },
         recalculate: vi.fn(),
     };
 

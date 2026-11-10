@@ -50,7 +50,8 @@ import {
     type ContextSchemeDescriptor,
     type ContextSchemeEngineAdapter,
 } from '@ezclassify/types';
-import { bucketKey, type BucketKey } from './store/store-shared';
+import { bucketKey, bucketParts, type BucketKey } from './store/store-shared';
+import type { EzClassifyStoreBuckets } from './store/ezclassify-store';
 
 export { bucketKey, bucketParts, type BucketKey } from './store/store-shared';
 
@@ -437,6 +438,52 @@ export function schemeEngineOf(
         );
     }
     return resolved.context.scheme;
+}
+
+/**
+ * The buckets of a store over several Contexts, each read by its Context's
+ * scheme. A framework root that builds its own store for `{ contexts }` hands
+ * it this, so the store reads every bucket the way the runtime resolves it.
+ *
+ * There is no default bucket: a marking markup assigns to no Context is refused
+ * rather than read by whichever Context comes first.
+ *
+ * @param source - The Contexts by the key markup names them with
+ * @param options - `format`: the format whole markings are written in, in every
+ *   Context; omitted, each bucket takes its scheme's default
+ * @returns The store's bucket resolver
+ * @throws TypeError when `source` is not a map of Contexts
+ */
+export function contextStoreBuckets(
+    source: EzClassifyContextMap,
+    options?: { format?: string },
+): EzClassifyStoreBuckets {
+    const set = ContextSet.from(source);
+    const format = options?.format;
+    return {
+        resolve: (bucket) => {
+            const { contextKey, schemeSelector } = bucketParts(bucket);
+            const context = set.get(contextKey);
+            if (!context) {
+                throw new ContextResolutionError(
+                    'context-unresolved',
+                    `No Context '${contextKey}' among the Contexts this store reads.`,
+                    null,
+                );
+            }
+            const engine = schemeEngineOf({
+                contextKey,
+                context,
+                schemeSelector,
+                primary: schemeSelector === PRIMARY_SCHEME_SELECTOR,
+                bucket,
+            });
+            return {
+                engine,
+                format: format ?? engine.getSchemeMeta().defaultRenderFormat,
+            };
+        },
+    };
 }
 
 /** The primary scheme of a Context, resolved. */

@@ -3,6 +3,7 @@ import { EzClassifyUI } from './ezclassify-ui';
 import { loadMultiScopeRegression } from '../test-fixtures/load-multi-scope-regression';
 import type { MarkedTextArea } from './components/marked-text-area';
 import type { Assertion } from '@ezclassify/types';
+import { asContext } from '../test-fixtures/as-context';
 
 let ui: EzClassifyUI | undefined;
 afterEach(() => {
@@ -23,7 +24,7 @@ async function mount(
     textarea.value = text;
     const engine = loadMultiScopeRegression();
     configure?.(engine);
-    ui = new EzClassifyUI(engine, {
+    ui = new EzClassifyUI(asContext(engine), {
         root: document.querySelector<HTMLElement>('#root')!,
     });
     await flush();
@@ -322,9 +323,12 @@ describe('MarkedTextArea portions of a whole over an asynchronous engine', () =>
         root: HTMLElement,
         refuse?: (method: string, args: unknown[]) => boolean,
     ) {
-        ui = new EzClassifyUI(overTheWire(loadMultiScopeRegression(), refuse), {
-            root,
-        });
+        ui = new EzClassifyUI(
+            asContext(overTheWire(loadMultiScopeRegression(), refuse)),
+            {
+                root,
+            },
+        );
     }
     function textareaPartOfDocument(): HTMLTextAreaElement {
         const textarea = document.createElement('textarea');

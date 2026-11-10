@@ -24,6 +24,8 @@ import { Context } from '@ezclassify/engine';
 import { EzClassifyUI } from './ezclassify-ui';
 import { MarkedTextArea } from './components/marked-text-area';
 import { MarkedInput } from './components/marked-input';
+import { asContext } from '../test-fixtures/as-context';
+import { levelState } from './store/page-rollup-harness';
 
 function wait(ms = 30): Promise<void> {
     return new Promise((r) => setTimeout(r, ms));
@@ -127,7 +129,7 @@ afterEach(() => {
 describe('marked host added after mount enhances once, no observer loop', () => {
     it('enhances a marked-input added after mount exactly once', async () => {
         const engine = createMarkedEngine();
-        const forms = new EzClassifyUI(engine as never, { root });
+        const forms = new EzClassifyUI(asContext(engine as never), { root });
         activeForms.push(forms);
         await wait(60);
 
@@ -154,7 +156,7 @@ describe('marked host added after mount enhances once, no observer loop', () => 
 
     it('enhances a marked-textarea added after mount exactly once', async () => {
         const engine = createMarkedEngine();
-        const forms = new EzClassifyUI(engine as never, { root });
+        const forms = new EzClassifyUI(asContext(engine as never), { root });
         activeForms.push(forms);
         await wait(60);
 
@@ -192,7 +194,7 @@ describe('marked-textarea keeps every keystroke, popup does not steal', () => {
     it('typing ahead of a marking does not pop the inline editor mid-keystroke', async () => {
         const engine = createMarkedEngine();
         root.innerHTML = `<textarea id="body" data-ezclassify-controller="marked-textarea">(S) hello</textarea>`;
-        const forms = new EzClassifyUI(engine as never, { root });
+        const forms = new EzClassifyUI(asContext(engine as never), { root });
         activeForms.push(forms);
         // Let the initial scan settle so the "(S)" segment exists.
         await wait(400);
@@ -229,7 +231,7 @@ describe('marked-textarea keeps every keystroke, popup does not steal', () => {
         // move into a marking (segments fresh) still opens it.
         const engine = createMarkedEngine();
         root.innerHTML = `<textarea id="body" data-ezclassify-controller="marked-textarea">(S) hello</textarea>`;
-        const forms = new EzClassifyUI(engine as never, { root });
+        const forms = new EzClassifyUI(asContext(engine as never), { root });
         activeForms.push(forms);
         await wait(400);
 
@@ -258,7 +260,7 @@ describe('MarkedInput: a long value wraps instead of scrolling', () => {
         // the source CSS, and that scrollLeft is never written.
         const engine = createMarkedEngine();
         root.innerHTML = `<input type="text" id="mi" data-ezclassify-controller="marked-input" value="(U) a very long title that overflows the field width">`;
-        const forms = new EzClassifyUI(engine as never, { root });
+        const forms = new EzClassifyUI(asContext(engine as never), { root });
         activeForms.push(forms);
         await wait(80);
 
@@ -298,14 +300,12 @@ describe('MarkedInput: corrupted mark surfaces as invalid, never a silent downgr
     it('flags a mark with an unrecognized token and keeps the prior published state', async () => {
         const engine = createMarkedEngine();
         root.innerHTML = `<input type="text" id="mi" data-ezclassify-controller="marked-input" value="(S) classified title">`;
-        const forms = new EzClassifyUI(engine as never, { root });
+        const forms = new EzClassifyUI(asContext(engine as never), { root });
         activeForms.push(forms);
         await wait(80);
 
         expect(
-            forms.store
-                .getAggregate()
-                .assertions.some((a) => a.conceptId === 'S'),
+            levelState(forms.store).assertions.some((a) => a.conceptId === 'S'),
         ).toBe(true);
 
         // A keystroke lands inside the token: "(Sx)". The engine parses this
@@ -326,16 +326,14 @@ describe('MarkedInput: corrupted mark surfaces as invalid, never a silent downgr
         expect(chip?.getAttribute('title')).toMatch(/"sx"/i);
         // ... and the published state did NOT silently downgrade.
         expect(
-            forms.store
-                .getAggregate()
-                .assertions.some((a) => a.conceptId === 'S'),
+            levelState(forms.store).assertions.some((a) => a.conceptId === 'S'),
         ).toBe(true);
     });
 
     it('a valid mark renders without the invalid class', async () => {
         const engine = createMarkedEngine();
         root.innerHTML = `<input type="text" id="mi" data-ezclassify-controller="marked-input" value="(U) memo">`;
-        const forms = new EzClassifyUI(engine as never, { root });
+        const forms = new EzClassifyUI(asContext(engine as never), { root });
         activeForms.push(forms);
         await wait(80);
 
@@ -351,7 +349,7 @@ describe('MarkedInput: text selection survives and is visible', () => {
     it('select-all is not collapsed and does not force-open the picker', async () => {
         const engine = createMarkedEngine();
         root.innerHTML = `<input type="text" id="mi" data-ezclassify-controller="marked-input" value="(U) hello world">`;
-        const forms = new EzClassifyUI(engine as never, { root });
+        const forms = new EzClassifyUI(asContext(engine as never), { root });
         activeForms.push(forms);
         await wait(80);
 
@@ -382,7 +380,7 @@ describe('MarkedInput: text selection survives and is visible', () => {
     it('a collapsed caret inside the chip still opens the picker', async () => {
         const engine = createMarkedEngine();
         root.innerHTML = `<input type="text" id="mi" data-ezclassify-controller="marked-input" value="(U) hello">`;
-        const forms = new EzClassifyUI(engine as never, { root });
+        const forms = new EzClassifyUI(asContext(engine as never), { root });
         activeForms.push(forms);
         await wait(80);
 
@@ -407,7 +405,7 @@ describe('MarkedInput: printable keystroke inside the mark routes to the picker'
     it('prevents the raw edit and opens the picker instead', async () => {
         const engine = createMarkedEngine();
         root.innerHTML = `<input type="text" id="mi" data-ezclassify-controller="marked-input" value="(S) title">`;
-        const forms = new EzClassifyUI(engine as never, { root });
+        const forms = new EzClassifyUI(asContext(engine as never), { root });
         activeForms.push(forms);
         await wait(80);
 
@@ -440,7 +438,7 @@ describe('MarkedTextArea: add-marking always yields a recognized segment', () =>
     it('inserts the template at the start of the current line, not mid-line', async () => {
         const engine = createMarkedEngine();
         root.innerHTML = `<textarea id="body" data-ezclassify-controller="marked-textarea">Report body paragraph.</textarea>`;
-        const forms = new EzClassifyUI(engine as never, { root });
+        const forms = new EzClassifyUI(asContext(engine as never), { root });
         activeForms.push(forms);
         await wait(200);
 
@@ -491,7 +489,7 @@ describe('Escape cancels the marking picker instead of committing junk', () => {
     it('MarkedTextArea: junk typed in the picker is discarded on Escape', async () => {
         const engine = createMarkedEngine();
         root.innerHTML = `<textarea id="esc-ta" data-ezclassify-controller="marked-textarea"></textarea>`;
-        const forms = new EzClassifyUI(engine as never, { root });
+        const forms = new EzClassifyUI(asContext(engine as never), { root });
         activeForms.push(forms);
         await wait(200);
 
@@ -533,7 +531,7 @@ describe('Escape cancels the marking picker instead of committing junk', () => {
     it('MarkedTextArea: Escape on an edited existing marking restores the original', async () => {
         const engine = createMarkedEngine();
         root.innerHTML = `<textarea id="esc-ta2" data-ezclassify-controller="marked-textarea">(U) body text.</textarea>`;
-        const forms = new EzClassifyUI(engine as never, { root });
+        const forms = new EzClassifyUI(asContext(engine as never), { root });
         activeForms.push(forms);
         await wait(200);
 
@@ -584,7 +582,7 @@ describe('Escape cancels the marking picker instead of committing junk', () => {
     it('MarkedInput: Escape restores the pre-open value', async () => {
         const engine = createMarkedEngine();
         root.innerHTML = `<input type="text" id="esc-mi" data-ezclassify-controller="marked-input" value="(U) report title">`;
-        const forms = new EzClassifyUI(engine as never, { root });
+        const forms = new EzClassifyUI(asContext(engine as never), { root });
         activeForms.push(forms);
         await wait(200);
 
@@ -631,7 +629,7 @@ describe('Unrecognized wrapped text is flagged, never silently unmarked', () => 
     it('MarkedTextArea: line-leading junk parens get the invalid-chip treatment', async () => {
         const engine = createMarkedEngine();
         root.innerHTML = `<textarea id="junk-ta" data-ezclassify-controller="marked-textarea"></textarea>`;
-        const forms = new EzClassifyUI(engine as never, { root });
+        const forms = new EzClassifyUI(asContext(engine as never), { root });
         activeForms.push(forms);
         await wait(200);
 
@@ -667,7 +665,7 @@ describe('Unrecognized wrapped text is flagged, never silently unmarked', () => 
     it('MarkedTextArea: recognized markings are not affected by the junk flagging', async () => {
         const engine = createMarkedEngine();
         root.innerHTML = `<textarea id="mix-ta" data-ezclassify-controller="marked-textarea">(U) first line.\n(junkxyz) second line.</textarea>`;
-        const forms = new EzClassifyUI(engine as never, { root });
+        const forms = new EzClassifyUI(asContext(engine as never), { root });
         activeForms.push(forms);
         await wait(400);
 
@@ -686,7 +684,7 @@ describe('Unrecognized wrapped text is flagged, never silently unmarked', () => 
     it('MarkedTextArea: flags an indented mark the scan could not read', async () => {
         const engine = createMarkedEngine();
         root.innerHTML = `<textarea id="indent-ta" data-ezclassify-controller="marked-textarea">(U) one.\n  (zzz) indented.</textarea>`;
-        const forms = new EzClassifyUI(engine as never, { root });
+        const forms = new EzClassifyUI(asContext(engine as never), { root });
         activeForms.push(forms);
         await wait(400);
 
@@ -703,7 +701,7 @@ describe('Unrecognized wrapped text is flagged, never silently unmarked', () => 
     it('MarkedTextArea: leaves an unread wrapped token inside a line as prose', async () => {
         const engine = createMarkedEngine();
         root.innerHTML = `<textarea id="cite-ta" data-ezclassify-controller="marked-textarea">(S) see section (a) below.</textarea>`;
-        const forms = new EzClassifyUI(engine as never, { root });
+        const forms = new EzClassifyUI(asContext(engine as never), { root });
         activeForms.push(forms);
         await wait(400);
 
@@ -721,7 +719,7 @@ describe('Unrecognized wrapped text is flagged, never silently unmarked', () => 
     it('MarkedTextArea: an unread mark after another mark on its line stays prose', async () => {
         const engine = createMarkedEngine();
         root.innerHTML = `<textarea id="after-ta" data-ezclassify-controller="marked-textarea">(S)(QQ) first.\n(S) (QQ) second.</textarea>`;
-        const forms = new EzClassifyUI(engine as never, { root });
+        const forms = new EzClassifyUI(asContext(engine as never), { root });
         activeForms.push(forms);
         await wait(400);
 
@@ -758,7 +756,7 @@ describe('MarkedTextArea shows the part marks the engine reads', () => {
         const audited = context.audit({ text }).result.parts;
         expect(audited.map((part) => part.marking)).toEqual(['(S)', '(U)']);
         root.innerHTML = `<textarea id="mid-ta" data-ezclassify-controller="marked-textarea">${text}</textarea>`;
-        const forms = new EzClassifyUI(engine as never, { root });
+        const forms = new EzClassifyUI(asContext(engine as never), { root });
         activeForms.push(forms);
         await wait(400);
 
@@ -783,7 +781,7 @@ describe('Marked fields carry one enhancement status mark', () => {
         // the ⌘+Enter tip, not floating over the field's own content.
         const engine = createMarkedEngine();
         root.innerHTML = `<input type="text" id="mark-mi" data-ezclassify-controller="marked-input" value="(U) title">`;
-        const forms = new EzClassifyUI(engine as never, { root });
+        const forms = new EzClassifyUI(asContext(engine as never), { root });
         activeForms.push(forms);
         await wait(200);
 
@@ -805,7 +803,7 @@ describe('Marked fields carry one enhancement status mark', () => {
         // Same chrome slot as MarkedInput above.
         const engine = createMarkedEngine();
         root.innerHTML = `<textarea id="mark-ta" data-ezclassify-controller="marked-textarea">(U) first.\n(S) second.</textarea>`;
-        const forms = new EzClassifyUI(engine as never, { root });
+        const forms = new EzClassifyUI(asContext(engine as never), { root });
         activeForms.push(forms);
         await wait(300);
 

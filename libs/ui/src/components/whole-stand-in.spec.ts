@@ -45,6 +45,7 @@ import {
     STAND_IN_WHOLE,
     wholeStandInContext,
 } from '../../test-fixtures/whole-stand-in-scheme';
+import { levelState } from '../store/page-rollup-harness';
 
 let root: HTMLDivElement;
 let forms: EzClassifyUI | null = null;
@@ -473,7 +474,7 @@ describe('the store reads parts against their whole', () => {
     it('rolls the page up in the whole when every marking is it or its part', async () => {
         await mountPart('marked-input', '(L//SHARE) Quarterly notes');
         await wait(200);
-        const page = forms!.store.getAggregate();
+        const page = levelState(forms!.store);
         expect(page.valid).toBe(true);
         expect(page.rendered).toBe('HIGH//SHARE WITH ALPHA, BRAVO');
         expect(

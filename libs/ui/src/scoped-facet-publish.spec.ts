@@ -23,6 +23,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { loadMultiScopeRegression } from '../test-fixtures/load-multi-scope-regression';
 import { EzClassifyUI } from './ezclassify-ui';
 import type { SingleSelect } from './components/single-select';
+import { asContext } from '../test-fixtures/as-context';
 
 const SCOPED_FACET_HTML = `
   <input type="hidden" id="doc-marking" data-ezclassify-marking />
@@ -123,7 +124,9 @@ describe('EzClassifyUI: scoped facet edit survives on the whole', () => {
     }
 
     it('an office_record-scope comes_from pick lands on the whole and survives a later level edit + rollup', async () => {
-        forms = new EzClassifyUI(loadMultiScopeRegression(), { root });
+        forms = new EzClassifyUI(asContext(loadMultiScopeRegression()), {
+            root,
+        });
         await flush();
 
         // 1. Pick an office_record-scope comes_from on the whole. This publishes
@@ -198,7 +201,9 @@ describe('EzClassifyUI: scoped facet edit survives on the whole', () => {
      */
     describe('a document-level subscriber sees scoped assertions', () => {
         it('delivers a scoped facet edit to store.subscribe(markingId)', async () => {
-            forms = new EzClassifyUI(loadMultiScopeRegression(), { root });
+            forms = new EzClassifyUI(asContext(loadMultiScopeRegression()), {
+                root,
+            });
             await flush();
 
             const seen: string[][] = [];
@@ -234,7 +239,7 @@ describe('EzClassifyUI: scoped facet edit survives on the whole', () => {
             // introspection members alone, which is what the remote adapter
             // narrowing does too.
             forms = new EzClassifyUI(
-                answersLate(loadMultiScopeRegression(), 5) as never,
+                asContext(answersLate(loadMultiScopeRegression(), 5) as never),
                 {
                     root,
                 },
@@ -295,7 +300,9 @@ describe('EzClassifyUI: scoped facet edit survives on the whole', () => {
             const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
             forms = new EzClassifyUI(
-                withoutCategoryScopes(loadMultiScopeRegression()) as never,
+                asContext(
+                    withoutCategoryScopes(loadMultiScopeRegression()) as never,
+                ),
                 { root },
             );
             await flush();
@@ -312,7 +319,9 @@ describe('EzClassifyUI: scoped facet edit survives on the whole', () => {
         it('stays quiet when the scheme agrees with the control', async () => {
             const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
-            forms = new EzClassifyUI(loadMultiScopeRegression(), { root });
+            forms = new EzClassifyUI(asContext(loadMultiScopeRegression()), {
+                root,
+            });
             await flush();
 
             expect(

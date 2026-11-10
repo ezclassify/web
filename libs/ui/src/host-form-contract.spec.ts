@@ -14,6 +14,7 @@ import type { LocalContextSchemeEngineAdapter } from '@ezclassify/types';
 import { Context } from '@ezclassify/engine';
 import { EzClassifyUI } from './ezclassify-ui';
 import { MarkedInput } from './components/marked-input';
+import { asContext } from '../test-fixtures/as-context';
 
 function wait(ms = 50): Promise<void> {
     return new Promise((r) => setTimeout(r, ms));
@@ -120,7 +121,7 @@ describe('Host Form Contract: native input events', () => {
     it('marked-input: a picker-applied marking emits a native bubbling input event', async () => {
         const engine = createMarkedEngine();
         root.innerHTML = `<form id="f"><input type="text" id="mi" data-ezclassify-controller="marked-input"></form>`;
-        const forms = new EzClassifyUI(engine as never, { root });
+        const forms = new EzClassifyUI(asContext(engine as never), { root });
         activeForms.push(forms);
         await wait(80);
 
@@ -175,7 +176,7 @@ describe('Host Form Contract: native input events', () => {
         // change this field originated; re-announcing it would echo.
         const engine = createMarkedEngine();
         root.innerHTML = `<form id="f"><input type="text" id="mi" data-ezclassify-controller="marked-input" value="(U) memo"></form>`;
-        const forms = new EzClassifyUI(engine as never, { root });
+        const forms = new EzClassifyUI(asContext(engine as never), { root });
         activeForms.push(forms);
         await wait(80);
 
@@ -201,7 +202,7 @@ describe('Host Form Contract: native input events', () => {
     it('marked-textarea: the add-marking template insert emits a native input event', async () => {
         const engine = createMarkedEngine();
         root.innerHTML = `<form id="f"><textarea id="ta" data-ezclassify-controller="marked-textarea">Body text.</textarea></form>`;
-        const forms = new EzClassifyUI(engine as never, { root });
+        const forms = new EzClassifyUI(asContext(engine as never), { root });
         activeForms.push(forms);
         await wait(200);
 
@@ -222,7 +223,7 @@ describe('Host Form Contract: native input events', () => {
     it('plain bind: the blur-commit reformat emits a native input event; unchanged value emits none', async () => {
         const engine = createMarkedEngine();
         root.innerHTML = `<form id="f"><input id="p" data-ezclassify-marking type="text" value="u" /></form>`;
-        const forms = new EzClassifyUI(engine as never, { root });
+        const forms = new EzClassifyUI(asContext(engine as never), { root });
         activeForms.push(forms);
         await wait(80);
 
@@ -230,7 +231,8 @@ describe('Host Form Contract: native input events', () => {
         const field = document.getElementById('p') as HTMLInputElement;
         const events = collectFieldInputEvents(form, field);
 
-        // Commit rewrites "u" to the rendered "U": one native event.
+        // Commit rewrites typed "u" to the rendered "U": one native event.
+        field.value = 'u';
         field.dispatchEvent(new Event('blur'));
         await wait(80);
         expect(field.value).toBe('U');

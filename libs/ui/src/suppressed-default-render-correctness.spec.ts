@@ -32,6 +32,7 @@ import { loadMultiScopeRegression } from '../test-fixtures/load-multi-scope-regr
 import { EzClassifyUI } from './ezclassify-ui';
 import type { TagInput } from './components/tag-input';
 import type { MarkingField } from './components/marking-field';
+import { asContext } from '../test-fixtures/as-context';
 
 const HTML = `
   <input type="hidden" id="doc-marking" data-ezclassify-marking />
@@ -64,7 +65,9 @@ describe('suppressed default-fill assertion never leaks into a rendered surface'
     });
 
     it('deleting OAKWOOD auto-fills OUR_SCHOOL as state, absent from every rendered surface, on both TagInput and MarkingField', async () => {
-        forms = new EzClassifyUI(loadMultiScopeRegression(), { root });
+        forms = new EzClassifyUI(asContext(loadMultiScopeRegression()), {
+            root,
+        });
         await flush();
 
         // TagInput ('tags') is registered in the runtime's own `autocompleters`

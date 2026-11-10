@@ -11,6 +11,7 @@ import type { LocalContextSchemeEngineAdapter } from '@ezclassify/types';
 import { Context } from '@ezclassify/engine';
 import { EzClassifyUI } from './ezclassify-ui';
 import { parseComponentOptions } from './component-factory';
+import { asContext } from '../test-fixtures/as-context';
 
 function wait(ms = 50): Promise<void> {
     return new Promise((r) => setTimeout(r, ms));
@@ -126,7 +127,7 @@ describe('data-ezclassify-no-hints', () => {
     it('suppresses the marked-input keyboard hint but keeps the touch affordance', async () => {
         const engine = createEngine();
         root.innerHTML = `<input type="text" id="mi" data-ezclassify-controller="marked-input" data-ezclassify-no-hints>`;
-        const forms = new EzClassifyUI(engine as never, { root });
+        const forms = new EzClassifyUI(asContext(engine as never), { root });
         activeForms.push(forms);
         await wait(80);
 
@@ -138,7 +139,7 @@ describe('data-ezclassify-no-hints', () => {
     it('keeps the marked-input keyboard hint without the attribute', async () => {
         const engine = createEngine();
         root.innerHTML = `<input type="text" id="mi" data-ezclassify-controller="marked-input">`;
-        const forms = new EzClassifyUI(engine as never, { root });
+        const forms = new EzClassifyUI(asContext(engine as never), { root });
         activeForms.push(forms);
         await wait(80);
 
@@ -151,7 +152,7 @@ describe('data-ezclassify-no-hints', () => {
       <div data-ezclassify-no-hints>
         <input id="ac" data-ezclassify-controller="tags" type="text" value="" />
       </div>`;
-        const forms = new EzClassifyUI(engine as never, { root });
+        const forms = new EzClassifyUI(asContext(engine as never), { root });
         activeForms.push(forms);
         await wait(80);
 
@@ -167,7 +168,7 @@ describe('data-ezclassify-no-tooltips', () => {
     it('turns shouldShowTooltip off for the enhanced component', async () => {
         const engine = createEngine();
         root.innerHTML = `<input id="ac" data-ezclassify-controller="tags" data-ezclassify-no-tooltips type="text" value="" />`;
-        const forms = new EzClassifyUI(engine as never, { root });
+        const forms = new EzClassifyUI(asContext(engine as never), { root });
         activeForms.push(forms);
         await wait(80);
 

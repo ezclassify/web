@@ -92,12 +92,13 @@ export { EquivalencyMap } from './components';
 export type { EquivalencyEntry } from './components';
 export { defaultLocale, setLocale, resetLocale, t } from './i18n';
 export { buildCategoryColorMap } from './color-resolver';
-export { bucketParts } from './context-binding';
+export { bucketKey, bucketParts, contextStoreBuckets } from './context-binding';
 export type {
     BucketKey,
     EzClassifyContextMap,
     EzClassifyContexts,
 } from './context-binding';
+export type { RollupEventDetail, RollupBucketDetail } from './forms/rollup';
 export {
     assembleWithConcept,
     findUnambiguousMatch,
@@ -111,12 +112,16 @@ export type {
 } from './marking-utils';
 export {
     VanillaEzClassifyStore,
+    EMPTY_EZCLASSIFY_AGGREGATE,
     EMPTY_EZCLASSIFY_STATE,
+    SOLE_BUCKET,
     EMPTY_FACET_STATE,
     facetStateEqual,
 } from './store/ezclassify-store';
 export type {
+    EzClassifyAggregate,
     EzClassifyStore,
+    EzClassifyStoreBuckets,
     MarkingEntriesStore,
     EzClassifyStoreAggregateResult,
     EzClassifyStoreEngine,

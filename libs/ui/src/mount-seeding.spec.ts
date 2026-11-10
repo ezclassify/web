@@ -8,6 +8,8 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { EzClassifyUI } from './ezclassify-ui';
 import { VanillaEzClassifyStore } from './store/ezclassify-store';
 import { loadMultiScopeRegression } from '../test-fixtures/load-multi-scope-regression';
+import { asContext } from '../test-fixtures/as-context';
+import { levelState } from './store/page-rollup-harness';
 
 const FORM = `<form id="root">
     <input id="document" value="SCHOOL STAFF" data-ezclassify-controller="marking">
@@ -79,7 +81,7 @@ describe('seeding marking hosts on mount', () => {
         const root = document.querySelector<HTMLElement>('#root')!;
         const { engine, store, seeds, reads } = countingStore();
         const isReady = ready(root);
-        ui = new EzClassifyUI(engine, { root, store });
+        ui = new EzClassifyUI(asContext(engine), { root, store });
         await isReady;
         await settle();
         const entries = [
@@ -123,7 +125,7 @@ describe('seeding marking hosts on mount', () => {
         const root = document.querySelector<HTMLElement>('#root')!;
         const { engine, store, seeds } = countingStore();
         const isReady = ready(root);
-        ui = new EzClassifyUI(engine, { root, store });
+        ui = new EzClassifyUI(asContext(engine), { root, store });
         await isReady;
         await settle();
         seeds.clear();
@@ -158,11 +160,11 @@ describe('seeding marking hosts on mount', () => {
         const { engine, store } = countingStore();
         store.setPartOf('never-seeded', 'document');
         const isReady = ready(root);
-        ui = new EzClassifyUI(engine, { root, store });
+        ui = new EzClassifyUI(asContext(engine), { root, store });
         await isReady;
         await settle();
         expect(store.getWholeRollup('document').rendered).not.toBe('');
-        expect(store.getAggregate().rendered).not.toBe('');
+        expect(levelState(store).rendered).not.toBe('');
         const banner = root.querySelector<HTMLElement>(
             '[data-ezclassify-aggregate="document"]',
         )!;

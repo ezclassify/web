@@ -33,9 +33,10 @@ import type { ComponentSchemeEngine } from './components/component-base-readonly
 import {
     ContextResolutionError,
     ContextSet,
+    contextStoreBuckets,
     schemeEngineOf,
-    PRIMARY_SCHEME_SELECTOR,
     SINGLE_CONTEXT_KEY,
+    type EzClassifyContextMap,
     type EzClassifyContexts,
     type ResolvedContext,
 } from './context-binding';
@@ -47,7 +48,6 @@ import {
 import { HiddenAssertionField } from './components/hidden-assertion-field';
 import type { MarkedTextArea } from './components/marked-text-area';
 import { EMPTY_VALUE } from './text-utils';
-import { t } from './i18n';
 import type {
     BucketScheme,
     FieldAssertion,
@@ -83,6 +83,7 @@ import {
     type HostError,
 } from './binding-model';
 import { bucketKey, bucketParts, type BucketKey } from './store/store-shared';
+import { reportPublishFailure } from './store/publish-failure';
 import {
     parseComponentOptions,
     resolveNativeInput,
@@ -279,8 +280,6 @@ export class EzClassifyUI {
     private draftHosts = new WeakMap<object, string>();
     /** @internal */
     fields: HTMLInputElement[] = [];
-    /** @internal */
-    rollupField: HTMLInputElement | null = null;
     /**
      * The format whole markings are written in when a field names none: the
      * host's `format` option, else the only Context's scheme default. With
@@ -431,11 +430,9 @@ export class EzClassifyUI {
      * write-back does not also write into them.
      */
     private readonly helperInputs = new WeakSet<HTMLElement>();
-    /** Whether the rollup field last showed an incomplete rollup. */
+    /** Whether the outputs last showed an incomplete rollup. */
     private rollupIncompleteShown = false;
-    /** The custom validity message this runtime set on the rollup field. */
-    private rollupValidity: string | null = null;
-    /** Stops the page-aggregate subscription behind the rollup field's flag. */
+    /** Stops the page-aggregate subscription that refreshes the outputs. */
     private unsubscribeIncomplete: (() => void) | null = null;
     private readonly _textIdSalt = Math.random().toString(36).slice(2, 8);
     /**
@@ -475,7 +472,6 @@ export class EzClassifyUI {
         contexts: EzClassifyContexts,
         options?: {
             format?: string;
-            rollupId?: string;
             colorMap?: RenderColorMap;
             tooltipConceptProperty?: string;
             root?: HTMLElement;
@@ -515,39 +511,19 @@ export class EzClassifyUI {
         if (options?.tooltipConceptProperty)
             this.tooltipConceptProperty = options.tooltipConceptProperty;
         if (options?.favorites) this.favorites = options.favorites;
-        this.store = options?.store ?? this.createStore(options?.format);
+        this.store =
+            options?.store ?? this.createStore(contexts, options?.format);
 
-        const rollupId = options?.rollupId ?? 'ezclassify-rollup';
-        const existingSink = this.root.querySelector(
-            '#' + cssEscape(rollupId),
-        ) as HTMLInputElement | null;
-        // Reuse an existing #<rollupId> ONLY when it is OWNED by this instance,
-        // i.e. its nearest [data-ezclassify-mount-root] ancestor is this root, not
-        // a nested child scope's root. The default rollupId ('ezclassify-rollup')
-        // is shared, so a nested instance whose root sits inside a parent that
-        // already created that sink would otherwise hijack the parent's sink and
-        // write the child's value into it (a nested scope's default-id
-        // collision). Ownership (not a direct-child check) keeps each scope's sink
-        // its own while still honoring a consumer that placed the sink deep in the
-        // single-mount tree.
-        let rollupEl =
-            existingSink && isOwnedBy(existingSink, this._instanceId)
-                ? existingSink
-                : null;
-        if (!rollupEl) {
-            rollupEl = document.createElement('input');
-            rollupEl.type = 'hidden';
-            rollupEl.id = rollupId;
-            rollupEl.name = rollupId;
-            this.root.appendChild(rollupEl);
-        }
-        this.rollupField = rollupEl;
-        // A page aggregate the store holds as stale (a contributor whose read
-        // failed, or one that read only part of its source) makes the rollup
-        // this scope shows incomplete too, whether or not its value moves.
-        this.unsubscribeIncomplete = this.store.subscribeAggregate(() =>
-            this.refreshIncomplete(),
-        );
+        // Every level's rollup lives in the store. When the page level moves
+        // (any level below it moving moves the page), the outputs the host
+        // placed are shown again, and a level the store holds as stale (a
+        // contributor whose read failed, or one that read only part of its
+        // source) makes those outputs incomplete whether or not a value moved.
+        this.unsubscribeIncomplete = this.store.subscribeAggregate(() => {
+            this.refreshIncomplete();
+            if (!this._destroyed && !this.initializing)
+                void rollup.updateRollup(this);
+        });
 
         // Register this instance in the cross-instance mount-rollup registry. The
         // ancestry edge (which parent scope this child contributes its whole into)
@@ -595,7 +571,7 @@ export class EzClassifyUI {
             ? listed.then(() => Promise.all(this._pendingInits))
             : Promise.all(this._pendingInits);
         mounted.then(async () => {
-            if (!this.rollupField) return;
+            if (this._destroyed) return;
             this.initializing = false;
             this._pendingInits = [];
             this.wireHostWriteback();
@@ -636,7 +612,10 @@ export class EzClassifyUI {
      * Context's scheme, or, with several Contexts, one bucket per (Context,
      * scheme) pair that markup resolves, with no default bucket.
      */
-    private createStore(format: string | undefined): EzClassifyStore {
+    private createStore(
+        source: EzClassifyContexts,
+        format: string | undefined,
+    ): EzClassifyStore {
         if (this.contexts.single) {
             return new VanillaEzClassifyStore(
                 this.engine,
@@ -644,32 +623,9 @@ export class EzClassifyUI {
             );
         }
         return new VanillaEzClassifyStore({
-            buckets: {
-                resolve: (bucket) => {
-                    const { contextKey, schemeSelector } = bucketParts(bucket);
-                    const context = this.contexts.get(contextKey);
-                    if (!context) {
-                        throw new ContextResolutionError(
-                            'context-unresolved',
-                            `[ezclassify] No Context '${contextKey}' on this EzClassifyUI.`,
-                            null,
-                        );
-                    }
-                    const engine = schemeEngineOf({
-                        contextKey,
-                        context,
-                        schemeSelector,
-                        primary: schemeSelector === PRIMARY_SCHEME_SELECTOR,
-                        bucket,
-                    });
-                    return {
-                        engine,
-                        format:
-                            format ??
-                            engine.getSchemeMeta().defaultRenderFormat,
-                    };
-                },
-            },
+            buckets: contextStoreBuckets(source as EzClassifyContextMap, {
+                format,
+            }),
         });
     }
 
@@ -1209,6 +1165,8 @@ export class EzClassifyUI {
         const elementOf = (id: string): Element | undefined => {
             const host = this.markingHosts.get(id);
             if (host) return host;
+            const scope = this.scopeWholes.get(id);
+            if (scope) return scope.root;
             for (const [el, collection] of this.collections)
                 if (collection === id) return el;
             return undefined;
@@ -1330,7 +1288,103 @@ export class EzClassifyUI {
      * @internal
      */
     flushRollupNow(): void {
+        this.syncChildScopes();
         void rollup.flushRollupNow(this);
+    }
+
+    /**
+     * The wholes nested scopes contribute, by the marking id this scope's store
+     * holds each under: one per child scope and bucket.
+     */
+    private readonly scopeWholes = new Map<
+        string,
+        { key: string; root: HTMLElement; signature: string }
+    >();
+    private scopeWholeCounter = 0;
+
+    /**
+     * Carry each nested scope's rolled-up wholes into this scope's store, as
+     * wholes of the collection the scope sits in. A scope's page rollup is a
+     * whole in this tree: the store reads its facts the way it reads any
+     * whole's, in the same bucket, so a nested island and a field beside it
+     * roll up together and different buckets never merge. A whole a scope no
+     * longer contributes leaves the store.
+     *
+     * A child that holds one Context is read in the Context this scope resolves
+     * where the child's root stands. A child that names its Contexts by key is
+     * read under the same keys. A child this scope cannot place is a host error
+     * on the child's root, and this scope's levels read as incomplete.
+     */
+    private syncChildScopes(): void {
+        if (this._destroyed) return;
+        const live = new Set<string>();
+        const idByKey = new Map<string, string>();
+        for (const [id, whole] of this.scopeWholes) idByKey.set(whole.key, id);
+        for (const child of registry.childrenOf(this._instanceId)) {
+            for (const whole of child.childWholes().values()) {
+                const bucket = this.parentBucketOf(child, whole.bucket);
+                if (bucket === undefined) continue;
+                const key = `${child.instanceId}\u001f${bucket}`;
+                let id = idByKey.get(key);
+                if (!id) {
+                    id = `__ez-scope-${this._textIdSalt}-${this.scopeWholeCounter++}`;
+                    idByKey.set(key, id);
+                }
+                live.add(id);
+                const signature = signAssertions(whole.assertions);
+                const known = this.scopeWholes.get(id);
+                if (known?.signature === signature) continue;
+                if (!known) {
+                    this.store.setBucket(id, bucket);
+                    this.store.setMembership(id, child.collectionId);
+                }
+                this.scopeWholes.set(id, {
+                    key,
+                    root: child.root,
+                    signature,
+                });
+                void this.store
+                    .seedAssertions(id, whole.assertions)
+                    .catch((error: unknown) =>
+                        reportPublishFailure('nested scope', id, error),
+                    );
+            }
+        }
+        for (const id of Array.from(this.scopeWholes.keys())) {
+            if (live.has(id)) continue;
+            this.scopeWholes.delete(id);
+            this.store.releaseSeed(id);
+        }
+    }
+
+    /**
+     * The bucket in this scope a nested scope's bucket is read in, or
+     * undefined, after reporting a host error on the child's root, when this
+     * scope holds no such Context.
+     */
+    private parentBucketOf(
+        child: registry.RegistryChild,
+        childBucket: BucketKey,
+    ): BucketKey | undefined {
+        const { contextKey, schemeSelector } = bucketParts(childBucket);
+        let key = contextKey;
+        if (contextKey === SINGLE_CONTEXT_KEY) {
+            const resolved = this.contextForMount(child.root);
+            if (!resolved) return undefined;
+            key = resolved.contextKey;
+        }
+        const bucket = bucketKey(key, schemeSelector);
+        if (this.bucketsNamed(key, schemeSelector || null).includes(bucket))
+            return bucket;
+        this.reportHostError(
+            {
+                code: 'context-unresolved',
+                message: `[ezclassify] A nested EzClassifyUI marks in ${contextKey ? `Context '${contextKey}'` : 'its Context'}${schemeSelector ? `, scheme '${schemeSelector}'` : ''}, which this EzClassifyUI does not hold.`,
+                element: child.root,
+            },
+            null,
+        );
+        return undefined;
     }
 
     /**
@@ -1352,7 +1406,7 @@ export class EzClassifyUI {
             wholes.set(bucket, {
                 bucket,
                 rendered: level.rendered,
-                assertions: state.toFieldAssertions(level.assertions),
+                assertions: level.assertions,
             });
         this._childWholes = wholes;
         // A stable signature of the contribution: its facts, per bucket.
@@ -1391,20 +1445,18 @@ export class EzClassifyUI {
     }
 
     /**
-     * Carry {@link rollupIncomplete} to the rollup field: while the rollup it
-     * holds may be missing markings, the field is invalid (custom validity and
-     * `aria-invalid`), and the enclosing scope is told so it can say the same
-     * of the whole it builds from this one. Clearing removes only the message
-     * this runtime set. Reads no engine: it only reports what is known.
+     * Carry {@link rollupIncomplete} to the outputs the host placed: while the
+     * rollup they hold may be missing markings, each is invalid (custom
+     * validity and `aria-invalid`), and the enclosing scope is told so it can
+     * say the same of the whole it builds from this one. Reads no engine: it
+     * only reports what is known.
      *
      * @internal
      */
     refreshIncomplete(fromRollup = false): void {
-        const field = this.rollupField;
-        if (!field) return;
         const incomplete = this.rollupIncomplete();
         if (incomplete === this.rollupIncompleteShown) return;
-        // Raised at once, cleared only by a rollup pass: the field may still
+        // Raised at once, cleared only by a rollup pass: an output may still
         // hold the value computed while something was unread, and only a pass
         // run after that recomputes it. Ask for one rather than wait for it.
         if (!incomplete && !fromRollup) {
@@ -1413,23 +1465,7 @@ export class EzClassifyUI {
             return;
         }
         this.rollupIncompleteShown = incomplete;
-        if (incomplete) {
-            this.rollupValidity = t('rollup.incomplete');
-            field.setCustomValidity(this.rollupValidity);
-            field.setAttribute('aria-invalid', 'true');
-        } else {
-            // A field barred from constraint validation (the default hidden
-            // input) reports no message, so only a validated field can show
-            // that a host replaced this one.
-            if (
-                this.rollupValidity !== null &&
-                (!field.willValidate ||
-                    field.validationMessage === this.rollupValidity)
-            )
-                field.setCustomValidity('');
-            this.rollupValidity = null;
-            field.removeAttribute('aria-invalid');
-        }
+        rollup.setOutputsIncomplete(this, incomplete);
         registry.notifyParentIncomplete(this._instanceId);
     }
 
@@ -1442,8 +1478,9 @@ export class EzClassifyUI {
     ): registry.RegistryChild {
         return {
             instanceId: this._instanceId,
+            root: this.root,
             collectionId,
-            // What this scope's rollup field shows: raised at once, cleared by
+            // What this scope's outputs show: raised at once, cleared by
             // the pass that recomputes the whole the parent reads.
             incomplete: () => !this._destroyed && this.rollupIncompleteShown,
             childWholes: (): Map<BucketKey, ChildWhole> => {
@@ -1930,9 +1967,10 @@ export class EzClassifyUI {
     }
 
     /**
-     * Wire the behavior-only `data-ezclassify-bind` path for plain inputs. When
-     * `storeBinding` is provided the input participates in a named marking via
-     * the store (publishes on commit, reflects sibling view commits back in).
+     * Wire a plain input that holds or views a marking without a controller.
+     * When `storeBinding` is provided the input participates in a named marking
+     * via the store (publishes on commit, reflects sibling view commits back
+     * in).
      */
     private attachPlainInputBehavior(
         input: HTMLInputElement,
@@ -2653,32 +2691,11 @@ export class EzClassifyUI {
         if (controller === 'tags') {
             const scope = el.getAttribute('data-ezclassify-scope');
             if (scope) componentOpts.scope = scope;
-            const collapseAttr = rawOptions['collapse-at'];
-            if (collapseAttr) {
-                const n = parseInt(collapseAttr, 10);
-                if (Number.isFinite(n)) componentOpts.collapseThreshold = n;
-            }
             // Category color coding is on by default; author opts out with
             // data-ezclassify-tags-color-coding="false".
             if ('color-coding' in rawOptions)
                 componentOpts.colorCoding =
                     rawOptions['color-coding'] !== 'false';
-        }
-
-        // Hidden / marked-textarea pass their controller-specific `format` option
-        // through as the render format / hidden-render format respectively.
-        if (
-            controller === 'hidden' &&
-            typeof rawOptions['format'] === 'string' &&
-            !componentOpts.formatId
-        ) {
-            componentOpts.formatId = rawOptions['format'];
-        }
-        if (
-            controller === 'marked-textarea' &&
-            typeof rawOptions['format'] === 'string'
-        ) {
-            componentOpts.hiddenFormat = rawOptions['format'];
         }
 
         // Marked-textarea specific options. Per binding-model §16, hidden part
@@ -3682,17 +3699,14 @@ export class EzClassifyUI {
     }
 
     /**
-     * Force an immediate rollup recalculation and return the rendered
-     * aggregate.
+     * Show every level's rollup in the outputs the host placed now, without
+     * waiting for the next change. The rollups themselves live in the store:
+     * read them with `store.getAggregate(levelId?)`.
+     *
+     * @returns Resolves once the outputs show the store's current rollups
      */
-    recalculate(): string {
-        rollup.updateRollup(this);
-        return this.rollupField?.value ?? '';
-    }
-
-    /** Return the current rollup value without triggering a recalculation. */
-    getRollup(): string {
-        return this.rollupField?.value ?? '';
+    recalculate(): Promise<void> {
+        return rollup.flushRollupNow(this);
     }
 
     /** Get all assertions across every field and component, deduplicated. */
@@ -3789,6 +3803,9 @@ export class EzClassifyUI {
         this.markingHosts.clear();
         this.seededMarkings.clear();
         this.initialSeeds = [];
+        // The wholes nested scopes contributed belong to this scope's tree.
+        for (const id of this.scopeWholes.keys()) store.releaseSeed(id);
+        this.scopeWholes.clear();
     }
 
     /**
@@ -3893,10 +3910,6 @@ export class EzClassifyUI {
                 }
                 mount.remove();
             });
-        // Remove the rollup hidden input if we created it
-        if (this.rollupField) {
-            this.rollupField.remove();
-        }
         this.aggregates.clear();
         this.plainBehaviorCleanups.forEach((cleanup) => cleanup());
         this.plainBehaviorCleanups.clear();
@@ -3913,6 +3926,5 @@ export class EzClassifyUI {
         for (const adopted of this.adoptedStyles) adopted.release();
         this.adoptedStyles = [];
         this.fields = [];
-        this.rollupField = null;
     }
 }

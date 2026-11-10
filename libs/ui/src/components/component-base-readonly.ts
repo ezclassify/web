@@ -293,11 +293,6 @@ export interface ComponentOptions {
      */
     root?: HTMLElement;
     /**
-     * Groups with more items than this start collapsed in the dropdown (default
-     * 50)
-     */
-    collapseThreshold?: number;
-    /**
      * When false, tag-input chips are not category-colored: text and underline
      * use the field's own color. Declarative:
      * data-ezclassify-tags-color-coding. Defaults to true.

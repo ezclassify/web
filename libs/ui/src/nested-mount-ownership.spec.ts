@@ -1,10 +1,9 @@
 /**
  * Nested-mount ownership invariants the characterization harness
  * (nested-mount-harness.spec.ts) does not cover: the outer-first construction
- * race (reclaim-on-register), the shared default-rollupId sink collision, the
- * synchronous depth-2 settle, the cross-family independence rule,
- * removed-subtree-descendant teardown, and the StrictMode mount/unmount/remount
- * cleanup path.
+ * race (reclaim-on-register), the synchronous depth-2 settle, the cross-family
+ * independence rule, removed-subtree-descendant teardown, and the StrictMode
+ * mount/unmount/remount cleanup path.
  */
 
 import { readFileSync } from 'node:fs';
@@ -14,6 +13,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { Context } from '@ezclassify/engine';
 import { EzClassifyUI } from './ezclassify-ui';
 import { __resetMountRollupRegistry } from './mount-rollup-registry';
+import { levelState } from './store/page-rollup-harness';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const fixturesDir = resolve(__dirname, '../../../vendor/spec/fixtures/v1');
@@ -60,8 +60,22 @@ function mountSiblingsFor(host: HTMLElement): HTMLElement[] {
         ),
     );
 }
-function rollupValueOf(root: HTMLElement, rollupId: string): string {
-    return root.querySelector<HTMLInputElement>('#' + rollupId)?.value ?? '';
+/**
+ * Place the hidden output the host submits the page marking with inside `root`,
+ * and hand `root` back for the constructor.
+ */
+function withOutput<T extends HTMLElement>(root: T, id: string): T {
+    const output = document.createElement('input');
+    output.type = 'hidden';
+    output.id = id;
+    output.setAttribute('data-ezclassify-aggregate', '');
+    root.appendChild(output);
+    return root;
+}
+
+/** The page marking an instance shows in the output placed in `root`. */
+function rollupValueOf(root: HTMLElement, outputId: string): string {
+    return root.querySelector<HTMLInputElement>('#' + outputId)?.value ?? '';
 }
 function fieldIdsOf(ui: EzClassifyUI): string[] {
     return (ui as unknown as { fields: HTMLElement[] }).fields.map((f) => f.id);
@@ -115,16 +129,14 @@ describe('nested-mount fix invariants', () => {
         // OUTER first, it enhances the field while no inner boundary exists yet.
         const outerUI = track(
             new EzClassifyUI(newEngine(), {
-                root: outer,
-                rollupId: 'race-outer',
+                root: withOutput(outer, 'race-outer'),
             }),
         );
         await settle();
         // INNER second, its reclaim sweep must take the field away from outer.
         const innerUI = track(
             new EzClassifyUI(newEngine(), {
-                root: inner,
-                rollupId: 'race-inner',
+                root: withOutput(inner, 'race-inner'),
             }),
         );
         await settle();
@@ -165,8 +177,7 @@ describe('nested-mount fix invariants', () => {
 
             const outerUI = track(
                 new EzClassifyUI(newMarkedEngine(), {
-                    root: outer,
-                    rollupId: 'nest-outer',
+                    root: withOutput(outer, 'nest-outer'),
                 }),
             );
             await settle();
@@ -174,8 +185,7 @@ describe('nested-mount fix invariants', () => {
 
             const innerUI = track(
                 new EzClassifyUI(newMarkedEngine(), {
-                    root: inner,
-                    rollupId: 'nest-inner',
+                    root: withOutput(inner, 'nest-inner'),
                 }),
             );
             await settle();
@@ -186,41 +196,15 @@ describe('nested-mount fix invariants', () => {
                 inner.querySelectorAll(':scope > [data-ezclassify-mount]'),
             ).toHaveLength(1);
             // The field's marking rolls up into the nested whole, and reaches the
-            // outer scope only as that whole: the outer store holds its own field
-            // alone.
+            // outer scope only as that whole: the outer store no longer holds the
+            // field, and reads the nested scope as one of its wholes.
             expect(rollupValueOf(inner, 'nest-inner')).toBe('HIGH');
-            expect(innerUI.store.getAggregate().rendered).toBe('HIGH');
-            expect(outerUI.store.getAggregate().rendered).toBe('LOW');
+            expect(levelState(innerUI.store).rendered).toBe('HIGH');
+            expect(outerUI.store.get('nest-body').rendered).toBe('');
+            expect(levelState(outerUI.store).rendered).toBe('HIGH');
             expect(rollupValueOf(outer, 'nest-outer')).toBe('HIGH');
         },
     );
-
-    // -------------------------------------------------------------------------
-    // Default-rollupId sink collision. Both nested instances use the SHARED
-    // default rollup id 'ezclassify-rollup'. Each
-    // must get its OWN sink, the child must not hijack the parent's sink.
-    // -------------------------------------------------------------------------
-    it('default-rollupId: nested instances do not share one sink', async () => {
-        const outer = container;
-        const inner = document.createElement('div');
-        outer.appendChild(inner);
-        const field = document.createElement('input');
-        field.id = 'def-field';
-        field.setAttribute('data-ezclassify-controller', 'tags');
-        field.value = 'HIGH';
-        inner.appendChild(field);
-
-        track(new EzClassifyUI(newEngine(), { root: outer })); // default 'ezclassify-rollup'
-        track(new EzClassifyUI(newEngine(), { root: inner })); // default 'ezclassify-rollup'
-        await settle();
-
-        // Two distinct sink inputs exist (one per scope root).
-        const outerSink = outer.querySelector(':scope > #ezclassify-rollup');
-        const innerSink = inner.querySelector(':scope > #ezclassify-rollup');
-        expect(outerSink).not.toBeNull();
-        expect(innerSink).not.toBeNull();
-        expect(outerSink).not.toBe(innerSink);
-    });
 
     // -------------------------------------------------------------------------
     // Depth-2 synchronous settle. A leaf change in the inner scope must reach the
@@ -239,14 +223,12 @@ describe('nested-mount fix invariants', () => {
 
         track(
             new EzClassifyUI(newEngine(), {
-                root: outer,
-                rollupId: 'd2-outer',
+                root: withOutput(outer, 'd2-outer'),
             }),
         );
         track(
             new EzClassifyUI(newEngine(), {
-                root: inner,
-                rollupId: 'd2-inner',
+                root: withOutput(inner, 'd2-inner'),
             }),
         );
         await settle();
@@ -278,14 +260,12 @@ describe('nested-mount fix invariants', () => {
 
         track(
             new EzClassifyUI(newEngine(), {
-                root: outer,
-                rollupId: 'ss-outer',
+                root: withOutput(outer, 'ss-outer'),
             }),
         );
         track(
             new EzClassifyUI(newEngine(), {
-                root: inner,
-                rollupId: 'ss-inner',
+                root: withOutput(inner, 'ss-inner'),
             }),
         );
         await settle();
@@ -309,7 +289,9 @@ describe('nested-mount fix invariants', () => {
         root.appendChild(wrapper);
 
         const ui = track(
-            new EzClassifyUI(newEngine(), { root, rollupId: 'sub-rollup' }),
+            new EzClassifyUI(newEngine(), {
+                root: withOutput(root, 'sub-rollup'),
+            }),
         );
         await settle();
         const components = (
@@ -338,15 +320,16 @@ describe('nested-mount fix invariants', () => {
         root.appendChild(field);
 
         const first = new EzClassifyUI(newEngine(), {
-            root,
-            rollupId: 'sm-rollup',
+            root: withOutput(root, 'sm-rollup'),
         });
         await settle();
         first.destroy();
         await settle();
 
         const second = track(
-            new EzClassifyUI(newEngine(), { root, rollupId: 'sm-rollup' }),
+            new EzClassifyUI(newEngine(), {
+                root: withOutput(root, 'sm-rollup'),
+            }),
         );
         await settle();
 

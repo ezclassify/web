@@ -18,18 +18,6 @@ describe('parseComponentOptions', () => {
         el = document.createElement('div');
     });
 
-    it('maps `format` to formatId', () => {
-        expect(parseComponentOptions(el, { format: 'banner' })).toEqual(
-            expect.objectContaining({ formatId: 'banner' }),
-        );
-    });
-
-    it('maps `category` to categoryId', () => {
-        expect(parseComponentOptions(el, { category: 'level' })).toEqual(
-            expect.objectContaining({ categoryId: 'level' }),
-        );
-    });
-
     it('passes through `size` unchanged', () => {
         expect(parseComponentOptions(el, { size: 'compact' })).toEqual(
             expect.objectContaining({ size: 'compact' }),
@@ -108,37 +96,28 @@ describe('parseComponentOptions', () => {
     });
 
     it('extracts multiple options at once', () => {
-        const opts = parseComponentOptions(el, {
-            'format': 'short',
-            'category': 'level',
-            'show-preview': '',
-        });
+        el.setAttribute('data-ezclassify-format', 'short');
+        el.setAttribute('data-ezclassify-category', 'level');
+        const opts = parseComponentOptions(el, { 'show-preview': '' });
         expect(opts.formatId).toBe('short');
         expect(opts.categoryId).toBe('level');
         expect(opts.showPreview).toBe(true);
     });
 
-    it('falls back to data-ezclassify-category on the host when no controller option set', () => {
+    it('reads the category from data-ezclassify-category on the host', () => {
         el.setAttribute('data-ezclassify-category', 'level');
         expect(parseComponentOptions(el, {})).toEqual(
             expect.objectContaining({ categoryId: 'level' }),
         );
     });
 
-    it('falls back to data-ezclassify-format on the host when no controller option set', () => {
+    it('reads the format from data-ezclassify-format on the host', () => {
         // `data-ezclassify-format` is a host-level attribute in the documented
-        // grammar, like scheme / scope / category: one attribute, one meaning,
+        // grammar, like scope and category: one attribute, one meaning,
         // wherever it is written. A controller host must honor it.
         el.setAttribute('data-ezclassify-format', 'banner');
         expect(parseComponentOptions(el, {})).toEqual(
             expect.objectContaining({ formatId: 'banner' }),
-        );
-    });
-
-    it('prefers the controller-prefixed format option over the host attribute', () => {
-        el.setAttribute('data-ezclassify-format', 'banner');
-        expect(parseComponentOptions(el, { format: 'inline' })).toEqual(
-            expect.objectContaining({ formatId: 'inline' }),
         );
     });
 
@@ -148,19 +127,12 @@ describe('parseComponentOptions', () => {
     });
 
     it('does not inherit data-ezclassify-format from an ancestor', () => {
-        // Unlike `scheme`, format is per-field: a wrapper that sets one field's
-        // format must not silently retag every controller beneath it.
+        // Format is per-field: a wrapper that sets one field's format must not
+        // silently retag every controller beneath it.
         const parent = document.createElement('div');
         parent.setAttribute('data-ezclassify-format', 'banner');
         parent.appendChild(el);
         expect(parseComponentOptions(el, {}).formatId).toBeUndefined();
-    });
-
-    it('reads data-ezclassify-scheme as schemeId', () => {
-        el.setAttribute('data-ezclassify-scheme', 'scheme-x');
-        expect(parseComponentOptions(el, {})).toEqual(
-            expect.objectContaining({ schemeId: 'scheme-x' }),
-        );
     });
 });
 

@@ -6,6 +6,7 @@ import { VanillaEzClassifyStore } from './store/ezclassify-store';
 import { ComponentBase } from './components/component-base';
 import { acceptedValue, judgedAsHeld } from './loaded-value';
 import { mockProcessResult } from './engine-result-mock';
+import { asContext } from '../test-fixtures/as-context';
 
 /** A recognition that read every character. */
 function complete(): ProcessResult['recognition'] {
@@ -153,18 +154,17 @@ async function mount(
     input.id = 'loaded';
     input.value = value;
     if (controller) input.dataset.ezclassifyController = controller;
-    if (storeHost) input.dataset.ezclassifyRendered = '';
+    if (storeHost) input.dataset.ezclassifyMarking = '';
     form.append(input);
     if (withReceiver) {
         const receiver = document.createElement('input');
         receiver.id = 'receiver';
-        receiver.dataset.ezclassifyBind = '';
         receiver.dataset.ezclassifyBoundTo = 'loaded';
         receiver.value = value;
         form.append(receiver);
     }
     document.body.append(form);
-    const ui = new EzClassifyUI(engine(policy, repair) as never, {
+    const ui = new EzClassifyUI(asContext(engine(policy, repair) as never), {
         root: form,
     });
     mounted.push(ui);
@@ -200,7 +200,9 @@ it('keeps an unproven string read in bound MF/TI receivers but accepts structure
     const ready = new Promise((resolve) =>
         form.addEventListener('ezclassify:ready', resolve, { once: true }),
     );
-    const ui = new EzClassifyUI(missingRecognition as never, { root: form });
+    const ui = new EzClassifyUI(asContext(missingRecognition as never), {
+        root: form,
+    });
     mounted.push(ui);
     await ready;
     const source = '  level a  ';
@@ -728,7 +730,9 @@ async function mountRuled(markup: string, publish?: [string, string]) {
     const ready = new Promise((resolve) =>
         form.addEventListener('ezclassify:ready', resolve, { once: true }),
     );
-    const ui = new EzClassifyUI(ruledEngine() as never, { root: form });
+    const ui = new EzClassifyUI(asContext(ruledEngine() as never), {
+        root: form,
+    });
     mounted.push(ui);
     await ready;
     if (publish) await ui.store.publishRendered(...publish);

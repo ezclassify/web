@@ -25,8 +25,6 @@ import type { FavoritesConfig } from './components';
  * only Vue's `root`.
  */
 export interface EzClassifyPresentationOptions {
-    /** ID of the hidden input that receives the aggregated rollup value. */
-    rollupId?: string;
     /**
      * Context-defined render format ID for this UI scope; omitted uses its
      * default.

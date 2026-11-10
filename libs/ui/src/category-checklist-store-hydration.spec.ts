@@ -8,6 +8,7 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { loadMultiScopeRegression } from '../test-fixtures/load-multi-scope-regression';
 import { EzClassifyUI } from './ezclassify-ui';
+import { asContext } from '../test-fixtures/as-context';
 
 const CHECKLIST_FACET_HTML = `
   <input type="hidden" id="doc-marking" data-ezclassify-marking />
@@ -65,7 +66,9 @@ describe('CategoryChecklist hydrates from external store publishes', () => {
 
     it('publish while mounted: checkbox reflects the external assertions', async () => {
         root.innerHTML = CHECKLIST_FACET_HTML;
-        forms = new EzClassifyUI(loadMultiScopeRegression(), { root });
+        forms = new EzClassifyUI(asContext(loadMultiScopeRegression()), {
+            root,
+        });
         await flush();
 
         await forms.store.publishAssertions('doc-marking', [SCOPED_ASSERTION]);
@@ -77,7 +80,9 @@ describe('CategoryChecklist hydrates from external store publishes', () => {
 
     it('publish after a facet allowability push: the new selection still renders checked', async () => {
         root.innerHTML = CHECKLIST_FACET_HTML;
-        forms = new EzClassifyUI(loadMultiScopeRegression(), { root });
+        forms = new EzClassifyUI(asContext(loadMultiScopeRegression()), {
+            root,
+        });
         await flush();
 
         // A default-scope commit first: triggers the store's suggest fan-out,
@@ -111,7 +116,9 @@ describe('CategoryChecklist hydrates from external store publishes', () => {
 
     it('publish of a gated-out concept: the checklist rebuilds and shows it checked', async () => {
         root.innerHTML = CHECKLIST_FACET_HTML;
-        forms = new EzClassifyUI(loadMultiScopeRegression(), { root });
+        forms = new EzClassifyUI(asContext(loadMultiScopeRegression()), {
+            root,
+        });
         await flush();
 
         // Simulate a facet allowability push that gates every concept out
@@ -148,7 +155,9 @@ describe('CategoryChecklist hydrates from external store publishes', () => {
     it('mount after publish: checkbox reflects the pre-existing store state', async () => {
         // Marking host exists first; the publish lands before the checklist mounts.
         root.innerHTML = `<input type="hidden" id="doc-marking" data-ezclassify-marking />`;
-        forms = new EzClassifyUI(loadMultiScopeRegression(), { root });
+        forms = new EzClassifyUI(asContext(loadMultiScopeRegression()), {
+            root,
+        });
         await flush();
 
         await forms.store.publishAssertions('doc-marking', [SCOPED_ASSERTION]);

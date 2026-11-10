@@ -9,6 +9,7 @@ import type { LocalContextSchemeEngineAdapter } from '@ezclassify/types';
 import { MarkedInput } from './marked-input';
 import { InlineMarkingEditor } from './inline-marking-editor';
 import { EzClassifyUI } from '../ezclassify-ui';
+import { levelState } from '../store/page-rollup-harness';
 
 /**
  * User interactions address the owned editor; form assertions use the original
@@ -2245,7 +2246,7 @@ describe('MarkedInput: standalone self-publish to the page aggregate', () => {
         const b = editingField('mi-b') as HTMLTextAreaElement;
 
         // Empty aggregate up front.
-        expect(forms.store.getAggregate().assertions).toHaveLength(0);
+        expect(levelState(forms.store).assertions).toHaveLength(0);
 
         // Mark A (U), B (S). The 'max' rollup on `level` makes the aggregate S.
         a.value = '(U) alpha';
@@ -2255,7 +2256,7 @@ describe('MarkedInput: standalone self-publish to the page aggregate', () => {
         b.dispatchEvent(new Event('input', { bubbles: true }));
         await wait(80);
 
-        const raised = forms.store.getAggregate();
+        const raised = levelState(forms.store);
         expect(
             raised.assertions.some((x) => x.conceptId === 'S'),
             'aggregate must include S after a marked-input edit',
@@ -2266,7 +2267,7 @@ describe('MarkedInput: standalone self-publish to the page aggregate', () => {
         b.dispatchEvent(new Event('input', { bubbles: true }));
         await wait(80);
 
-        const lowered = forms.store.getAggregate();
+        const lowered = levelState(forms.store);
         expect(
             lowered.assertions.some((x) => x.conceptId === 'S'),
             'aggregate must drop S after lowering the mark',
@@ -2287,9 +2288,7 @@ describe('MarkedInput: standalone self-publish to the page aggregate', () => {
         await wait(80);
 
         expect(
-            forms.store
-                .getAggregate()
-                .assertions.some((x) => x.conceptId === 'S'),
+            levelState(forms.store).assertions.some((x) => x.conceptId === 'S'),
         ).toBe(true);
 
         // User deletes the marking, leaving plain text. The aggregate must clear.
@@ -2298,7 +2297,7 @@ describe('MarkedInput: standalone self-publish to the page aggregate', () => {
         el.dispatchEvent(new Event('input', { bubbles: true }));
         await wait(80);
 
-        expect(forms.store.getAggregate().assertions).toHaveLength(0);
+        expect(levelState(forms.store).assertions).toHaveLength(0);
     });
 
     it('a marked-input with data-ezclassify-bound-to still binds to the named marking (not self)', async () => {

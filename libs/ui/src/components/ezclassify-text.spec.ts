@@ -10,6 +10,7 @@ import type {
 } from '@ezclassify/types';
 import { schemeOnlyContext } from '../../test-fixtures/context-doubles';
 import { mockRenderFormats } from '../render-format-layout-mock';
+import { levelState } from '../store/page-rollup-harness';
 
 /**
  * Minimal in-memory engine adapter for unit tests. Supports the multi-scheme
@@ -481,7 +482,7 @@ describe('EzClassifyText (declarative via EzClassifyUI)', () => {
         forms = new EzClassifyUI(asContext(createMockEngine()), { root });
         await flush();
 
-        const agg = forms.store.getAggregate();
+        const agg = levelState(forms.store);
         expect(agg.assertions.length).toBeGreaterThanOrEqual(1);
         // The text card's c1+c2 must surface in the aggregate.
         expect(agg.assertions.some((a) => a.conceptId === 'c1')).toBe(true);
@@ -521,7 +522,7 @@ describe('EzClassifyText (declarative via EzClassifyUI)', () => {
         const ids = Array.from(codes).map((c) => c.id);
         expect(new Set(ids).size).toBe(2);
 
-        const agg = forms.store.getAggregate();
+        const agg = levelState(forms.store);
         expect(agg.assertions.some((a) => a.conceptId === 'c1')).toBe(true);
         expect(agg.assertions.some((a) => a.conceptId === 'c2')).toBe(true);
     });

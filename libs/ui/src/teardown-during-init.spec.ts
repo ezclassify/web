@@ -71,7 +71,6 @@ function destroyedStoreErrors(): string[] {
 function mount(store: VanillaEzClassifyStore): EzClassifyUI {
     return new EzClassifyUI(newContext(), {
         root: container,
-        rollupId: 'teardown-rollup',
         store,
     });
 }

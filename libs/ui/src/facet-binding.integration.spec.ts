@@ -7,6 +7,7 @@ import {
     VanillaEzClassifyStore,
     createEzClassifyFacetBinding,
 } from '@ezclassify/ui';
+import { asContext } from '../test-fixtures/as-context';
 
 describe('third-party control integration', () => {
     it('drives native single and multiple selects without controller attributes', async () => {
@@ -203,7 +204,7 @@ function mountPage(served: string, pickFirst = false) {
     );
     if (pickFirst) void binding.setSelected(['CONFIDENTIAL']);
     const ready = runtimeReady(root);
-    const ui = new EzClassifyUI(engine, { root, store });
+    const ui = new EzClassifyUI(asContext(engine), { root, store });
     return {
         store,
         binding,
@@ -254,7 +255,7 @@ describe('a store shared by one page after another', () => {
         root.appendChild(host);
         document.body.appendChild(root);
         const ready = runtimeReady(root);
-        const ui = new EzClassifyUI(engine, { root, store });
+        const ui = new EzClassifyUI(asContext(engine), { root, store });
         return {
             host,
             ready,
@@ -290,7 +291,7 @@ describe('a store shared by one page after another', () => {
         root.appendChild(markingHost('INTERNAL//DO NOT FORWARD'));
         document.body.appendChild(root);
         const firstReady = runtimeReady(root);
-        const first = new EzClassifyUI(engine, { root, store });
+        const first = new EzClassifyUI(asContext(engine), { root, store });
         await settle(firstReady);
         const committed: string[] = [];
         store.subscribe('doc-marking', (state) =>
@@ -307,7 +308,7 @@ describe('a store shared by one page after another', () => {
         );
         await binding.setSelected(['CONFIDENTIAL']);
         const secondReady = runtimeReady(root);
-        const second = new EzClassifyUI(engine, { root, store });
+        const second = new EzClassifyUI(asContext(engine), { root, store });
         await settle(secondReady);
 
         expect(committed.length).toBeGreaterThan(0);
@@ -340,7 +341,7 @@ describe('a store shared by one page after another', () => {
         const root = document.createElement('div');
         root.appendChild(markingHost('INTERNAL//DO NOT FORWARD'));
         document.body.appendChild(root);
-        const runtime = new EzClassifyUI(engine, { root, store });
+        const runtime = new EzClassifyUI(asContext(engine), { root, store });
         // Let the fields initialize and the seed go on the wire.
         for (let i = 0; i < 3; i++)
             await new Promise<void>((tick) => setTimeout(tick, 0));
@@ -361,7 +362,7 @@ describe('a store shared by one page after another', () => {
         root.appendChild(markingHost('INTERNAL//DO NOT FORWARD'));
         document.body.appendChild(root);
         const firstReady = runtimeReady(root);
-        const first = new EzClassifyUI(engine, { root, store });
+        const first = new EzClassifyUI(asContext(engine), { root, store });
         await settle(firstReady);
         const binding = createEzClassifyFacetBinding(
             store,
@@ -374,7 +375,7 @@ describe('a store shared by one page after another', () => {
         await settle(Promise.resolve());
 
         const secondReady = runtimeReady(root);
-        const second = new EzClassifyUI(engine, { root, store });
+        const second = new EzClassifyUI(asContext(engine), { root, store });
         await settle(secondReady);
 
         expect(store.get('doc-marking').rendered).toBe(
@@ -394,7 +395,10 @@ describe('a store shared by one page after another', () => {
         root.appendChild(first);
         document.body.appendChild(root);
         const firstReady = runtimeReady(root);
-        const firstRuntime = new EzClassifyUI(engine, { root, store });
+        const firstRuntime = new EzClassifyUI(asContext(engine), {
+            root,
+            store,
+        });
         await settle(firstReady);
         const binding = createEzClassifyFacetBinding(
             store,
@@ -413,7 +417,10 @@ describe('a store shared by one page after another', () => {
         firstRuntime.destroy();
         await settle(Promise.resolve());
         const secondReady = runtimeReady(root);
-        const secondRuntime = new EzClassifyUI(engine, { root, store });
+        const secondRuntime = new EzClassifyUI(asContext(engine), {
+            root,
+            store,
+        });
         await settle(secondReady);
 
         expect(store.get('doc-marking').rendered).toBe(
@@ -431,7 +438,10 @@ describe('a store shared by one page after another', () => {
         root.appendChild(first);
         document.body.appendChild(root);
         const firstReady = runtimeReady(root);
-        const firstRuntime = new EzClassifyUI(engine, { root, store });
+        const firstRuntime = new EzClassifyUI(asContext(engine), {
+            root,
+            store,
+        });
         await settle(firstReady);
         // A section rendered conditionally, after the runtime is ready.
         first.appendChild(markingHost('INTERNAL'));
@@ -454,7 +464,10 @@ describe('a store shared by one page after another', () => {
         second.appendChild(markingHost('RESTRICTED//DO NOT FORWARD'));
         root.appendChild(second);
         const secondReady = runtimeReady(root);
-        const secondRuntime = new EzClassifyUI(engine, { root, store });
+        const secondRuntime = new EzClassifyUI(asContext(engine), {
+            root,
+            store,
+        });
         await settle(secondReady);
 
         expect(store.get('doc-marking').rendered).toBe(

@@ -58,7 +58,6 @@ describe('a plain bound input mounted after construction', () => {
     async function mountLateInput(): Promise<HTMLInputElement> {
         const input = document.createElement('input');
         input.id = 'plain-host';
-        input.setAttribute('data-ezclassify-marking', '');
         input.setAttribute('data-ezclassify-bound-to', MARKING_ID);
         root.appendChild(input);
         await flush();
@@ -66,7 +65,7 @@ describe('a plain bound input mounted after construction', () => {
     }
 
     it('settles instead of looping the observer forever', async () => {
-        forms = new EzClassifyUI(loadCedarValleyContext().scheme, { root });
+        forms = new EzClassifyUI(loadCedarValleyContext(), { root });
         await flush();
 
         const input = await mountLateInput();
@@ -80,17 +79,17 @@ describe('a plain bound input mounted after construction', () => {
         expect(
             root.querySelectorAll('.ez-plain-field-wrap > .ez-status-mark'),
         ).toHaveLength(1);
-        expect(forms.fields.filter((f) => f === input)).toHaveLength(1);
+        // A bound view shows the marking; it is never a rollup contributor.
+        expect(forms.fields).not.toContain(input);
     });
 
     it('wraps exactly once when the input is present before construction', async () => {
         const input = document.createElement('input');
         input.id = 'plain-host';
-        input.setAttribute('data-ezclassify-marking', '');
         input.setAttribute('data-ezclassify-bound-to', MARKING_ID);
         root.appendChild(input);
 
-        forms = new EzClassifyUI(loadCedarValleyContext().scheme, { root });
+        forms = new EzClassifyUI(loadCedarValleyContext(), { root });
         await flush();
 
         expect(root.querySelectorAll('.ez-plain-field-wrap')).toHaveLength(1);
@@ -100,11 +99,12 @@ describe('a plain bound input mounted after construction', () => {
         expect(
             root.querySelectorAll('.ez-plain-field-wrap > .ez-status-mark'),
         ).toHaveLength(1);
-        expect(forms.fields.filter((f) => f === input)).toHaveLength(1);
+        // A bound view shows the marking; it is never a rollup contributor.
+        expect(forms.fields).not.toContain(input);
     });
 
     it('hydrates from state published before it mounted', async () => {
-        forms = new EzClassifyUI(loadCedarValleyContext().scheme, { root });
+        forms = new EzClassifyUI(loadCedarValleyContext(), { root });
         await flush();
 
         await forms.store.publishAssertions(MARKING_ID, STAGED);
@@ -119,7 +119,7 @@ describe('a plain bound input mounted after construction', () => {
     });
 
     it('leaves an unpublished marking alone', async () => {
-        forms = new EzClassifyUI(loadCedarValleyContext().scheme, { root });
+        forms = new EzClassifyUI(loadCedarValleyContext(), { root });
         await flush();
 
         const input = await mountLateInput();
@@ -128,7 +128,7 @@ describe('a plain bound input mounted after construction', () => {
     });
 
     it('still reflects a commit that lands after it mounted', async () => {
-        forms = new EzClassifyUI(loadCedarValleyContext().scheme, { root });
+        forms = new EzClassifyUI(loadCedarValleyContext(), { root });
         await flush();
 
         const input = await mountLateInput();
@@ -145,11 +145,10 @@ describe('a plain bound input mounted after construction', () => {
         // teardown. Unwrapping must tolerate that stale sibling reference.
         const input = document.createElement('input');
         input.id = 'plain-host';
-        input.setAttribute('data-ezclassify-marking', '');
         input.setAttribute('data-ezclassify-bound-to', MARKING_ID);
         root.appendChild(input);
 
-        forms = new EzClassifyUI(loadCedarValleyContext().scheme, { root });
+        forms = new EzClassifyUI(loadCedarValleyContext(), { root });
         await flush();
 
         forms.destroy();
@@ -161,7 +160,7 @@ describe('a plain bound input mounted after construction', () => {
     });
 
     it('unwraps the late input on destroy and leaves no residue', async () => {
-        forms = new EzClassifyUI(loadCedarValleyContext().scheme, { root });
+        forms = new EzClassifyUI(loadCedarValleyContext(), { root });
         await flush();
 
         const input = await mountLateInput();

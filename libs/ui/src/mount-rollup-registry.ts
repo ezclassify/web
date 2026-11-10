@@ -30,7 +30,7 @@
  * a child in bundle B would never find each other.
  */
 
-import type { FieldAssertion } from './forms/types';
+import type { Assertion } from '@ezclassify/types';
 import type { HostError } from './binding-model';
 import type { BucketKey } from './store/store-shared';
 
@@ -48,7 +48,7 @@ export interface ChildWhole {
     /** The (Context key, scheme selector) bucket this whole belongs to. */
     bucket: BucketKey;
     /** The child whole's assertion set. */
-    assertions: FieldAssertion[];
+    assertions: Assertion[];
     /** The child whole's rendered string, as the child shows it. */
     rendered: string;
 }
@@ -57,6 +57,12 @@ export interface ChildWhole {
 export interface RegistryChild {
     /** Stable per-instance id (the child's `data-ezclassify-mount-root` value). */
     readonly instanceId: string;
+    /**
+     * The child's root element. The parent reads a single-Context child's
+     * wholes in the Context the parent resolves at this element, and orders
+     * them where it stands in the document.
+     */
+    readonly root: HTMLElement;
     /**
      * The collection in the parent's tree the child's wholes are members of;
      * null for the parent's page.

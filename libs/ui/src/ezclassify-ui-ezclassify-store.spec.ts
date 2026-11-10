@@ -23,6 +23,8 @@ import {
 import type { Assertion, ProcessResult, RenderResult } from '@ezclassify/types';
 import type { TagInput } from './components/tag-input';
 import type { SingleSelect } from './components/single-select';
+import { asContext } from '../test-fixtures/as-context';
+import { levelState } from './store/page-rollup-harness';
 
 const FOUR_FIELDS_HTML = `
   <input type="hidden" id="doc-marking" data-ezclassify-marking />
@@ -47,7 +49,7 @@ async function mountReady(
     const ready = new Promise((resolve) =>
         root.addEventListener('ezclassify:ready', resolve, { once: true }),
     );
-    const forms = new EzClassifyUI(engine, { root });
+    const forms = new EzClassifyUI(asContext(engine), { root });
     await ready;
     return forms;
 }
@@ -169,7 +171,7 @@ describe('EzClassifyUI store wireup', () => {
         const sameStore = forms.store;
         const stableId = categoryHost.id;
         forms.destroy();
-        forms = new EzClassifyUI(loadMultiScopeRegression(), {
+        forms = new EzClassifyUI(asContext(loadMultiScopeRegression()), {
             root,
             store: sameStore,
         });
@@ -184,7 +186,9 @@ describe('EzClassifyUI store wireup', () => {
     });
 
     it('exposes a default VanillaEzClassifyStore when none is supplied', () => {
-        forms = new EzClassifyUI(loadMultiScopeRegression(), { root });
+        forms = new EzClassifyUI(asContext(loadMultiScopeRegression()), {
+            root,
+        });
         expect(forms.store).toBeInstanceOf(VanillaEzClassifyStore);
     });
 
@@ -282,7 +286,7 @@ describe('EzClassifyUI store wireup', () => {
     it('uses the caller-supplied store when one is passed', () => {
         const engine = loadMultiScopeRegression();
         const store = new VanillaEzClassifyStore(engine);
-        forms = new EzClassifyUI(engine, { root, store });
+        forms = new EzClassifyUI(asContext(engine), { root, store });
         expect(forms.store).toBe(store);
     });
 
@@ -302,7 +306,7 @@ describe('EzClassifyUI store wireup', () => {
                 data-ezclassify-bound-to="doc-marking">${initialBody}</textarea>
     `;
         document.body.appendChild(root2);
-        forms = new EzClassifyUI(loadMultiScopeRegression(), {
+        forms = new EzClassifyUI(asContext(loadMultiScopeRegression()), {
             root: root2,
         });
         await flush();
@@ -425,7 +429,9 @@ describe('EzClassifyUI store wireup', () => {
     });
 
     it('facet-of → bound-to: a level facet pick reflects on the tag-input view', async () => {
-        forms = new EzClassifyUI(loadMultiScopeRegression(), { root });
+        forms = new EzClassifyUI(asContext(loadMultiScopeRegression()), {
+            root,
+        });
         await flush();
 
         await forms.store.publishAssertions('doc-marking', [
@@ -445,7 +451,9 @@ describe('EzClassifyUI store wireup', () => {
     });
 
     it('facet-of → facet-of merging: different categories stay isolated; same-category siblings stay in sync', async () => {
-        forms = new EzClassifyUI(loadMultiScopeRegression(), { root });
+        forms = new EzClassifyUI(asContext(loadMultiScopeRegression()), {
+            root,
+        });
         await flush();
 
         // The level facet publishes STUDENTS; the school facet receives only the school slice
@@ -500,7 +508,9 @@ describe('EzClassifyUI store wireup', () => {
     });
 
     it('source dedup: a publisher does not receive its own commit', async () => {
-        forms = new EzClassifyUI(loadMultiScopeRegression(), { root });
+        forms = new EzClassifyUI(asContext(loadMultiScopeRegression()), {
+            root,
+        });
         await flush();
 
         // Grab the autocomplete component instance via the runtime's internal map.
@@ -534,7 +544,9 @@ describe('EzClassifyUI store wireup', () => {
     });
 
     it('detaches the native-input listener on destroy so a torn-down autocompleter stops reacting', async () => {
-        forms = new EzClassifyUI(loadMultiScopeRegression(), { root });
+        forms = new EzClassifyUI(asContext(loadMultiScopeRegression()), {
+            root,
+        });
         await flush();
 
         const acEl = root.querySelector<HTMLInputElement>('#ac')!;
@@ -576,7 +588,7 @@ describe('EzClassifyUI store wireup', () => {
              data-ezclassify-category="level" />
     `;
         document.body.appendChild(root3);
-        forms = new EzClassifyUI(loadMultiScopeRegression(), {
+        forms = new EzClassifyUI(asContext(loadMultiScopeRegression()), {
             root: root3,
         });
         await flush();
@@ -586,7 +598,9 @@ describe('EzClassifyUI store wireup', () => {
     });
 
     it('writes store rendered state back into the marking host on commit', async () => {
-        forms = new EzClassifyUI(loadMultiScopeRegression(), { root });
+        forms = new EzClassifyUI(asContext(loadMultiScopeRegression()), {
+            root,
+        });
         await flush();
 
         await forms.store.publishAssertions('doc-marking', [
@@ -604,7 +618,9 @@ describe('EzClassifyUI store wireup', () => {
     });
 
     it('writes back on publishRendered too, not just publishAssertions', async () => {
-        forms = new EzClassifyUI(loadMultiScopeRegression(), { root });
+        forms = new EzClassifyUI(asContext(loadMultiScopeRegression()), {
+            root,
+        });
         await flush();
 
         await forms.store.publishRendered(
@@ -630,7 +646,9 @@ describe('EzClassifyUI store wireup', () => {
             );
         });
 
-        forms = new EzClassifyUI(loadMultiScopeRegression(), { root });
+        forms = new EzClassifyUI(asContext(loadMultiScopeRegression()), {
+            root,
+        });
         await ready;
         await flush();
 
@@ -657,7 +675,7 @@ describe('EzClassifyUI store wireup', () => {
       <input id="ac-host" data-ezclassify-controller="tags" data-ezclassify-marking />
     `;
         document.body.appendChild(root5);
-        forms = new EzClassifyUI(loadMultiScopeRegression(), {
+        forms = new EzClassifyUI(asContext(loadMultiScopeRegression()), {
             root: root5,
         });
         await flush();
@@ -691,7 +709,7 @@ describe('EzClassifyUI store wireup', () => {
              data-ezclassify-bound-to="doc-marking" />
     `;
         document.body.appendChild(root4);
-        forms = new EzClassifyUI(loadMultiScopeRegression(), {
+        forms = new EzClassifyUI(asContext(loadMultiScopeRegression()), {
             root: root4,
         });
         await flush();
@@ -807,7 +825,7 @@ describe('EzClassifyUI store wireup', () => {
                     : {},
             };
         }) as typeof engine.process;
-        forms = new EzClassifyUI(engine, { root: root5 });
+        forms = new EzClassifyUI(asContext(engine), { root: root5 });
         await flush();
         processCalls = 0;
         const shortView = root5.querySelector<HTMLInputElement>('#short-view')!;
@@ -941,7 +959,7 @@ describe('EzClassifyUI store wireup', () => {
                 },
             } satisfies RenderResult;
         }) as typeof engine.render;
-        forms = new EzClassifyUI(engine, { root: root5 });
+        forms = new EzClassifyUI(asContext(engine), { root: root5 });
         await flush();
         const input = root5.querySelector<HTMLInputElement>('#short-rollup')!;
         type AggregateState = EzClassifyState;
@@ -974,7 +992,7 @@ describe('EzClassifyUI store wireup', () => {
                 },
             ]);
             await flush();
-            const aggregate = forms!.store.getAggregate();
+            const aggregate = levelState(forms!.store);
             expect(aggregate.aggregate).toBe(true);
             expect(aggregate.assertions[0]?.value).toBe(value);
             notifyAggregate(aggregate);
@@ -1046,7 +1064,7 @@ describe('EzClassifyUI store wireup', () => {
              data-ezclassify-bound-to="doc-marking" />
     `;
         document.body.appendChild(root5);
-        forms = new EzClassifyUI(loadMultiScopeRegression(), {
+        forms = new EzClassifyUI(asContext(loadMultiScopeRegression()), {
             root: root5,
         });
         await flush();
@@ -1119,7 +1137,9 @@ describe('EzClassifyUI store wireup', () => {
     it('does not produce an unhandled rejection when the store is destroyed before a component onChange fires', async () => {
         // Internal onChange publication catches a destroyed-store rejection.
         // Vitest treats any uncaught rejection as a failure.
-        forms = new EzClassifyUI(loadMultiScopeRegression(), { root });
+        forms = new EzClassifyUI(asContext(loadMultiScopeRegression()), {
+            root,
+        });
         await flush();
 
         const components = (

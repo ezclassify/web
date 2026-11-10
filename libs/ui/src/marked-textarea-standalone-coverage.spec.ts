@@ -9,6 +9,7 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { loadMultiScopeRegression } from '../test-fixtures/load-multi-scope-regression';
 import { EzClassifyUI } from './ezclassify-ui';
+import { asContext } from '../test-fixtures/as-context';
 
 const HTML = `
   <textarea id="body" data-ezclassify-controller="marked-textarea"></textarea>
@@ -48,7 +49,9 @@ describe('standalone MarkedTextArea: parts roll up to the textarea without a who
     ])(
         'preserves prose and mounts no whole-over-parts control for %s',
         async (body) => {
-            forms = new EzClassifyUI(loadMultiScopeRegression(), { root });
+            forms = new EzClassifyUI(asContext(loadMultiScopeRegression()), {
+                root,
+            });
             await flush();
 
             const ta = root.querySelector<HTMLTextAreaElement>('#body')!;

@@ -12,6 +12,7 @@ import type {
 } from '@ezclassify/types';
 import { loadMultiScopeRegression } from '../test-fixtures/load-multi-scope-regression';
 import { EzClassifyUI } from './ezclassify-ui';
+import { asContext } from '../test-fixtures/as-context';
 
 const HTML = `
   <input type="hidden" id="doc-marking" data-ezclassify-marking />
@@ -48,7 +49,9 @@ describe('MarkedTextArea bound-to: multi-segment publish rolls up per the docume
     });
 
     it("two segments asserting the same single-select category resolve via that category's rollup rule (max rank), not typing order", async () => {
-        forms = new EzClassifyUI(loadMultiScopeRegression(), { root });
+        forms = new EzClassifyUI(asContext(loadMultiScopeRegression()), {
+            root,
+        });
         await flush();
 
         const ta = root.querySelector<HTMLTextAreaElement>('#body')!;
@@ -76,7 +79,9 @@ describe('MarkedTextArea bound-to: multi-segment publish rolls up per the docume
     });
 
     it('reversed typing order (higher-rank segment typed SECOND) still resolves to the higher rank, ruling out first-segment-wins too', async () => {
-        forms = new EzClassifyUI(loadMultiScopeRegression(), { root });
+        forms = new EzClassifyUI(asContext(loadMultiScopeRegression()), {
+            root,
+        });
         await flush();
 
         const ta = root.querySelector<HTMLTextAreaElement>('#body')!;
@@ -129,7 +134,7 @@ describe('MarkedTextArea bound-to: multi-segment publish rolls up per the docume
             }
             return result;
         });
-        forms = new EzClassifyUI(engine, { root });
+        forms = new EzClassifyUI(asContext(engine), { root });
         await flush();
         const textarea = root.querySelector<HTMLTextAreaElement>('#body')!;
         textarea.value =
@@ -152,7 +157,9 @@ describe('MarkedTextArea bound-to: multi-segment publish rolls up per the docume
     });
 
     it('two segments asserting different categories union together on doc-marking', async () => {
-        forms = new EzClassifyUI(loadMultiScopeRegression(), { root });
+        forms = new EzClassifyUI(asContext(loadMultiScopeRegression()), {
+            root,
+        });
         await flush();
 
         const ta = root.querySelector<HTMLTextAreaElement>('#body')!;
@@ -202,7 +209,9 @@ describe('MarkedTextArea bound-to: replacement parts cannot be cleared by stale 
     });
 
     it('keeps the replacement segment set in the parent aggregate', async () => {
-        forms = new EzClassifyUI(loadMultiScopeRegression(), { root });
+        forms = new EzClassifyUI(asContext(loadMultiScopeRegression()), {
+            root,
+        });
         await flush();
 
         const textarea = root.querySelector<HTMLTextAreaElement>('#body')!;

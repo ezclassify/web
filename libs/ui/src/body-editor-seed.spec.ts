@@ -20,6 +20,8 @@ import type { LocalContextSchemeEngineAdapter } from '@ezclassify/types';
 import { Context } from '@ezclassify/engine';
 import { EzClassifyUI } from './ezclassify-ui';
 import { MarkedInput } from './components/marked-input';
+import { asContext } from '../test-fixtures/as-context';
+import { levelState } from './store/page-rollup-harness';
 
 function wait(ms = 30): Promise<void> {
     return new Promise((r) => setTimeout(r, ms));
@@ -115,7 +117,7 @@ describe('the initial seed reads a body editor mark, never its body', () => {
     it('leaves an authored mark on the field after mount', async () => {
         const engine = createMarkedEngine();
         root.innerHTML = `<div class="field"><input type="text" id="mi-seed" data-ezclassify-controller="marked-input" value="(S) quarterly report"></div>`;
-        const forms = new EzClassifyUI(engine as never, { root });
+        const forms = new EzClassifyUI(asContext(engine as never), { root });
         activeForms.push(forms);
         await wait(200);
 
@@ -126,7 +128,7 @@ describe('the initial seed reads a body editor mark, never its body', () => {
     it('seeds the store with the mark the field carries, not an empty set', async () => {
         const engine = createMarkedEngine();
         root.innerHTML = `<div class="field"><input type="text" id="mi-seed" data-ezclassify-controller="marked-input" value="(S) quarterly report"></div>`;
-        const forms = new EzClassifyUI(engine as never, { root });
+        const forms = new EzClassifyUI(asContext(engine as never), { root });
         activeForms.push(forms);
         await wait(200);
 
@@ -140,7 +142,7 @@ describe('the initial seed reads a body editor mark, never its body', () => {
     it('keeps the component assertions the field parsed for itself', async () => {
         const engine = createMarkedEngine();
         root.innerHTML = `<div class="field"><input type="text" id="mi-seed" data-ezclassify-controller="marked-input" value="(S) quarterly report"></div>`;
-        const forms = new EzClassifyUI(engine as never, { root });
+        const forms = new EzClassifyUI(asContext(engine as never), { root });
         activeForms.push(forms);
         await wait(200);
 
@@ -156,11 +158,11 @@ describe('the initial seed reads a body editor mark, never its body', () => {
         // before the user touches anything.
         const engine = createMarkedEngine();
         root.innerHTML = `<div class="field"><input type="text" id="mi-seed" data-ezclassify-controller="marked-input" value="(S) quarterly report"></div>`;
-        const forms = new EzClassifyUI(engine as never, { root });
+        const forms = new EzClassifyUI(asContext(engine as never), { root });
         activeForms.push(forms);
         await wait(200);
 
-        const aggregate = forms.store.getAggregate();
+        const aggregate = levelState(forms.store);
         expect(aggregate.assertions.some((a) => a.conceptId === 'S')).toBe(
             true,
         );
@@ -169,7 +171,7 @@ describe('the initial seed reads a body editor mark, never its body', () => {
     it('commits an empty body editor once so facet subscribers get their signal', async () => {
         const engine = createMarkedEngine();
         root.innerHTML = `<div class="field"><input type="text" id="mi-empty" data-ezclassify-controller="marked-input"></div>`;
-        const forms = new EzClassifyUI(engine as never, { root });
+        const forms = new EzClassifyUI(asContext(engine as never), { root });
         activeForms.push(forms);
 
         const seen: number[] = [];
@@ -187,7 +189,7 @@ describe('the initial seed reads a body editor mark, never its body', () => {
         // and nothing else, so the raw value is exactly what the store wants.
         const engine = createMarkedEngine();
         root.innerHTML = `<input id="plain-host" data-ezclassify-marking value="S" />`;
-        const forms = new EzClassifyUI(engine as never, { root });
+        const forms = new EzClassifyUI(asContext(engine as never), { root });
         activeForms.push(forms);
         await wait(200);
 

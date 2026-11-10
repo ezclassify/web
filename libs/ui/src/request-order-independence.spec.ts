@@ -6,6 +6,7 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import { EzClassifyUI } from './ezclassify-ui';
 import { loadMultiScopeRegression } from '../test-fixtures/load-multi-scope-regression';
+import { asContext } from '../test-fixtures/as-context';
 
 const REMOTE = new Set([
     'process',
@@ -81,7 +82,7 @@ async function settle() {
 async function run(delayOf: (call: number) => number) {
     document.body.innerHTML = FORM;
     const { remote, requests } = remoteEngine(delayOf);
-    ui = new EzClassifyUI(remote, {
+    ui = new EzClassifyUI(asContext(remote), {
         root: document.querySelector<HTMLElement>('#root')!,
     });
     await settle();
@@ -123,7 +124,7 @@ describe('engine requests under any answer order', () => {
     it('binds a field to its own host, never the first input its form holds', async () => {
         document.body.innerHTML = FORM;
         const { remote } = remoteEngine(() => 1);
-        ui = new EzClassifyUI(remote, {
+        ui = new EzClassifyUI(asContext(remote), {
             root: document.querySelector<HTMLElement>('#root')!,
         });
         await settle();

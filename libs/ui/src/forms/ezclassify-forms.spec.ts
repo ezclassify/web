@@ -138,39 +138,6 @@ describe('EzClassifyUI', () => {
         forms = null;
     });
 
-    it('recalculate returns current rollup value', () => {
-        const engine = createEngine();
-        (engine.aggregate as any).mockReturnValue({
-            assertions: [
-                {
-                    conceptId: 'a',
-                    categoryId: 'f1',
-                    confidence: 'certain',
-                    source: 'user',
-                },
-            ],
-            rendered: 'A',
-            valid: true,
-            errors: [],
-            appliedFixes: [],
-            notices: [],
-        });
-        forms = new EzClassifyUI(schemeOnlyContext(engine), { root });
-
-        const result = forms.recalculate();
-        expect(typeof result).toBe('string');
-    });
-
-    it('getRollup returns rollup value without recalculating', () => {
-        forms = new EzClassifyUI(schemeOnlyContext(createEngine()), { root });
-        const rollup = root.querySelector(
-            '#ezclassify-rollup',
-        ) as HTMLInputElement;
-        rollup.value = 'cached-value';
-
-        expect(forms.getRollup()).toBe('cached-value');
-    });
-
     it('getAllAssertions returns deduplicated assertions from all fields', () => {
         forms = new EzClassifyUI(schemeOnlyContext(createEngine()), { root });
 

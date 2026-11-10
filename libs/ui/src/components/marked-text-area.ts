@@ -192,7 +192,7 @@ export interface MarkedTextAreaOptions extends ComponentOptions {
      *
      * @internal
      */
-    onScanCompleteness?: (complete: boolean, firstPortionRead: boolean) => void;
+    onScanCompleteness?: (complete: boolean) => void;
 }
 
 /** Numbers each field's incomplete-scan notice, so its id is unique. */
@@ -304,11 +304,6 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
      * the textarea is invalid, and its rollups are flagged stale.
      */
     private scanComplete = true;
-    /**
-     * Whether the last scan read the first portion. A scan that stops before
-     * any portion leaves the first one, and any marking bound to it, unread.
-     */
-    private firstPortionRead = true;
     /** The completeness last reported to validity and the runtime. */
     private reportedScanComplete = true;
     /**
@@ -317,8 +312,6 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
      * only a scan that lands can clear the error the failure raised.
      */
     private scanFailed = false;
-    /** The first-portion reading last reported to the runtime. */
-    private reportedFirstPortionRead = true;
     /** The custom validity message this field set, so it clears only its own. */
     private scanValidity: string | null = null;
     /**
@@ -985,7 +978,6 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
         // of this field's verdicts, and the rollups stop counting a field
         // that is gone.
         this.scanComplete = true;
-        this.firstPortionRead = true;
         this.reportScanCompleteness();
     }
 
@@ -1044,7 +1036,6 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
             this.activeRange = null;
             this.activeSegmentIndex = -1;
             this.scanComplete = true;
-            this.firstPortionRead = true;
             this.scanFailed = false;
             this.renderDisplay();
             this.updateStatusMark();
@@ -1077,7 +1068,6 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
                 // text. The portions committed before stay, and the field says
                 // the text is unchecked until a scan reads all of it.
                 this.scanComplete = false;
-                this.firstPortionRead = false;
                 this.updateStatusMark();
                 this.reportScanCompleteness();
             }
@@ -1375,7 +1365,6 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
                 .join('\n') ===
                 this.hiddenContainers.map((box) => box.id).join('\n');
         this.scanComplete = complete;
-        this.firstPortionRead = complete || embedded.length > 0;
         this.renderDisplay();
         this.updateStatusMark();
         if (!markingsUnchanged) {
@@ -1452,20 +1441,10 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
      * set itself is left alone.
      */
     private reportScanCompleteness(): void {
-        if (
-            this.scanComplete === this.reportedScanComplete &&
-            this.firstPortionRead === this.reportedFirstPortionRead
-        )
-            return;
-        const completenessChanged =
-            this.scanComplete !== this.reportedScanComplete;
+        if (this.scanComplete === this.reportedScanComplete) return;
         this.reportedScanComplete = this.scanComplete;
-        this.reportedFirstPortionRead = this.firstPortionRead;
-        if (completenessChanged) this.showScanNotice(!this.scanComplete);
-        this.options.onScanCompleteness?.(
-            this.scanComplete,
-            this.firstPortionRead,
-        );
+        this.showScanNotice(!this.scanComplete);
+        this.options.onScanCompleteness?.(this.scanComplete);
     }
 
     /**
@@ -2050,20 +2029,6 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
             ]),
         );
         const portions = this.committedPortions();
-        // The explicit first-part binding follows the first current portion,
-        // even after an insertion changes which stable entry occupies it.
-        if (
-            this.textarea.hasAttribute('data-ezclassify-first-part-binding') &&
-            this.hiddenContainers[0]?.id !==
-                portions.find((segment) => segment.entryId)?.entryId
-        ) {
-            for (const { box, field } of previous.values()) {
-                field?.destroy();
-                this.options.unregisterHiddenField?.(box);
-                box.remove();
-            }
-            previous.clear();
-        }
         this.hiddenFields = [];
         this.hiddenContainers = [];
         for (let i = 0; i < portions.length; i++) {

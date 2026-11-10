@@ -41,25 +41,16 @@ import { TranslatedView, isTranslatedView } from './components/translated-view';
  * through verbatim so per-controller extensions don't need to update this
  * function.
  *
- * The element is also consulted for shared host-level attributes
- * (`data-ezclassify-scope`, `data-ezclassify-scheme`,
- * `data-ezclassify-category`, `data-ezclassify-format`) so they can be set once
- * at the host element rather than repeated under the controller prefix. A
- * controller-prefixed option always wins over the host attribute.
+ * The host-level attributes `data-ezclassify-scope`, `data-ezclassify-category`
+ * and `data-ezclassify-format` are read off the element itself; they have no
+ * controller-prefixed form. The Context and scheme an element marks with are
+ * the runtime's to resolve, not an option.
  */
 export function parseComponentOptions(
     el: HTMLElement,
     raw: Record<string, string>,
 ): Record<string, unknown> {
     const opts: Record<string, unknown> = { ...raw };
-    if (typeof opts['format'] === 'string') {
-        opts.formatId = opts['format'];
-        delete opts['format'];
-    }
-    if (typeof opts['category'] === 'string') {
-        opts.categoryId = opts['category'];
-        delete opts['category'];
-    }
     if (typeof opts['primary-category'] === 'string') {
         opts.primaryCategoryId = opts['primary-category'];
         delete opts['primary-category'];
@@ -116,27 +107,15 @@ export function parseComponentOptions(
     // Shared binding attributes (live on the host element, not under the controller prefix).
     const scope = el.getAttribute('data-ezclassify-scope');
     if (scope) opts.scope = scope;
-    const scheme =
-        el.getAttribute('data-ezclassify-scheme') ??
-        el
-            .closest('[data-ezclassify-scheme]')
-            ?.getAttribute('data-ezclassify-scheme');
-    if (scheme) opts.schemeId = scheme;
-    // Allow category to live as a top-level binding too, when not specified on the controller prefix.
-    if (!opts.categoryId) {
-        const category = el.getAttribute('data-ezclassify-category');
-        if (category) opts.categoryId = category;
-    }
-    // Same rule for the render format. `data-ezclassify-format` is a host-level
-    // attribute in the documented grammar and the forms layer has always read
-    // it off a plain enhanced input; a controller host is still a field, so the
-    // attribute has to mean the same thing there. Read from the host element
-    // only, not the closest ancestor: format is a per-field choice, and
-    // inheriting it would retag every controller under a wrapper that set one.
-    if (!opts.formatId) {
-        const format = resolveFormatAttr(el);
-        if (format) opts.formatId = format;
-    }
+    // The category a facet picker selects in is a host attribute, never a
+    // controller-prefixed option.
+    const category = el.getAttribute('data-ezclassify-category');
+    if (category) opts.categoryId = category;
+    // The render format, read from the host element only, not the closest
+    // ancestor: format is a per-field choice, and inheriting it would retag
+    // every controller under a wrapper that set one.
+    const format = resolveFormatAttr(el);
+    if (format) opts.formatId = format;
     return opts;
 }
 

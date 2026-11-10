@@ -27,8 +27,12 @@ import { resolve, dirname, basename } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, it, expect } from 'vitest';
 import { Context } from '@ezclassify/engine';
-import type { LocalContextSchemeEngineAdapter } from '@ezclassify/types';
+import type {
+    GuideRuleSelection,
+    LocalContextSchemeEngineAdapter,
+} from '@ezclassify/types';
 import { EzClassifyUI } from '@ezclassify/ui';
+import { asContext } from '../test-fixtures/as-context';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const specRoot = resolve(__dirname, '../../../vendor/spec');
@@ -101,7 +105,7 @@ function makeForms(engine: LocalContextSchemeEngineAdapter): {
 } {
     const root = document.createElement('div');
     document.body.appendChild(root);
-    const forms = new EzClassifyUI(engine, { root });
+    const forms = new EzClassifyUI(asContext(engine), { root });
     return { forms, root };
 }
 
@@ -156,7 +160,7 @@ function runViaForms(
         );
     }
     if (method === 'evaluateMany') {
-        return guide().evaluateMany(args[0] as string[]);
+        return guide().evaluateMany(args[0] as GuideRuleSelection[]);
     }
     if (method === 'guideScan') {
         const hits = guide().scan(args[0] as string);
