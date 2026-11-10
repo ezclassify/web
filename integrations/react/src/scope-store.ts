@@ -49,20 +49,18 @@ export class ScopeStore extends ReactEzClassifyStore {
 }
 
 /**
- * Build a root's store over the Contexts its `EzClassifyUI` reads. One Context
- * is the store's sole bucket, read by that Context's scheme; several are read
- * per bucket, resolved the way the runtime resolves them.
+ * Build a root's store over the Contexts its `EzClassifyUI` reads, one bucket
+ * per (Context, scheme) pair, resolved the way the runtime resolves them. One
+ * Context's primary scheme is the default bucket, and a field that selects its
+ * other scheme with `data-ezclassify-scheme` is read in a bucket of its own.
  */
 function buildStore(
     source: EzClassifySource,
     format: string | undefined,
 ): ScopeStore {
-    if ('contexts' in source) {
-        return new ScopeStore({
-            buckets: contextStoreBuckets(source, { format }),
-        });
-    }
-    return new ScopeStore(source.scheme, format ? { format } : undefined);
+    return new ScopeStore({
+        buckets: contextStoreBuckets(source, { format }),
+    });
 }
 
 /** What a root holds so it can rebuild its own store. */

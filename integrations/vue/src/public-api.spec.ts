@@ -17,6 +17,10 @@ import {
     type WritableComputedRef,
 } from 'vue';
 import { mount, type VueWrapper } from '@vue/test-utils';
+import { readFileSync } from 'node:fs';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { bucketKey } from '@ezclassify/ui';
 import { Context } from '@ezclassify/engine';
 import {
     createEzClassify,
@@ -297,6 +301,55 @@ describe('<EzClassify>', () => {
         wrapper = null;
         await expect(store!.publishRendered('doc', 'A')).rejects.toThrow(
             /destroyed/,
+        );
+    });
+
+    it("marks a field in one Context's second scheme, in its own bucket", async () => {
+        const fixtures = resolve(
+            dirname(fileURLToPath(import.meta.url)),
+            '../../../vendor/spec/fixtures/v1',
+        );
+        const read = (name: string): unknown =>
+            JSON.parse(readFileSync(resolve(fixtures, `${name}.json`), 'utf8'));
+        const context = Context.fromComponents({
+            schemes: [
+                { key: 'first', scheme: read('ref-scheme-1') },
+                { key: 'second', scheme: read('ref-scheme-2') },
+            ],
+            primaryScheme: 'first',
+        } as Parameters<typeof Context.fromComponents>[0]);
+        let store: VueRefStore | null = null;
+        mountInRoot(
+            defineComponent({
+                setup() {
+                    store = useInjectedStore();
+                    return () =>
+                        h('div', [
+                            h('input', {
+                                'id': 'memo',
+                                'data-ezclassify-marking': '',
+                                'value': 'HIGH',
+                            }),
+                            h('div', { 'data-ezclassify-scheme': 'second' }, [
+                                h('input', {
+                                    'id': 'note',
+                                    'data-ezclassify-marking': '',
+                                    'value': 'LOW//ALPHA',
+                                }),
+                            ]),
+                        ]);
+                },
+            }),
+            { context },
+        );
+
+        await vi.waitFor(() =>
+            expect(store!.get('note').rendered).toBe('LOW//ALPHA'),
+        );
+        expect(store!.get('memo').rendered).toBe('HIGH');
+        const buckets = store!.getAggregate().byBucket;
+        expect([...buckets.keys()].sort()).toEqual(
+            [bucketKey('', ''), bucketKey('', 'second')].sort(),
         );
     });
 

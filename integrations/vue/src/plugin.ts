@@ -100,18 +100,13 @@ function resolveConfig(provision: EzClassifyProvision): EzClassifyConfig {
     return {
         contexts: input,
         presentation,
-        // One Context is the store's sole bucket; several are read per bucket,
-        // resolved the way the runtime resolves them.
+        // One bucket per (Context, scheme) pair, resolved the way the runtime
+        // resolves them; one Context's primary scheme is the default bucket.
         createStore: () =>
-            context !== undefined
-                ? new VueRefStore(context.scheme, {
-                      format: presentation.format,
-                  })
-                : new VueRefStore({
-                      buckets: contextStoreBuckets(
-                          { contexts: contexts! },
-                          { format: presentation.format },
-                      ),
-                  }),
+            new VueRefStore({
+                buckets: contextStoreBuckets(input, {
+                    format: presentation.format,
+                }),
+            }),
     };
 }

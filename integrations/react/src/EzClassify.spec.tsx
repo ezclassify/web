@@ -20,6 +20,7 @@ import { describe, it, expect, afterEach, vi } from 'vitest';
 import { act, cleanup, render, screen } from '@testing-library/react';
 import { Context } from '@ezclassify/engine';
 import { schemeOnlyContext } from '../../../libs/ui/test-fixtures/context-doubles';
+import { bucketKey } from '@ezclassify/ui';
 import type { ContextAdapter, FavoritesConfig } from '@ezclassify/ui';
 import {
     EzClassify,
@@ -330,6 +331,55 @@ describe('<EzClassifyProvider> props', () => {
         expect(
             document.querySelectorAll('[data-ezclassify-mount]'),
         ).toHaveLength(2);
+    });
+
+    it("marks a field in one Context's second scheme, in its own bucket", async () => {
+        const second: unknown = JSON.parse(
+            readFileSync(resolve(fixturesDir, 'ref-scheme-2.json'), 'utf8'),
+        );
+        const context = Context.fromComponents({
+            schemes: [
+                { key: 'first', scheme },
+                { key: 'second', scheme: second },
+            ],
+            primaryScheme: 'first',
+        } as Parameters<
+            typeof Context.fromComponents
+        >[0]) as unknown as ContextAdapter;
+        const seen: { store?: ReactEzClassifyStore; forms?: unknown }[] = [];
+        render(
+            <EzClassifyProvider context={context}>
+                <EzClassify>
+                    <input
+                        id="memo"
+                        data-ezclassify-marking
+                        defaultValue="HIGH"
+                    />
+                    <div data-ezclassify-scheme="second">
+                        <input
+                            id="note"
+                            data-ezclassify-marking
+                            defaultValue="LOW//ALPHA"
+                        />
+                    </div>
+                    <Probe seen={seen} />
+                </EzClassify>
+            </EzClassifyProvider>,
+        );
+        await flush();
+
+        const store = last(seen).store!;
+        await vi.waitFor(() =>
+            expect(store.get('note').rendered).toBe('LOW//ALPHA'),
+        );
+        expect(store.get('memo').rendered).toBe('HIGH');
+        const buckets = store.getAggregate().byBucket;
+        expect([...buckets.keys()].sort()).toEqual(
+            [bucketKey('', ''), bucketKey('', 'second')].sort(),
+        );
+        expect(buckets.get(bucketKey('', 'second'))!.rendered).toBe(
+            'LOW//ALPHA',
+        );
     });
 
     it('applies its presentation options to the roots below', async () => {

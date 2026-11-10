@@ -9,6 +9,9 @@
  * host owns.
  */
 import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { readFileSync } from 'node:fs';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { TestBed } from '@angular/core/testing';
 import { Component } from '@angular/core';
 import { Context } from '@ezclassify/engine';
@@ -181,6 +184,42 @@ describe('provideEzClassify', () => {
         expect(store).toBeInstanceOf(AngularSignalStore);
         await store.publishRendered('doc', 'HIGH');
         expect(store.get('doc').rendered).toBe('HIGH');
+    });
+
+    it("lets a bare root mark in one Context's second scheme, in its own bucket", async () => {
+        const fixtures = resolve(
+            dirname(fileURLToPath(import.meta.url)),
+            '../../../../vendor/spec/fixtures/v1',
+        );
+        const read = (name: string): unknown =>
+            JSON.parse(readFileSync(resolve(fixtures, `${name}.json`), 'utf8'));
+        const crosswalking = openContext(
+            Context.fromComponents({
+                schemes: [
+                    { key: 'first', scheme: read('ref-scheme-1') },
+                    { key: 'second', scheme: read('ref-scheme-2') },
+                ],
+                primaryScheme: 'first',
+            } as Parameters<typeof Context.fromComponents>[0]),
+        );
+        await TestBed.configureTestingModule({
+            imports: [BareRootComponent],
+            providers: [provideEzClassify({ context: crosswalking })],
+        }).compileComponents();
+
+        const fixture = TestBed.createComponent(BareRootComponent);
+        fixture.detectChanges(false);
+        const directive =
+            fixture.debugElement.children[0].injector.get(EzClassifyDirective);
+
+        const store = directive.getStore()!;
+        const second = bucketKey('', 'second');
+        store.setBucket('note', second);
+        await store.publishRendered('note', 'LOW//ALPHA');
+        expect(store.get('note').rendered).toBe('LOW//ALPHA');
+        expect(store.getAggregate().byBucket.get(second)?.rendered).toBe(
+            'LOW//ALPHA',
+        );
     });
 
     it('binds a remote Context scheme without addressed lifecycle methods', async () => {

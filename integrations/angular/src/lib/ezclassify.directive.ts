@@ -218,19 +218,13 @@ export class EzClassifyDirective implements OnInit, OnChanges, OnDestroy {
 
         const provided = this.ezClassifyStore ?? null;
         this.ownsStore = provided === null;
-        // One Context is the store's sole bucket; several are read per bucket,
-        // resolved the way the runtime resolves them.
+        // One bucket per (Context, scheme) pair, resolved the way the runtime
+        // resolves them; one Context's primary scheme is the default bucket.
         const store =
             provided ??
-            ('contexts' in source
-                ? new AngularSignalStore({
-                      buckets: contextStoreBuckets(source, {
-                          format: opts.format,
-                      }),
-                  })
-                : new AngularSignalStore(source.scheme, {
-                      format: opts.format,
-                  }));
+            new AngularSignalStore({
+                buckets: contextStoreBuckets(source, { format: opts.format }),
+            });
         this.store.set(store);
         Promise.resolve().then(() => {
             if (this.destroyed || token !== this.initToken) return;
