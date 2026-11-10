@@ -274,7 +274,8 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
      * sets it.
      */
     private partOfId: string | undefined;
-    private targetIdPrefix = 'para-';
+    /** Names a portion entry when the textarea has no id and no whole. */
+    private readonly entryIdPrefix = 'para-';
 
     /**
      * Display-size observer; stored so destroy() can disconnect it. Without
@@ -1306,7 +1307,7 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
             text,
             owned,
             () =>
-                `${this.textarea.id || this.partOfId || this.targetIdPrefix}-entry-${++this.hiddenGeneration}`,
+                `${this.textarea.id || this.partOfId || this.entryIdPrefix}-entry-${++this.hiddenGeneration}`,
         );
         owned.forEach((segment, index) => {
             segment.entryId = ids[index];
@@ -2049,10 +2050,6 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
                     box.setAttribute('data-marked-textarea-entry-managed', '');
                 this.hiddenRoot.appendChild(box);
             }
-            box.setAttribute(
-                'data-ezclassify-target',
-                `${this.targetIdPrefix}${i + 1}`,
-            );
             box.dataset.segmentIndex = String(i);
             box.dataset.segmentStart = String(seg.start);
             box.dataset.segmentEnd = String(seg.end);

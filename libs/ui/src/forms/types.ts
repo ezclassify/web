@@ -185,7 +185,6 @@ export interface FormsComponentState {
      * with `data-ezclassify-part-of`.
      */
     partOfMap: Map<HTMLElement, string>;
-    targetMap: Map<HTMLElement, string>;
     /**
      * Per-whole coverage state, keyed by the whole's marking id. Populated by
      * the rollup pass: every whole with parts gets its own entry, holding the

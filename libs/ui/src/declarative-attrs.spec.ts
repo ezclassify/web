@@ -650,83 +650,6 @@ describe('Declarative attribute system (EzClassifyUI)', () => {
         forms.destroy();
     });
 
-    it('reads ezclassify-for attribute on components and tracks in targetMap', async () => {
-        const select = document.createElement('select');
-        select.setAttribute('data-ezclassify-controller', 'select');
-        select.setAttribute('data-ezclassify-category', 'level');
-        select.setAttribute('data-ezclassify-target', 'section-1');
-        document.body.appendChild(select);
-
-        const forms = await createForms();
-        expect(forms.targetMap.get(select)).toBe('section-1');
-
-        forms.destroy();
-    });
-
-    it('reads ezclassify-for attribute on autocomplete fields and tracks in targetMap', async () => {
-        const input = document.createElement('input');
-        input.type = 'text';
-        input.setAttribute('data-ezclassify-controller', 'tags');
-        input.setAttribute('data-ezclassify-target', 'para-2');
-        document.body.appendChild(input);
-
-        const forms = await createForms();
-        expect(forms.targetMap.get(input)).toBe('para-2');
-
-        forms.destroy();
-    });
-
-    it('getAssertionsByTarget returns grouped assertions', async () => {
-        const input1 = document.createElement('input');
-        input1.type = 'text';
-        input1.setAttribute('data-ezclassify-controller', 'tags');
-        input1.setAttribute('data-ezclassify-target', 'para-1');
-        document.body.appendChild(input1);
-
-        const input2 = document.createElement('input');
-        input2.type = 'text';
-        input2.setAttribute('data-ezclassify-controller', 'tags');
-        input2.setAttribute('data-ezclassify-target', 'para-2');
-        document.body.appendChild(input2);
-
-        const forms = await createForms();
-        const byTarget = forms.getAssertionsByTarget();
-        // Should return a Map (may be empty if no values entered)
-        expect(byTarget instanceof Map).toBe(true);
-
-        forms.destroy();
-    });
-
-    it('ezclassify:change event includes target in detail', async () => {
-        const select = document.createElement('select');
-        select.setAttribute('data-ezclassify-controller', 'select');
-        select.setAttribute('data-ezclassify-category', 'level');
-        select.setAttribute('data-ezclassify-target', 'section-3');
-        document.body.appendChild(select);
-
-        const forms = await createForms();
-
-        const changePromise = new Promise<CustomEvent>((resolve) => {
-            select.addEventListener('ezclassify:change', (e) =>
-                resolve(e as CustomEvent),
-            );
-        });
-
-        // Selecting a concept fires onChange, which re-emits ezclassify:change
-        // carrying the configured target from the data-ezclassify-target attribute.
-        const mount = select.nextElementSibling as HTMLElement;
-        const picker = mount.querySelector(
-            '.select-dropdown',
-        ) as HTMLSelectElement;
-        picker.value = 'A';
-        picker.dispatchEvent(new Event('change', { bubbles: true }));
-
-        const event = await changePromise;
-        expect(event.detail.target).toBe('section-3');
-
-        forms.destroy();
-    });
-
     describe('behavior-only elements (no controller)', () => {
         /**
          * Wrap the host element in a dedicated <section> so we can assert that
@@ -807,25 +730,6 @@ describe('Declarative attribute system (EzClassifyUI)', () => {
                 forms.store.get('document-marking').assertions,
             ).toMatchObject([{ conceptId: 'B', categoryId: 'level' }]);
             expect(select.value).toBe('B');
-
-            forms.destroy();
-        });
-
-        it('a behavior-only input with data-ezclassify-target tracks the target but injects no view', async () => {
-            const input = document.createElement('input');
-            input.id = 'targeted';
-            input.setAttribute('data-ezclassify-marking', '');
-            input.setAttribute('data-ezclassify-target', 'banner-target');
-            const wrapper = wrap(input);
-
-            const forms = await createForms();
-
-            // Behavior: target relationship is tracked, field is registered.
-            expect(forms.targetMap.get(input)).toBe('banner-target');
-            expect(forms.fields).toContain(input);
-            // View: zero injected DOM in the host element's container.
-            expect(forms.components.has(input)).toBe(false);
-            expect(wrapper.children.length).toBe(1);
 
             forms.destroy();
         });

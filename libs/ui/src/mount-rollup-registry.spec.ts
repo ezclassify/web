@@ -26,6 +26,7 @@ function makeChild(
 ): RegistryChild {
     return {
         instanceId: id,
+        root: document.createElement('div'),
         collectionId,
         childWholes: () => {
             const m = new Map<BucketKey, ChildWhole>();

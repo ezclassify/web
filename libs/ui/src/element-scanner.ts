@@ -6,10 +6,10 @@
  * - Behavior layer, engine binding. An element is reported to `onBehavior` when
  *   it carries any `data-ezclassify-*` attribute. The callback receives a
  *   parsed `BehaviorBinding` describing the engine wiring (marking, bound-to,
- *   source, aggregate, translate, target, part-of, facet-of, category, scope,
- *   scheme). Where the element sits in the marking tree is the binding model's
- *   call (`binding-model.ts`), not the scanner's. Behavior callbacks must not
- *   mutate the DOM beyond reading values and listening for events.
+ *   source, aggregate, translate, part-of, facet-of, category, scope, scheme).
+ *   Where the element sits in the marking tree is the binding model's call
+ *   (`binding-model.ts`), not the scanner's. Behavior callbacks must not mutate
+ *   the DOM beyond reading values and listening for events.
  * - View layer, visual treatment. An element is reported to `onView` when it
  *   carries `data-ezclassify-controller="<name>"`. The callback receives the
  *   controller name and an options bag harvested from
@@ -86,11 +86,6 @@ export interface BehaviorBinding {
      * named marking. Used with `data-ezclassify-category`.
      */
     facetOf?: string;
-    /**
-     * `data-ezclassify-target="<id>"`: the target element id this binding rolls
-     * up into.
-     */
-    target?: string;
     /** `data-ezclassify-scope` (presence-only flag or scope label). */
     scope?: string;
     /** `data-ezclassify-scheme="<selector>"`: the Context-local scheme. */
@@ -207,8 +202,6 @@ export function readBinding(el: HTMLElement): BehaviorBinding {
     if (category) binding.category = category;
     const partOf = el.getAttribute('data-ezclassify-part-of');
     if (partOf) binding.partOf = partOf;
-    const target = el.getAttribute('data-ezclassify-target');
-    if (target) binding.target = target;
     const scope = el.getAttribute('data-ezclassify-scope');
     if (scope !== null) binding.scope = scope;
     const scheme = el.getAttribute('data-ezclassify-scheme');
@@ -281,7 +274,7 @@ export const EZ_SELECTOR =
     '[data-ezclassify-controller], [data-ezclassify-marking], ' +
     '[data-ezclassify-bound-to], [data-ezclassify-source], [data-ezclassify-aggregate], ' +
     '[data-ezclassify-translate], [data-ezclassify-category], [data-ezclassify-part-of], ' +
-    '[data-ezclassify-facet-of], [data-ezclassify-target], [data-ezclassify-scope], ' +
+    '[data-ezclassify-facet-of], [data-ezclassify-scope], ' +
     '[data-ezclassify-scheme], [data-ezclassify-whole], [data-ezclassify-collection], ' +
     '[data-ezclassify-member-of], [data-ezclassify-ignore]';
 

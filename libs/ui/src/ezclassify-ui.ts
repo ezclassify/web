@@ -343,8 +343,6 @@ export class EzClassifyUI {
     /** @internal */
     partOfMap = new Map<HTMLElement, string>();
     /** @internal */
-    targetMap = new Map<HTMLElement, string>();
-    /** @internal */
     aggregates = new Map<
         string,
         {
@@ -1691,7 +1689,6 @@ export class EzClassifyUI {
 
         // Relationship maps.
         this.partOfMap.delete(host);
-        this.targetMap.delete(host);
 
         // Plain-behavior cleanups.
         const plainCleanup = this.plainBehaviorCleanups.get(host);
@@ -1796,7 +1793,6 @@ export class EzClassifyUI {
             !el.hasAttribute('data-ezclassify-controller')
         )
             this.seedOnMount(el.id, el);
-        if (binding.target) this.targetMap.set(el, binding.target);
 
         // Non-input elements with data-ezclassify-source (e.g. <output>) mirror
         // a named marking's rendered string by subscribing to the in-memory store.
@@ -2109,7 +2105,6 @@ export class EzClassifyUI {
                         detail: {
                             assertions: [],
                             rendered: '',
-                            target: this.targetMap.get(input),
                         },
                     }),
                 );
@@ -2173,7 +2168,6 @@ export class EzClassifyUI {
                     detail: {
                         assertions: result.assertions,
                         rendered,
-                        target: this.targetMap.get(input),
                     },
                 }),
             );
@@ -2728,11 +2722,10 @@ export class EzClassifyUI {
                 this.settingValue = false;
             }
             rollup.updateRollup(this);
-            const target = this.targetMap.get(el);
             el.dispatchEvent(
                 new CustomEvent('ezclassify:change', {
                     bubbles: true,
-                    detail: { assertions, rendered, target },
+                    detail: { assertions, rendered },
                 }),
             );
             // marked-textarea publishes from its own input listener; its
@@ -2916,7 +2909,6 @@ export class EzClassifyUI {
                     this.storeUnsubscribers.delete(hiddenEl);
                 }
                 this.partOfMap.delete(hiddenEl);
-                this.targetMap.delete(hiddenEl);
                 this.mounted.delete(hiddenEl);
                 this.bindingNodes.delete(hiddenEl);
                 this.clearHostError(hiddenEl);
@@ -3871,42 +3863,6 @@ export class EzClassifyUI {
                 });
             }
         }
-        return result;
-    }
-
-    /**
-     * Get assertions grouped by target element ID (from data-ezclassify-target
-     * attributes). Returns a Map where keys are target IDs and values are
-     * assertion arrays. Elements without `data-ezclassify-target` are grouped
-     * under the empty string key.
-     */
-    getAssertionsByTarget(): Map<string, FieldAssertion[]> {
-        const result = new Map<string, FieldAssertion[]>();
-
-        const addToTarget = (
-            targetId: string,
-            assertions: FieldAssertion[],
-        ) => {
-            if (assertions.length === 0) return;
-            const existing = result.get(targetId) ?? [];
-            existing.push(...assertions);
-            result.set(targetId, existing);
-        };
-
-        // From fields
-        for (const f of this.fields) {
-            const targetId = this.targetMap.get(f) ?? '';
-            const stored = this.fieldAssertions.get(f);
-            if (stored) addToTarget(targetId, stored);
-        }
-
-        // From components
-        for (const [el, comp] of this.mounted) {
-            const targetId = this.targetMap.get(el) ?? '';
-            const assertions = state.toFieldAssertions(comp.getAssertions());
-            addToTarget(targetId, assertions);
-        }
-
         return result;
     }
 

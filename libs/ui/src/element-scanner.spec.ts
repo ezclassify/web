@@ -85,7 +85,6 @@ describe('scanElements', () => {
     it('reports a behavior-bound element with no controller only to onBehavior', () => {
         const input = document.createElement('input');
         input.setAttribute('data-ezclassify-marking', '');
-        input.setAttribute('data-ezclassify-target', 'para-1');
         root.appendChild(input);
 
         const onBehavior = vi.fn();
@@ -95,7 +94,6 @@ describe('scanElements', () => {
         expect(onBehavior).toHaveBeenCalledTimes(1);
         const binding = onBehavior.mock.calls[0][1] as BehaviorBinding;
         expect(binding.marking).toBe(true);
-        expect(binding.target).toBe('para-1');
         expect(onView).not.toHaveBeenCalled();
     });
 
@@ -121,7 +119,6 @@ describe('scanElements', () => {
         el.setAttribute('data-ezclassify-part-of', 'parent-id');
         el.setAttribute('data-ezclassify-bound-to', 'bind-id');
         el.setAttribute('data-ezclassify-translate', 'cw-1');
-        el.setAttribute('data-ezclassify-target', 'tgt');
         el.setAttribute('data-ezclassify-scope', '');
         el.setAttribute('data-ezclassify-scheme', 'scheme-x');
         root.appendChild(el);
@@ -135,7 +132,6 @@ describe('scanElements', () => {
             partOf: 'parent-id',
             boundTo: 'bind-id',
             translate: 'cw-1',
-            target: 'tgt',
             scope: '',
             scheme: 'scheme-x',
         });
@@ -237,7 +233,7 @@ describe('scanElements', () => {
     it('invokes onBehavior before onView for elements with both', () => {
         const input = document.createElement('input');
         input.setAttribute('data-ezclassify-controller', 'tags');
-        input.setAttribute('data-ezclassify-target', 'para-1');
+        input.setAttribute('data-ezclassify-category', 'level');
         root.appendChild(input);
 
         const calls: string[] = [];

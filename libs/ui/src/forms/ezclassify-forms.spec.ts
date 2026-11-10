@@ -1,6 +1,6 @@
 /**
  * Unit tests for EzClassifyUI controller, constructor, enhance, destroy,
- * recalculate, getAllAssertions, getAssertionsByTarget, getRollup.
+ * recalculate and getAllAssertions.
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
@@ -179,27 +179,6 @@ describe('EzClassifyUI', () => {
 
         const all = forms.getAllAssertions();
         expect(all.some((a) => a.conceptId === 'c')).toBe(true);
-    });
-
-    it('getAssertionsByTarget groups assertions by ezclassify-for target', () => {
-        forms = new EzClassifyUI(schemeOnlyContext(createEngine()), { root });
-
-        const field1 = document.createElement('input');
-        const field2 = document.createElement('input');
-        forms.fields.push(field1, field2);
-        forms.fieldAssertions.set(field1, [
-            { conceptId: 'a', categoryId: 'f1' },
-        ]);
-        forms.fieldAssertions.set(field2, [
-            { conceptId: 'b', categoryId: 'f1' },
-        ]);
-        forms.targetMap.set(field1, 'target-1');
-
-        const byTarget = forms.getAssertionsByTarget();
-        expect(byTarget.get('target-1')).toHaveLength(1);
-        expect(byTarget.get('target-1')![0].conceptId).toBe('a');
-        expect(byTarget.get('')).toHaveLength(1);
-        expect(byTarget.get('')![0].conceptId).toBe('b');
     });
 
     it('constructor sets defaultFormat from profile when not provided', () => {

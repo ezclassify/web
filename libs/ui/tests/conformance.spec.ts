@@ -188,8 +188,11 @@ function runViaForms(
     const { forms, root } = makeForms(engine);
 
     try {
+        // The scheme view the runtime marks with, read through its internal
+        // accessor: the case runs on what the forms instance holds.
         return dispatchOnEngine(
-            forms.engine as LocalContextSchemeEngineAdapter,
+            (forms as unknown as { engine: LocalContextSchemeEngineAdapter })
+                .engine,
             method,
             args,
         );
