@@ -64,11 +64,10 @@ moves it; a host that asks for more height keeps it.
 
 Standalone MarkingField and TagInput controllers register their own marking
 identity from the native input's id, generating one when it has none. They do
-not require a hidden rendered
-field or a redundant `data-ezclassify-rendered` attribute. Explicit
+not need a hidden field or a `data-ezclassify-marking` attribute. Explicit
 `data-ezclassify-bound-to` still selects a separate marking when the host
-application needs one; hidden and plain rendered fields retain their own
-`data-ezclassify-rendered` declaration.
+application needs one; a marking with no controller, hidden or plain, declares
+itself with `data-ezclassify-marking`.
 
 EzClassify events are additive. `ezclassify:change` carries both `detail.rendered` and `detail.assertions` for hosts that want to subscribe to structured changes and persist assertions instead of the rendered string. Using those events is optional; it must never be required to recover the field's current rendered value or observe an ordinary value change.
 
@@ -141,43 +140,68 @@ field's typing, accept, commit, blur or Escape path.
 
 ### Rollup Observes Native Inputs
 
-`forms/rollup.ts` aggregates native input values, component renderings, and
-nested scopes' rolled-up wholes into per-profile markings. Changes schedule a
-debounced pass. Facet groups contribute their combined parent marking when one
-is present.
-
-The marking store has a separate path in `store/base-ezclassify-store.ts`: it
-collects committed assertion sets and calls `aggregateAssertions()` for page
-aggregates and whole rollups. It does not reparse rendered strings, so
+`forms/rollup.ts` reads native input values, component renderings and nested
+roots' wholes, and passes each level's contributions to the store as facts.
+Changes schedule a debounced pass. The store (`store/base-ezclassify-store.ts`)
+computes every level from committed assertion sets with
+`aggregateAssertions()`. It does not reparse rendered strings, so
 render-suppressed assertions and captured values survive aggregation.
 
-- Collect each input's resolved profile id and rendered string.
-- Group values by profile id.
-- Call `engine.aggregate(values, options)` for each scheme group. An addressable
-  adapter also receives the scheme id; a Context-bound adapter omits it.
-- Write each group's result to `data-rendered-<schemeId>` on the rollup target.
-- Set `rollup.value` to the only contributing scheme's rendering, or prefer the
-  default scheme among multiple contributors. Without a contributing default,
-  use the first contributing scheme.
-- Emit `ezclassify:rollup` with `detail.byScheme` (a `{ schemeId: rendered }` map) so multi-scheme pages can read every group's output without parsing attributes. The event also carries `detail.rendered`, `detail.contributions`, and `detail.assertions`.
+- The binding classifier (`binding-model.ts`) places each element: a part in
+  its whole, a whole in its collection, a collection in its parent, a view
+  nowhere. It reads structure and element attributes, never marking text.
+- A view never contributes. An `aggregate` output's own value is never read
+  back into a rollup, so a rollup can always go down.
+- A level combines its member wholes (each one's value and its parts rollup)
+  and its child collections' rollups, in document order. Parts reach a level
+  only through their whole.
+- `scope` never excludes a field. Alternate-scope assertions stay out of the
+  whole-marking rollup because the store splits each assertion set by the
+  categories' declared scopes.
+- `no-rollup` keeps a live non-content control, such as a filter picker, out of
+  every level. It is refused on a part and on a whole with parts.
+- Each output the host placed (a controller-less `aggregate` element) gets its
+  level's value in its bucket: a hidden input holds it, any other element shows
+  it as text, and both carry it as
+  `data-rendered-<context key>-<scheme selector>`. The library adds no input of
+  its own.
+- Each change emits `ezclassify:rollup` on the level's element (the instance
+  root for the page, a collection's container, a whole's host). `detail.level`
+  names the level (`null` for the page) and `detail.byContext` maps each Context
+  key to its scheme selectors and each one's `{ rendered, assertions, stale }`.
 
-#### Multi-profile rollup contract
+#### Multi-Context rollup contract
 
-Each enhanced component carries a resolved `schemeId` (set during `init` via
-`resolveProfile(container, engine, options)`). Resolution order (implemented in `resolveProfile` in `components/component-base-readonly.ts`):
+One instance holds every Context on the page: `new EzClassifyUI(context)` for
+one, and `new EzClassifyUI({ contexts })` for several, keyed by the names the
+markup uses. Each marking is read in one bucket, the pair
+(Context key, Context-local scheme selector), written as
+`${contextKey}\u001f${schemeSelector}`.
 
-1. `data-ezclassify-scheme` on the host element or closest ancestor, then
-   `options.schemeId`.
-2. A Context-bound adapter uses `getScheme().id` and rejects a requested id
-   that differs from that bound scheme.
-3. An addressable adapter uses an explicit request, then its default scheme.
-   Without scheme-list introspection, its bound `getScheme().id` is used;
-   with exactly one listed scheme, that scheme is selected.
-4. Multiple listed schemes without a request or default cause an error that
-   names the available ids.
-
-The rollup never produces a merged cross-profile rendering; profiles are
-independent at render time by design.
+1. The Context is `data-ezclassify-context` on the host or its nearest
+   ancestor. With one Context it is that Context. With several and no ancestor
+   attribute it is a host error; no key is a default by position.
+2. The scheme is `data-ezclassify-scheme` on the host or its nearest ancestor:
+   the selector the Context's `describeSchemes` and REST `?scheme=` use, not a
+   global scheme id. Without it, the Context's primary scheme.
+3. A part is read in its whole's bucket. A `part-of` that crosses Contexts or
+   schemes is a host error.
+4. Every level keeps one rollup per bucket and never produces a merged
+   rendering across buckets. Two Contexts that carry the same scheme stay
+   separate, and the process cache is partitioned by adapter for the same
+   reason.
+5. A level view shows every non-empty bucket, labeled, unless its own
+   `context` or `scheme` attribute picks one. It never filters by an inherited
+   attribute. An output that holds one value names its bucket with its own
+   attributes when the level has several, or it is a host error; the decision
+   is static at mount.
+6. A collection's `context` is the default for fields inside it, never a
+   membership filter.
+7. Guides and access policies need no selector. A Context holds at most one
+   access policy, and its guides side by side: a scan across guides tags each
+   hit with its `guideId`, the guidebook shows one section per guide, and the
+   guide helper evaluates selections qualified by guide, so a hit and its
+   outcome always name the guide they came from.
 
 ### Rollups read settled values
 
@@ -197,10 +221,10 @@ anyone comparing two loads of the same form.
   registering parts before anything is asked for them makes no whole field
   read itself again. A whole rollup's
   contributors are the parts registered under it and the whole itself; the
-  page aggregate's are every registered part and every seeded or published
-  marking. A rollup of a contributor set with a read still pending is never
+  page aggregate's, and each collection's, are its member wholes (each one's
+  value and its whole rollup) and its child collections. A rollup of a contributor set with a read still pending is never
   sent; the answer that settles the last contributor computes it. Contributor
-  sets go to `aggregateAssertions` in marking-id order. A contributor whose
+  sets go to `aggregateAssertions` in document order. A contributor whose
   first read fails counts as settled: the rollup is computed without it and
   flagged `stale`.
 - A MarkedTextArea whose scan did not read its whole text (the scan's
@@ -222,15 +246,12 @@ anyone comparing two loads of the same form.
       the field that the textarea is described by, and once through a polite
       live region when it appears. It sets the textarea's custom validity and
       `aria-invalid`, clearing only a message it set.
-    - In first-part-binding mode, a scan that read no portion leaves the marking
-      the first portion is bound to unread: banners mirroring that marking say
-      it may be incomplete until a scan reads the first portion.
 - A rollup on display says when it may be missing markings. A banner showing a
   `stale` rollup keeps its value and adds a visible, announced statement that it
-  may be incomplete. The runtime's rollup field is invalid (custom validity and
-  `aria-invalid`) while its scope has an incomplete MarkedTextArea, the store
-  holds the page aggregate as stale, or a nested scope's whole is incomplete; a
-  scope built from an incomplete inner whole is incomplete too. The flag is
+  may be incomplete. An `aggregate` output the host placed is invalid (custom
+  validity and `aria-invalid`) while its level has an incomplete MarkedTextArea,
+  the store holds the level as stale, or a nested root's whole is incomplete; a
+  level built from an incomplete inner level is incomplete too. The flag is
   raised at once and cleared only by the rollup pass that recomputes the value,
   which it asks for. Raising it sends no engine request.
 - The store sets no timer. Every `EzClassifyStoreEngine` call resolves or
@@ -346,9 +367,9 @@ processing is a separate `Change` in `appliedFixes` (`ruleId`, `action`,
 
 ### Whole-over-parts coverage has one source
 
-An authored whole is checked against its parts when one or more fields name
-it with `data-ezclassify-part-of="<whole-id>"`. No second annotation is
-required. A writable controller can represent the whole directly with that id
+An authored whole is checked against its parts when it has any: fields inside
+its `data-ezclassify-whole` container, or naming it with
+`data-ezclassify-part-of`. No second annotation is required. A writable controller can represent the whole directly with that id
 or through `data-ezclassify-bound-to="<whole-id>"`. Each whole gets its
 coverage finding from exactly one place:
 
@@ -379,7 +400,7 @@ fix it proposes, so a raise never lands below what a part needs.
 
 - The runtime gives a field bound to a whole a `resolveParts` option. It reads
   the current markings of the same contributors the store rolls up for that
-  whole (every registered marking whose `part-of` names it), at call time:
+  whole (every registered part of it), at call time:
   the store's committed value for a part the store holds, the field's
   rendering for any other. Blank parts are left out; none at all means no
   `parts` key.
@@ -411,7 +432,7 @@ It only means the part cannot be compared with the whole.
   MarkedTextArea does the same per mark: a mark that raises keeps what the
   scan found and is flagged with the message, and the other marks read.
 - MarkedInput reads its leading mark as a part the same way MarkedTextArea
-  reads its portions: with the whole's context when it is `part-of` a whole.
+  reads its portions: with the whole's context when it is a part of a whole.
   A MarkedInput that is its own marking host tells the store which whole it
   belongs to when it registers, so its commits reach the whole's rollup
   listeners and the whole field reads again.
@@ -602,11 +623,10 @@ onAssertionEdit()
 
 DOM updateRollup()
   ├── Debounce (skip while initializing)
-  ├── Collect native values, component renderings and nested-scope wholes
-  ├── Aggregate contributions by scheme
-  ├── Update per-scheme attributes and publish wholes to the parent scope
-  ├── If native rollup value changed: write it and emit input/change
-  ├── Emit ezclassify:rollup, including when its primary value is unchanged
+  ├── Collect native values, component renderings and nested-root wholes
+  ├── Hand each level's contributions to the store as facts, per bucket
+  ├── Write each host-placed output; emit input/change when its value changed
+  ├── Emit ezclassify:rollup on each level whose rollup changed
   └── Validate parent-child relationships even when rendering is unchanged
 ```
 

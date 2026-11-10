@@ -3,8 +3,9 @@
 Every `data-ezclassify-*` attribute the runtime reads or writes, in one table.
 This is the source of truth for what an author may put in markup and what the
 runtime stamps back. It applies to vanilla `@ezclassify/ui` and, identically, to
-the React / Vue / Angular adapters; the adapters only wire lifecycle; the
-attributes are the same DOM contract.
+the React / Vue / Angular adapters. The adapters only wire lifecycle; the
+attributes are the same DOM contract. After initialization, everything is
+markup.
 
 Conventions used below:
 
@@ -14,54 +15,111 @@ Conventions used below:
 - **Scope**: `host` (any element; the binding/behavior seam) or
   `prefixed` (a `data-ezclassify-<controller>-<option>` option harvested for a
   specific controller).
-- **Status**: `canonical`, or `internal` (runtime-stamped, not part of the
-  authoring surface).
 
-The seam between the two layers, engine **binding** (behavior) and visual
-**treatment** (view), is documented in [`binding-model.md`](./binding-model.md);
-this file is the flat attribute index that complements it.
+What wholes, parts, collections and views mean, and how a store holds them,
+is specified in [`binding-model.md`](./binding-model.md); this file is the flat
+attribute index that complements it.
 
 ---
 
-## Host-level binding & behavior attributes
+## Host-level attributes
 
-These live on any element. Carrying any one of them makes the element
-"ezclassify-bound" and brings it into the scanner. Exactly one **binding axis**
-attribute (`bound-to` / `facet-of` / `source` / `aggregate`) may be present per
-element; if more than one is set the scanner keeps the first in that order and
-warns.
+These live on any element. Carrying any one of them brings the element into the
+scanner; ordinary page text is never read. Exactly one **view** attribute
+(`bound-to` / `facet-of` / `source` / `aggregate`) may be present per element;
+if more than one is set the scanner keeps the first in that order and warns.
 
-| Attribute                              | Owner                                                                       | Audience          | Values                                                                                                                                                                                                                                                                             | Default                       | Status                                  |
-| -------------------------------------- | --------------------------------------------------------------------------- | ----------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------- | --------------------------------------- |
-| `data-ezclassify-bind`                 | `element-scanner` / `ezclassify-ui`                                         | author            | presence-only; enhances a raw marking input, or binds a native `<select>` in place when combined with `facet-of` and `category`                                                                                                                                                    | (none)                        | canonical                               |
-| `data-ezclassify-rendered`             | `element-scanner`                                                           | author            | presence-only; the element's DOM `id` is the marking id                                                                                                                                                                                                                            | (none)                        | canonical                               |
-| `data-ezclassify-bound-to`             | `element-scanner`                                                           | author            | marking id (binding axis: two-way full-marking view)                                                                                                                                                                                                                               | (none)                        | canonical                               |
-| `data-ezclassify-source`               | `element-scanner`                                                           | author            | marking id (binding axis: one-way read)                                                                                                                                                                                                                                            | (none)                        | canonical                               |
-| `data-ezclassify-aggregate`            | `element-scanner`                                                           | author            | empty value for the page aggregate; whole marking id for its parts-only rollup                                                                                                                                                                                                     | (none)                        | canonical                               |
-| `data-ezclassify-facet-of`             | `element-scanner`                                                           | author            | marking id (binding axis: two-way category-scoped view; use with `data-ezclassify-category`)                                                                                                                                                                                       | (none)                        | canonical                               |
-| `data-ezclassify-category`             | `element-scanner` / `component-factory`                                     | author            | category id                                                                                                                                                                                                                                                                        | (none)                        | canonical                               |
-| `data-ezclassify-part-of`              | `element-scanner`                                                           | author            | parent marking id (this field is one part of a composite marking)                                                                                                                                                                                                                  | (none)                        | canonical                               |
-| `data-ezclassify-target`               | `element-scanner` / `forms/rollup`                                          | author            | element id this binding rolls up into                                                                                                                                                                                                                                              | (none)                        | canonical                               |
-| `data-ezclassify-scope`                | `element-scanner` / `component-factory`                                     | author            | presence-only flag or scope label                                                                                                                                                                                                                                                  | (none)                        | canonical                               |
-| `data-ezclassify-scheme`               | `element-scanner` / `component-factory`                                     | author            | scheme id (multi-scheme engines; inherited from nearest ancestor that sets it)                                                                                                                                                                                                     | engine default scheme         | canonical                               |
-| `data-ezclassify-controller`           | `element-scanner`                                                           | author            | one of: `tags`, `select`, `checklist`, `selector`, `card`, `banner`, `dualpane`, `handbook`, `guidebook`, `access-handbook`, `guide-helper`, `guide-checklist`, `decisionflow`, `hidden`, `marked-textarea`, `marked-input`, `marking`, `text`, `equivalency`, `context-reference` | (none)                        | canonical                               |
-| `data-ezclassify-format`               | `format-resolver` / `component-factory`                                     | author            | render-format id; honored on a plain enhanced input and on any controller host. A `data-ezclassify-<controller>-format` option on the same element wins. Read from the element itself, never inherited from an ancestor                                                            | context default render format | canonical                               |
-| `data-ezclassify-role`                 | `components/ezclassify-text`                                                | author            | role string on a `text` host                                                                                                                                                                                                                                                       | (none)                        | canonical                               |
-| `data-ezclassify-context`              | `components/ezclassify-text`, `hidden-assertion-field`, `marked-field-base` | author            | shared-context id linking related fields                                                                                                                                                                                                                                           | (none)                        | canonical                               |
-| `data-ezclassify-group`                | `forms/rollup`                                                              | author            | rollup group label (fields sharing a group roll up together)                                                                                                                                                                                                                       | (none)                        | canonical                               |
-| `data-ezclassify-show-when-parent-has` | `forms/rollup`                                                              | author            | `parentId:CONCEPT1,CONCEPT2`; element is shown only when the parent holds one of the listed concepts                                                                                                                                                                               | (none)                        | canonical                               |
-| `data-ezclassify-hide-when-parent-has` | `forms/rollup`                                                              | author            | `parentId:CONCEPT1,CONCEPT2`; element is hidden when the parent holds one of the listed concepts                                                                                                                                                                                   | (none)                        | canonical                               |
-| `data-ezclassify-error-target`         | `components/ezclassify-text`                                                | author            | id of the element that should display this field's error                                                                                                                                                                                                                           | (none)                        | canonical                               |
-| `data-ezclassify-first-part-binding`   | `ezclassify-ui`                                                             | author            | marking id whose first part this composite host binds                                                                                                                                                                                                                              | (none)                        | canonical                               |
-| `data-ezclassify-no-rollup`            | `forms/rollup` / `ezclassify-ui`                                            | author or runtime | presence-only; exclude this field from the page rollup (also stamped by the runtime on fields it auto-excludes)                                                                                                                                                                    | (none)                        | canonical (author) / internal (stamped) |
-| `data-ezclassify-no-tooltips`          | `component-factory` / `components/component-base`                           | author            | presence-only; disables concept/detail hover tooltips for the host and its subtree (closest-ancestor semantics)                                                                                                                                                                    | tooltips enabled              | canonical                               |
-| `data-ezclassify-no-hints`             | `component-factory` / `components/marked-field-base`                        | author            | presence-only; disables keyboard-hint chrome (hint footers, floating hint chips) for the host and its subtree; the touch "Add marking" affordance is core interaction and stays                                                                                                    | hints enabled                 | canonical                               |
+The attributes split into four groups:
+
+- **Markings.** `controller` names what a field holds; `marking` declares a
+  marking with no controller.
+- **Structure.** `whole`, `part-of`, `collection`, `member-of` and `ignore`
+  place each marking in the tree. Most pages need only `whole`.
+- **Views.** `bound-to`, `facet-of`, `source`, `aggregate` and `translate` show
+  or edit a marking or a level. A view never contributes to a rollup.
+- **Selection and presentation.** `context` and `scheme` choose what a marking
+  is read against; the rest are presentation and opt-outs.
+
+| Attribute                              | Owner                                                | Audience | Values                                                                                                                                                                                                                                                                                              | Default                       |
+| -------------------------------------- | ---------------------------------------------------- | -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------- |
+| `data-ezclassify-controller`           | `element-scanner`                                    | author   | one of: `tags`, `select`, `checklist`, `selector`, `card`, `banner`, `dualpane`, `handbook`, `guidebook`, `access-handbook`, `guide-helper`, `guide-checklist`, `decisionflow`, `hidden`, `marked-textarea`, `marked-input`, `marking`, `text`, `equivalency`, `context-reference`                  | (none)                        |
+| `data-ezclassify-marking`              | `binding-model` / `ezclassify-ui`                    | author   | presence-only; a marking with no controller, whose DOM `id` is the marking id. A visible text input gets the validation helper, a hidden input holds the value as data, and any other element shows the rendered text. A native `<select>` with `facet-of` and `category` binds in place without it | (none)                        |
+| `data-ezclassify-whole`                | `binding-model`                                      | author   | on a container: the marking id of the whole it holds. The host with that DOM id is the whole; every other marking host inside is a part of it                                                                                                                                                       | (none)                        |
+| `data-ezclassify-part-of`              | `binding-model`                                      | author   | whole marking id, on a part that does not sit inside its whole's container. It always names a whole and the host always reads as a part                                                                                                                                                             | (none)                        |
+| `data-ezclassify-collection`           | `binding-model` / `store`                            | author   | on a container: the collection id. The wholes and collections nested inside it are its members                                                                                                                                                                                                      | (none)                        |
+| `data-ezclassify-member-of`            | `binding-model`                                      | author   | collection id, on a whole or collection that does not sit inside the collection it belongs to                                                                                                                                                                                                       | nearest enclosing collection  |
+| `data-ezclassify-ignore`               | `binding-model` / `element-scanner`                  | author   | presence-only; nothing inside the subtree is read. A marking host inside it is a host error                                                                                                                                                                                                         | (none)                        |
+| `data-ezclassify-bound-to`             | `element-scanner`                                    | author   | marking id (view: two-way full-marking editor)                                                                                                                                                                                                                                                      | (none)                        |
+| `data-ezclassify-facet-of`             | `element-scanner`                                    | author   | marking id (view: two-way category-scoped editor; use with `data-ezclassify-category`)                                                                                                                                                                                                              | (none)                        |
+| `data-ezclassify-category`             | `element-scanner` / `component-factory`              | author   | category id                                                                                                                                                                                                                                                                                         | (none)                        |
+| `data-ezclassify-source`               | `element-scanner`                                    | author   | marking id (view: one-way read)                                                                                                                                                                                                                                                                     | (none)                        |
+| `data-ezclassify-aggregate`            | `element-scanner` / `forms/rollup`                   | author   | empty (or `"true"`) for the page; a whole id for its parts; a collection id for its members. With no controller, a hidden input holds the value and any other element shows it as text                                                                                                              | (none)                        |
+| `data-ezclassify-translate`            | `components/translated-view`                         | author   | crosswalk id; on a view, shows its value translated through that crosswalk. Empty when the Context holds exactly one crosswalk from its primary scheme                                                                                                                                              | (none)                        |
+| `data-ezclassify-context`              | `context-binding`                                    | author   | Context key from the `contexts` map given at initialization. Needed only with several Contexts. A marking host inherits it from the nearest ancestor that sets one; a level view filters by its own attribute only                                                                                  | the only Context              |
+| `data-ezclassify-scheme`               | `context-binding` / `component-factory`              | author   | the Context-local scheme selector, for a crosswalk Context's second scheme. Inherited from the nearest ancestor that sets it                                                                                                                                                                        | the Context's primary scheme  |
+| `data-ezclassify-format`               | `format-resolver` / `component-factory`              | author   | render-format id; honored on a plain enhanced input and on any controller host. Read from the element itself, never inherited from an ancestor                                                                                                                                                      | context default render format |
+| `data-ezclassify-role`                 | `components/ezclassify-text`                         | author   | `part`, on a `text` host that shows a part with no whole on the page. Every other role comes from structure                                                                                                                                                                                         | (none)                        |
+| `data-ezclassify-scope`                | `element-scanner` / `component-factory`              | author   | scope label, on a whole field that authors a non-default scope. A facet takes its scope from its category's declared scope instead. It never removes a field from a rollup                                                                                                                          | (none)                        |
+| `data-ezclassify-show-when-parent-has` | `forms/rollup`                                       | author   | `parentId:CONCEPT1,CONCEPT2`; element is shown only when the parent holds one of the listed concepts                                                                                                                                                                                                | (none)                        |
+| `data-ezclassify-hide-when-parent-has` | `forms/rollup`                                       | author   | `parentId:CONCEPT1,CONCEPT2`; element is hidden when the parent holds one of the listed concepts                                                                                                                                                                                                    | (none)                        |
+| `data-ezclassify-error-target`         | `components/ezclassify-text`                         | author   | id of the element that should display this field's error                                                                                                                                                                                                                                            | (none)                        |
+| `data-ezclassify-no-rollup`            | `store` / `forms/rollup`                             | author   | presence-only; a live control that is not content, such as a filter picker. It is processed and validated but feeds no rollup. A host error on a part or on a whole with parts                                                                                                                      | (none)                        |
+| `data-ezclassify-no-tooltips`          | `component-factory` / `components/component-base`    | author   | presence-only; disables concept/detail hover tooltips for the host and its subtree (closest-ancestor semantics)                                                                                                                                                                                     | tooltips enabled              |
+| `data-ezclassify-no-hints`             | `component-factory` / `components/marked-field-base` | author   | presence-only; disables keyboard-hint chrome (hint footers, floating hint chips) for the host and its subtree; the touch "Add marking" affordance is core interaction and stays                                                                                                                     | hints enabled                 |
+
+Presence attributes read `"true"` as present and `"false"` as absent, so a
+framework that writes booleans as strings works unchanged.
+
+### Where a marking sits
+
+| Where the marking host sits                            | It reads as                               |
+| ------------------------------------------------------ | ----------------------------------------- |
+| Inside a `whole` container, other than the named whole | a part of that whole                      |
+| Anywhere, with `part-of`                               | a part of the named whole                 |
+| Inside a collection, outside any `whole` container     | a whole, member of the nearest collection |
+| In neither                                             | a whole, member of the page               |
+
+The instance root is the page. A nested library instance (a framework island)
+is a member of the nearest collection around it.
 
 A field that names no `data-ezclassify-format` writes the context default,
-except a field that shows a part: one whose own host, or the marking it is
-bound to or is a facet of, names a whole in `data-ezclassify-part-of`. That
-field writes the scheme's part default, the format the store writes the part
-in.
+except a field that shows a part: a part itself, or a view bound to a part or
+a facet of one. That field writes the scheme's part default, the format the
+store writes the part in.
+
+### Host errors
+
+Where markup contradicts itself, the runtime refuses it instead of guessing.
+The element stays unenhanced, an `ezclassify:host-error` event bubbles from it
+with a `code` and a `message`, and every level above it is flagged incomplete:
+an unread marking is never treated as an absent one. The cases:
+
+- a marking host inside an `ignore` subtree;
+- a `whole` container with no value, naming no host, or inside another `whole`
+  container;
+- a collection with no value, inside a `whole` container, or on a marking host;
+- a `part-of` that names something other than a whole, disagrees with its
+  enclosing `whole` container, crosses Contexts or schemes, or sits on an
+  element that holds no marking;
+- a `member-of` that names no collection, sits on a part, or names its own
+  collection or one inside it;
+- `no-rollup` on a part or on a whole with parts;
+- `data-ezclassify-marking` together with a view attribute;
+- a nested library instance inside a `whole` container;
+- a marking host that resolves no Context, and one marking id used in two
+  Contexts;
+- a controller-less `aggregate` output that does not name its bucket when its
+  level has several (see below).
+
+### Rollup outputs and buckets
+
+A rollup is kept per bucket: one Context key and one scheme selector. Buckets
+never merge. A `banner` on a level shows every non-empty bucket, each labeled,
+unless its own `context` or `scheme` attribute picks one. A controller-less
+output holds one value, so when the instance has several Contexts, or the
+Context several schemes, the output names its bucket with its own `context` and
+`scheme` attributes. Each output also carries its value as
+`data-rendered-<context key>-<scheme selector>`.
 
 ## Runtime-stamped attributes (do not author)
 
@@ -121,12 +179,11 @@ A banner showing a rollup the store flags `stale`, or a marking bound to a
 first portion no scan has read, gains `.status-banner--incomplete` and a
 `.status-banner-incomplete` line with `⚠`
 (`.status-banner-incomplete__icon`) and the `rollup.incomplete` message, which
-its accessible name also carries. The runtime's rollup field
-(`#ezclassify-rollup` or the configured `rollupId`) carries the same message as
-its custom validity, with `aria-invalid="true"`, while its scope's rollup may
-be incomplete. The default hidden input is barred from constraint validation,
-so it does not block a submit; the textarea's own validity does. Both messages
-are locale keys and follow `setLocale`.
+its accessible name also carries. An `aggregate` output the host placed
+carries the same message as its custom validity, with `aria-invalid="true"`,
+while its level's rollup may be incomplete. A hidden input is barred from
+constraint validation, so it does not block a submit; the textarea's own
+validity does. Both messages are locale keys and follow `setLocale`.
 
 ## Prefixed controller options
 
@@ -136,34 +193,30 @@ its host into an options bag (see `element-scanner.harvestControllerOptions` and
 `"false"`. Other flags and options follow their table entries. JSON options must be valid JSON. Unknown suffixes pass through
 verbatim and have no effect unless the controller reads them.
 
-| Attribute                                   | Controller        | Audience | Values                                                                 | Default                          | Status    |
-| ------------------------------------------- | ----------------- | -------- | ---------------------------------------------------------------------- | -------------------------------- | --------- |
-| `data-ezclassify-tags-color-coding`         | `tags`            | author   | `"false"` opts out; any other value (or absence) keeps color coding on | on                               | canonical |
-| `data-ezclassify-tags-show-preview`         | `tags`            | author   | presence-only; render a live rendered-string preview                   | off                              | canonical |
-| `data-ezclassify-select-category`           | `select`          | author   | category id                                                            | host `data-ezclassify-category`  | canonical |
-| `data-ezclassify-select-mode`               | `select`          | author   | `"dropdown"` or `"cards"`                                              | `dropdown`                       | canonical |
-| `data-ezclassify-select-color-map`          | `select`          | author   | JSON color map                                                         | (none)                           | canonical |
-| `data-ezclassify-checklist-category`        | `checklist`       | author   | category id                                                            | host `data-ezclassify-category`  | canonical |
-| `data-ezclassify-checklist-show-preview`    | `checklist`       | author   | presence-only; render a live preview                                   | off                              | canonical |
-| `data-ezclassify-selector-category-groups`  | `selector`        | author   | JSON array of category groups                                          | (none)                           | canonical |
-| `data-ezclassify-selector-show-codes`       | `selector`        | author   | presence-only; show concept codes alongside labels                     | off                              | canonical |
-| `data-ezclassify-banner-affix`              | `banner`          | author   | `top` or `bottom`; fixed viewport edge                                 | (none)                           | canonical |
-| `data-ezclassify-banner-boundary`           | `banner`          | author   | boundary the current marking is measured against                       | (none)                           | canonical |
-| `data-ezclassify-banner-show-current-data`  | `banner`          | author   | presence-only; show the current-data line                              | on when boundary or affix is set | canonical |
-| `data-ezclassify-banner-current-label`      | `banner`          | author   | label for the current-data line                                        | scheme vocabulary                | canonical |
-| `data-ezclassify-banner-boundary-label`     | `banner`          | author   | label for the boundary line                                            | scheme vocabulary                | canonical |
-| `data-ezclassify-decisionflow-categories`   | `decisionflow`    | author   | JSON array (or comma list) of category ids to walk                     | (none)                           | canonical |
-| `data-ezclassify-equivalency-equivalencies` | `equivalency`     | author   | JSON array of `{ source, target }` equivalency entries                 | (none)                           | canonical |
-| `data-ezclassify-equivalency-source-label`  | `equivalency`     | author   | header label for the source column                                     | (none)                           | canonical |
-| `data-ezclassify-equivalency-target-label`  | `equivalency`     | author   | header label for the target column                                     | (none)                           | canonical |
-| `data-ezclassify-hidden-format`             | `hidden`          | author   | render-format id for the hidden rollup field                           | context default                  | canonical |
-| `data-ezclassify-marked-textarea-format`    | `marked-textarea` | author   | render-format id                                                       | context default                  | canonical |
-| `data-ezclassify-text-format`               | `text`            | author   | render-format id                                                       | context default                  | canonical |
+| Attribute                                   | Controller     | Audience | Values                                                                                                                            | Default                          |
+| ------------------------------------------- | -------------- | -------- | --------------------------------------------------------------------------------------------------------------------------------- | -------------------------------- |
+| `data-ezclassify-tags-color-coding`         | `tags`         | author   | `"false"` opts out; any other value (or absence) keeps color coding on                                                            | on                               |
+| `data-ezclassify-tags-show-preview`         | `tags`         | author   | presence-only; render a live rendered-string preview                                                                              | off                              |
+| `data-ezclassify-select-mode`               | `select`       | author   | `"dropdown"` or `"cards"`                                                                                                         | `dropdown`                       |
+| `data-ezclassify-select-color-map`          | `select`       | author   | JSON color map                                                                                                                    | (none)                           |
+| `data-ezclassify-checklist-parent-concept`  | `checklist`    | author   | concept id; list only the category's concepts under this parent                                                                   | every concept in the category    |
+| `data-ezclassify-checklist-show-preview`    | `checklist`    | author   | presence-only; render a live preview                                                                                              | off                              |
+| `data-ezclassify-selector-category-groups`  | `selector`     | author   | JSON array of category groups                                                                                                     | (none)                           |
+| `data-ezclassify-selector-show-codes`       | `selector`     | author   | presence-only; show concept codes alongside labels                                                                                | off                              |
+| `data-ezclassify-banner-affix`              | `banner`       | author   | `top` or `bottom`; fixed viewport edge                                                                                            | (none)                           |
+| `data-ezclassify-banner-boundary`           | `banner`       | author   | boundary the current marking is measured against; the banner reads the marking it shows as a whole against this one boundary only | (none)                           |
+| `data-ezclassify-banner-show-current-data`  | `banner`       | author   | presence-only; show the current-data line                                                                                         | on when boundary or affix is set |
+| `data-ezclassify-banner-current-label`      | `banner`       | author   | label for the current-data line                                                                                                   | scheme vocabulary                |
+| `data-ezclassify-banner-boundary-label`     | `banner`       | author   | label for the boundary line                                                                                                       | scheme vocabulary                |
+| `data-ezclassify-decisionflow-categories`   | `decisionflow` | author   | JSON array (or comma list) of category ids to walk                                                                                | (none)                           |
+| `data-ezclassify-equivalency-equivalencies` | `equivalency`  | author   | JSON array of `{ source, target }` equivalency entries                                                                            | (none)                           |
+| `data-ezclassify-equivalency-source-label`  | `equivalency`  | author   | header label for the source column                                                                                                | (none)                           |
+| `data-ezclassify-equivalency-target-label`  | `equivalency`  | author   | header label for the target column                                                                                                | (none)                           |
 
 > Shared options harvested off the host (not under the controller prefix):
-> `data-ezclassify-scope`, `data-ezclassify-scheme`, and `data-ezclassify-category`
-> are read once on the host so they don't need to be repeated under each
-> controller prefix; see `component-factory.parseComponentOptions`.
+> `data-ezclassify-format`, `data-ezclassify-scope`, `data-ezclassify-scheme`
+> and `data-ezclassify-category` are read once on the host, and no controller
+> has a prefixed copy of them; see `component-factory.parseComponentOptions`.
 
 ## Context reference drawer
 
@@ -184,6 +237,21 @@ Direct children declaring `data-ezclassify-tab` supply custom tabs. They accept
 `data-ezclassify-tab-id`, `data-ezclassify-tab-label` (defaults to the tab id),
 `data-ezclassify-tab-icon`, and numeric `data-ezclassify-tab-order`.
 
+## Initialization (not attributes)
+
+The constructor is the only code a page writes. It takes one Context, or
+several by key:
+
+```ts
+new EzClassifyUI(context, options?);
+new EzClassifyUI({ contexts: { district, records } }, options?);
+```
+
+With several Contexts, markup chooses one with `data-ezclassify-context`. No key
+is the default by position; a marking host with no Context on an ancestor is a
+host error. `options.root` defaults to `document.body`, and `options.store`
+supplies a store the host already owns.
+
 ## Instance-level options (not attributes)
 
 A `data-ezclassify-*` value is always a string on an element, so it can only
@@ -194,7 +262,7 @@ picks them up through its `ComponentOptions`.
 
 | Option      | Constructor option                         | Shape                                                                                    | Threaded into                                                                                        | Default                          |
 | ----------- | ------------------------------------------ | ---------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- | -------------------------------- |
-| `favorites` | `new EzClassifyUI(adapter, { favorites })` | `FavoritesConfig` (`load`/optional `save`/`remove`, see `components/favorites-panel.ts`) | `ComponentOptions.favorites` on every `tags`, `marked-textarea`, `marked-input`, and `marking` mount | unset (★ button does not render) |
+| `favorites` | `new EzClassifyUI(context, { favorites })` | `FavoritesConfig` (`load`/optional `save`/`remove`, see `components/favorites-panel.ts`) | `ComponentOptions.favorites` on every `tags`, `marked-textarea`, `marked-input`, and `marking` mount | unset (★ button does not render) |
 
 `favorites.load` is called with `{ schemeId, scope, formatId }` every time a
 field's ★ popover opens; the component never caches the result across opens.

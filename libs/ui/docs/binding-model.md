@@ -13,46 +13,52 @@ implementation gets fixed.
 The [vanilla document form](../README.md#mark-a-document-and-its-parts)
 and [React document form](../../../integrations/react/README.md) show a working
 whole MarkingField with MarkingField, TagInput, MarkedInput and MarkedTextArea
-parts, one form store, separate authored/parts rollup displays and store writes.
+parts, one store, separate authored and parts rollup displays, and store
+writes from code.
+
+A page initializes the library once. Everything after that is markup: no
+binding, membership or rollup is set up in code.
 
 ## 1. Mental model
 
-The library tracks a small graph of marking objects. Each marking has an
-id, a state (rendered string + assertions + validity), and zero or more
-DOM views, inputs, chips, banners, tag inputs, that read from it
-or write into it. Views declare their relationship to a marking with
-`data-ezclassify-*` attributes. When any view publishes a change, the
-library writes it to the store, the store fans the new state to every
-subscribed view, and a separate page-level aggregate recomputes from the
-markings that contribute to it.
+The library tracks a tree of markings. The page is the root. Collections
+group wholes, a whole holds parts, and the DOM nesting of the markup states the
+tree. Each marking has an id, a state (rendered string + assertions +
+validity), and zero or more DOM views, inputs, chips, banners, tag inputs, that
+read from it or write into it. When any view publishes a change, the library
+writes it to the store, the store fans the new state to every subscribed view,
+and each level above the marking recomputes from the facts of its members.
 
 ```
-   ┌─────────────────────────────────────────────────────────────┐
-   │                       Page aggregate                         │
-   │   data-ezclassify-aggregate (read-only subscribers only)     │
-   └──────────────────────────▲──────────────────────────────────┘
-                              │ recomputed on any contributor change
-                              │
-   ┌──────────────────────┐   │   ┌──────────────────────┐
-   │ marking "doc"        │───┘   │ marking "para-1"     │
-   │ identity:            │       │ identity:            │
-   │   data-ezclassify-   │◀──────│   data-ezclassify-   │
-   │   rendered          │ part- │   rendered          │
-   │                      │ of    │   part-of="doc"      │
-   └──────▲───────▲───────┘       └──────▲───────────────┘
-          │       │                      │
-   bound-to    facet-of(cat)         bound-to
-          │       │                      │
-   ┌──────┴─┐ ┌───┴────┐             ┌──┴─────────┐
-   │ tags   │ │ select │             │ inline-    │
-   │ (chip) │ │ (tier) │             │ marked-    │
-   │ (two-  │ │ (two-  │             │ textarea   │
-   │ way)   │ │ way    │             │ (publish)  │
-   └────────┘ │ scoped)│             └────────────┘
-              └────────┘
+   ┌──────────────────────────────────────────────────────────────┐
+   │ page (instance root)          data-ezclassify-aggregate      │
+   │                                                              │
+   │   ┌──────────────────────────────────────────────────────┐   │
+   │   │ collection "folderA"      aggregate="folderA"        │   │
+   │   │   data-ezclassify-collection="folderA"               │   │
+   │   │                                                      │   │
+   │   │   ┌──────────────────────────────────────────────┐   │   │
+   │   │   │ whole "memo1"         aggregate="memo1"      │   │   │
+   │   │   │   data-ezclassify-whole="memo1"              │   │   │
+   │   │   │                                              │   │   │
+   │   │   │   #memo1 (the whole)   part   part   part    │   │   │
+   │   │   └──────────────────────────────────────────────┘   │   │
+   │   │                                                      │   │
+   │   │   #memo2 (a whole with no parts)                     │   │
+   │   └──────────────────────────────────────────────────────┘   │
+   └──────────────────────────────────────────────────────────────┘
 ```
 
-Three binding modes:
+Every marking host is one of two things, by where it sits:
+
+| Where the marking host sits                            | It reads as                               |
+| ------------------------------------------------------ | ----------------------------------------- |
+| Inside a `whole` container, other than the named whole | a part of that whole                      |
+| Anywhere, with `part-of`                               | a part of the named whole                 |
+| Inside a collection, outside any `whole` container     | a whole, member of the nearest collection |
+| In neither                                             | a whole, member of the page               |
+
+Views attach to a marking or a level and never contribute to one:
 
 - **`bound-to`**: full marking, two-way. The view sees the entire
   rendered/assertions state and any edit it makes replaces the whole
@@ -60,36 +66,39 @@ Three binding modes:
 - **`facet-of` + `category`**: one category slice of the marking,
   two-way. The view sees only that category's assertions; an edit
   patches that category and leaves the rest of the marking alone.
-- **`source` / `aggregate`**: one-way read. The view subscribes but
-  cannot publish back. Use `source="<marking-id>"` to mirror a specific
-  marking; use `aggregate` to subscribe to the computed page rollup.
+- **`source`**: one-way read of one marking.
+- **`aggregate`**: one-way read of a level. Bare, it reads the page; with a
+  value it reads that whole's parts or that collection's members.
+- **`translate`**: on a view, shows its value translated through a crosswalk.
 
-`part-of` is structural, not a binding mode. It declares a coverage
-relationship between two marking objects: "this marking's content must
-be covered by the named parent marking." It does not move data. A field
-bound to the parent is processed with the parts' markings as `parts`, so
-its errors and fixes account for them (see ARCHITECTURE.md, "A whole is
-processed with its parts").
+A part relationship is a coverage relationship: "this part's content must be
+covered by its whole." It does not move data. A whole is processed with its
+parts' markings as `parts`, so its errors and fixes account for them (see
+ARCHITECTURE.md, "A whole is processed with its parts").
 
-### 1.1 Two aggregates: page-aggregate vs whole-rollup
+### 1.1 Levels: page, collection, whole
 
-The store exposes two distinct aggregate views. They answer different
-questions and must not be conflated:
+Each level rolls up its members as facts, never as text:
 
-- **Page aggregate**: `engine.aggregateAssertions(assertions of every marking
-object in the store)`. Includes wholes, parts, and standalone markings. One per
-  store. Subscribed via `subscribeAggregate(listener)`. The author hooks
-  this to a page-classification banner that summarizes "what is the
-  highest marking found anywhere on this page."
-- **Whole-rollup**: `engine.aggregateAssertions(assertions of parts declaring
-part-of=X)` for a specific whole `X`. One per `X`. Subscribed via
-  `subscribeWholeRollup(wholeId, listener)`. The whole itself is _not_
-  included; this is the rollup of what flows up TO the whole, used to
-  prove "the body content requires the banner to at least cover Y."
+- **Whole rollup**: the parts of one whole, without the whole itself. It
+  proves "the body content requires the banner to at least cover Y." Read it
+  with `getWholeRollup(wholeId)` or `getAggregate(wholeId)`, and show it with
+  `aggregate="<whole id>"`.
+- **Collection rollup**: each member whole contributes its own value and its
+  whole rollup; each child collection contributes its own rollup. Read it with
+  `getAggregate(collectionId)`, show it with `aggregate="<collection id>"`.
+- **Page aggregate**: the same, for the wholes and collections no collection
+  holds. Read it with `getAggregate()`, show it with a bare `aggregate`. It
+  answers "what is the highest marking anywhere on this page."
 
-The two coincide only when a page has no markings outside one whole's
-subtree. In any document with a banner field plus body parts, they
-diverge:
+Parts never contribute to a level directly; they reach it through their
+whole's rollup. Nesting changes nothing about the result: a page with one
+collection holding every whole gives the same page marking as the same wholes
+at the top level.
+
+The page aggregate and a whole rollup coincide only when a page has no
+markings outside one whole's parts. In any document with a banner field plus
+body parts, they diverge:
 
 | Banner field  | Body parts                                     | Page aggregate       | doc-banner whole-rollup |
 | ------------- | ---------------------------------------------- | -------------------- | ----------------------- |
@@ -101,11 +110,43 @@ Edit the banner alone, the page aggregate updates but the whole-rollup
 stays put; the banner isn't a part of itself. Edit a part, both
 update.
 
-### 1.2 Subscribing: three ways
+### 1.2 Buckets: Contexts and schemes
+
+A page may mark against several Contexts, and a crosswalk Context holds more
+than one scheme. Each marking is read in one **bucket**: one Context key and
+one Context-local scheme selector. Every level keeps one rollup per bucket,
+and buckets never merge. Two Contexts that carry the same scheme stay apart,
+because their guide and access composition can differ.
 
 ```ts
-// 1. Programmatic: the typical path for framework code.
-const unsub = store.subscribeAggregate((s) => setPageBanner(s.rendered));
+// One Context: the only bucket.
+new EzClassifyUI(context);
+// Several: markup picks one with data-ezclassify-context="<key>".
+new EzClassifyUI({ contexts: { district, records } });
+```
+
+A marking host takes its Context from `data-ezclassify-context` on itself or
+the nearest ancestor, and its scheme from `data-ezclassify-scheme` the same
+way. With one Context, the attribute is never needed. With several, there is
+no positional default: a host that resolves no Context is a host error. A
+collection's `context` is a default for the fields inside it, never a filter
+on its members.
+
+A level view shows every non-empty bucket, each labeled, unless its own
+`context` or `scheme` attribute picks one. It never filters by an inherited
+attribute, so a `<body data-ezclassify-context="district">` default cannot hide
+the records bucket from the page banner. An output that holds one value, a
+hidden input with `aggregate`, names its bucket with its own attributes when
+the level has several. The `ezclassify:rollup` event fires on a level's element
+and carries `detail.level` and `detail.byContext`, keyed by Context key and
+then scheme selector.
+
+### 1.3 Subscribing: three ways
+
+```ts
+// 1. Programmatic: the typical path for framework code. A level's state is
+//    one EzClassifyState per bucket.
+const unsub = store.subscribeAggregate((page) => setPageBanner(page.byBucket));
 const unsub2 = store.subscribeWholeRollup('doc-banner', (s) =>
     setRollupTip(s.rendered),
 );
@@ -113,7 +154,7 @@ const unsub2 = store.subscribeWholeRollup('doc-banner', (s) =>
 
 ```html
 <!-- 2. Declarative: `data-ezclassify-aggregate` with no value is the
-     page aggregate; with a value it's that whole's rollup. -->
+     page; with a value it is that whole's parts or that collection. -->
 <div data-ezclassify-controller="banner" data-ezclassify-aggregate>...</div>
 <div data-ezclassify-controller="banner" data-ezclassify-aggregate="doc-banner">
     ...
@@ -128,10 +169,11 @@ if (forms.isReady) {
 }
 ```
 
-`subscribeWholeRollup(wholeId, …)` fires on every commit of a
-contributor; every marking whose `setPartOf(.., wholeId)` named the
-whole. It does NOT fire on a commit of the whole itself, since the
-whole isn't part of its own rollup.
+`subscribeWholeRollup(wholeId, …)` fires on every commit of one of that
+whole's parts. It does NOT fire on a commit of the whole itself, since the
+whole isn't part of its own rollup. `subscribeAggregate(listener, nodeId?)`
+fires when a level's rollup changes, not on a recompute that gives the same
+result.
 
 #### Watching a scoped control
 
@@ -163,35 +205,37 @@ attribute: the store routes on each category's declared `scopes` and the
 scheme's `defaultScope`, read through `listCategories()` and
 `getSchemeMeta()`. `data-ezclassify-scope` says which scope the author
 means the control to author in; it scopes the control's own concept list
-and nothing else. When the two disagree the library warns, because the
+and nothing else, and it never removes the control from a rollup. When the two
+disagree the library warns, because the
 silent version is expensive: a category the scheme reports as
 default-scope goes through the whole-marking render format, that format
 excludes it, and the assertions render to nothing and never reach
 committed state. Nothing appears to publish and no subscriber ever fires.
 The two ways to land there are a typo in the attribute and a scheme that
-reached the client without its scope declarations.
+reached the client without its scope declarations. A facet needs no `scope`
+attribute: its category's declared scope decides.
 
-### 1.3 Worked example: the marked-document demo
+### 1.4 Worked example: the marked-document demo
 
 Seeded state, banner field shows `HIGH/AUTH-X` (user-typed), MTA
 parts read `[[LOW]] [[MED/CTRL-A]] [[HIGH/CTRL-A]]`. The DOM:
 
 ```html
-<input id="doc-banner" type="hidden" data-ezclassify-rendered />
-<input
-    id="doc-banner-input"
-    data-ezclassify-controller="tags"
-    data-ezclassify-bound-to="doc-banner" />
-<textarea
-    id="doc-body"
-    data-ezclassify-controller="marked-textarea"
-    data-ezclassify-part-of="doc-banner">
+<section data-ezclassify-whole="doc-banner">
+    <input id="doc-banner" type="hidden" data-ezclassify-marking />
+    <input
+        id="doc-banner-input"
+        data-ezclassify-controller="tags"
+        data-ezclassify-bound-to="doc-banner" />
+    <textarea id="doc-body" data-ezclassify-controller="marked-textarea">
 …</textarea>
+</section>
 ```
 
-The MarkedTextArea creates one hidden marking object per part under
-`doc-body`'s mount container, each declared `part-of="doc-banner"`. The
-store tracks them through `setPartOf`. Part edits update their rollups. Whole
+The MarkedTextArea creates one hidden marking object per portion under
+`doc-body`'s mount container. They sit inside the `whole` container, so each
+is a part of `doc-banner`, and the store tracks them through `setPartOf`. Part
+edits update their rollups. Whole
 edits reread contributions only when the scheme can depend on that whole:
 explicit `roleAware: false` proves independence; true or missing metadata is
 conservative. Coverage validation against the changed whole still runs.
@@ -208,10 +252,10 @@ What each display reads:
 Edit the banner to `MED/CTRL-A`: page aggregate updates (the page is no
 longer dominated by a HIGH banner, so it falls back to the part
 maximum which is `HIGH/CTRL-A`); the section-1 rollup stays the
-same (banner edit doesn't touch any part-of edge). Edit a part: both
+same (a whole edit changes none of its parts). Edit a part: both
 update.
 
-### 1.4 Aggregates compute from assertions, not strings
+### 1.5 Aggregates compute from assertions, not strings
 
 Every marking object in the store carries three pieces of state:
 `assertions`, `rendered`, and `valid`. The assertions are the
@@ -272,42 +316,46 @@ a document). Both paths share the same post-parse pipeline; the only
 difference is that `aggregate(strings)` runs the parser on each input
 first, while `aggregateAssertions` skips that step entirely.
 
-### 1.5 Recompute budget
+### 1.6 Recompute budget
 
-On any commit the store does at most one whole-rollup recompute (only for the
-whole the committed marking belongs to) and at most one page-aggregate
-recompute. Listeners on unaffected wholes are not notified.
+On any commit the store recomputes only the levels above the committed
+marking, in its own bucket: the whole rollup it belongs to, if it is a part,
+then each collection on the way up, then the page. Listeners on unaffected
+levels are not notified.
 
 Spelled out by commit type:
 
-- **Part commit**: a marking whose `setPartOf` points to some `<whole-id>`:
-  one `aggregateAssertions` call for `<whole-id>`'s rollup, one for the page
-  aggregate. No other whole's rollup recomputes.
-- **Whole commit**: a marking that is the parent of other markings but has no
-  `part-of` edge itself: no whole-rollup call, one page-aggregate call. The
-  whole is not part of its own rollup.
-- **Standalone commit**: a marking with no `part-of` edge and not referenced
-  as a whole by anything else: no whole-rollup call, one page-aggregate call.
+- **Part commit**: one `aggregateAssertions` call for its whole's rollup, then
+  one for each level above that whole. No other whole's rollup recomputes.
+- **Whole commit**: no whole-rollup call; one call for each level above it.
+  The whole is not part of its own rollup.
+- **Collection change** (a member added, moved or removed): one call for that
+  collection and one for each level above it.
 
 This is the published contract that adapter implementers must honor. Over a
 remote engine each `aggregateAssertions` call is one network round trip, so the
-store's per-commit budget is also the floor for network traffic: N edits in a
-row produce N pairs of calls (whole-rollup + page-aggregate).
+store's per-commit budget is also the floor for network traffic. A flat page
+(every whole a member of the page) costs one whole-rollup call and one page
+call per part edit.
 
-## 2. One marking-object kind
+## 2. Wholes and parts come from structure
 
-There is no `whole` type and no `part` type. There is only the marking
-object. Whether a marking acts as a "whole" or a "part" comes from the
-relationships pointed at it or away from it:
+There is no `whole` type and no `part` type in the store. There is only the
+marking object, and its role comes from where its host sits:
 
-- A marking with no `part-of` and at least one marking that names it as
-  a `part-of` parent acts as a _whole_ for that subtree.
-- A marking with a `part-of` attribute acts as a _part_ of the named
-  parent.
-- A marking can be both, nested wholes, but nested wholes are
-  deferred from the 1.0 surface (see §16).
-- A marking can be neither: a standalone marking with no part-of edges
-  is the simplest case.
+- A marking host inside a `data-ezclassify-whole="<id>"` container is a part
+  of the whole `<id>`, except the host whose DOM id is `<id>`, which is the
+  whole.
+- A marking host with `data-ezclassify-part-of="<id>"` is a part of the whole
+  `<id>`, wherever it sits. It is for a part that cannot sit inside its whole's
+  container. `part-of` names only a whole, and its host always reads as a
+  part.
+- Every other marking host is a whole. A whole with no parts is the simplest
+  case.
+
+A part is never a whole of further parts. Grouping happens one level up:
+wholes belong to collections, and collections to collections, so a folder tree
+is collections of wholes, not a chain of parts.
 
 This is the right shape because the engine itself treats these as one
 kind of thing. `engine.process` doesn't care if you're processing a
@@ -316,49 +364,88 @@ object stays one type. The UI mirrors that.
 
 Standalone `marking`, `tags`, `marked-input`, and `text` controllers declare
 their own marking identity through their DOM `id` (an id is assigned when
-omitted). Plain or hidden marking data uses `data-ezclassify-rendered`.
-An explicit `bound-to`, `facet-of`, `source`, or `aggregate` view uses its named
-marking or computed value instead of registering another marking.
-The initial scan indexes identities before binding views, so a preview may
-precede its marking control in the document.
+omitted). A marking with no controller uses `data-ezclassify-marking`, and its
+DOM `id` is the marking id. A marking that code seeds, saves or names from
+another element needs an explicit `id`. An explicit `bound-to`, `facet-of`,
+`source`, or `aggregate` view uses its named marking or level instead of
+registering another marking. The initial scan indexes identities before
+binding views, so a preview may precede its marking control in the document.
+
+### 2.1 Collections
+
+`data-ezclassify-collection="<id>"` on a container declares a collection. The
+wholes and collections nested inside it are its members, inside the one
+library instance. A whole or collection that cannot nest inside its
+collection names it with `data-ezclassify-member-of="<id>"`. The instance root
+is the page collection, and a nested library instance (a framework island) is
+a member of the nearest collection around it.
+
+### 2.2 What is never read
+
+The scanner reads only elements that carry `data-ezclassify-*` attributes, so
+quoted markings in ordinary page text are never read. Inside an enhanced area,
+`data-ezclassify-ignore` fences a subtree: nothing inside it is read. A
+marking host inside it is a host error, because a marking the author placed
+must never silently drop out of a rollup.
+
+### 2.3 Host errors
+
+Where the markup contradicts itself, the runtime reports a host error instead
+of guessing: the element stays unenhanced, an `ezclassify:host-error` event
+bubbles from it, and every level above it is flagged incomplete. An unread
+marking is never treated as an absent one. The full list is in
+[`attributes.md`](./attributes.md#host-errors).
 
 ## 3. Attribute vocabulary
 
-Three axes. An element can carry one identity attribute, one structural
-attribute, and one binding attribute. Mixing two binding attributes on a
-single element is an error; the scanner logs and ignores extras.
+An element can carry one identity or structure attribute and one view
+attribute. Mixing two view attributes on a single element is an error; the
+scanner logs and ignores extras.
 
-| Attribute                             | Axis       | Meaning                                                                                                 | Example                                                                              |
-| ------------------------------------- | ---------- | ------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
-| `data-ezclassify-rendered`            | Identity   | This element IS a marking object. Its `id` is the marking-id.                                           | `<input id="doc-marking" data-ezclassify-rendered />`                                |
-| `data-ezclassify-part-of="<id>"`      | Structural | This marking's content must be covered by the named parent marking.                                     | `data-ezclassify-part-of="doc-marking"`                                              |
-| `data-ezclassify-bound-to="<id>"`     | Binding    | Two-way full-marking view. Reads `state.rendered` + `state.assertions`; publishes back via either side. | `data-ezclassify-bound-to="doc-marking"`                                             |
-| `data-ezclassify-facet-of="<id>"`     | Binding    | Two-way category-scoped view. Used with `data-ezclassify-category`.                                     | `data-ezclassify-facet-of="doc-marking" data-ezclassify-category="level"`            |
-| `data-ezclassify-category="<cat>"`    | Binding    | Names the category slice for `facet-of`. Required with `facet-of`.                                      | `data-ezclassify-category="from_school"`                                             |
-| `data-ezclassify-source="<id>"`       | Binding    | One-way read of a specific marking by id. Read-only views.                                              | `<div data-ezclassify-source="doc-marking" data-ezclassify-controller="card">`       |
-| `data-ezclassify-aggregate`           | Binding    | One-way read: empty value for the page aggregate, or a whole id for its parts-only rollup.              | `<div data-ezclassify-controller="banner" data-ezclassify-aggregate>`                |
-| `data-ezclassify-controller="<name>"` | View       | Mounts the named visual component on this host. Independent of the binding axis.                        | `<input data-ezclassify-controller="tags" data-ezclassify-bound-to="doc-marking" />` |
+| Attribute                             | Axis      | Meaning                                                                                                 | Example                                                                        |
+| ------------------------------------- | --------- | ------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
+| `data-ezclassify-controller="<name>"` | Identity  | Mounts the named component. On a marking controller it also declares the marking, by DOM `id`.          | `<input id="doc" data-ezclassify-controller="marking" />`                      |
+| `data-ezclassify-marking`             | Identity  | This element IS a marking object with no controller. Its `id` is the marking id.                        | `<input id="doc-marking" type="hidden" data-ezclassify-marking />`             |
+| `data-ezclassify-whole="<id>"`        | Structure | On a container: the hosts inside are parts of the whole `<id>`.                                         | `<form data-ezclassify-whole="doc">`                                           |
+| `data-ezclassify-part-of="<id>"`      | Structure | This host is a part of the whole `<id>`, from outside its container.                                    | `data-ezclassify-part-of="doc"`                                                |
+| `data-ezclassify-collection="<id>"`   | Structure | On a container: a collection; the wholes and collections inside are its members.                        | `<section data-ezclassify-collection="folderA">`                               |
+| `data-ezclassify-member-of="<id>"`    | Structure | This whole or collection is a member of the collection `<id>`, from outside it.                         | `data-ezclassify-member-of="folderA"`                                          |
+| `data-ezclassify-ignore`              | Structure | Nothing in this subtree is read.                                                                        | `<ul data-ezclassify-ignore>`                                                  |
+| `data-ezclassify-bound-to="<id>"`     | View      | Two-way full-marking view. Reads `state.rendered` + `state.assertions`; publishes back via either side. | `data-ezclassify-bound-to="doc-marking"`                                       |
+| `data-ezclassify-facet-of="<id>"`     | View      | Two-way category-scoped view. Used with `data-ezclassify-category`.                                     | `data-ezclassify-facet-of="doc-marking" data-ezclassify-category="level"`      |
+| `data-ezclassify-category="<cat>"`    | View      | Names the category slice for `facet-of`. Required with `facet-of`.                                      | `data-ezclassify-category="from_school"`                                       |
+| `data-ezclassify-source="<id>"`       | View      | One-way read of a specific marking by id. Read-only views.                                              | `<div data-ezclassify-source="doc-marking" data-ezclassify-controller="card">` |
+| `data-ezclassify-aggregate`           | View      | One-way read of a level: empty for the page, a whole id for its parts, a collection id for its members. | `<div data-ezclassify-controller="banner" data-ezclassify-aggregate>`          |
+| `data-ezclassify-translate="<id>"`    | View      | Shows the view's value translated through the named crosswalk; empty with exactly one crosswalk.        | `<div data-ezclassify-source="doc" data-ezclassify-translate>`                 |
+| `data-ezclassify-context="<key>"`     | Selection | The Context a marking is read in, by key. Only with several Contexts. Inherited.                        | `<section data-ezclassify-context="records">`                                  |
+| `data-ezclassify-scheme="<selector>"` | Selection | The Context-local scheme, for a crosswalk Context's second scheme. Inherited.                           | `<div data-ezclassify-scheme="tier">`                                          |
 
 Notes on shape:
 
-- Every binding attribute references a marking by `id`. Marking-ids must
-  be unique within an ezclassify root.
+- Every view attribute references a marking or level by `id`. Marking ids must
+  be unique within an ezclassify root, across every Context it holds.
 - Marking ids must also be unique across all forms that are on screen at
   the same time. A Vue `<Transition>` without `mode="out-in"` keeps the
   leaving form mounted while the entering one mounts, so two forms
   briefly share the page and a repeated id collides.
-- An element with a binding attribute does not need
-  `data-ezclassify-rendered` on itself; it points _at_ a marking, it
-  doesn't _declare_ one.
-- An element with `data-ezclassify-rendered` does not need a binding
-  attribute; it can be a pure container that other views bind to.
+- An element with a view attribute does not need
+  `data-ezclassify-marking` on itself; it points _at_ a marking, it
+  doesn't _declare_ one. Carrying both is a host error.
+- An element with `data-ezclassify-marking` does not need a view
+  attribute; it can be a pure container that other views bind to. A visible
+  text input gets the validation helper, a hidden input holds data, and any
+  other element shows the rendered text.
+- A native `<select>` with `facet-of` and `category` and no controller binds
+  in place; it needs no other attribute.
+- A `whole`, `collection` or other structure attribute that changes after the
+  first scan re-derives the subtree it sits on.
 - Hidden inputs as marking declarations are fine and idiomatic:
     ```html
     <input
         id="doc-marking"
         name="documentMarking"
         type="hidden"
-        data-ezclassify-rendered />
+        data-ezclassify-marking />
     ```
     The hidden input integrates with native `FormData`, so server submits
     pick up the rendered value automatically.
@@ -511,6 +598,22 @@ export type EzClassifyState = {
 };
 ```
 
+A level's rollup is one such state per bucket:
+
+```ts
+/** A Context key and a Context-local scheme selector, joined by U+001F. */
+export type BucketKey = string;
+
+export interface EzClassifyAggregate {
+    readonly byBucket: ReadonlyMap<BucketKey, EzClassifyState>;
+}
+```
+
+A bucket appears once something in it contributes, or once something in it is
+missing (a contributor whose read failed, or that read only part of its
+source). Its state is then `stale`, so a missing contributor never reads as an
+empty level.
+
 A process writes only the outputs it is asked for. A view that shows the
 marking in an output other than `rendered` asks the store for it with
 `store.requestOutput(id, output)`, and every publish for that marking names
@@ -626,13 +729,35 @@ export interface EzClassifyStore {
     requestOutput(id: string, output: string): () => void;
 
     /**
-     * Get the current page-aggregate state. Computed from contributing
-     * markings.
+     * The current rollup of a level, one state per bucket: the page when
+     * `nodeId` is omitted, else a collection, or a whole for its parts.
      */
-    getAggregate(): EzClassifyState;
+    getAggregate(nodeId?: string, bucket?: BucketKey): EzClassifyAggregate;
 
-    /** Subscribe to aggregate state changes. */
-    subscribeAggregate(listener: (state: EzClassifyState) => void): () => void;
+    /** Subscribe to a level's rollup: the page when `nodeId` is omitted. */
+    subscribeAggregate(
+        listener: (aggregate: EzClassifyAggregate) => void,
+        nodeId?: string,
+    ): () => void;
+
+    /** The parts-only rollup of one whole, in the whole's bucket. */
+    getWholeRollup(wholeId: string): EzClassifyState;
+    subscribeWholeRollup(
+        wholeId: string,
+        listener: (state: EzClassifyState) => void,
+    ): () => void;
+
+    /**
+     * The tree, stated by the runtime from the markup. The store reads no DOM.
+     * A part is placed in its whole, a whole in its collection, a collection in
+     * its parent, and each marking in its bucket.
+     */
+    setPartOf(markingId: string, wholeId: string | null): void;
+    setMembership(markingId: string, collectionId: string | null): void;
+    registerCollection(collectionId: string, parentId: string | null): void;
+    unregisterCollection(collectionId: string): void;
+    setBucket(markingId: string, bucket: BucketKey): void;
+    setNoRollup(markingId: string, noRollup: boolean): void;
 
     /**
      * Tear the store down. Disconnects all listeners and releases the engine
@@ -747,11 +872,11 @@ resolved and the store is settled. The intended use:
 const root = forms.root;
 
 // Subscribe to live updates up front.
-const unsub = store.subscribeAggregate((s) => setAggregate(s.rendered));
+const unsub = store.subscribeAggregate((page) => setAggregate(page.byBucket));
 
 // Pull initial state in one shot when the runtime says it's stable.
 const onReady = () => {
-    setAggregate(store.getAggregate().rendered);
+    setAggregate(store.getAggregate().byBucket);
     const mta = forms.components.get(textareaEl) as MarkedTextArea | undefined;
     if (mta) setSegments(mta.getSegments());
 };
@@ -839,8 +964,7 @@ assertion-side views to it.
 
 ## 7. Coverage is a check, never a push
 
-When a marking with `data-ezclassify-part-of="<parent-id>"` changes, or
-when the parent marking changes, the library re-runs
+When a part changes, or when its whole changes, the library re-runs
 `engine.checkCoverage(children, parent)` for every affected parent and
 processes each child with its parent as `partOf`.
 
@@ -875,8 +999,8 @@ the event.
 The library never mutates the child marking to fit a changed parent.
 That mutation rule applies whether the parent loosened, tightened, or
 shifted categories. The author resolves the conflict; either by
-relaxing the parent, downgrading the child, or removing the part-of
-relationship.
+relaxing the parent, downgrading the child, or moving the child out of the
+whole.
 
 The one push the library offers goes the other way, and only on request.
 A whole field that judges its parts itself (see ARCHITECTURE.md, "A whole
@@ -947,8 +1071,11 @@ export interface EzClassifyStore {
     seedAssertions(id: string, assertions: Assertion[]): Promise<void>;
     releaseSeed(id: string): void;
     requestOutput(id: string, output: string): () => void;
-    getAggregate(): EzClassifyState;
-    subscribeAggregate(listener: (state: EzClassifyState) => void): () => void;
+    getAggregate(nodeId?: string, bucket?: BucketKey): EzClassifyAggregate;
+    subscribeAggregate(
+        listener: (aggregate: EzClassifyAggregate) => void,
+        nodeId?: string,
+    ): () => void;
     destroy(): void;
 }
 ```
@@ -965,7 +1092,7 @@ export interface EzClassifyStore {
 The runtime accepts the store as a constructor arg:
 
 ```ts
-const ui = new EzClassifyUI(engine, { root: rootEl, store });
+const ui = new EzClassifyUI(context, { root: rootEl, store });
 ```
 
 If no store is passed, the runtime defaults to a `VanillaEzClassifyStore`.
@@ -974,10 +1101,11 @@ The store talks to an engine through the small `EzClassifyStoreEngine`
 surface. EzClassify supports only its own engines behind it, the
 in-process engine and the REST client. Custom external engines are not
 supported.
-Framework adapters (`@ezclassify/angular`'s `EzClassifyDirective`,
-`@ezclassify/react`'s `EzClassifyProvider`, `@ezclassify/vue`'s
-`useEzClassify`) inject their own store automatically; the consumer
-doesn't pass it explicitly.
+Framework adapters (`@ezclassify/angular`'s `ezClassify` directive,
+`@ezclassify/react`'s `<EzClassify>` and `@ezclassify/vue`'s `<EzClassify>`)
+create their own store for each root automatically; the consumer
+doesn't pass it explicitly. There is no application-wide store: UI that shares
+a form's state sits inside the same root, or the host passes `store`.
 
 ### Conformance test
 
@@ -1189,7 +1317,7 @@ fields. Vanilla HTML, no framework, no JavaScript glue:
     id="doc-marking"
     name="documentMarking"
     type="hidden"
-    data-ezclassify-rendered />
+    data-ezclassify-marking />
 
 <input
     data-ezclassify-controller="tags"
@@ -1226,7 +1354,7 @@ that category's assertions back. The store merges, re-renders, and
 echoes the new state out to TagInput. The textarea keeps its authored body.
 
 No JS is required because the binding lives entirely in the attributes.
-`new EzClassifyUI(engine, { root: rootEl })` scans the DOM, wires the store, and
+`new EzClassifyUI(context)` scans the DOM, wires the store, and
 the views handle the rest. The hidden `#doc-marking` input integrates
 with `FormData` on submit, the server picks up the rendered marking
 string with zero extra plumbing.
@@ -1234,10 +1362,10 @@ string with zero extra plumbing.
 ### Variable entries in a marked body
 
 The shipped stores implement the optional `MarkingEntriesStore` capability.
-`getEntryIds(collectionId)` returns an immutable ordered ID list, or `undefined`
+`getEntryIds(editorId)` returns an immutable ordered ID list, or `undefined`
 before membership has been committed. An empty list is an explicit collection
 with no markings. A bound textarea uses its `bound-to` marking ID as its
-collection ID; a standalone textarea uses its own element ID.
+editor ID; a standalone textarea uses its own element ID.
 
 Each ID addresses ordinary `store.get`, `subscribe`, `publishAssertions` and
 `publishRendered` operations. Membership holds no duplicate marking state and
@@ -1263,10 +1391,10 @@ await forms.store.publishAssertions(
 );
 ```
 
-`setEntryIds(collectionId, ids, source?)` commits membership; `subscribeEntries`
+`setEntryIds(editorId, ids, source?)` commits membership; `subscribeEntries`
 observes subsequent commits. Subscribe before reading the current IDs when
-hydrating an external view. IDs must be nonempty and unique, and a collection
-cannot include itself. Publish a new entry's marking state before adding its
+hydrating an external view. IDs must be nonempty and unique, and an editor
+cannot list itself. Publish a new entry's marking state before adding its
 ID. Removing an ID removes its marking token, retaining the body as unmarked
 prose. An empty entry keeps an insertion anchor, so later state can restore
 its token. Clearing membership removes tokens, not document text.
@@ -1295,8 +1423,7 @@ reports `ambiguous-parent`. These conflicts appear in
 `ezclassify:entry-error`.
 
 Custom stores without the optional membership methods retain scalar assertion
-publication. They do not provide two-way variable-entry binding. The explicit
-`first-part-binding` mode continues to bind only its designated first portion.
+publication. They do not provide two-way variable-entry binding.
 
 ## 12. The structured-document example
 
@@ -1313,50 +1440,48 @@ const doc = {
 };
 ```
 
-Three classification fields, each their own marking object:
+Three classification fields, each their own marking object. The form holds
+the document marking and its two parts:
 
 ```html
-<input
-    id="doc-marking"
-    name="documentMarking"
-    type="hidden"
-    data-ezclassify-rendered />
-<input
-    id="title-marking"
-    type="hidden"
-    data-ezclassify-rendered
-    data-ezclassify-part-of="doc-marking" />
-<input
-    id="para1-marking"
-    type="hidden"
-    data-ezclassify-rendered
-    data-ezclassify-part-of="doc-marking" />
+<form data-ezclassify-whole="doc-marking">
+    <input
+        id="doc-marking"
+        name="documentMarking"
+        type="hidden"
+        data-ezclassify-marking />
+    <input id="title-marking" type="hidden" data-ezclassify-marking />
+    <input id="para1-marking" type="hidden" data-ezclassify-marking />
 
-<!-- Document-level: full marking, with a tag input -->
-<input
-    data-ezclassify-controller="tags"
-    data-ezclassify-bound-to="doc-marking" />
+    <!-- Document-level: full marking, with a tag input -->
+    <input
+        data-ezclassify-controller="tags"
+        data-ezclassify-bound-to="doc-marking" />
 
-<!-- Title: also a full marking, but only the level facet has a picker -->
-<label>Title</label>
-<input type="text" value="the title" />
-<input
-    data-ezclassify-controller="select"
-    data-ezclassify-facet-of="title-marking"
-    data-ezclassify-category="level" />
+    <!-- Title: also a full marking, but only the level facet has a picker -->
+    <label>Title</label>
+    <input type="text" value="the title" />
+    <select
+        data-ezclassify-facet-of="title-marking"
+        data-ezclassify-category="level"></select>
 
-<!-- Paragraph: inline marked-textarea on the text body -->
-<label>Paragraph 1</label>
-<textarea
-    data-ezclassify-controller="marked-textarea"
-    data-ezclassify-bound-to="para1-marking">
+    <!-- Paragraph: inline marked-textarea on the text body -->
+    <label>Paragraph 1</label>
+    <textarea
+        data-ezclassify-controller="marked-textarea"
+        data-ezclassify-bound-to="para1-marking">
 this is my paragraph</textarea>
+</form>
 ```
 
 The `productID`, `title.value`, and `para-1.text` fields are plain HTML;
 ezclassify doesn't touch them. The classification fields are the
-marking objects, and `part-of` declares the structural relationship. The
-textarea itself owns its prose; save its native value with the document.
+marking objects, and the `whole` container declares the structural
+relationship: `#doc-marking` is the whole, and the two other marking
+objects inside it are its parts. The views bound to them are not markings
+and contribute nothing of their own. The native `<select>` binds in place as
+a facet picker with no controller. The textarea itself owns its prose; save
+its native value with the document.
 
 JS bridge:
 
@@ -1390,7 +1515,7 @@ The user types `HIGH/CTRL-A`. The marking is a string; assertions are
 derived by the engine. Components surfacing this pattern:
 
 ```html
-<input id="banner-marking" type="hidden" data-ezclassify-rendered />
+<input id="banner-marking" type="hidden" data-ezclassify-marking />
 
 <input
     data-ezclassify-controller="tags"
@@ -1416,7 +1541,7 @@ The user clicks `DAIRY`, `GLUTEN`. The marking is a set of assertions;
 the rendered form is a CSV the engine emits. Components:
 
 ```html
-<input id="allergen-marking" type="hidden" data-ezclassify-rendered />
+<input id="allergen-marking" type="hidden" data-ezclassify-marking />
 
 <div
     data-ezclassify-controller="checklist"
@@ -1501,23 +1626,27 @@ Things you must not do. Each one has a concrete failure mode.
 - **No silent coverage corrections.** When a parent's coverage shifts,
   the library never re-writes the child to match, however helpful a
   fix would look. See §7.
-- **No mixing two binding attributes on one element.** Either
+- **No mixing two view attributes on one element.** Either
   `bound-to` or `facet-of` or `source` or `aggregate`. The scanner
   warns and ignores extras, but the right rule is "don't write it."
+- **No wiring in code after initialization.** Membership, parts, Contexts and
+  outputs are markup. A page that registers a Context, places a marking in a
+  rollup or creates a rollup input from code is working around the model; the
+  attribute for it exists.
 
 ## 16. Deferred from the 1.0 surface
 
 The model supports extensions beyond the 1.0 implementation. Explicit deferrals:
 
-- **Nested wholes.** A marking that is `part-of` a parent marking
-  which is itself `part-of` a grandparent. The graph supports it;
-  the engine round-trip would work; the UI runtime wouldn't compute
-  multi-level coverage correctly without more work. Customers who
-  need this can file a feature request.
-- **Cross-engine context.** A single marking field driven by two
-  schemes at once, side by side, each from a different authority.
-  The multi-profile rollup is a flat aggregation, not a true
-  multi-engine context. It needs its own design.
+- **A page ceiling.** A declared allowed marking for the page, against which
+  every level is checked. `banner-boundary` checks one banner's marking against
+  one value until then.
+- **Engine-reported applicability.** `show-when-parent-has` and
+  `hide-when-parent-has` name concepts in markup. A scheme that declares when a
+  section applies would replace them.
+- **One guide's view of a multi-guide Context.** Guide controls show every
+  guide the Context holds, one section per guide, and every hit names its
+  guide. A `data-ezclassify-guide` selector would narrow a view to one.
 - **SSR / hydration.** The whole binding layer assumes a live DOM.
   Server-rendered markup with client-side hydration works if the
   server emits the right hidden inputs, but we don't ship a
