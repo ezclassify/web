@@ -1,8 +1,7 @@
 import { useCallback, useRef, useSyncExternalStore } from 'react';
 import {
     EMPTY_EZCLASSIFY_STATE,
-    bucketParts,
-    type BucketKey,
+    bucketKey,
     type EzClassifyState,
 } from '@ezclassify/ui';
 import { useProvision } from './EzClassifyProvider';
@@ -17,7 +16,11 @@ import type { ReactEzClassifyStore } from './react-ezclassify-store';
 export interface EzClassifyBucket {
     /** The Context key. Required when the provider was given several. */
     context?: string;
-    /** The scheme selector, for a Context that holds several schemes. */
+    /**
+     * The selector of a scheme other than the Context's primary, for a Context
+     * that holds several. Omitted, the primary scheme is read, as markup reads
+     * it without `data-ezclassify-scheme`.
+     */
     scheme?: string;
 }
 
@@ -40,9 +43,11 @@ interface Held {
  * reads that whole's parts; with the id of a collection, its members.
  *
  * A level keeps one roll-up per Context and scheme and never merges them, so
- * the hook reads exactly one. On a page with several Contexts it must name its
- * Context, and on a Context with several schemes its scheme, as a submitted
- * aggregate sink must; otherwise it throws rather than pick one silently.
+ * the hook reads exactly one: the Context it names, in its primary scheme
+ * unless it names another. Which one is fixed when the hook is called, never by
+ * the data a level holds. On a page with several Contexts it must name its
+ * Context, and it throws at once when it names none, or one the provider does
+ * not hold.
  *
  * ```tsx
  * const page = useEzClassifyRollup();
@@ -53,7 +58,8 @@ interface Held {
  * @param id - A whole or collection id; omitted reads the page.
  * @param bucket - Which Context and scheme to read, where there is a choice.
  * @returns The roll-up state; empty until anything at that level is marked.
- * @throws When the bucket is ambiguous or names an unknown Context.
+ * @throws When the provider holds several Contexts and the hook names none, or
+ *   names one the provider does not hold.
  */
 export function useEzClassifyRollup(
     id?: string,
@@ -120,9 +126,8 @@ export function useEzClassifyRollup(
 }
 
 /**
- * Pick the one roll-up the caller asked for from a level's buckets.
- *
- * @throws When more than one bucket matches.
+ * The one roll-up the caller asked for: its Context (the only one when the
+ * provider holds one) in the scheme it names, the primary when it names none.
  */
 function readBucket(
     store: ReactEzClassifyStore,
@@ -130,27 +135,12 @@ function readBucket(
     context: string | undefined,
     scheme: string | undefined,
 ): EzClassifyState {
-    const matches: [BucketKey, EzClassifyState][] = [];
-    for (const [key, state] of store.getAggregate(id).byBucket) {
-        const { contextKey, schemeSelector } = bucketParts(key);
-        if (context !== undefined && contextKey !== context) continue;
-        if (scheme !== undefined && schemeSelector !== scheme) continue;
-        matches.push([key, state]);
-    }
-    if (matches.length > 1) {
-        const names = matches
-            .map(([key]) => {
-                const { contextKey, schemeSelector } = bucketParts(key);
-                return [contextKey, schemeSelector || '(primary)']
-                    .filter(Boolean)
-                    .join('/');
-            })
-            .join(', ');
-        throw new Error(
-            `[ezclassify/react] useEzClassifyRollup(${describeLevel(id)}) matches several roll-ups (${names}); name one with { context, scheme }.`,
-        );
-    }
-    return matches[0]?.[1] ?? EMPTY_EZCLASSIFY_STATE;
+    return (
+        store
+            .getAggregate(id)
+            .byBucket.get(bucketKey(context ?? '', scheme ?? '')) ??
+        EMPTY_EZCLASSIFY_STATE
+    );
 }
 
 function describeLevel(id: string | undefined): string {

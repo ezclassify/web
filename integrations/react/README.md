@@ -307,6 +307,10 @@ the Context default, or select a format declared by your Context through
 and [binding model](https://github.com/ezclassify/web/blob/main/libs/ui/docs/binding-model.md) describe the complete
 control and store contracts.
 
+A root restarts its runtime when `options.colorMap` or `options.favorites` is a
+new object. Define them once, as a module constant or with `useMemo`, instead
+of writing them inline in a component that re-renders.
+
 ## License
 
 Apache-2.0.

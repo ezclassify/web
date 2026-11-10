@@ -23,7 +23,12 @@ import { useStableSource, type EzClassifySource } from './use-stable-source';
 
 /** Props shared by both forms of {@link EzClassifyProvider}. */
 interface ProviderBaseProps {
-    /** Presentation defaults for every `<EzClassify>` root below. */
+    /**
+     * Presentation defaults for every `<EzClassify>` root below. A root starts
+     * its runtime again when `colorMap` or `favorites` is a different object,
+     * so define them once (a module constant, or `useMemo`) rather than inline
+     * in a component that re-renders.
+     */
     options?: EzClassifyOptions;
     children?: ReactNode;
 }

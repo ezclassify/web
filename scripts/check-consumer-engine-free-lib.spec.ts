@@ -101,7 +101,7 @@ describe('auditEngineFreedom', () => {
                 files: [
                     {
                         path: 'src/a.ts',
-                        text: "import { useSchemeEngine } from '@ezclassify/react';\nimport '@ezclassify/ui';",
+                        text: "import { useEzClassifyRollup } from '@ezclassify/react';\nimport '@ezclassify/ui';",
                     },
                 ],
             }),

@@ -165,19 +165,15 @@ describe('useEzClassifyRollup on one Context', () => {
         expect(result.current.rendered).toBe('TWO');
     });
 
-    it('refuses to pick between several schemes it does not name', () => {
-        vi.spyOn(console, 'error').mockImplementation(() => {});
+    it('reads the primary scheme when it names none, whatever another scheme holds', () => {
         const store = new LevelStore();
-        store.levels.set(
-            undefined,
-            new Map([
-                [PRIMARY, state('ONE')],
-                [TIER, state('TWO')],
-            ]),
-        );
-        expect(() => mount(store, { context: makeContext() })).toThrow(
-            /several roll-ups/,
-        );
+        const { result } = mount(store, { context: makeContext() });
+        expect(result.current).toBe(EMPTY_EZCLASSIFY_STATE);
+        // Data reaching a second scheme never makes a mounted reader throw.
+        act(() => store.commit(undefined, TIER, state('TWO')));
+        expect(result.current).toBe(EMPTY_EZCLASSIFY_STATE);
+        act(() => store.commit(undefined, PRIMARY, state('ONE')));
+        expect(result.current.rendered).toBe('ONE');
     });
 
     it('stops listening when it unmounts', () => {
