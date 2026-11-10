@@ -269,6 +269,23 @@ describe('each kind has its own outline and legend row', () => {
         locator.destroy();
     });
 
+    it('keeps a whole container and the fields inside it as separate regions', () => {
+        const target = page(
+            '<section id="doc-whole" data-ezclassify-whole="doc"><input id="doc" data-ezclassify-marking><input id="p1" data-ezclassify-marking></section><p id="row"><input id="solo" data-ezclassify-marking></p>',
+        );
+        const locator = createComponentLocator({ target, active: true });
+        const kindOf = (id: string) =>
+            target.querySelector<HTMLElement>(`#${id}`)!.dataset
+                .ezclassifyXrayKind;
+        expect(kindOf('doc-whole')).toBe('structure');
+        expect(kindOf('doc')).toBe('marking');
+        expect(kindOf('p1')).toBe('marking');
+        // A field alone in its row still outlines the row.
+        expect(kindOf('row')).toBe('marking');
+        expect(kindOf('solo')).toBeUndefined();
+        locator.destroy();
+    });
+
     it('names a part with the whole it belongs to', () => {
         const target = page(
             '<output id="p1" data-ezclassify-marking data-ezclassify-part-of="doc"></output>',

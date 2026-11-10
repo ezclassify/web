@@ -555,8 +555,21 @@ function chipHost(element: HTMLElement, target: HTMLElement): HTMLElement {
         return enhancement;
     if (!isRendered(element) || !element.matches('input, textarea, select'))
         return element;
+    // A bare form control outlines its field row, but only when that row is
+    // its alone: a row that is a region of its own (a whole container, say)
+    // or holds other fields keeps one outline per region. The control's own
+    // plumbing mount does not count as another field.
     const parent = element.parentElement;
-    return parent && target.contains(parent) && isRendered(parent)
+    const fields = parent
+        ? [...parent.querySelectorAll<HTMLElement>(MARKER_SELECTOR)].filter(
+              (marker) => !marker.hasAttribute(MOUNT_ATTR),
+          )
+        : [];
+    return parent &&
+        target.contains(parent) &&
+        !parent.matches(MARKER_SELECTOR) &&
+        fields.length === 1 &&
+        isRendered(parent)
         ? parent
         : element;
 }
