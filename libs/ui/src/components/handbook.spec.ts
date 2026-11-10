@@ -383,6 +383,39 @@ describe('Handbook', () => {
             expect(labels).toContain('Guidance');
         });
 
+        it('leads the overview with a marked scheme document overall marking, verbatim', async () => {
+            const marked = {
+                ...createProfile(),
+                marking: '(U) NOTIONAL//TEST',
+            } as Scheme;
+            await handbook.init(container, toCtx(createEngine(marked)));
+
+            const overview = container.querySelector('.ez-handbook__overview')!;
+            const marking = overview.querySelector(
+                '.ez-handbook__overview-marking',
+            )!;
+            expect(overview.firstElementChild).toBe(marking);
+            expect(marking.textContent).toBe(
+                'Overall marking: (U) NOTIONAL//TEST',
+            );
+            expect(marking.querySelector('.ez-sr-only')!.textContent).toBe(
+                'Overall marking: ',
+            );
+        });
+
+        it('shows no overall marking for an unmarked scheme document', async () => {
+            await handbook.init(container, toCtx(createEngine()));
+
+            const overview = container.querySelector('.ez-handbook__overview')!;
+            expect(
+                overview.querySelector('.ez-handbook__overview-marking'),
+            ).toBeNull();
+            expect(overview.textContent).not.toContain('Overall marking');
+            expect(overview.firstElementChild!.className).toBe(
+                'ez-handbook__overview-name',
+            );
+        });
+
         it('shows version, category count, and concept count', async () => {
             await handbook.init(container, toCtx(createEngine()));
 

@@ -10,7 +10,8 @@
  * them, filtering categories and concepts to the active scope using the same
  * rules as the engine's suggestion system. A profile overview section at the
  * top shows the profile's name, version, description, and guidance before the
- * category list.
+ * category list, led by the scheme document's overall marking when it is
+ * marked.
  *
  * Categories start collapsed. When a search filter is active, matching concepts
  * inside collapsed categories are revealed.
@@ -413,6 +414,18 @@ export class Handbook extends ReadOnlyComponentBase {
     private renderOverview(): HTMLDivElement {
         const el = document.createElement('div');
         el.className = 'ez-handbook__overview';
+
+        // A marked scheme document carries its own overall marking. Show it
+        // verbatim, the way the document writes it; nothing here reads it.
+        if (this.scheme.marking) {
+            const marking = document.createElement('div');
+            marking.className = 'ez-handbook__overview-marking';
+            const label = document.createElement('span');
+            label.className = 'ez-sr-only';
+            label.textContent = 'Overall marking: ';
+            marking.append(label, this.scheme.marking);
+            el.appendChild(marking);
+        }
 
         const name = document.createElement('div');
         name.className = 'ez-handbook__overview-name';
