@@ -3,7 +3,7 @@ import {
     createComponentLocator,
     type ComponentLocator,
 } from './component-locator';
-import { adoptedStyleTexts } from './styles/adopt';
+import { adoptedStyleTexts } from '../styles/adopt';
 
 /**
  * The locator's stylesheet is adopted onto the document, not appended as a
@@ -156,7 +156,7 @@ describe('component locator viewport labels', () => {
         region.setAttribute('data-ezclassify-marking', '');
         await Promise.resolve();
         flush();
-        expect(chip.textContent).toBe('@ezclassify/ui data-binding');
+        expect(chip.textContent).toBe('marking');
         await Promise.resolve();
         expect(frames.size).toBe(0);
         const added = document.createElement('div');

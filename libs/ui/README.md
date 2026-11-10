@@ -431,6 +431,27 @@ That is a product boundary, not a packaging accident. Scheme content in the
 browser puts the rules in the client, where they can be read and edited. The
 REST path keeps them on the server and sends back answers.
 
+## Highlight components while you build
+
+`@ezclassify/ui/devtools` outlines every region of a page EzClassify reads or
+drives: components, bound markings, wholes and collections, views and
+handbooks, ignored regions, and anything you tag `data-ezclassify-powered`
+because your own code fills it from EzClassify data. Hidden inputs have no box,
+so its legend lists them instead. It is a separate entry, so a production
+bundle never carries it unless you import it.
+
+```ts
+import { createComponentLocator } from '@ezclassify/ui/devtools';
+
+const locator = createComponentLocator();
+document.body.append(locator.element);
+// later: locator.destroy();
+```
+
+On a page with no build step, load the entry as a module and type
+`ezclassify.devtools()` in the browser console. `ezclassify.devtools(false)`
+turns it off.
+
 ## Key exports
 
 | Export                                              | Purpose                                          |

@@ -19,4 +19,13 @@ await buildLib({
     // quietly permit an import that must never reach the public package.
     external: ['@ezclassify/types', 'fs', 'path', 'crypto', 'node:*'],
     plugins: [cssInlinePlugin(), tsResolvePlugin()],
+    // The devtools overlay ships beside the library, never inside it: a page
+    // gets it only by importing @ezclassify/ui/devtools.
+    esmSubpaths: { 'devtools/index': 'src/devtools/index.ts' },
+    extraExports: {
+        './devtools': {
+            types: './devtools/index.d.ts',
+            import: './devtools/index.mjs',
+        },
+    },
 });

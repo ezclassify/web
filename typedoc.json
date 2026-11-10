@@ -2,6 +2,7 @@
     "$schema": "https://typedoc.org/schema.json",
     "entryPoints": [
         "libs/ui/src/index.ts",
+        "libs/ui/src/devtools/index.ts",
         "integrations/angular/src/index.ts",
         "integrations/react/src/index.ts",
         "integrations/vue/src/index.ts"

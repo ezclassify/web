@@ -38,11 +38,6 @@ export { THEMES, applyTheme } from './themes';
 export type { EzTheme } from './themes';
 export { initComparison, compareRenderings } from './comparison';
 export type { ComparisonResult } from './comparison';
-export { createComponentLocator } from './component-locator';
-export type {
-    ComponentLocator,
-    ComponentLocatorOptions,
-} from './component-locator';
 export { contextSignature, sameSignature } from './engine-signature';
 export * from './render-colors';
 export * from './token-tree';

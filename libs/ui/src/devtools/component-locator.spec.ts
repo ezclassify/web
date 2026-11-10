@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import { createComponentLocator } from './component-locator';
-import { adoptedStyleTexts } from './styles/adopt';
-import { setMountHost } from './mount-host-registry';
+import { adoptedStyleTexts } from '../styles/adopt';
+import { setMountHost } from '../mount-host-registry';
 
 /**
  * The locator's stylesheet is adopted onto the document, not appended as a
@@ -226,7 +226,7 @@ describe('component locator', () => {
         locator.destroy();
     });
 
-    it('marks a visible rendered output as a binding', () => {
+    it('marks a visible rendered output as a bound marking', () => {
         const target = document.createElement('div');
         const output = document.createElement('output');
         output.setAttribute('data-ezclassify-marking', '');
@@ -243,7 +243,7 @@ describe('component locator', () => {
         toggle.checked = true;
         toggle.dispatchEvent(new Event('change'));
 
-        expect(output.dataset.ezclassifyXrayKind).toBe('binding');
+        expect(output.dataset.ezclassifyXrayKind).toBe('marking');
         locator.destroy();
     });
 

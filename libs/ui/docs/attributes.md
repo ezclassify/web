@@ -10,8 +10,8 @@ markup.
 Conventions used below:
 
 - **Owner**: the module that reads (or stamps) the attribute.
-- **Audience**: `author` (you set it in markup), `runtime` (the library stamps
-  it; do not set it by hand), or `tooling` (used by the x-ray/locator overlay).
+- **Audience**: `author` (you set it in markup) or `runtime` (the library
+  stamps it; do not set it by hand).
 - **Scope**: `host` (any element; the binding/behavior seam) or
   `prefixed` (a `data-ezclassify-<controller>-<option>` option harvested for a
   specific controller).
@@ -29,7 +29,7 @@ scanner; ordinary page text is never read. Exactly one **view** attribute
 (`bound-to` / `facet-of` / `source` / `aggregate`) may be present per element;
 if more than one is set the scanner keeps the first in that order and warns.
 
-The attributes split into four groups:
+The attributes split into five groups:
 
 - **Markings.** `controller` names what a field holds; `marking` declares a
   marking with no controller.
@@ -39,6 +39,8 @@ The attributes split into four groups:
   or edit a marking or a level. A view never contributes to a rollup.
 - **Selection and presentation.** `context` and `scheme` choose what a marking
   is read against; the rest are presentation and opt-outs.
+- **Developer tools.** `powered` marks content your own code fills from
+  EzClassify data. The runtime does not read it; the devtools overlay shows it.
 
 | Attribute                              | Owner                                                | Audience | Values                                                                                                                                                                                                                                                                                              | Default                       |
 | -------------------------------------- | ---------------------------------------------------- | -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------- |
@@ -66,9 +68,27 @@ The attributes split into four groups:
 | `data-ezclassify-no-rollup`            | `store` / `forms/rollup`                             | author   | presence-only; a live control that is not content, such as a filter picker. It is processed and validated but feeds no rollup. A host error on a part or on a whole with parts                                                                                                                      | (none)                        |
 | `data-ezclassify-no-tooltips`          | `component-factory` / `components/component-base`    | author   | presence-only; disables concept/detail hover tooltips for the host and its subtree (closest-ancestor semantics)                                                                                                                                                                                     | tooltips enabled              |
 | `data-ezclassify-no-hints`             | `component-factory` / `components/marked-field-base` | author   | presence-only; disables keyboard-hint chrome (hint footers, floating hint chips) for the host and its subtree; the touch "Add marking" affordance is core interaction and stays                                                                                                                     | hints enabled                 |
+| `data-ezclassify-powered`              | `devtools/component-locator`                         | author   | presence-only; content your own code fills from EzClassify data, so the devtools overlay can show it. On a container it covers the subtree with one outline. The library never sets it                                                                                                              | (none)                        |
 
 Presence attributes read `"true"` as present and `"false"` as absent, so a
 framework that writes booleans as strings works unchanged.
+
+### Seeing them on a page
+
+The "Highlight components" overlay outlines everything on a page these
+attributes describe, one color per group, and lists hidden inputs it cannot
+outline. It ships from its own entry so it never reaches a production bundle
+unless you import it:
+
+```ts
+import { createComponentLocator } from '@ezclassify/ui/devtools';
+
+document.body.append(createComponentLocator().element);
+```
+
+Loading that entry also defines `ezclassify.devtools()`, so on a page with no
+build step you can turn the highlights on from the browser console and off
+again with `ezclassify.devtools(false)`.
 
 ### Where a marking sits
 
@@ -140,7 +160,6 @@ in tests and CSS but must not set them by hand.
 | `data-ezclassify-mount-root` | `ezclassify-ui` / `element-scanner` | runtime  | the instance id stamped on each `EzClassifyUI` root; the cross-instance ownership boundary.                                                                                      | internal |
 | `data-ezclassify-error`      | `forms/rollup` / `forms/styles`     | runtime  | presence-only; stamped on a field without a component that failed the rollup's check, styled by the default stylesheet. A component shows the failure in its own errors instead. | internal |
 | `data-ezclassify-invalid`    | `ezclassify-ui`                     | runtime  | presence-only; stamped on a mount container whose value is invalid.                                                                                                              | internal |
-| `data-ezclassify-powered`    | `component-locator`                 | tooling  | presence-only; marks native elements a developer populates in JS so the x-ray overlay can highlight them.                                                                        | internal |
 
 ### Enhancement status mark (runtime element, not an attribute)
 

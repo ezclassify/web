@@ -1,37 +1,64 @@
 /**
- * "Locate EzClassify components" x-ray overlay, a framework-agnostic, vanilla
- * DOM control that badges every region of a page driven by EzClassify, keyed
- * purely off attributes. Drop it on any page (demo or production) that uses the
- * runtime; it discovers the regions itself.
+ * The "Highlight components" overlay: a framework-agnostic DOM control that
+ * outlines every region of a page EzClassify reads or drives, keyed purely off
+ * attributes. It ships from the `@ezclassify/ui/devtools` entry so it never
+ * lands in a production bundle unless a page imports it.
  *
- * Three categories, each keyed off a marker attribute:
+ * What it finds comes from the library's own attribute registry in
+ * `binding-model.ts` (the controller, marking, view and structural attributes)
+ * plus `data-ezclassify-powered`, so a new attribute added there is found
+ * without editing this module. Each element takes one kind:
  *
- * - `[data-ezclassify-mount]` / `[data-ezclassify-controller]`: @ezclassify/ui
- *   components (the runtime's rendered widgets and in-place enhanced hosts).
- * - `[data-ezclassify-marking]`: plain native elements that hold a marking by
- *   attribute.
- * - `[data-ezclassify-powered]`: native elements a developer populates in JS from
- *   EzClassify return data (a manual "powered by" marker).
+ * - Components: `@ezclassify/ui` controllers and their mounts;
+ * - Bound markings: elements that hold a marking by `data-ezclassify-marking`;
+ * - Structure: whole containers, collections and the other structural attributes
+ *   (`part-of`, `member-of`, `context`, `scheme`, `no-rollup`);
+ * - Views: the view attributes and the reference controllers (handbooks and the
+ *   reference drawer);
+ * - Ignored regions: `data-ezclassify-ignore` subtrees, shown as excluded;
+ * - Powered: `data-ezclassify-powered`, the manual marker for content a
+ *   developer's own code fills from EzClassify data. It is region-scoped: one
+ *   outline covers the container's subtree, and powered elements nested in it
+ *   are not outlined again. The library never stamps it.
  *
- * The locator marks only rendered regions. Enhancement runtimes commonly leave
- * hidden controllers and zero-height plumbing mounts beside the visible widget;
- * outlining marker attributes directly would therefore label implementation
- * details instead of the UI a user can see.
+ * The locator outlines only rendered regions. Enhancement runtimes leave hidden
+ * controllers and zero-height plumbing mounts beside the visible widget, and
+ * outlining marker attributes directly would label implementation details
+ * instead of the UI a user can see. Hidden sinks (hidden inputs and headless
+ * controllers) have no box to outline, so the legend lists them instead.
  */
 
-import { componentNameForController } from './component-factory';
-import { adoptStylesOnce } from './styles/adopt';
-import { getMountHost } from './mount-host-registry';
+import {
+    CONTROLLER_ATTR,
+    IGNORE_ATTR,
+    isPresent,
+    MARKING_ATTR,
+    STRUCTURAL_ATTRS,
+    VIEW_ATTRS,
+} from '../binding-model';
+import { componentNameForHost } from '../component-factory';
+import type { ControllerName } from '../element-scanner';
+import { getMountHost } from '../mount-host-registry';
+import { adoptStylesOnce } from '../styles/adopt';
+
+/**
+ * Presence: a developer's own code fills this element (and its subtree) from
+ * EzClassify data. Read only by this overlay; the library never stamps it.
+ */
+const POWERED_ATTR = 'data-ezclassify-powered';
+
+/** The sibling mount the factory inserts for an interactive controller. */
+const MOUNT_ATTR = 'data-ezclassify-mount';
 
 /** Options for {@link createComponentLocator}. */
 export interface ComponentLocatorOptions {
     /**
      * Element that receives the `ezclassify-xray` class when the switch is on.
      * Defaults to `document.body`, so `[data-ezclassify-powered]` elements that
-     * live outside any ui mount are still badged.
+     * live outside any ui mount are still outlined.
      */
     target?: HTMLElement;
-    /** Override the switch label. Defaults to "Locate EzClassify components". */
+    /** Override the switch label. Defaults to "Highlight components". */
     label?: string;
     /** Initial switch state. Defaults to off. */
     active?: boolean;
@@ -53,61 +80,150 @@ export interface ComponentLocator {
     destroy: () => void;
 }
 
+/** The kind of region an outline marks. */
+type XrayKind =
+    'component' | 'marking' | 'structure' | 'view' | 'ignored' | 'powered';
+
+/** Structural attributes other than `ignore`, which is a kind of its own. */
+const STRUCTURE_ATTRS: readonly string[] = STRUCTURAL_ATTRS.filter(
+    (attr) => attr !== IGNORE_ATTR,
+);
+
+/**
+ * The registry attributes that give an element each kind, in priority order: an
+ * element that carries several takes the first kind that matches.
+ */
+const KIND_ATTRIBUTES: ReadonlyArray<readonly [XrayKind, readonly string[]]> = [
+    ['ignored', [IGNORE_ATTR]],
+    ['view', VIEW_ATTRS],
+    ['component', [CONTROLLER_ATTR, MOUNT_ATTR]],
+    ['marking', [MARKING_ATTR]],
+    ['structure', STRUCTURE_ATTRS],
+    ['powered', [POWERED_ATTR]],
+];
+
+/** Every attribute the overlay finds. */
+const FOUND_ATTRIBUTES: readonly string[] = KIND_ATTRIBUTES.flatMap(
+    ([, attrs]) => attrs,
+);
+const MARKER_SELECTOR = FOUND_ATTRIBUTES.map((attr) => `[${attr}]`).join(',');
+
+/**
+ * Controllers that show reference material rather than hold or edit a marking:
+ * the handbooks and the reference drawer. They read as views.
+ */
+const REFERENCE_CONTROLLERS: ReadonlySet<string> = new Set([
+    'handbook',
+    'guidebook',
+    'access-handbook',
+    'crosswalk-handbook',
+    'context-reference',
+]);
+
+/** Controllers that render nothing: their host is a hidden sink. */
+const HEADLESS_CONTROLLERS: ReadonlySet<string> = new Set(['hidden']);
+
+/** Legend rows, in reading order, with each kind's palette. */
+const KINDS: ReadonlyArray<{
+    kind: XrayKind;
+    legend: string;
+    color: string;
+    badge: string;
+    dark: string;
+    outline: 'dashed' | 'dotted';
+}> = [
+    {
+        kind: 'component',
+        legend: 'Components',
+        color: '#7c3aed',
+        badge: '#6d28d9',
+        dark: '#a78bfa',
+        outline: 'dashed',
+    },
+    {
+        kind: 'marking',
+        legend: 'Bound markings',
+        color: '#b45309',
+        badge: '#b45309',
+        dark: '#fbbf24',
+        outline: 'dashed',
+    },
+    {
+        kind: 'structure',
+        legend: 'Structure (wholes, collections)',
+        color: '#15803d',
+        badge: '#15803d',
+        dark: '#4ade80',
+        outline: 'dashed',
+    },
+    {
+        kind: 'view',
+        legend: 'Views and handbooks',
+        color: '#1d4ed8',
+        badge: '#1d4ed8',
+        dark: '#60a5fa',
+        outline: 'dashed',
+    },
+    {
+        kind: 'ignored',
+        legend: 'Ignored (excluded)',
+        color: '#475569',
+        badge: '#475569',
+        dark: '#94a3b8',
+        outline: 'dotted',
+    },
+    {
+        kind: 'powered',
+        legend: 'Powered by EzClassify (manual)',
+        color: '#0e7490',
+        badge: '#0e7490',
+        dark: '#22d3ee',
+        outline: 'dashed',
+    },
+];
+
 /**
  * The x-ray stylesheet. Gated entirely on a `.ezclassify-xray` ancestor, so it
- * is inert until the switch turns the class on. Injected once into the document
- * head; never into a ui root, because `[data-ezclassify-powered]` elements may
- * live anywhere on the page.
+ * is inert until the switch turns the class on. Adopted once onto the document;
+ * never into a ui root, because `[data-ezclassify-powered]` elements may live
+ * anywhere on the page.
  */
 const XRAY_CSS = `
 /* Palette lives at :root so it resolves everywhere (some chips render on host
    wrappers outside the demo root). These are inert custom properties, harmless
-   when x-ray is off. Dark mode only brightens the dashed OUTLINE colors; the
-   chip backgrounds stay saturated so white chip text keeps contrast in both.
+   when x-ray is off. Dark mode only brightens the OUTLINE colors; the chip
+   backgrounds stay saturated so white chip text keeps contrast in both.
    Theme state comes from the HOST's theme attributes, never from the
    operating system: the library never queries the OS color-scheme media
    feature (standing rule in styles.css). The selector set and the
    :not([data-color-scheme='light']) shadowing mirror the main stylesheet's
    dark palette block. */
 :root {
-  --ezx-comp-color: #7c3aed;  --ezx-comp-badge: #6d28d9;
-  --ezx-bound-color: #b45309; --ezx-bound-badge: #b45309;
-  --ezx-powered-color: #0e7490; --ezx-powered-badge: #0e7490;
+${KINDS.map((k) => `  --ezx-${k.kind}-color: ${k.color}; --ezx-${k.kind}-badge: ${k.badge};`).join('\n')}
 }
 [data-color-scheme='dark'],
 [data-theme='dark']:not([data-color-scheme='light']),
 [data-bs-theme='dark']:not([data-color-scheme='light']),
 .dark:not([data-color-scheme='light']) {
-  --ezx-comp-color: #a78bfa;
-  --ezx-bound-color: #fbbf24;
-  --ezx-powered-color: #22d3ee;
+${KINDS.map((k) => `  --ezx-${k.kind}-color: ${k.dark};`).join('\n')}
 }
 
 /* JavaScript applies one private kind to each rendered region. Raw marker
    attributes are intentionally not styled: hidden controllers and height-zero
    mounts are runtime plumbing, not user-visible components. */
-.ezclassify-xray[data-ezclassify-xray-kind='component'],
-.ezclassify-xray [data-ezclassify-xray-kind='component'] {
-  --ezx-chip-bg: var(--ezx-comp-badge);
-  --ezx-outline: var(--ezx-comp-color);
-}
-.ezclassify-xray[data-ezclassify-xray-kind='binding'],
-.ezclassify-xray [data-ezclassify-xray-kind='binding'] {
-  --ezx-chip: "@ezclassify/ui data-binding";
-  --ezx-chip-bg: var(--ezx-bound-badge);
-  --ezx-outline: var(--ezx-bound-color);
-}
-.ezclassify-xray[data-ezclassify-xray-kind='powered'],
-.ezclassify-xray [data-ezclassify-xray-kind='powered'] {
-  --ezx-chip: "powered by EzClassify";
-  --ezx-chip-bg: var(--ezx-powered-badge);
-  --ezx-outline: var(--ezx-powered-color);
-}
+${KINDS.map(
+    (k) => `.ezclassify-xray[data-ezclassify-xray-kind='${k.kind}'],
+.ezclassify-xray [data-ezclassify-xray-kind='${k.kind}'] {
+  --ezx-chip-bg: var(--ezx-${k.kind}-badge);
+  --ezx-outline: var(--ezx-${k.kind}-color);
+  --ezx-outline-style: ${k.outline};
+}`,
+).join('\n')}
 
 /* Outlines remain on the rendered region; labels are portaled separately. */
 .ezclassify-xray[data-ezclassify-xray-kind],
 .ezclassify-xray [data-ezclassify-xray-kind] {
-  outline: 2px dashed var(--ezx-outline);
+  outline: 2px var(--ezx-outline-style, dashed) var(--ezx-outline);
   outline-offset: 3px;
   border-radius: 0.4rem;
 }
@@ -134,7 +250,7 @@ const XRAY_CSS = `
   top: var(--ezx-label-top, 0px);
   max-width: var(--ezx-label-width, calc(100vw - 0.5rem));
   box-sizing: border-box;
-  background: var(--ezx-chip-bg, var(--ezx-comp-badge));
+  background: var(--ezx-chip-bg, var(--ezx-component-badge));
   font-family: var(--font-mono, ui-monospace, monospace);
   font-size: 0.65rem;
   font-weight: 700;
@@ -149,7 +265,8 @@ const XRAY_CSS = `
 .ezclassify-locator__chip[hidden] { display: none; }
 
 /* The locator control itself: a compact card with an iOS-style slider and a
-   3-row legend. Prefixed ezclassify-locator… to avoid host collisions. */
+   legend of every kind. Prefixed ezclassify-locator… to avoid host
+   collisions. */
 .ezclassify-locator {
   display: inline-flex;
   flex-direction: column;
@@ -196,7 +313,7 @@ const XRAY_CSS = `
   transition: transform 0.18s ease;
 }
 .ezclassify-locator__slider:checked {
-  background: var(--ezx-comp-badge, #6d28d9);
+  background: var(--ezx-component-badge, #6d28d9);
 }
 .ezclassify-locator__slider:checked::before {
   transform: translateX(1.05rem);
@@ -236,17 +353,39 @@ const XRAY_CSS = `
   border: 2px solid;
   flex: none;
 }
-.ezclassify-locator__item--comp .ezclassify-locator__swatch {
-  border-color: var(--ezx-comp-color, #7c3aed);
-  background: var(--ezx-comp-badge, #6d28d9);
+${KINDS.map(
+    (k) => `.ezclassify-locator__item--${k.kind} .ezclassify-locator__swatch {
+  border-color: var(--ezx-${k.kind}-color, ${k.color});
+  border-style: ${k.outline === 'dotted' ? 'dotted' : 'solid'};
+  background: var(--ezx-${k.kind}-badge, ${k.badge});
+}`,
+).join('\n')}
+.ezclassify-locator__hidden {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  line-height: 1.4;
 }
-.ezclassify-locator__item--bound .ezclassify-locator__swatch {
-  border-color: var(--ezx-bound-color, #b45309);
-  background: var(--ezx-bound-badge, #b45309);
+.ezclassify-locator__hidden[hidden] { display: none; }
+.ezclassify-locator__hidden-list {
+  list-style: none;
+  margin: 0;
+  padding: 0 0 0 1.3rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 0.7rem;
+  overflow-wrap: anywhere;
 }
-.ezclassify-locator__item--powered .ezclassify-locator__swatch {
-  border-color: var(--ezx-powered-color, #0e7490);
-  background: var(--ezx-powered-badge, #0e7490);
+
+/* The console switch's control floats in a corner of a page it was not
+   designed into. */
+.ezclassify-locator--floating {
+  position: fixed;
+  right: 1rem;
+  bottom: 1rem;
+  z-index: 2147483646;
 }
 `;
 
@@ -259,46 +398,119 @@ function injectLocatorStyles(): void {
     adoptStylesOnce(XRAY_CSS, document);
 }
 
-const LEGEND_ROWS: Array<{ modifier: string; label: string }> = [
-    { modifier: 'comp', label: '@ezclassify/ui' },
-    { modifier: 'bound', label: '@ezclassify/ui data-binding' },
-    { modifier: 'powered', label: 'Powered by EzClassify (manual)' },
-];
-
-const MARKER_SELECTOR = [
-    '[data-ezclassify-mount]',
-    '[data-ezclassify-controller]',
-    '[data-ezclassify-marking]',
-    '[data-ezclassify-powered]',
-].join(',');
 const XRAY_KIND_ATTRIBUTE = 'data-ezclassify-xray-kind';
 const XRAY_LABEL_ATTRIBUTE = 'data-ezclassify-xray-label';
 
-type XrayKind = 'component' | 'binding' | 'powered';
-
-function markerKind(element: HTMLElement): XrayKind {
-    if (
-        element.hasAttribute('data-ezclassify-mount') ||
-        element.hasAttribute('data-ezclassify-controller')
-    ) {
-        return 'component';
-    }
-    if (element.hasAttribute('data-ezclassify-marking')) return 'binding';
-    return 'powered';
+/** The host a factory mount was created for, when the element is a mount. */
+function mountedHost(element: HTMLElement): HTMLElement | null {
+    if (!element.hasAttribute(MOUNT_ATTR)) return null;
+    const host = getMountHost(element);
+    return host && host !== element ? host : null;
 }
 
-function markerLabel(element: HTMLElement, kind: XrayKind): string {
-    if (kind === 'binding') return '@ezclassify/ui data-binding';
-    if (kind === 'powered') return 'powered by EzClassify';
-    const controller =
-        element.getAttribute('data-ezclassify-mount') ??
-        element.getAttribute('data-ezclassify-controller');
-    const componentName = controller
-        ? componentNameForController(controller)
-        : null;
-    return componentName
-        ? `@ezclassify/ui: ${componentName}`
+/** The controller an element mounts, read off the host or its mount. */
+function controllerOf(element: HTMLElement): string | null {
+    return (
+        element.getAttribute(CONTROLLER_ATTR) ??
+        element.getAttribute(MOUNT_ATTR)
+    );
+}
+
+/**
+ * The kind an element's own attributes give it, or null when it carries none of
+ * the registry attributes. A mount takes the kind of the host it was created
+ * for.
+ */
+function markerKind(element: HTMLElement): XrayKind | null {
+    const host = mountedHost(element);
+    if (host) return markerKind(host) ?? 'component';
+    for (const [kind, attrs] of KIND_ATTRIBUTES) {
+        if (!attrs.some((attr) => isPresent(element, attr))) continue;
+        if (
+            kind === 'component' &&
+            REFERENCE_CONTROLLERS.has(controllerOf(element) ?? '')
+        )
+            return 'view';
+        return kind;
+    }
+    return null;
+}
+
+/** `whole: doc-1`, or the bare name for a presence attribute. */
+function attributeText(element: HTMLElement, attr: string): string {
+    const name = attr.slice('data-ezclassify-'.length);
+    const value = element.getAttribute(attr)?.trim();
+    return value && value !== 'true' ? `${name}: ${value}` : name;
+}
+
+/** The text of each attribute in `attrs` the element carries. */
+function attributesText(
+    element: HTMLElement,
+    attrs: readonly string[],
+): string[] {
+    return attrs
+        .filter((attr) => isPresent(element, attr))
+        .map((attr) => attributeText(element, attr));
+}
+
+/**
+ * The chip text for an element of a kind: what it is, then any structural
+ * attribute it also carries, so a part shows the whole it belongs to.
+ */
+function markerLabel(marker: HTMLElement, kind: XrayKind): string {
+    const element = mountedHost(marker) ?? marker;
+    const controller = controllerOf(element);
+    const component = componentNameForHost(
+        element,
+        controller as ControllerName | null,
+    );
+    const library = component
+        ? `@ezclassify/ui: ${component}`
         : '@ezclassify/ui';
+    let head: string;
+    switch (kind) {
+        case 'component':
+            head = library;
+            break;
+        case 'marking':
+            head = element.id ? `marking #${element.id}` : 'marking';
+            break;
+        case 'view': {
+            const views = attributesText(element, VIEW_ATTRS);
+            head = views.length
+                ? [...views, ...(component ? [component] : [])].join(' · ')
+                : library;
+            break;
+        }
+        case 'structure':
+            return attributesText(element, STRUCTURE_ATTRS).join(' · ');
+        case 'ignored':
+            return 'ignored: excluded';
+        case 'powered':
+            return 'powered by EzClassify';
+    }
+    return [head, ...attributesText(element, STRUCTURE_ATTRS)].join(' · ');
+}
+
+/** A hidden input or a headless controller: data with no box to outline. */
+function isHiddenSink(element: HTMLElement): boolean {
+    if (element instanceof HTMLInputElement && element.type === 'hidden')
+        return true;
+    return HEADLESS_CONTROLLERS.has(
+        element.getAttribute(CONTROLLER_ATTR) ?? '',
+    );
+}
+
+/** Whether a powered element sits inside another powered region. */
+function insidePoweredRegion(element: HTMLElement): boolean {
+    for (
+        let ancestor = element.parentElement;
+        ancestor;
+        ancestor = ancestor.parentElement
+    ) {
+        if (isPresent(ancestor, POWERED_ATTR)) return true;
+    }
+    return false;
 }
 
 function isRendered(element: HTMLElement): boolean {
@@ -393,24 +605,49 @@ function clearTargets(target: HTMLElement): void {
     }
 }
 
-function syncTargets(target: HTMLElement): HTMLElement[] {
+/** A hidden sink the legend lists. */
+interface HiddenSink {
+    kind: XrayKind;
+    label: string;
+}
+
+/**
+ * Mark every rendered region under `target` with its kind and label, and return
+ * the regions plus the hidden sinks that have no box to outline.
+ */
+function syncTargets(target: HTMLElement): {
+    regions: HTMLElement[];
+    hidden: HiddenSink[];
+} {
     const markers: HTMLElement[] = [];
     if (target.matches(MARKER_SELECTOR)) markers.push(target);
     markers.push(...target.querySelectorAll<HTMLElement>(MARKER_SELECTOR));
 
-    const priorities: Record<XrayKind, number> = {
-        component: 3,
-        binding: 2,
-        powered: 1,
-    };
+    const priority = (kind: XrayKind) =>
+        KIND_ATTRIBUTES.length -
+        KIND_ATTRIBUTES.findIndex(([candidate]) => candidate === kind);
     const chosen = new Map<HTMLElement, { kind: XrayKind; label: string }>();
+    const hidden: HiddenSink[] = [];
     for (const marker of markers) {
+        const kind = markerKind(marker);
+        if (!kind) continue;
+        if (isHiddenSink(marker)) {
+            const label = markerLabel(marker, kind);
+            hidden.push({
+                kind,
+                label:
+                    marker.id && kind !== 'marking'
+                        ? `${label} · #${marker.id}`
+                        : label,
+            });
+            continue;
+        }
+        if (kind === 'powered' && insidePoweredRegion(marker)) continue;
         const host = chipHost(marker, target);
         if (!isRendered(host)) continue;
         if (host === marker && isPairedPlumbingMount(marker)) continue;
-        const kind = markerKind(marker);
         const current = chosen.get(host)?.kind;
-        if (!current || priorities[kind] > priorities[current]) {
+        if (!current || priority(kind) > priority(current)) {
             chosen.set(host, { kind, label: markerLabel(marker, kind) });
         }
     }
@@ -432,25 +669,24 @@ function syncTargets(target: HTMLElement): HTMLElement[] {
         if (host.getAttribute(XRAY_LABEL_ATTRIBUTE) !== label)
             host.setAttribute(XRAY_LABEL_ATTRIBUTE, label);
     }
-    return [...chosen.keys()];
+    return { regions: [...chosen.keys()], hidden };
 }
 
 /**
- * Build a self-contained "Locate EzClassify components" control: a real on/off
- * toggle slider plus a legend (shown only when on). Toggling identifies the
- * currently rendered EzClassify regions and keeps that set synchronized as the
- * page changes. Labels live in a viewport overlay, outside clipping ancestors,
- * and follow visible regions on scroll and resize without intercepting input.
- *
- * @example Const locator = createComponentLocator({ target: demoRoot })
- * slot.appendChild(locator.element) // …later locator.destroy()
+ * Build a self-contained "Highlight components" control: a real on/off toggle
+ * slider plus a legend (shown only when on). Toggling outlines the currently
+ * rendered EzClassify regions and keeps that set synchronized as the page
+ * changes. Labels live in a viewport overlay, outside clipping ancestors, and
+ * follow visible regions on scroll and resize without intercepting input.
+ * Append the returned `element` where the control should sit and call
+ * `destroy()` to remove it.
  */
 export function createComponentLocator(
     options: ComponentLocatorOptions = {},
 ): ComponentLocator {
     injectLocatorStyles();
 
-    const label = options.label ?? 'Locate EzClassify components';
+    const label = options.label ?? 'Highlight components';
 
     const root = document.createElement('div');
     root.className = 'ezclassify-locator';
@@ -474,18 +710,49 @@ export function createComponentLocator(
     const legend = document.createElement('ul');
     legend.className = 'ezclassify-locator__legend';
     legend.setAttribute('aria-label', 'EzClassify component legend');
-    for (const row of LEGEND_ROWS) {
+    for (const row of KINDS) {
         const item = document.createElement('li');
-        item.className = `ezclassify-locator__item ezclassify-locator__item--${row.modifier}`;
+        item.className = `ezclassify-locator__item ezclassify-locator__item--${row.kind}`;
         const swatch = document.createElement('span');
         swatch.className = 'ezclassify-locator__swatch';
         swatch.setAttribute('aria-hidden', 'true');
         const text = document.createElement('span');
-        text.textContent = row.label;
+        text.textContent = row.legend;
         item.appendChild(swatch);
         item.appendChild(text);
         legend.appendChild(item);
     }
+    const hiddenItem = document.createElement('li');
+    hiddenItem.className = 'ezclassify-locator__hidden';
+    hiddenItem.hidden = true;
+    const hiddenHeading = document.createElement('span');
+    const hiddenList = document.createElement('ul');
+    hiddenList.className = 'ezclassify-locator__hidden-list';
+    hiddenItem.append(hiddenHeading, hiddenList);
+    legend.appendChild(hiddenItem);
+    let hiddenKey = '';
+    const listHidden = (sinks: HiddenSink[]) => {
+        // Compare first: the control may sit inside the observed target, and
+        // an unchanged list must not write and wake the observer again.
+        const key = sinks.map((s) => `${s.kind}\u001f${s.label}`).join('\n');
+        if (key === hiddenKey) return;
+        hiddenKey = key;
+        hiddenItem.hidden = sinks.length === 0;
+        hiddenHeading.textContent = `Hidden, not outlined (${sinks.length})`;
+        hiddenList.replaceChildren(
+            ...sinks.map((sink) => {
+                const entry = document.createElement('li');
+                entry.className = `ezclassify-locator__item ezclassify-locator__item--${sink.kind}`;
+                const swatch = document.createElement('span');
+                swatch.className = 'ezclassify-locator__swatch';
+                swatch.setAttribute('aria-hidden', 'true');
+                const text = document.createElement('span');
+                text.textContent = sink.label;
+                entry.append(swatch, text);
+                return entry;
+            }),
+        );
+    };
 
     root.appendChild(switchLabel);
     root.appendChild(legend);
@@ -501,7 +768,8 @@ export function createComponentLocator(
     let scheduledFrame: number | null = null;
 
     const sync = () => {
-        const regions = syncTargets(target);
+        const { regions, hidden } = syncTargets(target);
+        listHidden(hidden);
         const current = new Set(regions);
         for (const [region, chip] of chips) {
             if (!current.has(region)) {
@@ -655,9 +923,16 @@ export function createComponentLocator(
                     : new ResizeObserver(scheduleSync);
             sync();
             observer = new MutationObserver((records) => {
-                // Labels are owned output, not changes to the host UI. In the
-                // default body scope their text/styles must not self-schedule.
-                if (records.some((record) => !overlay.contains(record.target)))
+                // Labels and the legend are owned output, not changes to the
+                // host UI. In the default body scope their writes must not
+                // self-schedule.
+                if (
+                    records.some(
+                        (record) =>
+                            !overlay.contains(record.target) &&
+                            !root.contains(record.target),
+                    )
+                )
                     scheduleSync();
             });
             observer.observe(target, {
@@ -671,10 +946,9 @@ export function createComponentLocator(
                     'hidden',
                     'open',
                     'aria-hidden',
-                    'data-ezclassify-mount',
-                    'data-ezclassify-controller',
-                    'data-ezclassify-marking',
-                    'data-ezclassify-powered',
+                    'type',
+                    'id',
+                    ...FOUND_ATTRIBUTES,
                 ],
             });
             window.addEventListener('scroll', scheduleSync, {
@@ -687,6 +961,7 @@ export function createComponentLocator(
             window.visualViewport?.addEventListener('resize', scheduleSync);
         } else {
             clearTargets(target);
+            listHidden([]);
         }
         options.onChange?.(on);
     };

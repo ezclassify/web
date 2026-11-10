@@ -159,6 +159,14 @@ export function ensureTopLevelDtsStub(outDir) {
  * `--watch` on the command line keeps esbuild contexts and a declaration `tsc
  * --watch` alive until SIGINT/SIGTERM.
  *
+ * `esmSubpaths` adds ESM-only entries beside the root one, keyed by output path
+ * without extension (`{ 'devtools/index': 'src/devtools/index.ts' }` writes
+ * dist/lib/devtools/index.mjs). The ESM build then splits the code the entries
+ * share into dist/lib/chunks/, so module state such as a registry is one
+ * instance whichever entries a page loads. CommonJS has no code splitting, so
+ * the subpaths are not built for `require`; a copy there would carry its own
+ * registries.
+ *
  * `label` names the watch-mode log; `external` lists peer and external package
  * imports. `plugins` defaults to `[tsResolvePlugin()]`, and `target` to
  * `['es2020']`. `jsx` and `loader` are passed through to esbuild. `tsconfig`
@@ -174,6 +182,7 @@ export function ensureTopLevelDtsStub(outDir) {
  *     loader?: Record<string, import('esbuild').Loader>;
  *     tsconfig?: string;
  *     extraExports?: Record<string, unknown>;
+ *     esmSubpaths?: Record<string, string>;
  * }} [options]
  *   Package-specific build choices.
  */
@@ -186,6 +195,7 @@ export async function buildLib({
     loader,
     tsconfig = 'tsconfig.lib.json',
     extraExports,
+    esmSubpaths,
 } = {}) {
     // Imported lazily so loading this module for its pure helpers (unit tests
     // run under jsdom) never evaluates esbuild, which requires a Node realm.
@@ -220,12 +230,23 @@ export async function buildLib({
 
     // Published packages deliberately omit source maps. Do not emit map
     // references whose targets the package `files` allowlist then excludes.
-    const esmOpts = {
-        ...sharedOptions,
-        format: 'esm',
-        outfile: path.join(outDir, 'index.mjs'),
-        sourcemap: false,
-    };
+    const esmOpts = esmSubpaths
+        ? {
+              ...sharedOptions,
+              entryPoints: { index: 'src/index.ts', ...esmSubpaths },
+              format: 'esm',
+              splitting: true,
+              outdir: outDir,
+              outExtension: { '.js': '.mjs' },
+              chunkNames: 'chunks/[name]-[hash]',
+              sourcemap: false,
+          }
+        : {
+              ...sharedOptions,
+              format: 'esm',
+              outfile: path.join(outDir, 'index.mjs'),
+              sourcemap: false,
+          };
     const cjsOpts = {
         ...sharedOptions,
         format: 'cjs',
