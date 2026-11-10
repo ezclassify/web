@@ -106,6 +106,17 @@ export const defaultLocale = {
     'composer.cancel': 'Cancel',
 
     'fix.heading': 'Ways to fix',
+
+    'translate.notCarried': 'Not carried',
+    'translate.forbidden': 'The crosswalk forbids translating this marking.',
+    'translate.invalidSource':
+        'The marking does not read, so it was not translated.',
+    'translate.targetInvalid': 'The translated marking does not stand.',
+    'translate.failed': 'The marking could not be translated.',
+    'translate.disposition.review': 'needs review',
+    'translate.disposition.omit': 'omitted',
+    'translate.disposition.forbid': 'forbidden',
+    'translate.disposition.unmapped': 'no mapping',
 } as const;
 
 type LocaleKeys = keyof typeof defaultLocale;

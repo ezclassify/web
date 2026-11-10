@@ -150,31 +150,6 @@ async function primarySelector(context: ContextAdapter): Promise<string> {
 export type TranslatedViewStatus =
     'empty' | 'pending' | CrosswalkTranslationResult['status'] | 'error';
 
-/**
- * English defaults for the view's text. Each key is looked up through the
- * locale first, so a host's `setLocale` translation wins once the key is part
- * of the default locale.
- */
-const DEFAULT_TEXT = {
-    'translate.notCarried': 'Not carried',
-    'translate.forbidden': 'The crosswalk forbids translating this marking.',
-    'translate.invalidSource':
-        'The marking does not read, so it was not translated.',
-    'translate.targetInvalid': 'The translated marking does not stand.',
-    'translate.failed': 'The marking could not be translated.',
-    'translate.disposition.review': 'needs review',
-    'translate.disposition.omit': 'omitted',
-    'translate.disposition.forbid': 'forbidden',
-    'translate.disposition.unmapped': 'no mapping',
-} as const;
-
-type TextKey = keyof typeof DEFAULT_TEXT;
-
-function text(key: TextKey): string {
-    const localized = t(key);
-    return localized === key ? DEFAULT_TEXT[key] : localized;
-}
-
 /** Options a translated view takes beyond every component's. */
 export interface TranslatedViewOptions extends ComponentOptions {
     /**
@@ -326,7 +301,7 @@ export class TranslatedView implements ComponentInstance {
             this.rendered = '';
             this.markingEl.textContent = '';
             this.markingEl.removeAttribute('aria-invalid');
-            this.noteEl.textContent = `${text('translate.failed')} ${message}`;
+            this.noteEl.textContent = `${t('translate.failed')} ${message}`;
             this.listEl.replaceChildren();
             this.setStatus('error');
         }
@@ -350,7 +325,7 @@ export class TranslatedView implements ComponentInstance {
         if (result.status === 'forbidden') {
             this.rendered = '';
             this.markingEl.textContent = '';
-            this.noteEl.textContent = text('translate.forbidden');
+            this.noteEl.textContent = t('translate.forbidden');
             for (const match of result.forbiddenBy) {
                 const sources =
                     match.kind === 'mapping' ? [match.source] : match.sources;
@@ -368,7 +343,7 @@ export class TranslatedView implements ComponentInstance {
         if (result.status === 'invalid-source') {
             this.rendered = '';
             this.markingEl.textContent = '';
-            this.noteEl.textContent = text('translate.invalidSource');
+            this.noteEl.textContent = t('translate.invalidSource');
             this.addErrors(result.source.errors);
             this.setStatus('invalid-source');
             return;
@@ -378,7 +353,7 @@ export class TranslatedView implements ComponentInstance {
         this.markingEl.textContent = this.rendered || EMPTY_VALUE;
         if (!result.target.valid) {
             this.markingEl.setAttribute('aria-invalid', 'true');
-            this.noteEl.textContent = text('translate.targetInvalid');
+            this.noteEl.textContent = t('translate.targetInvalid');
             this.addErrors(result.target.errors);
         } else {
             this.noteEl.textContent = '';
@@ -416,7 +391,7 @@ export class TranslatedView implements ComponentInstance {
                 selection.guidance,
             );
         }
-        this.listEl.setAttribute('aria-label', text('translate.notCarried'));
+        this.listEl.setAttribute('aria-label', t('translate.notCarried'));
         this.setStatus(result.status);
     }
 
@@ -458,7 +433,7 @@ export class TranslatedView implements ComponentInstance {
         }
         const word = document.createElement('span');
         word.className = 'ez-translated-view__disposition';
-        word.textContent = text(`translate.disposition.${disposition}`);
+        word.textContent = t(`translate.disposition.${disposition}`);
         item.append(word);
         const detail = [reason, guidance].filter(Boolean).join(' ');
         if (detail) item.append(`: ${detail}`);
