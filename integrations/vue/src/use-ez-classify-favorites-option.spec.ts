@@ -15,7 +15,7 @@ import { describe, it, expect, afterEach } from 'vitest';
 import { defineComponent, h, nextTick } from 'vue';
 import { mount, type VueWrapper } from '@vue/test-utils';
 import { Context } from '@ezclassify/engine';
-import type { SchemeEngineAdapter } from '@ezclassify/types';
+import type { LocalContextSchemeEngineAdapter } from '@ezclassify/types';
 import type { FavoritesConfig } from '@ezclassify/ui';
 import { useEzClassify } from './index';
 
@@ -90,7 +90,7 @@ function mountTagsField(favorites?: FavoritesConfig): HTMLDivElement {
     root = document.createElement('div');
     document.body.appendChild(root);
     const engine = Context.fromComponents({ scheme: MINIMAL_SCHEME })
-        .scheme as SchemeEngineAdapter;
+        .scheme as LocalContextSchemeEngineAdapter;
     const localRoot = root;
     const App = defineComponent({
         setup() {

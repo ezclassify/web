@@ -4,12 +4,15 @@ import {
     openContext,
     schemeOnlyContext,
 } from '../../test-fixtures/context-doubles';
-import type { Assertion, LocalSchemeEngineAdapter } from '@ezclassify/types';
+import type {
+    Assertion,
+    LocalContextSchemeEngineAdapter,
+} from '@ezclassify/types';
 import { SingleSelect } from './single-select';
 function makeEngine(
     withTextInput = false,
     calendarValue = false,
-): LocalSchemeEngineAdapter {
+): LocalContextSchemeEngineAdapter {
     return openContext(
         Context.fromComponents({
             scheme: {
@@ -121,13 +124,13 @@ function makeEngine(
                 },
             },
         }),
-    ).scheme as LocalSchemeEngineAdapter;
+    ).scheme as LocalContextSchemeEngineAdapter;
 }
 
 // Same shape as makeEngine, but the level category drives the display color
 // (render.color_from) and each level concept carries an authority-mandated
 // color pair. Used to prove the cards adopt the mandated color.
-function makeColoredEngine(): LocalSchemeEngineAdapter {
+function makeColoredEngine(): LocalContextSchemeEngineAdapter {
     const colors: Record<string, { background: string; text: string }> = {
         'level-1': { background: '#00a651', text: '#ffffff' },
         'level-2': { background: '#ff8c00', text: '#000000' },
@@ -215,13 +218,13 @@ function makeColoredEngine(): LocalSchemeEngineAdapter {
                 },
             },
         }),
-    ).scheme as LocalSchemeEngineAdapter;
+    ).scheme as LocalContextSchemeEngineAdapter;
 }
 
 const toCtx = (eng: unknown) => schemeOnlyContext(eng as never);
 describe('SingleSelect', () => {
     let container: HTMLDivElement;
-    let engine: LocalSchemeEngineAdapter;
+    let engine: LocalContextSchemeEngineAdapter;
     let component: SingleSelect;
     beforeEach(async () => {
         container = document.createElement('div');

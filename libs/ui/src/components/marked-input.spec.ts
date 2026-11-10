@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { Context } from '@ezclassify/engine';
-import type { LocalSchemeEngineAdapter } from '@ezclassify/types';
+import type { LocalContextSchemeEngineAdapter } from '@ezclassify/types';
 import { MarkedInput } from './marked-input';
 import { InlineMarkingEditor } from './inline-marking-editor';
 import { EzClassifyUI } from '../ezclassify-ui';
@@ -39,7 +39,7 @@ function wait(ms = 50): Promise<void> {
  */
 function createBareEngineWithTemplate(
     template: string,
-): LocalSchemeEngineAdapter {
+): LocalContextSchemeEngineAdapter {
     return Context.fromComponents({
         scheme: {
             scheme: {
@@ -104,14 +104,14 @@ function createBareEngineWithTemplate(
                 },
             },
         },
-    }).scheme as LocalSchemeEngineAdapter;
+    }).scheme as LocalContextSchemeEngineAdapter;
 }
 
-function createBareFormatEngine(): LocalSchemeEngineAdapter {
+function createBareFormatEngine(): LocalContextSchemeEngineAdapter {
     return createBareEngineWithTemplate('({marking}) ');
 }
 
-function createTestEngine(): LocalSchemeEngineAdapter {
+function createTestEngine(): LocalContextSchemeEngineAdapter {
     return Context.fromComponents({
         scheme: {
             scheme: {
@@ -176,7 +176,7 @@ function createTestEngine(): LocalSchemeEngineAdapter {
                 },
             },
         },
-    }).scheme as LocalSchemeEngineAdapter;
+    }).scheme as LocalContextSchemeEngineAdapter;
 }
 
 /**
@@ -258,7 +258,7 @@ function createTestContext() {
  * `level` (U/S) and `scope` (LOCAL/REGIONAL), the part format renders both so
  * we can detect when one category is silently dropped.
  */
-function createMultiCategoryEngine(): LocalSchemeEngineAdapter {
+function createMultiCategoryEngine(): LocalContextSchemeEngineAdapter {
     return Context.fromComponents({
         scheme: {
             scheme: {
@@ -364,7 +364,7 @@ function createMultiCategoryEngine(): LocalSchemeEngineAdapter {
                 },
             },
         },
-    }).scheme as LocalSchemeEngineAdapter;
+    }).scheme as LocalContextSchemeEngineAdapter;
 }
 
 let root: HTMLDivElement;

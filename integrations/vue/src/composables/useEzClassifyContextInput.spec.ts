@@ -3,7 +3,7 @@ import { defineComponent, h, ref, nextTick } from 'vue';
 import { mount } from '@vue/test-utils';
 import { Context } from '@ezclassify/engine';
 import { schemeOnlyContext } from '../../../../libs/ui/test-fixtures/context-doubles';
-import type { LocalSchemeEngineAdapter } from '@ezclassify/types';
+import type { LocalContextSchemeEngineAdapter } from '@ezclassify/types';
 import { useEzClassify, type UseEzClassifyReturn } from '../index';
 
 // Parity: useEzClassify must accept a full Context, same input surface as
@@ -89,7 +89,7 @@ describe('useEzClassify(Context)', () => {
                 // `Context.scheme` is typed as the local-or-remote union; a
                 // context built from inline components carries the local one.
                 const api = useEzClassify(
-                    ctx.scheme as LocalSchemeEngineAdapter,
+                    ctx.scheme as LocalContextSchemeEngineAdapter,
                     { rollupId: 'banner' },
                 );
                 expect(api).toBeTruthy();
@@ -104,7 +104,7 @@ describe('useEzClassify(Context)', () => {
         // around the same scheme engine keys identical via contextSignature, so the
         // watch must short-circuit and keep the live EzClassifyUI/store instances.
         const engine = Context.fromComponents({ scheme: testProfile })
-            .scheme as LocalSchemeEngineAdapter;
+            .scheme as LocalContextSchemeEngineAdapter;
         const engineRef = ref(schemeOnlyContext(engine));
         let captured: UseEzClassifyReturn | null = null;
 

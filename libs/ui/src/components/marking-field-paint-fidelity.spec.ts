@@ -16,7 +16,7 @@
  * invariant is about.
  */
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import type { LocalSchemeEngineAdapter } from '@ezclassify/types';
+import type { LocalContextSchemeEngineAdapter } from '@ezclassify/types';
 import { EzClassifyUI } from '../ezclassify-ui';
 import { MarkingField } from './marking-field';
 import { Context } from '@ezclassify/engine';
@@ -30,7 +30,7 @@ function wait(ms = 60): Promise<void> {
  * token tree lays its concepts out as a tiered group) while the concepts in
  * play are plain siblings joined by the format's own "/" concept separator.
  */
-function createTieredEngine(): LocalSchemeEngineAdapter {
+function createTieredEngine(): LocalContextSchemeEngineAdapter {
     return Context.fromComponents({
         scheme: {
             scheme: {
@@ -144,7 +144,7 @@ function createTieredEngine(): LocalSchemeEngineAdapter {
                 },
             },
         },
-    }).scheme as LocalSchemeEngineAdapter;
+    }).scheme as LocalContextSchemeEngineAdapter;
 }
 
 /**
@@ -153,7 +153,7 @@ function createTieredEngine(): LocalSchemeEngineAdapter {
  * `dissem` sorts alphabetically, which puts the multi-word "FED ONLY" ahead of
  * "NOFORN" even though its concept position is higher.
  */
-function createPrefixedEngine(): LocalSchemeEngineAdapter {
+function createPrefixedEngine(): LocalContextSchemeEngineAdapter {
     return Context.fromComponents({
         scheme: {
             scheme: {
@@ -307,14 +307,14 @@ function createPrefixedEngine(): LocalSchemeEngineAdapter {
                 },
             },
         },
-    }).scheme as LocalSchemeEngineAdapter;
+    }).scheme as LocalContextSchemeEngineAdapter;
 }
 
 let root: HTMLDivElement;
 let forms: EzClassifyUI | null = null;
 
 async function mount(
-    engine: LocalSchemeEngineAdapter,
+    engine: LocalContextSchemeEngineAdapter,
 ): Promise<{ input: HTMLTextAreaElement; field: MarkingField }> {
     root.innerHTML =
         '<textarea id="mf" data-ezclassify-controller="marking"></textarea>';

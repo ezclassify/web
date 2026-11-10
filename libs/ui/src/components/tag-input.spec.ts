@@ -23,7 +23,7 @@ import {
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
-import type { LocalSchemeEngineAdapter } from '@ezclassify/types';
+import type { LocalContextSchemeEngineAdapter } from '@ezclassify/types';
 import { EzClassifyUI } from '../ezclassify-ui';
 import { TagInput } from './tag-input';
 import { Context } from '@ezclassify/engine';
@@ -39,7 +39,7 @@ function wait(ms = 60): Promise<void> {
  * test scheme, since TagInput inherits the identical whole-marking value
  * contract.
  */
-function createTestEngine(): LocalSchemeEngineAdapter {
+function createTestEngine(): LocalContextSchemeEngineAdapter {
     return Context.fromComponents({
         scheme: {
             scheme: {
@@ -199,7 +199,7 @@ function createTestEngine(): LocalSchemeEngineAdapter {
                 },
             },
         },
-    }).scheme as LocalSchemeEngineAdapter;
+    }).scheme as LocalContextSchemeEngineAdapter;
 }
 
 /**

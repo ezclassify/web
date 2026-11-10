@@ -1,7 +1,7 @@
 import { afterEach, expect, it, vi } from 'vitest';
 import { Context } from '@ezclassify/engine';
 import { openContext } from '../../test-fixtures/context-doubles';
-import type { LocalSchemeEngineAdapter } from '@ezclassify/types';
+import type { LocalContextSchemeEngineAdapter } from '@ezclassify/types';
 import { MarkedInput } from './marked-input';
 import { MarkedTextArea } from './marked-text-area';
 
@@ -54,7 +54,7 @@ function adapter() {
             },
         }),
     );
-    const engine = context.scheme as LocalSchemeEngineAdapter;
+    const engine = context.scheme as LocalContextSchemeEngineAdapter;
     const process = engine.process.bind(engine);
     vi.spyOn(engine, 'process').mockImplementation((input, options) => ({
         ...process(input, options),

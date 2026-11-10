@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import type { ScanOutcome, SchemePublicView } from '@ezclassify/types';
-import type { LocalSchemeEngineAdapter } from '@ezclassify/types';
+import type { LocalContextSchemeEngineAdapter } from '@ezclassify/types';
 import { Context } from '@ezclassify/engine';
 import { openContext } from '../../test-fixtures/context-doubles';
 import { EzClassifyUI } from '../ezclassify-ui';
@@ -80,7 +80,7 @@ function createProfile(): SchemePublicView {
  * Engine that follows the bare-render architecture: the part format returns "U"
  * (no parens); MTA wraps once via embedded_marking.template → "(U) ".
  */
-function createBareFormatEngine(): LocalSchemeEngineAdapter {
+function createBareFormatEngine(): LocalContextSchemeEngineAdapter {
     return openContext(
         Context.fromComponents({
             scheme: {
@@ -148,10 +148,10 @@ function createBareFormatEngine(): LocalSchemeEngineAdapter {
                 },
             },
         }),
-    ).scheme as LocalSchemeEngineAdapter;
+    ).scheme as LocalContextSchemeEngineAdapter;
 }
 
-function createTestEngine(): LocalSchemeEngineAdapter {
+function createTestEngine(): LocalContextSchemeEngineAdapter {
     return openContext(
         Context.fromComponents({
             scheme: {
@@ -218,7 +218,7 @@ function createTestEngine(): LocalSchemeEngineAdapter {
                 },
             },
         }),
-    ).scheme as LocalSchemeEngineAdapter;
+    ).scheme as LocalContextSchemeEngineAdapter;
 }
 
 /**

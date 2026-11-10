@@ -21,7 +21,7 @@ import { describe, it, expect } from 'vitest';
 import { render, act } from '@testing-library/react';
 import { Context } from '@ezclassify/engine';
 import { schemeOnlyContext } from '../../../libs/ui/test-fixtures/context-doubles';
-import type { LocalSchemeEngineAdapter } from '@ezclassify/types';
+import type { LocalContextSchemeEngineAdapter } from '@ezclassify/types';
 import { useSchemeEngine } from './index';
 import type { ReactEzClassifyStore } from './index';
 
@@ -35,9 +35,9 @@ function loadScheme(): unknown {
 }
 
 /** Build a fresh, standalone scheme engine adapter from the reference fixture. */
-function makeEngine(): LocalSchemeEngineAdapter {
+function makeEngine(): LocalContextSchemeEngineAdapter {
     return Context.fromComponents({ scheme: loadScheme() })
-        .scheme as LocalSchemeEngineAdapter;
+        .scheme as LocalContextSchemeEngineAdapter;
 }
 
 /** Flush React effects plus EzClassifyUI's async component-init queue. */
@@ -61,7 +61,7 @@ function FreshContextApp({
     rollupId,
     probe,
 }: {
-    engine: LocalSchemeEngineAdapter;
+    engine: LocalContextSchemeEngineAdapter;
     rollupId: string;
     probe: Probe;
 }) {
@@ -92,7 +92,7 @@ function MemoizedContextApp({
     rollupId,
     probe,
 }: {
-    engine: LocalSchemeEngineAdapter;
+    engine: LocalContextSchemeEngineAdapter;
     rollupId: string;
     probe: Probe;
 }) {

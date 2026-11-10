@@ -19,7 +19,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
-import type { LocalSchemeEngineAdapter } from '@ezclassify/types';
+import type { LocalContextSchemeEngineAdapter } from '@ezclassify/types';
 import { Context } from '@ezclassify/engine';
 import { EzClassifyUI } from './ezclassify-ui';
 import { MarkedTextArea } from './components/marked-text-area';
@@ -102,8 +102,8 @@ function createMarkedContext() {
 }
 
 /** The scheme operations of {@link createMarkedContext}. */
-function createMarkedEngine(): LocalSchemeEngineAdapter {
-    return createMarkedContext().scheme as LocalSchemeEngineAdapter;
+function createMarkedEngine(): LocalContextSchemeEngineAdapter {
+    return createMarkedContext().scheme as LocalContextSchemeEngineAdapter;
 }
 
 let root: HTMLDivElement;
@@ -743,7 +743,7 @@ describe('Unrecognized wrapped text is flagged, never silently unmarked', () => 
 describe('MarkedTextArea shows the part marks the engine reads', () => {
     it('shows a mid-line mark the scan reads and audit counts as a part', async () => {
         const context = createMarkedContext();
-        const engine = context.scheme as LocalSchemeEngineAdapter;
+        const engine = context.scheme as LocalContextSchemeEngineAdapter;
         const text = '(S) see section (U) below.';
         // The engine reads the mid-line "(U)" in both operations.
         const scanned = (

@@ -7,7 +7,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import type { LocalSchemeEngineAdapter } from '@ezclassify/types';
+import type { LocalContextSchemeEngineAdapter } from '@ezclassify/types';
 import { Context } from '@ezclassify/engine';
 import { EzClassifyUI } from './ezclassify-ui';
 import { parseComponentOptions } from './component-factory';
@@ -16,7 +16,7 @@ function wait(ms = 50): Promise<void> {
     return new Promise((r) => setTimeout(r, ms));
 }
 
-function createEngine(): LocalSchemeEngineAdapter {
+function createEngine(): LocalContextSchemeEngineAdapter {
     return Context.fromComponents({
         scheme: {
             scheme: {
@@ -71,7 +71,7 @@ function createEngine(): LocalSchemeEngineAdapter {
                 },
             },
         },
-    }).scheme as LocalSchemeEngineAdapter;
+    }).scheme as LocalContextSchemeEngineAdapter;
 }
 
 let root: HTMLDivElement;

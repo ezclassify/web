@@ -7,7 +7,7 @@
  * that resulting value as its basis.
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import type { LocalSchemeEngineAdapter } from '@ezclassify/types';
+import type { LocalContextSchemeEngineAdapter } from '@ezclassify/types';
 import { Context } from '@ezclassify/engine';
 import {
     openContext,
@@ -23,7 +23,7 @@ function wait(ms = 60): Promise<void> {
 
 const RULE = 'a-over-b';
 
-function createEngine(): LocalSchemeEngineAdapter {
+function createEngine(): LocalContextSchemeEngineAdapter {
     const concept = (id: string, category: string, position: number) => ({
         id,
         name: id,
@@ -109,7 +109,7 @@ function createEngine(): LocalSchemeEngineAdapter {
                 },
             },
         }),
-    ).scheme as LocalSchemeEngineAdapter;
+    ).scheme as LocalContextSchemeEngineAdapter;
 }
 
 let root: HTMLDivElement;

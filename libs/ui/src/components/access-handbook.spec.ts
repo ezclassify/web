@@ -6,7 +6,7 @@ import type {
 } from '@ezclassify/types';
 import type {
     ContextAdapter,
-    LocalSchemeEngineAdapter,
+    LocalContextSchemeEngineAdapter,
 } from '@ezclassify/types';
 import { Context } from '@ezclassify/engine';
 import { schemeOnlyContext } from '../../test-fixtures/context-doubles';
@@ -41,7 +41,7 @@ function makeRule(
     };
 }
 
-function makeEngine(): LocalSchemeEngineAdapter {
+function makeEngine(): LocalContextSchemeEngineAdapter {
     return Context.fromComponents({
         scheme: {
             scheme: {
@@ -96,7 +96,7 @@ function makeEngine(): LocalSchemeEngineAdapter {
                 },
             },
         },
-    }).scheme as LocalSchemeEngineAdapter;
+    }).scheme as LocalContextSchemeEngineAdapter;
 }
 
 function makeAccessEngine(rules: AccessRuleDescription[]): AccessEngineAdapter {

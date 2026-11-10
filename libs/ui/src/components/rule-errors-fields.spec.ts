@@ -12,7 +12,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import type {
     Fix,
-    LocalSchemeEngineAdapter,
+    LocalContextSchemeEngineAdapter,
     ProcessResult,
 } from '@ezclassify/types';
 import { Context } from '@ezclassify/engine';
@@ -24,7 +24,7 @@ function wait(ms = 60): Promise<void> {
 
 const RULE = 'caveat-needs-high';
 
-function createEngine(): LocalSchemeEngineAdapter {
+function createEngine(): LocalContextSchemeEngineAdapter {
     const concept = (
         id: string,
         label: string,
@@ -104,7 +104,7 @@ function createEngine(): LocalSchemeEngineAdapter {
                 },
             },
         },
-    }).scheme as LocalSchemeEngineAdapter;
+    }).scheme as LocalContextSchemeEngineAdapter;
 
     // The two ways the scheme's rule can be met, each the whole marking it
     // leaves, the shape the engine proposes them in.
@@ -138,7 +138,7 @@ function createEngine(): LocalSchemeEngineAdapter {
                 return { ...result, proposedFixes: fixesFor(result) };
             };
         },
-    }) as LocalSchemeEngineAdapter;
+    }) as LocalContextSchemeEngineAdapter;
 }
 
 let root: HTMLDivElement;

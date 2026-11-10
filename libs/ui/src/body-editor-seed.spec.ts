@@ -16,7 +16,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import type { LocalSchemeEngineAdapter } from '@ezclassify/types';
+import type { LocalContextSchemeEngineAdapter } from '@ezclassify/types';
 import { Context } from '@ezclassify/engine';
 import { EzClassifyUI } from './ezclassify-ui';
 import { MarkedInput } from './components/marked-input';
@@ -26,7 +26,7 @@ function wait(ms = 30): Promise<void> {
 }
 
 /** Engine with an embedded-marking pattern so marked fields can scan segments. */
-function createMarkedEngine(): LocalSchemeEngineAdapter {
+function createMarkedEngine(): LocalContextSchemeEngineAdapter {
     return Context.fromComponents({
         scheme: {
             scheme: {
@@ -91,7 +91,7 @@ function createMarkedEngine(): LocalSchemeEngineAdapter {
                 },
             },
         },
-    }).scheme as LocalSchemeEngineAdapter;
+    }).scheme as LocalContextSchemeEngineAdapter;
 }
 
 let root: HTMLDivElement;

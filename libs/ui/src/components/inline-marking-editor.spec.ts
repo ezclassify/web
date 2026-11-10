@@ -10,7 +10,10 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { InlineMarkingEditor } from './inline-marking-editor';
 import { Context } from '@ezclassify/engine';
 import { schemeOnlyContext } from '../../test-fixtures/context-doubles';
-import type { Assertion, LocalSchemeEngineAdapter } from '@ezclassify/types';
+import type {
+    Assertion,
+    LocalContextSchemeEngineAdapter,
+} from '@ezclassify/types';
 import {
     activeRow,
     allSurfaces,
@@ -27,7 +30,7 @@ import {
 
 const toCtx = (eng: unknown) => schemeOnlyContext(eng as never);
 
-function createRealEngine(): LocalSchemeEngineAdapter {
+function createRealEngine(): LocalContextSchemeEngineAdapter {
     const concepts = [
         {
             id: 'U',
@@ -223,7 +226,7 @@ function createRealEngine(): LocalSchemeEngineAdapter {
                 },
             },
         },
-    }).scheme as LocalSchemeEngineAdapter;
+    }).scheme as LocalContextSchemeEngineAdapter;
 }
 
 function assertionsFor(ids: string[]): Assertion[] {

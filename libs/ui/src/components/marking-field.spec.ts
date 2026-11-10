@@ -24,7 +24,7 @@ import {
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
-import type { LocalSchemeEngineAdapter } from '@ezclassify/types';
+import type { LocalContextSchemeEngineAdapter } from '@ezclassify/types';
 import { EzClassifyUI } from '../ezclassify-ui';
 import { MarkingField } from './marking-field';
 import { Context } from '@ezclassify/engine';
@@ -79,7 +79,7 @@ function createTestEngine(
          */
         withEachAffix?: boolean;
     } = {},
-): LocalSchemeEngineAdapter {
+): LocalContextSchemeEngineAdapter {
     const hasBranchCategory =
         opts.withSuppressedCategory || opts.withSuppressedCategoryDefault;
     const categories = [
@@ -281,7 +281,7 @@ function createTestEngine(
                 },
             },
         }),
-    ).scheme as LocalSchemeEngineAdapter;
+    ).scheme as LocalContextSchemeEngineAdapter;
 }
 
 /**
@@ -294,9 +294,9 @@ function createTestEngine(
  * exactly where a remote adapter actually has it.
  */
 function toAsyncAdapter(
-    engine: LocalSchemeEngineAdapter,
+    engine: LocalContextSchemeEngineAdapter,
     delayMs = 10,
-): LocalSchemeEngineAdapter {
+): LocalContextSchemeEngineAdapter {
     const asyncMethods = new Set(['process', 'render', 'suggest']);
     return new Proxy(engine as object, {
         get(target, prop, receiver) {
@@ -314,7 +314,7 @@ function toAsyncAdapter(
             }
             return (value as (...a: unknown[]) => unknown).bind(target);
         },
-    }) as LocalSchemeEngineAdapter;
+    }) as LocalContextSchemeEngineAdapter;
 }
 
 /**
@@ -328,8 +328,8 @@ function toAsyncAdapter(
  * Strips only the parentheses `withEachAffix` frames its values with.
  */
 function withUnframedRender(
-    engine: LocalSchemeEngineAdapter,
-): LocalSchemeEngineAdapter {
+    engine: LocalContextSchemeEngineAdapter,
+): LocalContextSchemeEngineAdapter {
     const unframe = (value: unknown): unknown => {
         if (typeof value === 'string') return value.replace(/[()]/g, '');
         if (value === null || typeof value !== 'object') return value;
@@ -354,7 +354,7 @@ function withUnframedRender(
                     (value as (...a: unknown[]) => unknown).apply(target, args),
                 );
         },
-    }) as LocalSchemeEngineAdapter;
+    }) as LocalContextSchemeEngineAdapter;
 }
 
 /**

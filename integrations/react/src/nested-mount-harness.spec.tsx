@@ -24,7 +24,7 @@ import { fileURLToPath } from 'node:url';
 import { describe, it, expect, afterEach } from 'vitest';
 import { render, act, cleanup } from '@testing-library/react';
 import { Context } from '@ezclassify/engine';
-import type { LocalSchemeEngineAdapter } from '@ezclassify/types';
+import type { LocalContextSchemeEngineAdapter } from '@ezclassify/types';
 import { useSchemeEngine } from './index';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -37,9 +37,9 @@ function loadScheme(): unknown {
 }
 
 /** A fresh, standalone scheme engine adapter from the reference fixture. */
-function makeEngine(): LocalSchemeEngineAdapter {
+function makeEngine(): LocalContextSchemeEngineAdapter {
     return Context.fromComponents({ scheme: loadScheme() })
-        .scheme as LocalSchemeEngineAdapter;
+        .scheme as LocalContextSchemeEngineAdapter;
 }
 
 /** Flush React effects plus EzClassifyUI's async component-init + rollup. */
@@ -57,7 +57,11 @@ afterEach(() => cleanup());
  * A nested-scope field: a child that opens its OWN useSchemeEngine scope on a
  * wrapper holding a single controller element.
  */
-function NestedScopeField({ engine }: { engine: LocalSchemeEngineAdapter }) {
+function NestedScopeField({
+    engine,
+}: {
+    engine: LocalContextSchemeEngineAdapter;
+}) {
     const { ref } = useSchemeEngine(engine, { rollupId: 'c5-child-rollup' });
     return (
         <div ref={ref} data-testid="c5-child-region">
@@ -67,7 +71,7 @@ function NestedScopeField({ engine }: { engine: LocalSchemeEngineAdapter }) {
 }
 
 /** Parent provider-region that ALSO opens a useSchemeEngine scope. */
-function ParentRegion({ engine }: { engine: LocalSchemeEngineAdapter }) {
+function ParentRegion({ engine }: { engine: LocalContextSchemeEngineAdapter }) {
     const { ref } = useSchemeEngine(engine, { rollupId: 'c5-parent-rollup' });
     return (
         <div ref={ref} data-testid="c5-parent-region">

@@ -22,19 +22,19 @@ import { useEffect, useState, type ReactElement } from 'react';
 import { describe, it, expect, afterEach, vi } from 'vitest';
 import { render, act, cleanup, screen } from '@testing-library/react';
 import { Context } from '@ezclassify/engine';
-import type { LocalSchemeEngineAdapter } from '@ezclassify/types';
+import type { LocalContextSchemeEngineAdapter } from '@ezclassify/types';
 import { EzClassifyProvider, useSchemeEngine } from './index';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const fixturesDir = resolve(__dirname, '../../../vendor/spec/fixtures/v1');
 
 /** A fresh, standalone scheme engine adapter from the reference fixture. */
-function makeEngine(): LocalSchemeEngineAdapter {
+function makeEngine(): LocalContextSchemeEngineAdapter {
     return Context.fromComponents({
         scheme: JSON.parse(
             readFileSync(resolve(fixturesDir, 'ref-scheme-1.json'), 'utf8'),
         ),
-    }).scheme as LocalSchemeEngineAdapter;
+    }).scheme as LocalContextSchemeEngineAdapter;
 }
 
 /** Flush React effects plus EzClassifyUI's async component init. */
@@ -71,7 +71,8 @@ function ProvidedHost(): ReactElement {
  * and arrives a tick later, which is the shape of every REST consumer.
  */
 function LateProvider(): ReactElement {
-    const [engine, setEngine] = useState<LocalSchemeEngineAdapter | null>(null);
+    const [engine, setEngine] =
+        useState<LocalContextSchemeEngineAdapter | null>(null);
     useEffect(() => {
         const timer = setTimeout(() => setEngine(makeEngine()), 10);
         return () => clearTimeout(timer);
@@ -85,7 +86,8 @@ function LateProvider(): ReactElement {
 
 /** The per-subtree override: the hook builds and owns the store itself. */
 function LateOverrideHost(): ReactElement {
-    const [engine, setEngine] = useState<LocalSchemeEngineAdapter | null>(null);
+    const [engine, setEngine] =
+        useState<LocalContextSchemeEngineAdapter | null>(null);
     useEffect(() => {
         const timer = setTimeout(() => setEngine(makeEngine()), 10);
         return () => clearTimeout(timer);

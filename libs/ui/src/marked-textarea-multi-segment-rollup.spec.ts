@@ -6,7 +6,10 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import type { SchemeEngineAdapter } from '@ezclassify/types';
+import type {
+    LocalContextSchemeEngineAdapter,
+    SchemeEngineAdapter,
+} from '@ezclassify/types';
 import { loadMultiScopeRegression } from '../test-fixtures/load-multi-scope-regression';
 import { EzClassifyUI } from './ezclassify-ui';
 
@@ -99,31 +102,33 @@ describe('MarkedTextArea bound-to: multi-segment publish rolls up per the docume
     });
 
     it('ignores an older portion aggregate that answers after a replacement', async () => {
-        const engine: SchemeEngineAdapter = loadMultiScopeRegression();
+        const engine: LocalContextSchemeEngineAdapter =
+            loadMultiScopeRegression();
         const aggregate = engine.aggregateAssertions.bind(engine);
         let release!: () => void;
         const gate = new Promise<void>((resolve) => {
             release = resolve;
         });
         let held = false;
-        vi.spyOn(engine, 'aggregateAssertions').mockImplementation(
-            (...args) => {
-                const result = aggregate(...args);
-                if (
-                    !held &&
-                    args[0].length === 2 &&
-                    args[0].some((set) =>
-                        set.some(
-                            (a) => a.conceptId === 'STATE_ASSESSMENT_STAFF',
-                        ),
-                    )
-                ) {
-                    held = true;
-                    return gate.then(() => result);
-                }
-                return result;
-            },
-        );
+        // The held answer arrives late, the way a remote adapter's would, so
+        // the spy takes the contract that lets an answer be a promise.
+        vi.spyOn(
+            engine as unknown as SchemeEngineAdapter,
+            'aggregateAssertions',
+        ).mockImplementation((...args) => {
+            const result = aggregate(...args);
+            if (
+                !held &&
+                args[0].length === 2 &&
+                args[0].some((set) =>
+                    set.some((a) => a.conceptId === 'STATE_ASSESSMENT_STAFF'),
+                )
+            ) {
+                held = true;
+                return gate.then(() => result);
+            }
+            return result;
+        });
         forms = new EzClassifyUI(engine, { root });
         await flush();
         const textarea = root.querySelector<HTMLTextAreaElement>('#body')!;

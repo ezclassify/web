@@ -21,7 +21,7 @@ import { StrictMode, type ReactElement, type ReactNode } from 'react';
 import { describe, it, expect, afterEach, beforeEach, vi } from 'vitest';
 import { render, act, cleanup } from '@testing-library/react';
 import { Context } from '@ezclassify/engine';
-import type { LocalSchemeEngineAdapter } from '@ezclassify/types';
+import type { LocalContextSchemeEngineAdapter } from '@ezclassify/types';
 import {
     EzClassifyProvider,
     useEzClassifyStore,
@@ -33,12 +33,12 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const fixturesDir = resolve(__dirname, '../../../vendor/spec/fixtures/v1');
 
 /** A fresh, standalone scheme engine adapter from the reference fixture. */
-function makeEngine(): LocalSchemeEngineAdapter {
+function makeEngine(): LocalContextSchemeEngineAdapter {
     return Context.fromComponents({
         scheme: JSON.parse(
             readFileSync(resolve(fixturesDir, 'ref-scheme-1.json'), 'utf8'),
         ),
-    }).scheme as LocalSchemeEngineAdapter;
+    }).scheme as LocalContextSchemeEngineAdapter;
 }
 
 /** Flush React effects plus EzClassifyUI's async component init. */
@@ -101,7 +101,7 @@ function ProvidedPage({
     probe,
     children,
 }: {
-    engine: LocalSchemeEngineAdapter;
+    engine: LocalContextSchemeEngineAdapter;
     probe: { store: ReactEzClassifyStore | null };
     children?: ReactNode;
 }): ReactElement {
@@ -138,7 +138,7 @@ function OverridePage({
     engine,
     testId,
 }: {
-    engine: LocalSchemeEngineAdapter;
+    engine: LocalContextSchemeEngineAdapter;
     testId: string;
 }): ReactElement {
     const { ref } = useSchemeEngine(engine);

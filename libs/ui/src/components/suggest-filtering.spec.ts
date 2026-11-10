@@ -27,7 +27,7 @@ import {
     type EzClassifyStoreEngine,
     type FacetState,
 } from '../store/ezclassify-store';
-import type { SchemeEngineAdapter } from '@ezclassify/types';
+import type { LocalContextSchemeEngineAdapter } from '@ezclassify/types';
 
 /**
  * Flush enough microtasks for the store's refreshFacets chain to settle.
@@ -39,7 +39,7 @@ async function flushFacets(): Promise<void> {
 }
 
 describe('store-driven suggest filtering (facet subscription)', () => {
-    let engine: SchemeEngineAdapter;
+    let engine: LocalContextSchemeEngineAdapter;
     let store: VanillaEzClassifyStore;
     let container: HTMLDivElement;
 

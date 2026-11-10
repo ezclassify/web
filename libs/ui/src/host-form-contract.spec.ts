@@ -10,7 +10,7 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { rowFor } from './components/composer/composer-harness';
-import type { LocalSchemeEngineAdapter } from '@ezclassify/types';
+import type { LocalContextSchemeEngineAdapter } from '@ezclassify/types';
 import { Context } from '@ezclassify/engine';
 import { EzClassifyUI } from './ezclassify-ui';
 import { MarkedInput } from './components/marked-input';
@@ -19,7 +19,7 @@ function wait(ms = 50): Promise<void> {
     return new Promise((r) => setTimeout(r, ms));
 }
 
-function createMarkedEngine(): LocalSchemeEngineAdapter {
+function createMarkedEngine(): LocalContextSchemeEngineAdapter {
     return Context.fromComponents({
         scheme: {
             scheme: {
@@ -84,7 +84,7 @@ function createMarkedEngine(): LocalSchemeEngineAdapter {
                 },
             },
         },
-    }).scheme as LocalSchemeEngineAdapter;
+    }).scheme as LocalContextSchemeEngineAdapter;
 }
 
 let root: HTMLDivElement;

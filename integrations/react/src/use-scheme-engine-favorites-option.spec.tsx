@@ -16,7 +16,7 @@ import { fileURLToPath } from 'node:url';
 import { describe, it, expect, afterEach } from 'vitest';
 import { render, cleanup, act } from '@testing-library/react';
 import { Context } from '@ezclassify/engine';
-import type { LocalSchemeEngineAdapter } from '@ezclassify/types';
+import type { LocalContextSchemeEngineAdapter } from '@ezclassify/types';
 import type { FavoritesConfig } from '@ezclassify/ui';
 import { useSchemeEngine } from './index';
 
@@ -29,9 +29,9 @@ function loadScheme(): unknown {
     );
 }
 
-function makeEngine(): LocalSchemeEngineAdapter {
+function makeEngine(): LocalContextSchemeEngineAdapter {
     return Context.fromComponents({ scheme: loadScheme() })
-        .scheme as LocalSchemeEngineAdapter;
+        .scheme as LocalContextSchemeEngineAdapter;
 }
 
 const noopFavorites: FavoritesConfig = { load: () => [] };
@@ -50,7 +50,7 @@ function TagsField({
     engine,
     favorites,
 }: {
-    engine: LocalSchemeEngineAdapter;
+    engine: LocalContextSchemeEngineAdapter;
     favorites?: FavoritesConfig;
 }) {
     const { ref } = useSchemeEngine(engine, { favorites });

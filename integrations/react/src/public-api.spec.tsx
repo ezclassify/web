@@ -10,7 +10,7 @@
 import { render, renderHook, screen, waitFor } from '@testing-library/react';
 import { createElement, type ReactNode } from 'react';
 import { Context } from '@ezclassify/engine';
-import type { SchemeEngineAdapter } from '@ezclassify/types';
+import type { LocalContextSchemeEngineAdapter } from '@ezclassify/types';
 import {
     EzClassifyProvider,
     ReactEzClassifyStore,
@@ -83,9 +83,9 @@ const testProfile = {
     },
 };
 
-function buildEngine(): SchemeEngineAdapter {
+function buildEngine(): LocalContextSchemeEngineAdapter {
     return Context.fromComponents({ scheme: testProfile })
-        .scheme as SchemeEngineAdapter;
+        .scheme as LocalContextSchemeEngineAdapter;
 }
 
 function wrapperFor(
