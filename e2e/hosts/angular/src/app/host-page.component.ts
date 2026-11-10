@@ -8,7 +8,7 @@
  * a scheme.
  *
  * The integration is one directive plus attributes on ordinary HTML.
- * `provideEzClassify` named the engine in `main.ts`; `ezClassify` marks the
+ * `provideEzClassify` named the Context in `main.ts`; `ezClassify` marks the
  * host whose subtree gets enhanced.
  */
 
@@ -38,7 +38,7 @@ import { HOST_RUNTIME } from './host-runtime';
                 <input
                     id="document-marking"
                     type="hidden"
-                    data-ezclassify-rendered />
+                    data-ezclassify-marking />
 
                 <div
                     class="banner-slot"

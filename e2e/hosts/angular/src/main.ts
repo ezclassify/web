@@ -2,9 +2,9 @@
  * Bootstrap the Angular integration host.
  *
  * The runtime connection is resolved BEFORE the application starts.
- * `provideEzClassify` takes a concrete engine, and an Angular application that
- * is bound to a published composition has nothing useful to render until it
- * knows which one; asking every component to guard against a half-connected
+ * `provideEzClassify` takes a connected Context, and an Angular application
+ * that is bound to a published composition has nothing useful to render until
+ * it knows which one; asking every component to guard against a half-connected
  * root would be carrying that uncertainty through the whole tree for the sake
  * of a few hundred milliseconds at startup.
  *
@@ -38,7 +38,7 @@ async function start(): Promise<void> {
         await bootstrapApplication(HostPageComponent, {
             providers: [
                 provideZonelessChangeDetection(),
-                provideEzClassify({ engine: client }),
+                provideEzClassify({ context: client }),
                 { provide: HOST_RUNTIME, useValue: client },
             ],
         });

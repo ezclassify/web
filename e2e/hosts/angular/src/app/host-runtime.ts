@@ -2,7 +2,7 @@
  * The connected REST client, as a first-class injectable.
  *
  * `provideEzClassify` already puts the client in the injector, but it puts it
- * there as an ENGINE: the adapter contract the UI binds to, deliberately narrow
+ * there as a Context: the adapter contract the UI binds to, deliberately narrow
  * enough that a component cannot tell a remote client from an embedded one. A
  * component that wants a client-only fact (which Context version the runtime
  * resolved this application to) is asking a different question, so it asks
