@@ -577,6 +577,51 @@ describe('a field that selects a scheme', () => {
         expect(output('typed-note').value).toBe('LOW//ALPHA');
     });
 
+    function twoSchemeEngineContext() {
+        // The engine's own two-scheme Context.
+        return Object.freeze(
+            Context.fromComponents({
+                schemes: [
+                    { key: 'ref-scheme-1', scheme: scheme('ref-scheme-1') },
+                    { key: 'ref-scheme-2', scheme: scheme('ref-scheme-2') },
+                ],
+                primaryScheme: 'ref-scheme-1',
+            } as Parameters<typeof Context.fromComponents>[0]),
+        );
+    }
+
+    it("marks a bound view in its marking's scheme wherever the view sits", async () => {
+        root.innerHTML = `
+            <div data-ezclassify-scheme="ref-scheme-2">
+                <input type="hidden" id="note" data-ezclassify-marking value="LOW//ALPHA">
+            </div>
+            <fieldset data-ezclassify-controller="selector" data-ezclassify-bound-to="note"></fieldset>
+            <input id="typed-note" data-ezclassify-bound-to="note">`;
+        const ui = mount(twoSchemeEngineContext());
+        await expect.poll(() => output('typed-note').value).toBe('LOW//ALPHA');
+        await new Promise((resolve) => setTimeout(resolve, 50));
+
+        expect(hostErrors()).toEqual([]);
+        expect(ui.store.get('note').rendered).toBe('LOW//ALPHA');
+    });
+
+    it('refuses a bound view whose own markup selects another scheme than its marking', async () => {
+        root.innerHTML = `
+            <div data-ezclassify-scheme="ref-scheme-2">
+                <input type="hidden" id="note" data-ezclassify-marking value="LOW//ALPHA">
+            </div>
+            <div data-ezclassify-scheme="ref-scheme-1">
+                <fieldset data-ezclassify-controller="selector" data-ezclassify-bound-to="note"></fieldset>
+            </div>
+            <input id="typed-note" data-ezclassify-bound-to="note">`;
+        const ui = mount(twoSchemeEngineContext());
+        await expect.poll(() => output('typed-note').value).toBe('LOW//ALPHA');
+        await expect.poll(() => hostErrors()).toEqual(['context-unresolved']);
+
+        expect(errors[0]!.message).toMatch(/binds the marking 'note'/);
+        expect(ui.store.get('note').rendered).toBe('LOW//ALPHA');
+    });
+
     it('refuses a field per element when the store the host gave cannot read its scheme', async () => {
         root.innerHTML = twoSchemes;
         const { context } = crosswalking();

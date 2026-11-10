@@ -424,6 +424,21 @@ describe('contextForScheme', () => {
         expect(contextForScheme(resolved(context, 'tier'))).toBe(bound);
     });
 
+    it('leaves out the guide and access policy, which do not mark in the selected scheme', () => {
+        const context = Object.freeze({
+            ...contextHolding(CROSSWALK_SCHEMES),
+            guide: { buildGuideViews: () => [] },
+            access: { listAccessRuleIds: () => [] },
+        }) as unknown as ContextAdapter;
+        const bound = contextForScheme(resolved(context, 'tier'));
+
+        expect(bound.guide).toBeUndefined();
+        expect(bound.access).toBeUndefined();
+        expect('guide' in bound).toBe(false);
+        expect('access' in bound).toBe(false);
+        expect(context.guide).toBeDefined();
+    });
+
     it('refuses a scheme the Context gives no view for', () => {
         const context = contextHolding(CROSSWALK_SCHEMES);
         expect(

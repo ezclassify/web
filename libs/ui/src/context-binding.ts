@@ -437,6 +437,19 @@ export function schemeEngineOf(
     return viewOf(resolved.context, resolved.schemeSelector, element);
 }
 
+/**
+ * The Context surfaces a scheme-bound Context leaves out. A Context's guides and
+ * access policy each target a scheme of their own, and the component surface
+ * does not say which, so a component bound to one of the Context's other
+ * schemes gets neither. A guide's rollup copied into a field read in another
+ * scheme would be another scheme's marking, and the access handbook would list
+ * rules that field's marking may not be judged by.
+ */
+const UNBOUND_SURFACES: ReadonlySet<PropertyKey> = new Set([
+    'guide',
+    'access',
+]);
+
 /** Contexts bound to one of their non-primary schemes, per selector. */
 const schemeBoundContexts = new WeakMap<
     ContextAdapter,
@@ -448,8 +461,9 @@ const schemeBoundContexts = new WeakMap<
  * Context, whose `scheme` is the scheme the element selects. A component reads
  * and writes through `context.scheme`, so a field under
  * `data-ezclassify-scheme` is parsed, rendered and offered choices by that
- * scheme rather than the primary. Everything else is the Context's own. The
- * bound Context is built once per Context and selector.
+ * scheme rather than the primary. It has no guide or access surface (see
+ * {@link UNBOUND_SURFACES}); everything else is the Context's own. The bound
+ * Context is built once per Context and selector.
  *
  * @param resolved - What {@link ContextSet.resolve} returned for the element
  * @param element - The element, carried on the error
@@ -475,10 +489,12 @@ export function contextForScheme(
     const view = new Proxy({} as ContextAdapter, {
         get(_, property) {
             if (property === 'scheme') return scheme;
+            if (UNBOUND_SURFACES.has(property)) return undefined;
             const value = Reflect.get(context, property, context);
             return typeof value === 'function' ? value.bind(context) : value;
         },
         has(_, property) {
+            if (UNBOUND_SURFACES.has(property)) return false;
             return Reflect.has(context, property);
         },
     });

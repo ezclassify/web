@@ -200,6 +200,16 @@ interface StoreBinding {
     publish(assertions: EngineAssertion[], rendered: string): void;
 }
 
+/** A resolved Context and scheme, as a host error names it. */
+function describeBucket(resolved: ResolvedContext): string {
+    const scheme = resolved.primary
+        ? 'the primary scheme'
+        : `scheme '${resolved.schemeSelector}'`;
+    return resolved.contextKey
+        ? `${scheme} of Context '${resolved.contextKey}'`
+        : scheme;
+}
+
 /** Stable identity for one retained render, including refusal assessment. */
 function renderViewSignature(view: RenderResult | undefined): string {
     return JSON.stringify(view ?? null);
@@ -663,7 +673,60 @@ export class EzClassifyUI {
      * @internal
      */
     resolveContext(el: Element): ResolvedContext {
-        return this.contexts.resolve(el, this.root);
+        const host = this.boundMarkingHostOf(el);
+        if (!host) return this.contexts.resolve(el, this.root);
+        // A view bound to a marking marks in that marking's Context and
+        // scheme, wherever the view sits. Read by its own placement, a view
+        // outside the marking's data-ezclassify-scheme subtree would parse
+        // the marking in another scheme and write that reading back.
+        const resolved = this.contexts.resolve(host, this.root);
+        this.refuseDisagreeingView(el, host, resolved);
+        return resolved;
+    }
+
+    /**
+     * The marking host a view's `data-ezclassify-bound-to` or
+     * `data-ezclassify-facet-of` names, or null when `el` binds none.
+     */
+    private boundMarkingHostOf(el: Element): Element | null {
+        const id =
+            el.getAttribute('data-ezclassify-bound-to') ??
+            el.getAttribute('data-ezclassify-facet-of');
+        if (!id || id === el.id) return null;
+        return this.markingHosts.get(id) ?? null;
+    }
+
+    /**
+     * Refuse a bound view whose own markup selects another Context or scheme
+     * than the marking it binds. Markup the view does not declare follows
+     * the marking.
+     *
+     * @throws ContextResolutionError when the view's declared Context or
+     *   scheme disagrees with its marking's
+     */
+    private refuseDisagreeingView(
+        el: Element,
+        host: Element,
+        marking: ResolvedContext,
+    ): void {
+        const declaresContext =
+            this.contexts.declaredContextKey(el, this.root) !== null;
+        const declaresScheme =
+            this.contexts.declaredSchemeSelector(el, this.root) !== null;
+        if (!declaresContext && !declaresScheme) return;
+        const own = this.contexts.resolve(el, this.root);
+        if (
+            own.contextKey === marking.contextKey &&
+            (!declaresScheme || own.bucket === marking.bucket)
+        )
+            return;
+        throw new ContextResolutionError(
+            'context-unresolved',
+            `This view binds the marking '${host.id}', which marks in ${describeBucket(marking)}, ` +
+                `but its own markup selects ${describeBucket(own)}. ` +
+                'Move the view, or remove the data-ezclassify-context or data-ezclassify-scheme that disagrees.',
+            el,
+        );
     }
 
     /**
