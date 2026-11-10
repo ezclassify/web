@@ -1,15 +1,15 @@
 {
   "openapiVersion": "1.0.0-dev.30",
-  "openapiSha256": "5d390282d1e39c62d2e0d1a1b588e37e30e1261206e8f0e5a829b5ebb0e019f5",
-  "specBundleSha256": "9c8bd3d6356a3623f93f256baada8ead7d56d9d9a1411d98975cb3304856328c",
-  "specDigest": "6b7824d0a28ee8c07520a4e00ae35b293164d964d65e096412d15c4a0987bce0",
-  "contractsSha": "a8ffa5d962d77be629923e39f09c61040172e330",
+  "openapiSha256": "165636519a9a0aa675a78f04d06804ac0ce9f1bd09ed4b6f8cbfeb5431c4ab1a",
+  "specBundleSha256": "a746bfcfd41b4d31228fc4240db067a99daeb27f85c3951853f2e48c8613cb1c",
+  "specDigest": "fea044755977dea462c28e815ab9dee9e7e5058fe2e407f12fb57c85de39bc7f",
+  "contractsSha": "9311fa4605e61499e11a3778f13a3a9f3b4bf436",
   "sourcePackages": {
     "@ezclassify/openapi": "1.0.0-dev.30",
     "@ezclassify/schemas": "1.0.0-dev.30",
     "@ezclassify/conformance": "1.0.0-dev.30"
   },
-  "generatedAt": "2026-11-10T01:58:53.000Z",
+  "generatedAt": "2026-11-10T16:14:31.000Z",
   "generators": {},
   "generatedPaths": []
 }
