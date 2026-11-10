@@ -122,7 +122,10 @@ describe('format-resolver', () => {
 
         it('returns defaultPartFormat for a field that shows a part', () => {
             const ctx = createMockCtx();
-            const field = createField({ 'data-ezclassify-part-of': 'doc' });
+            const field = createField({
+                'data-ezclassify-marking': '',
+                'data-ezclassify-part-of': 'doc',
+            });
             expect(getFormat(ctx, field)).toBe('part');
             field.setAttribute('data-ezclassify-format', 'inline');
             expect(getFormat(ctx, field)).toBe('inline');
@@ -134,17 +137,34 @@ describe('format-resolver', () => {
             document.body.innerHTML = '';
         });
 
-        it('is true for a field that names the whole it is part of', () => {
+        it('is true for a marking that names the whole it is part of', () => {
             expect(
-                holdsPart(createField({ 'data-ezclassify-part-of': 'doc' })),
+                holdsPart(
+                    createField({
+                        'data-ezclassify-marking': '',
+                        'data-ezclassify-part-of': 'doc',
+                    }),
+                ),
             ).toBe(true);
-            expect(holdsPart(createField())).toBe(false);
+            expect(
+                holdsPart(createField({ 'data-ezclassify-marking': '' })),
+            ).toBe(false);
+        });
+
+        it('is true for a marking inside a whole container other than the whole', () => {
+            document.body.innerHTML = `
+                <form data-ezclassify-whole="doc">
+                    <input id="doc" data-ezclassify-controller="marking" />
+                    <input id="p" data-ezclassify-controller="marking" />
+                </form>`;
+            expect(holdsPart(document.getElementById('p')!)).toBe(true);
+            expect(holdsPart(document.getElementById('doc')!)).toBe(false);
         });
 
         it('asks the host of the marking a field is bound to or is a facet of', () => {
             document.body.innerHTML = `
-                <input type="hidden" id="doc" data-ezclassify-rendered />
-                <input type="hidden" id="para" data-ezclassify-rendered
+                <input type="hidden" id="doc" data-ezclassify-marking />
+                <input type="hidden" id="para" data-ezclassify-marking
                        data-ezclassify-part-of="doc" />`;
             const bound = (id: string) =>
                 createField({ 'data-ezclassify-bound-to': id });
@@ -165,7 +185,7 @@ describe('format-resolver', () => {
 
         it('follows the bound marking, not a part-of the field itself declares', () => {
             document.body.innerHTML =
-                '<input type="hidden" id="doc" data-ezclassify-rendered />';
+                '<input type="hidden" id="doc" data-ezclassify-marking />';
             const field = createField({
                 'data-ezclassify-bound-to': 'doc',
                 'data-ezclassify-part-of': 'page',

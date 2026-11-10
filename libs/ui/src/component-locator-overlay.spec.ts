@@ -153,7 +153,7 @@ describe('component locator viewport labels', () => {
         await Promise.resolve();
         expect(frames.size).toBe(0);
         region.removeAttribute('data-ezclassify-mount');
-        region.setAttribute('data-ezclassify-rendered', '');
+        region.setAttribute('data-ezclassify-marking', '');
         await Promise.resolve();
         flush();
         expect(chip.textContent).toBe('@ezclassify/ui data-binding');

@@ -48,7 +48,7 @@ beforeEach(() => {
     });
     container = document.createElement('div');
     container.innerHTML = `
-        <input type="hidden" id="doc-marking" data-ezclassify-rendered />
+        <input type="hidden" id="doc-marking" data-ezclassify-marking />
         <input id="tag-field"
                data-ezclassify-controller="tags"
                data-ezclassify-bound-to="doc-marking" />

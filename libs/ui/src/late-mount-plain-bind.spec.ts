@@ -1,6 +1,6 @@
 /**
- * Regression coverage for the plain `data-ezclassify-bind` input that arrives
- * after its `EzClassifyUI` is already live.
+ * Regression coverage for the plain `data-ezclassify-marking` input that
+ * arrives after its `EzClassifyUI` is already live.
  *
  * The behavior pass wraps such an input in a `span.ez-plain-field-wrap` so the
  * enhancement status mark has somewhere to sit. During the initial scan that is
@@ -44,7 +44,7 @@ describe('a plain bound input mounted after construction', () => {
     beforeEach(() => {
         document.body.innerHTML = '';
         root = document.createElement('div');
-        root.innerHTML = `<input type="hidden" id="${MARKING_ID}" data-ezclassify-rendered />`;
+        root.innerHTML = `<input type="hidden" id="${MARKING_ID}" data-ezclassify-marking />`;
         document.body.appendChild(root);
         forms = null;
     });
@@ -58,7 +58,7 @@ describe('a plain bound input mounted after construction', () => {
     async function mountLateInput(): Promise<HTMLInputElement> {
         const input = document.createElement('input');
         input.id = 'plain-host';
-        input.setAttribute('data-ezclassify-bind', '');
+        input.setAttribute('data-ezclassify-marking', '');
         input.setAttribute('data-ezclassify-bound-to', MARKING_ID);
         root.appendChild(input);
         await flush();
@@ -86,7 +86,7 @@ describe('a plain bound input mounted after construction', () => {
     it('wraps exactly once when the input is present before construction', async () => {
         const input = document.createElement('input');
         input.id = 'plain-host';
-        input.setAttribute('data-ezclassify-bind', '');
+        input.setAttribute('data-ezclassify-marking', '');
         input.setAttribute('data-ezclassify-bound-to', MARKING_ID);
         root.appendChild(input);
 
@@ -145,7 +145,7 @@ describe('a plain bound input mounted after construction', () => {
         // teardown. Unwrapping must tolerate that stale sibling reference.
         const input = document.createElement('input');
         input.id = 'plain-host';
-        input.setAttribute('data-ezclassify-bind', '');
+        input.setAttribute('data-ezclassify-marking', '');
         input.setAttribute('data-ezclassify-bound-to', MARKING_ID);
         root.appendChild(input);
 

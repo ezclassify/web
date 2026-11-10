@@ -186,7 +186,7 @@ describe('the initial seed reads a body editor mark, never its body', () => {
         // The control: a host that is NOT a body editor holds a marking string
         // and nothing else, so the raw value is exactly what the store wants.
         const engine = createMarkedEngine();
-        root.innerHTML = `<input id="plain-host" data-ezclassify-rendered value="S" />`;
+        root.innerHTML = `<input id="plain-host" data-ezclassify-marking value="S" />`;
         const forms = new EzClassifyUI(engine as never, { root });
         activeForms.push(forms);
         await wait(200);

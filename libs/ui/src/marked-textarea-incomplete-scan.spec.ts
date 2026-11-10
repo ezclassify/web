@@ -425,44 +425,6 @@ describe('MarkedTextArea scan that does not read the whole text', () => {
         expect(ui.store.getAggregate().stale).toBeUndefined();
     });
 
-    it('flags the marking bound to the first part when the scan read no part', async () => {
-        document.body.innerHTML = `<form id="root">
-    <input id="lead" type="hidden" value="STUDENTS" data-ezclassify-rendered>
-    <textarea id="body" data-ezclassify-controller="marked-textarea" data-ezclassify-first-part-binding="lead">(ST) First.
-(DC) Second.</textarea>
-    <div id="lead-banner" data-ezclassify-controller="banner" data-ezclassify-source="lead"></div>
-</form>`;
-        const root = document.querySelector<HTMLElement>('#root')!;
-        const { engine, control } = stoppingEngine();
-        const isReady = ready(root);
-        ui = new EzClassifyUI(engine, { root });
-        await isReady;
-        await settle();
-        const textarea = root.querySelector<HTMLTextAreaElement>('#body')!;
-        const banner = root.querySelector<HTMLElement>(
-            '#lead-banner .status-banner',
-        )!;
-        const flagged = () =>
-            banner.classList.contains('status-banner--incomplete');
-        expect(flagged()).toBe(false);
-
-        // A scan that reached the first part read it: nothing to flag on the
-        // marking it is bound to.
-        control.stopEarly = true;
-        control.mode = 'first';
-        await type(textarea, '(ST) First.\n(DC) Second.\n(SA) Third.');
-        expect(flagged()).toBe(false);
-
-        control.mode = 'none';
-        await type(textarea, '(ST) First.\n(DC) Second.');
-        expect(flagged()).toBe(true);
-        expect(banner.textContent).toContain(t('rollup.incomplete'));
-
-        control.stopEarly = false;
-        await type(textarea, '(ST) First.');
-        expect(flagged()).toBe(false);
-    });
-
     it('announces the incomplete scan and says so in text, not color alone', async () => {
         document.body.innerHTML = PORTIONS_FORM;
         const root = document.querySelector<HTMLElement>('#root')!;

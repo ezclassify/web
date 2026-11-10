@@ -14,7 +14,7 @@ import { loadMultiScopeRegression } from '../test-fixtures/load-multi-scope-regr
 import { EzClassifyUI } from './ezclassify-ui';
 
 const HTML = `
-  <input type="hidden" id="doc-marking" data-ezclassify-rendered />
+  <input type="hidden" id="doc-marking" data-ezclassify-marking />
   <textarea id="body" data-ezclassify-controller="marked-textarea"
          data-ezclassify-bound-to="doc-marking"></textarea>
 `;
@@ -188,7 +188,7 @@ describe('MarkedTextArea bound-to: replacement parts cannot be cleared by stale 
         document.body.innerHTML = '';
         root = document.createElement('div');
         root.innerHTML = `
-          <input type="hidden" id="doc-marking" data-ezclassify-rendered />
+          <input type="hidden" id="doc-marking" data-ezclassify-marking />
           <textarea id="body" data-ezclassify-controller="marked-textarea"
                     data-ezclassify-bound-to="doc-marking"></textarea>
         `;

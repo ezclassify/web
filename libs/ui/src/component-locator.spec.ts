@@ -229,7 +229,7 @@ describe('component locator', () => {
     it('marks a visible rendered output as a binding', () => {
         const target = document.createElement('div');
         const output = document.createElement('output');
-        output.setAttribute('data-ezclassify-rendered', '');
+        output.setAttribute('data-ezclassify-marking', '');
         rendered(target, 300, 100);
         rendered(output);
         target.append(output);

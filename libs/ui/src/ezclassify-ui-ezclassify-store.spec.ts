@@ -2,7 +2,7 @@
  * Runtime wireup tests for `EzClassifyUI` + `EzClassifyStore` cross-talk.
  *
  * Each spec mounts the scanner's binding pass on a small DOM with
- * `data-ezclassify-rendered` + `data-ezclassify-bound-to` /
+ * `data-ezclassify-marking` + `data-ezclassify-bound-to` /
  * `data-ezclassify-facet-of` siblings, then drives one view's component surface
  * (tag input `setValue` / select `addAssertion`) and asserts the others were
  * fanned the new state through the store.
@@ -25,7 +25,7 @@ import type { TagInput } from './components/tag-input';
 import type { SingleSelect } from './components/single-select';
 
 const FOUR_FIELDS_HTML = `
-  <input type="hidden" id="doc-marking" data-ezclassify-rendered />
+  <input type="hidden" id="doc-marking" data-ezclassify-marking />
   <input id="ac" data-ezclassify-controller="tags"
          data-ezclassify-bound-to="doc-marking" />
   <input id="level" data-ezclassify-controller="select"
@@ -88,7 +88,7 @@ describe('EzClassifyUI store wireup', () => {
     it('indexes standalone marking and tags before source views and contributes once per part', async () => {
         root.innerHTML = `
           <output id="mirror" data-ezclassify-source="part"></output>
-          <input id="whole" type="hidden" data-ezclassify-rendered value="DISTRICT COORDINATORS">
+          <input id="whole" type="hidden" data-ezclassify-marking value="DISTRICT COORDINATORS">
           <input id="part" data-ezclassify-controller="marking" data-ezclassify-part-of="whole" value="DISTRICT COORDINATORS">
           <input id="tags-part" data-ezclassify-controller="tags" data-ezclassify-part-of="whole" value="STUDENTS">
           <input id="bound" data-ezclassify-controller="marking" data-ezclassify-bound-to="part">
@@ -190,7 +190,7 @@ describe('EzClassifyUI store wireup', () => {
 
     it('keeps unrecognized store text visible and invalid in both authoring views', async () => {
         root.innerHTML = `
-          <input type="hidden" id="doc-marking" data-ezclassify-rendered />
+          <input type="hidden" id="doc-marking" data-ezclassify-marking />
           <textarea id="marking" data-ezclassify-controller="marking"
                     data-ezclassify-bound-to="doc-marking">UNKNOWN-VOCABULARY</textarea>
           <input id="tags" data-ezclassify-controller="tags"
@@ -252,7 +252,7 @@ describe('EzClassifyUI store wireup', () => {
 
     it('keeps a canonical unknown reading when an older component reprocess finishes later', async () => {
         root.innerHTML = `
-          <input type="hidden" id="doc-marking" data-ezclassify-rendered />
+          <input type="hidden" id="doc-marking" data-ezclassify-marking />
           <textarea id="marking" data-ezclassify-controller="marking"
                     data-ezclassify-bound-to="doc-marking"></textarea>
         `;
@@ -295,7 +295,7 @@ describe('EzClassifyUI store wireup', () => {
         const root2 = document.createElement('div');
         const initialBody = '(STUDENTS) Intro text here.';
         root2.innerHTML = `
-      <input type="hidden" id="doc-marking" data-ezclassify-rendered />
+      <input type="hidden" id="doc-marking" data-ezclassify-marking />
       <input id="ac" data-ezclassify-controller="tags"
              data-ezclassify-bound-to="doc-marking" />
       <textarea id="mta" data-ezclassify-controller="marked-textarea"
@@ -327,7 +327,7 @@ describe('EzClassifyUI store wireup', () => {
         const root2 = document.createElement('div');
         const initialBody = '(STUDENTS) Intro text here.';
         root2.innerHTML = `
-      <input type="hidden" id="doc-marking" data-ezclassify-rendered />
+      <input type="hidden" id="doc-marking" data-ezclassify-marking />
       <textarea id="mta" data-ezclassify-controller="marked-textarea"
                 data-ezclassify-bound-to="doc-marking">${initialBody}</textarea>
     `;
@@ -356,7 +356,7 @@ describe('EzClassifyUI store wireup', () => {
         document.body.innerHTML = '';
         const root2 = document.createElement('div');
         root2.innerHTML = `
-      <input type="hidden" id="doc-marking" data-ezclassify-rendered />
+      <input type="hidden" id="doc-marking" data-ezclassify-marking />
       <textarea id="mta" data-ezclassify-controller="marked-textarea"
                 data-ezclassify-bound-to="doc-marking">(STUDENTS) Intro text.</textarea>
     `;
@@ -400,7 +400,7 @@ describe('EzClassifyUI store wireup', () => {
         document.body.innerHTML = '';
         const root2 = document.createElement('div');
         root2.innerHTML = `
-      <input type="hidden" id="doc-marking" data-ezclassify-rendered />
+      <input type="hidden" id="doc-marking" data-ezclassify-marking />
       <input id="ac" data-ezclassify-controller="tags"
              data-ezclassify-bound-to="doc-marking" />
       <textarea id="mf" data-ezclassify-controller="marking"
@@ -654,8 +654,7 @@ describe('EzClassifyUI store wireup', () => {
         document.body.innerHTML = '';
         const root5 = document.createElement('div');
         root5.innerHTML = `
-      <input id="ac-host" data-ezclassify-controller="tags"
-             data-ezclassify-rendered />
+      <input id="ac-host" data-ezclassify-controller="tags" data-ezclassify-marking />
     `;
         document.body.appendChild(root5);
         forms = new EzClassifyUI(loadMultiScopeRegression(), {
@@ -687,7 +686,7 @@ describe('EzClassifyUI store wireup', () => {
         document.body.innerHTML = '';
         const root4 = document.createElement('div');
         root4.innerHTML = `
-      <input type="hidden" id="doc-marking" value="STUDENTS" data-ezclassify-rendered />
+      <input type="hidden" id="doc-marking" value="STUDENTS" data-ezclassify-marking />
       <input id="ac" data-ezclassify-controller="tags"
              data-ezclassify-bound-to="doc-marking" />
     `;
@@ -705,10 +704,10 @@ describe('EzClassifyUI store wireup', () => {
         document.body.innerHTML = '';
         const root5 = document.createElement('div');
         root5.innerHTML = `
-      <input type="hidden" id="doc-marking" data-ezclassify-rendered />
+      <input type="hidden" id="doc-marking" data-ezclassify-marking />
       <fieldset id="whole-selector" data-ezclassify-controller="selector"
                 data-ezclassify-bound-to="doc-marking"></fieldset>
-      <input id="typed-marking" name="typed-marking" data-ezclassify-bind
+      <input id="typed-marking" name="typed-marking"
              data-ezclassify-bound-to="doc-marking" />
     `;
         document.body.appendChild(root5);
@@ -745,8 +744,8 @@ describe('EzClassifyUI store wireup', () => {
         document.body.innerHTML = '';
         const root5 = document.createElement('div');
         root5.innerHTML = `
-      <input type="hidden" id="doc-marking" data-ezclassify-rendered />
-      <input id="short-view" value="safe prior value" data-ezclassify-bind
+      <input type="hidden" id="doc-marking" data-ezclassify-marking />
+      <input id="short-view" value="safe prior value"
              data-ezclassify-bound-to="doc-marking"
              data-ezclassify-format="short" />
     `;
@@ -870,8 +869,8 @@ describe('EzClassifyUI store wireup', () => {
         document.body.innerHTML = '';
         const root5 = document.createElement('div');
         root5.innerHTML = `
-      <input type="hidden" id="doc-marking" data-ezclassify-rendered />
-      <input id="short-rollup" value="safe prior value" data-ezclassify-bind
+      <input type="hidden" id="doc-marking" data-ezclassify-marking />
+      <input id="short-rollup" value="safe prior value"
              data-ezclassify-bound-to="doc-marking"
              data-ezclassify-format="short" />
     `;
@@ -1042,8 +1041,8 @@ describe('EzClassifyUI store wireup', () => {
         document.body.innerHTML = '';
         const root5 = document.createElement('div');
         root5.innerHTML = `
-      <input type="hidden" id="doc-marking" data-ezclassify-rendered />
-      <input id="default-view" data-ezclassify-bind
+      <input type="hidden" id="doc-marking" data-ezclassify-marking />
+      <input id="default-view"
              data-ezclassify-bound-to="doc-marking" />
     `;
         document.body.appendChild(root5);
@@ -1158,8 +1157,8 @@ describe('EzClassifyUI store wireup', () => {
         document.body.innerHTML = '';
         const root = document.createElement('div');
         root.innerHTML = `
-      <input type="hidden" id="doc-marking" data-ezclassify-rendered />
-      <input id="typed-view" data-ezclassify-bind
+      <input type="hidden" id="doc-marking" data-ezclassify-marking />
+      <input id="typed-view"
              data-ezclassify-bound-to="doc-marking"
              data-ezclassify-format="short" />
     `;

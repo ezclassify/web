@@ -25,7 +25,7 @@ import { EzClassifyUI } from './ezclassify-ui';
 import type { SingleSelect } from './components/single-select';
 
 const SCOPED_FACET_HTML = `
-  <input type="hidden" id="doc-marking" data-ezclassify-rendered />
+  <input type="hidden" id="doc-marking" data-ezclassify-marking />
   <input id="level" data-ezclassify-controller="select"
          data-ezclassify-facet-of="doc-marking"
          data-ezclassify-category="level" />

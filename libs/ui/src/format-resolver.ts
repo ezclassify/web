@@ -1,10 +1,8 @@
+import { partWholeOf } from './binding-model';
 import type { FormsContext } from './forms/types';
 
 /** Per-field render-format attribute. */
 const FORMAT_ATTR = 'data-ezclassify-format';
-
-/** Names the whole marking a marking host is part of. */
-const PART_OF_ATTR = 'data-ezclassify-part-of';
 
 /**
  * Read the author-declared render-format attribute for a field.
@@ -73,8 +71,9 @@ export function defaultSurfaceOf(
  * The whole the marking a field shows is a part of.
  *
  * A field shows the marking it is bound to or is a facet of, else its own. That
- * marking is a part when its host names a whole in `data-ezclassify-part-of`,
- * which is also what registers it with the store as a part of that whole.
+ * marking is a part when its host sits in a `data-ezclassify-whole` container
+ * other than as the named whole, or names a whole in `data-ezclassify-part-of`
+ * (see `binding-model.ts`).
  *
  * @param field - The field's host element
  * @returns The whole's id, or null when the marking the field shows is no part
@@ -84,7 +83,7 @@ export function wholeOfShownMarking(field: Element): string | null {
         field.getAttribute('data-ezclassify-bound-to') ??
         field.getAttribute('data-ezclassify-facet-of');
     const host = shown ? field.ownerDocument.getElementById(shown) : field;
-    return host?.getAttribute(PART_OF_ATTR) ?? null;
+    return host ? partWholeOf(host) : null;
 }
 
 /**

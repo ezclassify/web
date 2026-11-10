@@ -47,7 +47,7 @@ describe('EzClassifyUI ezclassify:ready event', () => {
 
     it('fires exactly once per EzClassifyUI instance', async () => {
         root.innerHTML = `
-      <input type="hidden" id="doc-marking" data-ezclassify-rendered />
+      <input type="hidden" id="doc-marking" data-ezclassify-marking />
       <input id="ac" data-ezclassify-controller="tags"
              data-ezclassify-bound-to="doc-marking" />
     `;
@@ -66,7 +66,7 @@ describe('EzClassifyUI ezclassify:ready event', () => {
 
     it('fires AFTER every component init() resolves', async () => {
         root.innerHTML = `
-      <input type="hidden" id="doc-marking" data-ezclassify-rendered />
+      <input type="hidden" id="doc-marking" data-ezclassify-marking />
       <input id="ac" data-ezclassify-controller="tags"
              data-ezclassify-bound-to="doc-marking" />
       <input id="level" data-ezclassify-controller="select"
@@ -106,7 +106,7 @@ describe('EzClassifyUI ezclassify:ready event', () => {
 
     it('exposes isReady=false before the sweep settles and true after', async () => {
         root.innerHTML = `
-      <input type="hidden" id="doc-marking" data-ezclassify-rendered />
+      <input type="hidden" id="doc-marking" data-ezclassify-marking />
       <input id="ac" data-ezclassify-controller="tags"
              data-ezclassify-bound-to="doc-marking" />
     `;
@@ -119,7 +119,7 @@ describe('EzClassifyUI ezclassify:ready event', () => {
 
     it('event detail carries markingIds and componentCount', async () => {
         root.innerHTML = `
-      <input type="hidden" id="doc-marking" data-ezclassify-rendered />
+      <input type="hidden" id="doc-marking" data-ezclassify-marking />
       <input id="ac" data-ezclassify-controller="tags"
              data-ezclassify-bound-to="doc-marking" />
       <input id="level" data-ezclassify-controller="select"
@@ -171,7 +171,7 @@ describe('EzClassifyUI ezclassify:ready event', () => {
         const inner = document.createElement('div');
         outer.appendChild(inner);
         inner.innerHTML = `
-      <input type="hidden" id="doc-marking" data-ezclassify-rendered />
+      <input type="hidden" id="doc-marking" data-ezclassify-marking />
     `;
         const outerFired: Event[] = [];
         outer.addEventListener('ezclassify:ready', (e) => outerFired.push(e));
@@ -198,7 +198,7 @@ describe('EzClassifyUI ezclassify:ready event', () => {
         });
         const store = new VanillaEzClassifyStore(stalled);
         root.innerHTML =
-            '<input type="hidden" id="doc-marking" data-ezclassify-rendered value="INTERNAL">';
+            '<input type="hidden" id="doc-marking" data-ezclassify-marking value="INTERNAL">';
         let fired = 0;
         root.addEventListener('ezclassify:ready', () => fired++);
         forms = new EzClassifyUI(engine, { root, store });

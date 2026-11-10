@@ -10,7 +10,7 @@ import { loadMultiScopeRegression } from '../test-fixtures/load-multi-scope-regr
 import { EzClassifyUI } from './ezclassify-ui';
 
 const CHECKLIST_FACET_HTML = `
-  <input type="hidden" id="doc-marking" data-ezclassify-rendered />
+  <input type="hidden" id="doc-marking" data-ezclassify-marking />
   <div id="source-policy-checklist" data-ezclassify-controller="checklist"
        data-ezclassify-facet-of="doc-marking"
        data-ezclassify-scope="office_record"
@@ -147,7 +147,7 @@ describe('CategoryChecklist hydrates from external store publishes', () => {
 
     it('mount after publish: checkbox reflects the pre-existing store state', async () => {
         // Marking host exists first; the publish lands before the checklist mounts.
-        root.innerHTML = `<input type="hidden" id="doc-marking" data-ezclassify-rendered />`;
+        root.innerHTML = `<input type="hidden" id="doc-marking" data-ezclassify-marking />`;
         forms = new EzClassifyUI(loadMultiScopeRegression(), { root });
         await flush();
 

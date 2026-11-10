@@ -176,7 +176,7 @@ function markingHost(value: string): HTMLInputElement {
     const host = document.createElement('input');
     host.type = 'hidden';
     host.id = 'doc-marking';
-    host.setAttribute('data-ezclassify-rendered', '');
+    host.setAttribute('data-ezclassify-marking', '');
     host.value = value;
     return host;
 }

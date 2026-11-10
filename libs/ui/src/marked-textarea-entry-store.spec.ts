@@ -18,7 +18,7 @@ async function mount(
     configure?: (engine: ReturnType<typeof loadMultiScopeRegression>) => void,
 ) {
     document.body.innerHTML =
-        '<div id="root"><input id="document" type="hidden" data-ezclassify-rendered><textarea id="body" data-ezclassify-controller="marked-textarea" data-ezclassify-bound-to="document"></textarea></div>';
+        '<div id="root"><input id="document" type="hidden" data-ezclassify-marking><textarea id="body" data-ezclassify-controller="marked-textarea" data-ezclassify-bound-to="document"></textarea></div>';
     const textarea = document.querySelector('textarea')!;
     textarea.value = text;
     const engine = loadMultiScopeRegression();

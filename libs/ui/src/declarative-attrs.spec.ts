@@ -746,11 +746,11 @@ describe('Declarative attribute system (EzClassifyUI)', () => {
             return wrapper;
         }
 
-        it('an input with only data-ezclassify-bind is tracked without view injection', async () => {
+        it('an input with only data-ezclassify-marking is tracked without view injection', async () => {
             const input = document.createElement('input');
             input.type = 'text';
             input.id = 'plain';
-            input.setAttribute('data-ezclassify-bind', '');
+            input.setAttribute('data-ezclassify-marking', '');
             const wrapper = wrap(input);
 
             const forms = await createForms();
@@ -781,10 +781,9 @@ describe('Declarative attribute system (EzClassifyUI)', () => {
             marking.type = 'hidden';
             marking.id = 'document-marking';
             marking.value = 'A';
-            marking.setAttribute('data-ezclassify-rendered', '');
+            marking.setAttribute('data-ezclassify-marking', '');
 
             const select = document.createElement('select');
-            select.setAttribute('data-ezclassify-bind', '');
             select.setAttribute('data-ezclassify-facet-of', 'document-marking');
             select.setAttribute('data-ezclassify-category', 'level');
             select.append(new Option('Pick a level', ''));
@@ -820,7 +819,7 @@ describe('Declarative attribute system (EzClassifyUI)', () => {
         it('a behavior-only input with data-ezclassify-target tracks the target but injects no view', async () => {
             const input = document.createElement('input');
             input.id = 'targeted';
-            input.setAttribute('data-ezclassify-bind', '');
+            input.setAttribute('data-ezclassify-marking', '');
             input.setAttribute('data-ezclassify-target', 'banner-target');
             const wrapper = wrap(input);
 
@@ -839,7 +838,7 @@ describe('Declarative attribute system (EzClassifyUI)', () => {
         it('a behavior-only element with data-ezclassify-part-of tracks the relationship without view', async () => {
             const input = document.createElement('input');
             input.id = 'portion';
-            input.setAttribute('data-ezclassify-bind', '');
+            input.setAttribute('data-ezclassify-marking', '');
             input.setAttribute('data-ezclassify-part-of', 'whole-banner');
             const wrapper = wrap(input);
 
@@ -858,7 +857,7 @@ describe('Declarative attribute system (EzClassifyUI)', () => {
             const input = document.createElement('input');
             input.type = 'text';
             input.id = 'plain-rollup';
-            input.setAttribute('data-ezclassify-bind', '');
+            input.setAttribute('data-ezclassify-marking', '');
             input.setAttribute('data-ezclassify-category', 'level');
             wrapper.appendChild(input);
             document.body.appendChild(wrapper);
@@ -928,7 +927,7 @@ describe('Declarative attribute system (EzClassifyUI)', () => {
             const input = document.createElement('input');
             input.type = 'text';
             input.id = 'fmt-input';
-            input.setAttribute('data-ezclassify-bind', '');
+            input.setAttribute('data-ezclassify-marking', '');
             input.setAttribute('data-ezclassify-category', 'level');
             input.setAttribute('data-ezclassify-format', 'short');
             wrapper.appendChild(input);
@@ -987,7 +986,7 @@ describe('Declarative attribute system (EzClassifyUI)', () => {
             const input = document.createElement('input');
             input.type = 'text';
             input.id = 'no-fmt-input';
-            input.setAttribute('data-ezclassify-bind', '');
+            input.setAttribute('data-ezclassify-marking', '');
             input.setAttribute('data-ezclassify-category', 'level');
             wrapper.appendChild(input);
             document.body.appendChild(wrapper);
@@ -1036,7 +1035,7 @@ describe('Declarative attribute system (EzClassifyUI)', () => {
 
         it('a behavior-only element with a non-input tag receives no field registration', async () => {
             const div = document.createElement('div');
-            div.setAttribute('data-ezclassify-bind', '');
+            div.setAttribute('data-ezclassify-marking', '');
             div.setAttribute('data-ezclassify-category', 'level');
             const wrapper = wrap(div);
 

@@ -34,7 +34,7 @@ import type { TagInput } from './components/tag-input';
 import type { MarkingField } from './components/marking-field';
 
 const HTML = `
-  <input type="hidden" id="doc-marking" data-ezclassify-rendered />
+  <input type="hidden" id="doc-marking" data-ezclassify-marking />
   <input id="tags" data-ezclassify-controller="tags"
          data-ezclassify-bound-to="doc-marking" />
   <textarea id="marking" data-ezclassify-controller="marking"

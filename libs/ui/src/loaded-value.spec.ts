@@ -195,7 +195,7 @@ it('keeps an unproven string read in bound MF/TI receivers but accepts structure
         },
     });
     const form = document.createElement('form');
-    form.innerHTML = `<input type="hidden" id="loaded" data-ezclassify-rendered><input id="mf" data-ezclassify-controller="marking" data-ezclassify-bound-to="loaded"><input id="ti" data-ezclassify-controller="tags" data-ezclassify-bound-to="loaded">`;
+    form.innerHTML = `<input type="hidden" id="loaded" data-ezclassify-marking><input id="mf" data-ezclassify-controller="marking" data-ezclassify-bound-to="loaded"><input id="ti" data-ezclassify-controller="tags" data-ezclassify-bound-to="loaded">`;
     document.body.append(form);
     const ready = new Promise((resolve) =>
         form.addEventListener('ezclassify:ready', resolve, { once: true }),
@@ -226,7 +226,7 @@ it('keeps an unproven string read in bound MF/TI receivers but accepts structure
     expect(ui.store.get('structured').valid).toBe(true);
     expect('recognition' in ui.store.get('structured')).toBe(false);
     const structured = document.createElement('section');
-    structured.innerHTML = `<input type="hidden" id="structured" data-ezclassify-rendered><input id="mf-structured" data-ezclassify-controller="marking" data-ezclassify-bound-to="structured"><input id="ti-structured" data-ezclassify-controller="tags" data-ezclassify-bound-to="structured">`;
+    structured.innerHTML = `<input type="hidden" id="structured" data-ezclassify-marking><input id="mf-structured" data-ezclassify-controller="marking" data-ezclassify-bound-to="structured"><input id="ti-structured" data-ezclassify-controller="tags" data-ezclassify-bound-to="structured">`;
     form.append(structured);
     await new Promise((resolve) => setTimeout(resolve, 100));
     for (const id of ['mf-structured', 'ti-structured'])
@@ -852,7 +852,7 @@ describe('a loaded marking takes what the engine fixed and says so', () => {
 
     it('shows the same fixed marking, errors and explanation in every bound field', async () => {
         const { form, ui } = await mountRuled(
-            `<input type="hidden" id="doc" data-ezclassify-rendered>
+            `<input type="hidden" id="doc" data-ezclassify-marking>
              <div class="mf"><input id="mf" data-ezclassify-controller="marking" data-ezclassify-bound-to="doc"></div>
              <div class="ti"><input id="ti" data-ezclassify-controller="tags" data-ezclassify-bound-to="doc"></div>`,
             ['doc', 'LEVEL A//TAG-G'],

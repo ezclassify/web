@@ -6,9 +6,10 @@
  * - Behavior layer, engine binding. An element is reported to `onBehavior` when
  *   it carries any `data-ezclassify-*` attribute. The callback receives a
  *   parsed `BehaviorBinding` describing the engine wiring (marking, bound-to,
- *   source, aggregate, target, part-of, facet-of, category, scope, scheme).
- *   Behavior callbacks must not mutate the DOM beyond reading values and
- *   listening for events.
+ *   source, aggregate, translate, target, part-of, facet-of, category, scope,
+ *   scheme). Where the element sits in the marking tree is the binding model's
+ *   call (`binding-model.ts`), not the scanner's. Behavior callbacks must not
+ *   mutate the DOM beyond reading values and listening for events.
  * - View layer, visual treatment. An element is reported to `onView` when it
  *   carries `data-ezclassify-controller="<name>"`. The callback receives the
  *   controller name and an options bag harvested from
@@ -19,6 +20,8 @@
  * guarantees `onBehavior` is called before `onView` so the view layer sees
  * engine binding already wired.
  */
+
+import { isPresent, MARKING_ATTR, STRUCTURAL_ATTRS } from './binding-model';
 
 /** Recognized controller names: the visual-treatment side of the seam. */
 export const CONTROLLER_NAMES = [
@@ -48,28 +51,32 @@ export type ControllerName = (typeof CONTROLLER_NAMES)[number];
 
 /** Parsed binding read off the `data-ezclassify-*` attributes of an element. */
 export interface BehaviorBinding {
-    /** Explicit `data-ezclassify-bind` opt-in (no value required). */
-    bind: boolean;
     /**
-     * `data-ezclassify-rendered` (presence-only). This element IS a rendered
-     * marking object; its DOM `id` is the marking-id.
+     * `data-ezclassify-marking` (presence-only): this element IS a marking; its
+     * DOM `id` is the marking id. A visible text input gets the validation
+     * helper, a hidden input holds the value, any other element shows it.
      */
-    rendered?: boolean;
+    marking: boolean;
     /**
      * `data-ezclassify-bound-to="<id>"`: two-way full-marking view of the named
      * marking.
      */
     boundTo?: string;
-    /**
-     * `data-ezclassify-source="<id>"`: one-way read of the named marking. For
-     * the page-level computed aggregate, use `aggregate` instead.
-     */
+    /** `data-ezclassify-source="<id>"`: one-way read of the named marking. */
     source?: string;
     /**
-     * `data-ezclassify-aggregate` (presence-only); one-way read of the
-     * page-level computed aggregate. No id.
+     * `data-ezclassify-aggregate`: one-way read of a level. Empty for the
+     * instance root (the page); otherwise the id of a whole (its parts'
+     * roll-up) or a collection (its members'). React's `"true"` reads as
+     * empty.
      */
-    aggregate?: boolean;
+    aggregate?: string;
+    /**
+     * `data-ezclassify-translate="<crosswalk id>"`: the view shows its value
+     * translated through that crosswalk. Empty when the Context holds exactly
+     * one crosswalk from its primary scheme.
+     */
+    translate?: string;
     /** `data-ezclassify-category="<id>"` */
     category?: string;
     /** `data-ezclassify-part-of="<id>"` */
@@ -86,7 +93,7 @@ export interface BehaviorBinding {
     target?: string;
     /** `data-ezclassify-scope` (presence-only flag or scope label). */
     scope?: string;
-    /** `data-ezclassify-scheme="<scheme-id>"` */
+    /** `data-ezclassify-scheme="<selector>"`: the Context-local scheme. */
     scheme?: string;
 }
 
@@ -126,7 +133,7 @@ const warnedFrameworkTwoWay = new WeakSet<HTMLElement>();
  * True when the element has any `data-ezclassify-*` attribute (any one implies
  * binding).
  */
-function isBehaviorBound(el: HTMLElement): boolean {
+export function isBehaviorBound(el: HTMLElement): boolean {
     for (let i = 0; i < el.attributes.length; i++) {
         if (el.attributes[i].name.startsWith('data-ezclassify-')) return true;
     }
@@ -159,11 +166,16 @@ function detectFrameworkTwoWay(el: HTMLElement): string | null {
     return null;
 }
 
-function readBinding(el: HTMLElement): BehaviorBinding {
+/**
+ * Read the engine wiring an element declares.
+ *
+ * @param el - Element to read
+ * @returns The parsed binding; axis duplicates keep the first in table order
+ */
+export function readBinding(el: HTMLElement): BehaviorBinding {
     const binding: BehaviorBinding = {
-        bind: el.hasAttribute('data-ezclassify-bind'),
+        marking: isPresent(el, MARKING_ATTR),
     };
-    if (el.hasAttribute('data-ezclassify-rendered')) binding.rendered = true;
 
     const axisPresent = BINDING_AXIS_ATTRS.filter((a) => el.hasAttribute(a));
     if (axisPresent.length > 1 && !warnedAxisDup.has(el)) {
@@ -185,8 +197,11 @@ function readBinding(el: HTMLElement): BehaviorBinding {
         const v = el.getAttribute('data-ezclassify-source');
         if (v) binding.source = v;
     } else if (axis === 'data-ezclassify-aggregate') {
-        binding.aggregate = true;
+        const v = el.getAttribute('data-ezclassify-aggregate')?.trim() ?? '';
+        binding.aggregate = v === 'true' ? '' : v;
     }
+    const translate = el.getAttribute('data-ezclassify-translate');
+    if (translate !== null) binding.translate = translate.trim();
 
     const category = el.getAttribute('data-ezclassify-category');
     if (category) binding.category = category;
@@ -262,11 +277,13 @@ export function harvestControllerOptions(
 export const MOUNT_ROOT_ATTR = 'data-ezclassify-mount-root';
 
 /** All `data-ezclassify-*` attribute selectors the scanner reports on. */
-const EZ_SELECTOR =
-    '[data-ezclassify-controller], [data-ezclassify-bind], [data-ezclassify-rendered], ' +
+export const EZ_SELECTOR =
+    '[data-ezclassify-controller], [data-ezclassify-marking], ' +
     '[data-ezclassify-bound-to], [data-ezclassify-source], [data-ezclassify-aggregate], ' +
-    '[data-ezclassify-category], [data-ezclassify-part-of], [data-ezclassify-facet-of], ' +
-    '[data-ezclassify-target], [data-ezclassify-scope], [data-ezclassify-scheme]';
+    '[data-ezclassify-translate], [data-ezclassify-category], [data-ezclassify-part-of], ' +
+    '[data-ezclassify-facet-of], [data-ezclassify-target], [data-ezclassify-scope], ' +
+    '[data-ezclassify-scheme], [data-ezclassify-whole], [data-ezclassify-collection], ' +
+    '[data-ezclassify-member-of], [data-ezclassify-ignore]';
 
 /**
  * Ownership boundary: an element is owned by the instance whose mount root is
@@ -321,16 +338,24 @@ export function scanElements(
 
 /**
  * Watch `root` for elements added or removed later that carry
- * `data-ezclassify-*` attributes. Added elements owned by `ownerId` run through
- * the behavior/view callbacks; removed elements (and their `data-ezclassify-*`
- * descendants) are reported to `onRemove` so the caller can tear down the
- * components it created for them. Returns the observer so the caller can
- * disconnect on cleanup.
+ * `data-ezclassify-*` attributes, and for changes to the structural attributes
+ * that place an element in the marking tree.
+ *
+ * - Added elements owned by `ownerId` run through the behavior/view callbacks.
+ * - Removed elements (and their `data-ezclassify-*` descendants) are reported to
+ *   `onRemove` so the caller can tear down the components it created for them.
+ * - An element whose structural attribute (`whole`, `part-of`, `collection`,
+ *   `member-of`, `context`, `scheme`, `ignore`, `no-rollup`) changed is
+ *   reported once per batch to `onStructureChange`, so the caller can derive
+ *   its subtree again. An element added in the same batch, or inside another
+ *   reported element, is not reported: that derivation already reads it.
  *
  * A node reported in `removedNodes` that is still connected within `root` was
  * merely RELOCATED (the enhance path moves a keep-visible host into its own
  * wrapper); it is NOT reported to `onRemove`. Only nodes that actually left the
  * observed subtree count as removals.
+ *
+ * @returns The observer, so the caller can disconnect on cleanup
  */
 export function observeNewElements(
     root: HTMLElement,
@@ -338,12 +363,20 @@ export function observeNewElements(
     onBehavior: BehaviorCallback,
     onView: ViewCallback,
     onRemove?: (el: HTMLElement) => void,
+    onStructureChange?: (el: HTMLElement) => void,
 ): MutationObserver {
     const observer = new MutationObserver((mutations) => {
+        const added = new Set<Node>();
+        const restructured = new Set<HTMLElement>();
         for (const m of mutations) {
+            if (m.type === 'attributes') {
+                if (m.target instanceof HTMLElement) restructured.add(m.target);
+                continue;
+            }
             for (let i = 0; i < m.addedNodes.length; i++) {
                 const node = m.addedNodes[i];
                 if (!(node instanceof HTMLElement)) continue;
+                added.add(node);
                 emitOne(node, ownerId, onBehavior, onView);
                 scanElements(node, ownerId, onBehavior, onView);
             }
@@ -373,7 +406,33 @@ export function observeNewElements(
                 }
             }
         }
+        if (!onStructureChange) return;
+        for (const el of restructured) {
+            if (!el.isConnected || !root.contains(el)) continue;
+            let fresh = false;
+            for (const node of added)
+                if (node.contains(el)) {
+                    fresh = true;
+                    break;
+                }
+            if (fresh) continue;
+            // An enclosing element derived again covers this one.
+            let covered = false;
+            for (const other of restructured)
+                if (other !== el && other.contains(el)) {
+                    covered = true;
+                    break;
+                }
+            if (!covered) onStructureChange(el);
+        }
     });
-    observer.observe(root, { childList: true, subtree: true });
+    observer.observe(root, {
+        childList: true,
+        subtree: true,
+        attributes: !!onStructureChange,
+        ...(onStructureChange
+            ? { attributeFilter: [...STRUCTURAL_ATTRS] }
+            : {}),
+    });
     return observer;
 }

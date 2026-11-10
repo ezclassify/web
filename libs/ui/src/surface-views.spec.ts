@@ -79,12 +79,12 @@ describe('plain inputs bound to a marking on that scheme', () => {
     async function mount(shortFormat = 'sensitivity/short') {
         const root = document.createElement('div');
         root.innerHTML = `
-            <input type="hidden" id="doc" data-ezclassify-rendered />
-            <input id="full" data-ezclassify-bind data-ezclassify-bound-to="doc"
+            <input type="hidden" id="doc" data-ezclassify-marking />
+            <input id="full" data-ezclassify-bound-to="doc"
                    data-ezclassify-format="sensitivity/full" />
-            <input id="short" data-ezclassify-bind data-ezclassify-bound-to="doc"
+            <input id="short" data-ezclassify-bound-to="doc"
                    data-ezclassify-format="${shortFormat}" />
-            <input id="plain" data-ezclassify-bind data-ezclassify-bound-to="doc" />`;
+            <input id="plain" data-ezclassify-bound-to="doc" />`;
         document.body.appendChild(root);
         const engine = createEngine();
         forms = new EzClassifyUI(engine as never, { root });
@@ -224,8 +224,8 @@ describe('fields that show a part on that scheme and name no format', () => {
     async function mount(fields: string) {
         const root = document.createElement('div');
         root.innerHTML = `
-            <input type="hidden" id="doc" data-ezclassify-rendered />
-            <input type="hidden" id="para" data-ezclassify-rendered
+            <input type="hidden" id="doc" data-ezclassify-marking />
+            <input type="hidden" id="para" data-ezclassify-marking
                    data-ezclassify-part-of="doc" />
             ${fields}`;
         document.body.appendChild(root);
@@ -253,7 +253,7 @@ describe('fields that show a part on that scheme and name no format', () => {
 
     it('show a part bound to a plain input as the store holds it, asking for no output', async () => {
         const { input } = await mount(`
-            <input id="plain" data-ezclassify-bind data-ezclassify-bound-to="para" />`);
+            <input id="plain" data-ezclassify-bound-to="para" />`);
         const requestOutput = vi.spyOn(forms!.store, 'requestOutput');
 
         await forms!.store.publishRendered('para', 'CONFIDENTIAL // PARTNERS');
@@ -265,7 +265,7 @@ describe('fields that show a part on that scheme and name no format', () => {
 
     it('write the text typed into a part field in the part default', async () => {
         const { engine, input } = await mount(`
-            <input id="portion" data-ezclassify-bind data-ezclassify-part-of="doc" />`);
+            <input id="portion" data-ezclassify-marking data-ezclassify-part-of="doc" />`);
         const process = vi.spyOn(engine, 'process');
 
         const portion = input('portion');

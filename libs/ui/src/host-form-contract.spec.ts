@@ -221,7 +221,7 @@ describe('Host Form Contract: native input events', () => {
 
     it('plain bind: the blur-commit reformat emits a native input event; unchanged value emits none', async () => {
         const engine = createMarkedEngine();
-        root.innerHTML = `<form id="f"><input id="p" data-ezclassify-bind type="text" value="u" /></form>`;
+        root.innerHTML = `<form id="f"><input id="p" data-ezclassify-marking type="text" value="u" /></form>`;
         const forms = new EzClassifyUI(engine as never, { root });
         activeForms.push(forms);
         await wait(80);

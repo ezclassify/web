@@ -16,8 +16,8 @@ const FORM = `<form id="root">
     <input id="title" value="(ST) Title" data-ezclassify-controller="marked-input" data-ezclassify-part-of="document">
     <textarea id="body" data-ezclassify-controller="marked-textarea" data-ezclassify-part-of="document">(SS) First.
 (ST) Second.</textarea>
-    <input type="hidden" id="appendix" value="STUDENTS" data-ezclassify-rendered data-ezclassify-part-of="document">
-    <input type="hidden" id="cover" value="SCHOOL STAFF" data-ezclassify-rendered>
+    <input type="hidden" id="appendix" value="STUDENTS" data-ezclassify-marking data-ezclassify-part-of="document">
+    <input type="hidden" id="cover" value="SCHOOL STAFF" data-ezclassify-marking>
     <div data-ezclassify-controller="banner" data-ezclassify-source="document"></div>
     <div data-ezclassify-controller="banner" data-ezclassify-aggregate="document"></div>
 </form>`;
@@ -129,8 +129,8 @@ describe('seeding marking hosts on mount', () => {
         seeds.clear();
         root.insertAdjacentHTML(
             'beforeend',
-            `<input type="hidden" id="late-cover" value="STUDENTS" data-ezclassify-rendered>
-            <input type="hidden" id="late-part" value="STUDENTS" data-ezclassify-rendered data-ezclassify-part-of="document">
+            `<input type="hidden" id="late-cover" value="STUDENTS" data-ezclassify-marking>
+            <input type="hidden" id="late-part" value="STUDENTS" data-ezclassify-marking data-ezclassify-part-of="document">
             <input id="late-field" value="STUDENTS" data-ezclassify-controller="marking" data-ezclassify-part-of="document">
             <textarea id="late-body" data-ezclassify-controller="marked-textarea" data-ezclassify-part-of="document">(SS) Late.</textarea>`,
         );

@@ -8,9 +8,8 @@
  *
  * - `[data-ezclassify-mount]` / `[data-ezclassify-controller]`: @ezclassify/ui
  *   components (the runtime's rendered widgets and in-place enhanced hosts).
- * - `[data-ezclassify-bind]`: plain native elements two-way-bound by attribute.
- * - `[data-ezclassify-rendered]`: native elements the runtime's text controller
- *   renders engine output into.
+ * - `[data-ezclassify-marking]`: plain native elements that hold a marking by
+ *   attribute.
  * - `[data-ezclassify-powered]`: native elements a developer populates in JS from
  *   EzClassify return data (a manual "powered by" marker).
  *
@@ -269,8 +268,7 @@ const LEGEND_ROWS: Array<{ modifier: string; label: string }> = [
 const MARKER_SELECTOR = [
     '[data-ezclassify-mount]',
     '[data-ezclassify-controller]',
-    '[data-ezclassify-bind]',
-    '[data-ezclassify-rendered]',
+    '[data-ezclassify-marking]',
     '[data-ezclassify-powered]',
 ].join(',');
 const XRAY_KIND_ATTRIBUTE = 'data-ezclassify-xray-kind';
@@ -285,12 +283,7 @@ function markerKind(element: HTMLElement): XrayKind {
     ) {
         return 'component';
     }
-    if (
-        element.hasAttribute('data-ezclassify-bind') ||
-        element.hasAttribute('data-ezclassify-rendered')
-    ) {
-        return 'binding';
-    }
+    if (element.hasAttribute('data-ezclassify-marking')) return 'binding';
     return 'powered';
 }
 
@@ -680,8 +673,7 @@ export function createComponentLocator(
                     'aria-hidden',
                     'data-ezclassify-mount',
                     'data-ezclassify-controller',
-                    'data-ezclassify-bind',
-                    'data-ezclassify-rendered',
+                    'data-ezclassify-marking',
                     'data-ezclassify-powered',
                 ],
             });

@@ -93,7 +93,7 @@ describe('externally published store state reaches bound views', () => {
     beforeEach(() => {
         document.body.innerHTML = '';
         root = document.createElement('div');
-        root.innerHTML = `<input type="hidden" id="${MARKING_ID}" data-ezclassify-rendered />`;
+        root.innerHTML = `<input type="hidden" id="${MARKING_ID}" data-ezclassify-marking />`;
         document.body.appendChild(root);
         forms = null;
     });
@@ -282,8 +282,8 @@ describe('externally published store state reaches bound views', () => {
  * `marked-textarea` uses ordered entry membership rather than this scalar
  * hydration path; its entry editing and source ownership have separate
  * coverage. The producer-only text controller has no hydration step. Plain
- * `data-ezclassify-bind` inputs are a behavior path, not a component view, and
- * are not covered here.
+ * `data-ezclassify-marking` inputs are a behavior path, not a component view,
+ * and are not covered here.
  */
 describe('hydrate-at-mount covers every marking-bound controller', () => {
     let root: HTMLDivElement;
@@ -292,7 +292,7 @@ describe('hydrate-at-mount covers every marking-bound controller', () => {
     beforeEach(() => {
         document.body.innerHTML = '';
         root = document.createElement('div');
-        root.innerHTML = `<input type="hidden" id="${MARKING_ID}" data-ezclassify-rendered />`;
+        root.innerHTML = `<input type="hidden" id="${MARKING_ID}" data-ezclassify-marking />`;
         document.body.appendChild(root);
         forms = null;
     });
