@@ -14,7 +14,7 @@ import {
     useEzClassifyFacet,
     useEzClassifyStore,
     type UseEzClassifyFacetReturn,
-} from '@ezclassify/react';
+} from './index';
 import { EzClassifyStoreProvider } from './useEzClassify';
 import { publishFacetSelection } from '@ezclassify/ui';
 import { openOperations } from '../../../libs/ui/test-fixtures/context-doubles';

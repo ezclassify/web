@@ -16,6 +16,7 @@
  */
 import { describe, it, expect, beforeAll, afterAll, inject } from 'vitest';
 import {
+    SOLE_BUCKET,
     VanillaEzClassifyStore,
     createEzClassifyFacetBinding,
     type FacetState,
@@ -140,7 +141,10 @@ describe('EzClassifyStore over a REST deployment', () => {
         await store.publishAssertions('agg-b', [user(high)]);
         // `max` rollup on the ranked category: the aggregate takes the higher.
         expect(
-            store.getAggregate().assertions.map((a) => a.conceptId),
+            store
+                .getAggregate()
+                .byBucket.get(SOLE_BUCKET)!
+                .assertions.map((a) => a.conceptId),
         ).toContain(high);
     });
 });
