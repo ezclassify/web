@@ -9,7 +9,8 @@
  * plus `data-ezclassify-powered`, so a new attribute added there is found
  * without editing this module. Each element takes one kind:
  *
- * - Components: `@ezclassify/ui` controllers and their mounts;
+ * - Components: `@ezclassify/ui` controllers, their mounts, and the coverage
+ *   action the library renders beside a whole;
  * - Bound markings: elements that hold a marking by `data-ezclassify-marking`;
  * - Structure: whole containers, collections and the other structural attributes
  *   (`part-of`, `member-of`, `context`, `scheme`, `no-rollup`);
@@ -49,6 +50,13 @@ const POWERED_ATTR = 'data-ezclassify-powered';
 
 /** The sibling mount the factory inserts for an interactive controller. */
 const MOUNT_ATTR = 'data-ezclassify-mount';
+
+/**
+ * The coverage action the library renders beside a whole, naming that whole. A
+ * whole can be a hidden input, which leaves this the only thing on the page to
+ * outline for it.
+ */
+const COVERAGE_ACTION_ATTR = 'data-ezclassify-for';
 
 /** Options for {@link createComponentLocator}. */
 export interface ComponentLocatorOptions {
@@ -96,7 +104,7 @@ const STRUCTURE_ATTRS: readonly string[] = STRUCTURAL_ATTRS.filter(
 const KIND_ATTRIBUTES: ReadonlyArray<readonly [XrayKind, readonly string[]]> = [
     ['ignored', [IGNORE_ATTR]],
     ['view', VIEW_ATTRS],
-    ['component', [CONTROLLER_ATTR, MOUNT_ATTR]],
+    ['component', [CONTROLLER_ATTR, MOUNT_ATTR, COVERAGE_ACTION_ATTR]],
     ['marking', [MARKING_ATTR]],
     ['structure', STRUCTURE_ATTRS],
     ['powered', [POWERED_ATTR]],
@@ -119,6 +127,12 @@ const REFERENCE_CONTROLLERS: ReadonlySet<string> = new Set([
     'crosswalk-handbook',
     'context-reference',
 ]);
+
+/** The attributes a chip names after what the element is. */
+const RELATION_ATTRS: readonly string[] = [
+    ...STRUCTURE_ATTRS,
+    COVERAGE_ACTION_ATTR,
+];
 
 /** Controllers that render nothing: their host is a hidden sink. */
 const HEADLESS_CONTROLLERS: ReadonlySet<string> = new Set(['hidden']);
@@ -460,10 +474,9 @@ function attributesText(
 function markerLabel(marker: HTMLElement, kind: XrayKind): string {
     const element = mountedHost(marker) ?? marker;
     const controller = controllerOf(element);
-    const component = componentNameForHost(
-        element,
-        controller as ControllerName | null,
-    );
+    const component = isPresent(element, COVERAGE_ACTION_ATTR)
+        ? 'CoverageAction'
+        : componentNameForHost(element, controller as ControllerName | null);
     const library = component
         ? `@ezclassify/ui: ${component}`
         : '@ezclassify/ui';
@@ -489,7 +502,7 @@ function markerLabel(marker: HTMLElement, kind: XrayKind): string {
         case 'powered':
             return 'powered by EzClassify';
     }
-    return [head, ...attributesText(element, STRUCTURE_ATTRS)].join(' · ');
+    return [head, ...attributesText(element, RELATION_ATTRS)].join(' · ');
 }
 
 /** A hidden input or a headless controller: data with no box to outline. */
@@ -558,11 +571,13 @@ function chipHost(element: HTMLElement, target: HTMLElement): HTMLElement {
     // A bare form control outlines its field row, but only when that row is
     // its alone: a row that is a region of its own (a whole container, say)
     // or holds other fields keeps one outline per region. The control's own
-    // plumbing mount does not count as another field.
+    // plumbing mount and coverage action do not count as another field.
     const parent = element.parentElement;
     const fields = parent
         ? [...parent.querySelectorAll<HTMLElement>(MARKER_SELECTOR)].filter(
-              (marker) => !marker.hasAttribute(MOUNT_ATTR),
+              (marker) =>
+                  !marker.hasAttribute(MOUNT_ATTR) &&
+                  !marker.hasAttribute(COVERAGE_ACTION_ATTR),
           )
         : [];
     return parent &&
@@ -584,7 +599,11 @@ function isPairedPlumbingMount(element: HTMLElement): boolean {
             isRendered(child),
     );
     if (hasRenderedComponent) return false;
-    const enhancedRegion = element.previousElementSibling;
+    // A coverage action mounts directly after the wrapper, ahead of the mount.
+    const previous = element.previousElementSibling;
+    const enhancedRegion = previous?.hasAttribute(COVERAGE_ACTION_ATTR)
+        ? previous.previousElementSibling
+        : previous;
     if (!(enhancedRegion instanceof HTMLElement)) return false;
 
     // Enhancement moves the native controller into a rendered wrapper and

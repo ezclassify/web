@@ -12,6 +12,8 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createComponentLocator } from './component-locator';
 import { adoptedStyleTexts } from '../styles/adopt';
 import { setMountHost } from '../mount-host-registry';
+import { syncCoverageAction } from '../components/coverage-action';
+import type { FormsContext } from '../forms/types';
 
 const ATTRIBUTES_MD = path.resolve(
     import.meta.dirname,
@@ -350,6 +352,93 @@ describe('powered regions', () => {
             target.querySelector<HTMLElement>('#banner')!.dataset
                 .ezclassifyXrayKind,
         ).toBe('view');
+        locator.destroy();
+    });
+});
+
+describe('the coverage action', () => {
+    afterEach(() => {
+        document.body.replaceChildren();
+    });
+
+    const NOT_COVERED = {
+        covered: false,
+        rendered: 'L2',
+        missingLabels: ['L2'],
+        excessLabels: [],
+    } as unknown as Parameters<typeof syncCoverageAction>[4];
+
+    /** Have the library mount its real action on `whole`, and give it a box. */
+    function mountAction(whole: HTMLElement): HTMLElement {
+        const ctx = {
+            root: document,
+            mounted: new WeakMap(),
+            autocompleters: new WeakMap(),
+        } as unknown as FormsContext;
+        syncCoverageAction(ctx, whole.id, whole, 'L1', NOT_COVERED);
+        const action = document.querySelector<HTMLElement>(
+            `.ez-coverage-action[data-ezclassify-for="${whole.id}"]`,
+        )!;
+        rendered(action, 24, 24);
+        return action;
+    }
+
+    it('outlines the action beside a hidden whole, naming that whole', () => {
+        const target = page(
+            '<section id="doc-whole" data-ezclassify-whole="doc"><input type="hidden" id="doc" data-ezclassify-marking></section>',
+        );
+        const action = mountAction(target.querySelector<HTMLElement>('#doc')!);
+        const locator = createComponentLocator({ target, active: true });
+        document.body.append(locator.element);
+
+        expect(action.className).toContain('ez-coverage-action--unseen');
+        expect(action.dataset.ezclassifyXrayKind).toBe('component');
+        expect(action.dataset.ezclassifyXrayLabel).toBe(
+            '@ezclassify/ui: CoverageAction · for: doc',
+        );
+        // The whole has no box of its own, so the legend still lists it.
+        expect(
+            locator.element.querySelector('.ezclassify-locator__hidden-list')
+                ?.textContent,
+        ).toContain('marking #doc');
+        locator.destroy();
+    });
+
+    it('does not outline an action with no box', () => {
+        const target = page(
+            '<input type="hidden" id="doc" data-ezclassify-marking>',
+        );
+        const action = mountAction(target.querySelector<HTMLElement>('#doc')!);
+        rendered(action, 0, 0);
+        const locator = createComponentLocator({ target, active: true });
+        expect(action.hasAttribute('data-ezclassify-xray-kind')).toBe(false);
+        locator.destroy();
+    });
+
+    it('is not another field: a lone field keeps its row outline', () => {
+        const target = page(
+            '<p id="row"><input id="doc" data-ezclassify-marking></p>',
+        );
+        const action = mountAction(target.querySelector<HTMLElement>('#doc')!);
+        const locator = createComponentLocator({ target, active: true });
+        expect(
+            target.querySelector<HTMLElement>('#row')!.dataset
+                .ezclassifyXrayKind,
+        ).toBe('marking');
+        expect(action.dataset.ezclassifyXrayKind).toBe('component');
+        locator.destroy();
+    });
+
+    it('leaves the plumbing mount after it paired with the enhanced field', () => {
+        const target = page(
+            '<div><div id="wrap" class="marked-input-wrap"><input id="doc" data-ezclassify-controller="marked-input"></div><div id="mount" data-ezclassify-mount="marked-input"></div></div>',
+        );
+        const mount = target.querySelector<HTMLElement>('#mount')!;
+        const action = mountAction(target.querySelector<HTMLElement>('#doc')!);
+        expect(action.nextElementSibling).toBe(mount);
+        const locator = createComponentLocator({ target, active: true });
+        expect(mount.hasAttribute('data-ezclassify-xray-kind')).toBe(false);
+        expect(action.dataset.ezclassifyXrayKind).toBe('component');
         locator.destroy();
     });
 });
