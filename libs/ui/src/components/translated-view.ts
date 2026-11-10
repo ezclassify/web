@@ -32,7 +32,6 @@ import type {
     CrosswalkOutcome,
     CrosswalkSelectionOutcome,
     CrosswalkTranslationResult,
-    MaybePromise,
     ValidationError,
 } from '@ezclassify/types';
 import type {
@@ -48,33 +47,6 @@ import translatedViewCss from './translated-view.css?inline';
 
 /** The host attribute that declares a translated view. */
 export const TRANSLATE_ATTRIBUTE = 'data-ezclassify-translate';
-
-/**
- * One crosswalk a Context holds: crosswalk `id` at `version` translates from
- * the scheme selected by `source` to the scheme selected by `target`. The
- * selectors are the Context-local keys {@link ContextAdapter.describeSchemes}
- * reports.
- *
- * Pending in the contract as `ContextAdapter.describeCrosswalks()`, the
- * crosswalk counterpart of `describeSchemes()`. Only the bare form needs it; a
- * named crosswalk translates without it.
- */
-export interface ContextCrosswalkDescriptor {
-    /** Crosswalk artifact id, as `translate` takes it. */
-    id: string;
-    /** Crosswalk artifact version. */
-    version: string;
-    /** Selector of the scheme it translates from. */
-    source: string;
-    /** Selector of the scheme it translates to. */
-    target: string;
-}
-
-type CrosswalkDescribing = {
-    describeCrosswalks?: () => MaybePromise<
-        readonly ContextCrosswalkDescriptor[]
-    >;
-};
 
 /**
  * A translated view whose markup cannot be served: the field stays unenhanced
@@ -108,15 +80,8 @@ export async function resolveCrosswalkId(
     schemeSelector?: string,
 ): Promise<string> {
     if (named) return named;
-    const describe = (context as ContextAdapter & CrosswalkDescribing)
-        .describeCrosswalks;
-    if (typeof describe !== 'function') {
-        throw new TranslateHostError(
-            `${TRANSLATE_ATTRIBUTE} needs a crosswalk id: this Context does not list its crosswalks.`,
-        );
-    }
     const selector = schemeSelector || (await primarySelector(context));
-    const crosswalks = await describe.call(context);
+    const crosswalks = await context.describeCrosswalks();
     const from = crosswalks.filter((c) => c.source === selector);
     if (from.length === 1) return from[0].id;
     if (from.length === 0) {

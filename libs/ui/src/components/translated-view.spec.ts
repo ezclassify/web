@@ -12,6 +12,7 @@ import { describe, expect, it, vi } from 'vitest';
 import type {
     ContextAdapter,
     ContextOperationResult,
+    ContextCrosswalkDescriptor,
     ContextSchemeDescriptor,
     CrosswalkCompletedTranslationResult,
     CrosswalkTranslationInput,
@@ -22,7 +23,6 @@ import {
     TranslateHostError,
     TranslatedView,
     resolveCrosswalkId,
-    type ContextCrosswalkDescriptor,
 } from './translated-view';
 
 const SOURCE = { kind: 'scheme' as const, id: 'tier', version: '1.0.0' };
@@ -41,7 +41,7 @@ type Translate = (
 ) => Promise<ContextOperationResult<CrosswalkTranslationResult>>;
 
 interface FixtureOptions {
-    crosswalks?: ContextCrosswalkDescriptor[] | null;
+    crosswalks?: ContextCrosswalkDescriptor[];
     schemes?: ContextSchemeDescriptor[];
     translate?: Translate;
 }
@@ -105,20 +105,29 @@ function partial(): CrosswalkCompletedTranslationResult {
     };
 }
 
+/** A crosswalk the fixture Context lists, with no mappings of its own. */
+function crosswalk(
+    id: string,
+    source: string,
+    target: string,
+): ContextCrosswalkDescriptor {
+    return {
+        id,
+        version: '1.0.0',
+        name: id,
+        source,
+        target,
+        mappings: [],
+        selections: [],
+    };
+}
+
 function fixtureContext(options: FixtureOptions = {}): ContextAdapter & {
     translate: ReturnType<typeof vi.fn>;
 } {
-    const crosswalks =
-        options.crosswalks === undefined
-            ? [
-                  {
-                      id: 'tier-to-label',
-                      version: '1.0.0',
-                      source: 'tier',
-                      target: 'label',
-                  },
-              ]
-            : options.crosswalks;
+    const crosswalks = options.crosswalks ?? [
+        crosswalk('tier-to-label', 'tier', 'label'),
+    ];
     const context = {
         connected: true,
         scheme: {
@@ -137,10 +146,8 @@ function fixtureContext(options: FixtureOptions = {}): ContextAdapter & {
         translate: vi.fn(
             options.translate ?? (async () => envelope(partial())),
         ),
+        describeCrosswalks: async () => crosswalks,
         destroy: vi.fn(),
-        ...(crosswalks === null
-            ? {}
-            : { describeCrosswalks: async () => crosswalks }),
     };
     return context as unknown as ContextAdapter & {
         translate: ReturnType<typeof vi.fn>;
@@ -411,18 +418,8 @@ describe('resolveCrosswalkId', () => {
     it('takes the one crosswalk from the primary scheme when bare', async () => {
         const context = fixtureContext({
             crosswalks: [
-                {
-                    id: 'label-to-tier',
-                    version: '1',
-                    source: 'label',
-                    target: 'tier',
-                },
-                {
-                    id: 'tier-to-label',
-                    version: '1',
-                    source: 'tier',
-                    target: 'label',
-                },
+                crosswalk('label-to-tier', 'label', 'tier'),
+                crosswalk('tier-to-label', 'tier', 'label'),
             ],
         });
         await expect(resolveCrosswalkId(context, '')).resolves.toBe(
@@ -433,18 +430,8 @@ describe('resolveCrosswalkId', () => {
     it('reads from the view scheme selector when the view sets one', async () => {
         const context = fixtureContext({
             crosswalks: [
-                {
-                    id: 'label-to-tier',
-                    version: '1',
-                    source: 'label',
-                    target: 'tier',
-                },
-                {
-                    id: 'tier-to-label',
-                    version: '1',
-                    source: 'tier',
-                    target: 'label',
-                },
+                crosswalk('label-to-tier', 'label', 'tier'),
+                crosswalk('tier-to-label', 'tier', 'label'),
             ],
         });
         await expect(resolveCrosswalkId(context, '', 'label')).resolves.toBe(
@@ -461,19 +448,13 @@ describe('resolveCrosswalkId', () => {
     it('refuses a bare view when several crosswalks leave the scheme', async () => {
         const context = fixtureContext({
             crosswalks: [
-                { id: 'a', version: '1', source: 'tier', target: 'label' },
-                { id: 'b', version: '1', source: 'tier', target: 'other' },
+                crosswalk('a', 'tier', 'label'),
+                crosswalk('b', 'tier', 'other'),
             ],
         });
         await expect(resolveCrosswalkId(context, '')).rejects.toThrow(
             /several crosswalks .*\(a, b\)/,
         );
-    });
-
-    it('refuses a bare view on a Context that does not list its crosswalks', async () => {
-        await expect(
-            resolveCrosswalkId(fixtureContext({ crosswalks: null }), ''),
-        ).rejects.toBeInstanceOf(TranslateHostError);
     });
 
     it('mounts a bare view through the one crosswalk', async () => {

@@ -26,6 +26,7 @@ function contextHolding(
         } as unknown as ContextSchemeEngineAdapter,
         describeSchemes:
             typeof schemes === 'function' ? schemes : () => schemes,
+        describeCrosswalks: unavailable,
         audit: unavailable,
         checkContextAccess: unavailable,
         accessRequirements: unavailable,
