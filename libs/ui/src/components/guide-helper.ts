@@ -633,23 +633,15 @@ export class GuideChecklist extends ReadOnlyComponentBase {
     }
 
     /**
-     * Nominate each hit's rule in the guide that holds it. A hit names its
-     * guide when the scan covered several; with one guide loaded, an untagged
-     * hit is that guide's. A hit no loaded guide holds nominates nothing, so a
-     * rule id two guides share never nominates the other guide's rule.
+     * Nominate each hit's rule in the guide it names. A hit no loaded guide
+     * holds nominates nothing, so a rule id two guides share never nominates
+     * the other guide's rule.
      */
     private updateScanNominations(results: GuideScanResult[]): void {
-        const soleGuideId =
-            this.views.length === 1 ? this.views[0].id : undefined;
         this.nominatedRules = new Set();
-        for (const result of results) {
-            const guideId = result.guideId ?? soleGuideId;
-            if (
-                !guideId ||
-                !this.rulesByGuide.get(guideId)?.has(result.rule.id)
-            )
-                continue;
-            this.nominatedRules.add(selectionKey(guideId, result.rule.id));
+        for (const { guideId, rule } of results) {
+            if (!this.rulesByGuide.get(guideId)?.has(rule.id)) continue;
+            this.nominatedRules.add(selectionKey(guideId, rule.id));
         }
         const count = this.nominatedRules.size;
         if (count > 0) {

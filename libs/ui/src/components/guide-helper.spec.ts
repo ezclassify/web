@@ -287,11 +287,11 @@ describe('GuideChecklist', () => {
         expect(status.textContent).toContain('No rules nominated');
     });
 
-    it('does not nominate an untagged hit when several guides are loaded', async () => {
-        await init({
-            guides: [TEST_GUIDE_VIEW, { ...TEST_GUIDE_VIEW, id: 'other' }],
-        });
-        const scan = vi.fn(() => [{ rule: { id: 'rule-a' } }]);
+    it('does not nominate a hit whose guide is not loaded', async () => {
+        await init();
+        const scan = vi.fn(() => [
+            { rule: { id: 'rule-a' }, guideId: 'another-guide' },
+        ]);
         (
             checklist as unknown as { guideAdapter: { scan: typeof scan } }
         ).guideAdapter = { scan };
@@ -481,8 +481,8 @@ describe('GuideChecklist', () => {
         const mockGuideAdapter = {
             evaluateMany: vi.fn(),
             scan: vi.fn(() => [
-                { rule: { id: 'rule-a' } },
-                { rule: { id: 'rule-b' } },
+                { rule: { id: 'rule-a' }, guideId: TEST_GUIDE_VIEW.id },
+                { rule: { id: 'rule-b' }, guideId: TEST_GUIDE_VIEW.id },
             ]),
         };
         (
@@ -522,9 +522,13 @@ describe('GuideChecklist', () => {
 
         const oldRequest = checklist.analyzeText('old');
         const newRequest = checklist.analyzeText('new');
-        newScan.resolve([{ rule: { id: 'rule-b' } }]);
+        newScan.resolve([
+            { rule: { id: 'rule-b' }, guideId: TEST_GUIDE_VIEW.id },
+        ]);
         await newRequest;
-        oldScan.resolve([{ rule: { id: 'rule-a' } }]);
+        oldScan.resolve([
+            { rule: { id: 'rule-a' }, guideId: TEST_GUIDE_VIEW.id },
+        ]);
         await oldRequest;
 
         expect(
@@ -956,12 +960,13 @@ describe('GuideChecklist', () => {
         it('accepts text analysis while remote views are still loading', async () => {
             const pending = deferred<GuideStructuralView[]>();
             await initRemote(pending.promise);
-            const scan = vi.fn(() => [{ rule: { id: 'rule-a' } }]);
+            const hit = { rule: { id: 'rule-a' }, guideId: TEST_GUIDE_VIEW.id };
+            const scan = vi.fn(() => [hit]);
             (
                 checklist as unknown as { guideAdapter: { scan: typeof scan } }
             ).guideAdapter = { scan };
             await expect(checklist.analyzeText('alpha')).resolves.toEqual([
-                { rule: { id: 'rule-a' } },
+                hit,
             ]);
             pending.resolve([TEST_GUIDE_VIEW]);
             await vi.waitFor(() =>

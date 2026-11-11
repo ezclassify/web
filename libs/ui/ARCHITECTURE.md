@@ -184,7 +184,7 @@ markup uses. Each marking is read in one bucket, the pair
    the selector the Context's `describeSchemes` and REST `?scheme=` use, not a
    global scheme id. Without it, the Context's primary scheme. Each bucket is
    read by the Context's view of its scheme (`context.scheme` for the
-   primary, `context.schemeView(selector)` for another), and a selector the
+   primary, `context.schemes.get(selector)` for another), and a selector the
    Context does not hold is a host error.
 3. A part is read in its whole's bucket. A `part-of` that crosses Contexts or
    schemes is a host error.

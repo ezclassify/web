@@ -373,7 +373,7 @@ export class TranslatedView implements ComponentInstance {
             const selector = this.options.schemeSelector;
             const scheme = (
                 selector
-                    ? this.context.schemeView(selector)
+                    ? this.context.schemes.get(selector)
                     : this.context.scheme
             ).getScheme();
             if (scheme.id === result.sourceScheme.id) {

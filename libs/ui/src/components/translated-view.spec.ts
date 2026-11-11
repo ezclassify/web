@@ -233,10 +233,12 @@ describe('TranslatedView', () => {
         const tier = context.scheme.getScheme();
         Object.assign(context, {
             scheme: { getScheme: () => ({ id: 'label', concepts: [] }) },
-            schemeView: (selector: string) => {
-                if (selector !== 'tier')
-                    throw new Error(`no scheme ${selector}`);
-                return { getScheme: () => tier };
+            schemes: {
+                get: (selector: string) => {
+                    if (selector !== 'tier')
+                        throw new Error(`no scheme ${selector}`);
+                    return { getScheme: () => tier };
+                },
             },
         });
         const view = new TranslatedView();

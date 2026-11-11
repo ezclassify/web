@@ -488,19 +488,27 @@ describe('a field that selects a scheme', () => {
                 roles: ['crosswalk-target'],
             },
         ];
-        const schemeView = vi.fn((selector: string) => {
+        const get = vi.fn((selector: string) => {
             if (selector === 'ref-scheme-2') return target;
             throw new Error(`no scheme '${selector}'`);
         });
-        const proxied = new Proxy(context, {
-            get(on, property, receiver) {
+        // The Context holds `schemes` as a frozen property, which a proxy over
+        // it could not answer differently, so the proxy stands over an empty
+        // object and forwards everything else to the Context.
+        const proxied = new Proxy({} as typeof context, {
+            get(_, property) {
                 if (property === 'describeSchemes') return () => schemes;
-                if (property === 'schemeView') return schemeView;
-                const value = Reflect.get(on, property, receiver);
-                return typeof value === 'function' ? value.bind(on) : value;
+                if (property === 'schemes') return { get };
+                const value = Reflect.get(context, property, context);
+                return typeof value === 'function'
+                    ? value.bind(context)
+                    : value;
+            },
+            has(_, property) {
+                return Reflect.has(context, property);
             },
         });
-        return { context: proxied, schemeView };
+        return { context: proxied, schemesGet: get };
     }
 
     const twoSchemes = `
@@ -514,13 +522,13 @@ describe('a field that selects a scheme', () => {
 
     it("marks in the Context's second scheme, in its own bucket", async () => {
         root.innerHTML = twoSchemes;
-        const { context, schemeView } = crosswalking();
+        const { context, schemesGet } = crosswalking();
         const ui = mount(context);
         await expect.poll(() => output('first-page').value).toBe('HIGH');
         await expect.poll(() => output('second-page').value).toBe('LOW//ALPHA');
 
         expect(hostErrors()).toEqual([]);
-        expect(schemeView).toHaveBeenCalledWith('ref-scheme-2');
+        expect(schemesGet).toHaveBeenCalledWith('ref-scheme-2');
         const page = ui.store.getAggregate().byBucket;
         expect([...page.keys()].sort()).toEqual(
             [bucketKey('', ''), bucketKey('', 'ref-scheme-2')].sort(),

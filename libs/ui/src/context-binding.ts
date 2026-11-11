@@ -31,7 +31,7 @@
  * reports and REST `?scheme=` takes). Without it an element marks in the
  * Context's primary scheme, and naming the primary's selector is the same as
  * naming nothing. An element marks in whichever scheme it selects: the primary
- * through `context.scheme`, any other through `context.schemeView(selector)`.
+ * through `context.scheme`, any other through `context.schemes.get(selector)`.
  *
  * Both attributes are read from the element itself and its ancestors up to the
  * instance root, never beyond it: markup above the root belongs to whatever
@@ -439,17 +439,17 @@ export class ContextSet {
 
 /**
  * The scheme operations for a resolved element: the Context's primary view, or
- * the view `schemeView` binds to the selected scheme. The selector picks the
+ * the view `schemes.get` gives for the selected scheme. The selector picks the
  * view; operations on it take none.
  *
  * {@link ContextSet.resolve} has already checked the selector against the
- * schemes the Context lists, so a Context that still refuses the view is a
- * fault in the Context. It is reported as `scheme-unresolved`, never answered
+ * schemes the Context lists, so a local Context that still refuses the view is
+ * a fault in the Context. It is reported as `scheme-unresolved`, never answered
  * with the primary.
  *
  * @param resolved - What {@link ContextSet.resolve} returned for the element
  * @param element - The element, carried on the error
- * @throws ContextResolutionError when the Context gives no view for the scheme
+ * @throws ContextResolutionError when the Context refuses the scheme
  */
 export function schemeEngineOf(
     resolved: ResolvedContext,
@@ -486,7 +486,7 @@ const schemeBoundContexts = new WeakMap<
  *
  * @param resolved - What {@link ContextSet.resolve} returned for the element
  * @param element - The element, carried on the error
- * @throws ContextResolutionError when the Context gives no view for the scheme
+ * @throws ContextResolutionError when the Context refuses the scheme
  */
 export function contextForScheme(
     resolved: ResolvedContext,
@@ -525,7 +525,7 @@ export function contextForScheme(
  * The buckets of a store over the Contexts an `EzClassifyUI` is given, each
  * read by the scheme its key names: a Context's primary scheme through
  * `context.scheme`, another scheme it holds through
- * `context.schemeView(selector)`. A framework root that builds its own store
+ * `context.schemes.get(selector)`. A framework root that builds its own store
  * hands it this, so the store reads every bucket the way the runtime resolves
  * it, including a field marked in a Context's second scheme.
  *
@@ -571,9 +571,14 @@ export function contextStoreBuckets(
 }
 
 /**
- * The view a Context binds to one of its non-primary schemes. A Context that
- * gives none (it does not hold the selector, or cannot bind it) is refused as
- * `scheme-unresolved`, never answered with the primary.
+ * The view a Context gives for one of its non-primary schemes, never the
+ * primary in its place. A local Context holds the composition and refuses a
+ * selector it lacks, which is reported as `scheme-unresolved`. A remote Context
+ * does not check: the view it returns sends the selector with each request and
+ * the server answers one it lacks with `scheme_not_found`, so that refusal
+ * arrives from the operation. {@link ContextSet.resolve} reads the Context's
+ * list first, so markup naming an unlisted selector is a host error either
+ * way.
  */
 function viewOf(
     context: ContextAdapter,
@@ -581,7 +586,7 @@ function viewOf(
     element: Element | null,
 ): ContextSchemeEngineAdapter {
     try {
-        return context.schemeView(selector);
+        return context.schemes.get(selector);
     } catch (err) {
         throw new ContextResolutionError(
             'scheme-unresolved',

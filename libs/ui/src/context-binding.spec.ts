@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import type {
     ContextAdapter,
     ContextSchemeDescriptor,
@@ -34,15 +34,20 @@ function contextHolding(
     return {
         connected: true,
         scheme: primary,
-        schemeView: (selector: string) => {
-            const listed = Array.isArray(schemes)
-                ? schemes.find((s) => s.selector === selector)
-                : undefined;
-            if (!listed || listed.roles.includes('primary'))
-                throw new Error(`no scheme view '${selector}'`);
-            if (!views.has(selector))
-                views.set(selector, viewOf(listed.id, `${selector}-format`));
-            return views.get(selector)!;
+        schemes: {
+            get: (selector: string) => {
+                const listed = Array.isArray(schemes)
+                    ? schemes.find((s) => s.selector === selector)
+                    : undefined;
+                if (!listed || listed.roles.includes('primary'))
+                    throw new Error(`no scheme view '${selector}'`);
+                if (!views.has(selector))
+                    views.set(
+                        selector,
+                        viewOf(listed.id, `${selector}-format`),
+                    );
+                return views.get(selector)!;
+            },
         },
         describeSchemes:
             typeof schemes === 'function' ? schemes : () => schemes,
@@ -257,7 +262,7 @@ describe('ContextSet.resolve', () => {
         expect(resolved.primary).toBe(false);
         expect(resolved.bucket).toBe(bucketKey('', 'tier'));
         const engine = schemeEngineOf(resolved, field);
-        expect(engine).toBe(context.schemeView('tier'));
+        expect(engine).toBe(context.schemes.get('tier'));
         expect(engine).not.toBe(context.scheme);
         expect(engine.getScheme().id).toBe('scheme-b');
     });
@@ -294,6 +299,23 @@ describe('ContextSet.resolve', () => {
 
         expect(err.code).toBe('scheme-unresolved');
         expect(err.message).toContain('base, tier');
+    });
+
+    it("refuses a selector the Context's list lacks even when its schemes.get would give a view", () => {
+        const get = vi.fn(() => ({}) as ContextSchemeEngineAdapter);
+        const set = ContextSet.from({
+            ...contextHolding(CROSSWALK_SCHEMES),
+            schemes: { get },
+        });
+        set.load();
+        const { root, field } = tree({
+            section: { 'data-ezclassify-scheme': 'other' },
+        });
+
+        expect(resolutionError(() => set.resolve(field, root)).code).toBe(
+            'scheme-unresolved',
+        );
+        expect(get).not.toHaveBeenCalled();
     });
 
     it('holds a declared selector until a remote Context has listed its schemes', async () => {
@@ -375,7 +397,7 @@ describe('contextStoreBuckets', () => {
         const primary = buckets.resolve(bucketKey('', ''));
         const second = buckets.resolve(bucketKey('', 'tier'));
         expect(primary.engine).toBe(context.scheme);
-        expect(second.engine).toBe(context.schemeView('tier'));
+        expect(second.engine).toBe(context.schemes.get('tier'));
         // No host format: each bucket names none, as a store over that scheme
         // alone, and the store writes in the scheme's own default.
         expect(primary).not.toHaveProperty('format');
@@ -391,8 +413,20 @@ describe('contextStoreBuckets', () => {
 
         expect(buckets.defaultBucket).toBeUndefined();
         const second = buckets.resolve(bucketKey('capco', 'tier'));
-        expect(second.engine).toBe(capco.schemeView('tier'));
+        expect(second.engine).toBe(capco.schemes.get('tier'));
         expect(second.format).toBe('host-format');
+    });
+
+    it('reads a bucket a remote Context does not check through that key, never the primary', () => {
+        const view = {} as ContextSchemeEngineAdapter;
+        const get = vi.fn(() => view);
+        const buckets = contextStoreBuckets({
+            ...contextHolding(CROSSWALK_SCHEMES),
+            schemes: { get },
+        });
+
+        expect(buckets.resolve(bucketKey('', 'other')).engine).toBe(view);
+        expect(get).toHaveBeenCalledWith('other');
     });
 
     it('refuses a bucket for a scheme the Context does not hold', () => {
@@ -432,7 +466,7 @@ describe('contextForScheme', () => {
         const context = Object.freeze(contextHolding(CROSSWALK_SCHEMES));
         const bound = contextForScheme(resolved(context, 'tier'));
 
-        expect(bound.scheme).toBe(context.schemeView('tier'));
+        expect(bound.scheme).toBe(context.schemes.get('tier'));
         expect(bound.scheme.getScheme().id).toBe('scheme-b');
         expect('audit' in bound).toBe(true);
         expect(bound.describeSchemes).toBeTypeOf('function');
