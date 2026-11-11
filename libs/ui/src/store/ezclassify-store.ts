@@ -650,6 +650,16 @@ export interface EzClassifyStore extends Partial<MarkingEntriesStore> {
     setPartOf(markingId: string, wholeId: string | null): void;
 
     /**
+     * Hold a marking as a part whose whole is not on the page, or stop. The
+     * marking is read in the part role and written in the part format like any
+     * other part, so views can read it through {@link get}. It has no whole to
+     * roll up into and no level holds it, so it feeds no rollup. A marking
+     * {@link setPartOf} placed in a whole is that whole's part whatever this
+     * says. Idempotent.
+     */
+    setStandalonePart(markingId: string, standalone: boolean): void;
+
+    /**
      * Place a marking in a bucket: the Context and scheme it is read in. A
      * marking nobody placed is in the store's default bucket; with no default,
      * a seed or publish to it is refused.

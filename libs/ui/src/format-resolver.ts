@@ -79,22 +79,39 @@ export function defaultSurfaceOf(
  * @returns The whole's id, or null when the marking the field shows is no part
  */
 export function wholeOfShownMarking(field: Element): string | null {
-    const shown =
-        field.getAttribute('data-ezclassify-bound-to') ??
-        field.getAttribute('data-ezclassify-facet-of');
-    const host = shown ? field.ownerDocument.getElementById(shown) : field;
+    const host = hostOfShownMarking(field);
     return host ? partWholeOf(host) : null;
 }
 
 /**
- * Whether the marking a field shows is a part of another marking (see
- * {@link wholeOfShownMarking}).
+ * Whether the marking a field shows is a part with no whole on the page (see
+ * `isStandalonePart`).
+ *
+ * @param field - The field's host element
+ * @returns True when the marking the field shows has no whole to read against
+ */
+export function showsStandalonePart(field: Element): boolean {
+    const host = hostOfShownMarking(field);
+    return !!host && isStandalonePart(host);
+}
+
+/**
+ * Whether the marking a field shows is a part: of another marking (see
+ * {@link wholeOfShownMarking}), or with no whole on the page.
  *
  * @param field - The field's host element
  * @returns True when the marking the field shows is a part
  */
 export function holdsPart(field: Element): boolean {
-    return wholeOfShownMarking(field) !== null;
+    return wholeOfShownMarking(field) !== null || showsStandalonePart(field);
+}
+
+/** The host of the marking a field is bound to or a facet of, else the field. */
+function hostOfShownMarking(field: Element): Element | null {
+    const shown =
+        field.getAttribute('data-ezclassify-bound-to') ??
+        field.getAttribute('data-ezclassify-facet-of');
+    return shown ? field.ownerDocument.getElementById(shown) : field;
 }
 
 /**
@@ -105,7 +122,5 @@ export function holdsPart(field: Element): boolean {
 export function getFormat(ctx: FormsContext, field: HTMLInputElement): string {
     const dataFormat = resolveFormatAttr(field);
     if (dataFormat && dataFormat.length > 0) return dataFormat;
-    return holdsPart(field) || isStandalonePart(field)
-        ? ctx.defaultPartFormat
-        : ctx.defaultFormat;
+    return holdsPart(field) ? ctx.defaultPartFormat : ctx.defaultFormat;
 }

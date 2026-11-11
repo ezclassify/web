@@ -57,13 +57,6 @@ export const VIEW_ATTRS = [
     'data-ezclassify-translate',
 ] as const;
 
-/** The view attributes that name one marking to show. */
-const SHOWN_MARKING_ATTRS = [
-    'data-ezclassify-bound-to',
-    'data-ezclassify-facet-of',
-    'data-ezclassify-source',
-] as const;
-
 /**
  * Attributes whose change re-derives the subtree they sit on: each one moves a
  * host between levels, Contexts or buckets, or in or out of the tree.
@@ -146,8 +139,6 @@ export type HostErrorCode =
      * container names, a member of a collection, or a body editor.
      */
     | 'part-role-refused'
-    /** A view of a marking host that holds a part with no whole on the page. */
-    | 'view-of-standalone-part'
     /** A marking host that resolves no Context. */
     | 'context-unresolved'
     /**
@@ -287,7 +278,7 @@ export function isMarkingController(el: Element): boolean {
 /**
  * Whether a marking host holds a part whose whole is not on the page: it
  * declares `role="part"` and structure names no whole. It reads in the part
- * role and stays outside the store, so it feeds no level.
+ * role and the store holds it for its views, but it feeds no level.
  *
  * @param el - Element to read
  * @returns True for a part with no whole on the page
@@ -563,17 +554,6 @@ export function classify(el: HTMLElement, root: HTMLElement): BindingNode {
                     `${describe(el)} declares ${MARKING_ATTR} and ${view}. A view shows a marking; it is not one.`,
                 ),
             };
-        const shown = shownStandalonePart(el);
-        if (shown)
-            return {
-                ...base,
-                kind: 'view',
-                error: hostError(
-                    el,
-                    'view-of-standalone-part',
-                    `${describe(el)} shows "${shown}", a part with no whole on the page. Such a part is read by its own field alone; name its whole, or remove ${ROLE_ATTR}.`,
-                ),
-            };
         return { ...base, kind: 'view' };
     }
 
@@ -626,14 +606,6 @@ function bodyEditorPartRole(el: HTMLElement): HostError {
     );
 }
 
-/** A hidden input with no controller: it holds a marking's value and reads none. */
-function holdsDataOnly(el: HTMLElement): boolean {
-    return (
-        !el.hasAttribute(CONTROLLER_ATTR) &&
-        (el as HTMLInputElement).type === 'hidden'
-    );
-}
-
 /** The refusal for a marking host that cannot read in the part role, if any. */
 function refusePartRole(
     el: HTMLElement,
@@ -655,27 +627,7 @@ function refusePartRole(
             'part-role-refused',
             `${describe(el)} declares ${ROLE_ATTR}="part" and is a member of "${memberOf}". A collection holds wholes.`,
         );
-    if (holdsDataOnly(el))
-        return hostError(
-            el,
-            'part-role-refused',
-            `${describe(el)} is a hidden input and declares ${ROLE_ATTR}="part". A part with no whole is read by its own field, and a hidden input has none.`,
-        );
     return undefined;
-}
-
-/**
- * The id of the part with no whole on the page a view shows, or null. Such a
- * part holds no state a view could read (see {@link isStandalonePart}).
- */
-function shownStandalonePart(el: HTMLElement): string | null {
-    for (const attr of SHOWN_MARKING_ATTRS) {
-        const id = valueOf(el, attr);
-        if (!id || id === el.id) continue;
-        const target = el.ownerDocument.getElementById(id);
-        if (target && isStandalonePart(target)) return id;
-    }
-    return null;
 }
 
 /** Classify a marking host: a part, or a whole in a collection. */

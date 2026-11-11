@@ -79,7 +79,6 @@ import {
     errorLevelOf,
     isMarkingController,
     isMarkingHost,
-    isStandalonePart,
     listsBuckets,
     placeNestedRoot,
     COLLECTION_ATTR,
@@ -113,6 +112,7 @@ import {
     holdsPart,
     resolveFormatAttr,
     resolveOutput,
+    showsStandalonePart,
     wholeOfShownMarking,
 } from './format-resolver';
 import { renderViewRefusalMessages, renderViewRefused } from './render-refusal';
@@ -176,7 +176,6 @@ const REFERENCE_ERRORS: ReadonlySet<string> = new Set<HostErrorCode>([
     'part-of-not-whole',
     'part-of-across-contexts',
     'no-rollup-on-whole-with-parts',
-    'view-of-standalone-part',
     'duplicate-marking-id',
 ]);
 
@@ -1212,10 +1211,7 @@ export class EzClassifyUI {
             }
             this.hostEpochs.set(el, (this.hostEpochs.get(el) ?? 0) + 1);
             this.markingHosts.set(el.id, el);
-            // A part with no whole on the page is read by its own field. The
-            // store holds what levels roll up, and this feeds none of them.
-            if (isStandalonePart(el)) this.validMarkingIds.delete(el.id);
-            else this.validMarkingIds.add(el.id);
+            this.validMarkingIds.add(el.id);
         };
         index(root);
         root.querySelectorAll<HTMLElement>(
@@ -1372,6 +1368,10 @@ export class EzClassifyUI {
             );
             return;
         }
+        // Set before its whole goes and cleared after one comes, so a marking
+        // is never a whole of the level in between.
+        const standalone = node.kind === 'part' && node.wholeId === undefined;
+        if (standalone) this.store.setStandalonePart(id, true);
         if (node.kind === 'part') {
             this.store.setPartOf(id, node.wholeId ?? null);
         } else if (node.kind === 'whole') {
@@ -1379,6 +1379,7 @@ export class EzClassifyUI {
             this.store.setMembership(id, node.collectionId ?? null);
             this.store.setNoRollup(id, !node.contributes);
         }
+        if (!standalone) this.store.setStandalonePart(id, false);
     }
 
     /**
@@ -2001,6 +2002,7 @@ export class EzClassifyUI {
             if (host.id && this.validMarkingIds.has(host.id)) {
                 this.store.setPartOf(host.id, null);
                 this.store.releaseSeed(host.id);
+                this.store.setStandalonePart(host.id, false);
                 this.markingHosts.delete(host.id);
                 this.validMarkingIds.delete(host.id);
                 this.seededMarkings.delete(host.id);
@@ -2306,9 +2308,7 @@ export class EzClassifyUI {
         // store's committed state, so its spelling is resolved to the output
         // the store's publishes can write.
         const formats = this.formatsOf(input);
-        const standalonePart = isStandalonePart(input);
-        const renderedIn =
-            holdsPart(input) || standalonePart ? formats.part : formats.whole;
+        const renderedIn = holdsPart(input) ? formats.part : formats.whole;
         const spelled = resolveFormatAttr(input) || renderedIn;
         const output = storeBinding
             ? this.outputNamed(input, spelled)
@@ -2372,12 +2372,7 @@ export class EzClassifyUI {
         };
 
         const processText = (text: string) =>
-            engineOf().process(text, {
-                outputFormat: fmt,
-                ...(standalonePart
-                    ? { context: { role: 'part' as const } }
-                    : {}),
-            });
+            engineOf().process(text, { outputFormat: fmt });
 
         const commitValue = async (): Promise<void> => {
             const raw = input.value;
@@ -2464,11 +2459,6 @@ export class EzClassifyUI {
             void commitValue();
         };
         input.addEventListener('blur', handleBlur);
-        // No store seeds a part with no whole on the page, so its field reads
-        // the value it was served.
-        if (standalonePart && input.value.trim())
-            this._pendingInits.push(commitValue());
-
         let storeUnsub: (() => void) | undefined;
         if (storeBinding) {
             // Reflect commits from other views (tag inputs, etc.) back into the input.
@@ -3044,8 +3034,7 @@ export class EzClassifyUI {
                     | undefined) ?? this.colorMap,
             favorites: this.favorites,
         });
-        const standalonePart = isStandalonePart(el);
-        if (holdsPart(el) || standalonePart) componentOpts.holdsPart = true;
+        if (holdsPart(el)) componentOpts.holdsPart = true;
 
         // A field that holds a whole marking judges it against the parts that
         // name it: every process call carries their current markings (see
@@ -3100,7 +3089,7 @@ export class EzClassifyUI {
                 }
                 return { role: 'part' };
             };
-        } else if (standalonePart) {
+        } else if (showsStandalonePart(el)) {
             // With no whole on the page, rules that ask about the whole stay
             // unresolved and the whole's own rules never judge the part.
             componentOpts.resolveContext = () => ({ role: 'part' });

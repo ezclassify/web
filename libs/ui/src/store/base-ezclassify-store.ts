@@ -579,6 +579,8 @@ export abstract class BaseEzClassifyStore implements EzClassifyStore {
         Set<(aggregate: EzClassifyAggregate) => void>
     >();
     private readonly partOfByMarking = new Map<string, string>();
+    /** Parts with no whole on the page: see {@link setStandalonePart}. */
+    private readonly standaloneParts = new Set<string>();
     /**
      * Observed context provenance is positive evidence of dependence, including
      * a stand-in that takes the whole's list. Absence cannot prove
@@ -1436,6 +1438,15 @@ export abstract class BaseEzClassifyStore implements EzClassifyStore {
         void this.recomputeLevel(this.levelOfWhole(wholeId));
     }
 
+    setStandalonePart(markingId: string, standalone: boolean): void {
+        this.assertAlive();
+        if (this.standaloneParts.has(markingId) === standalone) return;
+        if (standalone) this.standaloneParts.add(markingId);
+        else this.standaloneParts.delete(markingId);
+        this.rolesChanged(markingId);
+        void this.recomputeLevel(this.levelOfWhole(markingId));
+    }
+
     setBucket(markingId: string, bucket: BucketKey): void {
         this.assertAlive();
         if (this.bucketKeyOf(markingId) === bucket) {
@@ -1713,6 +1724,7 @@ export abstract class BaseEzClassifyStore implements EzClassifyStore {
         this.collections.clear();
         this.membershipByMarking.clear();
         this.noRollupMarkings.clear();
+        this.standaloneParts.clear();
         this.bucketByMarking.clear();
         this.partOfByMarking.clear();
         this.standInParts.clear();
@@ -1851,7 +1863,7 @@ export abstract class BaseEzClassifyStore implements EzClassifyStore {
      */
     private formatFor(id: string): string | undefined {
         const bucket = this.bucketOf(id);
-        if (!this.partOfByMarking.has(id)) {
+        if (!this.partOfByMarking.has(id) && !this.standaloneParts.has(id)) {
             if (bucket.format) return bucket.format;
             if (bucket.wholeFormat === undefined) {
                 bucket.wholeFormat =
@@ -2016,7 +2028,8 @@ export abstract class BaseEzClassifyStore implements EzClassifyStore {
         // contributes its stated value to its level directly.
         const partOfWhole = this.partOfByMarking.get(id);
         if (partOfWhole) void this.recomputeWholeRollup(partOfWhole);
-        else void this.recomputeLevel(this.levelOfWhole(id));
+        else if (!this.standaloneParts.has(id))
+            void this.recomputeLevel(this.levelOfWhole(id));
         // Recompose only when contribution rules can read the changed whole.
         // Coverage diagnostics are refreshed independently by the bound views.
         if (wholeReading(state) !== before && this.hasDependentParts(id)) {
@@ -2290,12 +2303,13 @@ export abstract class BaseEzClassifyStore implements EzClassifyStore {
      * The context one marking is read in when it is a part: see
      * {@link wholeContext}, for its {@link setPartOf} parent. A part whose whole
      * holds nothing yet is still read as a part, so a rule that asks about the
-     * whole is unresolved rather than judged by the whole rules.
+     * whole is unresolved rather than judged by the whole rules, and so is one
+     * with no whole on the page.
      */
     private wholeContextOf(id: string): ProcessingContext | undefined {
         const wholeId = this.partOfByMarking.get(id);
-        if (!wholeId) return undefined;
-        return this.wholeContext(wholeId) ?? { role: 'part' };
+        if (wholeId) return this.wholeContext(wholeId) ?? { role: 'part' };
+        return this.standaloneParts.has(id) ? { role: 'part' } : undefined;
     }
 
     /**
@@ -2437,8 +2451,8 @@ export abstract class BaseEzClassifyStore implements EzClassifyStore {
     }
 
     /**
-     * The wholes a level holds: every marking that is not a part, and every id
-     * a part names as its whole, placed in this level.
+     * The wholes a level holds: every marking that is not a part of any kind,
+     * and every id a part names as its whole, placed in this level.
      */
     private wholesIn(level: LevelId): string[] {
         const ids = new Set<string>([
@@ -2449,6 +2463,7 @@ export abstract class BaseEzClassifyStore implements EzClassifyStore {
         return [...ids].filter(
             (id) =>
                 !this.partOfByMarking.has(id) &&
+                !this.standaloneParts.has(id) &&
                 this.levelOfWhole(id) === level,
         );
     }

@@ -61,11 +61,10 @@ Every marking host is one of two things, by where it sits:
 
 `role="part"` is for a part whose whole lives somewhere else: a field that
 edits one paragraph of a document the page does not show. It works on any
-marking host with a field to read it, so a hidden input is refused. The host
-reads in the part role, so whole-only rules never judge
-it and rules that ask about the whole stay unresolved. It is read by its own
-field and is not in the store, so it feeds no level, and a view of it is a host
-error.
+marking host, a hidden input included. The host reads in the part role, so
+whole-only rules never judge it and rules that ask about the whole stay
+unresolved. The store holds it like any other marking, so views can show and
+edit it, and it feeds no level.
 
 Views attach to a marking or a level and never contribute to one:
 
@@ -770,10 +769,12 @@ export interface EzClassifyStore {
 
     /**
      * The tree, stated by the runtime from the markup. The store reads no DOM.
-     * A part is placed in its whole, a whole in its collection, a collection in
-     * its parent, and each marking in its bucket.
+     * A part is placed in its whole, or held as a part with no whole on the
+     * page, a whole in its collection, a collection in its parent, and each
+     * marking in its bucket.
      */
     setPartOf(markingId: string, wholeId: string | null): void;
+    setStandalonePart(markingId: string, standalone: boolean): void;
     setMembership(markingId: string, collectionId: string | null): void;
     registerCollection(collectionId: string, parentId: string | null): void;
     unregisterCollection(collectionId: string): void;

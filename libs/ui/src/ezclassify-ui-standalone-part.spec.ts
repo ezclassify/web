@@ -1,7 +1,8 @@
 /**
  * `data-ezclassify-role="part"` is how a marking host says it holds a part
  * whose whole is not on the page: each kind of host reads in the part role,
- * through the real engine, and none of them feeds a level.
+ * through the real engine, the store holds it for its views, and none of them
+ * feeds a level.
  */
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -236,6 +237,26 @@ describe('a part in a scheme with a part format', () => {
         expect(text).toContain('Format: portion');
         expect(text).toContain('Valid: true');
     });
+
+    it('shows a view the part format the host holds', async () => {
+        mountTwoFormats(`
+            <input type="hidden" id="part" data-ezclassify-marking data-ezclassify-role="part" value="low">
+            <output id="shown" data-ezclassify-source="part"></output>`);
+
+        await expect.poll(() => byId('shown').textContent).toBe('L');
+        expect(ui!.store.get('part').valid).toBe(true);
+    });
+
+    it('writes a field bound to the part in the part format', async () => {
+        mountTwoFormats(`
+            <input type="hidden" id="part" data-ezclassify-marking data-ezclassify-role="part" value="low">
+            <input id="edit" data-ezclassify-controller="marking" data-ezclassify-bound-to="part">`);
+        const edit = byId<HTMLInputElement>('edit');
+
+        await expect
+            .poll(() => ui!.components.get(edit)?.getRendered())
+            .toBe('L');
+    });
 });
 
 describe('a part whose whole is not on the page', () => {
@@ -319,8 +340,8 @@ describe('a part whose whole is not on the page', () => {
 
         await expect.poll(() => page.value).toBe(FORM);
         const store = ui!.store;
-        expect(store.get('part').rendered).toBe('');
-        expect(store.get('plain').rendered).toBe('');
+        expect(store.get('part').rendered).toBe('LOW');
+        expect(store.get('plain').rendered).toBe('LOW');
 
         byId<HTMLInputElement>('whole').value = '';
         byId('whole').dispatchEvent(new FocusEvent('blur', { bubbles: true }));
@@ -328,7 +349,7 @@ describe('a part whose whole is not on the page', () => {
         await expect.poll(() => page.value).toBe('');
     });
 
-    it('leaves the store when the attribute arrives, and rejoins when it goes', async () => {
+    it('leaves its level when the attribute arrives, and rejoins when it goes', async () => {
         mount(`
             <input type="hidden" id="page" data-ezclassify-aggregate>
             <input id="host" data-ezclassify-marking value="LOW">`);
@@ -342,13 +363,60 @@ describe('a part whose whole is not on the page', () => {
         await expect.poll(() => page.value).toBe('LOW');
     });
 
-    it('is a host error to point a view at one', async () => {
+    it('shows its marking to a view, which feeds nothing either', async () => {
         mount(`
+            <input type="hidden" id="page" data-ezclassify-aggregate>
             <input id="part" data-ezclassify-marking data-ezclassify-role="part" value="LOW">
             <output id="shown" data-ezclassify-source="part"></output>`);
 
+        await expect.poll(() => byId('shown').textContent).toBe('LOW');
+        expect(byId<HTMLInputElement>('page').value).toBe('');
+        expect(errors).toEqual([]);
+    });
+
+    it('reads a hidden host in the part role, for its views', async () => {
+        mount(`
+            <input type="hidden" id="page" data-ezclassify-aggregate>
+            <input type="hidden" id="part" data-ezclassify-marking data-ezclassify-role="part" value="${FORM}">
+            <input type="hidden" id="good" data-ezclassify-marking data-ezclassify-role="part" value="LOW">
+            <output id="shown" data-ezclassify-source="good"></output>`);
+        const store = ui!.store;
+
         await expect
-            .poll(() => errors.map((e) => e.code))
-            .toEqual(['view-of-standalone-part']);
+            .poll(() => store.get('part').errors.map((e) => e.message))
+            .toContain(WHOLE_ONLY);
+        expect(store.get('part').valid).toBe(false);
+        await expect.poll(() => byId('shown').textContent).toBe('LOW');
+        expect(store.get('good').valid).toBe(true);
+        expect(byId<HTMLInputElement>('page').value).toBe('');
+        expect(errors).toEqual([]);
+    });
+
+    it('judges a field bound to one in the part role', async () => {
+        mount(`
+            <input type="hidden" id="part" data-ezclassify-marking data-ezclassify-role="part" value="LOW">
+            <input id="edit" data-ezclassify-controller="marking" data-ezclassify-bound-to="part">`);
+        await expect.poll(() => ui!.mounted.has(byId('edit'))).toBe(true);
+
+        const component = ui!.mounted.get(byId('edit')) as unknown as {
+            options: { resolveContext?: () => unknown };
+        };
+        expect(component.options.resolveContext?.()).toEqual({ role: 'part' });
+    });
+
+    it('takes its marking and its role out of the store with its host', async () => {
+        mount(`
+            <input type="hidden" id="page" data-ezclassify-aggregate>
+            <input type="hidden" id="part" data-ezclassify-marking data-ezclassify-role="part" value="LOW">`);
+        const store = ui!.store;
+        const page = byId<HTMLInputElement>('page');
+        await expect.poll(() => store.get('part').rendered).toBe('LOW');
+
+        byId('part').remove();
+        await expect.poll(() => store.get('part').rendered).toBe('');
+
+        // The id names nothing now, so a later marking under it is a whole.
+        await store.publishRendered('part', 'LOW');
+        await expect.poll(() => page.value).toBe('LOW');
     });
 });

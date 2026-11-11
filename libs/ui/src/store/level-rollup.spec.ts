@@ -142,6 +142,143 @@ describe('page rollup', () => {
     });
 });
 
+describe('a part with no whole on the page', () => {
+    const contexts = (engine: EzClassifyStoreEngine) => {
+        const seen: Array<ProcessingContext | undefined> = [];
+        const process = engine.process.bind(engine);
+        engine.process = (input, options) => {
+            seen.push(options?.context);
+            return process(input, options);
+        };
+        return seen;
+    };
+
+    it('holds its marking for its views and feeds no level', async () => {
+        const engine = recordingEngine();
+        const store = new VanillaEzClassifyStore(engine);
+        store.setStandalonePart('alone', true);
+        await store.publishRendered('doc', 'level:low');
+        await store.publishRendered('alone', 'level:high');
+        await settle();
+
+        expect(store.get('alone').rendered).toBe('level:high');
+        expect(rendered(store)).toBe('level:low');
+        expect(levelState(store).stale).toBeUndefined();
+
+        // Its commits ask no level anything.
+        engine.calls.length = 0;
+        await store.publishRendered('alone', 'level:mid');
+        await settle();
+        expect(engine.calls).toEqual([]);
+    });
+
+    it('is read in the part role, with no whole to read against', async () => {
+        const engine = recordingEngine();
+        const seen = contexts(engine);
+        const store = new VanillaEzClassifyStore(engine);
+        store.setStandalonePart('alone', true);
+        await store.publishRendered('alone', 'level:high');
+        await store.publishAssertions('alone', [
+            { categoryId: 'level', conceptId: 'low' } as Assertion,
+        ]);
+
+        expect(seen.length).toBeGreaterThan(0);
+        expect(new Set(seen.map((c) => JSON.stringify(c)))).toEqual(
+            new Set([JSON.stringify({ role: 'part' })]),
+        );
+    });
+
+    it('is written in the part format', async () => {
+        const engine = recordingEngine();
+        engine.getSchemeMeta = () => ({
+            scopes: [],
+            defaultRenderFormat: 'whole-format',
+            defaultPartRenderFormat: 'part-format',
+        });
+        const formats: Array<string | undefined> = [];
+        const process = engine.process.bind(engine);
+        engine.process = (input, options) => {
+            formats.push(options?.outputFormat);
+            return process(input, options);
+        };
+        const store = new VanillaEzClassifyStore(engine);
+        store.setStandalonePart('alone', true);
+        await store.publishRendered('alone', 'level:high');
+
+        expect(new Set(formats)).toEqual(new Set(['part-format']));
+    });
+
+    it('holds no level while it is still being read', async () => {
+        const engine = recordingEngine();
+        const store = new VanillaEzClassifyStore(engine);
+        await store.publishRendered('doc', 'level:low');
+        await settle();
+        const process = engine.process.bind(engine);
+        engine.process = (input, options) =>
+            input === 'level:high'
+                ? new Promise(() => {})
+                : process(input, options);
+        store.setStandalonePart('alone', true);
+        void store.publishRendered('alone', 'level:high');
+
+        await store.publishRendered('doc', 'level:mid');
+        await settle();
+
+        expect(rendered(store)).toBe('level:mid');
+    });
+
+    it('reads again in the part role when its role changes mid-read', async () => {
+        const engine = recordingEngine();
+        const seen: Array<ProcessingContext | undefined> = [];
+        const process = engine.process.bind(engine);
+        engine.process = (input, options) => {
+            seen.push(options?.context);
+            return seen.length === 1
+                ? new Promise(() => {})
+                : process(input, options);
+        };
+        const store = new VanillaEzClassifyStore(engine);
+        void store.publishRendered('alone', 'level:high');
+        await settle();
+        expect(seen).toEqual([undefined]);
+
+        store.setStandalonePart('alone', true);
+        await settle();
+
+        expect(seen.at(-1)).toEqual({ role: 'part' });
+        expect(store.get('alone').rendered).toBe('level:high');
+    });
+
+    it('joins its level when it stops being one, read as a whole', async () => {
+        const engine = recordingEngine();
+        const seen = contexts(engine);
+        const store = new VanillaEzClassifyStore(engine);
+        store.setStandalonePart('alone', true);
+        await store.publishRendered('alone', 'level:high');
+        await settle();
+        expect(rendered(store)).toBe('');
+
+        store.setStandalonePart('alone', false);
+        await settle();
+        expect(rendered(store)).toBe('level:high');
+
+        seen.length = 0;
+        await store.publishRendered('alone', 'level:low');
+        expect(seen).toEqual([undefined]);
+    });
+
+    it("is its whole's part once a whole names it", async () => {
+        const engine = recordingEngine();
+        const store = new VanillaEzClassifyStore(engine);
+        store.setStandalonePart('p1', true);
+        store.setPartOf('p1', 'doc');
+        await store.publishRendered('p1', 'level:high');
+        await settle();
+
+        expect(store.getWholeRollup('doc').rendered).toBe('level:high');
+    });
+});
+
 describe('whole rollup', () => {
     it('reads the parts of a whole that holds nothing as parts, never as wholes', async () => {
         const engine = recordingEngine();

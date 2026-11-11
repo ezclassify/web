@@ -20,8 +20,8 @@ import {
     CONTROLLER_ATTR,
     SCHEME_ATTR,
     viewAttrOf,
-    isStandalonePart,
 } from '../binding-model';
+import { showsStandalonePart } from '../format-resolver';
 import { getFormat, toFieldAssertions } from './state';
 import { showCopiedIndicator } from './dom';
 import { isOwnedBy } from '../element-scanner';
@@ -1332,7 +1332,7 @@ export async function copyMarkingToClipboard(
     const result = await Promise.resolve(
         scheme.validate(lastValid, {
             outputFormat: format,
-            ...(isStandalonePart(field)
+            ...(showsStandalonePart(field)
                 ? { context: { role: 'part' as const } }
                 : {}),
         }),

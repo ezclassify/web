@@ -92,10 +92,6 @@ describe('classify: a part whose whole is not on the page', () => {
             'a member of a collection it sits in',
             '<div data-ezclassify-collection="c"><input id="p" data-ezclassify-marking data-ezclassify-role="part"></div>',
         ],
-        [
-            'a hidden input',
-            '<input id="p" type="hidden" data-ezclassify-marking data-ezclassify-role="part">',
-        ],
     ])('refuses the part role on %s', (_what, markup) => {
         root.innerHTML = markup;
 
@@ -110,16 +106,27 @@ describe('classify: a part whose whole is not on the page', () => {
         expect(classify(el('c'), root).error?.code).toBe('part-of-not-whole');
     });
 
+    it('takes a hidden input, which holds the part for its views', () => {
+        root.innerHTML =
+            '<input id="p" type="hidden" data-ezclassify-marking data-ezclassify-role="part">';
+
+        expect(classify(el('p'), root)).toMatchObject({
+            kind: 'part',
+            contributes: false,
+        });
+        expect(classify(el('p'), root).error).toBeUndefined();
+        expect(isStandalonePart(el('p'))).toBe(true);
+    });
+
     it.each(['bound-to', 'facet-of', 'source'])(
-        'refuses a %s view of one',
+        'takes a %s view of one',
         (attr) => {
             root.innerHTML = `
                 <input id="p" data-ezclassify-marking data-ezclassify-role="part">
                 <input id="v" data-ezclassify-${attr}="p">`;
 
-            expect(classify(el('v'), root).error?.code).toBe(
-                'view-of-standalone-part',
-            );
+            expect(classify(el('v'), root)).toMatchObject({ kind: 'view' });
+            expect(classify(el('v'), root).error).toBeUndefined();
         },
     );
 });

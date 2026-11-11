@@ -925,6 +925,65 @@ describe('parent-child integration via updateRollup', () => {
         document.body.replaceChildren();
     });
 
+    it('mounts no correction on a hidden whole with no bound field', async () => {
+        const ctx = ctxReporting(OVER_RELEASE);
+
+        const hidden = document.createElement('input');
+        hidden.type = 'hidden';
+        hidden.id = 'hidden-whole';
+        hidden.value = 'L1';
+        ctx.fields.push(hidden);
+
+        const child = document.createElement('input');
+        child.value = 'L2';
+        ctx.fields.push(child);
+        ctx.partOfMap.set(child, 'hidden-whole');
+
+        document.body.append(hidden, child);
+        await updateRollup(ctx);
+
+        expect(document.querySelector('.ez-coverage-action')).toBeNull();
+        // Its coverage is still judged, and the host still told.
+        expect(ctx.aggregates?.get('hidden-whole')?.state.valid).toBe(false);
+        document.body.replaceChildren();
+    });
+
+    it('mounts the correction of a hidden whole on the field bound to it', async () => {
+        const ctx = ctxReporting(OVER_RELEASE);
+
+        const hidden = document.createElement('input');
+        hidden.type = 'hidden';
+        hidden.id = 'hidden-whole';
+        hidden.value = 'L1';
+        ctx.fields.push(hidden);
+
+        const bound = document.createElement('input');
+        bound.setAttribute('data-ezclassify-bound-to', 'hidden-whole');
+        ctx.mounted.set(bound, {
+            init: vi.fn(),
+            getAssertions: vi.fn(() => []),
+            setAssertions: vi.fn(),
+            setValue: vi.fn(),
+            destroy: vi.fn(),
+            getRendered: vi.fn(() => 'L1'),
+        });
+
+        const child = document.createElement('input');
+        child.value = 'L2';
+        ctx.fields.push(child);
+        ctx.partOfMap.set(child, 'hidden-whole');
+
+        document.body.append(hidden, bound, child);
+        await updateRollup(ctx);
+
+        const action = document.querySelector(
+            '.ez-coverage-action[data-ezclassify-for="hidden-whole"]',
+        );
+        expect(action).not.toBeNull();
+        expect(bound.nextElementSibling).toBe(action);
+        document.body.replaceChildren();
+    });
+
     it('puts a banner over-release on the banner and leaves the correct portion alone', async () => {
         const ctx = ctxReporting(OVER_RELEASE);
 
