@@ -15,6 +15,7 @@ import type {
     RemoteGuideEngineAdapter,
 } from '@ezclassify/types';
 import { Guidebook } from './guidebook';
+import { resetLocale, setLocale } from '../i18n';
 import { loadCedarValleyContext } from '@ezclassify/example-schemes/cedar-valley';
 import { loadCedarValleyLevelsContext } from '@ezclassify/example-schemes/cedar-valley-protection';
 
@@ -228,6 +229,22 @@ describe('Guidebook', () => {
             expect(shownMarking('a')!.textContent).toBe(
                 'Overall marking: (U) NOTIONAL//TEST',
             );
+        });
+
+        it("names the document marking in the page's locale", async () => {
+            setLocale({ 'aria.overallMarkingPrefix': 'Marquage global : ' });
+            try {
+                await guidebook.init(
+                    container,
+                    openContext(loadCedarValleyContext()),
+                    { guides: view('a', '(U) NOTIONAL//TEST') },
+                );
+                expect(shownMarking('a')!.textContent).toBe(
+                    'Marquage global : (U) NOTIONAL//TEST',
+                );
+            } finally {
+                resetLocale();
+            }
         });
 
         it('keeps each guide marking visible while its guide is collapsed', async () => {

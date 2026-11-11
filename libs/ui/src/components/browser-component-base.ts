@@ -22,6 +22,7 @@ import {
     type StructuralView,
 } from '@ezclassify/types';
 import { announce, createAnnouncer } from './component-utils';
+import { t } from '../i18n';
 
 /** Options for {@link renderStructuralTree}. */
 export interface RenderStructuralTreeOptions<Item> {
@@ -293,7 +294,7 @@ export function buildOverallMarking(
     line.className = className;
     const label = document.createElement('span');
     label.className = 'ez-sr-only';
-    label.textContent = 'Overall marking: ';
+    label.textContent = t('aria.overallMarkingPrefix');
     line.append(label, marking);
     return line;
 }

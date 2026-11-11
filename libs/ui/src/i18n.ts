@@ -34,6 +34,7 @@ export const defaultLocale = {
     'aria.inferredSuffix': ' (inferred)',
     'aria.unprintedSuffix': ' (not shown in the marking)',
     'aria.unreadSuffix': ' (not recognized)',
+    'aria.overallMarkingPrefix': 'Overall marking: ',
     'aria.favorites': 'Favorites',
     'aria.favoritesActive': 'Favorites (current marking is saved)',
 
