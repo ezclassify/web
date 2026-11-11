@@ -76,7 +76,7 @@
     font-size: 0.75rem;
     letter-spacing: 0.02em;
     color: var(--ez-color-text, #111);
-    margin-bottom: 0.25rem;
+    padding: 0.25rem 1rem;
     overflow-wrap: anywhere;
 }
 
