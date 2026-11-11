@@ -1022,17 +1022,14 @@ export class MarkedInput extends MarkedFieldBase<HTMLTextAreaElement> {
 
         if (mySeq !== this.scanSeq) return;
 
-        // Nothing is published from a write the engine refused: the mark and
-        // the last published state stand until it can be written.
-        if (renderViewRefused(result)) {
-            this._userEdited = false;
-            this.showRefusal(result);
-            this.renderDisplay();
-            return;
-        }
-
+        // A refused write is the engine's marker, so the field keeps the text
+        // it holds. What the engine read from the mark is still what the
+        // author wrote, and the store needs it to judge the part: left out,
+        // the rollup would go on reading the last marking that could be
+        // written.
+        const refused = renderViewRefused(result);
         this.assertions = result.assertions;
-        this.rendered = result.rendered;
+        if (!refused) this.rendered = result.rendered;
         this.recordMarkFixes(result.assertions, result.appliedFixes);
 
         // Validity: surface part-level engine errors, and catch silent
@@ -1044,13 +1041,17 @@ export class MarkedInput extends MarkedFieldBase<HTMLTextAreaElement> {
         // explaining the change, flag the mark invalid rather than silently
         // publishing the downgraded form.
         const partErrors = result.errors ?? [];
-        this.valid = partErrors.length === 0;
-        this.errors = partErrors.map((e) => e.message);
-        this.showRuleErrors(
-            partErrors,
-            result.proposedFixes ?? [],
-            result.warnings,
-        );
+        if (refused) {
+            this.showRefusal(result);
+        } else {
+            this.valid = partErrors.length === 0;
+            this.errors = partErrors.map((e) => e.message);
+            this.showRuleErrors(
+                partErrors,
+                result.proposedFixes ?? [],
+                result.warnings,
+            );
+        }
         // Fail closed on unrecognized tokens: a typo inside the mark (e.g.
         // "HxOLD") parses to a REDUCED assertion set, so publishing it would
         // silently downgrade the shared marking. Keep the last published state
