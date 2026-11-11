@@ -88,6 +88,14 @@ describe('classify: a part whose whole is not on the page', () => {
             'a body editor',
             '<textarea id="p" data-ezclassify-controller="marked-textarea" data-ezclassify-role="part"></textarea>',
         ],
+        [
+            'a member of a collection it sits in',
+            '<div data-ezclassify-collection="c"><input id="p" data-ezclassify-marking data-ezclassify-role="part"></div>',
+        ],
+        [
+            'a hidden input',
+            '<input id="p" type="hidden" data-ezclassify-marking data-ezclassify-role="part">',
+        ],
     ])('refuses the part role on %s', (_what, markup) => {
         root.innerHTML = markup;
 
@@ -137,6 +145,10 @@ describe('listsBuckets', () => {
         ],
         [
             '<div id="v" data-ezclassify-controller="banner" data-ezclassify-aggregate data-ezclassify-translate="x"></div>',
+            false,
+        ],
+        [
+            '<div id="v" data-ezclassify-controller="banner" data-ezclassify-aggregate data-ezclassify-scheme="tier"></div>',
             false,
         ],
     ])('reads %s as %s', (markup, expected) => {

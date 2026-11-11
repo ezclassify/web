@@ -61,7 +61,8 @@ Every marking host is one of two things, by where it sits:
 
 `role="part"` is for a part whose whole lives somewhere else: a field that
 edits one paragraph of a document the page does not show. It works on any
-marking host. The host reads in the part role, so whole-only rules never judge
+marking host with a field to read it, so a hidden input is refused. The host
+reads in the part role, so whole-only rules never judge
 it and rules that ask about the whole stay unresolved. It is read by its own
 field and is not in the store, so it feeds no level, and a view of it is a host
 error.
@@ -465,7 +466,10 @@ Notes on shape:
         data-ezclassify-marking />
     ```
     The hidden input integrates with native `FormData`, so server submits
-    pick up the rendered value automatically.
+    pick up the rendered value automatically. When the engine cannot write
+    the marking, the input holds nothing and gains `data-ezclassify-invalid`,
+    so a submit never carries the last marking as the current one. A field
+    showing the marking says why; with only facets, the first facet does.
 
 ### 3.1 Why `facet`
 
@@ -1301,6 +1305,9 @@ Per-marking config:
 
 - A bare string is shorthand for `{ path, mode: 'rendered' }`.
 - `{ path, mode: 'rendered' | 'assertions' }` lets the consumer pick.
+
+A `rendered` path holds an empty string while the engine cannot write the
+marking, so the document never carries the last marking as the current one.
 
 `setPath` is the only safe way to push programmatic edits from JS into
 the document object, plain JS objects are not reactive, so a direct

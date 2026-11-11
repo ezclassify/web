@@ -120,6 +120,124 @@ afterEach(() => {
     vi.restoreAllMocks();
 });
 
+/** The same marking written differently in a whole and in a part. */
+function twoFormatContext() {
+    const level = {
+        ...concept('LOW', 'level', 1),
+        views: { default: 'LOW', portion: 'L' },
+    };
+    return Context.fromComponents({
+        scheme: {
+            scheme: {
+                id: 'two-format-part',
+                version: '1.0.0',
+                name: 'Two formats',
+                role_aware: true,
+                role_detection: {
+                    whole: { views: ['whole'] },
+                    part: { views: ['portion'] },
+                },
+                data: {
+                    concepts: { inline: [level] },
+                    categories: [
+                        {
+                            id: 'level',
+                            label: 'Level',
+                            single: true,
+                            rollup: 'max',
+                            position: 1,
+                        },
+                    ],
+                },
+                rules: [
+                    {
+                        id: 'low-on-parts-only',
+                        action: 'forbid',
+                        target: 'LOW',
+                        when: { role: 'whole' },
+                        message: 'LOW belongs on a part.',
+                    },
+                ],
+                parse: { case_sensitive: false, strip_whitespace: true },
+                render: {
+                    default: 'whole',
+                    formats: [
+                        {
+                            id: 'whole',
+                            surface: 'marking',
+                            mode: 'inline',
+                            separator: '//',
+                            view: 'default',
+                            fields: [{ category: 'level', separator: '/' }],
+                        },
+                        {
+                            id: 'portion',
+                            surface: 'marking',
+                            mode: 'inline',
+                            separator: '//',
+                            view: 'portion',
+                            fields: [{ category: 'level', separator: '/' }],
+                        },
+                    ],
+                },
+            },
+        },
+    });
+}
+
+describe('a part in a scheme with a part format', () => {
+    function mountTwoFormats(markup: string): EzClassifyUI {
+        root.innerHTML = markup;
+        ui = new EzClassifyUI(twoFormatContext(), { root });
+        return ui;
+    }
+
+    it('writes a plain input in the part format', async () => {
+        mountTwoFormats(
+            `<input id="part" data-ezclassify-marking data-ezclassify-role="part" value="L">`,
+        );
+        const input = byId<HTMLInputElement>('part');
+        await expect.poll(() => input.getAttribute('aria-invalid')).toBeNull();
+
+        input.value = 'low';
+        input.dispatchEvent(new FocusEvent('blur', { bubbles: true }));
+
+        await expect.poll(() => input.value).toBe('L');
+    });
+
+    it('writes a controller field in the part format', async () => {
+        mountTwoFormats(
+            `<input id="part" data-ezclassify-controller="marking" data-ezclassify-role="part" value="LOW">`,
+        );
+        const input = byId<HTMLInputElement>('part');
+
+        await expect
+            .poll(() => ui!.components.get(input)?.getRendered())
+            .toBe('L');
+    });
+
+    it('copies in the part format, read in the part role', async () => {
+        const writeText = vi.fn(async () => {});
+        Object.defineProperty(navigator, 'clipboard', {
+            configurable: true,
+            value: { writeText },
+        });
+        mountTwoFormats(
+            `<input id="part" data-ezclassify-marking data-ezclassify-role="part" value="L">`,
+        );
+        const input = byId<HTMLInputElement>('part');
+        await expect.poll(() => input.getAttribute('aria-invalid')).toBeNull();
+
+        await ui!.copyMarkingToClipboard(input);
+
+        expect(writeText).toHaveBeenCalledTimes(1);
+        const text = (writeText.mock.calls[0] as unknown as [string])[0];
+        expect(text.split('\n')[0]).toBe('L');
+        expect(text).toContain('Format: portion');
+        expect(text).toContain('Valid: true');
+    });
+});
+
 describe('a part whose whole is not on the page', () => {
     it('refuses a whole-only form in a plain input, and in a plain input with no role takes it', async () => {
         mount(`

@@ -787,6 +787,22 @@ describe('CategorySelector', () => {
             expect(rowIds()).toEqual(['f2']);
         });
 
+        it('lists the surface its format writes when the host names no scope', async () => {
+            engine = scopedEngine();
+            const meta = engine.getSchemeMeta();
+            const formats = [
+                ...(meta.formats ?? []),
+                {
+                    ...(meta.formats ?? [])[0],
+                    id: 'severity-format',
+                    surface: 'severity',
+                },
+            ];
+            engine.getSchemeMeta = () => ({ ...meta, formats });
+            await init({ formatId: 'severity-format' });
+            expect(rowIds()).toEqual(['f2']);
+        });
+
         it('lists a category bound by facet whatever its scope', async () => {
             engine = scopedEngine();
             await init({ categoryId: 'f2' });
@@ -860,6 +876,17 @@ describe('CategorySelector', () => {
                 'ambiguous-representation',
             );
             expect(document.body.textContent).not.toContain(MARKER);
+        });
+
+        it('leaves saying why to the field that shows the marking, on a facet', async () => {
+            engine = refusingEngine();
+            await init({ facetOf: 'whole' });
+
+            click('c2');
+
+            expect(container.hasAttribute('data-ezclassify-invalid')).toBe(
+                false,
+            );
         });
 
         it('clears the status once the selection can be written', async () => {

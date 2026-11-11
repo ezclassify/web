@@ -20,6 +20,7 @@ import {
     CONTROLLER_ATTR,
     SCHEME_ATTR,
     viewAttrOf,
+    isStandalonePart,
 } from '../binding-model';
 import { getFormat, toFieldAssertions } from './state';
 import { showCopiedIndicator } from './dom';
@@ -1329,7 +1330,12 @@ export async function copyMarkingToClipboard(
     const format = getFormat(ctx, field);
     // Copying reads the stored marking; nothing here corrects it.
     const result = await Promise.resolve(
-        scheme.validate(lastValid, { outputFormat: format }),
+        scheme.validate(lastValid, {
+            outputFormat: format,
+            ...(isStandalonePart(field)
+                ? { context: { role: 'part' as const } }
+                : {}),
+        }),
     );
     const meta = scheme.getSchemeMeta();
     const assertions = result.assertions.map((a) => a.conceptId).join(', ');

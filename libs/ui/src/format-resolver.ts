@@ -1,4 +1,4 @@
-import { partWholeOf } from './binding-model';
+import { isStandalonePart, partWholeOf } from './binding-model';
 import type { FormsContext } from './forms/types';
 
 /** Per-field render-format attribute. */
@@ -105,5 +105,7 @@ export function holdsPart(field: Element): boolean {
 export function getFormat(ctx: FormsContext, field: HTMLInputElement): string {
     const dataFormat = resolveFormatAttr(field);
     if (dataFormat && dataFormat.length > 0) return dataFormat;
-    return holdsPart(field) ? ctx.defaultPartFormat : ctx.defaultFormat;
+    return holdsPart(field) || isStandalonePart(field)
+        ? ctx.defaultPartFormat
+        : ctx.defaultFormat;
 }

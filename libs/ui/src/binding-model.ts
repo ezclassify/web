@@ -313,7 +313,8 @@ export function listsBuckets(el: Element): boolean {
     return (
         el.hasAttribute('data-ezclassify-aggregate') &&
         el.getAttribute(CONTROLLER_ATTR) === BUCKET_LIST_CONTROLLER &&
-        !el.hasAttribute('data-ezclassify-translate')
+        !el.hasAttribute('data-ezclassify-translate') &&
+        !el.hasAttribute(SCHEME_ATTR)
     );
 }
 
@@ -625,6 +626,14 @@ function bodyEditorPartRole(el: HTMLElement): HostError {
     );
 }
 
+/** A hidden input with no controller: it holds a marking's value and reads none. */
+function holdsDataOnly(el: HTMLElement): boolean {
+    return (
+        !el.hasAttribute(CONTROLLER_ATTR) &&
+        (el as HTMLInputElement).type === 'hidden'
+    );
+}
+
 /** The refusal for a marking host that cannot read in the part role, if any. */
 function refusePartRole(
     el: HTMLElement,
@@ -639,11 +648,18 @@ function refusePartRole(
             'part-role-refused',
             `${describe(el)} is the whole its ${WHOLE_ATTR} container names, and it declares ${ROLE_ATTR}="part".`,
         );
-    if (memberOf && partWholeOf(el) === null)
+    if (partWholeOf(el) !== null) return undefined;
+    if (memberOf)
         return hostError(
             el,
             'part-role-refused',
-            `${describe(el)} declares ${ROLE_ATTR}="part" and ${MEMBER_OF_ATTR}="${memberOf}". A collection holds wholes.`,
+            `${describe(el)} declares ${ROLE_ATTR}="part" and is a member of "${memberOf}". A collection holds wholes.`,
+        );
+    if (holdsDataOnly(el))
+        return hostError(
+            el,
+            'part-role-refused',
+            `${describe(el)} is a hidden input and declares ${ROLE_ATTR}="part". A part with no whole is read by its own field, and a hidden input has none.`,
         );
     return undefined;
 }
@@ -684,7 +700,11 @@ function classifyHost(
     const memberOf = valueOf(el, MEMBER_OF_ATTR);
 
     if (valueOf(el, ROLE_ATTR) === 'part' && !placed.error) {
-        const refused = refusePartRole(el, placed.isWhole === true, memberOf);
+        const refused = refusePartRole(
+            el,
+            placed.isWhole === true,
+            memberOf ?? nestingCollection(el, root),
+        );
         if (refused) return { ...base, kind: 'part', error: refused };
         if (placed.wholeId === undefined) return { ...base, kind: 'part' };
     }

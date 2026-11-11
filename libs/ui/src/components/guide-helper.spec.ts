@@ -1277,11 +1277,48 @@ describe('GuideChecklist', () => {
         );
 
         it('has no editor without the attribute or with "false"', async () => {
-            await mountFromMarkup({ editor: 'false' });
+            const { errors } = await mountFromMarkup({ editor: 'false' });
+            expect(errors).toEqual([]);
             expect(container.querySelector('textarea')).toBeNull();
             expect(
                 container.querySelector('.ezc-guide-analyze-btn'),
             ).toBeNull();
+        });
+
+        it('lets a selection set while the guides load stand over the markup', async () => {
+            const host = document.createElement('div');
+            host.setAttribute('data-ezclassify-controller', 'guide-checklist');
+            host.setAttribute('data-ezclassify-guide-checklist-selected', SEED);
+            container.before(host);
+            setMountHost(container, host);
+            let answer!: (views: GuideStructuralView[]) => void;
+            const guide = {
+                buildGuideViews: () =>
+                    new Promise<GuideStructuralView[]>((resolve) => {
+                        answer = resolve;
+                    }),
+                evaluateMany: vi.fn(() => makeEvaluation('MARK-1')),
+                scan: vi.fn(() => []),
+            };
+            const mounted = checklist.init(
+                container,
+                { ...toCtx(engine), guide } as never,
+                parseComponentOptions(
+                    host,
+                    harvestControllerOptions(host, 'guide-checklist'),
+                ),
+            );
+            await Promise.resolve();
+            const newer = [{ guideId: TEST_GUIDE_VIEW.id, ruleId: 'rule-b' }];
+            checklist.setSelections(newer);
+
+            answer([TEST_GUIDE_VIEW]);
+            await mounted;
+            await vi.waitFor(() =>
+                expect(guide.evaluateMany).toHaveBeenCalled(),
+            );
+
+            expect(checklist.getSelections()).toEqual(newer);
         });
 
         it('shows the marking, its breakdown and its failure notice in the named element', async () => {

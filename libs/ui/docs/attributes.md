@@ -132,7 +132,8 @@ renamed. The cases:
 - `data-ezclassify-marking` together with a view attribute;
 - a nested library instance inside a `whole` container;
 - `role="part"` on the whole its container names, on a member of a collection,
-  or on a `marked-textarea`, whose portions are parts;
+  on a hidden input, which has no field to read it, or on a `marked-textarea`,
+  whose portions are parts;
 - a `bound-to`, `facet-of` or `source` view of a part with no whole on the page;
 - a marking host that resolves no Context, or selects a scheme its Context
   does not hold, and one marking id on two marking hosts;
@@ -173,8 +174,8 @@ in tests and CSS but must not set them by hand.
 | `data-ezclassify-mount`      | `component-factory`                 | runtime  | the controller name on a sibling mount. Pickers render inside it; text editors use their own wrappers. In-place views have no sibling mount (see binding model §3.2).            | internal |
 | `data-ezclassify-mount-root` | `ezclassify-ui` / `element-scanner` | runtime  | the instance id stamped on each `EzClassifyUI` root; the cross-instance ownership boundary.                                                                                      | internal |
 | `data-ezclassify-error`      | `forms/rollup` / `forms/styles`     | runtime  | presence-only; stamped on a field without a component that failed the rollup's check, styled by the default stylesheet. A component shows the failure in its own errors instead. | internal |
-| `data-ezclassify-invalid`    | `ezclassify-ui`                     | runtime  | presence-only; stamped on a mount container whose value is invalid.                                                                                                              | internal |
-| `data-ezclassify-for`        | `coverage-action`                   | runtime  | the id of the whole a `.ez-coverage-action` control acts on; stamped on that control, which sits beside the whole's field.                                                       |
+| `data-ezclassify-invalid`    | `ezclassify-ui`                     | runtime  | presence-only; stamped on a mount container whose value is invalid, and on a hidden marking host whose marking could not be written.                                             | internal |
+| `data-ezclassify-for`        | `coverage-action`                   | runtime  | the id of the whole a `.ez-coverage-action` control acts on; stamped on that control, which sits beside the whole's field.                                                       | internal |
 
 ### Enhancement status mark (runtime element, not an attribute)
 
