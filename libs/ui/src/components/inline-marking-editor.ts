@@ -46,6 +46,7 @@ import {
 import { recordAppliedFixes } from './status-mark';
 import { createComposerPort } from './composer/composer-port';
 import { withoutTakenFromWhole } from '../assertion-identity';
+import { renderViewRefused } from '../render-refusal';
 import { t } from '../i18n';
 import {
     ComposerController,
@@ -383,15 +384,10 @@ export class InlineMarkingEditor {
                         ? new Set(coverage.coveredCategories)
                         : undefined;
                 },
-                write: async (assertions) =>
-                    (
-                        await Promise.resolve(
-                            this.callRender(
-                                [...assertions],
-                                this.options.formatId,
-                            ),
-                        )
-                    ).rendered,
+                write: (assertions) =>
+                    Promise.resolve(
+                        this.callRender([...assertions], this.options.formatId),
+                    ),
                 readsInWhole: () =>
                     this.options.resolveContext?.()?.partOf !== undefined,
             },
@@ -467,7 +463,11 @@ export class InlineMarkingEditor {
         );
         if (this.destroyed) return;
         this.assertions = result.assertions;
-        this.rendered = result.rendered;
+        // A refused write is the engine's marker: the draft it read stands,
+        // and the facts still go to the host, which judges them.
+        this.rendered = renderViewRefused(result)
+            ? reading.rendered
+            : result.rendered;
         // A second commit in the same session replaces the first, and what
         // was fixed in the value it replaces no longer describes the mark.
         if (commit.replaces) this._appliedFixes.clear();

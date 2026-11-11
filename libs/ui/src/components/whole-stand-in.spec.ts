@@ -29,13 +29,17 @@ import { EzClassifyUI } from '../ezclassify-ui';
 import { InlineMarkingEditor } from './inline-marking-editor';
 import { MarkedInput } from './marked-input';
 import { MarkedTextArea } from './marked-text-area';
+import type { MarkingField } from './marking-field';
 import { statedAssertions } from './composer/composer-controller';
 import {
     activeRow,
     leave,
     openSurface,
     press,
+    resultState,
+    resultValue,
     rowFor,
+    typeText,
     wait,
 } from './composer/composer-harness';
 import { VanillaEzClassifyStore } from '../store/ezclassify-store';
@@ -988,4 +992,179 @@ describe('contextual stand-in options', () => {
             expect(rowFor('JOINT')).toBeUndefined();
         },
     );
+});
+
+describe('a marking its format cannot write', () => {
+    /** The draft the stand-in scheme reads but cannot write back. */
+    const REFUSED = 'JOINT H//SHARE';
+    const MARKER = 'unrepresentable';
+
+    /** The reason the engine gives, as the field shows it. */
+    const REASON = 'ambiguous-identity';
+
+    /** Mount a field holding `value` that reads in the part role. */
+    async function mountRefusing(markup: string): Promise<HTMLTextAreaElement> {
+        root.innerHTML = markup;
+        forms = new EzClassifyUI(asContext(wholeStandInContext() as never), {
+            root,
+        });
+        await wait(450);
+        return document.getElementById('f') as HTMLTextAreaElement;
+    }
+
+    const FIELDS: ReadonlyArray<[string, string, string]> = [
+        [
+            'a marked-input with role="part"',
+            `<input type="text" id="f" data-ezclassify-controller="marked-input" data-ezclassify-role="part" value="(L) notes">`,
+            `(${REFUSED}) notes`,
+        ],
+        [
+            'a marked-input part with an empty whole',
+            `<input type="hidden" id="doc" data-ezclassify-marking value="" /><input type="text" id="f" data-ezclassify-controller="marked-input" data-ezclassify-part-of="doc" value="(L) notes">`,
+            `(${REFUSED}) notes`,
+        ],
+        [
+            'a marked-textarea part with an empty whole',
+            `<input type="hidden" id="doc" data-ezclassify-marking value="" /><textarea id="f" data-ezclassify-controller="marked-textarea" data-ezclassify-part-of="doc">(L) notes</textarea>`,
+            `(${REFUSED}) notes`,
+        ],
+    ];
+
+    it.each(FIELDS)(
+        '%s commits the draft as written and says why',
+        async (_what, markup, expected) => {
+            const host = await mountRefusing(markup);
+            const input = await openEditor(host);
+            typeText(input, REFUSED);
+            await wait(200);
+            expect(resultValue()).toBe(REFUSED);
+            expect(resultState()).toBe('invalid');
+            press(input, 'Enter');
+            await wait(450);
+
+            expect(host.value).toBe(expected);
+            expect(host.value).not.toContain(MARKER);
+            expect(shownErrors(host)).toContain(REASON);
+            expect(forms!.components.get(host)!.getRendered()).not.toContain(
+                MARKER,
+            );
+        },
+    );
+
+    it.each(FIELDS)(
+        '%s still hands the store what it read',
+        async (_what, markup) => {
+            const host = await mountRefusing(markup);
+            const input = await openEditor(host);
+            typeText(input, REFUSED);
+            await wait(200);
+            press(input, 'Enter');
+            await wait(450);
+            if (root.querySelector('[data-ezclassify-role="part"]')) return;
+
+            const held = partStates(host).flatMap((one) => one.assertions);
+            expect(ids(held, 'level')).toEqual(['HIGH']);
+        },
+    );
+
+    /** Type the draft into an open editor. */
+    async function draftIn(input: HTMLInputElement): Promise<void> {
+        typeText(input, REFUSED);
+        await wait(200);
+        expect(input.value).toBe(REFUSED);
+    }
+
+    /** Browse the list past the draft's last word and click a row. */
+    async function browseAndPick(
+        input: HTMLInputElement,
+        label: string,
+    ): Promise<void> {
+        typeText(input, `${REFUSED} `);
+        await wait(200);
+        press(input, 'ArrowDown');
+        await wait(100);
+        rowFor(label)!.click();
+        await wait(200);
+    }
+
+    it('an editor keeps the draft and says why when a pick cannot be written', async () => {
+        const container = document.createElement('div');
+        root.appendChild(container);
+        const changes: string[] = [];
+        editor = new InlineMarkingEditor();
+        await editor.init(container, wholeStandInContext() as never, 'L', {
+            formatId: 'portion',
+            resolveContext: () => ({ role: 'part' }),
+            root,
+            onChange: (rendered) => changes.push(rendered),
+        });
+        await wait(80);
+        const input = container.querySelector(
+            '.inline-editor-input',
+        ) as HTMLInputElement;
+        input.focus();
+        await wait(80);
+        await draftIn(input);
+
+        await browseAndPick(input, 'L');
+
+        expect(input.value.trim()).toBe(REFUSED);
+        expect(openSurface()?.textContent).toContain(REASON);
+        expect(openSurface()?.textContent).not.toContain(MARKER);
+        expect(changes.join()).not.toContain(MARKER);
+    });
+
+    it('a marking field keeps the draft and says why when a pick cannot be written', async () => {
+        const host = await mountRefusing(
+            `<label for="f">Part</label><input type="text" id="f" data-ezclassify-controller="marking" data-ezclassify-role="part" value="L">`,
+        );
+        const input = root.querySelector(
+            'textarea.marking-field-host',
+        ) as HTMLInputElement;
+        input.focus();
+        await wait(200);
+        await draftIn(input);
+
+        await browseAndPick(input, 'L');
+
+        expect(input.value.trim()).toBe(REFUSED);
+        expect(openSurface()?.textContent).toContain(REASON);
+        expect(host.value).not.toContain(MARKER);
+    });
+
+    it('a marking field keeps no pending draft it cannot write', async () => {
+        const host = await mountRefusing(
+            `<label for="f">Part</label><input type="text" id="f" data-ezclassify-controller="marking" data-ezclassify-role="part" value="L">`,
+        );
+        const field = forms!.components.get(host) as MarkingField;
+        const input = root.querySelector(
+            'textarea.marking-field-host',
+        ) as HTMLInputElement;
+        input.focus();
+        await wait(200);
+        typeText(input, 'H//SHARE');
+        await wait(200);
+        expect(field.pendingDraft()).toBe('H//SHARE');
+
+        await draftIn(input);
+
+        expect(field.pendingDraft()).toBeNull();
+    });
+
+    it('a marking field holds its value and says why when a commit cannot be written', async () => {
+        const host = await mountRefusing(
+            `<label for="f">Part</label><input type="text" id="f" data-ezclassify-controller="marking" data-ezclassify-role="part" value="L">`,
+        );
+        const input = root.querySelector(
+            'textarea.marking-field-host',
+        ) as HTMLInputElement;
+        input.focus();
+        await wait(200);
+        await draftIn(input);
+        press(input, 'Enter');
+        await wait(450);
+
+        expect(host.value).toBe('L');
+        expect(root.textContent).toContain(REASON);
+    });
 });

@@ -165,7 +165,7 @@ describe('readDocPath / writeDocPath', () => {
 });
 
 describe('bindEzClassifyToObject', () => {
-    it('keeps the document value when the engine refuses to write the marking', async () => {
+    it('holds no marking in the document when the engine refuses to write it', async () => {
         const engine = passThroughEngine();
         const process = engine.process.bind(engine);
         engine.process = (input, ...rest) => {
@@ -199,6 +199,10 @@ describe('bindEzClassifyToObject', () => {
         await store.publishAssertions('doc-marking', [fact('secret')]);
 
         await store.publishAssertions('doc-marking', [fact('refused')]);
+
+        expect(doc.classification).toBe('');
+
+        await store.publishAssertions('doc-marking', [fact('secret')]);
 
         expect(doc.classification).toBe('tier:secret');
         handle.dispose();

@@ -834,14 +834,12 @@ export abstract class ComponentBase extends ReadOnlyComponentBase {
                         ? new Set(coverage.coveredCategories)
                         : undefined;
                 },
-                write: async (assertions) =>
-                    (
-                        await Promise.resolve(
-                            this.callRender([...assertions], {
-                                format: this.formatId,
-                            }),
-                        )
-                    ).rendered,
+                write: (assertions) =>
+                    Promise.resolve(
+                        this.callRender([...assertions], {
+                            format: this.formatId,
+                        }),
+                    ),
                 readsInWhole: () =>
                     this.getProcessingContext()?.partOf !== undefined,
             },

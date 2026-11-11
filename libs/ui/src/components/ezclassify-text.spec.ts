@@ -183,6 +183,71 @@ describe('EzClassifyText (standalone)', () => {
         host.remove();
     });
 
+    describe('a marking the engine cannot write', () => {
+        const MARKER = '[unrepresentable:ambiguous-representation]';
+        const refused = {
+            rendered: MARKER,
+            assessment: {
+                emitted: [],
+                omitted: [],
+                collapsed: [],
+                conflicts: [],
+                unrepresentable: [
+                    {
+                        output: 'default',
+                        reason: 'ambiguous-representation',
+                    },
+                ],
+            },
+        };
+
+        it('keeps the page text when it reads one, and says why', async () => {
+            const read = engine.validate as unknown as (
+                input: string,
+            ) => Record<string, unknown>;
+            engine.validate = ((input: string) => ({
+                ...read(input),
+                ...refused,
+            })) as unknown as SchemeEngineAdapter['validate'];
+            host.textContent = 'c1';
+
+            await field.init(host as HTMLDivElement, toCtx(engine));
+
+            expect(host.textContent).toBe('c1');
+            expect(field.getRendered()).toBe('c1');
+            expect(host.getAttribute('aria-invalid')).toBe('true');
+        });
+
+        it.each([
+            ['an engine in hand', () => refused],
+            ['a remote engine', () => Promise.resolve(refused)],
+        ])(
+            'keeps its text and goes invalid on new facts, with %s',
+            async (_what, render) => {
+                host.textContent = 'c1';
+                await field.init(host as HTMLDivElement, toCtx(engine));
+                const write = engine.render;
+                engine.render = vi.fn(
+                    render,
+                ) as unknown as SchemeEngineAdapter['render'];
+
+                field.setAssertions(field.getAssertions());
+                await Promise.resolve();
+                await Promise.resolve();
+
+                expect(field.getRendered()).toBe('c1');
+                expect(host.getAttribute('aria-invalid')).toBe('true');
+
+                engine.render = write;
+                field.setAssertions(field.getAssertions());
+                await Promise.resolve();
+                await Promise.resolve();
+
+                expect(host.getAttribute('aria-invalid')).toBeNull();
+            },
+        );
+    });
+
     it('sets aria-live="polite" on the host on init', async () => {
         host.textContent = 'c1';
         await field.init(host as HTMLDivElement, toCtx(engine));

@@ -17,6 +17,7 @@
 import type {
     Assertion,
     ProcessingContext,
+    RenderAssessment,
     ValidationError,
 } from '@ezclassify/types';
 import type {
@@ -26,6 +27,10 @@ import type {
     ComponentSchemeEngine,
 } from './component-base-readonly';
 import { resolveProfile, resolveSchemeEngine } from './component-base-readonly';
+import {
+    renderViewRefusalMessages,
+    renderViewRefused,
+} from '../render-refusal';
 import textCss from './ezclassify-text.css?inline';
 import { adoptStyles, type AdoptedStyles } from '../styles/adopt';
 
@@ -82,6 +87,8 @@ export class EzClassifyText implements ComponentInstance {
     private errors: ValidationError[] = [];
     private adoptedStyle: AdoptedStyles | null = null;
     private destroyed = false;
+    /** The last write of the facts was refused, so `valid` says that. */
+    private refused = false;
 
     async init(
         container: HTMLDivElement,
@@ -168,14 +175,14 @@ export class EzClassifyText implements ComponentInstance {
             format: this.formatId,
         });
         if ('rendered' in result) {
-            this.rendered = result.rendered;
+            this.applyWrite(result);
             this.applyValidationClasses();
             this.emitChange();
         } else {
             result.then(
                 (r) => {
                     if (this.destroyed) return;
-                    this.rendered = r.rendered;
+                    this.applyWrite(r);
                     this.applyValidationClasses();
                     this.emitChange();
                 },
@@ -259,9 +266,17 @@ export class EzClassifyText implements ComponentInstance {
             );
             if (this.destroyed) return;
             this.assertions = result.assertions ?? [];
-            this.rendered = result.rendered ?? '';
             this.valid = result.valid !== false;
             this.errors = result.errors ?? [];
+            this.refused = false;
+            // A refused write is the engine's marker: the text this host
+            // holds stands, and the host says it could not be written.
+            if (renderViewRefused(result)) {
+                this.rendered = text;
+                this.refuse(result, this.errors);
+            } else {
+                this.rendered = result.rendered ?? '';
+            }
         } catch (err) {
             // Engine errors are treated as a hard-invalid marking: keep the prior
             // assertions empty so we don't leak stale state into the aggregate,
@@ -287,6 +302,38 @@ export class EzClassifyText implements ComponentInstance {
         this.host.textContent = this.rendered;
         this.applyValidationClasses();
         this.emitChange();
+    }
+
+    /** Take a write of the facts; a refused one leaves the text standing. */
+    private applyWrite(write: {
+        rendered: string;
+        assessment?: RenderAssessment;
+    }): void {
+        if (renderViewRefused(write)) {
+            this.refuse(write);
+            return;
+        }
+        this.rendered = write.rendered;
+        if (this.refused) {
+            this.refused = false;
+            this.valid = true;
+            this.errors = [];
+        }
+    }
+
+    /** Hold the host invalid, with why its marking could not be written. */
+    private refuse(
+        write: { assessment?: RenderAssessment },
+        errors: readonly ValidationError[] = [],
+    ): void {
+        this.refused = true;
+        this.valid = false;
+        this.errors = [
+            ...errors,
+            ...renderViewRefusalMessages(this.formatId, write).map(
+                (message) => ({ constraintId: '_refused', message }),
+            ),
+        ];
     }
 
     private applyValidationClasses(): void {

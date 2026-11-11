@@ -42,6 +42,41 @@ const student: Assertion = {
 };
 
 describe('MarkedTextArea two-way entry bindings', () => {
+    it('keeps the marking an entry holds when the engine cannot write its new facts', async () => {
+        const { textarea, store } = await mount(undefined, (engine) => {
+            const render = engine.render.bind(engine);
+            engine.render = ((assertions: Assertion[], ...rest: unknown[]) =>
+                assertions.some((a) => a.conceptId === 'STUDENTS')
+                    ? {
+                          rendered:
+                              '[unrepresentable:ambiguous-representation]',
+                          assessment: {
+                              emitted: [],
+                              omitted: [],
+                              collapsed: [],
+                              conflicts: [],
+                              unrepresentable: [
+                                  {
+                                      output: 'portion',
+                                      reason: 'ambiguous-representation',
+                                  },
+                              ],
+                          },
+                      }
+                    : Reflect.apply(render, engine, [
+                          assertions,
+                          ...rest,
+                      ])) as typeof engine.render;
+        });
+        const held = textarea.value;
+        const ids = store.getEntryIds!('document')!;
+
+        await store.publishAssertions(ids[1]!, [student]);
+        await flush();
+
+        expect(textarea.value).toBe(held);
+    });
+
     it('edits one stable store entry without replacing either body', async () => {
         const { textarea, component, store } = await mount();
         const ids = store.getEntryIds!('document')!;

@@ -68,14 +68,18 @@ type Process = (
 describe('readingFromResult', () => {
     it('is complete only when recognition accounted for every character', () => {
         expect(
-            readingFromResult(result([a('S', 'level')], 'S', 'complete'), 'S')
-                .complete,
+            readingFromResult(
+                result([a('S', 'level')], 'S', 'complete'),
+                'S',
+                'default',
+            ).complete,
         ).toBe(true);
         const partial = readingFromResult(
             result([a('S', 'level')], 'S zz', 'partial', [
                 { start: 2, end: 4, text: 'zz' },
             ]),
             'S zz',
+            'default',
         );
         expect(partial.complete).toBe(false);
         expect(partial.unmatched).toEqual([{ start: 2, end: 4, text: 'zz' }]);
@@ -83,13 +87,36 @@ describe('readingFromResult', () => {
 
     it('is not complete without recognition, however many assertions came back', () => {
         expect(
-            readingFromResult(result([a('S', 'level')], 'S'), 'S zz').complete,
+            readingFromResult(result([a('S', 'level')], 'S'), 'S zz', 'default')
+                .complete,
         ).toBe(false);
+    });
+
+    it('keeps the draft in place of a refused write and says why', () => {
+        const refused = {
+            ...result([a('S', 'level')], '[unrepresentable:lossy]', 'complete'),
+            assessment: {
+                emitted: [],
+                omitted: [],
+                collapsed: [],
+                conflicts: [],
+                unrepresentable: [{ output: 'default', reason: 'lossy' }],
+            },
+        } as unknown as ProcessResult;
+
+        const reading = readingFromResult(refused, 'S', 'default');
+
+        expect(reading.rendered).toBe('S');
+        expect(reading.refusal).toEqual([
+            'Cannot display format "default": output "default" was refused (lossy).',
+        ]);
+        expect(reading.assertions).toEqual([a('S', 'level')]);
     });
 
     it('treats an empty draft as complete: it clears the value', () => {
         expect(
-            readingFromResult(result([], '', 'unrecognized'), '  ').complete,
+            readingFromResult(result([], '', 'unrecognized'), '  ', 'default')
+                .complete,
         ).toBe(true);
     });
 });
@@ -107,10 +134,12 @@ describe('readWholeDraft', () => {
             process,
             coveredCategories: () => new Set(['level']),
         };
-        const reading = await readWholeDraft(binding, 'S', [
-            a('S', 'level'),
-            a('MAIN', 'branch'),
-        ]);
+        const reading = await readWholeDraft(
+            binding,
+            'S',
+            [a('S', 'level'), a('MAIN', 'branch')],
+            'default',
+        );
         expect(reading.assertions.map((x) => x.conceptId).sort()).toEqual([
             'MAIN',
             'S',
@@ -133,6 +162,7 @@ describe('readWholeDraft', () => {
             { process, coveredCategories: () => new Set(['level']) },
             'S',
             [a('S', 'level')],
+            'default',
         );
         expect(process).toHaveBeenCalledTimes(1);
         expect(process).toHaveBeenCalledWith('S', {});
@@ -140,9 +170,12 @@ describe('readWholeDraft', () => {
 
     it('carries nothing when the adapter cannot say what its format writes', async () => {
         const process = vi.fn<Process>(async () => result([], '', 'complete'));
-        const reading = await readWholeDraft({ process }, '', [
-            a('MAIN', 'branch'),
-        ]);
+        const reading = await readWholeDraft(
+            { process },
+            '',
+            [a('MAIN', 'branch')],
+            'default',
+        );
         expect(reading.assertions).toEqual([]);
         expect(process).toHaveBeenCalledWith('', {});
     });
@@ -172,6 +205,7 @@ describe('readAdditiveDraft', () => {
             'U zz',
             [a('S', 'level'), a('NF', 'caveat')],
             replacing,
+            'default',
         );
         // The typed level replaces the base's; the caveat goes beside the text.
         expect(process).toHaveBeenCalledTimes(1);
@@ -216,6 +250,7 @@ describe('readAdditiveDraft', () => {
             'U//S',
             [a('C', 'level'), a('NF', 'caveat')],
             replacing,
+            'default',
         );
         expect(reading.valid).toBe(false);
         expect(reading.errors.map((e) => e.constraintId)).toEqual([
@@ -237,6 +272,7 @@ describe('readAdditiveDraft', () => {
             '',
             [a('S', 'level'), a('I', 'x', { confidence: 'inferred' })],
             (l) => [...l],
+            'default',
         );
         // Only what the user stated goes back to the engine.
         expect(process).toHaveBeenCalledWith('', { chosen: [a('S', 'level')] });
@@ -247,7 +283,7 @@ describe('readAdditiveDraft', () => {
     it('refuses a text it cannot read for the add rule', async () => {
         const process = vi.fn<Process>(async () => result([], ''));
         await expect(
-            readAdditiveDraft({ process }, 'U', [], replacing),
+            readAdditiveDraft({ process }, 'U', [], replacing, 'default'),
         ).rejects.toThrow(/validate/);
         expect(process).not.toHaveBeenCalled();
     });

@@ -84,7 +84,14 @@ export interface ComposerCorrection extends TextRange {
  */
 export interface ComposerReading {
     readonly assertions: Assertion[];
+    /** The marking as written; the draft's own text when the write was refused. */
     readonly rendered: string;
+    /**
+     * Why the engine could not write this marking, when it could not. A refused
+     * write is the engine's marker, which never reaches the draft or the
+     * field.
+     */
+    readonly refusal?: readonly string[];
     /** Every character of the draft was accounted for (or the draft is empty). */
     readonly complete: boolean;
     readonly unmatched: readonly ComposerFragment[];
@@ -102,6 +109,9 @@ export interface ComposerReading {
     /** What was read before repair, the basis a rule fix applies to. */
     readonly assertionsBeforeRepair?: Assertion[];
 }
+
+/** What writing an assertion set gave: its text, or why there is none. */
+export type ComposerWrite = Pick<ComposerReading, 'rendered' | 'refusal'>;
 
 /** A category as the composer needs it. */
 export interface ComposerCategory {
@@ -140,7 +150,7 @@ export interface ComposerPort {
      * format needs to write a word that stands for them. Without it, a pick is
      * written as `render` gives it.
      */
-    write?(assertions: readonly Assertion[]): Promise<string>;
+    write?(assertions: readonly Assertion[]): Promise<ComposerWrite>;
     /**
      * Every concept the field offers, in engine order. Asked once with no
      * `live` assertions, and again for each new draft with them: a scheme can
@@ -1602,19 +1612,19 @@ export class ComposerController {
     activate(row: ComposerRow): Promise<void> {
         const run = this.busy.then(() => this.activateNow(row));
         this.busy = run.catch(() => {});
-        if (row.kind !== 'fix') return run;
-        return run.then(async () => {
-            await this.commit();
+        return run.then(async (fixed) => {
+            if (fixed) await this.commit();
         });
     }
 
-    private async activateNow(row: ComposerRow): Promise<void> {
+    /** @returns Whether a fix was applied, and so has a marking to commit. */
+    private async activateNow(row: ComposerRow): Promise<boolean> {
         switch (row.kind) {
             case 'more':
                 this.showMore = true;
                 this.activeIndex = -1;
                 this.emit();
-                return;
+                return false;
             case 'correction': {
                 const next = spliceToken(
                     this.text,
@@ -1634,15 +1644,14 @@ export class ComposerController {
                         .replace('{from}', row.fragment.text)
                         .replace('{to}', row.suggestion.label),
                 );
-                return;
+                return false;
             }
             case 'fix':
-                await this.applyFix(row);
-                return;
+                return this.applyFix(row);
             case 'concept':
-                if (row.gated) return;
+                if (row.gated) return false;
                 await this.acceptConcept(row);
-                return;
+                return false;
         }
     }
 
@@ -1656,23 +1665,28 @@ export class ComposerController {
      */
     private async applyFix(
         row: Extract<ComposerRow, { kind: 'fix' }>,
-    ): Promise<void> {
+    ): Promise<boolean> {
         const assertions = fixAssertions(row.fix);
         // The whole value was replaced, not typed: nothing to search.
         this.browsing = true;
         if (this.shape === 'additive') {
             // The fix stands for the whole value: it becomes the chips.
-            await this.rewrite(assertions, []);
+            if (!(await this.rewrite(assertions, []))) return false;
         } else {
             let reading: ComposerReading;
             try {
                 reading = await this.port.render(assertions);
             } catch {
-                return;
+                return false;
+            }
+            if (reading.refusal) {
+                this.refuseEdit(reading.refusal);
+                return false;
             }
             this.adoptReading(reading.rendered, reading);
         }
         this.announceText(row.label);
+        return true;
     }
 
     /**
@@ -1735,7 +1749,7 @@ export class ComposerController {
         // search for the last word of the marking.
         this.browsing = true;
         // Text the draft could not read stays, after the marking.
-        await this.rewrite(next, baseline.unmatched);
+        if (!(await this.rewrite(next, baseline.unmatched))) return;
         this.announceText(
             row.action === 'remove'
                 ? t('a11y.suggestionRemoved').replace('{label}', s.label)
@@ -1754,11 +1768,14 @@ export class ComposerController {
     /**
      * Write an assertion set back into the draft in the draft's own shape,
      * carrying every fragment the parser could not read.
+     *
+     * @returns False when the draft stands as it was: the set could not be
+     *   written
      */
     private async rewrite(
         assertions: Assertion[],
         leftovers: readonly ComposerFragment[],
-    ): Promise<void> {
+    ): Promise<boolean> {
         const carried = leftovers.map((f) => f.text.trim()).filter(Boolean);
         if (this.shape === 'additive') {
             this.base = assertions;
@@ -1766,25 +1783,49 @@ export class ComposerController {
             this.baseVersion++;
             const text = carried.join(' ');
             await this.replaceDraft(text, text.length);
-            return;
+            return true;
         }
         // The draft states what the user stated, written as the format
         // writes it: not what the engine infers from it (the USA a REL TO
         // list starts with, say), which the reading shows under "Saves as"
         // and which re-reading would pin as stated, and not a repair of a
         // rule the set breaks, which the reading reports instead.
-        let rendered: string;
+        let written: ComposerWrite;
         try {
-            rendered = this.port.write
+            written = this.port.write
                 ? await this.port.write(assertions)
-                : (await this.port.render(assertions)).rendered;
+                : await this.port.render(assertions);
         } catch {
-            return;
+            return false;
+        }
+        if (written.refusal) {
+            this.refuseEdit(written.refusal);
+            return false;
         }
         // Exactly the marking, then anything unread: no trailing separator
         // or space. Typing goes on from there as it would anywhere.
-        const text = [rendered, ...carried].filter(Boolean).join(' ');
+        const text = [written.rendered, ...carried].filter(Boolean).join(' ');
         await this.replaceDraft(text, text.length);
+        return true;
+    }
+
+    /**
+     * A pick or a fix the engine cannot write: the draft stays as it was and
+     * says why, the way a commit that stores nothing does.
+     */
+    private refuseEdit(refusal: readonly string[]): void {
+        this.invalid = true;
+        this.problem = {
+            fragment: this.text.trim(),
+            rule: refusal.join(' '),
+        };
+        this.emit();
+        this.announceText(
+            t('a11y.composer.notSaved').replace(
+                '{problem}',
+                this.problemText(this.problem),
+            ),
+        );
     }
 
     private async replaceDraft(text: string, caret: number): Promise<void> {
@@ -1882,9 +1923,14 @@ export class ComposerController {
         this.emit();
         const rendered = this.port.committed().rendered;
         this.announceText(
-            rendered
-                ? t('a11y.composer.set').replace('{rendered}', rendered)
-                : t('a11y.composer.cleared'),
+            reading.refusal
+                ? t('a11y.composer.notSaved').replace(
+                      '{problem}',
+                      reading.refusal.join(' '),
+                  )
+                : rendered
+                  ? t('a11y.composer.set').replace('{rendered}', rendered)
+                  : t('a11y.composer.cleared'),
         );
         return 'stored';
     }
@@ -1958,7 +2004,9 @@ export class ComposerController {
                       ),
             ];
             const reading = snap.reading;
-            if (reading && reading.complete && reading.rendered) {
+            if (reading?.refusal) {
+                parts.push(...reading.refusal);
+            } else if (reading && reading.complete && reading.rendered) {
                 parts.push(
                     t('a11y.composer.savesAs').replace(
                         '{rendered}',

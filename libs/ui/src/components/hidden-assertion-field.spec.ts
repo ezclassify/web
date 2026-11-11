@@ -281,45 +281,57 @@ describe('HiddenAssertionField', () => {
         asyncContainer.remove();
     });
 
-    it('keeps the value it holds when the engine refuses to write new facts', async () => {
-        const refusalContainer = document.createElement('div');
-        document.body.appendChild(refusalContainer);
-        const refusingEngine = {
-            getScheme: engine.getScheme,
-            render: vi.fn(() => ({
-                rendered: '[unrepresentable:ambiguous-representation]',
-                assessment: {
-                    emitted: [],
-                    omitted: [],
-                    collapsed: [],
-                    conflicts: [],
-                    unrepresentable: [
-                        {
-                            output: 'default',
-                            reason: 'ambiguous-representation',
-                        },
-                    ],
-                },
-            })),
-            validate: engine.validate,
-        } as unknown as SchemeEngineAdapter;
-        const field = new HiddenAssertionField();
-        await field.init(refusalContainer, toCtx(refusingEngine), {
-            initialValue: 'held',
-        });
-        const held = field.getRendered();
-
-        field.setAssertions([
-            {
-                conceptId: 'c1',
-                categoryId: 'cat1',
-                confidence: 'certain',
-                source: 'user',
+    describe('facts the engine cannot write', () => {
+        const refused = {
+            rendered: '[unrepresentable:ambiguous-representation]',
+            assessment: {
+                emitted: [],
+                omitted: [],
+                collapsed: [],
+                conflicts: [],
+                unrepresentable: [
+                    {
+                        output: 'default',
+                        reason: 'ambiguous-representation',
+                    },
+                ],
             },
-        ]);
+        };
+        const fact = {
+            conceptId: 'c1',
+            categoryId: 'cat1',
+            confidence: 'certain' as const,
+            source: 'user' as const,
+        };
 
-        expect(field.getRendered()).toBe(held);
-        field.destroy();
-        refusalContainer.remove();
+        it.each([
+            ['an engine in hand', () => refused],
+            ['a remote engine', () => Promise.resolve(refused)],
+        ])('holds no text, with %s', async (_what, render) => {
+            const refusalContainer = document.createElement('div');
+            document.body.appendChild(refusalContainer);
+            const refusingEngine = {
+                getScheme: engine.getScheme,
+                getSchemeMeta: engine.getSchemeMeta,
+                render: vi.fn(render),
+                validate: engine.validate,
+            } as unknown as SchemeEngineAdapter;
+            const onChange = vi.fn();
+            const field = new HiddenAssertionField();
+            await field.init(refusalContainer, toCtx(refusingEngine), {
+                initialValue: 'held',
+                onChange,
+            });
+            expect(field.getRendered()).not.toBe('');
+
+            field.setAssertions([fact]);
+            await Promise.resolve();
+            await Promise.resolve();
+
+            expect(field.getRendered()).toBe('');
+            expect(onChange).toHaveBeenLastCalledWith([fact], '');
+            field.destroy();
+            refusalContainer.remove();
+        });
     });
 });

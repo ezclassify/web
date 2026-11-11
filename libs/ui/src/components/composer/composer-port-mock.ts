@@ -147,6 +147,8 @@ export class FakePort implements ComposerPort {
     ];
     /** Rows `gated()` reports for any query. */
     gatedRows: Suggestion[] = [];
+    /** Why the engine cannot write any set handed to `render`. */
+    refuseRender: readonly string[] | undefined;
 
     async gated(): Promise<Suggestion[]> {
         return this.gatedRows;
@@ -170,7 +172,10 @@ export class FakePort implements ComposerPort {
         };
     }
     async render(assertions: readonly Assertion[]) {
-        return reading([...assertions], [], '');
+        const written = reading([...assertions], [], '');
+        return this.refuseRender
+            ? { ...written, rendered: '', refusal: this.refuseRender }
+            : written;
     }
     async suggestions(_live?: readonly Assertion[]): Promise<Suggestion[]> {
         return CONCEPTS.map((c) => ({

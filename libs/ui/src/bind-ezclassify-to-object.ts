@@ -321,14 +321,15 @@ export function createDocBinding<T extends object>(
         teardown.push(
             store.subscribe(entry.markingId, (state) => {
                 if (disposed) return;
-                // A refused state's text is the engine's marker: the document
-                // keeps the marking it holds.
-                if (entry.mode === 'rendered' && renderViewRefused(state))
-                    return;
+                // A refused state's text is the engine's marker, and a document
+                // has no field to say why. It holds no marking rather than the
+                // last one, which no longer describes it.
                 const next =
-                    entry.mode === 'rendered'
-                        ? state.rendered
-                        : state.assertions;
+                    entry.mode === 'assertions'
+                        ? state.assertions
+                        : renderViewRefused(state)
+                          ? ''
+                          : state.rendered;
                 const after = stringifyForDiff(next);
                 if (after === lastSeen[entry.path]) return;
                 const before = lastSeen[entry.path];

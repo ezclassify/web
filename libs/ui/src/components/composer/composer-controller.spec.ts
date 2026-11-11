@@ -565,6 +565,47 @@ describe('the commit table', () => {
         expect(c.isDirty()).toBe(false);
     });
 
+    it('a fix the engine cannot write leaves the draft and says why', async () => {
+        port.fixes = [
+            {
+                message: 'Remove ORCON.',
+                rendered: 'SECRET',
+                keeps: [{ conceptId: 'S', categoryId: 'level' }],
+                adds: [],
+                removes: [{ conceptId: 'OC', categoryId: 'caveat' }],
+            },
+        ];
+        const c = controller();
+        await c.open();
+        await typed(c, 'SECRET ORCON');
+        const fix = c.snapshot().rows.find((r) => r.kind === 'fix');
+        const draft = c.snapshot().text;
+        port.refuseRender = ['Cannot write this.'];
+
+        await c.activate(fix!);
+
+        expect(c.snapshot().text).toBe(draft);
+        expect(c.snapshot().invalid).toBe(true);
+        expect(c.problemText(c.snapshot().problem!)).toBe('Cannot write this.');
+    });
+
+    it('a pick the engine cannot write leaves the draft and says why', async () => {
+        const c = controller();
+        await c.open();
+        await typed(c, 'SEC');
+        const row = c
+            .snapshot()
+            .rows.find(
+                (r) => r.kind === 'concept' && r.suggestion.label === 'SECRET',
+            );
+        port.refuseRender = ['Cannot write this.'];
+
+        await c.activate(row!);
+
+        expect(c.snapshot().text).toBe('SEC');
+        expect(c.problemText(c.snapshot().problem!)).toBe('Cannot write this.');
+    });
+
     it('a pick leaves exactly the marking, and a separator typed next joins it', async () => {
         const c = controller();
         await c.open();

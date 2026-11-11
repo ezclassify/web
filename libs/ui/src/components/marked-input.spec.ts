@@ -2437,6 +2437,63 @@ describe('MarkedInput favorites', () => {
         expect(field.getAssertions().map((a) => a.conceptId)).toEqual(['S']);
     });
 
+    it('keeps the saved text when the engine refuses to write a favorite', async () => {
+        const real = createTestEngine();
+        // The adapter is frozen, so the refusal wraps it from outside.
+        const engine = new Proxy(real, {
+            get(target, key) {
+                const member = Reflect.get(target, key, target) as unknown;
+                if (typeof member !== 'function') return member;
+                if (key !== 'validate') return member.bind(target);
+                return async (...args: unknown[]) => {
+                    const result = await Reflect.apply(member, target, args);
+                    return args[0] === 'S'
+                        ? {
+                              ...result,
+                              rendered:
+                                  '[unrepresentable:ambiguous-representation]',
+                              assessment: {
+                                  ...result.assessment,
+                                  unrepresentable: [
+                                      {
+                                          output: 'portion',
+                                          reason: 'ambiguous-representation',
+                                      },
+                                  ],
+                              },
+                          }
+                        : result;
+                };
+            },
+        });
+        const container = document.createElement('div');
+        root.appendChild(container);
+        container.appendChild(document.createElement('input'));
+        const field = new MarkedInput();
+        await field.init(container, asContext(engine as never), {
+            favorites: {
+                load: vi.fn(async () => [{ marking: 'S', label: 'Secret' }]),
+            },
+        });
+        const input = container.querySelector<HTMLTextAreaElement>(
+            '.marked-input-native',
+        )!;
+        input.value = '(U) quarterly report';
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+        await wait();
+
+        (root.querySelector('.ez-favorites-button') as HTMLElement).click();
+        await wait();
+        (
+            document.body.querySelector(
+                '.ez-favorites-panel .proto-dropdown-item',
+            ) as HTMLElement
+        ).dispatchEvent(new MouseEvent('click', { bubbles: true }));
+        await wait();
+
+        expect(input.value).toBe('(S) quarterly report');
+    });
+
     it('applying a favorite while the inline picker is open closes the picker instead of leaving it stale', async () => {
         // Applying a favorite must close an open picker so its stale draft
         // cannot overwrite the applied marking.

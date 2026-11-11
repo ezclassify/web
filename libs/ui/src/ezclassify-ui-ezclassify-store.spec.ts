@@ -1248,11 +1248,14 @@ describe('EzClassifyUI store wireup', () => {
                     input,
                     ...rest,
                 ]) as ProcessResult;
-                if (!Array.isArray(input) || input[0]?.value !== 'REFUSE')
-                    return result;
+                const facts = Array.isArray(input)
+                    ? input
+                    : (rest[0] as { assertions?: Assertion[] } | undefined)
+                          ?.assertions;
+                if (facts?.[0]?.value !== 'REFUSE') return result;
                 return {
                     ...result,
-                    assertions: input,
+                    assertions: facts,
                     rendered: MARKER,
                     assessment: {
                         emitted: [],
@@ -1279,7 +1282,7 @@ describe('EzClassifyUI store wireup', () => {
             confidence: 'certain',
         });
 
-        it('leaves a hidden host its value', async () => {
+        it('empties a hidden host and flags it until the marking can be written', async () => {
             document.body.innerHTML = '';
             const root5 = document.createElement('div');
             root5.innerHTML = `<input type="hidden" id="doc-marking" data-ezclassify-marking value="" />`;
@@ -1299,7 +1302,191 @@ describe('EzClassifyUI store wireup', () => {
             await flush();
 
             expect(forms.store.get('doc-marking').rendered).toBe(MARKER);
+            expect(host.value).toBe('');
+            expect(host.hasAttribute('data-ezclassify-invalid')).toBe(true);
+
+            await forms.store.publishRendered(
+                'doc-marking',
+                'DISTRICT COORDINATORS',
+            );
+            await flush();
+
             expect(host.value).toBe('DISTRICT COORDINATORS');
+            expect(host.hasAttribute('data-ezclassify-invalid')).toBe(false);
+        });
+
+        /** Mount a marking host with two facets of it. */
+        async function mountFacets(host: string, category = 'level') {
+            document.body.innerHTML = '';
+            const root5 = document.createElement('div');
+            root5.innerHTML = `${host}
+                <div id="f1" data-ezclassify-controller="selector" data-ezclassify-facet-of="doc-marking" data-ezclassify-category="${category}"></div>
+                <div id="f2" data-ezclassify-controller="selector" data-ezclassify-facet-of="doc-marking" data-ezclassify-category="${category}"></div>`;
+            document.body.appendChild(root5);
+            forms = await mountReady(root5, refusingEngine());
+            await flush();
+            return root5;
+        }
+
+        const flagged = (root5: HTMLElement) =>
+            [...root5.querySelectorAll('[data-ezclassify-invalid]')].map(
+                (el) => el.closest('[data-ezclassify-mount]') ?? el,
+            ).length;
+
+        it('says why on the first facet of a marking no field shows', async () => {
+            const root5 = await mountFacets(
+                '<input type="hidden" id="doc-marking" data-ezclassify-marking value="" />',
+            );
+
+            await forms!.store.publishAssertions('doc-marking', [
+                fact('REFUSE'),
+            ]);
+            await flush();
+
+            const shown = [
+                ...document.querySelectorAll('.ez-validation-errors'),
+            ].filter((list) => !(list as HTMLElement).hidden);
+            expect(shown).toHaveLength(1);
+            expect(shown[0].textContent).toContain('ambiguous-representation');
+            expect(shown[0].textContent).not.toContain('unrepresentable:');
+            // The hidden host, and the one facet that speaks for it.
+            expect(flagged(root5)).toBe(2);
+
+            await forms!.store.publishRendered(
+                'doc-marking',
+                'DISTRICT COORDINATORS',
+            );
+            await flush();
+
+            expect(flagged(root5)).toBe(0);
+        });
+
+        it('says why on a facet whose own slice the refused marking left alone', async () => {
+            const root5 = await mountFacets(
+                '<input type="hidden" id="doc-marking" data-ezclassify-marking value="" />',
+                'from_school',
+            );
+
+            await forms!.store.publishAssertions('doc-marking', [
+                fact('REFUSE'),
+            ]);
+            await flush();
+
+            expect(flagged(root5)).toBe(2);
+            expect(document.body.textContent).toContain(
+                'ambiguous-representation',
+            );
+        });
+
+        it('shows no marking on a display it cannot write', async () => {
+            document.body.innerHTML = '';
+            const root5 = document.createElement('div');
+            root5.innerHTML = `<input type="hidden" id="doc-marking" data-ezclassify-marking value="" />
+                <div id="b" data-ezclassify-controller="banner" data-ezclassify-bound-to="doc-marking"></div>`;
+            document.body.appendChild(root5);
+            forms = await mountReady(root5, refusingEngine());
+            await forms.store.publishRendered(
+                'doc-marking',
+                'DISTRICT COORDINATORS',
+            );
+            await flush();
+            expect(root5.querySelector('.status-banner--empty')).toBeNull();
+
+            await forms.store.publishAssertions('doc-marking', [
+                fact('REFUSE'),
+            ]);
+            await flush();
+
+            expect(root5.textContent).not.toContain('unrepresentable');
+            expect(root5.querySelector('.status-banner--empty')).not.toBeNull();
+        });
+
+        it('leaves a facet silent when a field shows the marking', async () => {
+            const root5 = await mountFacets(
+                '<input id="doc-marking" data-ezclassify-marking value="" />',
+            );
+
+            await forms!.store.publishAssertions('doc-marking', [
+                fact('REFUSE'),
+            ]);
+            await flush();
+
+            const host = root5.querySelector<HTMLInputElement>('#doc-marking')!;
+            expect(host.getAttribute('aria-invalid')).toBe('true');
+            expect(host.validationMessage).toContain(
+                'ambiguous-representation',
+            );
+            const facets = root5.querySelectorAll<HTMLElement>(
+                '[data-ezclassify-mount="selector"]',
+            );
+            expect(facets.length).toBeGreaterThan(0);
+            for (const facet of facets)
+                expect(facet.hasAttribute('data-ezclassify-invalid')).toBe(
+                    false,
+                );
+        });
+
+        it('publishes the facts of a hidden controller it cannot write', async () => {
+            document.body.innerHTML = '';
+            const root5 = document.createElement('div');
+            root5.innerHTML = `<input type="hidden" id="h" data-ezclassify-controller="hidden" data-ezclassify-marking value="" />`;
+            document.body.appendChild(root5);
+            const engine = refusingEngine();
+            const render = engine.render.bind(engine);
+            engine.render = ((assertions: Assertion[], ...rest: unknown[]) =>
+                assertions[0]?.value === 'REFUSE'
+                    ? {
+                          rendered: MARKER,
+                          assessment: {
+                              emitted: [],
+                              omitted: [],
+                              collapsed: [],
+                              conflicts: [],
+                              unrepresentable: [
+                                  {
+                                      output: 'whole',
+                                      reason: 'ambiguous-representation',
+                                  },
+                              ],
+                          },
+                      }
+                    : Reflect.apply(render, engine, [
+                          assertions,
+                          ...rest,
+                      ])) as typeof engine.render;
+            forms = await mountReady(root5, engine);
+            const host = root5.querySelector<HTMLInputElement>('#h')!;
+
+            forms.components.get(host)!.setAssertions([fact('REFUSE')]);
+            await flush();
+
+            const state = forms.store.get('h');
+            expect(state.assertions.map((a) => a.value)).toEqual(['REFUSE']);
+            expect(state.rendered).toBe(MARKER);
+        });
+
+        it('shows no marking on a banner of a marking it cannot write, and says so', async () => {
+            document.body.innerHTML = '';
+            const root5 = document.createElement('div');
+            root5.innerHTML = `<input type="hidden" id="doc-marking" data-ezclassify-marking value="" />
+                <div id="b" data-ezclassify-controller="banner" data-ezclassify-source="doc-marking"></div>
+                <code id="t" data-ezclassify-controller="text" data-ezclassify-source="doc-marking"></code>`;
+            document.body.appendChild(root5);
+            forms = await mountReady(root5, refusingEngine());
+
+            await forms.store.publishAssertions('doc-marking', [
+                fact('REFUSE'),
+            ]);
+            await flush();
+
+            expect(root5.textContent).not.toContain('unrepresentable');
+            expect(
+                root5.querySelector('.status-banner--incomplete'),
+            ).not.toBeNull();
+            expect(root5.querySelector('.status-banner--empty')).not.toBeNull();
+            expect(
+                root5.querySelector('#t')!.getAttribute('aria-invalid'),
+            ).toBe('true');
         });
 
         it('does not publish a selector field back over the marking it could not write', async () => {

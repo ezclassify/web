@@ -559,7 +559,8 @@ export class MarkingField extends ComponentBase {
         if (this._destroyed || !this.controller?.isDirty()) return null;
         // Only a draft that reads completely, and as the marking it reads to:
         // typed text the engine has not accepted is never kept as a marking.
-        return this.controller.completeReading()?.rendered ?? null;
+        const reading = this.controller.completeReading();
+        return reading && !reading.refusal ? reading.rendered : null;
     }
 
     /** Also read an open draft again, so its fix rows account for the parts. */

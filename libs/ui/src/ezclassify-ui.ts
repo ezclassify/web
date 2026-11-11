@@ -1081,14 +1081,16 @@ export class EzClassifyUI {
             const unsubscribe = this.store.subscribe(
                 id,
                 (state: EzClassifyState) => {
-                    // A refused state's text is the engine's marker: this host
-                    // keeps its value, and the fields showing the marking say
-                    // why it could not be written.
-                    if (renderViewRefused(state)) return;
-                    if (writableHost.value === state.rendered) return;
+                    // A refused state's text is the engine's marker. Nobody
+                    // reads this host but the form it submits with, so it
+                    // holds nothing rather than the last marking, and says so.
+                    const refused = renderViewRefused(state);
+                    host.toggleAttribute('data-ezclassify-invalid', refused);
+                    const next = refused ? '' : state.rendered;
+                    if (writableHost.value === next) return;
                     host.dataset.ezState = 'sync';
                     try {
-                        writableHost.value = state.rendered;
+                        writableHost.value = next;
                     } finally {
                         delete host.dataset.ezState;
                     }
@@ -1103,6 +1105,31 @@ export class EzClassifyUI {
             );
             this.storeUnsubscribers.set(host, unsubscribe);
         }
+    }
+
+    /**
+     * Whether a facet is where its marking's refusal is said: the first facet
+     * of a marking no field shows. A field showing the marking says why it
+     * could not be written; a hidden host cannot.
+     */
+    private facetSpeaksFor(facet: HTMLElement, markingId: string): boolean {
+        const shows = (el: Element) => {
+            const controller = el.getAttribute('data-ezclassify-controller');
+            return controller
+                ? controller !== 'hidden'
+                : (el as HTMLInputElement).type !== 'hidden';
+        };
+        const host = this.markingHosts.get(markingId);
+        if (host && shows(host)) return false;
+        const id = cssEscape(markingId);
+        const views = this.root.querySelectorAll(
+            `[data-ezclassify-bound-to="${id}"]`,
+        );
+        if (Array.from(views).some(shows)) return false;
+        return (
+            this.root.querySelector(`[data-ezclassify-facet-of="${id}"]`) ===
+            facet
+        );
     }
 
     private enhance(): void {
@@ -2951,6 +2978,8 @@ export class EzClassifyUI {
             el.hasAttribute('data-marked-textarea-field')
         ) {
             this.publishStructurally(storeBinding);
+        } else if (storeBinding && controller === 'hidden' && !facetOfId) {
+            this.publishUnwrittenFacts(storeBinding);
         }
 
         // Parse the harvested options bag into typed component options.
@@ -3029,6 +3058,16 @@ export class EzClassifyUI {
                 this.store
                     .get(facetOfId)
                     .assertions.filter((a) => a.categoryId !== facetCategory);
+            componentOpts.resolveFacetRefusal = () =>
+                this.facetSpeaksFor(el, facetOfId)
+                    ? renderViewRefusalMessages(
+                          resolveFormatAttr(el) ||
+                              this.formatsOf(el)[
+                                  holdsPart(el) ? 'part' : 'whole'
+                              ],
+                          this.store.get(facetOfId),
+                      )
+                    : [];
         }
 
         const wholeId = facetOfId ? undefined : storeMarkingId;
@@ -3402,18 +3441,26 @@ export class EzClassifyUI {
                         controller === 'marked-textarea'
                     )
                         return;
-                    showIncomplete?.(s.stale === true);
+                    // A refused state's text is the engine's marker, which no
+                    // view reads: the text says the facts could not be written,
+                    // and a banner shows no marking and says it may be missing.
+                    const refused = renderViewRefused(s);
+                    showIncomplete?.(s.stale === true || refused);
                     // setAssertions() only re-renders; it never reads the marking,
                     // so read-derived state freezes at mount time: the text
                     // controller's validity/aria-invalid, and the banner's
                     // displayColor for rule-driven schemes. Route both through
                     // setValue(rendered), which reads the marking with validate,
                     // so that state tracks.
-                    if (
+                    if (refused && controller === 'text') {
+                        component!.setAssertions(s.assertions ?? []);
+                    } else if (
                         (controller === 'text' || controller === 'banner') &&
                         typeof component.setValue === 'function'
                     ) {
-                        void component.setValue(s.rendered ?? '');
+                        void component.setValue(
+                            refused ? '' : (s.rendered ?? ''),
+                        );
                     } else {
                         component!.setAssertions(s.assertions ?? []);
                     }
@@ -3691,6 +3738,17 @@ export class EzClassifyUI {
         );
         this.hydrateFromStore(binding.markingId, applyState);
 
+        // Whether a marking could be written is known once the store has
+        // committed it, and a facet's own publish is not echoed back to it, so
+        // this listens with no publisher's identity.
+        const refreshRefusal = isFacet
+            ? component.refreshFacetRefusal?.bind(component)
+            : undefined;
+        const unsubRefusal = refreshRefusal
+            ? this.store.subscribe(binding.markingId, refreshRefusal)
+            : undefined;
+        refreshRefusal?.();
+
         // Wire the per-category facet allowability subscription for facet pickers.
         // The store owns the suggest traffic for every subscribed category on a
         // commit, and decides whether that is one batched call or a fan-out; the
@@ -3714,6 +3772,7 @@ export class EzClassifyUI {
 
         this.storeUnsubscribers.set(binding.token.token as HTMLElement, () => {
             unsubState();
+            unsubRefusal?.();
             unsubFacet?.();
         });
     }
@@ -4031,6 +4090,26 @@ export class EzClassifyUI {
             const sig = signAssertions(assertions);
             if (sig === lastPublishedSig) return;
             lastPublishedSig = sig;
+            this.store
+                .publishAssertions(binding.markingId, assertions, binding.token)
+                .catch(() => {});
+        };
+    }
+
+    /**
+     * A hidden field holds no text for facts the engine could not write, and
+     * publishing the empty text would drop them. Those facts go to the store as
+     * they are, unless the store already holds them.
+     */
+    private publishUnwrittenFacts(binding: StoreBinding): void {
+        const publishText = binding.publish;
+        binding.publish = (assertions: EngineAssertion[], rendered: string) => {
+            if (rendered || assertions.length === 0) {
+                publishText(assertions, rendered);
+                return;
+            }
+            const held = this.store.get(binding.markingId).assertions;
+            if (signAssertions(held) === signAssertions(assertions)) return;
             this.store
                 .publishAssertions(binding.markingId, assertions, binding.token)
                 .catch(() => {});

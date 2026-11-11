@@ -57,7 +57,10 @@ import {
     unreadRuns,
     type UnreadRun,
 } from '../loaded-value';
-import { renderViewRefusalMessages } from '../render-refusal';
+import {
+    renderViewRefusalMessages,
+    renderViewRefused,
+} from '../render-refusal';
 import { getMountHost } from '../mount-host-registry';
 
 /**
@@ -89,6 +92,8 @@ export interface ComponentInstance {
      * assertion identity.
      */
     applyStoreState?(state: EzClassifyState): void;
+    /** See {@link ReadOnlyComponentBase.refreshFacetRefusal}. */
+    refreshFacetRefusal?(): void;
     /**
      * The parts this field's whole marking covers changed. A field that judges
      * its whole against its parts (see `ComponentOptions.resolveParts`) reads
@@ -194,6 +199,13 @@ export interface ComponentOptions {
      * `data-ezclassify-facet-of` attribute on the host element.
      */
     facetOf?: string;
+    /**
+     * For a facet of a marking no field shows (a hidden host with only facets):
+     * why that marking could not be written, when it could not. Nothing else on
+     * the page can say so. Empty for a marking a field shows, which says so
+     * itself, and for every facet but the first of its marking.
+     */
+    resolveFacetRefusal?: () => readonly string[];
     /** Show the rendered string preview bar (default: false) */
     showPreview?: boolean;
     /**
@@ -622,15 +634,20 @@ export abstract class ReadOnlyComponentBase implements ComponentInstance {
         const result = this.callRender(this.assertions, {
             format: this.formatId,
         });
-        if ('rendered' in result) {
-            this._lastRendered = result.rendered;
+        // A refused write is the engine's marker, never the field's value. A
+        // display has no way to say why, so it shows no marking rather than
+        // the last one.
+        const paint = (written: {
+            rendered: string;
+            assessment?: RenderAssessment;
+        }) => {
+            this._lastRendered = renderViewRefused(written)
+                ? ''
+                : written.rendered;
             this.onAssertionsChanged();
-        } else {
-            result.then(({ rendered }) => {
-                this._lastRendered = rendered;
-                this.onAssertionsChanged();
-            });
-        }
+        };
+        if ('rendered' in result) paint(result);
+        else void result.then(paint);
     }
 
     /**
@@ -866,11 +883,11 @@ export abstract class ReadOnlyComponentBase implements ComponentInstance {
         warnings: readonly Warning[] = [],
     ): void {
         // Facet-of: this component renders one category slice of a larger
-        // marking. The host renders validation once at the parent field; a
-        // facet view never carries a validation surface.
+        // marking. The host renders validation once at the parent field, so a
+        // facet says nothing about the marking's rules.
         this.showRuleErrors(
             this.options.facetOf
-                ? NO_RULE_ERRORS
+                ? this.facetReport()
                 : ruleErrorsFrom(errors, proposedFixes, warnings),
         );
     }
@@ -881,7 +898,9 @@ export abstract class ReadOnlyComponentBase implements ComponentInstance {
      */
     protected showReadFailure(error: unknown): void {
         this.showRuleErrors(
-            this.options.facetOf ? NO_RULE_ERRORS : readFailureReport(error),
+            this.options.facetOf
+                ? this.facetReport()
+                : readFailureReport(error),
         );
     }
 
@@ -903,7 +922,7 @@ export abstract class ReadOnlyComponentBase implements ComponentInstance {
         warnings: readonly Warning[] = [],
     ): void {
         if (this.options.facetOf) {
-            this.showRuleErrors(NO_RULE_ERRORS);
+            this.showRuleErrors(this.facetReport());
             return;
         }
         const report = ruleErrorsFrom(errors, proposedFixes, warnings);
@@ -914,6 +933,26 @@ export abstract class ReadOnlyComponentBase implements ComponentInstance {
                 ...renderViewRefusalMessages(this.formatId, write),
             ],
         });
+    }
+
+    /**
+     * The store committed the marking this facet is a slice of. Whether that
+     * marking could be written is not in the facet's slice, so the facet asks
+     * again.
+     */
+    refreshFacetRefusal(): void {
+        if (this.options.facetOf) this.showRuleErrors(this.facetReport());
+    }
+
+    /**
+     * What a facet shows: nothing, unless it is where its marking's refusal is
+     * said (see {@link ComponentOptions.resolveFacetRefusal}).
+     */
+    private facetReport(): RuleErrorReport {
+        const messages = this.options.resolveFacetRefusal?.() ?? [];
+        return messages.length > 0
+            ? { ...NO_RULE_ERRORS, messages: [...messages] }
+            : NO_RULE_ERRORS;
     }
 
     private showRuleErrors(report: RuleErrorReport): void {

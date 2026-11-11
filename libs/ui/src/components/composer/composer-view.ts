@@ -1226,8 +1226,12 @@ export class ComposerView {
             return;
         }
         if (reading.complete) {
-            r.dataset.state = s.invalid ? 'invalid' : 'ok';
-            label.textContent = t('composer.savesAs');
+            // A marking the engine cannot write is never shown as saving.
+            const refused = !!reading.refusal;
+            r.dataset.state = s.invalid || refused ? 'invalid' : 'ok';
+            label.textContent = t(
+                refused ? 'composer.notSaved' : 'composer.savesAs',
+            );
             value.textContent = reading.rendered;
             const changes = document.createElement('span');
             changes.className = 'ez-composer__changes';
@@ -1282,7 +1286,11 @@ export class ComposerView {
             // The same report the field shows under itself when the list is
             // closed: every rule the result breaks, then the warnings. The
             // fix rows below are the ways to fix it.
-            const report = ruleErrorsFrom(reading.errors, [], reading.warnings);
+            const read = ruleErrorsFrom(reading.errors, [], reading.warnings);
+            const report = {
+                ...read,
+                messages: [...read.messages, ...(reading.refusal ?? [])],
+            };
             // The broken rules fold under one line so the ways to fix stay in
             // view: on the phone sheet when there are fixes, whenever more
             // than three are listed, and when the popover had no room for

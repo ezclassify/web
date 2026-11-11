@@ -6,7 +6,11 @@
  * without rendering an editable widget.
  */
 
-import type { Assertion, ValidationError } from '@ezclassify/types';
+import type {
+    Assertion,
+    RenderAssessment,
+    ValidationError,
+} from '@ezclassify/types';
 import type {
     ComponentInstance,
     ComponentOptions,
@@ -76,14 +80,20 @@ export class HiddenAssertionField implements ComponentInstance {
         const result = this.callRender(this.assertions, {
             format: this.formatId,
         });
-        // A refused write is the engine's marker, never the field's value.
+        // A refused write is the engine's marker, never the field's value, and
+        // nothing here can show why. The field holds no text rather than the
+        // text of a marking it no longer holds.
+        const written = (r: {
+            rendered: string;
+            assessment?: RenderAssessment;
+        }) => (renderViewRefused(r) ? '' : r.rendered);
         if ('rendered' in result) {
-            if (!renderViewRefused(result)) this.rendered = result.rendered;
+            this.rendered = written(result);
             this.emitChange();
         } else {
             result.then(
                 (r) => {
-                    if (!renderViewRefused(r)) this.rendered = r.rendered;
+                    this.rendered = written(r);
                     this.emitChange();
                 },
                 (err) => {

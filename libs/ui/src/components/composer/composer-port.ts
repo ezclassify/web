@@ -35,6 +35,7 @@ import {
     type FormatLayoutSource,
 } from '../../format-layout';
 import { defaultSurfaceOf } from '../../format-resolver';
+import { renderViewRefusalMessages } from '../../render-refusal';
 
 /** What a field provides for its composer port. Read on every call. */
 export interface ComposerPortField {
@@ -88,6 +89,27 @@ export function ownedElsewhere(
         return defaultSurface !== undefined && surface !== defaultSurface;
     }
     return !category.scopes.includes(surface);
+}
+
+/**
+ * The surfaces deciding which categories a field edits, for
+ * {@link ownedElsewhere}: the one it declares, else the one its format writes,
+ * and the scheme's default.
+ *
+ * @param meta - The scheme metadata the field's render formats come from
+ * @param formatId - The field's format
+ * @param scope - The surface the field declares, if any
+ */
+export function fieldSurfaces(
+    meta: FormatLayoutSource,
+    formatId: string,
+    scope: string | undefined,
+): { surface: string | undefined; defaultSurface: string | undefined } {
+    const outputs = meta.formats ?? [];
+    return {
+        surface: scope ?? outputs.find((f) => f.id === formatId)?.surface,
+        defaultSurface: defaultSurfaceOf(outputs, meta.defaultRenderFormat),
+    };
 }
 
 /**
@@ -172,20 +194,38 @@ export function createComposerPort(field: ComposerPortField): ComposerPort {
                           field.binding,
                           text,
                           field.committed().assertions,
+                          field.formatId(),
                       )
                     : await readAdditiveDraft(
                           field.binding,
                           text,
                           base ?? [],
                           add,
+                          field.formatId(),
                       ),
             ),
         write: field.binding.write
-            ? async (assertions) =>
-                  field.binding.write!(await writable(assertions))
+            ? async (assertions) => {
+                  const written = await field.binding.write!(
+                      await writable(assertions),
+                  );
+                  const refusal = renderViewRefusalMessages(
+                      field.formatId(),
+                      written,
+                  );
+                  return refusal.length > 0
+                      ? { rendered: '', refusal }
+                      : { rendered: written.rendered };
+              }
             : undefined,
         render: async (assertions) =>
-            judged(await renderAssertions(field.binding, assertions)),
+            judged(
+                await renderAssertions(
+                    field.binding,
+                    assertions,
+                    field.formatId(),
+                ),
+            ),
         suggestions: (live) => field.suggestions(live),
         gated: (query, live) => field.gated(query, live),
         committed: () => field.committed(),
@@ -199,13 +239,10 @@ export function createComposerPort(field: ComposerPortField): ComposerPort {
         categories: () => {
             const bound = field.categoryId?.();
             const meta = field.meta();
-            const outputs = meta.formats ?? [];
-            const surface =
-                field.scope?.() ??
-                outputs.find((f) => f.id === field.formatId())?.surface;
-            const defaultSurface = defaultSurfaceOf(
-                outputs,
-                meta.defaultRenderFormat,
+            const { surface, defaultSurface } = fieldSurfaces(
+                meta,
+                field.formatId(),
+                field.scope?.(),
             );
             const order = new Map(
                 getPublicFormatLayout(meta, field.formatId()).categoryOrder.map(
