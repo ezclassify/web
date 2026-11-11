@@ -290,6 +290,21 @@ describe('a part whose whole is not on the page', () => {
             .toBe('true');
     });
 
+    it('reads a plain input with no id in the part role', async () => {
+        root.innerHTML = `<input data-ezclassify-marking data-ezclassify-role="part" value="LOW">`;
+        ui = new EzClassifyUI(context(), { root });
+        const input = root.querySelector<HTMLInputElement>('input')!;
+        await expect.poll(() => input.value).toBe('LOW');
+        expect(input.getAttribute('aria-invalid')).not.toBe('true');
+
+        input.value = FORM;
+        input.dispatchEvent(new FocusEvent('blur', { bubbles: true }));
+
+        await expect
+            .poll(() => input.getAttribute('aria-invalid'))
+            .toBe('true');
+    });
+
     it.each(['marking', 'tags'])(
         'refuses a whole-only form in a %s field',
         async (controller) => {
