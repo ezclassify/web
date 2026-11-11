@@ -2,9 +2,10 @@
  * CrosswalkHandbook Component
  *
  * A reference panel for one crosswalk a Context holds: what it translates from
- * and to, its guidance and citation, and every reviewed decision it applies,
- * the cross-field selections first and then the per-assertion mappings, each
- * with its disposition and reason.
+ * and to, led by the crosswalk document's overall marking when it carries one,
+ * its guidance and citation, and every reviewed decision it applies, the
+ * cross-field selections first and then the per-assertion mappings, each with
+ * its disposition and reason.
  *
  * Declared with `data-ezclassify-controller="crosswalk-handbook"`. A Context
  * that holds one crosswalk needs nothing else; one that holds several names the
@@ -40,7 +41,8 @@ import type {
     ComponentOptions,
 } from './component-base-readonly';
 import { resolveContextSource } from './component-base-readonly';
-import { createAnnouncer, announce } from './component-utils';
+import { buildOverallMarking } from './browser-component-base';
+import { COMPONENT_CSS, createAnnouncer, announce } from './component-utils';
 import { adoptStyles, type AdoptedStyles } from '../styles/adopt';
 import crosswalkHandbookCss from './crosswalk-handbook.css?inline';
 
@@ -254,7 +256,7 @@ export class CrosswalkHandbook implements ComponentInstance {
 
         if (this.options.injectStyles !== false) {
             this.adoptedStyle = adoptStyles(
-                crosswalkHandbookCss,
+                COMPONENT_CSS + crosswalkHandbookCss,
                 (this.options.root ??
                     container.ownerDocument?.head ??
                     document.head) as HTMLElement,
@@ -342,6 +344,12 @@ export class CrosswalkHandbook implements ComponentInstance {
         const crosswalk = this.crosswalk;
         const el = document.createElement('div');
         el.className = `${ROOT_CLASS}__overview`;
+
+        const marking = buildOverallMarking(
+            `${ROOT_CLASS}__overview-marking`,
+            crosswalk.marking,
+        );
+        if (marking) el.appendChild(marking);
 
         const name = document.createElement('div');
         name.className = `${ROOT_CLASS}__name`;

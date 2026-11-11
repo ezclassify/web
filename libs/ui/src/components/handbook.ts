@@ -28,7 +28,10 @@ import {
     type ComponentOptions,
 } from './component-base-readonly';
 import { createAnnouncer, announce } from './component-utils';
-import { resolveReferenceSurfaceOverride } from './browser-component-base';
+import {
+    buildOverallMarking,
+    resolveReferenceSurfaceOverride,
+} from './browser-component-base';
 import handbookCss from './handbook.css?inline';
 
 /** Structured description data for a single concept entry. */
@@ -414,17 +417,12 @@ export class Handbook extends ReadOnlyComponentBase {
         const el = document.createElement('div');
         el.className = 'ez-handbook__overview';
 
-        // A marked scheme document carries its own overall marking. Show it
-        // verbatim, the way the document writes it; nothing here reads it.
-        if (this.scheme.marking) {
-            const marking = document.createElement('div');
-            marking.className = 'ez-handbook__overview-marking';
-            const label = document.createElement('span');
-            label.className = 'ez-sr-only';
-            label.textContent = 'Overall marking: ';
-            marking.append(label, this.scheme.marking);
-            el.appendChild(marking);
-        }
+        // A marked scheme document carries its own overall marking.
+        const marking = buildOverallMarking(
+            'ez-handbook__overview-marking',
+            this.scheme.marking,
+        );
+        if (marking) el.appendChild(marking);
 
         const name = document.createElement('div');
         name.className = 'ez-handbook__overview-name';

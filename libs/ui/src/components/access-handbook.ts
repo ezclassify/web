@@ -5,7 +5,8 @@
  * loaded access policy, grouped into "always-applied" (unconditional) and
  * "conditional" (fired only when the marking contains certain concepts). For
  * each rule it shows the plain-English requirement, the conditional trigger
- * when present, and the user attributes the engine will inspect.
+ * when present, and the user attributes the engine will inspect. The overview
+ * leads with the policy document's overall marking when it carries one.
  *
  * Collapses by default. A search input filters rules across both groups by
  * name, requirement text, and attribute names.
@@ -25,6 +26,7 @@ import {
     type ComponentOptions,
 } from './component-base-readonly';
 import {
+    buildOverallMarking,
     buildSearchInput,
     announceMatchCount,
     resolveReferenceSurfaceOverride,
@@ -43,6 +45,14 @@ import accessHandbookCss from './access-handbook.css?inline';
 type AccessEngineWithSurfaceLabel = AccessEngineAdapter & {
     referenceSurfaceLabel?: ReferenceSurfaceLabel;
 };
+
+/**
+ * The access policy document's own overall marking, as the adapter reports it
+ * once the rule list has resolved. Absent when the policy declares none.
+ */
+function policyMarking(accessEngine: AccessEngineAdapter): string | undefined {
+    return (accessEngine as AccessEngineAdapter & { marking?: string }).marking;
+}
 
 /** Options specific to the AccessHandbook component. */
 export interface AccessHandbookOptions extends ComponentOptions {
@@ -219,6 +229,13 @@ export class AccessHandbook extends ReadOnlyComponentBase {
         if (this._destroyed) return;
 
         if (allRules.length === 0) {
+            // A policy with no rules is still a marked document.
+            const marking = buildOverallMarking(
+                `${ROOT_CLASS}__overview-marking`,
+                policyMarking(accessEngine),
+            );
+            if (marking) this.container.appendChild(marking);
+
             const empty = document.createElement('div');
             empty.className = `${ROOT_CLASS}__empty`;
             empty.setAttribute('role', 'status');
@@ -494,6 +511,12 @@ export class AccessHandbook extends ReadOnlyComponentBase {
     ): HTMLElement {
         const el = document.createElement('div');
         el.className = `${ROOT_CLASS}__overview`;
+
+        const marking = buildOverallMarking(
+            `${ROOT_CLASS}__overview-marking`,
+            policyMarking(accessEngine),
+        );
+        if (marking) el.appendChild(marking);
 
         const name = document.createElement('div');
         name.className = `${ROOT_CLASS}__overview-name`;

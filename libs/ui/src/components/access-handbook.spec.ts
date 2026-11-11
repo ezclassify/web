@@ -139,6 +139,72 @@ describe('AccessHandbook', () => {
         expect(empty).not.toBeNull();
     });
 
+    describe('overall marking', () => {
+        function markedContext(
+            rules: AccessRuleDescription[],
+            marking: string,
+        ): ContextAdapter {
+            const ctx = makeContext(rules);
+            Object.assign(ctx.access!, { marking });
+            return ctx;
+        }
+
+        it('leads the overview with the policy document marking', async () => {
+            await component.init(
+                container,
+                markedContext([makeRule()], '(U) NOTIONAL//TEST'),
+            );
+            await vi.waitFor(() =>
+                expect(
+                    container.querySelector('.ez-access-handbook__overview'),
+                ).not.toBeNull(),
+            );
+
+            const overview = container.querySelector(
+                '.ez-access-handbook__overview',
+            )!;
+            const marking = overview.querySelector(
+                '.ez-access-handbook__overview-marking',
+            )!;
+            expect(overview.firstElementChild).toBe(marking);
+            expect(marking.textContent).toBe(
+                'Overall marking: (U) NOTIONAL//TEST',
+            );
+        });
+
+        it('still shows the marking of a policy with no rules', async () => {
+            await component.init(
+                container,
+                markedContext([], '(U) NOTIONAL//TEST'),
+            );
+            await vi.waitFor(() =>
+                expect(
+                    container.querySelector('.ez-access-handbook__empty'),
+                ).not.toBeNull(),
+            );
+
+            expect(
+                container.querySelector('.ez-access-handbook__overview-marking')
+                    ?.textContent,
+            ).toBe('Overall marking: (U) NOTIONAL//TEST');
+        });
+
+        it('shows none for a policy that carries none', async () => {
+            await component.init(container, makeContext([makeRule()]));
+            await vi.waitFor(() =>
+                expect(
+                    container.querySelector('.ez-access-handbook__overview'),
+                ).not.toBeNull(),
+            );
+
+            expect(
+                container.querySelector(
+                    '.ez-access-handbook__overview-marking',
+                ),
+            ).toBeNull();
+        });
+    });
+
     it('renders group headers for always and conditional rules', async () => {
         const rules = [
             makeRule({

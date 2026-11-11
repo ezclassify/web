@@ -195,4 +195,61 @@ describe('Guidebook', () => {
             expect(container.innerHTML).toBe('');
         });
     });
+
+    describe('overall marking', () => {
+        function view(id: string, marking?: string): GuideStructuralView {
+            return {
+                id,
+                name: `Guide ${id}`,
+                description: '',
+                categories: [],
+                uncategorized: [],
+                ...(marking ? { marking } : {}),
+            };
+        }
+
+        function shownMarking(guideId: string): Element | null {
+            return container.querySelector(
+                `[data-guide-id="${guideId}"] .ez-guidebook__guide-marking`,
+            );
+        }
+
+        it('leads a lone guide with its document marking', async () => {
+            await guidebook.init(
+                container,
+                openContext(loadCedarValleyContext()),
+                {
+                    guides: view('a', '(U) NOTIONAL//TEST'),
+                },
+            );
+
+            const section = container.querySelector('[data-guide-id="a"]')!;
+            expect(section.firstElementChild).toBe(shownMarking('a'));
+            expect(shownMarking('a')!.textContent).toBe(
+                'Overall marking: (U) NOTIONAL//TEST',
+            );
+        });
+
+        it('keeps each guide marking visible while its guide is collapsed', async () => {
+            await guidebook.init(
+                container,
+                openContext(loadCedarValleyContext()),
+                {
+                    guides: [view('a'), view('b', '(U) NOTIONAL//B')],
+                },
+            );
+
+            const body = container.querySelector(
+                '[data-guide-id="b"] .ez-guidebook__guide-body',
+            )!;
+            expect(
+                body.classList.contains('ez-guidebook__guide-body--collapsed'),
+            ).toBe(true);
+            expect(body.contains(shownMarking('b'))).toBe(false);
+            expect(shownMarking('b')!.textContent).toBe(
+                'Overall marking: (U) NOTIONAL//B',
+            );
+            expect(shownMarking('a')).toBeNull();
+        });
+    });
 });

@@ -8,13 +8,19 @@
  * is a contract-shaped fixture, not the in-process engine.
  */
 
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import type {
     ContextAdapter,
     ContextCrosswalkDescriptor,
     ContextSchemeDescriptor,
 } from '@ezclassify/types';
+import { adoptedStyleTexts } from '../styles/adopt';
 import { CrosswalkHandbook, selectCrosswalk } from './crosswalk-handbook';
+
+// `?inline` CSS imports are empty under vitest; give the shared sheet its text.
+vi.mock('./component-utils.css?inline', () => ({
+    default: '.ez-sr-only { position: absolute; }',
+}));
 
 const SCHEMES: ContextSchemeDescriptor[] = [
     { selector: 'tier', id: 'tier', version: '2.0.0', roles: ['primary'] },
@@ -210,6 +216,43 @@ describe('CrosswalkHandbook', () => {
             'https://example.test/crosswalk-memo',
         );
         expect(link.rel).toBe('noopener noreferrer');
+    });
+
+    it('leads with the overall marking of a marked crosswalk', async () => {
+        const { host } = await mount(
+            fixtureContext([crosswalk({ marking: '(U) NOTIONAL//TEST' })]),
+        );
+        const overview = host.querySelector(
+            '.ez-crosswalk-handbook__overview',
+        )!;
+        const marking = overview.querySelector(
+            '.ez-crosswalk-handbook__overview-marking',
+        )!;
+        expect(overview.firstElementChild).toBe(marking);
+        expect(marking.textContent).toBe('Overall marking: (U) NOTIONAL//TEST');
+        expect(marking.querySelector('.ez-sr-only')!.textContent).toBe(
+            'Overall marking: ',
+        );
+    });
+
+    it('shows no overall marking for a crosswalk that carries none', async () => {
+        const { host } = await mount(fixtureContext([crosswalk()]));
+        expect(
+            host.querySelector('.ez-crosswalk-handbook__overview-marking'),
+        ).toBeNull();
+        expect(host.textContent).not.toContain('Overall marking');
+    });
+
+    it('adopts the styles that keep the marking label off screen', async () => {
+        const { handbook } = await mount(fixtureContext([crosswalk()]), {
+            injectStyles: true,
+        });
+        expect(
+            adoptedStyleTexts(document).some((css) =>
+                css.includes('.ez-sr-only'),
+            ),
+        ).toBe(true);
+        handbook.destroy();
     });
 
     it('names the direction by selector when the Context cannot list its schemes', async () => {

@@ -4,7 +4,8 @@
  * A browsable reference panel that displays all rules from one or more loaded
  * guides, grouped by category. For each rule it shows the name, keywords,
  * outcome, and rationale. Compound rules show their activation conditions and
- * which rules they override.
+ * which rules they override. Each guide leads with its document's overall
+ * marking when it carries one.
  *
  * Pass guide data via `opts.guides` (preferred) or the engine may provide a
  * `buildGuideViews()` method as a fallback path. No guide traversal / matcher
@@ -37,6 +38,7 @@ import guidebookCss from './guidebook.css?inline';
 import {
     renderStructuralTree,
     applyFilterToTree,
+    buildOverallMarking,
     buildSearchInput,
     announceMatchCount,
     resolveReferenceSurfaceOverride,
@@ -314,6 +316,13 @@ export class Guidebook extends ReadOnlyComponentBase {
             section.setAttribute('role', 'listitem');
             section.dataset.guideId = view.id;
             const open = !multiGuide || this.expandedGuides.has(view.id);
+
+            // Outside the collapsible body: a collapsed guide is still marked.
+            const marking = buildOverallMarking(
+                `${ROOT_CLASS}__guide-marking`,
+                view.marking,
+            );
+            if (marking) section.appendChild(marking);
 
             if (multiGuide) {
                 const ruleCount =

@@ -276,6 +276,29 @@ export function announceMatchCount(
 }
 
 /**
+ * The overall marking line a reference panel leads with, for a document that
+ * carries one. Shown verbatim, the way the document writes it; nothing here
+ * reads it. The label is for assistive technology only.
+ *
+ * @param className - Class for the line
+ * @param marking - The document's overall marking, if it declares one
+ * @returns The line, or `null` for a document with no overall marking
+ */
+export function buildOverallMarking(
+    className: string,
+    marking: string | undefined,
+): HTMLDivElement | null {
+    if (!marking) return null;
+    const line = document.createElement('div');
+    line.className = className;
+    const label = document.createElement('span');
+    label.className = 'ez-sr-only';
+    label.textContent = 'Overall marking: ';
+    line.append(label, marking);
+    return line;
+}
+
+/**
  * Reference-surface chrome-title resolver chokepoint: Handbook, Guidebook, and
  * AccessHandbook all call through here to decide whether their own artifact
  * (scheme / guide / access policy) renamed the reference surface they render,
