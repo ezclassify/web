@@ -227,6 +227,87 @@ describe('TranslatedView', () => {
         expect(view.getRendered()).toBe('RESTRICTED-LABEL');
     });
 
+    describe('a candidate that lost a selection', () => {
+        function withLoser(): CrosswalkCompletedTranslationResult {
+            const result = partial();
+            result.outcomes.push({
+                source: { categoryId: 'level', conceptId: 'high' },
+                mappingId: 'pick-one:other',
+                disposition: 'not-selected',
+                targets: [],
+                reason: 'Not emitted because pick-one selected a different candidate.',
+            });
+            return result;
+        }
+
+        function list(el: HTMLElement, selector: string): string[] {
+            return [...el.querySelectorAll(`${selector} li`)].map(
+                (li) => li.textContent ?? '',
+            );
+        }
+
+        it('is listed apart from the facts the crosswalk omits', async () => {
+            const { view, el } = await mounted(
+                fixtureContext({
+                    translate: async () => envelope(withLoser()),
+                }),
+            );
+
+            view.setAssertions([high, team]);
+            await settle();
+
+            expect(
+                list(
+                    el,
+                    '.ez-translated-view__list:not(.ez-translated-view__not-selected)',
+                ),
+            ).toEqual(['Team omitted: The label scheme has no groups.']);
+            expect(list(el, '.ez-translated-view__not-selected')).toEqual([
+                'High not selected: Not emitted because pick-one selected a different candidate.',
+            ]);
+            expect(
+                el
+                    .querySelector('.ez-translated-view__not-selected li')!
+                    .getAttribute('data-disposition'),
+            ).toBe('not-selected');
+            expect(
+                el
+                    .querySelector('.ez-translated-view__not-selected')!
+                    .getAttribute('aria-label'),
+            ).toBe('Not selected');
+        });
+
+        it('is gone once the view reads something else', async () => {
+            const translate = vi
+                .fn<Translate>()
+                .mockResolvedValueOnce(envelope(withLoser()))
+                .mockResolvedValueOnce(envelope(partial()));
+            const { view, el } = await mounted(fixtureContext({ translate }));
+
+            view.setAssertions([high, team]);
+            await settle();
+            view.setAssertions([team]);
+            await settle();
+
+            expect(list(el, '.ez-translated-view__not-selected')).toEqual([]);
+        });
+
+        it('is gone when the next read fails', async () => {
+            const translate = vi
+                .fn<Translate>()
+                .mockResolvedValueOnce(envelope(withLoser()))
+                .mockRejectedValueOnce(new Error('crosswalk unavailable'));
+            const { view, el } = await mounted(fixtureContext({ translate }));
+
+            view.setAssertions([high, team]);
+            await settle();
+            view.setAssertions([team]);
+            await settle();
+
+            expect(list(el, '.ez-translated-view__not-selected')).toEqual([]);
+        });
+    });
+
     it('names what was not carried through the scheme the view selects', async () => {
         // The view reads the Context's second scheme; the primary is the target.
         const context = fixtureContext();

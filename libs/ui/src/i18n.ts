@@ -112,6 +112,7 @@ export const defaultLocale = {
     'fix.heading': 'Ways to fix',
 
     'translate.notCarried': 'Not carried',
+    'translate.notSelected': 'Not selected',
     'translate.forbidden': 'The crosswalk forbids translating this marking.',
     'translate.invalidSource':
         'The marking does not read, so it was not translated.',
@@ -121,6 +122,7 @@ export const defaultLocale = {
     'translate.disposition.omit': 'omitted',
     'translate.disposition.forbid': 'forbidden',
     'translate.disposition.unmapped': 'no mapping',
+    'translate.disposition.not-selected': 'not selected',
 } as const;
 
 type LocaleKeys = keyof typeof defaultLocale;

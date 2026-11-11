@@ -20,9 +20,11 @@
  * The view hands the facts it reads to `ctx.translate({ crosswalkId, marking
  * })` and shows the engine's answer as given: the target marking, and every
  * source fact the crosswalk did not carry with the disposition and reason the
- * engine reports. It decides nothing about the marking itself. A translation
- * the crosswalk forbids, a source that does not read, or a call that fails
- * shows no target marking at all. A view never contributes to a roll-up.
+ * engine reports. A fact that only lost a selection to another candidate is
+ * listed apart from the facts the crosswalk omits: nothing decided against it.
+ * It decides nothing about the marking itself. A translation the crosswalk
+ * forbids, a source that does not read, or a call that fails shows no target
+ * marking at all. A view never contributes to a roll-up.
  */
 
 import type {
@@ -146,6 +148,7 @@ export class TranslatedView implements ComponentInstance {
     private markingEl!: HTMLSpanElement;
     private noteEl!: HTMLDivElement;
     private listEl!: HTMLUListElement;
+    private notSelectedEl!: HTMLUListElement;
     private incompleteEl!: HTMLDivElement;
 
     async init(
@@ -267,7 +270,7 @@ export class TranslatedView implements ComponentInstance {
             this.markingEl.textContent = '';
             this.markingEl.removeAttribute('aria-invalid');
             this.noteEl.textContent = `${t('translate.failed')} ${message}`;
-            this.listEl.replaceChildren();
+            this.clearLists();
             this.setStatus('error');
         }
     }
@@ -278,13 +281,13 @@ export class TranslatedView implements ComponentInstance {
         this.markingEl.textContent = EMPTY_VALUE;
         this.markingEl.removeAttribute('aria-invalid');
         this.noteEl.textContent = '';
-        this.listEl.replaceChildren();
+        this.clearLists();
         this.setStatus('empty');
     }
 
     private showResult(result: CrosswalkTranslationResult): void {
         const labels = this.sourceLabels(result);
-        this.listEl.replaceChildren();
+        this.clearLists();
         this.markingEl.removeAttribute('aria-invalid');
 
         if (result.status === 'forbidden') {
@@ -357,6 +360,10 @@ export class TranslatedView implements ComponentInstance {
             );
         }
         this.listEl.setAttribute('aria-label', t('translate.notCarried'));
+        this.notSelectedEl.setAttribute(
+            'aria-label',
+            t('translate.notSelected'),
+        );
         this.setStatus(result.status);
     }
 
@@ -390,7 +397,7 @@ export class TranslatedView implements ComponentInstance {
 
     private addItem(
         label: string,
-        disposition: 'review' | 'omit' | 'forbid' | 'unmapped',
+        disposition: Exclude<CrosswalkOutcome['disposition'], 'carry'>,
         reason: string,
         guidance?: string,
     ): void {
@@ -408,7 +415,15 @@ export class TranslatedView implements ComponentInstance {
         item.append(word);
         const detail = [reason, guidance].filter(Boolean).join(' ');
         if (detail) item.append(`: ${detail}`);
-        this.listEl.append(item);
+        (disposition === 'not-selected'
+            ? this.notSelectedEl
+            : this.listEl
+        ).append(item);
+    }
+
+    private clearLists(): void {
+        this.listEl.replaceChildren();
+        this.notSelectedEl.replaceChildren();
     }
 
     private addErrors(errors: readonly ValidationError[]): void {
@@ -435,6 +450,9 @@ export class TranslatedView implements ComponentInstance {
         this.noteEl.className = 'ez-translated-view__note';
         this.listEl = document.createElement('ul');
         this.listEl.className = 'ez-translated-view__list';
+        this.notSelectedEl = document.createElement('ul');
+        this.notSelectedEl.className =
+            'ez-translated-view__list ez-translated-view__not-selected';
         this.incompleteEl = document.createElement('div');
         this.incompleteEl.className =
             'ez-translated-view__note ez-translated-view__incomplete';
@@ -443,6 +461,7 @@ export class TranslatedView implements ComponentInstance {
             this.incompleteEl,
             this.noteEl,
             this.listEl,
+            this.notSelectedEl,
         );
         this.host.replaceChildren(this.wrap);
         this.setIncomplete(this.incomplete);
