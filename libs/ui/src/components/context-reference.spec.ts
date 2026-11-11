@@ -177,6 +177,7 @@ function remoteCtx(opts: {
                     : opts.access === 'empty'
                       ? Promise.resolve([])
                       : Promise.reject(new Error('404: no access policy')),
+            describeAccessMarking: () => Promise.resolve(undefined),
         } as never,
         describeSchemes: () => Promise.resolve([]),
         audit: () => Promise.resolve({} as never),

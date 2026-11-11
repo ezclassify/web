@@ -5,7 +5,7 @@
  * no access engine is bound, and aria-expanded a11y.
  */
 
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import yaml from 'js-yaml';
 import { Context } from '@ezclassify/engine';
 import { AccessHandbook } from './access-handbook';
@@ -55,6 +55,32 @@ describe('AccessHandbook', () => {
     afterEach(() => {
         component.destroy();
         container.remove();
+    });
+
+    it('leads with the overall marking the engine loaded from the policy', async () => {
+        const policy = yaml.load(cedarValleyAccessYaml) as {
+            access: object;
+        };
+        await component.init(
+            container,
+            Context.fromComponents({
+                scheme: yaml.load(cedarValleySchemeYaml),
+                access: {
+                    access: {
+                        ...policy.access,
+                        marking: 'NOTIONAL',
+                        marking_scheme: { id: 'cedar-valley' },
+                    },
+                },
+            }),
+        );
+
+        await vi.waitFor(() =>
+            expect(
+                container.querySelector('.ez-access-handbook__overview-marking')
+                    ?.textContent,
+            ).toBe('Overall marking: NOTIONAL'),
+        );
     });
 
     it('renders rule entries from the access engine', async () => {

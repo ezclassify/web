@@ -52,7 +52,11 @@ it('searches a large policy without recomputing every rule reference', async () 
     };
     const context = schemeOnlyContext(scheme as never);
     Object.assign(context, {
-        access: { schemeId: 'test', describeAllAccessRules: () => rules },
+        access: {
+            schemeId: 'test',
+            describeAllAccessRules: () => rules,
+            describeAccessMarking: () => undefined,
+        },
     });
     const container = document.createElement('div');
     document.body.appendChild(container);

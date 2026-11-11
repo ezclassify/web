@@ -103,6 +103,7 @@ function makeAccessEngine(rules: AccessRuleDescription[]): AccessEngineAdapter {
     return {
         schemeId: 'test',
         describeAllAccessRules: vi.fn(() => rules),
+        describeAccessMarking: vi.fn(() => undefined),
         describeApplicableRules: vi.fn(() => ({
             rules: [],
             combinedRequirementText: '',
@@ -145,7 +146,9 @@ describe('AccessHandbook', () => {
             marking: string,
         ): ContextAdapter {
             const ctx = makeContext(rules);
-            Object.assign(ctx.access!, { marking });
+            Object.assign(ctx.access!, {
+                describeAccessMarking: () => marking,
+            });
             return ctx;
         }
 
@@ -187,6 +190,45 @@ describe('AccessHandbook', () => {
                 container.querySelector('.ez-access-handbook__overview-marking')
                     ?.textContent,
             ).toBe('Overall marking: (U) NOTIONAL//TEST');
+        });
+
+        it('waits for a marking the policy reports over the wire', async () => {
+            const ctx = makeContext([makeRule()]);
+            Object.assign(ctx.access!, {
+                describeAccessMarking: () =>
+                    Promise.resolve('(U) NOTIONAL//TEST'),
+            });
+            await component.init(container, ctx);
+
+            await vi.waitFor(() =>
+                expect(
+                    container.querySelector(
+                        '.ez-access-handbook__overview-marking',
+                    )?.textContent,
+                ).toBe('Overall marking: (U) NOTIONAL//TEST'),
+            );
+        });
+
+        it('paints unavailable rather than unmarked when the marking cannot be read', async () => {
+            const consoleError = vi
+                .spyOn(console, 'error')
+                .mockImplementation(() => {});
+            const ctx = makeContext([makeRule()]);
+            Object.assign(ctx.access!, {
+                describeAccessMarking: () =>
+                    Promise.reject(new Error('policy fetch failed')),
+            });
+            await component.init(container, ctx);
+
+            await vi.waitFor(() =>
+                expect(
+                    container.querySelector('.ez-access-handbook__error'),
+                ).not.toBeNull(),
+            );
+            expect(
+                container.querySelector('.ez-access-handbook__overview'),
+            ).toBeNull();
+            consoleError.mockRestore();
         });
 
         it('shows none for a policy that carries none', async () => {
@@ -350,6 +392,7 @@ describe('AccessHandbook', () => {
             (ctx as unknown as { access: AccessEngineAdapter }).access = {
                 schemeId: 'test',
                 describeAllAccessRules: vi.fn(describeAllAccessRules),
+                describeAccessMarking: vi.fn(() => Promise.resolve(undefined)),
             } as unknown as AccessEngineAdapter;
             return ctx;
         }
