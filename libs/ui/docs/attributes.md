@@ -174,6 +174,7 @@ in tests and CSS but must not set them by hand.
 | `data-ezclassify-mount-root` | `ezclassify-ui` / `element-scanner` | runtime  | the instance id stamped on each `EzClassifyUI` root; the cross-instance ownership boundary.                                                                                      | internal |
 | `data-ezclassify-error`      | `forms/rollup` / `forms/styles`     | runtime  | presence-only; stamped on a field without a component that failed the rollup's check, styled by the default stylesheet. A component shows the failure in its own errors instead. | internal |
 | `data-ezclassify-invalid`    | `ezclassify-ui`                     | runtime  | presence-only; stamped on a mount container whose value is invalid.                                                                                                              | internal |
+| `data-ezclassify-for`        | `coverage-action`                   | runtime  | the id of the whole a `.ez-coverage-action` control acts on; stamped on that control, which sits beside the whole's field.                                                       |
 
 ### Enhancement status mark (runtime element, not an attribute)
 
