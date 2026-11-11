@@ -1361,6 +1361,24 @@ describe('EzClassifyUI store wireup', () => {
             expect(flagged(root5)).toBe(0);
         });
 
+        it('asks no Context why a facet is silent once the Context is gone', async () => {
+            const root5 = document.createElement('div');
+            document.body.innerHTML = '';
+            root5.innerHTML = `<input type="hidden" id="doc-marking" data-ezclassify-marking value="" />
+                <div id="f1" data-ezclassify-controller="selector" data-ezclassify-facet-of="doc-marking" data-ezclassify-category="level"></div>`;
+            document.body.appendChild(root5);
+            const engine = refusingEngine();
+            forms = await mountReady(root5, engine);
+            const facet = forms.components.get(
+                root5.querySelector<HTMLElement>('#f1')!,
+            )!;
+            engine.getSchemeMeta = () => {
+                throw new Error('This Context has been destroyed.');
+            };
+
+            expect(() => facet.updateValidationErrors!([])).not.toThrow();
+        });
+
         it('says why on a facet whose own slice the refused marking left alone', async () => {
             const root5 = await mountFacets(
                 '<input type="hidden" id="doc-marking" data-ezclassify-marking value="" />',

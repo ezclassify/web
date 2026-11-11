@@ -3058,16 +3058,17 @@ export class EzClassifyUI {
                 this.store
                     .get(facetOfId)
                     .assertions.filter((a) => a.categoryId !== facetCategory);
-            componentOpts.resolveFacetRefusal = () =>
-                this.facetSpeaksFor(el, facetOfId)
-                    ? renderViewRefusalMessages(
-                          resolveFormatAttr(el) ||
-                              this.formatsOf(el)[
-                                  holdsPart(el) ? 'part' : 'whole'
-                              ],
-                          this.store.get(facetOfId),
-                      )
+            // Named now: by the time a refusal is said, the Context may be gone.
+            const writes =
+                resolveFormatAttr(el) ||
+                this.formatsOf(el)[holdsPart(el) ? 'part' : 'whole'];
+            componentOpts.resolveFacetRefusal = () => {
+                const held = this.store.get(facetOfId);
+                return renderViewRefused(held) &&
+                    this.facetSpeaksFor(el, facetOfId)
+                    ? renderViewRefusalMessages(writes, held)
                     : [];
+            };
         }
 
         const wholeId = facetOfId ? undefined : storeMarkingId;
