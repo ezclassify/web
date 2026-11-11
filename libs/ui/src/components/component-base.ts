@@ -78,6 +78,7 @@ export abstract class ComponentBase extends ReadOnlyComponentBase {
         options?: ComponentOptions,
     ): Promise<void> {
         await super.init(container, engine, options);
+        if (this._destroyed) return;
         const mount = this.clearButtonMount();
         if (!mount) return;
         this.clearControl = createClearButton({
@@ -129,6 +130,11 @@ export abstract class ComponentBase extends ReadOnlyComponentBase {
      * destroyed state
      */
     protected _destroyed = false;
+
+    protected override get abandoned(): boolean {
+        return this._destroyed;
+    }
+
     /**
      * Concept-detail resolution and its result cache for this instance, shared
      * with every other field class via `createConceptDescriber`. Constructed

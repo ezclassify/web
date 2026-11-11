@@ -595,6 +595,10 @@ export abstract class ReadOnlyComponentBase implements ComponentInstance {
             break;
         }
 
+        // A host can tear the field down while that read is in flight, as React's
+        // StrictMode does on every mount. Building it now would leave a second
+        // editor beside the one the next runtime makes.
+        if (this.abandoned) return;
         this.setup();
         // Errors from the initial value arrived before setup() built the
         // field's own wrapper, so the list could only follow the mount then.
@@ -1006,6 +1010,14 @@ export abstract class ReadOnlyComponentBase implements ComponentInstance {
     }
 
     abstract destroy(): void;
+
+    /**
+     * Whether the component has been destroyed; a field with live state says
+     * so.
+     */
+    protected get abandoned(): boolean {
+        return false;
+    }
     protected abstract setup(): void;
     protected abstract render(): void;
 

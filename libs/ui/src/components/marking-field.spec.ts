@@ -841,6 +841,20 @@ describe('MarkingField native text input', () => {
         expect(input.value).toBe('SECRET//');
     });
 
+    it('builds nothing for a field torn down during its first read', async () => {
+        const error = vi.spyOn(console, 'error');
+        root.innerHTML =
+            '<input id="prefilled" type="text" value="UNCLASSIFIED" data-ezclassify-controller="marking">';
+        const context = asContext(createTestEngine() as never);
+        new EzClassifyUI(context, { root }).destroy();
+        forms = new EzClassifyUI(context, { root });
+        await wait(120);
+        expect(
+            root.querySelectorAll('textarea.marking-field-host'),
+        ).toHaveLength(1);
+        expect(error.mock.calls).toEqual([]);
+    });
+
     it('retains the typed value through destroy and remount while removing the old editor', async () => {
         const { input, editor } = await mountInput();
         editor.focus();

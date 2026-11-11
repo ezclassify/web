@@ -581,6 +581,9 @@ export class MarkingField extends ComponentBase {
         this.destroyClearButton();
         this.removeRuleErrors();
         this._destroyed = true;
+        // Torn down during its first read: setup never ran, and there is nothing
+        // to undo.
+        if (!this.view) return;
         this.releaseEditor?.();
         this.releaseEditor = null;
         this.view.destroy();
