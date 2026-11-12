@@ -1,8 +1,5 @@
 #!/usr/bin/env node
-/**
- * Build @ezclassify/angular using ng-packagr (APF: FESM2022 + Ivy metadata) +
- * schematics (CommonJS).
- */
+/** Build @ezclassify/angular using ng-packagr (APF: FESM2022 + Ivy metadata). */
 import * as fs from 'fs';
 import { execSync, spawn } from 'child_process';
 import { createRequire } from 'node:module';
@@ -72,17 +69,7 @@ const patchOutPkg = () => {
             }
         }
     }
-    outPkg.files = [
-        'fesm2022/',
-        outPkg.types,
-        '!**/*.map',
-        'NOTICE',
-        'schematics/package.json',
-        'schematics/collection.json',
-        'schematics/ng-add/index.js',
-        'schematics/ng-add/schema.json',
-    ];
-    outPkg.schematics = './schematics/collection.json';
+    outPkg.files = ['fesm2022/', outPkg.types, '!**/*.map', 'NOTICE'];
     // The source package.json sets publishConfig.directory = "dist/ngpkg" so
     // that `npm publish` (run from the source root) targets the built output.
     // Inside the generated dist/ngpkg/package.json the package root already IS
@@ -98,15 +85,13 @@ const patchOutPkg = () => {
 };
 
 if (isWatch) {
-    // Watch mode: spawn ng-packagr --watch + tsc --watch (schematics) as
-    // long-lived children. After each ng-packagr cycle completes, run the
-    // same dist/ngpkg/package.json path patch as the one-shot build.
-    console.log(
-        '[angular] starting ng-packagr --watch + tsc --watch (schematics)...',
-    );
+    // Watch mode: spawn ng-packagr --watch as a long-lived child. After each
+    // cycle completes, run the same dist/ngpkg/package.json path patch as the
+    // one-shot build.
+    console.log('[angular] starting ng-packagr --watch...');
 
     // Pipe ng-packagr stdout so we can detect the per-cycle completion signal
-    // and relay output faithfully. tsc --watch goes straight to inherited stdio.
+    // and relay output faithfully.
     const ngChild = spawn(
         'npx',
         [
@@ -143,21 +128,8 @@ if (isWatch) {
         if (buf.length > 8192) buf = buf.slice(-4096);
     });
 
-    const tscChild = spawn(
-        'npx',
-        [
-            'tsc',
-            '-p',
-            'tsconfig.schematics.json',
-            '--watch',
-            '--preserveWatchOutput',
-        ],
-        { stdio: 'inherit' },
-    );
-
     const shutdown = (sig) => {
         ngChild.kill(sig);
-        tscChild.kill(sig);
         process.exit(0);
     };
     process.on('SIGINT', () => shutdown('SIGINT'));
@@ -171,19 +143,11 @@ execSync('npx ng-packagr -p ng-package.json -c tsconfig.lib.json', {
     stdio: 'inherit',
 });
 
-// Compile schematics (CommonJS, for Angular CLI / ng add)
-execSync('npx tsc -p tsconfig.schematics.json', { stdio: 'inherit' });
-
 // Copy the third-party attribution notice into the published output. ng-packagr
 // already carries LICENSE across from the package root; NOTICE is not in its
 // asset set, so copy it explicitly and list it in the generated files array.
 fs.copyFileSync('NOTICE', 'dist/ngpkg/NOTICE');
 
-// Copy schematics into the ng-packagr output so they're included in the tarball
-fs.cpSync('schematics', 'dist/ngpkg/schematics', { recursive: true });
-// Remove TypeScript source from the published schematics directory, only compiled JS ships
-fs.rmSync('dist/ngpkg/schematics/ng-add/index.ts', { force: true });
-
 patchOutPkg();
 
-console.log(`✓ Built ${PKG_NAME} -> dist/ngpkg/ + schematics/`);
+console.log(`✓ Built ${PKG_NAME} -> dist/ngpkg/`);

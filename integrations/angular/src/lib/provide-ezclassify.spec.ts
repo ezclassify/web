@@ -19,7 +19,6 @@ import type { ContextAdapter } from '@ezclassify/types';
 import { EzClassifyDirective } from './ezclassify.directive';
 import { AngularSignalStore } from './angular-signal-store';
 import { provideEzClassify } from './provide-ezclassify';
-import { EzMarkingLabelComponent } from './ez-marking-label/ez-marking-label.component';
 import { openContext } from '../../../../libs/ui/test-fixtures/context-doubles';
 import { bucketKey } from '@ezclassify/ui';
 
@@ -99,14 +98,6 @@ class BareRootComponent {}
 class StoreOverrideRootComponent {
     store!: AngularSignalStore;
 }
-
-@Component({
-    selector: 'test-label-host',
-    standalone: true,
-    imports: [EzMarkingLabelComponent],
-    template: `<ez-marking-label [marking]="'HIGH'" />`,
-})
-class LabelHostComponent {}
 
 describe('provideEzClassify', () => {
     let context: ContextAdapter;
@@ -314,70 +305,5 @@ describe('provideEzClassify', () => {
         fixture.destroy();
         expect(() => owned.subscribe('doc', () => {})).not.toThrow();
         owned.destroy();
-    });
-
-    it('colors a label from the provided Context with no root above it', async () => {
-        await TestBed.configureTestingModule({
-            imports: [LabelHostComponent],
-            providers: [
-                provideEzClassify({
-                    context,
-                    options: {
-                        colorMap: {
-                            HIGH: { background: '#900', text: '#fff' },
-                        },
-                    },
-                }),
-            ],
-        }).compileComponents();
-
-        const read = vi.spyOn(context.scheme, 'validate');
-        const fixture = TestBed.createComponent(LabelHostComponent);
-        fixture.detectChanges();
-        await Promise.resolve();
-        fixture.detectChanges();
-        const span: HTMLElement =
-            fixture.nativeElement.querySelector('.ez-marking-label');
-        expect(span.classList).toContain('ez-marking-label--colored');
-        expect(read).toHaveBeenCalledWith('HIGH');
-    });
-
-    it('lets a root shadow the provided color map for a label inside it', async () => {
-        @Component({
-            selector: 'test-label-override-root',
-            standalone: true,
-            imports: [EzClassifyDirective, EzMarkingLabelComponent],
-            template: `<div
-                [ezClassifyOptions]="{
-                    colorMap: { HIGH: { background: '#111111', text: '#fff' } },
-                }"
-                ezClassify>
-                <ez-marking-label [marking]="'HIGH'" />
-            </div>`,
-        })
-        class LabelOverrideRootComponent {}
-
-        await TestBed.configureTestingModule({
-            imports: [LabelOverrideRootComponent],
-            providers: [
-                provideEzClassify({
-                    context,
-                    options: {
-                        colorMap: {
-                            HIGH: { background: '#eeeeee', text: '#000' },
-                        },
-                    },
-                }),
-            ],
-        }).compileComponents();
-
-        const fixture = TestBed.createComponent(LabelOverrideRootComponent);
-        fixture.detectChanges();
-        await Promise.resolve();
-        fixture.detectChanges();
-
-        const span: HTMLElement =
-            fixture.nativeElement.querySelector('.ez-marking-label');
-        expect(span.style.getPropertyValue('--ez-marking-bg')).toBe('#111111');
     });
 });

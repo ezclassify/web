@@ -34,6 +34,5 @@ export type {
     AngularSignalStoreOptions,
     SignalBackedEzClassifyStore,
 } from './lib/angular-signal-store';
-export { EzMarkingLabelComponent } from './lib/ez-marking-label/ez-marking-label.component';
 export { EzContextReferenceComponent } from './lib/context-reference/context-reference.component';
 export { EzContextReferenceTabComponent } from './lib/context-reference/context-reference-tab.component';

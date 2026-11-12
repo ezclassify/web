@@ -88,8 +88,7 @@ export type EzClassifyProvision = (
 
 /**
  * Name the connected Context, or several by key, and optional presentation
- * defaults, for every `ezClassify` root and `<ez-marking-label>` under this
- * injector.
+ * defaults, for every `ezClassify` root under this injector.
  *
  * @param provision - `{ context }` or `{ contexts }`, and optional presentation
  *   defaults.

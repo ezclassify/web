@@ -19,10 +19,6 @@
     "files": [
         "dist/ngpkg/fesm2022/",
         "dist/ngpkg/index.d.ts",
-        "schematics/collection.json",
-        "schematics/ng-add/index.js",
-        "schematics/ng-add/schema.json",
-        "schematics/package.json",
         "!dist/**/*.map"
     ],
     "keywords": [
@@ -34,7 +30,6 @@
     "scripts": {
         "build": "node build-lib.mjs",
         "build:watch": "node build-lib.mjs --watch",
-        "clean:deep": "node clean.mjs",
         "lint": "npx eslint src/",
         "pack:dry": "npm run build && npm pack ./dist/ngpkg --dry-run",
         "prepublishOnly": "echo 'Do not publish this package directly. Run: npm run publish:lib' && exit 1",
@@ -53,9 +48,6 @@
         "rxjs": ">=7.0.0"
     },
     "devDependencies": {
-        "@angular-devkit/core": "20.3.39",
-        "@angular-devkit/schematics": "20.3.39",
-        "@angular/cli": "20.3.39",
         "@angular/common": "20.3.34",
         "@angular/compiler": "20.3.34",
         "@angular/compiler-cli": "20.3.34",
@@ -66,7 +58,6 @@
         "@angular/router": "20.3.34",
         "@ezclassify/types": "^1.0.0-0",
         "@ezclassify/ui": "^1.0.0-0",
-        "@schematics/angular": "20.3.39",
         "ng-packagr": "20.3.2",
         "rxjs": "^7.8.2",
         "typescript": "5.9.3",
@@ -76,6 +67,5 @@
         "access": "public",
         "directory": "dist/ngpkg"
     },
-    "sideEffects": false,
-    "schematics": "./schematics/collection.json"
+    "sideEffects": false
 }
