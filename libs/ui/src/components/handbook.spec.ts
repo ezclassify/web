@@ -13,8 +13,10 @@ import type { ConceptView, Assertion } from '@ezclassify/types';
 import type { Category, Concept, Scheme } from '@ezclassify/types/internal';
 import { schemeOnlyContext } from '../../test-fixtures/context-doubles';
 import { Handbook } from './handbook';
-import { loadPantryContext } from '@ezclassify/example-schemes/pantry';
-import { loadCedarValleyContext } from '@ezclassify/example-schemes/cedar-valley';
+import {
+    loadCedarValleyContext,
+    loadCedarValleyLevelsContext,
+} from '../../../../test-support/community-content';
 import { mockRenderFormats } from '../render-format-layout-mock';
 
 /** Scheme with scopes and explicit defaultScope */
@@ -1135,39 +1137,41 @@ describe('Handbook', () => {
     });
 
     describe('context re-bind', () => {
-        it('renders pantry scheme categories and concepts', async () => {
-            const ctxA = toCtx(loadPantryContext().scheme);
+        it('renders Cedar Valley scheme categories and concepts', async () => {
+            const ctxA = toCtx(loadCedarValleyContext().scheme);
             await handbook.init(container, ctxA, { expandAll: true });
 
             const headers = [
                 ...container.querySelectorAll('.ez-handbook__category-header'),
             ];
             const headerText = headers.map((h) => h.textContent ?? '');
-            expect(headerText.some((t) => t.includes('Allergen Tags'))).toBe(
-                true,
-            );
+            expect(
+                headerText.some((t) => t.includes('Sensitive content')),
+            ).toBe(true);
 
             const entries = [
                 ...container.querySelectorAll('.ez-handbook__entry-name'),
             ];
             const entryNames = entries.map((e) => e.textContent ?? '');
-            expect(entryNames.some((n) => n.includes('Gluten'))).toBe(true);
+            expect(
+                entryNames.some((n) => n.includes('Student information')),
+            ).toBe(true);
         });
 
-        it('fully re-renders on Context change: cedarValley content appears, pantry content disappears', async () => {
-            const ctxA = toCtx(loadPantryContext().scheme);
+        it('fully re-renders on Context change: the levels content appears, the district content disappears', async () => {
+            const ctxA = toCtx(loadCedarValleyContext().scheme);
             await handbook.init(container, ctxA, { expandAll: true });
 
-            // Sanity: pantry content visible before re-bind
-            expect(container.textContent).toContain('Allergen Tags');
-            expect(container.textContent).toContain('Gluten');
+            // Sanity: district-only content visible before re-bind
+            expect(container.textContent).toContain('Sensitive content');
+            expect(container.textContent).toContain('Student information');
 
-            // Re-bind to cedarValley context
+            // Re-bind to the protection-levels context
             handbook.destroy();
-            const ctxB = toCtx(loadCedarValleyContext().scheme);
+            const ctxB = toCtx(loadCedarValleyLevelsContext().scheme);
             await handbook.init(container, ctxB, { expandAll: true });
 
-            // CedarValley category and concept must appear
+            // The levels category and concept must appear
             const headers = [
                 ...container.querySelectorAll('.ez-handbook__category-header'),
             ];
@@ -1180,11 +1184,13 @@ describe('Handbook', () => {
             const entryNames = entries.map((e) => e.textContent ?? '');
             expect(entryNames.some((n) => n.includes('Restricted'))).toBe(true);
 
-            // Pantry-specific content must be gone
-            expect(headerText.some((t) => t.includes('Allergen Tags'))).toBe(
-                false,
-            );
-            expect(entryNames.some((n) => n.includes('Gluten'))).toBe(false);
+            // Content only the district scheme carries must be gone
+            expect(
+                headerText.some((t) => t.includes('Sensitive content')),
+            ).toBe(false);
+            expect(
+                entryNames.some((n) => n.includes('Student information')),
+            ).toBe(false);
         });
     });
 });

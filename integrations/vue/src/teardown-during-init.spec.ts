@@ -12,7 +12,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { defineComponent, h, nextTick } from 'vue';
 import { mount } from '@vue/test-utils';
-import { loadCedarValleyContext } from '@ezclassify/example-schemes/cedar-valley';
+import { loadCedarValleyContext } from '../../../test-support/community-content';
 import { createEzClassify, EzClassify } from './index';
 
 /** Flush the async component-init chain and the rollup debounce behind it. */

@@ -20,9 +20,12 @@
  *   registry, builds every publishable package, and runs every spec that needs
  *   nothing proprietary. This is the lane CI gates on, and it is honest because
  *   an outside contributor can reproduce it exactly.
- * - The **private lane** adds the engine, the example schemes, and the store
- *   conformance suite. It runs in a full workspace checkout where those are
- *   available, and it is the authoritative run before a release.
+ * - The **private lane** adds the engine, the REST API, and the store conformance
+ *   suite. It runs in a full workspace checkout where those are available, and
+ *   it is the authoritative run before a release. The Cedar Valley content its
+ *   specs read comes from a community-content checkout, which is public;
+ *   `test-support/community-content.ts` requires it and fails when it is
+ *   missing.
  *
  * Which lane you are in is detected, not configured: a spec that imports a
  * private package is excluded when that package cannot be resolved. Nothing
@@ -51,7 +54,6 @@ const require = createRequire(import.meta.url);
  */
 export const PRIVATE_PACKAGES = [
     '@ezclassify/engine',
-    '@ezclassify/example-schemes',
     '@ezclassify/rest-api',
     '@ezclassify/testing-utils',
 ] as const;
@@ -258,8 +260,8 @@ function resolveRelative(fromFile: string, specifier: string): string | null {
  *
  * The walk follows relative imports because the private dependency is often one
  * hop away: a spec imports a fixture module, and the fixture is what loads the
- * engine and the example schemes. Stopping at the spec's own import list would
- * leave those specs in the public lane, where they fail collection.
+ * engine and builds the Cedar Valley Context. Stopping at the spec's own import
+ * list would leave those specs in the public lane, where they fail collection.
  *
  * @param roots - Repo-relative directories to scan
  * @returns Repo-relative spec paths to exclude, sorted
@@ -332,7 +334,7 @@ function announceSkipToCi(excluded: readonly string[]): void {
     console.log(
         '::notice title=Private-runtime specs skipped::' +
             `${excluded.length} spec(s) did not run. They drive a real engine ` +
-            'over proprietary example content, which a public checkout cannot ' +
+            'over a real engine, which a public checkout cannot ' +
             'install, so a regression they alone would catch will not fail ' +
             'this check.',
     );

@@ -17,7 +17,7 @@ import {
     cedarValleyAccessYaml,
     cedarValleyGuideYaml,
     cedarValleySchemeYaml,
-} from '@ezclassify/example-schemes/cedar-valley';
+} from '../../../../test-support/community-content';
 import { ContextReference } from './context-reference';
 import { EzClassifyUI } from '../ezclassify-ui';
 import { openContext } from '../../test-fixtures/context-doubles';

@@ -8,7 +8,7 @@ import type {
     CategoryView,
 } from '@ezclassify/types';
 import { schemeOnlyContext } from '../../test-fixtures/context-doubles';
-import { loadCedarValleyContext } from '@ezclassify/example-schemes/cedar-valley';
+import { loadCedarValleyContext } from '../../../../test-support/community-content';
 import { mockRenderFormats } from '../render-format-layout-mock';
 
 function createMockProfile(): SchemePublicView {

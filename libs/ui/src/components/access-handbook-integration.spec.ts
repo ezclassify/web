@@ -13,7 +13,7 @@ import {
     cedarValleySchemeYaml,
     cedarValleyGuideYaml,
     cedarValleyAccessYaml,
-} from '@ezclassify/example-schemes/cedar-valley';
+} from '../../../../test-support/community-content';
 
 // Keep the fixture self-contained; the canonical Context brand also recognizes
 // instances supplied by a separate engine package copy.

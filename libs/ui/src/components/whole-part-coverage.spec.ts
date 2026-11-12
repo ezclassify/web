@@ -23,7 +23,7 @@ import {
     cedarValleyAccessYaml,
     cedarValleyGuideYaml,
     cedarValleySchemeYaml,
-} from '@ezclassify/example-schemes/cedar-valley';
+} from '../../../../test-support/community-content';
 import * as jsYaml from 'js-yaml';
 import { EzClassifyUI } from '../ezclassify-ui';
 

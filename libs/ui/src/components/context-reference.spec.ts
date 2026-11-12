@@ -27,7 +27,7 @@ import {
     cedarValleySchemeYaml,
     cedarValleyGuideYaml,
     cedarValleyAccessYaml,
-} from '@ezclassify/example-schemes/cedar-valley';
+} from '../../../../test-support/community-content';
 
 // JSDOM doesn't define matchMedia; stub it once.
 if (typeof window !== 'undefined' && !window.matchMedia) {

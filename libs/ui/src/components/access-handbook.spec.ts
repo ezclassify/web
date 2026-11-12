@@ -10,7 +10,7 @@ import type {
 } from '@ezclassify/types';
 import { Context } from '@ezclassify/engine';
 import { schemeOnlyContext } from '../../test-fixtures/context-doubles';
-import { loadCedarValleyLevelsContext } from '@ezclassify/example-schemes/cedar-valley-protection';
+import { loadCedarValleyLevelsContext } from '../../../../test-support/community-content';
 
 function makeRule(
     overrides: Partial<AccessRuleDescription> = {},

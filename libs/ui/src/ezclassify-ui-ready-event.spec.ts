@@ -15,7 +15,7 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { loadCedarValleyContext } from '@ezclassify/example-schemes/cedar-valley';
+import { loadCedarValleyContext } from '../../../test-support/community-content';
 import { EzClassifyUI } from './ezclassify-ui';
 import { VanillaEzClassifyStore } from './store/ezclassify-store';
 import { asContext } from '../test-fixtures/as-context';

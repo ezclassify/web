@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { Context } from '@ezclassify/engine';
-import scheme from '@ezclassify/example-schemes/schemes/cedar-valley-handling@1.0.0.json';
-import { loadCedarValleyContext } from '@ezclassify/example-schemes/cedar-valley';
+import {
+    cedarValleyHandlingSchemeDocument,
+    loadCedarValleyContext,
+} from '../../../test-support/community-content';
 import {
     EzClassifyUI,
     VanillaEzClassifyStore,
@@ -11,7 +13,9 @@ import { asContext } from '../test-fixtures/as-context';
 
 describe('third-party control integration', () => {
     it('drives native single and multiple selects without controller attributes', async () => {
-        const context = Context.fromComponents({ scheme });
+        const context = Context.fromComponents({
+            scheme: cedarValleyHandlingSchemeDocument(),
+        });
         const store = new VanillaEzClassifyStore(context.scheme);
         const tierBinding = createEzClassifyFacetBinding(
             store,
@@ -117,7 +121,9 @@ describe('third-party control integration', () => {
     });
 
     it('gives a binding created on an already-resolved facet the same values as the first', async () => {
-        const context = Context.fromComponents({ scheme });
+        const context = Context.fromComponents({
+            scheme: cedarValleyHandlingSchemeDocument(),
+        });
         const store = new VanillaEzClassifyStore(context.scheme);
 
         const first = createEzClassifyFacetBinding(store, 'document', 'level');

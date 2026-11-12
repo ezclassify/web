@@ -4,8 +4,10 @@
  *
  * Cedar Valley derives an implicit recipient for every nonpublic file and its
  * render filter hides it, so no format ever writes it and no author can type
- * it. Pantry's part view spells its own parentheses: a concept renders as
- * "(gluten)", the same text the scheme's embedded pattern wraps.
+ * it. A scheme whose part view spells its own parentheses renders a concept as
+ * "(INTERNAL)", the same text the field's wrapper adds around a part mark. No
+ * shipped scheme does that, so those specs derive it from Cedar Valley's
+ * protection levels.
  *
  * Two field behaviors have to hold for those shapes. A marking loaded into the
  * field is flagged for correction only when the correction would change what
@@ -14,8 +16,11 @@
 
 import { asContext } from '../../test-fixtures/as-context';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { loadCedarValleyContext } from '@ezclassify/example-schemes/cedar-valley';
-import { loadPantryContext } from '@ezclassify/example-schemes/pantry';
+import { Context } from '@ezclassify/engine';
+import {
+    cedarValleyLevelsSchemeDocument,
+    loadCedarValleyContext,
+} from '../../../../test-support/community-content';
 import { EzClassifyUI } from '../ezclassify-ui';
 import { MarkedTextArea } from './marked-text-area';
 
@@ -40,10 +45,32 @@ afterEach(() => {
     document.body.innerHTML = '';
 });
 
+/**
+ * Cedar Valley's protection levels with every concept's view spelling its own
+ * parentheses.
+ *
+ * @returns A Context over the derived scheme
+ */
+function loadSelfWrappedLevelsContext(): Context {
+    const document = structuredClone(cedarValleyLevelsSchemeDocument()) as {
+        scheme: {
+            data: { concepts: Array<{ views: Record<string, string> }> };
+            embedded_marking?: Array<{ pattern: string; template: string }>;
+        };
+    };
+    document.scheme.embedded_marking = [
+        { pattern: '\\(([^)]+)\\)', template: '({marking})' },
+    ];
+    for (const concept of document.scheme.data.concepts) {
+        for (const [view, text] of Object.entries(concept.views)) {
+            concept.views[view] = `(${text})`;
+        }
+    }
+    return Context.fromComponents({ scheme: document });
+}
+
 async function mountTextarea(
-    engine:
-        | ReturnType<typeof loadCedarValleyContext>['scheme']
-        | ReturnType<typeof loadPantryContext>['scheme'],
+    engine: ReturnType<typeof loadCedarValleyContext>['scheme'],
     value: string,
 ): Promise<{ ta: HTMLTextAreaElement; comp: MarkedTextArea }> {
     const ta = document.createElement('textarea');
@@ -94,15 +121,19 @@ describe('MarkedTextArea: loaded markings are flagged only for corrections that 
         expect(segment.valid).toBe(true);
     });
 
-    it('accepts Pantry tags whose part view spells the wrapper itself', async () => {
-        const value = '(gluten)\n\nCreamy pasta.\n\n(dairy)\n\nButter sauce.';
+    it('accepts levels whose part view spells the wrapper itself', async () => {
+        const value =
+            '(INTERNAL)\n\nStaff plan.\n\n(CONFIDENTIAL)\n\nStudent records.';
         const { ta, comp } = await mountTextarea(
-            loadPantryContext().scheme,
+            loadSelfWrappedLevelsContext().scheme,
             value,
         );
 
         const segments = comp.getSegments();
-        expect(segments.map((s) => s.marking)).toEqual(['(gluten)', '(dairy)']);
+        expect(segments.map((s) => s.marking)).toEqual([
+            '(INTERNAL)',
+            '(CONFIDENTIAL)',
+        ]);
         for (const segment of segments) {
             expect(segment.errors).toEqual([]);
             expect(segment.valid).toBe(true);
@@ -125,19 +156,19 @@ describe('MarkedTextArea: loaded markings are flagged only for corrections that 
 });
 
 describe('MarkedTextArea: a repair writes one wrapper', () => {
-    it('keeps a typed Pantry tag single-wrapped', async () => {
+    it('keeps a typed level single-wrapped', async () => {
         const { ta, comp } = await mountTextarea(
-            loadPantryContext().scheme,
+            loadSelfWrappedLevelsContext().scheme,
             '',
         );
 
-        ta.value = '(gluten) Creamy pasta.';
+        ta.value = '(INTERNAL) Staff plan.';
         ta.dispatchEvent(new Event('input', { bubbles: true }));
         await wait(600);
 
-        expect(ta.value).toBe('(gluten) Creamy pasta.');
+        expect(ta.value).toBe('(INTERNAL) Staff plan.');
         const [segment] = comp.getSegments();
-        expect(segment.marking).toBe('(gluten)');
+        expect(segment.marking).toBe('(INTERNAL)');
         expect(segment.valid).toBe(true);
     });
 

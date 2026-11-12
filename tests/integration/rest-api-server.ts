@@ -23,20 +23,24 @@
  */
 import * as http from 'node:http';
 import { generateKeyPairSync, sign } from 'node:crypto';
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { createRequire } from 'node:module';
 import { join } from 'node:path';
 import { installTestContextTokens } from '@ezclassify/testing-utils/context-token';
 import { installLicensedRuntime } from '@ezclassify/testing-utils/licensed-runtime';
+import {
+    communityContentDir,
+    schemeDocumentJson,
+} from '../../test-support/community-content';
 import type { TestProject } from 'vitest/node';
 
 const require_ = createRequire(import.meta.url);
 
 /**
- * The example scheme the annotated parity scheme is derived from, and what the
- * derivation adds. No example scheme declares a definition, guidance or
- * role-aware processing, so without this one the suite could not tell a wire
+ * The Cedar Valley scheme the annotated parity scheme is derived from, and what
+ * the derivation adds. No Cedar Valley scheme declares a definition, guidance
+ * or role-aware processing, so without this one the suite could not tell a wire
  * that carries those optional summary fields from one that drops them.
  */
 const ANNOTATED_SCHEME = {
@@ -77,14 +81,7 @@ export const PARITY_SCHEME_IDS = [
 export function paritySchemeJson(
     id: (typeof PARITY_SCHEME_IDS)[number],
 ): string {
-    const pkg = require_.resolve('@ezclassify/example-schemes/package.json');
-    const dist = join(
-        pkg.slice(0, pkg.length - '/package.json'.length),
-        'dist',
-        'schemes',
-    );
-    const read = (source: string) =>
-        readFileSync(join(dist, `${source}@1.0.0.json`), 'utf8');
+    const read = (source: string) => schemeDocumentJson(source);
     if (id !== ANNOTATED_SCHEME.id) return read(id);
     const document = JSON.parse(read(ANNOTATED_SCHEME.from)) as {
         scheme: Record<string, unknown>;
@@ -139,14 +136,15 @@ function parityCaller() {
 function requireServerPackage(): void {
     try {
         require_.resolve('@ezclassify/rest-api/package.json');
-        require_.resolve('@ezclassify/example-schemes/package.json');
     } catch {
         throw new Error(
-            'The integration tier needs @ezclassify/rest-api and ' +
-                '@ezclassify/example-schemes from the private package registry. ' +
-                'Run `npm run lane:private` before `npm run test:integration`.',
+            'The integration tier needs @ezclassify/rest-api from the private ' +
+                'package registry. Run `npm run lane:private` before ' +
+                '`npm run test:integration`.',
         );
     }
+    // Throws with the fix when no community-content checkout is found.
+    communityContentDir();
 }
 
 export default async function setup(project: TestProject) {

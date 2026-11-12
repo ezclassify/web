@@ -14,7 +14,7 @@ import { TestBed, type ComponentFixture } from '@angular/core/testing';
 import { Component, Input, type Signal } from '@angular/core';
 import { By } from '@angular/platform-browser';
 import { getActiveConsumer } from '@angular/core/primitives/signals';
-import { loadCedarValleyContext } from '@ezclassify/example-schemes/cedar-valley';
+import { loadCedarValleyContext } from '../../../../test-support/community-content';
 import { VanillaEzClassifyStore, type EzClassifyStore } from '@ezclassify/ui';
 import {
     AngularSignalStore,

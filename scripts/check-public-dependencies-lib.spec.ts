@@ -55,13 +55,13 @@ describe('privateDependenciesOf', () => {
         const manifest = {
             devDependencies: {
                 '@ezclassify/engine': '^1.0.0-0',
-                '@ezclassify/example-schemes': '^1.0.0-0',
+                '@ezclassify/testing-utils': '^1.0.0-0',
                 '@ezclassify/types': '^1.0.0-0',
             },
         };
         expect(privateDependenciesOf(manifest).sort()).toEqual([
             'devDependencies:@ezclassify/engine',
-            'devDependencies:@ezclassify/example-schemes',
+            'devDependencies:@ezclassify/testing-utils',
         ]);
     });
 
@@ -72,9 +72,6 @@ describe('privateDependenciesOf', () => {
 
     it('does not list the engine as publicly installable', () => {
         expect(PUBLIC_SCOPED_PACKAGES.has('@ezclassify/engine')).toBe(false);
-        expect(PUBLIC_SCOPED_PACKAGES.has('@ezclassify/example-schemes')).toBe(
-            false,
-        );
         expect(PUBLIC_SCOPED_PACKAGES.has('@ezclassify/testing-utils')).toBe(
             false,
         );

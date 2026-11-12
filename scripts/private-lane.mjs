@@ -39,11 +39,7 @@ const REPO_ROOT = path.resolve(__dirname, '..');
  * sibling `../runtime` checkout through a source alias, so an edit to the suite
  * is visible here without a publish.
  */
-const PRIVATE_PACKAGES = [
-    '@ezclassify/engine',
-    '@ezclassify/example-schemes',
-    '@ezclassify/rest-api',
-];
+const PRIVATE_PACKAGES = ['@ezclassify/engine', '@ezclassify/rest-api'];
 
 /** The sibling checkout that carries the store conformance suite. */
 const SIBLING_RUNTIME = path.resolve(REPO_ROOT, '../runtime');

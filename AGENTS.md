@@ -25,7 +25,7 @@ globbing a directory, and that list is the whole install closure:
 Everything in the closure installs from a public registry. `npm run
 check:public-dependencies` enforces that by reading the committed manifests: no
 package in the closure may declare `@ezclassify/engine`,
-`@ezclassify/example-schemes`, `@ezclassify/testing-utils`, or anything else
+`@ezclassify/testing-utils`, or anything else
 that is not published publicly. If a spec needs one of those, it belongs to the
 private lane in [`DEVELOPMENT.md`](DEVELOPMENT.md), not in a dependency field.
 

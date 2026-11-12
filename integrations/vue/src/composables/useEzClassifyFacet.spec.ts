@@ -9,7 +9,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { defineComponent, h, nextTick } from 'vue';
 import { mount } from '@vue/test-utils';
-import { loadCedarValleyContext } from '@ezclassify/example-schemes/cedar-valley';
+import { loadCedarValleyContext } from '../../../../test-support/community-content';
 import { VueRefStore, VueRefStoreKey } from './vue-ref-store';
 import { createEzClassify, EzClassify } from '../index';
 import {

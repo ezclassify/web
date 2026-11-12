@@ -18,7 +18,7 @@
  */
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import type { Assertion } from '@ezclassify/types';
-import { loadCedarValleyContext } from '@ezclassify/example-schemes/cedar-valley';
+import { loadCedarValleyContext } from '../../../test-support/community-content';
 import { EzClassifyUI } from './ezclassify-ui';
 
 const MARKING_ID = 'doc-marking';

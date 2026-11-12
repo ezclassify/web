@@ -16,8 +16,8 @@ import type {
 } from '@ezclassify/types';
 import { Guidebook } from './guidebook';
 import { resetLocale, setLocale } from '../i18n';
-import { loadCedarValleyContext } from '@ezclassify/example-schemes/cedar-valley';
-import { loadCedarValleyLevelsContext } from '@ezclassify/example-schemes/cedar-valley-protection';
+import { loadCedarValleyContext } from '../../../../test-support/community-content';
+import { loadCedarValleyLevelsContext } from '../../../../test-support/community-content';
 
 describe('Guidebook', () => {
     let container: HTMLDivElement;

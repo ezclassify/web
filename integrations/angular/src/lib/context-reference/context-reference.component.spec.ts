@@ -16,7 +16,7 @@ import {
     cedarValleySchemeYaml,
     cedarValleyGuideYaml,
     cedarValleyAccessYaml,
-} from '@ezclassify/example-schemes/cedar-valley';
+} from '../../../../../test-support/community-content';
 import { EzClassifyDirective } from '../ezclassify.directive';
 import { provideEzClassify } from '../provide-ezclassify';
 import { EzContextReferenceComponent } from './context-reference.component';

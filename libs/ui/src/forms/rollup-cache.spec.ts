@@ -5,7 +5,7 @@
  * format) tuples within a session to avoid repeated engine processing.
  */
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { loadCedarValleyContext } from '@ezclassify/example-schemes/cedar-valley';
+import { loadCedarValleyContext } from '../../../../test-support/community-content';
 import { openContext } from '../../test-fixtures/context-doubles';
 import { clearRollupProcessCache, processRollupMarking } from './rollup';
 import { EzClassifyUI } from '../ezclassify-ui';

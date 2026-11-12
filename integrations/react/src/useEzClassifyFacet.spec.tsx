@@ -6,7 +6,7 @@ import {
     renderHook,
     waitFor,
 } from '@testing-library/react';
-import { loadCedarValleyContext } from '@ezclassify/example-schemes/cedar-valley';
+import { loadCedarValleyContext } from '../../../test-support/community-content';
 import {
     EzClassify,
     EzClassifyProvider,

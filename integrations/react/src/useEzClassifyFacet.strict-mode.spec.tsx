@@ -8,7 +8,7 @@
  */
 import React, { Activity, StrictMode, useState } from 'react';
 import { act, cleanup, render, waitFor } from '@testing-library/react';
-import { loadCedarValleyContext } from '@ezclassify/example-schemes/cedar-valley';
+import { loadCedarValleyContext } from '../../../test-support/community-content';
 import {
     EzClassify,
     EzClassifyProvider,

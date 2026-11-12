@@ -140,10 +140,16 @@ in a browser; CI drives the Angular example that way through
 `npm run verify:pack-consume`. An outside contributor can reproduce all of it
 exactly, which is the only reason it is worth gating on.
 
-**The private lane is for authorized EzClassify maintainers only.** It adds `@ezclassify/engine`, `@ezclassify/example-schemes`,
+**The private lane is for authorized EzClassify maintainers only.** It adds `@ezclassify/engine`,
 `@ezclassify/rest-api`, and the store conformance suite out of
 `@ezclassify/testing-utils`. It is the authoritative runtime integration run,
-and `npm run verify:private` is its gate:
+and `npm run verify:private` is its gate. The Cedar Valley content the specs
+read is not a package. It comes from a checkout of
+[community-content](https://github.com/ezclassify/community-content) through
+`test-support/community-content.ts`: the `community-content` directory next to
+this repository, or the directory in `EZCLASSIFY_COMMUNITY_CONTENT_DIR`. CI uses
+the commit in `test-support/community-content.pin`. A missing checkout fails the
+run rather than skipping specs.
 
 ```sh
 npm run lane:private          # installs the private runtime packages

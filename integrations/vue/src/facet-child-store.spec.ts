@@ -7,7 +7,7 @@
 import { describe, it, expect, afterEach } from 'vitest';
 import { defineComponent, h, inject, nextTick } from 'vue';
 import { mount, type VueWrapper } from '@vue/test-utils';
-import { loadCedarValleyContext } from '@ezclassify/example-schemes/cedar-valley';
+import { loadCedarValleyContext } from '../../../test-support/community-content';
 import {
     createEzClassify,
     EzClassify,
