@@ -280,7 +280,6 @@ describe('a translated view', () => {
                     contextId: 'ref',
                     resolvedVersion: '1.0.0',
                     artifacts: [],
-                    sources: [],
                 },
                 result: {
                     status: 'complete',
@@ -300,7 +299,6 @@ describe('a translated view', () => {
                         appliedFixes: [],
                     },
                 },
-                operationLimitations: [],
             }),
         );
         const proxied = new Proxy(context, {
@@ -551,10 +549,14 @@ describe('a field that selects a scheme', () => {
         );
 
         // The second scheme's vocabulary is not the primary's: the same text
-        // reads differently in each bucket.
+        // reads differently in each bucket. The primary reads only LOW and
+        // holds ALPHA as unread text.
         commit('memo', 'LOW//ALPHA');
         await expect.poll(() => output('first-page').value).toBe('LOW');
-        expect(ui.store.get('memo').rendered).toBe('LOW');
+        expect(ui.store.get('memo').assertions.map((a) => a.conceptId)).toEqual(
+            ['LOW'],
+        );
+        expect(ui.store.get('memo').valid).toBe(false);
         expect(ui.store.get('note').rendered).toBe('LOW//ALPHA');
         expect(output('second-page').value).toBe('LOW//ALPHA');
     });

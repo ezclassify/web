@@ -47,27 +47,25 @@ function createContext() {
                     version: '1.0.0',
                     name: 'Composer Pick',
                     data: {
-                        concepts: {
-                            inline: [
-                                concept('U', 'UNCLASSIFIED', 'level', 1),
-                                concept('S', 'SECRET', 'level', 2),
-                                concept('SI', 'SI', 'control', 1),
-                                concept('TK', 'TK', 'control', 2),
-                                concept('NF', 'NOFORN', 'dissem', 1),
-                                concept('REL', 'REL TO', 'dissem', 2),
-                                concept('DO', 'DISPLAY ONLY', 'dissem', 3),
-                                concept('USA', 'USA', 'rel', 0),
-                                // Two countries that belong to both lists.
-                                {
-                                    ...concept('AUS', 'AUS', 'rel', 1),
-                                    categories: ['rel', 'disp'],
-                                },
-                                {
-                                    ...concept('CAN', 'CAN', 'rel', 2),
-                                    categories: ['rel', 'disp'],
-                                },
-                            ],
-                        },
+                        concepts: [
+                            concept('U', 'UNCLASSIFIED', 'level', 1),
+                            concept('S', 'SECRET', 'level', 2),
+                            concept('SI', 'SI', 'control', 1),
+                            concept('TK', 'TK', 'control', 2),
+                            concept('NF', 'NOFORN', 'dissem', 1),
+                            concept('REL', 'REL TO', 'dissem', 2),
+                            concept('DO', 'DISPLAY ONLY', 'dissem', 3),
+                            concept('USA', 'USA', 'rel', 0),
+                            // Two countries that belong to both lists.
+                            {
+                                ...concept('AUS', 'AUS', 'rel', 1),
+                                categories: ['rel', 'disp'],
+                            },
+                            {
+                                ...concept('CAN', 'CAN', 'rel', 2),
+                                categories: ['rel', 'disp'],
+                            },
+                        ],
                         categories: [
                             {
                                 id: 'level',
@@ -132,7 +130,6 @@ function createContext() {
                             category: 'rel',
                         },
                     ],
-                    parse: { case_sensitive: false, strip_whitespace: true },
                     render: {
                         default: 'default',
                         formats: [

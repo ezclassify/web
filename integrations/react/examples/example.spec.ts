@@ -38,55 +38,49 @@ const profile = {
                     position: 1,
                 },
             ],
-            concepts: {
-                inline: [
-                    {
-                        id: 'LOW',
-                        name: 'Low',
-                        views: { default: 'LOW', portion: 'L' },
-                        categories: ['level'],
-                        parents: [],
-                        aliases: [],
-                        position: 0,
-                        rank: 0,
-                    },
-                    {
-                        id: 'MED',
-                        name: 'Med',
-                        views: { default: 'MED', portion: 'M' },
-                        categories: ['level'],
-                        parents: [],
-                        aliases: [],
-                        position: 1,
-                        rank: 1,
-                    },
-                    {
-                        id: 'HIGH',
-                        name: 'High',
-                        views: { default: 'HIGH', portion: 'H' },
-                        categories: ['level'],
-                        parents: [],
-                        aliases: [],
-                        position: 2,
-                        rank: 2,
-                    },
-                    {
-                        id: 'CTRL-A',
-                        name: 'Control A',
-                        views: { default: 'CTRL-A' },
-                        categories: ['controls'],
-                        parents: ['HIGH'],
-                        aliases: [],
-                        position: 0,
-                    },
-                ],
-            },
+            concepts: [
+                {
+                    id: 'LOW',
+                    name: 'Low',
+                    views: { default: 'LOW', portion: 'L' },
+                    categories: ['level'],
+                    parents: [],
+                    aliases: [],
+                    position: 0,
+                    rank: 0,
+                },
+                {
+                    id: 'MED',
+                    name: 'Med',
+                    views: { default: 'MED', portion: 'M' },
+                    categories: ['level'],
+                    parents: [],
+                    aliases: [],
+                    position: 1,
+                    rank: 1,
+                },
+                {
+                    id: 'HIGH',
+                    name: 'High',
+                    views: { default: 'HIGH', portion: 'H' },
+                    categories: ['level'],
+                    parents: [],
+                    aliases: [],
+                    position: 2,
+                    rank: 2,
+                },
+                {
+                    id: 'CTRL-A',
+                    name: 'Control A',
+                    views: { default: 'CTRL-A' },
+                    categories: ['controls'],
+                    parents: ['HIGH'],
+                    aliases: [],
+                    position: 0,
+                },
+            ],
         },
         rules: [],
-        parse: {
-            case_sensitive: false,
-            strip_whitespace: true,
-        },
         render: {
             default: 'default',
             formats: [
@@ -182,8 +176,7 @@ describe('4. Suggest: engine.suggest()', () => {
     const engine = Context.fromComponents({ scheme: profile }).scheme;
 
     // The argument is a MARKING, not a typed prefix: suggest() answers what
-    // this marking can still become. A search box asking which concepts match
-    // what the user typed wants filterConcepts() instead.
+    // this marking can still become.
     it('an empty marking can be completed with every level', () => {
         const result = engine.suggest('');
         expect(result.suggestions.map((s) => s.conceptId)).toEqual(
@@ -205,22 +198,6 @@ describe('4. Suggest: engine.suggest()', () => {
     });
 });
 
-describe('4b. Text search: engine.filterConcepts()', () => {
-    const engine = Context.fromComponents({ scheme: profile }).scheme;
-
-    it('a query narrows the matches', () => {
-        const all = engine.filterConcepts('');
-        const filtered = engine.filterConcepts('High');
-        expect(filtered.total.visible).toBeLessThan(all.total.visible);
-        expect([...filtered.visibleIds]).toContain('HIGH');
-    });
-
-    it('a query that matches nothing returns zero visible, without throwing', () => {
-        const result = engine.filterConcepts('ZZZNOMATCH');
-        expect(result.total.visible).toBe(0);
-    });
-});
-
 describe('5. Access: access.check()', () => {
     const policy = (access: unknown) =>
         Context.fromComponents({ scheme: profile, access }).access!;
@@ -229,8 +206,8 @@ describe('5. Access: access.check()', () => {
         const ae = policy({
             access: {
                 id: 'example-profile-access',
-                targetScheme: { id: 'example-profile' },
-                rules: { inline: [] },
+                target_scheme: { id: 'example-profile' },
+                rules: [],
             },
         });
         expect(() => ae.check([], {})).toThrow(/no access rules/i);
@@ -240,18 +217,16 @@ describe('5. Access: access.check()', () => {
         const ae = policy({
             access: {
                 id: 'example-profile-access',
-                targetScheme: { id: 'example-profile' },
-                rules: {
-                    inline: [
-                        {
-                            id: 'level-rule',
-                            name: 'Level',
-                            attribute: 'level',
-                            categoryId: 'level',
-                            strategy: 'gte',
-                        },
-                    ],
-                },
+                target_scheme: { id: 'example-profile' },
+                rules: [
+                    {
+                        id: 'level-rule',
+                        name: 'Level',
+                        attribute: 'level',
+                        category: 'level',
+                        strategy: 'gte',
+                    },
+                ],
             },
         });
         // @ts-expect-error, deliberately wrong type to test runtime guard
@@ -298,40 +273,34 @@ const LAYER_BASE = {
                     rollup: 'max',
                 },
             ],
-            concepts: {
-                inline: [
-                    {
-                        id: 'LOW',
-                        name: 'Low',
-                        categories: ['level'],
-                        position: 0,
-                        rank: 0,
-                        views: { default: 'LOW' },
-                    },
-                    {
-                        id: 'MED',
-                        name: 'Med',
-                        categories: ['level'],
-                        position: 1,
-                        rank: 1,
-                        views: { default: 'MED' },
-                    },
-                    {
-                        id: 'HIGH',
-                        name: 'High',
-                        categories: ['level'],
-                        position: 2,
-                        rank: 2,
-                        views: { default: 'HIGH' },
-                    },
-                ],
-            },
+            concepts: [
+                {
+                    id: 'LOW',
+                    name: 'Low',
+                    categories: ['level'],
+                    position: 0,
+                    rank: 0,
+                    views: { default: 'LOW' },
+                },
+                {
+                    id: 'MED',
+                    name: 'Med',
+                    categories: ['level'],
+                    position: 1,
+                    rank: 1,
+                    views: { default: 'MED' },
+                },
+                {
+                    id: 'HIGH',
+                    name: 'High',
+                    categories: ['level'],
+                    position: 2,
+                    rank: 2,
+                    views: { default: 'HIGH' },
+                },
+            ],
         },
         rules: [],
-        parse: {
-            case_sensitive: false,
-            strip_whitespace: true,
-        },
         render: {
             default: 'default',
             formats: [
@@ -356,18 +325,16 @@ const LAYER_ADD = {
         layer: { base: 'layer-base' },
         data: {
             categories: LAYER_BASE.scheme.data.categories,
-            concepts: {
-                inline: [
-                    {
-                        id: 'CRITICAL',
-                        name: 'Critical',
-                        categories: ['level'],
-                        position: 3,
-                        rank: 3,
-                        views: { default: 'CRITICAL' },
-                    },
-                ],
-            },
+            concepts: [
+                {
+                    id: 'CRITICAL',
+                    name: 'Critical',
+                    categories: ['level'],
+                    position: 3,
+                    rank: 3,
+                    views: { default: 'CRITICAL' },
+                },
+            ],
         },
         parse: {
             ...LAYER_BASE.scheme.parse,
@@ -387,7 +354,7 @@ const LAYER_REMOVE = {
         },
         data: {
             categories: LAYER_BASE.scheme.data.categories,
-            concepts: { inline: [] },
+            concepts: [],
         },
         parse: { ...LAYER_BASE.scheme.parse },
     },
@@ -402,18 +369,16 @@ const LAYER_OVERRIDE = {
         layer: { base: 'layer-base' },
         data: {
             categories: LAYER_BASE.scheme.data.categories,
-            concepts: {
-                inline: [
-                    {
-                        id: 'HIGH',
-                        name: 'High Override',
-                        categories: ['level'],
-                        position: 99,
-                        rank: 2,
-                        views: { default: 'HIGH-OVR' },
-                    },
-                ],
-            },
+            concepts: [
+                {
+                    id: 'HIGH',
+                    name: 'High Override',
+                    categories: ['level'],
+                    position: 99,
+                    rank: 2,
+                    views: { default: 'HIGH-OVR' },
+                },
+            ],
         },
         parse: { ...LAYER_BASE.scheme.parse },
     },

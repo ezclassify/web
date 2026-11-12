@@ -23,17 +23,15 @@ function adapter() {
                                 rollup: 'max',
                             },
                         ],
-                        concepts: {
-                            inline: [
-                                {
-                                    id: 'A',
-                                    rank: 1,
-                                    name: 'Alpha',
-                                    categories: ['kind'],
-                                    views: { default: 'A' },
-                                },
-                            ],
-                        },
+                        concepts: [
+                            {
+                                id: 'A',
+                                rank: 1,
+                                name: 'Alpha',
+                                categories: ['kind'],
+                                views: { default: 'A' },
+                            },
+                        ],
                     },
                     rules: [],
                     embedded_marking: [

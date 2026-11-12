@@ -248,14 +248,10 @@ function createTestEngine(
                     version: '1.0.0',
                     name: 'MarkingField Test',
                     data: {
-                        concepts: { inline: concepts },
+                        concepts: concepts,
                         categories,
                     },
                     rules: [],
-                    parse: {
-                        case_sensitive: false,
-                        strip_whitespace: true,
-                    },
                     render: {
                         default: 'default',
                         formats: [
@@ -400,30 +396,28 @@ function createTestContext(): OpenContext {
                     version: '1.0.0',
                     name: 'MarkingField Favorites Test',
                     data: {
-                        concepts: {
-                            inline: [
-                                {
-                                    id: 'S',
-                                    name: 'Secret',
-                                    views: { default: 'SECRET' },
-                                    categories: ['level'],
-                                    parents: [],
-                                    aliases: [],
-                                    position: 1,
-                                    rank: 2,
-                                },
-                                {
-                                    id: 'NF',
-                                    name: 'No Foreign',
-                                    views: { default: 'NOFORN' },
-                                    categories: ['caveat'],
-                                    parents: [],
-                                    aliases: [],
-                                    position: 1,
-                                    rank: 1,
-                                },
-                            ],
-                        },
+                        concepts: [
+                            {
+                                id: 'S',
+                                name: 'Secret',
+                                views: { default: 'SECRET' },
+                                categories: ['level'],
+                                parents: [],
+                                aliases: [],
+                                position: 1,
+                                rank: 2,
+                            },
+                            {
+                                id: 'NF',
+                                name: 'No Foreign',
+                                views: { default: 'NOFORN' },
+                                categories: ['caveat'],
+                                parents: [],
+                                aliases: [],
+                                position: 1,
+                                rank: 1,
+                            },
+                        ],
                         categories: [
                             {
                                 id: 'level',
@@ -444,10 +438,6 @@ function createTestContext(): OpenContext {
                         ],
                     },
                     rules: [],
-                    parse: {
-                        case_sensitive: false,
-                        strip_whitespace: true,
-                    },
                     render: {
                         default: 'default',
                         formats: [

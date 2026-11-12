@@ -28,30 +28,28 @@ function createMarkedEngine(): LocalContextSchemeEngineAdapter {
                 version: '1.0.0',
                 name: 'Contract Test',
                 data: {
-                    concepts: {
-                        inline: [
-                            {
-                                id: 'U',
-                                name: 'Unclassified',
-                                views: { default: 'U' },
-                                categories: ['level'],
-                                parents: [],
-                                aliases: [],
-                                position: 1,
-                                rank: 1,
-                            },
-                            {
-                                id: 'S',
-                                name: 'Secret',
-                                views: { default: 'S' },
-                                categories: ['level'],
-                                parents: [],
-                                aliases: [],
-                                position: 2,
-                                rank: 2,
-                            },
-                        ],
-                    },
+                    concepts: [
+                        {
+                            id: 'U',
+                            name: 'Unclassified',
+                            views: { default: 'U' },
+                            categories: ['level'],
+                            parents: [],
+                            aliases: [],
+                            position: 1,
+                            rank: 1,
+                        },
+                        {
+                            id: 'S',
+                            name: 'Secret',
+                            views: { default: 'S' },
+                            categories: ['level'],
+                            parents: [],
+                            aliases: [],
+                            position: 2,
+                            rank: 2,
+                        },
+                    ],
                     categories: [
                         {
                             id: 'level',
@@ -67,10 +65,6 @@ function createMarkedEngine(): LocalContextSchemeEngineAdapter {
                 embedded_marking: [
                     { pattern: '\\(([^)]+)\\)', template: '({marking}) ' },
                 ],
-                parse: {
-                    case_sensitive: false,
-                    strip_whitespace: true,
-                },
                 render: {
                     default: 'portion',
                     formats: [

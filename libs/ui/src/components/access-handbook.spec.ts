@@ -36,7 +36,6 @@ function makeRule(
         attributesNeeded: ['clearance'],
         dependsOn: [],
         overrides: [],
-        lines: [],
         ...overrides,
     };
 }
@@ -61,27 +60,21 @@ function makeEngine(): LocalContextSchemeEngineAdapter {
                             hierarchy_root: true,
                         },
                     ],
-                    concepts: {
-                        inline: [
-                            {
-                                id: 'l1',
-                                name: 'L1',
-                                views: { default: 'L1' },
-                                aliases: [],
-                                categories: ['level'],
-                                parents: [],
-                                position: 1,
-                                rank: 0,
-                            },
-                        ],
-                    },
+                    concepts: [
+                        {
+                            id: 'l1',
+                            name: 'L1',
+                            views: { default: 'L1' },
+                            aliases: [],
+                            categories: ['level'],
+                            parents: [],
+                            position: 1,
+                            rank: 0,
+                        },
+                    ],
                 },
                 rules: [],
                 rollup_pipelines: [],
-                parse: {
-                    case_sensitive: false,
-                    strip_whitespace: true,
-                },
                 render: {
                     default: 'default',
                     formats: [

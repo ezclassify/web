@@ -163,7 +163,7 @@ function createRealEngine(): LocalContextSchemeEngineAdapter {
                 id: 'ime-test',
                 version: '1.0.0',
                 name: 'InlineMarkingEditor Test',
-                data: { concepts: { inline: concepts }, categories },
+                data: { concepts: concepts, categories },
                 rules: [
                     {
                         id: 'rel-countries-require-rel',
@@ -176,10 +176,6 @@ function createRealEngine(): LocalContextSchemeEngineAdapter {
                         category: 'caveat',
                     },
                 ],
-                parse: {
-                    case_sensitive: false,
-                    strip_whitespace: true,
-                },
                 render: {
                     default: 'default',
                     formats: [

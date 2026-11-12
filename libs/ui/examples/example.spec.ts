@@ -3,8 +3,8 @@
  *
  * EzClassify Forms library, end-to-end example spec
  *
- * Demonstrates the complete forms API: load, process, aggregate, suggest,
- * rollup (multi-field), comparison, and serialization.
+ * Demonstrates the forms API: load, process, aggregate, suggest, rollup
+ * (multi-field) and layered schemes.
  *
  * Run from the engine workspace root:
  *   npx vitest run libs/ui/examples
@@ -14,14 +14,7 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { Context } from '@ezclassify/engine';
 import type { LocalSchemeEngineAdapter } from '@ezclassify/types';
-import {
-    EzClassifyUI,
-    captureFormState,
-    restoreFormState,
-    exportFormState,
-    importFormState,
-    compareRenderings,
-} from '@ezclassify/ui';
+import { EzClassifyUI } from '@ezclassify/ui';
 
 // ---------------------------------------------------------------------------
 // Shared profile fixture, generic two-level composition profile
@@ -51,59 +44,53 @@ const PROFILE = {
                     position: 1,
                 },
             ],
-            concepts: {
-                inline: [
-                    {
-                        id: 'LOW',
-                        name: 'Low',
-                        views: { default: 'LOW', short: 'L' },
-                        categories: ['level'],
-                        parents: [],
-                        position: 0,
-                        rank: 0,
-                    },
-                    {
-                        id: 'MED',
-                        name: 'Medium',
-                        views: { default: 'MED', short: 'M' },
-                        categories: ['level'],
-                        parents: [],
-                        position: 1,
-                        rank: 1,
-                    },
-                    {
-                        id: 'HIGH',
-                        name: 'High',
-                        views: { default: 'HIGH', short: 'H' },
-                        categories: ['level'],
-                        parents: [],
-                        position: 2,
-                        rank: 2,
-                    },
-                    {
-                        id: 'CTRL-A',
-                        name: 'Control A',
-                        views: { default: 'CTRL-A' },
-                        categories: ['controls'],
-                        parents: ['HIGH'],
-                        position: 0,
-                    },
-                    {
-                        id: 'CTRL-B',
-                        name: 'Control B',
-                        views: { default: 'CTRL-B' },
-                        categories: ['controls'],
-                        parents: [],
-                        position: 1,
-                    },
-                ],
-            },
+            concepts: [
+                {
+                    id: 'LOW',
+                    name: 'Low',
+                    views: { default: 'LOW', short: 'L' },
+                    categories: ['level'],
+                    parents: [],
+                    position: 0,
+                    rank: 0,
+                },
+                {
+                    id: 'MED',
+                    name: 'Medium',
+                    views: { default: 'MED', short: 'M' },
+                    categories: ['level'],
+                    parents: [],
+                    position: 1,
+                    rank: 1,
+                },
+                {
+                    id: 'HIGH',
+                    name: 'High',
+                    views: { default: 'HIGH', short: 'H' },
+                    categories: ['level'],
+                    parents: [],
+                    position: 2,
+                    rank: 2,
+                },
+                {
+                    id: 'CTRL-A',
+                    name: 'Control A',
+                    views: { default: 'CTRL-A' },
+                    categories: ['controls'],
+                    parents: ['HIGH'],
+                    position: 0,
+                },
+                {
+                    id: 'CTRL-B',
+                    name: 'Control B',
+                    views: { default: 'CTRL-B' },
+                    categories: ['controls'],
+                    parents: [],
+                    position: 1,
+                },
+            ],
         },
         rules: [],
-        parse: {
-            case_sensitive: false,
-            strip_whitespace: true,
-        },
         render: {
             default: 'default',
             formats: [
@@ -138,37 +125,35 @@ const PROFILE_2 = {
                     position: 0,
                 },
             ],
-            concepts: {
-                inline: [
-                    {
-                        id: 'PUBLIC',
-                        name: 'Public',
-                        views: { default: 'PUBLIC' },
-                        categories: ['sensitivity'],
-                        parents: [],
-                        position: 0,
-                        rank: 0,
-                    },
-                    {
-                        id: 'INTERNAL',
-                        name: 'Internal',
-                        views: { default: 'INTERNAL' },
-                        categories: ['sensitivity'],
-                        parents: [],
-                        position: 1,
-                        rank: 1,
-                    },
-                    {
-                        id: 'PRIVATE',
-                        name: 'Private',
-                        views: { default: 'PRIVATE' },
-                        categories: ['sensitivity'],
-                        parents: [],
-                        position: 2,
-                        rank: 2,
-                    },
-                ],
-            },
+            concepts: [
+                {
+                    id: 'PUBLIC',
+                    name: 'Public',
+                    views: { default: 'PUBLIC' },
+                    categories: ['sensitivity'],
+                    parents: [],
+                    position: 0,
+                    rank: 0,
+                },
+                {
+                    id: 'INTERNAL',
+                    name: 'Internal',
+                    views: { default: 'INTERNAL' },
+                    categories: ['sensitivity'],
+                    parents: [],
+                    position: 1,
+                    rank: 1,
+                },
+                {
+                    id: 'PRIVATE',
+                    name: 'Private',
+                    views: { default: 'PRIVATE' },
+                    categories: ['sensitivity'],
+                    parents: [],
+                    position: 2,
+                    rank: 2,
+                },
+            ],
         },
         render: {
             default: 'default',
@@ -344,48 +329,6 @@ describe('4. Suggest: engine.suggest()', () => {
 });
 
 // ---------------------------------------------------------------------------
-// 4b. Text search
-// ---------------------------------------------------------------------------
-// `suggest()` answers "what can this marking become", so its argument is a
-// marking. The question a search box asks is different: which concepts match
-// what the user has typed. `filterConcepts()` is that surface, and it returns
-// the ids that matched plus the per-category counts a Handbook heading shows.
-describe('4b. Text search: engine.filterConcepts()', () => {
-    let engine: LocalSchemeEngineAdapter;
-
-    beforeEach(() => {
-        engine = Context.fromComponents({ scheme: PROFILE })
-            .scheme as LocalSchemeEngineAdapter;
-    });
-
-    it('an empty query matches every concept', () => {
-        const r = engine.filterConcepts('');
-        expect(r.total.visible).toBe(r.total.total);
-        expect(r.total.total).toBeGreaterThan(0);
-    });
-
-    it('a query narrows the matches', () => {
-        const all = engine.filterConcepts('');
-        const filtered = engine.filterConcepts('High');
-        expect(filtered.total.visible).toBeLessThan(all.total.visible);
-        expect(filtered.total.visible).toBeGreaterThan(0);
-        expect([...filtered.visibleIds]).toContain('HIGH');
-    });
-
-    it('a query that matches nothing returns zero visible, without throwing', () => {
-        const r = engine.filterConcepts('ZZZNOMATCH');
-        expect(r.total.visible).toBe(0);
-        expect(r.visibleIds.size).toBe(0);
-    });
-
-    it('counts are reported per category', () => {
-        const r = engine.filterConcepts('Control');
-        expect(r.categoryCounts.get('controls')?.visible).toBe(2);
-        expect(r.categoryCounts.get('level')?.visible).toBe(0);
-    });
-});
-
-// ---------------------------------------------------------------------------
 // 5. Rollup, EzClassifyUI multi-field aggregate
 // ---------------------------------------------------------------------------
 describe('5. Rollup: EzClassifyUI multi-field', () => {
@@ -444,108 +387,9 @@ describe('5. Rollup: EzClassifyUI multi-field', () => {
 });
 
 // ---------------------------------------------------------------------------
-// 6. Comparison, compareRenderings()
+// 6. Multi-profile, two independent engines
 // ---------------------------------------------------------------------------
-describe('6. Comparison: compareRenderings()', () => {
-    let engine: LocalSchemeEngineAdapter;
-
-    beforeEach(() => {
-        engine = Context.fromComponents({ scheme: PROFILE })
-            .scheme as LocalSchemeEngineAdapter;
-    });
-
-    it('two identical markings → relationship=identical, no concept diffs', async () => {
-        const result = await compareRenderings('HIGH', 'HIGH', engine);
-        expect(result.relationship).toBe('identical');
-        expect(result.addedConcepts).toEqual([]);
-        expect(result.removedConcepts).toEqual([]);
-    });
-
-    it('added concepts are listed in addedConcepts', async () => {
-        const result = await compareRenderings('LOW', 'LOW/CTRL-B', engine);
-        expect(result.addedConcepts).toContain('CTRL-B');
-    });
-
-    it('removed concepts are listed in removedConcepts', async () => {
-        const result = await compareRenderings('HIGH/CTRL-A', 'HIGH', engine);
-        expect(result.removedConcepts).toContain('CTRL-A');
-    });
-
-    it('level change has a defined relationship value', async () => {
-        const result = await compareRenderings('LOW', 'HIGH', engine);
-        expect(['upgrade', 'downgrade', 'lateral']).toContain(
-            result.relationship,
-        );
-        expect(result.removedConcepts).toContain('LOW');
-        expect(result.addedConcepts).toContain('HIGH');
-    });
-});
-
-// ---------------------------------------------------------------------------
-// 7. Serialization, captureFormState / restoreFormState
-// ---------------------------------------------------------------------------
-describe('7. Serialization: captureFormState / restoreFormState', () => {
-    let root: HTMLDivElement;
-    let forms: EzClassifyUI | null;
-
-    beforeEach(() => {
-        root = makeRoot();
-        forms = null;
-    });
-
-    afterEach(() => {
-        forms?.destroy();
-        root.remove();
-    });
-
-    it('captureFormState returns an object with a fields array', async () => {
-        forms = new EzClassifyUI(Context.fromComponents({ scheme: PROFILE }), {
-            root,
-        });
-        const state = await captureFormState(forms);
-        expect(state).toHaveProperty('fields');
-        expect(Array.isArray(state.fields)).toBe(true);
-    });
-
-    it('exportFormState returns valid JSON', async () => {
-        forms = new EzClassifyUI(Context.fromComponents({ scheme: PROFILE }), {
-            root,
-        });
-        const json = await exportFormState(forms);
-        expect(() => JSON.parse(json)).not.toThrow();
-        const parsed = JSON.parse(json);
-        expect(parsed).toHaveProperty('fields');
-    });
-
-    it('importFormState round-trips without throwing', async () => {
-        forms = new EzClassifyUI(Context.fromComponents({ scheme: PROFILE }), {
-            root,
-        });
-        const json = await exportFormState(forms);
-        expect(() => importFormState(forms!, json)).not.toThrow();
-    });
-
-    it('restoreFormState with an empty state does not throw', () => {
-        forms = new EzClassifyUI(Context.fromComponents({ scheme: PROFILE }), {
-            root,
-        });
-        expect(() =>
-            restoreFormState(forms!, {
-                version: 1,
-                fields: [],
-                rollup: '',
-                schemeId: '',
-                schemeVersion: '',
-                timestamp: '',
-            }),
-        ).not.toThrow();
-    });
-});
-
-// ---------------------------------------------------------------------------
-// 8. Multi-profile, two independent engines
-// ---------------------------------------------------------------------------
-describe('8. Multi-profile: two independent engines', () => {
+describe('6. Multi-profile: two independent engines', () => {
     it('each engine only recognizes its own concepts', () => {
         const e1 = Context.fromComponents({ scheme: PROFILE })
             .scheme as LocalSchemeEngineAdapter;
@@ -597,40 +441,34 @@ const LAYER_BASE = {
                     rollup: 'max',
                 },
             ],
-            concepts: {
-                inline: [
-                    {
-                        id: 'LOW',
-                        name: 'Low',
-                        categories: ['level'],
-                        position: 0,
-                        rank: 0,
-                        views: { default: 'LOW' },
-                    },
-                    {
-                        id: 'MED',
-                        name: 'Med',
-                        categories: ['level'],
-                        position: 1,
-                        rank: 1,
-                        views: { default: 'MED' },
-                    },
-                    {
-                        id: 'HIGH',
-                        name: 'High',
-                        categories: ['level'],
-                        position: 2,
-                        rank: 2,
-                        views: { default: 'HIGH' },
-                    },
-                ],
-            },
+            concepts: [
+                {
+                    id: 'LOW',
+                    name: 'Low',
+                    categories: ['level'],
+                    position: 0,
+                    rank: 0,
+                    views: { default: 'LOW' },
+                },
+                {
+                    id: 'MED',
+                    name: 'Med',
+                    categories: ['level'],
+                    position: 1,
+                    rank: 1,
+                    views: { default: 'MED' },
+                },
+                {
+                    id: 'HIGH',
+                    name: 'High',
+                    categories: ['level'],
+                    position: 2,
+                    rank: 2,
+                    views: { default: 'HIGH' },
+                },
+            ],
         },
         rules: [],
-        parse: {
-            case_sensitive: false,
-            strip_whitespace: true,
-        },
         render: {
             default: 'default',
             formats: [
@@ -655,18 +493,16 @@ const LAYER_ADD = {
         layer: { base: 'layer-base' },
         data: {
             categories: LAYER_BASE.scheme.data.categories,
-            concepts: {
-                inline: [
-                    {
-                        id: 'CRITICAL',
-                        name: 'Critical',
-                        categories: ['level'],
-                        position: 3,
-                        rank: 3,
-                        views: { default: 'CRITICAL' },
-                    },
-                ],
-            },
+            concepts: [
+                {
+                    id: 'CRITICAL',
+                    name: 'Critical',
+                    categories: ['level'],
+                    position: 3,
+                    rank: 3,
+                    views: { default: 'CRITICAL' },
+                },
+            ],
         },
         parse: {
             ...LAYER_BASE.scheme.parse,
@@ -686,7 +522,7 @@ const LAYER_REMOVE = {
         },
         data: {
             categories: LAYER_BASE.scheme.data.categories,
-            concepts: { inline: [] },
+            concepts: [],
         },
         parse: { ...LAYER_BASE.scheme.parse },
     },
@@ -701,18 +537,16 @@ const LAYER_OVERRIDE = {
         layer: { base: 'layer-base' },
         data: {
             categories: LAYER_BASE.scheme.data.categories,
-            concepts: {
-                inline: [
-                    {
-                        id: 'HIGH',
-                        name: 'High Override',
-                        categories: ['level'],
-                        position: 99,
-                        rank: 2,
-                        views: { default: 'HIGH-OVR' },
-                    },
-                ],
-            },
+            concepts: [
+                {
+                    id: 'HIGH',
+                    name: 'High Override',
+                    categories: ['level'],
+                    position: 99,
+                    rank: 2,
+                    views: { default: 'HIGH-OVR' },
+                },
+            ],
         },
         parse: { ...LAYER_BASE.scheme.parse },
     },
@@ -731,9 +565,9 @@ const LAYER_MISSING_DEP = {
 };
 
 // ---------------------------------------------------------------------------
-// 9. Full lifecycle, parts → validate each → aggregate to banner
+// 7. Full lifecycle, parts → validate each → aggregate to banner
 // ---------------------------------------------------------------------------
-describe('9. Full lifecycle: parts → aggregate → banner', () => {
+describe('7. Full lifecycle: parts → aggregate → banner', () => {
     it('valid parts aggregate to a banner containing the highest level', () => {
         const engine = Context.fromComponents({ scheme: PROFILE })
             .scheme as LocalSchemeEngineAdapter;
@@ -769,9 +603,9 @@ describe('9. Full lifecycle: parts → aggregate → banner', () => {
 });
 
 // ---------------------------------------------------------------------------
-// 10. Context.fromComponents with layers, layer composition
+// 8. Context.fromComponents with layers, layer composition
 // ---------------------------------------------------------------------------
-describe('10. Context.fromComponents with layers: layer composition', () => {
+describe('8. Context.fromComponents with layers: layer composition', () => {
     describe('add action', () => {
         it('merged engine contains concepts from both base and add-layer', () => {
             const engine = Context.fromComponents({
@@ -925,9 +759,9 @@ describe('10. Context.fromComponents with layers: layer composition', () => {
 });
 
 // ---------------------------------------------------------------------------
-// 11. Cross-profile layered lifecycle, full round-trip with composed layers
+// 9. Cross-profile layered lifecycle, full round-trip with composed layers
 // ---------------------------------------------------------------------------
-describe('11. Cross-profile layered lifecycle', () => {
+describe('9. Cross-profile layered lifecycle', () => {
     it('full lifecycle: author parts using base + add-layer concepts → aggregate → banner', () => {
         const engine = Context.fromComponents({
             scheme: LAYER_BASE,

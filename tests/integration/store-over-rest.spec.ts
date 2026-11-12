@@ -21,7 +21,7 @@ import {
     createEzClassifyFacetBinding,
     type FacetState,
 } from '@ezclassify/ui';
-import { EzClassifyClient } from '@ezclassify/rest-client';
+import { connectContext, type EzClassifyClient } from '@ezclassify/rest-client';
 import type { Assertion } from '@ezclassify/types';
 
 const SCHEME_ID = 'cedar-valley-handling';
@@ -36,11 +36,13 @@ describe('EzClassifyStore over a REST deployment', () => {
     let highRendered: string;
 
     beforeAll(async () => {
-        client = await EzClassifyClient.connect(inject('restApiBaseUrl'), {
+        client = await connectContext({
+            baseUrl: inject('restApiBaseUrl'),
             contextId: SCHEME_ID,
             contextVersion: '1.0.0',
             contextToken: inject('restApiContextTokens')[SCHEME_ID],
-            headers: inject('restApiApplicationHeaders'),
+            applicationId: 'web-parity',
+            headers: inject('restApiCallerHeaders'),
         });
         // The client's scheme operations are the store's engine: this is the
         // supported deployment shape, `@ezclassify/ui` pointed at the REST API.

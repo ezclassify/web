@@ -49,30 +49,28 @@ function createBareEngineWithTemplate(
                 version: '1.0.0',
                 name: 'MarkedInput Bare Format Test',
                 data: {
-                    concepts: {
-                        inline: [
-                            {
-                                id: 'U',
-                                name: 'Unclassified',
-                                views: { default: 'U' },
-                                categories: ['level'],
-                                parents: [],
-                                aliases: [],
-                                position: 1,
-                                rank: 1,
-                            },
-                            {
-                                id: 'S',
-                                name: 'Secret',
-                                views: { default: 'S' },
-                                categories: ['level'],
-                                parents: [],
-                                aliases: [],
-                                position: 2,
-                                rank: 2,
-                            },
-                        ],
-                    },
+                    concepts: [
+                        {
+                            id: 'U',
+                            name: 'Unclassified',
+                            views: { default: 'U' },
+                            categories: ['level'],
+                            parents: [],
+                            aliases: [],
+                            position: 1,
+                            rank: 1,
+                        },
+                        {
+                            id: 'S',
+                            name: 'Secret',
+                            views: { default: 'S' },
+                            categories: ['level'],
+                            parents: [],
+                            aliases: [],
+                            position: 2,
+                            rank: 2,
+                        },
+                    ],
                     categories: [
                         {
                             id: 'level',
@@ -86,10 +84,6 @@ function createBareEngineWithTemplate(
                 },
                 rules: [],
                 embedded_marking: [{ pattern: '\\(([^)]+)\\)', template }],
-                parse: {
-                    case_sensitive: false,
-                    strip_whitespace: true,
-                },
                 render: {
                     default: 'portion',
                     formats: [
@@ -121,30 +115,28 @@ function createTestEngine(): LocalContextSchemeEngineAdapter {
                 version: '1.0.0',
                 name: 'MarkedInput Test',
                 data: {
-                    concepts: {
-                        inline: [
-                            {
-                                id: 'U',
-                                name: 'Unclassified',
-                                views: { default: 'U' },
-                                categories: ['level'],
-                                parents: [],
-                                aliases: [],
-                                position: 1,
-                                rank: 1,
-                            },
-                            {
-                                id: 'S',
-                                name: 'Secret',
-                                views: { default: 'S' },
-                                categories: ['level'],
-                                parents: [],
-                                aliases: [],
-                                position: 2,
-                                rank: 2,
-                            },
-                        ],
-                    },
+                    concepts: [
+                        {
+                            id: 'U',
+                            name: 'Unclassified',
+                            views: { default: 'U' },
+                            categories: ['level'],
+                            parents: [],
+                            aliases: [],
+                            position: 1,
+                            rank: 1,
+                        },
+                        {
+                            id: 'S',
+                            name: 'Secret',
+                            views: { default: 'S' },
+                            categories: ['level'],
+                            parents: [],
+                            aliases: [],
+                            position: 2,
+                            rank: 2,
+                        },
+                    ],
                     categories: [
                         {
                             id: 'level',
@@ -160,10 +152,6 @@ function createTestEngine(): LocalContextSchemeEngineAdapter {
                 embedded_marking: [
                     { pattern: '\\(([^)]+)\\)', template: '({marking}) ' },
                 ],
-                parse: {
-                    case_sensitive: false,
-                    strip_whitespace: true,
-                },
                 render: {
                     default: 'portion',
                     formats: [
@@ -195,30 +183,28 @@ function createTestContext() {
                 version: '1.0.0',
                 name: 'MarkedInput Favorites Test',
                 data: {
-                    concepts: {
-                        inline: [
-                            {
-                                id: 'U',
-                                name: 'Unclassified',
-                                views: { default: 'U' },
-                                categories: ['level'],
-                                parents: [],
-                                aliases: [],
-                                position: 1,
-                                rank: 1,
-                            },
-                            {
-                                id: 'S',
-                                name: 'Secret',
-                                views: { default: 'S' },
-                                categories: ['level'],
-                                parents: [],
-                                aliases: [],
-                                position: 2,
-                                rank: 2,
-                            },
-                        ],
-                    },
+                    concepts: [
+                        {
+                            id: 'U',
+                            name: 'Unclassified',
+                            views: { default: 'U' },
+                            categories: ['level'],
+                            parents: [],
+                            aliases: [],
+                            position: 1,
+                            rank: 1,
+                        },
+                        {
+                            id: 'S',
+                            name: 'Secret',
+                            views: { default: 'S' },
+                            categories: ['level'],
+                            parents: [],
+                            aliases: [],
+                            position: 2,
+                            rank: 2,
+                        },
+                    ],
                     categories: [
                         {
                             id: 'level',
@@ -234,10 +220,6 @@ function createTestContext() {
                 embedded_marking: [
                     { pattern: '\\(([^)]+)\\)', template: '({marking}) ' },
                 ],
-                parse: {
-                    case_sensitive: false,
-                    strip_whitespace: true,
-                },
                 render: {
                     default: 'portion',
                     formats: [
@@ -268,50 +250,48 @@ function createMultiCategoryEngine(): LocalContextSchemeEngineAdapter {
                 version: '1.0.0',
                 name: 'MarkedInput Multi-Category Test',
                 data: {
-                    concepts: {
-                        inline: [
-                            {
-                                id: 'U',
-                                name: 'Unclassified',
-                                views: { default: 'U' },
-                                categories: ['level'],
-                                parents: [],
-                                aliases: [],
-                                position: 1,
-                                rank: 1,
-                            },
-                            {
-                                id: 'S',
-                                name: 'Secret',
-                                views: { default: 'S' },
-                                categories: ['level'],
-                                parents: [],
-                                aliases: [],
-                                position: 2,
-                                rank: 2,
-                            },
-                            {
-                                id: 'LOCAL',
-                                name: 'Local',
-                                views: { default: 'LOCAL' },
-                                categories: ['scope'],
-                                parents: [],
-                                aliases: [],
-                                position: 1,
-                                rank: 1,
-                            },
-                            {
-                                id: 'REGIONAL',
-                                name: 'Regional',
-                                views: { default: 'REGIONAL' },
-                                categories: ['scope'],
-                                parents: [],
-                                aliases: [],
-                                position: 2,
-                                rank: 2,
-                            },
-                        ],
-                    },
+                    concepts: [
+                        {
+                            id: 'U',
+                            name: 'Unclassified',
+                            views: { default: 'U' },
+                            categories: ['level'],
+                            parents: [],
+                            aliases: [],
+                            position: 1,
+                            rank: 1,
+                        },
+                        {
+                            id: 'S',
+                            name: 'Secret',
+                            views: { default: 'S' },
+                            categories: ['level'],
+                            parents: [],
+                            aliases: [],
+                            position: 2,
+                            rank: 2,
+                        },
+                        {
+                            id: 'LOCAL',
+                            name: 'Local',
+                            views: { default: 'LOCAL' },
+                            categories: ['scope'],
+                            parents: [],
+                            aliases: [],
+                            position: 1,
+                            rank: 1,
+                        },
+                        {
+                            id: 'REGIONAL',
+                            name: 'Regional',
+                            views: { default: 'REGIONAL' },
+                            categories: ['scope'],
+                            parents: [],
+                            aliases: [],
+                            position: 2,
+                            rank: 2,
+                        },
+                    ],
                     categories: [
                         {
                             id: 'level',
@@ -335,10 +315,6 @@ function createMultiCategoryEngine(): LocalContextSchemeEngineAdapter {
                 embedded_marking: [
                     { pattern: '\\(([^)]+)\\)', template: '({marking}) ' },
                 ],
-                parse: {
-                    case_sensitive: false,
-                    strip_whitespace: true,
-                },
                 render: {
                     default: 'long',
                     formats: [

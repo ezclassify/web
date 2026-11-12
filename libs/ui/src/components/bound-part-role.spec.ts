@@ -45,13 +45,11 @@ function createEngine() {
                 name: 'Bound part role',
                 role_aware: true,
                 data: {
-                    concepts: {
-                        inline: [
-                            concept('LOW', 'level', 1),
-                            concept('HOLD', 'handling', 1),
-                            concept('ALPHA', 'partners', 1),
-                        ],
-                    },
+                    concepts: [
+                        concept('LOW', 'level', 1),
+                        concept('HOLD', 'handling', 1),
+                        concept('ALPHA', 'partners', 1),
+                    ],
                     categories: [
                         {
                             id: 'level',
@@ -109,7 +107,6 @@ function createEngine() {
                         message: PART_RULE,
                     },
                 ],
-                parse: { case_sensitive: false, strip_whitespace: true },
                 render: {
                     default: 'default',
                     formats: [

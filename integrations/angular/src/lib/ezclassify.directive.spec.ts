@@ -29,26 +29,20 @@ const MINIMAL_SCHEME = {
                     hierarchy_root: true,
                 },
             ],
-            concepts: {
-                inline: [
-                    {
-                        id: 'HIGH',
-                        name: 'High',
-                        views: { default: 'HIGH' },
-                        categories: ['level'],
-                        parents: [],
-                        aliases: [],
-                        position: 0,
-                        rank: 0,
-                    },
-                ],
-            },
+            concepts: [
+                {
+                    id: 'HIGH',
+                    name: 'High',
+                    views: { default: 'HIGH' },
+                    categories: ['level'],
+                    parents: [],
+                    aliases: [],
+                    position: 0,
+                    rank: 0,
+                },
+            ],
         },
         rules: [],
-        parse: {
-            case_sensitive: false,
-            strip_whitespace: true,
-        },
         render: {
             default: 'default',
             formats: [

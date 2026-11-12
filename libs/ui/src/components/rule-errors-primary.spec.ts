@@ -23,76 +23,69 @@ function makeEngine(withTextInput = false, calendarValue = false): Context {
                             hierarchy_root: true,
                         },
                     ],
-                    concepts: {
-                        inline: [
-                            {
-                                id: 'level-1',
-                                name: 'Level 1',
-                                views: { default: 'L1' },
-                                definition:
-                                    'Choose this level for the first tier.',
-                                aliases: [],
-                                categories: ['level'],
-                                parents: [],
-                                position: 1,
-                                rank: 0,
+                    concepts: [
+                        {
+                            id: 'level-1',
+                            name: 'Level 1',
+                            views: { default: 'L1' },
+                            definition: 'Choose this level for the first tier.',
+                            aliases: [],
+                            categories: ['level'],
+                            parents: [],
+                            position: 1,
+                            rank: 0,
+                        },
+                        {
+                            id: 'level-2',
+                            name: 'Level 2',
+                            views: { default: 'L2' },
+                            aliases: [],
+                            categories: ['level'],
+                            parents: [],
+                            position: 2,
+                            rank: 1,
+                        },
+                        {
+                            id: 'level-3',
+                            name: 'Level 3',
+                            views: {
+                                default: calendarValue ? '{value}' : 'L3',
                             },
-                            {
-                                id: 'level-2',
-                                name: 'Level 2',
-                                views: { default: 'L2' },
-                                aliases: [],
-                                categories: ['level'],
-                                parents: [],
-                                position: 2,
-                                rank: 1,
-                            },
-                            {
-                                id: 'level-3',
-                                name: 'Level 3',
-                                views: {
-                                    default: calendarValue ? '{value}' : 'L3',
-                                },
-                                ...(withTextInput
-                                    ? {
-                                          text_input: {
-                                              encoding: calendarValue
-                                                  ? {
-                                                        type: 'calendar-date',
-                                                        canonical: 'YYYY-MM-DD',
-                                                        accepts: [
-                                                            'YYYYMMDD',
-                                                            'YYYY-MM-DD',
-                                                        ],
-                                                        views: {
-                                                            default: 'YYYYMMDD',
-                                                        },
-                                                    }
-                                                  : {
-                                                        type: 'text',
-                                                        pattern: '\\d{8}',
+                            ...(withTextInput
+                                ? {
+                                      text_input: {
+                                          encoding: calendarValue
+                                              ? {
+                                                    type: 'calendar-date',
+                                                    canonical: 'YYYY-MM-DD',
+                                                    accepts: [
+                                                        'YYYYMMDD',
+                                                        'YYYY-MM-DD',
+                                                    ],
+                                                    views: {
+                                                        default: 'YYYYMMDD',
                                                     },
-                                              placeholder: 'YYYYMMDD',
-                                              label: 'Review date',
-                                              required: true,
-                                          },
-                                      }
-                                    : {}),
-                                aliases: [],
-                                categories: ['level'],
-                                parents: [],
-                                position: 3,
-                                rank: 2,
-                            },
-                        ],
-                    },
+                                                }
+                                              : {
+                                                    type: 'text',
+                                                    pattern: '\\d{8}',
+                                                },
+                                          placeholder: 'YYYYMMDD',
+                                          label: 'Review date',
+                                          required: true,
+                                      },
+                                  }
+                                : {}),
+                            aliases: [],
+                            categories: ['level'],
+                            parents: [],
+                            position: 3,
+                            rank: 2,
+                        },
+                    ],
                 },
                 rules: [],
                 rollup_pipelines: [],
-                parse: {
-                    case_sensitive: false,
-                    strip_whitespace: true,
-                },
                 render: {
                     default: 'default',
                     formats: [

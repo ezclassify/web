@@ -445,20 +445,16 @@ function tinyScheme(id: string, category: string, concepts: string[]) {
                         rollup: 'max',
                     },
                 ],
-                concepts: {
-                    inline: concepts.map((concept, rank) => ({
-                        id: concept,
-                        name: concept,
-                        views: { default: concept },
-                        categories: [category],
-                        rank,
-                    })),
-                },
+                concepts: concepts.map((concept, rank) => ({
+                    id: concept,
+                    name: concept,
+                    views: { default: concept },
+                    categories: [category],
+                    rank,
+                })),
             },
             rules: [],
             parse: {
-                case_sensitive: false,
-                strip_whitespace: true,
                 normalize: [],
             },
             render: {
@@ -499,24 +495,20 @@ function engineCrosswalkContext(): ContextAdapter {
                     version: '1.0.0',
                     name: 'Tier to label',
                     guidance: 'Route review outcomes to the owner.',
-                    sourceScheme: { id: 'tier', version: '1.0.0' },
-                    targetScheme: { id: 'label', version: '1.0.0' },
+                    source_scheme: { id: 'tier', version: '1.0.0' },
+                    target_scheme: { id: 'label', version: '1.0.0' },
                     mappings: [
                         {
                             id: 'low-public',
-                            source: { categoryId: 'level', conceptId: 'LOW' },
-                            targets: [
-                                { categoryId: 'tag', conceptId: 'PUBLIC' },
-                            ],
+                            source: { category: 'level', concept: 'LOW' },
+                            targets: [{ category: 'tag', concept: 'PUBLIC' }],
                             disposition: 'carry',
                             reason: 'Low tier is releasable.',
                         },
                         {
                             id: 'high-limited',
-                            source: { categoryId: 'level', conceptId: 'HIGH' },
-                            targets: [
-                                { categoryId: 'tag', conceptId: 'LIMITED' },
-                            ],
+                            source: { category: 'level', concept: 'HIGH' },
+                            targets: [{ category: 'tag', concept: 'LIMITED' }],
                             disposition: 'review',
                             reason: 'The owner decides the audience.',
                         },

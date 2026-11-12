@@ -119,56 +119,54 @@ export const WHOLE_STAND_IN_SCHEME = {
                     rollup: 'pipeline',
                 },
             ],
-            concepts: {
-                inline: [
-                    {
-                        id: 'LOW',
-                        name: 'Low',
-                        categories: ['level'],
-                        rank: 1,
-                        views: { default: 'LOW', portion: 'L' },
-                    },
-                    {
-                        id: 'HIGH',
-                        name: 'High',
-                        categories: ['level'],
-                        rank: 2,
-                        views: { default: 'HIGH', portion: 'H' },
-                    },
-                    {
-                        id: 'SHARE',
-                        name: 'Share',
-                        categories: ['handling'],
-                        views: 'SHARE',
-                        stands_for_whole: 'partners',
-                    },
-                    {
-                        id: 'CLOSED',
-                        name: 'Closed',
-                        categories: ['handling'],
-                        views: 'CLOSED',
-                    },
-                    ...['ALPHA', 'BRAVO', 'CHARLIE'].map((id) => ({
-                        id,
-                        name: `Partner ${id}`,
-                        categories: ['partners'],
-                        views: id,
-                    })),
-                    ...['NORTH', 'SOUTH'].map((id) => ({
-                        id,
-                        name: `Owner ${id}`,
-                        categories: ['owners'],
-                        views: id,
-                    })),
-                    {
-                        id: 'JOINT-AS-WHOLE',
-                        name: 'Joint, owners as in the whole',
-                        categories: ['owner_shorthand'],
-                        views: 'JOINT',
-                        stands_for_whole: 'owners',
-                    },
-                ],
-            },
+            concepts: [
+                {
+                    id: 'LOW',
+                    name: 'Low',
+                    categories: ['level'],
+                    rank: 1,
+                    views: { default: 'LOW', portion: 'L' },
+                },
+                {
+                    id: 'HIGH',
+                    name: 'High',
+                    categories: ['level'],
+                    rank: 2,
+                    views: { default: 'HIGH', portion: 'H' },
+                },
+                {
+                    id: 'SHARE',
+                    name: 'Share',
+                    categories: ['handling'],
+                    views: 'SHARE',
+                    stands_for_whole: 'partners',
+                },
+                {
+                    id: 'CLOSED',
+                    name: 'Closed',
+                    categories: ['handling'],
+                    views: 'CLOSED',
+                },
+                ...['ALPHA', 'BRAVO', 'CHARLIE'].map((id) => ({
+                    id,
+                    name: `Partner ${id}`,
+                    categories: ['partners'],
+                    views: id,
+                })),
+                ...['NORTH', 'SOUTH'].map((id) => ({
+                    id,
+                    name: `Owner ${id}`,
+                    categories: ['owners'],
+                    views: id,
+                })),
+                {
+                    id: 'JOINT-AS-WHOLE',
+                    name: 'Joint, owners as in the whole',
+                    categories: ['owner_shorthand'],
+                    views: 'JOINT',
+                    stands_for_whole: 'owners',
+                },
+            ],
         },
         rules: [
             {
@@ -234,17 +232,16 @@ export const WHOLE_STAND_IN_SCHEME = {
         ],
         named_conditions: {
             'joint-ownership': {
-                category_id: 'owners',
+                category: 'owners',
                 operator: 'count_gte',
                 value: 2,
             },
             'joint-as-whole': {
-                category_id: 'owner_shorthand',
+                category: 'owner_shorthand',
                 operator: 'has_concept',
                 value: 'JOINT-AS-WHOLE',
             },
         },
-        parse: { case_sensitive: false, strip_whitespace: true },
         render: {
             default: 'banner',
             formats: [

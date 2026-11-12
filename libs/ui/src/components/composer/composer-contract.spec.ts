@@ -49,14 +49,12 @@ function createContext() {
                 version: '1.0.0',
                 name: 'Composer Contract',
                 data: {
-                    concepts: {
-                        inline: [
-                            concept('U', 'UNCLASSIFIED', 'level', 1),
-                            concept('S', 'SECRET', 'level', 2),
-                            concept('NF', 'NOFORN', 'caveat', 1),
-                            concept('OC', 'ORCON', 'caveat', 2),
-                        ],
-                    },
+                    concepts: [
+                        concept('U', 'UNCLASSIFIED', 'level', 1),
+                        concept('S', 'SECRET', 'level', 2),
+                        concept('NF', 'NOFORN', 'caveat', 1),
+                        concept('OC', 'ORCON', 'caveat', 2),
+                    ],
                     categories: [
                         {
                             id: 'level',
@@ -80,7 +78,6 @@ function createContext() {
                 embedded_marking: [
                     { pattern: '\\(([^)]+)\\)', template: '({marking}) ' },
                 ],
-                parse: { case_sensitive: false, strip_whitespace: true },
                 render: {
                     default: 'default',
                     formats: [

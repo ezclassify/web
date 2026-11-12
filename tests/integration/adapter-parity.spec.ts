@@ -34,23 +34,25 @@ import type {
     LocalContextSchemeEngineAdapter,
     RemoteContextSchemeEngineAdapter,
 } from '@ezclassify/types';
-import { EzClassifyClient } from '@ezclassify/rest-client';
+import { connectContext, type EzClassifyClient } from '@ezclassify/rest-client';
 import { PARITY_SCHEME_IDS, paritySchemeJson } from './rest-api-server';
 
 /** Either side of the comparison, under its own Context-bound contract. */
 type ContextSchemeAdapter =
     LocalContextSchemeEngineAdapter | RemoteContextSchemeEngineAdapter;
 
-/** Connect a client to one parity Context as the registered application. */
+/** Connect a client to one parity Context. */
 function connectClient(
     contextId: string,
     contextToken: string,
 ): Promise<EzClassifyClient> {
-    return EzClassifyClient.connect(inject('restApiBaseUrl'), {
+    return connectContext({
+        baseUrl: inject('restApiBaseUrl'),
         contextId,
         contextVersion: '1.0.0',
         contextToken,
-        headers: inject('restApiApplicationHeaders'),
+        applicationId: 'web-parity',
+        headers: inject('restApiCallerHeaders'),
     });
 }
 
@@ -172,24 +174,6 @@ const PARITY_OPERATIONS: ParityOperation[] = [
         run: (a, f) =>
             f.categoryIds.map((id) =>
                 a.getConceptsInCategory(id).map((c) => c.id),
-            ),
-    },
-    {
-        name: 'getConceptsInCategory({ nested: true }) content',
-        run: (a, f) =>
-            f.categoryIds.map((id) => {
-                const nested = a.getConceptsInCategory(id, { nested: true });
-                return byId(
-                    nested.map((n) => ('concept' in n ? n.concept : n)),
-                ).map((c) => c.id);
-            }),
-    },
-    {
-        name: 'uncoveredAssertions()',
-        run: (a, f) =>
-            a.uncoveredAssertions(
-                [user(f.highConceptId, f.primaryCategoryId)],
-                [user(f.lowConceptId, f.primaryCategoryId)],
             ),
     },
 

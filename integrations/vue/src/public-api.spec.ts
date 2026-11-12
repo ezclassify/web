@@ -52,23 +52,17 @@ const testProfile = {
                     rollup: 'union',
                 },
             ],
-            concepts: {
-                inline: [
-                    {
-                        id: 'A',
-                        name: 'A',
-                        views: { default: 'A' },
-                        categories: ['f1'],
-                        position: 0,
-                        aliases: [],
-                        parents: [],
-                    },
-                ],
-            },
-        },
-        parse: {
-            case_sensitive: false,
-            strip_whitespace: true,
+            concepts: [
+                {
+                    id: 'A',
+                    name: 'A',
+                    views: { default: 'A' },
+                    categories: ['f1'],
+                    position: 0,
+                    aliases: [],
+                    parents: [],
+                },
+            ],
         },
         render: {
             default: 'default',

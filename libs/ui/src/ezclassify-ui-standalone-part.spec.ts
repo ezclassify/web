@@ -34,12 +34,10 @@ function context() {
                 name: 'Standalone part',
                 role_aware: true,
                 data: {
-                    concepts: {
-                        inline: [
-                            concept('LOW', 'level', 1),
-                            concept('WHOLE-ONLY', 'handling', 1),
-                        ],
-                    },
+                    concepts: [
+                        concept('LOW', 'level', 1),
+                        concept('WHOLE-ONLY', 'handling', 1),
+                    ],
                     categories: [
                         {
                             id: 'level',
@@ -66,7 +64,6 @@ function context() {
                         message: WHOLE_ONLY,
                     },
                 ],
-                parse: { case_sensitive: false, strip_whitespace: true },
                 render: {
                     default: 'default',
                     formats: [
@@ -139,7 +136,7 @@ function twoFormatContext() {
                     part: { views: ['portion'] },
                 },
                 data: {
-                    concepts: { inline: [level] },
+                    concepts: [level],
                     categories: [
                         {
                             id: 'level',
@@ -159,7 +156,6 @@ function twoFormatContext() {
                         message: 'LOW belongs on a part.',
                     },
                 ],
-                parse: { case_sensitive: false, strip_whitespace: true },
                 render: {
                     default: 'whole',
                     formats: [

@@ -84,14 +84,10 @@ function createTestEngine(): LocalSchemeEngineAdapter {
                     version: '1.0.0',
                     name: 'Field Family Teardown Test',
                     data: {
-                        concepts: { inline: concepts },
+                        concepts: concepts,
                         categories,
                     },
                     rules: [],
-                    parse: {
-                        case_sensitive: false,
-                        strip_whitespace: true,
-                    },
                     render: {
                         default: 'default',
                         formats: [

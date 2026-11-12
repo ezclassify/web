@@ -43,15 +43,13 @@ function createEngine(): LocalContextSchemeEngineAdapter {
                     version: '1.0.0',
                     name: 'Stated Fix Test',
                     data: {
-                        concepts: {
-                            inline: [
-                                concept('LOW', 'level', 1),
-                                concept('HIGH', 'level', 2),
-                                concept('A', 'caveat', 1),
-                                concept('B', 'caveat', 2),
-                                concept('C', 'caveat', 3),
-                            ],
-                        },
+                        concepts: [
+                            concept('LOW', 'level', 1),
+                            concept('HIGH', 'level', 2),
+                            concept('A', 'caveat', 1),
+                            concept('B', 'caveat', 2),
+                            concept('C', 'caveat', 3),
+                        ],
                         categories: [
                             {
                                 id: 'level',
@@ -88,7 +86,6 @@ function createEngine(): LocalContextSchemeEngineAdapter {
                             message: 'C requires HIGH.',
                         },
                     ],
-                    parse: { case_sensitive: false, strip_whitespace: true },
                     embedded_marking: [
                         { pattern: '\\(([^)]+)\\)', template: '({marking}) ' },
                     ],

@@ -28,31 +28,28 @@ function engine(roleAware: boolean, hideValues = false) {
                             rollup: 'union',
                         },
                     ],
-                    concepts: {
-                        inline: [
-                            {
-                                id: 'SAME',
-                                name: 'Same',
-                                categories: ['head'],
-                                stands_for_whole: 'values',
-                                views: { default: 'SAME' },
-                            },
-                            {
-                                id: 'A',
-                                name: 'A',
-                                categories: ['values'],
-                                views: { default: 'A' },
-                            },
-                            {
-                                id: 'B',
-                                name: 'B',
-                                categories: ['values'],
-                                views: { default: 'B' },
-                            },
-                        ],
-                    },
+                    concepts: [
+                        {
+                            id: 'SAME',
+                            name: 'Same',
+                            categories: ['head'],
+                            stands_for_whole: 'values',
+                            views: { default: 'SAME' },
+                        },
+                        {
+                            id: 'A',
+                            name: 'A',
+                            categories: ['values'],
+                            views: { default: 'A' },
+                        },
+                        {
+                            id: 'B',
+                            name: 'B',
+                            categories: ['values'],
+                            views: { default: 'B' },
+                        },
+                    ],
                 },
-                parse: { case_sensitive: true },
                 render: {
                     default: 'default',
                     formats: [

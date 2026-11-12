@@ -140,20 +140,11 @@ function remoteCtx(opts: {
         attributesNeeded: ['clearance'],
         dependsOn: [],
         overrides: [],
-        lines: [],
     };
 
-    // The access surface is ALWAYS constructed (client fidelity). Its inventory
-    // reports the real composition: rules, empty, or an absent-artifact route
-    // that rejects.
-    const listAccessRuleIds = (): Promise<string[]> => {
-        if (opts.access === 'rules') return Promise.resolve(['need-clearance']);
-        if (opts.access === 'empty') return Promise.resolve([]);
-        return Promise.reject(
-            new Error('404: no access policy in this context'),
-        );
-    };
-
+    // The access surface is ALWAYS constructed (client fidelity). Its rule
+    // listing reports the real composition: rules, empty, or an
+    // absent-artifact route that rejects.
     return {
         connected: true,
         compositionPresence: {
@@ -170,7 +161,6 @@ function remoteCtx(opts: {
         } as never,
         access: {
             schemeId: 'test-async',
-            listAccessRuleIds,
             describeAllAccessRules: () =>
                 opts.access === 'rules'
                     ? Promise.resolve([accessRule])
@@ -292,7 +282,10 @@ describe('ContextReference', () => {
     describe('remote built-in presence from resolved composition', () => {
         it('shows ONLY handbook for a remote scheme-only context without probing access', async () => {
             const remote = remoteCtx({ guides: 0, access: 'absent' });
-            const accessProbe = vi.spyOn(remote.access!, 'listAccessRuleIds');
+            const accessProbe = vi.spyOn(
+                remote.access!,
+                'describeAllAccessRules',
+            );
             component.init(container, remote);
             expect(tabIds(container)).toEqual(['handbook']);
             await flush();

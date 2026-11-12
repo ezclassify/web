@@ -48,13 +48,11 @@ function createEngine(): LocalContextSchemeEngineAdapter {
                 version: '1.0.0',
                 name: 'Rule Errors Test',
                 data: {
-                    concepts: {
-                        inline: [
-                            concept('LOW', 'LOW', 'level', 1),
-                            concept('HIGH', 'HIGH', 'level', 2),
-                            concept('HOLD', 'HOLD', 'caveat', 1),
-                        ],
-                    },
+                    concepts: [
+                        concept('LOW', 'LOW', 'level', 1),
+                        concept('HIGH', 'HIGH', 'level', 2),
+                        concept('HOLD', 'HOLD', 'caveat', 1),
+                    ],
                     categories: [
                         {
                             id: 'level',
@@ -84,7 +82,6 @@ function createEngine(): LocalContextSchemeEngineAdapter {
                         message: 'HOLD requires HIGH.',
                     },
                 ],
-                parse: { case_sensitive: false, strip_whitespace: true },
                 embedded_marking: [
                     { pattern: '\\(([^)]+)\\)', template: '({marking}) ' },
                 ],

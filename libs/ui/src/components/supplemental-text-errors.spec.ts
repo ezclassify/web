@@ -32,33 +32,31 @@ function warehouseContext(): OpenContext {
                                 rollup: 'union',
                             },
                         ],
-                        concepts: {
-                            inline: [
-                                {
-                                    id: 'identifier',
-                                    name: 'Identifier',
-                                    categories: ['item'],
-                                    views: {
-                                        default: 'ID:{value}',
-                                        compact: 'ID:{value}',
-                                    },
-                                    text_input: {
-                                        label: 'Warehouse identifier',
-                                        encoding: {
-                                            type: 'text',
-                                            max_length: 3,
-                                        },
-                                        required: true,
-                                    },
+                        concepts: [
+                            {
+                                id: 'identifier',
+                                name: 'Identifier',
+                                categories: ['item'],
+                                views: {
+                                    default: 'ID:{value}',
+                                    compact: 'ID:{value}',
                                 },
-                                {
-                                    id: 'unlabeled',
-                                    name: 'Unlabeled',
-                                    categories: ['item'],
-                                    views: { default: 'NONE', compact: 'NONE' },
+                                text_input: {
+                                    label: 'Warehouse identifier',
+                                    encoding: {
+                                        type: 'text',
+                                        max_length: 3,
+                                    },
+                                    required: true,
                                 },
-                            ],
-                        },
+                            },
+                            {
+                                id: 'unlabeled',
+                                name: 'Unlabeled',
+                                categories: ['item'],
+                                views: { default: 'NONE', compact: 'NONE' },
+                            },
+                        ],
                     },
                     rules: [],
                     render: {
@@ -350,18 +348,7 @@ describe('supplemental draft canonical errors', () => {
         expect(replies).toHaveLength(3);
         component.destroy();
     });
-    it.each([
-        { source: 'parse', sourceRule: 'host-parse-proof' },
-        { metadata: { origin: 'host', nested: { revision: 2 } } },
-        {
-            provenance: {
-                providerId: 'warehouse-feed',
-                reproducibility: 'reproducible' as const,
-                snapshotId: 'warehouse-snapshot',
-                attribution: { name: 'Warehouse feed', license: 'unspecified' },
-            },
-        },
-    ])(
+    it.each([{ source: 'parse', sourceRule: 'host-parse-proof' }])(
         'invalidates a pending edit for a same-fact host state update %j',
         async (update) => {
             const { component, replies, requests, input, edit } =
@@ -388,54 +375,4 @@ describe('supplemental draft canonical errors', () => {
             component.destroy();
         },
     );
-
-    it('keeps an identical complete state echo active without rereading cloned metadata', async () => {
-        const { component, replies, input, edit } = await delayedMount({
-            ...chosen('AA'),
-            metadata: { alpha: 1, nested: { first: 'a', second: ['b'] } },
-        });
-        edit('XY');
-        const current = component.getAssertions()[0];
-        const echo: Assertion = {
-            ...current,
-            metadata: { nested: { second: ['b'], first: 'a' }, alpha: 1 },
-        };
-        component.setAssertions([echo]);
-        expect(replies).toHaveLength(2);
-        expect(component.getAssertions()).toEqual([echo]);
-        replies[1]();
-        await vi.waitFor(() =>
-            expect(component.getAssertions()).toEqual([echo]),
-        );
-        expect(input().value).toBe('XY');
-        expect(replies).toHaveLength(2);
-        component.destroy();
-    });
-    it('invalidates a delayed edit when sparse host metadata changes array length', async () => {
-        const { component, replies, input, edit } = await delayedMount({
-            ...chosen('AA'),
-            metadata: { sequence: [1] },
-        });
-        edit('XY');
-        const sequence = [1];
-        sequence.length = 2;
-        const supplied: Assertion = { ...chosen('XY'), metadata: { sequence } };
-        const wireState = JSON.stringify([supplied]);
-        expect(wireState).toContain('[1,null]');
-        component.setAssertions([supplied]);
-        replies[1]();
-        await Promise.resolve();
-        await Promise.resolve();
-        expect(JSON.stringify(component.getAssertions())).toBe(wireState);
-        expect(replies).toHaveLength(3);
-        replies[2]();
-        await vi.waitFor(() =>
-            expect(JSON.stringify(component.getAssertions())).toBe(wireState),
-        );
-        expect(input().value).toBe('XY');
-        expect(supplied.metadata?.sequence).toHaveLength(2);
-        expect(Object.hasOwn(sequence, 1)).toBe(false);
-        expect(replies).toHaveLength(3);
-        component.destroy();
-    });
 });

@@ -39,15 +39,13 @@ function createContext() {
                 version: '1.0.0',
                 name: 'Composer Contextual',
                 data: {
-                    concepts: {
-                        inline: [
-                            concept('U', 'UNCLASSIFIED', 'level', 1),
-                            concept('S', 'SECRET', 'level', 2),
-                            concept('SI', 'SI', 'control', 1),
-                            concept('SIG', 'SI-G', 'control', 2, ['SI']),
-                            concept('TK', 'TK', 'control', 3),
-                        ],
-                    },
+                    concepts: [
+                        concept('U', 'UNCLASSIFIED', 'level', 1),
+                        concept('S', 'SECRET', 'level', 2),
+                        concept('SI', 'SI', 'control', 1),
+                        concept('SIG', 'SI-G', 'control', 2, ['SI']),
+                        concept('TK', 'TK', 'control', 3),
+                    ],
                     categories: [
                         {
                             id: 'level',
@@ -68,7 +66,6 @@ function createContext() {
                     ],
                 },
                 rules: [],
-                parse: { case_sensitive: false, strip_whitespace: true },
                 render: {
                     default: 'default',
                     formats: [

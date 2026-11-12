@@ -25,20 +25,18 @@ function createEngine(): LocalContextSchemeEngineAdapter {
                 version: '1.0.0',
                 name: 'Opt-out Test',
                 data: {
-                    concepts: {
-                        inline: [
-                            {
-                                id: 'U',
-                                name: 'Unclassified',
-                                views: { default: 'U' },
-                                categories: ['level'],
-                                parents: [],
-                                aliases: [],
-                                position: 1,
-                                rank: 1,
-                            },
-                        ],
-                    },
+                    concepts: [
+                        {
+                            id: 'U',
+                            name: 'Unclassified',
+                            views: { default: 'U' },
+                            categories: ['level'],
+                            parents: [],
+                            aliases: [],
+                            position: 1,
+                            rank: 1,
+                        },
+                    ],
                     categories: [
                         {
                             id: 'level',
@@ -54,10 +52,6 @@ function createEngine(): LocalContextSchemeEngineAdapter {
                 embedded_marking: [
                     { pattern: '\\(([^)]+)\\)', template: '({marking}) ' },
                 ],
-                parse: {
-                    case_sensitive: false,
-                    strip_whitespace: true,
-                },
                 render: {
                     default: 'portion',
                     formats: [

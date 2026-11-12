@@ -32,29 +32,27 @@ function context(conditional: boolean) {
                                 : 'HOME',
                         },
                     ],
-                    concepts: {
-                        inline: [
-                            {
-                                id: 'LOW',
-                                name: 'Low',
-                                views: { default: 'LOW' },
-                                categories: ['level'],
-                                rank: 0,
-                            },
-                            {
-                                id: 'HOME',
-                                name: 'Home',
-                                views: { default: 'HOME' },
-                                categories: ['origin'],
-                            },
-                            {
-                                id: 'PARTNER',
-                                name: 'Partner',
-                                views: { default: 'PARTNER' },
-                                categories: ['origin'],
-                            },
-                        ],
-                    },
+                    concepts: [
+                        {
+                            id: 'LOW',
+                            name: 'Low',
+                            views: { default: 'LOW' },
+                            categories: ['level'],
+                            rank: 0,
+                        },
+                        {
+                            id: 'HOME',
+                            name: 'Home',
+                            views: { default: 'HOME' },
+                            categories: ['origin'],
+                        },
+                        {
+                            id: 'PARTNER',
+                            name: 'Partner',
+                            views: { default: 'PARTNER' },
+                            categories: ['origin'],
+                        },
+                    ],
                 },
                 render: {
                     default: 'banner',

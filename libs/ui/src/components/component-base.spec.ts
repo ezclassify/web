@@ -445,12 +445,10 @@ describe('ComponentBase', () => {
                 value: 'compact',
                 source,
                 confidence: 'certain',
-                metadata: { inputOnly: true },
             };
             const canonical: Assertion = {
                 ...chosen,
                 value: 'canonical',
-                metadata: { canonicalOnly: true },
             };
             const chosenEngine = createMockEngine();
             vi.mocked(chosenEngine.process).mockReturnValue(

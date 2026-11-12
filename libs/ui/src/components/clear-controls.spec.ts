@@ -29,18 +29,16 @@ function engine() {
                     name: 'Field Clear Test',
                     version: '1.0.0',
                     data: {
-                        concepts: {
-                            inline: ['LOW', 'HIGH'].map((id, index) => ({
-                                id,
-                                name: id,
-                                views: { default: id },
-                                categories: ['level'],
-                                parents: [],
-                                aliases: [],
-                                position: index,
-                                rank: index,
-                            })),
-                        },
+                        concepts: ['LOW', 'HIGH'].map((id, index) => ({
+                            id,
+                            name: id,
+                            views: { default: id },
+                            categories: ['level'],
+                            parents: [],
+                            aliases: [],
+                            position: index,
+                            rank: index,
+                        })),
                         categories: [
                             {
                                 id: 'level',
@@ -56,7 +54,6 @@ function engine() {
                     embedded_marking: [
                         { pattern: '\\(([^)]+)\\)', template: '({marking}) ' },
                     ],
-                    parse: { case_sensitive: false, strip_whitespace: true },
                     render: {
                         default: 'portion',
                         formats: [

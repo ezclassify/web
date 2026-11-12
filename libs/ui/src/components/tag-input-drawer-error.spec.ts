@@ -30,23 +30,21 @@ const scheme = {
                     rollup: 'union',
                 },
             ],
-            concepts: {
-                inline: [
-                    {
-                        id: 'INTERNAL',
-                        name: 'Internal',
-                        views: { default: 'INTERNAL' },
-                        categories: ['tier'],
-                        rank: 0,
-                    },
-                    {
-                        id: 'NTK',
-                        name: 'Need to know',
-                        views: { default: 'NEED TO KNOW' },
-                        categories: ['caveat'],
-                    },
-                ],
-            },
+            concepts: [
+                {
+                    id: 'INTERNAL',
+                    name: 'Internal',
+                    views: { default: 'INTERNAL' },
+                    categories: ['tier'],
+                    rank: 0,
+                },
+                {
+                    id: 'NTK',
+                    name: 'Need to know',
+                    views: { default: 'NEED TO KNOW' },
+                    categories: ['caveat'],
+                },
+            ],
         },
         rules: [],
         parse: {

@@ -64,10 +64,8 @@ function envelope(
             contextId: 'crosswalk-context',
             resolvedVersion: '1.0.0',
             artifacts: [SOURCE, TARGET, CROSSWALK],
-            sources: [],
         },
         result,
-        operationLimitations: [],
     };
 }
 

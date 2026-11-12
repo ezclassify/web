@@ -232,16 +232,6 @@ function createMockEngine(overrides: Record<string, unknown> = {}) {
                 valid: true,
             };
         }),
-        uncoveredAssertions: vi.fn(
-            (candidates: Assertion[], parent: Assertion[]) => {
-                const parentKeys = new Set(
-                    parent.map((a) => `${a.conceptId}::${a.categoryId}`),
-                );
-                return candidates.filter(
-                    (a) => !parentKeys.has(`${a.conceptId}::${a.categoryId}`),
-                );
-            },
-        ),
         checkCoverage: vi.fn(async (children: string[], parent: string) => {
             if (!parent || !Array.isArray(children) || children.length === 0) {
                 return {

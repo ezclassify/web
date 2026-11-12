@@ -28,13 +28,7 @@ function unread(
 }
 
 /** Neutral real-engine fixture: no policy vocabulary or external deployment. */
-function engine(
-    policy:
-        | 'preserve_unmatched'
-        | 'refuse'
-        | 'drop_unmatched' = 'preserve_unmatched',
-    repair = false,
-) {
+function engine(repair = false) {
     return Context.fromComponents({
         scheme: {
             scheme: {
@@ -65,41 +59,37 @@ function engine(
                             rollup: 'union',
                         },
                     ],
-                    concepts: {
-                        inline: [
-                            {
-                                id: 'A',
-                                name: 'Level A',
-                                categories: ['level'],
-                                views: { default: 'LEVEL A' },
-                                rank: 1,
-                            },
-                            {
-                                id: 'B',
-                                name: 'Level B',
-                                categories: ['level'],
-                                views: { default: 'LEVEL B' },
-                                rank: 2,
-                            },
-                            {
-                                id: 'X',
-                                name: 'Tag X',
-                                categories: ['tag'],
-                                views: { default: 'TAG-X' },
-                            },
-                            {
-                                id: 'H',
-                                name: 'Hidden fact',
-                                categories: ['hidden'],
-                                views: { default: 'HIDDEN' },
-                            },
-                        ],
-                    },
+                    concepts: [
+                        {
+                            id: 'A',
+                            name: 'Level A',
+                            categories: ['level'],
+                            views: { default: 'LEVEL A' },
+                            rank: 1,
+                        },
+                        {
+                            id: 'B',
+                            name: 'Level B',
+                            categories: ['level'],
+                            views: { default: 'LEVEL B' },
+                            rank: 2,
+                        },
+                        {
+                            id: 'X',
+                            name: 'Tag X',
+                            categories: ['tag'],
+                            views: { default: 'TAG-X' },
+                        },
+                        {
+                            id: 'H',
+                            name: 'Hidden fact',
+                            categories: ['hidden'],
+                            views: { default: 'HIDDEN' },
+                        },
+                    ],
                 },
                 rules: [],
                 parse: {
-                    case_sensitive: false,
-                    strip_whitespace: true,
                     ...(repair
                         ? {
                               normalize: [
@@ -107,7 +97,6 @@ function engine(
                                       id: 'dedup',
                                       type: 'dedup',
                                       description: 'Remove duplicate facts',
-                                      confidence: 'safe',
                                       explanation: 'Repeated fact',
                                   },
                               ],
@@ -116,7 +105,6 @@ function engine(
                 },
                 render: {
                     default: 'default',
-                    of_invalid: policy,
                     formats: [
                         {
                             id: 'default',
@@ -142,7 +130,6 @@ afterEach(() => {
 async function mount(
     controller: string,
     value: string,
-    policy?: Parameters<typeof engine>[0],
     storeHost = false,
     repair = false,
     withReceiver = false,
@@ -164,7 +151,7 @@ async function mount(
         form.append(receiver);
     }
     document.body.append(form);
-    const ui = new EzClassifyUI(asContext(engine(policy, repair) as never), {
+    const ui = new EzClassifyUI(asContext(engine(repair) as never), {
         root: form,
     });
     mounted.push(ui);
@@ -351,7 +338,6 @@ describe('supplied marking acceptance', () => {
                 const { input, form, ui } = await mount(
                     controller,
                     source,
-                    'preserve_unmatched',
                     true,
                 );
                 expect(input.value).toBe(held);
@@ -394,7 +380,6 @@ describe('supplied marking acceptance', () => {
         const { input, ui } = await mount(
             'marking',
             'LEVEL A//LEVEL A',
-            undefined,
             false,
             true,
         );
@@ -451,12 +436,7 @@ describe('supplied marking acceptance', () => {
     it('edits unresolved tag text whole and carries unread text through chip removal', async () => {
         const source = '  LEVEL A//BOGUS-TOKEN//TAG-X  ';
         const held = 'LEVEL A//TAG-X//BOGUS-TOKEN';
-        const { input, form } = await mount(
-            'tags',
-            source,
-            'preserve_unmatched',
-            true,
-        );
+        const { input, form } = await mount('tags', source, true);
         const filter =
             form.querySelector<HTMLInputElement>('.tag-input-filter')!;
         filter.focus();
@@ -483,12 +463,7 @@ describe('supplied marking acceptance', () => {
     it('does not drop unresolved source when a tag input event arrives without focus', async () => {
         const source = '  LEVEL A//BOGUS-TOKEN//TAG-X  ';
         const held = 'LEVEL A//TAG-X//BOGUS-TOKEN';
-        const { input, form } = await mount(
-            'tags',
-            source,
-            'preserve_unmatched',
-            true,
-        );
+        const { input, form } = await mount('tags', source, true);
         const filter =
             form.querySelector<HTMLInputElement>('.tag-input-filter')!;
         filter.value = 'LEVEL B';
@@ -504,19 +479,12 @@ describe('supplied marking acceptance', () => {
     });
     it('holds the engine writing of unread input in a store-only native host', async () => {
         const source = '  LEVEL A//BOGUS-TOKEN//TAG-X  ';
-        const { input, ui } = await mount(
-            '',
-            source,
-            'preserve_unmatched',
-            true,
-        );
+        const { input, ui } = await mount('', source, true);
         expect(input.value).toBe('LEVEL A//TAG-X//BOGUS-TOKEN');
         expect(ui.store.get('loaded').rendered).toBe(input.value);
     });
     it('refuses a category edit that would discard unread seeded text, then allows it after correction', async () => {
-        const store = new VanillaEzClassifyStore(
-            engine('preserve_unmatched') as never,
-        );
+        const store = new VanillaEzClassifyStore(engine() as never);
         const source = '  LEVEL A//BOGUS-TOKEN//TAG-X  ';
         await store.seedRendered('doc', source);
         await store.publishAssertions(
@@ -561,14 +529,7 @@ describe('supplied marking acceptance', () => {
         store.destroy();
     });
     it('reflects retained conflicting source into a plain bound receiver instead of its prior marking', async () => {
-        const { form, ui } = await mount(
-            '',
-            'LEVEL A',
-            'refuse',
-            true,
-            false,
-            true,
-        );
+        const { form, ui } = await mount('', 'LEVEL A', true, false, true);
         const receiver = form.querySelector<HTMLInputElement>('#receiver')!;
         const source = '  LEVEL A//LEVEL B  ';
         await ui.store.publishRendered('loaded', source);
@@ -648,18 +609,16 @@ function ruledEngine() {
                             default_concept: { concept: 'HOME', ...whenLevel },
                         }),
                     ],
-                    concepts: {
-                        inline: [
-                            concept('A', 'level', 'LEVEL A'),
-                            concept('B', 'level', 'LEVEL B'),
-                            concept('X', 'tag', 'TAG-X'),
-                            concept('G', 'tag', 'TAG-G'),
-                            concept('O', 'tag', 'TAG-O'),
-                            concept('R', 'tag', 'TAG-R'),
-                            concept('STD', 'handling', 'STD'),
-                            concept('HOME', 'origin', 'HOME'),
-                        ],
-                    },
+                    concepts: [
+                        concept('A', 'level', 'LEVEL A'),
+                        concept('B', 'level', 'LEVEL B'),
+                        concept('X', 'tag', 'TAG-X'),
+                        concept('G', 'tag', 'TAG-G'),
+                        concept('O', 'tag', 'TAG-O'),
+                        concept('R', 'tag', 'TAG-R'),
+                        concept('STD', 'handling', 'STD'),
+                        concept('HOME', 'origin', 'HOME'),
+                    ],
                 },
                 rules: [
                     {
@@ -686,7 +645,6 @@ function ruledEngine() {
                         message: 'TAG-O and TAG-R cannot appear together.',
                     },
                 ],
-                parse: { case_sensitive: false, strip_whitespace: true },
                 render: {
                     default: 'default',
                     formats: [
