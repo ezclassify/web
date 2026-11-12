@@ -247,12 +247,6 @@ function dispatchOnEngine(
         }
         case 'validate':
             return (engine.validate as (...a: unknown[]) => unknown)(...args);
-        case 'normalize':
-            return {
-                result: (engine.normalize as (...a: unknown[]) => unknown)(
-                    ...args,
-                ),
-            };
         case 'render': {
             // `render` writes and does not read, so it keeps one named format
             // argument; a recorded case that passes `{ format }` names it.

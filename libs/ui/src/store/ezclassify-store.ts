@@ -303,8 +303,6 @@ export interface EzClassifyStoreProcessResult {
     appliedFixes?: Change[];
     /** The ways to make the result valid, each a whole marking. */
     proposedFixes?: Fix[];
-    /** What was read before repair, present when repair changed it. */
-    assertionsBeforeRepair?: Assertion[];
     /** Portable scheme-derived default; host/component overrides are not stored. */
     displayColor?: ConceptColor;
 }

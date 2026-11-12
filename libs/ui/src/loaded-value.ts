@@ -63,7 +63,6 @@ export interface HeldReading {
     warnings?: ValidateResult['warnings'];
     proposedFixes?: ProcessResult['proposedFixes'];
     recognition?: RecognitionResult;
-    assertionsBeforeRepair?: Assertion[];
     assessment?: ProcessResult['assessment'];
 }
 
@@ -123,8 +122,6 @@ function heldJudgment<T extends HeldReading>(
         warnings: again.warnings,
     };
     if ('proposedFixes' in again) held.proposedFixes = again.proposedFixes;
-    // The repair is settled: nothing in the value was read before it.
-    delete held.assertionsBeforeRepair;
     if (text) held.recognition = again.recognition;
     return held;
 }

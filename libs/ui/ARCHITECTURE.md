@@ -580,8 +580,6 @@ store, goes through `loaded-value.ts`:
   refer to the input, so the held text is read once to obtain its current
   offsets. That reading supplies its judgment and recognition. The value,
   assertions with their sources, and applied fixes stay from the first read.
-  `assertionsBeforeRepair` is diagnostic history and never seeds an edit or
-  triggers another read.
 - The status mark lists the fixes the first read applied (see "Enhancement
   Status Indicator") and keeps them while the field holds that value, through
   echoes of it from the store; a different value starts the list over.

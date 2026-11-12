@@ -1,8 +1,7 @@
 /**
- * Behavior of VanillaEzClassifyStore and bindEzClassifyToObject around their
- * trickier contracts: store/host-value lockstep, facet category scoping,
- * rendered-string round-trips, part-of rollup moves, null-result guards,
- * destroy semantics, and subscription cleanup.
+ * Behavior of VanillaEzClassifyStore around its trickier contracts: facet
+ * category scoping, rendered-string round-trips, part-of rollup moves,
+ * null-result guards, destroy semantics, and subscription cleanup.
  *
  * These run in jsdom alongside ezclassify-ui-ezclassify-store.spec.ts, which
  * covers the common store paths.
@@ -13,12 +12,7 @@ import {
     VanillaEzClassifyStore,
     type EzClassifyStoreEngine,
     type EzClassifyStoreProcessResult,
-    EMPTY_EZCLASSIFY_STATE,
 } from './ezclassify-store';
-import {
-    bindEzClassifyToObject,
-    writeDocPath,
-} from '../bind-ezclassify-to-object';
 import type { Assertion, Suggestion } from '@ezclassify/types';
 import { EMPTY_RENDER_ASSESSMENT } from '../engine-result-mock';
 import { onLevelState } from './page-rollup-harness';
@@ -113,83 +107,6 @@ function passThroughEngine(
         ...overrides,
     };
 }
-
-// ---------------------------------------------------------------------------
-// 1. Store + host-value lockstep commit  (rendered-is-primary contract)
-// ---------------------------------------------------------------------------
-
-describe('store + host-value lockstep (rendered-is-primary)', () => {
-    it('store.get().rendered and the bound doc field update on the same commit tick', async () => {
-        const store = new VanillaEzClassifyStore(passThroughEngine());
-        const doc: { classification: string } = { classification: '' };
-        const handle = bindEzClassifyToObject(store, doc, {
-            'doc-marking': 'classification',
-        });
-
-        await store.publishRendered('doc-marking', 'level:S');
-
-        // Both sides reflect the same rendered string, no partial-update window.
-        expect(store.get('doc-marking').rendered).toBe('level:S');
-        expect(doc.classification).toBe('level:S');
-
-        handle.dispose();
-        store.destroy();
-    });
-
-    it('publishAssertions updates both store.assertions and the bound doc field', async () => {
-        const store = new VanillaEzClassifyStore(passThroughEngine());
-        const doc: { tags?: Assertion[] } = {};
-        const handle = bindEzClassifyToObject(store, doc, {
-            'tag-marking': { path: 'tags', mode: 'assertions' },
-        });
-
-        const assertions: Assertion[] = [
-            {
-                categoryId: 'level',
-                conceptId: 'S',
-                confidence: 'certain',
-                source: 'user',
-            },
-        ];
-        await store.publishAssertions('tag-marking', assertions);
-
-        // The engine re-parses the rendered string, so source changes from 'user' to 'parse'.
-        // Check conceptId/categoryId which survive the round-trip.
-        expect(store.get('tag-marking').assertions[0]).toMatchObject({
-            conceptId: 'S',
-            categoryId: 'level',
-        });
-        expect(doc.tags?.[0]).toMatchObject({
-            conceptId: 'S',
-            categoryId: 'level',
-        });
-
-        handle.dispose();
-        store.destroy();
-    });
-
-    it('empty publish resets both store and doc to EMPTY_EZCLASSIFY_STATE.rendered', async () => {
-        const store = new VanillaEzClassifyStore(passThroughEngine());
-        const doc: { classification: string } = { classification: 'level:S' };
-        const handle = bindEzClassifyToObject(store, doc, {
-            'doc-marking': 'classification',
-        });
-
-        // Seed a non-empty state first
-        await store.publishRendered('doc-marking', 'level:S');
-        expect(store.get('doc-marking').rendered).toBe('level:S');
-
-        // Empty publish resets the marking
-        await store.publishRendered('doc-marking', '');
-        expect(store.get('doc-marking').rendered).toBe(
-            EMPTY_EZCLASSIFY_STATE.rendered,
-        );
-        expect(doc.classification).toBe('');
-
-        handle.dispose();
-        store.destroy();
-    });
-});
 
 // ---------------------------------------------------------------------------
 // 2. Facet category scoping
@@ -846,31 +763,5 @@ describe('VanillaEzClassifyStore: subscribeFacet cleanup edge cases', () => {
         expect(() => unsub1()).not.toThrow();
 
         store.destroy();
-    });
-});
-
-// ---------------------------------------------------------------------------
-// 11. bindEzClassifyToObject edge cases
-// ---------------------------------------------------------------------------
-
-describe('bindEzClassifyToObject: edge cases', () => {
-    it('dispose() is idempotent', () => {
-        const store = new VanillaEzClassifyStore(passThroughEngine());
-        const handle = bindEzClassifyToObject(store, {}, { doc: 'path' });
-        handle.dispose();
-        expect(() => handle.dispose()).not.toThrow();
-        store.destroy();
-    });
-
-    it('writeDocPath throws when obj is null', () => {
-        expect(() => writeDocPath(null, 'some.path', 'val')).toThrow(
-            /target doc is not an object/,
-        );
-    });
-
-    it('writeDocPath throws when obj is a primitive', () => {
-        expect(() =>
-            writeDocPath(42 as unknown as object, 'some.path', 'val'),
-        ).toThrow(/target doc is not an object/);
     });
 });

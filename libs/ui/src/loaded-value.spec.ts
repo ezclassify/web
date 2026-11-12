@@ -290,7 +290,6 @@ describe('supplied marking acceptance', () => {
             rendered: 'ALPHA//BETA',
             valid: false,
             errors: [{ message: 'about the resulting value' } as never],
-            assertionsBeforeRepair: [],
             recognition: complete(),
         });
         const readAgain = vi.fn();
@@ -322,7 +321,6 @@ describe('supplied marking acceptance', () => {
         const repaired = mockProcessResult({
             rendered: 'ALPHA',
             valid: false,
-            assertionsBeforeRepair: [],
         });
         expect(judgedAsHeld([], repaired, readAgain)).toBe(repaired);
         expect(reads).toBe(0);
