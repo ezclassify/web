@@ -105,7 +105,10 @@ function DemoFields({ testId }: { testId: string }): ReactElement {
                 data-ezclassify-controller="tags"
                 data-ezclassify-bound-to={testId}
             />
-            <div data-ezclassify-controller="banner" data-ezclassify-aggregate />
+            <div
+                data-ezclassify-controller="banner"
+                data-ezclassify-aggregate
+            />
         </>
     );
 }

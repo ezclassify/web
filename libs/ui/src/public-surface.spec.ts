@@ -32,7 +32,6 @@ describe('@ezclassify/ui public surface', () => {
     // Every other control mounts through its data-ezclassify-controller
     // attribute, so its class is not part of the package contract.
     const attributeOnlyComponents = [
-        'AssertionCard',
         'DualPane',
         'CategoryChecklist',
         'CategorySelector',

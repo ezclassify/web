@@ -14,8 +14,8 @@
  * the installed package, which is what an integrator gets.
  *
  * Needs the private lane (`npm run lane:private`) so the installed REST server
- * and example schemes are present; the global setup fails with a clear message
- * when the server package is not resolvable.
+ * and a community-content checkout are present; the global setup fails with a
+ * clear message when the server package is not resolvable.
  */
 import { defineConfig } from 'vitest/config';
 import * as path from 'node:path';

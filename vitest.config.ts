@@ -6,7 +6,7 @@ import {
     specsNeedingPrivateRuntime,
 } from './vitest.private-runtime.ts';
 
-// Specs that need the proprietary engine, the example schemes, or the store
+// Specs that need the proprietary engine, the community-content checkout, or the store
 // conformance suite. Derived from what the sources actually import, so a
 // checkout without those packages runs the public lane and says which specs it
 // left out. See vitest.private-runtime.ts.

@@ -1,6 +1,6 @@
 /**
- * MarkedTextArea against the example schemes the demos ship, whose shapes the
- * synthetic test engines do not reproduce.
+ * MarkedTextArea against Cedar Valley, the scheme the demos ship, whose shapes
+ * the synthetic test engines do not reproduce.
  *
  * Cedar Valley derives an implicit recipient for every nonpublic file and its
  * render filter hides it, so no format ever writes it and no author can type
