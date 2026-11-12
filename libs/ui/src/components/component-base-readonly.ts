@@ -4,8 +4,8 @@
  * Provides engine binding, assertion storage, category colors, progressive
  * enhancement of native inputs, and style injection, but no reprocessing,
  * suggestion fetching, or interactive editing methods. Read-only components
- * like StatusBanner extend this instead of the full
- * ComponentBase, keeping their dependency surface minimal.
+ * like StatusBanner extend this instead of the full ComponentBase, keeping
+ * their dependency surface minimal.
  */
 
 import {
