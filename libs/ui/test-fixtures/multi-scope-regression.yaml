@@ -806,7 +806,7 @@ scheme:
         - when:
             any:
               - category_id: from_school
-                operator: count_unique_gt
+                operator: count_gt
                 value: 1
           then:
             copy:
