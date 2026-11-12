@@ -55,8 +55,8 @@ jobs:
         # failure an outside contributor meets before every other check gets a
         # turn. It reads the committed manifests and fails if the workspace
         # declares a package that is not published publicly, which is how the
-        # engine and the example schemes would come back: quietly, as somebody's
-        # devDependency, breaking `npm install` for every fork.
+        # engine would come back: quietly, as somebody's devDependency, breaking
+        # `npm install` for every fork.
         run: npm run check:public-dependencies
 
       - name: Install dependencies
@@ -147,8 +147,8 @@ jobs:
         run: git diff --exit-code && test -z "$(git status --porcelain)"
 
       - name: Run tests
-        # The public lane. Specs that need the engine, the example schemes, or
-        # the store conformance suite are excluded by
+        # The public lane. Specs that need the engine, the community-content
+        # checkout, or the store conformance suite are excluded by
         # vitest.private-runtime.ts, which annotates the run and writes a job
         # summary block naming every one of them, so what this check does not
         # cover is told to a reviewer rather than left to be discovered.

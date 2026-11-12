@@ -147,9 +147,11 @@ and `npm run verify:private` is its gate. The Cedar Valley content the specs
 read is not a package. It comes from a checkout of
 [community-content](https://github.com/ezclassify/community-content) through
 `test-support/community-content.ts`: the `community-content` directory next to
-this repository, or the directory in `EZCLASSIFY_COMMUNITY_CONTENT_DIR`. CI uses
-the commit in `test-support/community-content.pin`. A missing checkout fails the
-run rather than skipping specs.
+this repository, or the directory in `EZCLASSIFY_COMMUNITY_CONTENT_DIR`. Check out
+the commit in `test-support/community-content.pin`, which is the one the specs
+are proven against. CI runs only the public lane, which reads no Cedar Valley
+content, so it needs no checkout. A missing checkout fails the private lane
+rather than skipping specs.
 
 ```sh
 npm run lane:private          # installs the private runtime packages

@@ -13,10 +13,11 @@
  * 2. The `community-content` directory next to this repository, which is where the
  *    maintainer workspace puts it.
  *
- * CI checks out `github.com/ezclassify/community-content` at the commit in
- * `community-content.pin` and points the variable at it. A checkout that cannot
- * be found throws. Nothing skips quietly, because a skipped spec reads as a
- * smaller passing run.
+ * `community-content.pin` records the community-content commit these specs are
+ * proven against. Only the private lane reads Cedar Valley, and CI runs only
+ * the public lane, so a maintainer running the private lane checks out that
+ * commit. A checkout that cannot be found throws. Nothing skips quietly,
+ * because a skipped spec reads as a smaller passing run.
  */
 import { existsSync, readFileSync } from 'node:fs';
 import * as path from 'node:path';
@@ -45,8 +46,8 @@ export function communityContentDir(): string {
         throw new Error(
             `No community-content checkout at ${dir}. Clone ` +
                 'github.com/ezclassify/community-content next to this ' +
-                `repository, or set ${COMMUNITY_CONTENT_DIR_VARIABLE} to one ` +
-                '(CI uses the commit in test-support/community-content.pin).',
+                `repository, or set ${COMMUNITY_CONTENT_DIR_VARIABLE} to one, ` +
+                'at the commit in test-support/community-content.pin.',
         );
     }
     return dir;
