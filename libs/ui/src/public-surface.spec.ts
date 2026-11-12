@@ -17,31 +17,39 @@
  */
 import * as path from 'node:path';
 import ts from 'typescript';
-import { describe, it, expect, expectTypeOf } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import * as ui from './index';
-import type { GuideRuleSelection } from './index';
 
 describe('@ezclassify/ui public surface', () => {
     const intendedPublicComponents = [
-        'AssertionCard',
         'TagInput',
+        'Handbook',
+        'ContextReference',
+        'MarkedTextArea',
+        'MarkedInput',
+    ] as const;
+
+    // Every other control mounts through its data-ezclassify-controller
+    // attribute, so its class is not part of the package contract.
+    const attributeOnlyComponents = [
+        'AssertionCard',
         'DualPane',
         'CategoryChecklist',
         'CategorySelector',
         'SingleSelect',
         'StatusBanner',
-        'Handbook',
         'Guidebook',
-        'ContextReference',
         'GuideChecklist',
         'DecisionFlow',
         'HiddenAssertionField',
         'EzClassifyText',
-        'MarkedTextArea',
-        'MarkedInput',
         'MarkingField',
         'EquivalencyMap',
     ] as const;
+
+    it.each(attributeOnlyComponents)('does not export the class %s', (name) => {
+        expect((ui as Record<string, unknown>)[name]).toBeUndefined();
+    });
 
     it.each(intendedPublicComponents)(
         're-exports the public component %s',
@@ -64,20 +72,6 @@ describe('@ezclassify/ui public surface', () => {
         expect((ui as Record<string, unknown>)[name]).toBeUndefined();
     });
 
-    // A host that seeds a guide checklist names each rule by its guide, so the
-    // selection type the checklist takes and returns is part of the entry.
-    it('names the guide rule selection a host seeds a guide checklist with', () => {
-        expectTypeOf<GuideRuleSelection>().toEqualTypeOf<{
-            guideId: string;
-            ruleId: string;
-        }>();
-        expectTypeOf<
-            Parameters<ui.GuideChecklist['setSelections']>[0]
-        >().toEqualTypeOf<readonly GuideRuleSelection[]>();
-        expectTypeOf<
-            ReturnType<ui.GuideChecklist['getSelections']>
-        >().toEqualTypeOf<GuideRuleSelection[]>();
-    });
 });
 
 const LIB_DIR = path.resolve(import.meta.dirname, '..');

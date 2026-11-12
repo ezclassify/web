@@ -1048,7 +1048,7 @@ describe('GuideChecklist', () => {
         /** Mount with a host the runtime would have created the mount for. */
         async function mountWithHost(boundTo: string | null) {
             const host = document.createElement('div');
-            host.setAttribute('data-ezclassify-controller', 'guide-helper');
+            host.setAttribute('data-ezclassify-controller', 'guide-checklist');
             if (boundTo) host.setAttribute('data-ezclassify-bound-to', boundTo);
             container.before(host);
             setMountHost(container, host);

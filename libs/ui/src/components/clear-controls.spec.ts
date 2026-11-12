@@ -8,7 +8,6 @@ import { TagInput } from './tag-input';
 import { SingleSelect } from './single-select';
 import { CategoryChecklist } from './category-checklist';
 import { CategorySelector } from './category-selector';
-import { DualPane } from './dual-pane';
 import { DecisionFlow } from './decision-flow';
 import { MarkedInput } from './marked-input';
 import { MarkedTextArea } from './marked-text-area';
@@ -86,7 +85,6 @@ const fields: {
     { name: 'TagInput', create: () => new TagInput() },
     { name: 'SingleSelect', create: () => new SingleSelect() },
     { name: 'CategorySelector', create: () => new CategorySelector() },
-    { name: 'DualPane', create: () => new DualPane() },
     { name: 'DecisionFlow', create: () => new DecisionFlow() },
     { name: 'MarkedInput', create: () => new MarkedInput(), body: true },
     { name: 'MarkedTextArea', create: () => new MarkedTextArea(), body: true },

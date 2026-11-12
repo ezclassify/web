@@ -4,9 +4,7 @@ export {
     type ComponentInstance,
     type ComponentOptions,
 } from './component-base';
-export { AssertionCard, type AssertionCardOptions } from './assertion-card';
 export { TagInput, type TagInputOptions } from './tag-input';
-export { DualPane } from './dual-pane';
 export {
     CategoryChecklist,
     type CategoryChecklistOptions,
