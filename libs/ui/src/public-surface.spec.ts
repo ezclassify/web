@@ -71,7 +71,6 @@ describe('@ezclassify/ui public surface', () => {
     it.each(internalSymbols)('does not expose internal symbol %s', (name) => {
         expect((ui as Record<string, unknown>)[name]).toBeUndefined();
     });
-
 });
 
 const LIB_DIR = path.resolve(import.meta.dirname, '..');

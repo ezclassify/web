@@ -18,9 +18,7 @@ import { TagInput } from './components/tag-input';
 import { SingleSelect } from './components/single-select';
 import { CategoryChecklist } from './components/category-checklist';
 import { CategorySelector } from './components/category-selector';
-import { AssertionCard } from './components/assertion-card';
 import { StatusBanner } from './components/status-banner';
-import { DualPane } from './components/dual-pane';
 import { Handbook } from './components/handbook';
 import { Guidebook } from './components/guidebook';
 import { AccessHandbook } from './components/access-handbook';
@@ -161,9 +159,8 @@ export function createMountContainer(
     // 'context-reference' mounts in place because its host-authored custom-tab
     // children live inside the host element; a sibling mount would hide them
     // behind a display:none host and the drawer would never see them.
-    // Same in-place treatment as 'card' / 'banner'.
+    // 'banner' also renders in place.
     const isInteractive =
-        controller !== 'card' &&
         controller !== 'banner' &&
         controller !== 'text' &&
         controller !== 'equivalency' &&
@@ -221,9 +218,7 @@ const COMPONENT_REGISTRY: ReadonlyMap<string, ComponentRegistration> = new Map([
         'selector',
         { name: 'CategorySelector', create: () => new CategorySelector() },
     ],
-    ['card', { name: 'AssertionCard', create: () => new AssertionCard() }],
     ['banner', { name: 'StatusBanner', create: () => new StatusBanner() }],
-    ['dualpane', { name: 'DualPane', create: () => new DualPane() }],
     ['handbook', { name: 'Handbook', create: () => new Handbook() }],
     ['guidebook', { name: 'Guidebook', create: () => new Guidebook() }],
     [
@@ -237,10 +232,6 @@ const COMPONENT_REGISTRY: ReadonlyMap<string, ComponentRegistration> = new Map([
     [
         'context-reference',
         { name: 'ContextReference', create: () => new ContextReference() },
-    ],
-    [
-        'guide-helper',
-        { name: 'GuideChecklist', create: () => new GuideChecklist() },
     ],
     [
         'guide-checklist',

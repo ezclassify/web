@@ -635,7 +635,6 @@ export class MarkedInput extends MarkedFieldBase<HTMLTextAreaElement> {
             errors: ValidationError[];
             proposedFixes?: Fix[];
             warnings?: Warning[];
-            assertionsBeforeRepair?: Assertion[];
             assessment?: RenderAssessment;
         }) => {
             if (mySeq !== this.scanSeq) return;
@@ -980,7 +979,6 @@ export class MarkedInput extends MarkedFieldBase<HTMLTextAreaElement> {
             appliedFixes: Change[];
             proposedFixes?: Fix[];
             warnings?: Warning[];
-            assertionsBeforeRepair?: Assertion[];
             assessment?: RenderAssessment;
         };
         const savedAssertions = this._editorAssertions;

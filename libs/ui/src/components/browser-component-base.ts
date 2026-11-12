@@ -2,10 +2,11 @@
  * Shared rendering helpers for read-only "browser" components: Handbook
  * (profile concepts), Guidebook (guide rules), and AccessHandbook (access
  * rules). All three consume an engine view (`StructuralView<T>` for the first
- * two) plus a `FilterResult` from engine.filter* and render a related DOM
- * shape: categories or groups with collapsible headers and item rows. Search,
- * filter-driven visibility, ARIA wiring, and reference-surface noun resolution
- * live here so the three components don't duplicate them.
+ * two) plus a {@link TreeFilter} the component computes from its search query,
+ * and render a related DOM shape: categories or groups with collapsible headers
+ * and item rows. Search, filter-driven visibility, ARIA wiring, and
+ * reference-surface noun resolution live here so the three components don't
+ * duplicate them.
  *
  * Deliberately not a base class: Handbook, Guidebook, and AccessHandbook
  * already extend `ReadOnlyComponentBase`, which owns `this.engine` /
@@ -18,7 +19,6 @@ import {
     GENERIC_REFERENCE_SURFACE_NOUNS,
     type ReferenceSurfaceKey,
     type ReferenceSurfaceLabel,
-    type FilterResult,
     type StructuralView,
 } from '@ezclassify/types';
 import { announce, createAnnouncer } from './component-utils';
@@ -143,10 +143,24 @@ function buildCategoryHeader(
     return header;
 }
 
+/**
+ * Which rows of a structural tree match the current search query. The component
+ * computes it from its own view; {@link applyFilterToTree} applies it to the
+ * DOM.
+ */
+export interface TreeFilter {
+    /** Ids of the items that matched the query. */
+    visibleIds: Set<string>;
+    /** Matched and total item counts per category id. */
+    categoryCounts: Map<string, { visible: number; total: number }>;
+    /** Matched and total items across every category. */
+    total: { visible: number; total: number };
+}
+
 /** Options for {@link applyFilterToTree}. */
 export interface ApplyFilterOptions {
     container: HTMLElement;
-    filter: FilterResult;
+    filter: TreeFilter;
     rootClass: string;
     /**
      * When the filter is active ("`query !== ''`"), expand collapsed categories

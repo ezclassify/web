@@ -50,13 +50,6 @@ The tables list default light-theme values. Theme selectors can change them;
 | `--ez-dropdown-selected`   | `color-mix(in srgb, var(--ez-color-success, #22c55e) 10%, transparent)` | Background for already-selected items in multi-select |
 | `--ez-dropdown-group-bg`   | `rgba(0,0,0,0.04)`                                                      | Background for group headers in dropdowns and matrix  |
 
-## Marking Label
-
-| Variable                     | Default   | Description                                        |
-| ---------------------------- | --------- | -------------------------------------------------- |
-| `--ez-marking-label-default` | `#6b7280` | Default background color for the marking label bar |
-| `--ez-marking-label-text`    | `#ffffff` | Text color on the marking label bar                |
-
 ## Tags
 
 TagInput chips (`.proto-tag`) render as filled pills: a category-colored

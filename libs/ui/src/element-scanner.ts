@@ -36,15 +36,12 @@ export const CONTROLLER_NAMES = [
     'select',
     'checklist',
     'selector',
-    'card',
     'banner',
-    'dualpane',
     'handbook',
     'guidebook',
     'access-handbook',
     'crosswalk-handbook',
     'context-reference',
-    'guide-helper',
     'guide-checklist',
     'decisionflow',
     'hidden',
@@ -222,7 +219,7 @@ export function readBinding(el: HTMLElement): BehaviorBinding {
             `[ezclassify] element is ezclassify-managed AND carries a framework ` +
                 `two-way binding attribute (${fw}). The framework and the store will ` +
                 'both write .value and fight each other. Use the framework helper ' +
-                '(bindEzClassifyToSignal / useEzClassify / EzClassifyProvider) instead.',
+                '(useEzClassify, injectEzClassifyFacet or useEzClassifyFacet) instead.',
         );
     }
 

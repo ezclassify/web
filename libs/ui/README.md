@@ -512,41 +512,9 @@ turns it off.
 | `EzClassifyUI`                                      | Main class; mounts all components on a container |
 | `getDefaultStyles()` / `injectDefaultStyles()`      | CSS string / adopt a stylesheet                  |
 | `EZ_CSS_VARIABLES`                                  | Raw CSS tokens for custom theming                |
-| `captureFormState` / `restoreFormState`             | Serialize and re-hydrate form values             |
-| `exportFormState` / `importFormState`               | JSON round-trip for save/load workflows          |
 | `THEMES` / `applyTheme`                             | Built-in visual themes                           |
-| `initComparison` / `compareRenderings`              | Side-by-side rendering comparison helper         |
 | `defaultLocale` / `setLocale` / `resetLocale` / `t` | i18n support                                     |
 | `buildCategoryColorMap`                             | Map each scheme category id to its color         |
-| `assembleWithConcept` / `findUnambiguousMatch`      | Autocomplete helpers                             |
-| `groupSuggestionsWithDepth` / `getConceptDepth`     | Suggestion grouping utilities                    |
-
-## Form state serialization
-
-```ts
-import {
-    captureFormState,
-    restoreFormState,
-    exportFormState,
-    importFormState,
-} from '@ezclassify/ui';
-
-// forms is the mounted EzClassifyUI instance from the document form above.
-
-// In-memory snapshot: every field's value plus its structured assertions,
-// so alternate-scope categories and capture values survive the round-trip.
-const state = await captureFormState(forms);
-// ... user edits ...
-restoreFormState(forms, state);
-
-// JSON round-trip for save/load workflows. importFormState fails closed:
-// it throws on a shape-version, structure, or scheme mismatch instead of
-// restoring a snapshot it cannot read.
-localStorage.setItem('draft', await exportFormState(forms));
-
-const draft = localStorage.getItem('draft');
-if (draft) importFormState(forms, draft);
-```
 
 ## Whole-marking fields
 

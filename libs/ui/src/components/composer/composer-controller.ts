@@ -106,8 +106,6 @@ export interface ComposerReading {
      * repaired. A commit hands them to the field's status mark with the value.
      */
     readonly appliedFixes: readonly Change[];
-    /** What was read before repair, the basis a rule fix applies to. */
-    readonly assertionsBeforeRepair?: Assertion[];
 }
 
 /** What writing an assertion set gave: its text, or why there is none. */

@@ -9,10 +9,10 @@ import {
 } from './element-scanner';
 
 describe('CONTROLLER_NAMES', () => {
-    it('contains all 21 recognized controllers', () => {
+    it('contains all 18 recognized controllers', () => {
         // 2 framework/GRC controllers (scorecard, matrix) are deferred
         // from the 1.0 surface.
-        expect(CONTROLLER_NAMES).toHaveLength(21);
+        expect(CONTROLLER_NAMES).toHaveLength(18);
     });
 
     it('starts with tags', () => {
@@ -40,19 +40,12 @@ describe('CONTROLLER_NAMES', () => {
     });
 
     it('includes interactive controllers', () => {
-        for (const c of [
-            'tags',
-            'select',
-            'checklist',
-            'selector',
-            'dualpane',
-        ]) {
+        for (const c of ['tags', 'select', 'checklist', 'selector']) {
             expect(CONTROLLER_NAMES).toContain(c);
         }
     });
 
     it('includes read-only controllers', () => {
-        expect(CONTROLLER_NAMES).toContain('card');
         expect(CONTROLLER_NAMES).toContain('banner');
     });
 });
@@ -348,8 +341,8 @@ describe('harvestControllerOptions', () => {
 
     it('returns an empty bag when no matching attributes', () => {
         const el = document.createElement('div');
-        el.setAttribute('data-ezclassify-controller', 'card');
-        const opts = harvestControllerOptions(el, 'card');
+        el.setAttribute('data-ezclassify-controller', 'banner');
+        const opts = harvestControllerOptions(el, 'banner');
         expect(opts).toEqual({});
     });
 

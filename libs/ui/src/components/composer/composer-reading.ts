@@ -126,7 +126,6 @@ export function readingFromResult(
         warnings: result.warnings ?? [],
         proposedFixes: (result.proposedFixes ?? []) as Fix[],
         appliedFixes: result.appliedFixes ?? [],
-        assertionsBeforeRepair: result.assertionsBeforeRepair,
     };
 }
 

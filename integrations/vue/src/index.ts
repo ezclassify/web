@@ -100,8 +100,6 @@ export type {
     EzClassifyProvision,
 } from './plugin';
 export { EzClassify, useEzClassifyUI } from './EzClassify';
-export { bindEzClassifyToReactiveDoc } from './composables/bindEzClassifyToReactiveDoc';
-export type { VueReactiveDoc } from './composables/bindEzClassifyToReactiveDoc';
 export { useEzClassifyFacet } from './composables/useEzClassifyFacet';
 export type { UseEzClassifyFacetReturn } from './composables/useEzClassifyFacet';
 export { VueRefStore, VueRefStoreKey } from './composables/vue-ref-store';

@@ -61,7 +61,7 @@ const Host = defineComponent({
                     'data-ezclassify-bound-to': 'doc-marking',
                 }),
                 h('div', {
-                    'data-ezclassify-controller': 'card',
+                    'data-ezclassify-controller': 'banner',
                     'data-ezclassify-aggregate': '',
                 }),
             ]);

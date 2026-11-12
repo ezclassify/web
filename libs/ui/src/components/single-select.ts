@@ -32,7 +32,7 @@ import singleSelectCss from './single-select.css?inline';
 
 const SINGLE_SELECT_CSS: string = singleSelectCss;
 
-/** Compare complete assertion DTO state; host provenance changes are edits. */
+/** Compare complete assertion state; any field a host changes is an edit. */
 function sameAssertionState(left: unknown, right: unknown): boolean {
     if (Object.is(left, right)) return true;
     if (
@@ -380,8 +380,8 @@ export class SingleSelect extends ComponentBase {
                 sameAssertionState(this.assertions[index], assertion),
             )
         ) {
-            // Only a complete state echo leaves the current read active. A
-            // host provenance or metadata edit must invalidate it normally.
+            // Only a complete state echo leaves the current read active. Any
+            // other host edit invalidates it normally.
             this.assertions = [...assertions];
             this.render();
             return;

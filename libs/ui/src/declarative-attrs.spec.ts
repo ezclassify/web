@@ -17,7 +17,6 @@ vi.mock('./components/tag-input.css?inline', () => ({
 vi.mock('./components/single-select.css?inline', () => ({ default: '' }));
 vi.mock('./components/category-checklist.css?inline', () => ({ default: '' }));
 vi.mock('./components/category-selector.css?inline', () => ({ default: '' }));
-vi.mock('./components/assertion-card.css?inline', () => ({ default: '' }));
 vi.mock('./components/status-banner.css?inline', () => ({ default: '' }));
 vi.mock('./components/component-utils.css?inline', () => ({ default: '' }));
 vi.mock('./styles.css?inline', () => ({ default: '' }));
@@ -327,22 +326,6 @@ describe('Declarative attribute system (EzClassifyUI)', () => {
         expect(forms.components.has(fieldset)).toBe(true);
         const mount = fieldset.nextElementSibling;
         expect(mount?.getAttribute('data-ezclassify-mount')).toBe('selector');
-
-        forms.destroy();
-    });
-
-    it('ezclassify-card on a <div> creates an AssertionCard', async () => {
-        const div = document.createElement('div');
-        div.setAttribute('data-ezclassify-controller', 'card');
-        document.body.appendChild(div);
-
-        const forms = await createForms();
-
-        // Read-only components mount directly on the div (no hiding)
-        expect(div.style.display).not.toBe('none');
-        expect(forms.components.has(div)).toBe(true);
-        // The div itself is the container (no mount div created)
-        expect(div.getAttribute('data-ezclassify')).toBe('');
 
         forms.destroy();
     });

@@ -52,7 +52,7 @@ beforeEach(() => {
         <input id="tag-field"
                data-ezclassify-controller="tags"
                data-ezclassify-bound-to="doc-marking" />
-        <div data-ezclassify-controller="card" data-ezclassify-aggregate></div>
+        <div data-ezclassify-controller="banner" data-ezclassify-aggregate></div>
     `;
     document.body.appendChild(container);
 });

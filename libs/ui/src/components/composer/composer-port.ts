@@ -177,13 +177,6 @@ export function createComposerPort(field: ComposerPortField): ComposerPort {
         return {
             ...reading,
             assertions: mine(reading.assertions),
-            ...(reading.assertionsBeforeRepair
-                ? {
-                      assertionsBeforeRepair: mine(
-                          reading.assertionsBeforeRepair,
-                      ),
-                  }
-                : {}),
         };
     };
     return {

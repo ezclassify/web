@@ -306,8 +306,8 @@ text can request gated rows. For a part, contextual offerings come from
 reading still in flight. Additive drafts also call `validate()` before
 `process()`; facets with sibling assertions perform another judging read.
 
-DecisionFlow and DualPane share the composer's suggestion catalog and Context
-binding. They load or refresh cached offerings on focus, query and navigation
+DecisionFlow shares the composer's suggestion catalog and Context
+binding. It loads or refresh cached offerings on focus, query and navigation
 input, pointer interaction, and completion of a user edit. Setup, rendering, and
 external assertion updates do not request suggestions; rendering consumes the
 cache. A changed Context invalidates the cache for the next interaction.
@@ -519,16 +519,16 @@ resolution can add calls. The following describes current implementation paths
 and their differences from that budget; it does not relax the budget or the
 lazy-suggestion and render-purity rules.
 
-| Path                            | Engine work                                                                                                                  |
-| ------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| Shared-base initial read        | Nonempty text uses `validate()` for read-only components or `process()` for editable components; empty text skips that read. |
-| Whole-marking composer draft    | `process()` reads the draft with committed render-suppressed facts carried forward.                                          |
-| Additive composer draft         | Nonempty text uses `validate()` before `process()` to combine it with committed assertions.                                  |
-| Facet composer draft            | Sibling assertions can require a second `process()` to judge the combined marking.                                           |
-| Composer offerings              | Cached base catalog, contextual refresh when draft assertions change, and gated-query requests.                              |
-| DecisionFlow/DualPane offerings | Shared catalog and contextual offerings loaded or refreshed by user interaction; rendering uses cached results.              |
-| DOM form rollup                 | `aggregate()` per contributing scheme, plus facet-group aggregation and cached validation reads where needed.                |
-| Marking-store rollup            | `aggregateAssertions()` over committed contributors; subscribed facets can also refresh availability.                        |
+| Path                         | Engine work                                                                                                                  |
+| ---------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| Shared-base initial read     | Nonempty text uses `validate()` for read-only components or `process()` for editable components; empty text skips that read. |
+| Whole-marking composer draft | `process()` reads the draft with committed render-suppressed facts carried forward.                                          |
+| Additive composer draft      | Nonempty text uses `validate()` before `process()` to combine it with committed assertions.                                  |
+| Facet composer draft         | Sibling assertions can require a second `process()` to judge the combined marking.                                           |
+| Composer offerings           | Cached base catalog, contextual refresh when draft assertions change, and gated-query requests.                              |
+| DecisionFlow offerings       | Shared catalog and contextual offerings loaded or refreshed by user interaction; rendering uses cached results.              |
+| DOM form rollup              | `aggregate()` per contributing scheme, plus facet-group aggregation and cached validation reads where needed.                |
+| Marking-store rollup         | `aggregateAssertions()` over committed contributors; subscribed facets can also refresh availability.                        |
 
 Whole/part validation, dependent-field refresh, and remote metadata resolution
 can add calls. A commit may reuse a settled composer reading; it does not always
@@ -659,7 +659,7 @@ process call; it is a lookup over published data, not an evaluation.
 
 Current implementations do not all follow that shared precedence:
 
-- AssertionCard and StatusBanner's boundary mode use the host override before
+- StatusBanner's boundary mode uses the host override before
   the adapter color, then the declared scheme color and category palette.
 - StatusBanner's full-marking mode takes the adapter's `displayColor` before
   consulting the host `colorMap`, and stays neutral when neither the adapter,

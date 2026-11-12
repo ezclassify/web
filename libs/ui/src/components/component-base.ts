@@ -476,7 +476,6 @@ export abstract class ComponentBase extends ReadOnlyComponentBase {
             appliedFixes?: Change[];
             proposedFixes?: Fix[];
             warnings?: Warning[];
-            assertionsBeforeRepair?: Assertion[];
             assessment?: RenderAssessment;
         }) => {
             if (seq !== this._reprocessSeq || this._destroyed) return;
@@ -494,8 +493,6 @@ export abstract class ComponentBase extends ReadOnlyComponentBase {
                         // An absent attribution is also part of the chosen provenance.
                         if (chosen.sourceRule === undefined)
                             delete settled.sourceRule;
-                        if (chosen.provenance === undefined)
-                            delete settled.provenance;
                         return settled;
                     }
                     // Canonical values can differ from the chosen input. The

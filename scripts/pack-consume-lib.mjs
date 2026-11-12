@@ -103,7 +103,6 @@ export function angularConsumerManifest(
         '@angular/cli': `^${target.major}.0.0`,
         '@angular/build': `^${target.major}.0.0`,
         '@angular/compiler-cli': target.version,
-        '@angular-devkit/schematics': `^${target.major}.0.0`,
         'typescript': target.major === 22 ? '6.0.3' : '5.9.3',
         'playwright': playwrightVersion,
         '@playwright/test': playwrightVersion,
@@ -276,12 +275,6 @@ export function verifyAngularConsumers({
                 'node_modules/.bin',
                 name + (process.platform === 'win32' ? '.cmd' : ''),
             );
-        command('packed ng-add', binary('ng'), [
-            'generate',
-            '@ezclassify/angular:ng-add',
-            '--dry-run',
-            '--skip-import',
-        ]);
         command(
             'README path against the Cedar Valley replay',
             binary('playwright'),

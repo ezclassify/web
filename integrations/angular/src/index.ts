@@ -21,8 +21,6 @@ export {
     injectEzClassifyUI,
 } from './lib/ezclassify.directive';
 export type { EzClassifyDirectiveOptions } from './lib/ezclassify.directive';
-export { bindEzClassifyToSignal } from './lib/bind-ezclassify-to-signal';
-export type { BindMarkingsToSignalOptions } from './lib/bind-ezclassify-to-signal';
 export { injectEzClassifyFacet } from './lib/inject-ezclassify-facet';
 export type { InjectEzClassifyFacetReturn } from './lib/inject-ezclassify-facet';
 export {

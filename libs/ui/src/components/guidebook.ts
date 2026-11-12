@@ -18,7 +18,6 @@ import {
     resolveVocabulary,
     type ReferenceSurfaceLabel,
     type ResolvedVocabulary,
-    type FilterResult,
     type GuideStructuralView,
     type GuideRuleView,
     type MaybePromise,
@@ -38,6 +37,7 @@ import guidebookCss from './guidebook.css?inline';
 import {
     renderStructuralTree,
     applyFilterToTree,
+    type TreeFilter,
     buildOverallMarking,
     buildSearchInput,
     announceMatchCount,
@@ -428,7 +428,7 @@ export class Guidebook extends ReadOnlyComponentBase {
      * result per-guide.
      */
     private onSearch(query: string): void {
-        const filterByGuide = new Map<string, FilterResult>();
+        const filterByGuide = new Map<string, TreeFilter>();
         for (const view of this.views)
             filterByGuide.set(view.id, computeViewFilter(view, query));
 
@@ -610,15 +610,14 @@ function combineVocabularies(views: GuideStructuralView[]): ResolvedVocabulary {
 
 /**
  * Case-insensitive substring filter over a single structural view. Matches rule
- * id, name, description, rationale, keywords, and resolved matcher labels, the
- * same surface as engine.filterGuideRules, but operating on the view (which
- * already pre-resolved matcher labels) so the component never needs the raw
- * Guide.
+ * id, name, description, rationale, keywords, and resolved matcher labels. It
+ * reads the view, which already resolved the matcher labels, so the component
+ * never needs the raw Guide.
  */
 function computeViewFilter(
     view: GuideStructuralView,
     query: string,
-): FilterResult {
+): TreeFilter {
     const q = query.trim().toLowerCase();
     const visibleIds = new Set<string>();
     const categoryCounts = new Map<

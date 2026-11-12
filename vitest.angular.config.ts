@@ -15,11 +15,8 @@ describePrivateRuntime(PRIVATE_LANE_SPECS);
 export default defineConfig({
     resolve: {
         conditions: ['browser', 'module', 'import', 'default'],
-        // Prefer TypeScript source over a compiled sibling. The ng-add
-        // schematic ships a compiled index.js (gitignored, built by
-        // tsconfig.schematics.json) next to index.ts; without this its spec
-        // would bind to a potentially stale index.js on a source edit without
-        // a rebuild. In tests the .ts source is always the source of truth.
+        // Prefer TypeScript source over a compiled sibling: in tests the .ts
+        // source is always the source of truth.
         extensions: ['.ts', '.tsx', '.mjs', '.js', '.mts', '.jsx', '.json'],
         alias: {
             // Test-only subpath: cross-framework adapter parity suite. Must

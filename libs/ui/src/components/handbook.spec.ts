@@ -154,7 +154,7 @@ function createProfile(): Scheme {
                         text: 'Handle with care',
                     },
                     {
-                        type: 'handling',
+                        type: 'admonition',
                         required: false,
                         text: 'Special handling required',
                     },
@@ -216,11 +216,11 @@ function createProfile(): Scheme {
 /**
  * Project authored concepts the way an engine adapter does.
  *
- * `getConceptsInCategory` answers `ConceptView`, which carries `definition`,
- * `guidance` and `notices` as flat fields. The authored `Concept` the fixtures
- * below are written as keeps all three inside its `documentation` block, so a
- * mock that handed those documents straight back would let the Handbook pass
- * against a shape no real adapter returns.
+ * An adapter answers `ConceptView`, which carries `definition`, `guidance` and
+ * `notices` as flat fields. The authored `Concept` the fixtures below are
+ * written as keeps all three inside its `documentation` block, so a mock that
+ * handed those documents straight back would let the Handbook pass against a
+ * shape no real adapter returns.
  */
 function toConceptViews(concepts: Concept[]): ConceptView[] {
     return concepts.map(
@@ -274,12 +274,10 @@ function createEngine(scheme?: Scheme) {
             scopes: (p as any).scopes ?? [],
         }),
         listCategories: () => (p as any).categories ?? [],
-        getConceptsInCategory: (catId: string, opts?: any) => {
-            if (opts?.nested) return undefined;
-            return ((view as any).concepts ?? []).filter((c: any) =>
+        getConceptsInCategory: (catId: string) =>
+            ((view as any).concepts ?? []).filter((c: any) =>
                 c.categories?.includes(catId),
-            );
-        },
+            ),
         render: vi.fn((_a: Assertion[]) => ''),
         process: vi.fn((_input: string) => ({
             assertions: [],
@@ -308,12 +306,10 @@ function createAsyncEngine(scheme?: Scheme) {
             scopes: (p as any).scopes ?? [],
         }),
         listCategories: () => (p as any).categories ?? [],
-        getConceptsInCategory: (catId: string, opts?: any) => {
-            if (opts?.nested) return undefined;
-            return ((view as any).concepts ?? []).filter((c: any) =>
+        getConceptsInCategory: (catId: string) =>
+            ((view as any).concepts ?? []).filter((c: any) =>
                 c.categories?.includes(catId),
-            );
-        },
+            ),
         render: vi.fn((_a: Assertion[]) => ''),
         process: vi.fn((_input: string) => ({
             assertions: [],
@@ -554,49 +550,31 @@ describe('Handbook', () => {
             expect(rules[0].textContent).toBe('Exclusive with Beta');
         });
 
-        it('renders Description/Usage from flat ConceptView fields on the nested path', async () => {
-            // The nested-category path builds its entries from
-            // `getConceptsInCategory({ nested: true })` rather than from the flat
-            // call, so it reaches the description and usage text by its own route.
-            // Regression guard: that route has to render them too.
+        it('nests a concept under its broader concept, whatever its position', async () => {
             const p = createProfile();
-            const eng = createEngine(p);
-            eng.getConceptsInCategory = (
-                catId: string,
-                opts?: { nested?: boolean },
-            ) => {
-                const inCat = ((p as any).concepts ?? []).filter((c: any) =>
-                    c.categories?.includes(catId),
-                );
-                if (!opts?.nested) return inCat;
-                return inCat.map((c: any) => ({
-                    concept: {
-                        id: c.id,
-                        name: c.name,
-                        views: c.views ?? {},
-                        aliases: c.aliases ?? [],
-                        categories: c.categories ?? [],
-                        parents: c.parents ?? [],
-                        position: c.position ?? 0,
-                        // Flat view fields, NOT nested under `documentation`.
-                        definition: c.documentation?.definition,
-                        guidance: c.documentation?.guidance,
-                    },
-                    depth: 0,
-                }));
-            };
-            await handbook.init(container, toCtx(eng), { expandAll: true });
+            // Put the narrower concept first by position: it still reads
+            // under its broader one, one level down.
+            (p as any).concepts.find((c: any) => c.id === 'beta').position = -1;
+            await handbook.init(container, toCtx(createEngine(p)), {
+                expandAll: true,
+            });
 
-            const firstEntry = container.querySelector('.ez-handbook__entry')!;
-            const labels = [
-                ...firstEntry.querySelectorAll('.ez-handbook__section-label'),
-            ].map((l) => l.textContent);
-            expect(labels).toContain('Description');
-            expect(labels).toContain('Usage');
-            expect(
-                firstEntry.querySelector('.ez-handbook__section-text')!
-                    .textContent,
-            ).toBe('First letter of the Greek alphabet');
+            const entries = [
+                ...container.querySelectorAll<HTMLElement>(
+                    '.ez-handbook__entry',
+                ),
+            ].map((el) => [
+                el.getAttribute('aria-label'),
+                el.getAttribute('data-depth'),
+            ]);
+            expect(entries.slice(0, 3)).toEqual([
+                ['Alpha', '0'],
+                ['Beta', '1'],
+                ['Old Concept', '0'],
+            ]);
+            const beta = container.querySelectorAll('.ez-handbook__entry')[1];
+            expect(beta.classList).toContain('ez-handbook__entry--depth-1');
+            expect(beta.getAttribute('aria-level')).toBe('2');
         });
 
         it('shows aliases and alternative views', async () => {
@@ -667,7 +645,9 @@ describe('Handbook', () => {
             ).toBe(true);
             expect(notices[0].textContent).toContain('Handle with care');
             expect(
-                notices[1].classList.contains('ez-handbook__notice--handling'),
+                notices[1].classList.contains(
+                    'ez-handbook__notice--admonition',
+                ),
             ).toBe(true);
             expect(notices[1].textContent).toContain(
                 'Special handling required',

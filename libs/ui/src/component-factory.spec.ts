@@ -197,12 +197,6 @@ describe('createMountContainer', () => {
         expect(input.style.display).toBe('none');
     });
 
-    it('returns the element itself for the card controller (read-only)', () => {
-        const el = document.createElement('div');
-        const container = createMountContainer(el, 'card');
-        expect(container).toBe(el);
-    });
-
     it('returns the element itself for the banner controller (read-only)', () => {
         const el = document.createElement('div');
         const container = createMountContainer(el, 'banner');
@@ -224,9 +218,7 @@ describe('createComponent', () => {
         'select',
         'checklist',
         'selector',
-        'card',
         'banner',
-        'dualpane',
         'handbook',
         'decisionflow',
         'hidden',

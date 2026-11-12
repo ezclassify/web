@@ -33,7 +33,7 @@ Unused Angular-eslint plugins are absent; the root ESLint 10 configuration owns
 linting without installing an older ESLint solely to satisfy unused peers.
 
 `npm run verify:pack-consume` installs the actual published APF directory and
-exercises Angular 20/21/22 linking, production builds, `ng-add`, and the README
+exercises Angular 20/21/22 linking, production builds and the README
 document-form browser suite against the Angular example. It also checks strict
 public types and DOM mount/update/unmount for React 18/current 19 and Vue
 3.3/current 3.5 from the same packed artifacts.
@@ -51,11 +51,11 @@ exports or a runtime dependency.
 
 `npm run docs:source` creates a separate private maintainer reference at
 `dist/source-reference/index.html`. It includes maintained source modules,
-private/protected class members, package build wrappers, Angular schematics,
+private/protected class members, package build wrappers,
 repository scripts, example and e2e host source and the private [`libs/ui-tools/`](libs/ui-tools/)
 library. Install the private lane and ui-tools dependencies using the
-instructions below when generating this complete source view. Tests and compiled
-schematics output are excluded. TypeDoc describes exported module declarations;
+instructions below when generating this complete source view. Tests are
+excluded. TypeDoc describes exported module declarations;
 scripts without exports retain their CLI contract in their source headers. CSS,
 HTML templates, shell scripts and workflow configuration remain source artifacts
 rather than TypeScript API declarations.

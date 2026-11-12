@@ -419,23 +419,23 @@ An element can carry one identity or structure attribute and one view
 attribute. Mixing two view attributes on a single element is an error; the
 scanner logs and ignores extras.
 
-| Attribute                             | Axis      | Meaning                                                                                                 | Example                                                                        |
-| ------------------------------------- | --------- | ------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
-| `data-ezclassify-controller="<name>"` | Identity  | Mounts the named component. On a marking controller it also declares the marking, by DOM `id`.          | `<input id="doc" data-ezclassify-controller="marking" />`                      |
-| `data-ezclassify-marking`             | Identity  | This element IS a marking object with no controller. Its `id` is the marking id.                        | `<input id="doc-marking" type="hidden" data-ezclassify-marking />`             |
-| `data-ezclassify-whole="<id>"`        | Structure | On a container: the hosts inside are parts of the whole `<id>`.                                         | `<form data-ezclassify-whole="doc">`                                           |
-| `data-ezclassify-part-of="<id>"`      | Structure | This host is a part of the whole `<id>`, from outside its container.                                    | `data-ezclassify-part-of="doc"`                                                |
-| `data-ezclassify-collection="<id>"`   | Structure | On a container: a collection; the wholes and collections inside are its members.                        | `<section data-ezclassify-collection="folderA">`                               |
-| `data-ezclassify-member-of="<id>"`    | Structure | This whole or collection is a member of the collection `<id>`, from outside it.                         | `data-ezclassify-member-of="folderA"`                                          |
-| `data-ezclassify-ignore`              | Structure | Nothing in this subtree is read.                                                                        | `<ul data-ezclassify-ignore>`                                                  |
-| `data-ezclassify-bound-to="<id>"`     | View      | Two-way full-marking view. Reads `state.rendered` + `state.assertions`; publishes back via either side. | `data-ezclassify-bound-to="doc-marking"`                                       |
-| `data-ezclassify-facet-of="<id>"`     | View      | Two-way category-scoped view. Used with `data-ezclassify-category`.                                     | `data-ezclassify-facet-of="doc-marking" data-ezclassify-category="level"`      |
-| `data-ezclassify-category="<cat>"`    | View      | Names the category slice for `facet-of`. Required with `facet-of`.                                      | `data-ezclassify-category="from_school"`                                       |
-| `data-ezclassify-source="<id>"`       | View      | One-way read of a specific marking by id. Read-only views.                                              | `<div data-ezclassify-source="doc-marking" data-ezclassify-controller="card">` |
-| `data-ezclassify-aggregate`           | View      | One-way read of a level: empty for the page, a whole id for its parts, a collection id for its members. | `<div data-ezclassify-controller="banner" data-ezclassify-aggregate>`          |
-| `data-ezclassify-translate="<id>"`    | View      | Shows the view's value translated through the named crosswalk; empty with exactly one crosswalk.        | `<div data-ezclassify-source="doc" data-ezclassify-translate>`                 |
-| `data-ezclassify-context="<key>"`     | Selection | The Context a marking is read in, by key. Only with several Contexts. Inherited.                        | `<section data-ezclassify-context="records">`                                  |
-| `data-ezclassify-scheme="<selector>"` | Selection | The Context-local scheme, for a crosswalk Context's second scheme. Inherited.                           | `<div data-ezclassify-scheme="tier">`                                          |
+| Attribute                             | Axis      | Meaning                                                                                                 | Example                                                                          |
+| ------------------------------------- | --------- | ------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| `data-ezclassify-controller="<name>"` | Identity  | Mounts the named component. On a marking controller it also declares the marking, by DOM `id`.          | `<input id="doc" data-ezclassify-controller="marking" />`                        |
+| `data-ezclassify-marking`             | Identity  | This element IS a marking object with no controller. Its `id` is the marking id.                        | `<input id="doc-marking" type="hidden" data-ezclassify-marking />`               |
+| `data-ezclassify-whole="<id>"`        | Structure | On a container: the hosts inside are parts of the whole `<id>`.                                         | `<form data-ezclassify-whole="doc">`                                             |
+| `data-ezclassify-part-of="<id>"`      | Structure | This host is a part of the whole `<id>`, from outside its container.                                    | `data-ezclassify-part-of="doc"`                                                  |
+| `data-ezclassify-collection="<id>"`   | Structure | On a container: a collection; the wholes and collections inside are its members.                        | `<section data-ezclassify-collection="folderA">`                                 |
+| `data-ezclassify-member-of="<id>"`    | Structure | This whole or collection is a member of the collection `<id>`, from outside it.                         | `data-ezclassify-member-of="folderA"`                                            |
+| `data-ezclassify-ignore`              | Structure | Nothing in this subtree is read.                                                                        | `<ul data-ezclassify-ignore>`                                                    |
+| `data-ezclassify-bound-to="<id>"`     | View      | Two-way full-marking view. Reads `state.rendered` + `state.assertions`; publishes back via either side. | `data-ezclassify-bound-to="doc-marking"`                                         |
+| `data-ezclassify-facet-of="<id>"`     | View      | Two-way category-scoped view. Used with `data-ezclassify-category`.                                     | `data-ezclassify-facet-of="doc-marking" data-ezclassify-category="level"`        |
+| `data-ezclassify-category="<cat>"`    | View      | Names the category slice for `facet-of`. Required with `facet-of`.                                      | `data-ezclassify-category="from_school"`                                         |
+| `data-ezclassify-source="<id>"`       | View      | One-way read of a specific marking by id. Read-only views.                                              | `<div data-ezclassify-source="doc-marking" data-ezclassify-controller="banner">` |
+| `data-ezclassify-aggregate`           | View      | One-way read of a level: empty for the page, a whole id for its parts, a collection id for its members. | `<div data-ezclassify-controller="banner" data-ezclassify-aggregate>`            |
+| `data-ezclassify-translate="<id>"`    | View      | Shows the view's value translated through the named crosswalk; empty with exactly one crosswalk.        | `<div data-ezclassify-source="doc" data-ezclassify-translate>`                   |
+| `data-ezclassify-context="<key>"`     | Selection | The Context a marking is read in, by key. Only with several Contexts. Inherited.                        | `<section data-ezclassify-context="records">`                                    |
+| `data-ezclassify-scheme="<selector>"` | Selection | The Context-local scheme, for a crosswalk Context's second scheme. Inherited.                           | `<div data-ezclassify-scheme="tier">`                                            |
 
 Notes on shape:
 
@@ -488,7 +488,7 @@ one category-shaped face of a marking.
 
 ### 3.2 Controller rendering: in-place vs hidden-host + mount sibling
 
-The runtime mounts `banner`, `card`, `text`, `equivalency`, and
+The runtime mounts `banner`, `text`, `equivalency`, and
 `context-reference` in place on their authored hosts.
 
 Other controllers receive a sibling `<div data-ezclassify-mount="<controller>">`.
@@ -1144,8 +1144,6 @@ covers:
 - Each publish names exactly the outputs its views hold, and an output the
   scheme does not declare is refused without stopping later publishes.
 - `publishRendered` over a marking preserves its scoped assertions.
-- `captureFormState` → `restoreFormState` round-trips scoped and captured state
-  into a fresh mount.
 - A seed lands under an edit made before it or published while it is on the
   wire, and keeps the served scoped assertions and capture values; a rendered
   edit replaces only the default scope, and a rendered baseline replaces scoped
@@ -1246,8 +1244,8 @@ const level = injectEzClassifyFacet('doc-marking', 'level');
 ```
 
 The returned signals are read-only projections. `level.setValue(ids)` publishes
-through the store. For full document bindings, use `bindEzClassifyToSignal`;
-see the [Angular guide](../../../integrations/angular/README.md).
+through the store. See the [Angular guide](../../../integrations/angular/README.md)
+for the rest of the Angular API.
 
 ### React
 
@@ -1272,67 +1270,7 @@ const docRendered: Ref<string> = useEzClassify('doc-marking');
 Writing the ref calls `publishRendered` on the store. For the
 assertion side: `useEzClassifyAssertions`.
 
-## 10. Domain-object binding helper
-
-Most consumers don't want to wire individual markings by id; they want
-to wire a whole document object's classification fields in one call.
-`bindEzClassifyToObject` is that helper.
-
-```ts
-import { bindEzClassifyToObject } from '@ezclassify/ui';
-
-const handle = bindEzClassifyToObject(store, doc, {
-    'doc-marking': 'classification',
-    'title-marking': 'title.classification',
-    'para1-marking': { path: '/para-1/classification', mode: 'assertions' },
-});
-
-handle.onChange((updatedDoc, diff) => {
-    // updatedDoc is the doc with the latest values; diff lists what changed.
-});
-
-handle.setPath('title.classification', 'HIGH/AUTH-X'); // programmatic edit
-handle.dispose();
-```
-
-Path syntax:
-
-- **Dot-notation**: `'title.classification'`. The default.
-- **JSON Pointer** (RFC 6901): `'/title/classification'`. Detected by
-  a leading slash. Use this when keys contain dots or other
-  dot-notation-illegal characters (`para-1` is fine; `para.1` is not).
-
-Per-marking config:
-
-- A bare string is shorthand for `{ path, mode: 'rendered' }`.
-- `{ path, mode: 'rendered' | 'assertions' }` lets the consumer pick.
-
-A `rendered` path holds an empty string while the engine cannot write the
-marking, so the document never carries the last marking as the current one.
-
-`setPath` is the only safe way to push programmatic edits from JS into
-the document object, plain JS objects are not reactive, so a direct
-`doc.title.classification = 'HIGH'` mutation will not propagate to the
-store. (Framework variants observe their native update mechanism:
-`bindEzClassifyToSignal` for Angular observes signal writes,
-`useEzClassifyObject` for React exposes `setDoc` and `setPath`, and
-`bindEzClassifyToReactiveDoc` for Vue observes reactive document changes.
-Mutating an ordinary object directly does not trigger a React or Angular update.)
-
-All four are the same algorithm. `createDocBinding` in `@ezclassify/ui`
-walks the paths, dedupes the round trip, and orders the writes and
-publishes; each variant supplies a `ReactiveDoc`, which is three
-functions: read the document, write a path, and (optionally) report a
-host write. It is the doc-binding counterpart of the store's
-`ReactiveCell`, and it is the only place the frameworks differ. A
-container that leaves `observe` off gets a one-way binding, store to
-document, which is exactly what `bindEzClassifyToObject` is.
-
-`handle.onChange` receives a `diff` shaped as `Array<{ path: string,
-before: string, after: string }>` so consumers don't need to compare
-objects themselves.
-
-## 11. The four-fields-one-marking example
+## 10. The four-fields-one-marking example
 
 The canonical case: one logical marking, edited from four different
 fields. Vanilla HTML, no framework, no JavaScript glue:
@@ -1450,7 +1388,7 @@ reports `ambiguous-parent`. These conflicts appear in
 Custom stores without the optional membership methods retain scalar assertion
 publication. They do not provide two-way variable-entry binding.
 
-## 12. The structured-document example
+## 11. The structured-document example
 
 Most non-trivial consumers don't have one marking: they have a
 document with classifications scattered across nested fields. Here's
@@ -1508,29 +1446,24 @@ and contribute nothing of their own. The native `<select>` binds in place as
 a facet picker with no controller. The textarea itself owns its prose; save
 its native value with the document.
 
-JS bridge:
+To save, read each marking from the store and write it into the document:
 
 ```ts
-import { bindEzClassifyToObject } from '@ezclassify/ui';
-
-const handle = bindEzClassifyToObject(store, doc, {
-    'doc-marking': 'classification',
-    'title-marking': 'title.classification',
-    'para1-marking': '/para-1/classification', // JSON Pointer, key contains a dash
-});
-
-handle.onChange((updated) => save(updated));
+function save() {
+    doc.classification = forms.store.get('doc-marking').rendered;
+    doc.title.classification = forms.store.get('title-marking').rendered;
+    doc['para-1'].classification = forms.store.get('para1-marking').rendered;
+}
 ```
 
-When TagInput publishes a change to `doc-marking`, the store
-fires the subscriber chain → the helper runs the rendered string
-through to `doc.classification` and calls `onChange(doc, diff)`. When
-the user edits a marking inside `para-1`'s textarea, the same
-mechanism updates `doc['para-1'].classification`. Coverage checks fire
-in the background; coverage failures surface as `valid: false` on the
-failing child plus a DOM event on the child element.
+When TagInput publishes a change to `doc-marking`, the store holds the new
+rendered string, and the next `save()` writes it to `doc.classification`.
+Subscribe to a marking with `forms.store.subscribe(id, listener)` to save on
+every change instead. Coverage checks fire in the background; coverage
+failures surface as `valid: false` on the failing child plus a DOM event on the
+child element.
 
-## 13. String-side vs assertion-side schemes
+## 12. String-side vs assertion-side schemes
 
 Schemes split naturally into two patterns by what users type first.
 
@@ -1557,8 +1490,8 @@ derived by the engine. Components surfacing this pattern:
 ```
 
 Read state.rendered, write state.rendered. The assertion-side views
-(if any) are derived displays, a card showing the parsed concepts,
-say.
+(if any) are derived displays, a checklist showing the parsed
+concepts, say.
 
 ### Assertion-primary (geography, allergens, pantry-tags)
 
@@ -1574,19 +1507,19 @@ the rendered form is a CSV the engine emits. Components:
     data-ezclassify-category="allergens"></div>
 
 <div
-    data-ezclassify-controller="card"
+    data-ezclassify-controller="banner"
     data-ezclassify-source="allergen-marking"></div>
 ```
 
 The checklist publishes `assertions`; the engine renders a CSV string;
-the card displays it.
+the banner displays it.
 
 Both patterns work uniformly because every `EzClassifyState` carries both
 representations. The component's internal mode (rendered-side vs
 assertion-side) is invisible to the markup; only the scheme decides
 which pattern reads naturally.
 
-## 14. Industry-alignment notes
+## 13. Industry-alignment notes
 
 We're not inventing a paradigm. The conformant pieces:
 
@@ -1624,7 +1557,7 @@ The explicit non-default choices:
   dots, dashes that aren't dotted access). Auto-detect by leading
   slash; no flag.
 
-## 15. Forbidden patterns
+## 14. Forbidden patterns
 
 Things you must not do. Each one has a concrete failure mode.
 
@@ -1660,7 +1593,7 @@ Things you must not do. Each one has a concrete failure mode.
   attribute for it exists. `ui.add`, for pages whose markup the host can't
   edit, writes those attributes and nothing else.
 
-## 16. Deferred from the 1.0 surface
+## 15. Deferred from the 1.0 surface
 
 The model supports extensions beyond the 1.0 implementation. Explicit deferrals:
 

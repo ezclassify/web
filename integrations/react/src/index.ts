@@ -25,8 +25,6 @@ export {
 export type { SetRendered, SetAssertions } from './useEzClassify';
 export { useEzClassifyFacet } from './useEzClassifyFacet';
 export type { UseEzClassifyFacetReturn } from './useEzClassifyFacet';
-export { useEzClassifyObject } from './useEzClassifyObject';
-export type { UseEzClassifyObjectResult } from './useEzClassifyObject';
 export { useEzClassifyRollup } from './useEzClassifyRollup';
 export type { EzClassifyBucket } from './useEzClassifyRollup';
 export { ContextReference, ContextReferenceTab } from './ContextReference';
