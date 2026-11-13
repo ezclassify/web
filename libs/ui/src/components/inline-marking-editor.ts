@@ -149,6 +149,14 @@ export class InlineMarkingEditor {
     private input!: HTMLInputElement;
     private sizer!: HTMLSpanElement;
     private chevron!: HTMLButtonElement;
+    /**
+     * The box the chevron centers on: an invisible copy of the closing
+     * delimiter the host draws after the mount, so the chevron stands on the
+     * delimiter's whole width whatever the template writes (see closeDelimiter
+     * and inline-marking-editor.css).
+     */
+    private chevronAnchor!: HTMLSpanElement;
+    private chevronAnchorText!: Text;
     private unsubscribeChevron: (() => void) | null = null;
     private options!: InlineMarkingEditorOptions;
     private assertions: Assertion[] = [];
@@ -209,8 +217,13 @@ export class InlineMarkingEditor {
             void this.view?.open('pointer');
         });
         wrap.appendChild(this.input);
+        this.chevronAnchor = document.createElement('span');
+        this.chevronAnchor.className =
+            'inline-editor-chevron-anchor inline-editor-chevron-anchor--bare';
+        this.chevronAnchorText = document.createTextNode('');
         this.chevron = this.createChevron();
-        wrap.appendChild(this.chevron);
+        this.chevronAnchor.append(this.chevronAnchorText, this.chevron);
+        wrap.appendChild(this.chevronAnchor);
         this.autoSizeInput();
 
         // Seed without normalizing the visible text: a loaded marking stays
@@ -320,14 +333,24 @@ export class InlineMarkingEditor {
     /**
      * The marking's closing delimiter, for the host to draw right after the
      * editor's mount. The editor's chevron sits on it: while the chevron shows,
-     * the delimiter's glyph gives way to it but keeps its width, so the host's
+     * the delimiter's glyphs give way to it but keep their width, so the host's
      * display stays in register with its text layer and the space after the
-     * marking stays where it was (see inline-marking-editor.css).
+     * marking stays where it was (see inline-marking-editor.css). The chevron
+     * centers on the delimiter's full width, one glyph or several. A template
+     * that writes no closing delimiter leaves it nowhere to stand but on the
+     * text, so it is not drawn; a click on the marking opens the list.
      *
-     * @param text - The delimiter as the host writes it
+     * @param text - The delimiter as the host writes it, possibly empty
      * @returns The element to append after the mount
      */
     closeDelimiter(text: string): HTMLSpanElement {
+        if (this.chevronAnchor) {
+            this.chevronAnchorText.data = text;
+            this.chevronAnchor.classList.toggle(
+                'inline-editor-chevron-anchor--bare',
+                text === '',
+            );
+        }
         const span = document.createElement('span');
         span.className = 'inline-editor-close';
         span.textContent = text;

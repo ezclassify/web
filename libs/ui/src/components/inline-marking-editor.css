@@ -40,13 +40,27 @@
    transparent while the chevron shows, and takes no room in the line: the
    field's display has to stay in register with the invisible text layer, so
    nothing in the editor may push the text that follows. It stays inside the
-   editor's mount, so a press on it is a press inside the editor. Sized in em
-   because it stands in for a glyph of the field's own text: 0.15em is half a
-   closing parenthesis. */
+   editor's mount, so a press on it is a press inside the editor.
+
+   The anchor holds an invisible copy of that delimiter just past the
+   editor's end, so it is exactly as wide as the glyphs the host draws, one
+   or several, and the chevron centers on it. A template with no closing
+   delimiter leaves it nowhere to stand but on the text, so it is not drawn:
+   a click on the marking opens the list, as does Ctrl/Cmd+Enter. */
+.inline-editor-chevron-anchor {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 100%;
+    white-space: pre;
+    visibility: hidden;
+    pointer-events: none;
+}
 .inline-editor-chevron {
+    visibility: visible;
     position: absolute;
     top: 50%;
-    left: calc(100% + 0.15em);
+    left: 50%;
     transform: translate(-50%, -50%);
     display: inline-flex;
     align-items: center;
@@ -61,6 +75,9 @@
     color: var(--ez-color-muted, #6b7280);
     cursor: pointer;
     pointer-events: auto;
+}
+.inline-editor-chevron-anchor--bare .inline-editor-chevron {
+    display: none;
 }
 .inline-editor-chevron svg {
     flex: none;

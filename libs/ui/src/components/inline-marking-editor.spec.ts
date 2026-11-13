@@ -7,6 +7,9 @@
  * proven across all four fields in `composer/composer-contract.spec.ts`.
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import { dirname, join } from 'node:path';
 import { InlineMarkingEditor } from './inline-marking-editor';
 import { schemeOnlyContext } from '../../test-fixtures/context-doubles';
 import type {
@@ -304,6 +307,36 @@ describe('InlineMarkingEditor', () => {
         expect(container.querySelector('.inline-editor-wrap')).not.toBeNull();
         expect(input.type).toBe('text');
         expect(input.className).toBe('inline-editor-input');
+    });
+
+    it('centers its chevron on the closing delimiter the host draws, however many glyphs it has', async () => {
+        const { editor } = await open();
+        const chevron = container.querySelector('.inline-editor-chevron')!;
+        const anchor = chevron.parentElement!;
+        // The chevron stays inside the editor's mount, so a press on it is a
+        // press inside the editor.
+        expect(anchor.classList).toContain('inline-editor-chevron-anchor');
+        expect(container.contains(anchor)).toBe(true);
+
+        // The anchor holds the very text the host draws after the mount, so
+        // it is as wide as those glyphs and the chevron centers on all of them.
+        for (const delimiter of [')', ']]', ' »']) {
+            const close = editor.closeDelimiter(delimiter);
+            expect(close.textContent).toBe(delimiter);
+            expect(anchor.textContent).toBe(delimiter);
+            expect(anchor.classList).not.toContain(
+                'inline-editor-chevron-anchor--bare',
+            );
+        }
+
+        // A template with no closing delimiter gives the chevron nothing to
+        // stand on but the text, so the stylesheet does not draw it.
+        expect(editor.closeDelimiter('').textContent).toBe('');
+        expect(anchor.textContent).toBe('');
+        expect(anchor.classList).toContain(
+            'inline-editor-chevron-anchor--bare',
+        );
+        expect(anchor.querySelector('.inline-editor-chevron')).toBe(chevron);
     });
 
     it('rounds the editor hit width up so punctuation cannot click through to the host field', async () => {
@@ -751,5 +784,35 @@ describe('InlineMarkingEditor under the commit table', () => {
         expect(onCancel).not.toHaveBeenCalled();
         press(input, 'Escape');
         expect(onCancel).toHaveBeenCalled();
+    });
+});
+
+describe('InlineMarkingEditor chevron placement', () => {
+    it('positions the chevron from the anchor, never from a one-glyph estimate', () => {
+        const css = readFileSync(
+            join(
+                dirname(fileURLToPath(import.meta.url)),
+                'inline-marking-editor.css',
+            ),
+            'utf8',
+        ).replace(/\/\*[\s\S]*?\*\//g, '');
+        const rule = (selector: string) =>
+            css.match(
+                new RegExp(
+                    `(?:^|\\})\\s*${selector.replace(/[.]/g, '\\$&')}\\s*\\{([^}]*)\\}`,
+                ),
+            )?.[1] ?? '';
+        const anchor = rule('.inline-editor-chevron-anchor');
+        expect(anchor).toMatch(/position:\s*absolute/);
+        expect(anchor).toMatch(/left:\s*100%/);
+        expect(anchor).toMatch(/visibility:\s*hidden/);
+        const chevron = rule('.inline-editor-chevron');
+        expect(chevron).toMatch(/left:\s*50%/);
+        expect(chevron).toMatch(/transform:\s*translate\(-50%, -50%\)/);
+        expect(chevron).toMatch(/visibility:\s*visible/);
+        expect(chevron).not.toMatch(/em\)/);
+        expect(
+            rule('.inline-editor-chevron-anchor--bare .inline-editor-chevron'),
+        ).toMatch(/display:\s*none/);
     });
 });
