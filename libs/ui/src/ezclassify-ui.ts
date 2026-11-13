@@ -226,12 +226,6 @@ const REFERENCE_ERRORS: ReadonlySet<string> = new Set<HostErrorCode>([
  * Warn-once tracking for the scope-mismatch advisory, keyed by the offending
  * element so a framework re-rendering the same node never warns twice for it.
  */
-/**
- * Trailing room a plain enhanced input keeps for its status mark (the mark's
- * width plus its inset from the edge), so text never runs under the logo.
- */
-const PLAIN_STATUS_MARK_RESERVE = '1.75rem';
-
 const warnedScopeMismatch = new WeakSet<HTMLElement>();
 
 /**
@@ -2234,12 +2228,6 @@ export class EzClassifyUI {
                     shape: 'input',
                     root: this.root,
                 });
-                // The mark sits over the input's trailing edge; keep the text
-                // out from under it, never shrinking padding the host set.
-                const hostPadEnd = input.style.paddingInlineEnd;
-                const ownPadEnd =
-                    getComputedStyle(input).paddingInlineEnd || '0px';
-                input.style.paddingInlineEnd = `max(${ownPadEnd}, ${PLAIN_STATUS_MARK_RESERVE})`;
                 // Wire two-way store sync with the marking the input holds or
                 // edits, so sibling views (tag inputs, etc.) stay in step with
                 // it and its commits reach the levels above it.
@@ -2259,7 +2247,6 @@ export class EzClassifyUI {
                 const priorCleanup = this.plainBehaviorCleanups.get(input);
                 this.plainBehaviorCleanups.set(input, () => {
                     priorCleanup?.();
-                    input.style.paddingInlineEnd = hostPadEnd;
                     if (input.parentNode === statusWrap) {
                         if (priorParent) {
                             // The sibling captured at bind time may be gone by

@@ -53,13 +53,21 @@
     outline: 2px solid var(--ez-color-primary, #fdb827);
     outline-offset: 2px;
 }
-/* A plain enhanced input places the mark at the right edge, centered on the
-   field's first line: the only self-positioning shape. The field components
-   mount theirs in their inline chrome (field-chrome.css). */
+/* A plain enhanced input places the mark at the trailing edge, centered on
+   the field's first line: the only self-positioning shape. The field
+   components mount theirs in their inline chrome (field-chrome.css). */
 .ez-status-mark--input {
     top: 1rem;
-    right: 0.375rem;
+    inset-inline-end: 0.375rem;
     transform: translateY(-50%);
+}
+/* The plain input's text stops short of the mark: its width (1.25rem) and
+   inset (0.375rem), and a little air. Logical, like the mark's own inset, so a
+   right-to-left field keeps the room on the side the mark sits. !important
+   because the room has to hold over any padding the host gives that edge,
+   inline or in its own sheet; the other three edges stay the host's. */
+.ez-plain-field-wrap > input {
+    padding-inline-end: 1.75rem !important;
 }
 /* 'chrome': no self-positioning. The mark sits in normal flow as a flex child
    of the field's inline chrome, which provides layout; this only needs to
@@ -69,7 +77,7 @@
 .ez-status-mark--chrome {
     position: relative;
     top: auto;
-    right: auto;
+    inset-inline-end: auto;
     transform: none;
 }
 

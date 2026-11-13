@@ -169,6 +169,30 @@ describe('dot and sparkle occupy separate corners', () => {
         expect(sparkleGroup?.getAttribute('transform')).toBe('translate(59 7)');
     });
 
+    it("reserves the plain input's trailing room on the edge the mark sits on", () => {
+        const css = readFileSync(join(here, 'status-mark.css'), 'utf8').replace(
+            /\/\*[\s\S]*?\*\//g,
+            '',
+        );
+        const rule = (selector: string) =>
+            css.match(
+                new RegExp(
+                    `${selector.replace(/[.>]/g, '\\$&')}\\s*\\{([^}]*)\\}`,
+                ),
+            )?.[1] ?? '';
+        // Both on the logical end edge: a right-to-left field keeps its room
+        // under the mark, not on the far side.
+        expect(rule('.ez-status-mark--input')).toMatch(
+            /inset-inline-end:\s*0\.375rem/,
+        );
+        expect(rule('.ez-status-mark--input')).not.toMatch(
+            /(^|;|\s)(right|left):/,
+        );
+        expect(rule('.ez-plain-field-wrap > input')).toMatch(
+            /padding-inline-end:\s*1\.75rem\s*!important/,
+        );
+    });
+
     it('the corner dot anchors bottom-left in the stylesheet, not top-right', () => {
         const css = readFileSync(join(here, 'status-mark.css'), 'utf8');
         const dotRule = css.match(/\.ez-status-mark__dot\s*\{[^}]*\}/);

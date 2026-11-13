@@ -112,10 +112,11 @@ describe('a plain bound input mounted after construction', () => {
         expect(forms.fields).not.toContain(input);
     });
 
-    it('reserves trailing room for the status mark and gives it back on destroy', async () => {
+    it("leaves the host's own padding on the input, which the stylesheet's reserve sits over", async () => {
         const input = document.createElement('input');
         input.id = 'plain-host';
         input.setAttribute('data-ezclassify-bound-to', MARKING_ID);
+        input.style.paddingInlineEnd = '0.5rem';
         root.appendChild(input);
 
         forms = new EzClassifyUI(
@@ -124,10 +125,13 @@ describe('a plain bound input mounted after construction', () => {
         );
         await flush();
 
-        expect(input.style.paddingInlineEnd).toContain('1.75rem');
+        // The reserve is a rule on the wrap's input (status-mark.css), so it
+        // follows the host's later styles instead of freezing them at bind.
+        expect(input.parentElement?.classList).toContain('ez-plain-field-wrap');
+        expect(input.style.paddingInlineEnd).toBe('0.5rem');
         forms.destroy();
         forms = null;
-        expect(input.style.paddingInlineEnd).toBe('');
+        expect(input.style.paddingInlineEnd).toBe('0.5rem');
     });
 
     it('hydrates from state published before it mounted', async () => {
