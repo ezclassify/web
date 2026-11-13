@@ -52,9 +52,9 @@ jobs:
 
       - name: Test sources import no engine
         # Cheapest gate, so it runs first. Reads source text only and needs no
-        # install: no spec, fixture or test helper may import the engine, its
-        # WebAssembly build or the runtime's testing utilities, because a clean
-        # clone cannot install them. Engine behavior arrives as recordings.
+        # install: no spec, fixture or test helper may import the engine or
+        # its WebAssembly build, because a clean clone cannot install them.
+        # Engine behavior arrives as recordings.
         run: npm run check:spec-imports
 
       - name: Public dependency closure

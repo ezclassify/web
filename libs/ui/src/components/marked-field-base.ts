@@ -276,7 +276,12 @@ export abstract class MarkedFieldBase<
                 }
             ).embeddedMarking?.[0] ?? null;
         const formats = this.scheme.formats ?? [];
-        const listed = this.options.scopes ?? [];
+        // A lone `scope` is a list of one, and a list of one is that scope.
+        const listed = this.options.scopes?.length
+            ? this.options.scopes
+            : this.options.scope
+              ? [this.options.scope]
+              : [];
         const meta = resolvedEngine.getSchemeMeta();
         // The host's spelling is resolved to the output it names: an output id
         // as it is, a bare view id to that view on the field's surface (the
@@ -289,8 +294,7 @@ export abstract class MarkedFieldBase<
                   resolveOutput(
                       formats,
                       requestedFormat,
-                      this.options.scope ??
-                          inDeclarationOrder(listed, meta)[0] ??
+                      inDeclarationOrder(listed, meta)[0] ??
                           defaultSurfaceOf(
                               formats,
                               this.scheme.defaultRenderFormat,
@@ -322,10 +326,18 @@ export abstract class MarkedFieldBase<
         // of the one scope the field lists, else of the default scope.
         this.scanFormat =
             requested ||
-            (this.options.scope
-                ? viewOutputOf(meta, [this.options.scope], true)
+            (listed.length === 1
+                ? viewOutputOf(meta, listed, true)
                 : this.pickPartFormat()) ||
             this.schemeDefaultFormat(formats.map((format) => format.id));
+        // A field of one scope writes that scope only.
+        assertWritesScopes(
+            resolvedEngine,
+            resolvedScheme.categories,
+            this.scanFormat,
+            listed,
+            this.componentLabel,
+        );
     }
 
     /**

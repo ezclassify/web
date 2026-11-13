@@ -9,6 +9,7 @@ import {
     resolveFormatAttr,
     resolveOutput,
     viewOutputOf,
+    writesSeveralLines,
 } from './format-resolver';
 import type { FormsContext } from './forms/types';
 import { mockRenderFormats } from './render-format-layout-mock';
@@ -474,8 +475,71 @@ describe('a text field that lists several scopes', () => {
         );
     });
 
-    it('has nothing to check for one scope or none', () => {
-        expect(check('base/line', ['extra'])).not.toThrow();
+    it('lets one scope write its own output, and has nothing to check for none', () => {
+        expect(check('base/line', ['base'])).not.toThrow();
+        expect(check('line', ['base'])).not.toThrow();
         expect(check('base/line', [])).not.toThrow();
+    });
+
+    it("refuses one scope a format on another scope's surface", () => {
+        expect(check('base/line', ['extra'])).toThrow(
+            /MarkingField: data-ezclassify-scope lists "extra", but its format "base\/line" writes the surface of "base"/,
+        );
+    });
+
+    it('refuses a format that also writes a category of no scope it lists', () => {
+        expect(check('base/vector', ['base'])).toThrow(
+            /lists "base", but its format "base\/vector" also writes "adjust", of no scope it lists/,
+        );
+    });
+});
+
+describe('a format that writes several lines', () => {
+    const layout = (extra: Record<string, unknown>) =>
+        [
+            {
+                id: 'record/block',
+                surface: 'record',
+                outputView: 'block',
+                mode: 'inline',
+                categoryOrder: ['a', 'b'],
+                ...extra,
+            },
+        ] as never;
+
+    it('is a block of more than one category, or a layout whose text breaks a line', () => {
+        expect(
+            writesSeveralLines(layout({ mode: 'block' }), 'block', 'record'),
+        ).toBe(true);
+        expect(
+            writesSeveralLines(
+                layout({ separatorBefore: { b: '\n' } }),
+                'record/block',
+                undefined,
+            ),
+        ).toBe(true);
+        expect(
+            writesSeveralLines(
+                layout({ categoryEach: { a: { suffix: '\r\n' } } }),
+                'record/block',
+                undefined,
+            ),
+        ).toBe(true);
+    });
+
+    it('is not an inline layout, a block of one category, or an output it cannot find', () => {
+        expect(writesSeveralLines(layout({}), 'record/block', undefined)).toBe(
+            false,
+        );
+        expect(
+            writesSeveralLines(
+                layout({ mode: 'block', categoryOrder: ['a'] }),
+                'record/block',
+                undefined,
+            ),
+        ).toBe(false);
+        expect(
+            writesSeveralLines(layout({ mode: 'block' }), 'other', 'record'),
+        ).toBe(false);
     });
 });

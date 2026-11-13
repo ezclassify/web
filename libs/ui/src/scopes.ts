@@ -149,6 +149,35 @@ export function factsInScopes<T extends { categoryId: string }>(
 }
 
 /**
+ * The facts of a marking that a component writing `scopes` cannot state, so its
+ * own facts leave them as they are: those whose category belongs to none of the
+ * scopes and holds none of the component's own facts. A component that writes
+ * no scope writes the whole marking, so nothing is outside it.
+ *
+ * @param held - The marking's facts before the component's publish
+ * @param own - The facts the component publishes
+ * @param categories - The scheme's categories, with the scopes they declare
+ * @param scopes - The scope ids the component writes (see {@link scopeSetOf})
+ * @param meta - The scheme's scope metadata
+ */
+export function factsOutsideScopes<T extends { categoryId: string }>(
+    held: readonly T[],
+    own: ReadonlyArray<{ categoryId: string }>,
+    categories: ReadonlyArray<{ id: string; scopes?: readonly string[] }>,
+    scopes: readonly string[],
+    meta: ScopeSource,
+): T[] {
+    if (scopes.length === 0) return [];
+    const inside = new Set(
+        factsInScopes(held, categories, scopes, meta).map((a) => a.categoryId),
+    );
+    const stated = new Set(own.map((a) => a.categoryId));
+    return held.filter(
+        (a) => !inside.has(a.categoryId) && !stated.has(a.categoryId),
+    );
+}
+
+/**
  * The categories of the listed scopes, scope by scope in the scheme's
  * declaration order and each scope's categories in category order. A category
  * that belongs to several listed scopes is listed once, under the first of

@@ -47,6 +47,8 @@ import {
 } from './composer/composer-controller';
 import { ComposerView, accessibleLabel } from './composer/composer-view';
 import markingFieldCss from './marking-field.css?inline';
+import { defaultSurfaceOf, writesSeveralLines } from '../format-resolver';
+import { inDeclarationOrder } from '../scopes';
 
 /**
  * Enhances a native text input or textarea whose `.value` is the complete
@@ -98,6 +100,25 @@ export class MarkingField extends ComponentBase {
         return true;
     }
 
+    /**
+     * The scope id of the surface the field writes: the first of the scopes it
+     * lists, else the surface of the scheme's default output.
+     */
+    private writtenSurface(): string | undefined {
+        const listed = this.options.scopes?.length
+            ? this.options.scopes
+            : this.options.scope
+              ? [this.options.scope]
+              : [];
+        return (
+            inDeclarationOrder(listed, this.schemeMeta)[0] ??
+            defaultSurfaceOf(
+                this.schemeMeta.formats ?? [],
+                this.schemeMeta.defaultRenderFormat,
+            )
+        );
+    }
+
     /** Editable presentation; enhancedInput remains the authoritative control. */
     private get host(): HTMLTextAreaElement {
         return (
@@ -131,6 +152,24 @@ export class MarkingField extends ComponentBase {
                 !(native.tagName === 'INPUT' && native.type === 'text'))
         ) {
             throw new Error('MarkingField requires a textarea or text input.');
+        }
+        // A native text input drops the line breaks of its value, and the
+        // run-together text reads back as a different marking. A format that
+        // can write several lines needs a textarea.
+        if (
+            native.tagName === 'INPUT' &&
+            writesSeveralLines(
+                this.schemeMeta.formats ?? [],
+                this.formatId,
+                this.writtenSurface(),
+            )
+        ) {
+            throw new Error(
+                `[ezclassify] MarkingField: format "${this.formatId}" can write ` +
+                    'the marking on more than one line, and a text input holds ' +
+                    'one line. Mount the field on a textarea, or name a ' +
+                    'one-line format in data-ezclassify-format.',
+            );
         }
         this.injectComponentStyles(markingFieldCss);
 

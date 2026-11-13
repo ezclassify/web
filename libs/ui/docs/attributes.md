@@ -96,8 +96,15 @@ text.
 
 A field that lists several scopes is judged as the whole marking. Every
 component that publishes a marking whose facts reach past the scheme's default
-scope publishes the facts themselves, so a fact its text does not write is
-never lost from the store.
+scope, or that lists a scope other than the default, publishes the facts
+themselves, so a fact its text does not write is never lost from the store. A
+field that reads its text back keeps the store's facts of every scope it does
+not list.
+
+A field writes only the scopes it lists, so a format the host names that writes
+the surface of another scope, or a category of no listed scope, is refused at
+init. A text field on a one-line `<input>` is refused at init as well when its
+format can write a marking on more than one line; mount it on a `<textarea>`.
 
 Whether one format writes several scopes is the scheme's to say, through the
 coverage it reports for that format. A format writes the categories of its own
@@ -139,10 +146,12 @@ again with `ezclassify.devtools(false)`.
 The instance root is the page. A nested library instance (a framework island)
 is a member of the nearest collection around it.
 
-A field that names no `data-ezclassify-format` writes the context default,
-except a field that shows a part: a part itself, or a view bound to a part or
-a facet of one. That field writes the scheme's part default, the format the
-store writes the part in.
+A field that names no `data-ezclassify-format` and lists no scope writes the
+context default, except a field that shows a part: a part itself, or a view
+bound to a part or a facet of one. That field writes the scheme's part default,
+the format the store writes the part in. A field that lists scopes writes the
+default output of the first of them for its role instead (see "Listing
+scopes" above).
 
 ### Host errors
 

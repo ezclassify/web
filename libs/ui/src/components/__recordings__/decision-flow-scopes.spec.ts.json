@@ -2,48 +2,6 @@
     "engineVersion": "1.0.0-dev.30",
     "openapiVersion": "1.0.0-dev.30",
     "responses": {
-        "00dc51ae0742a6dc1375a6fd93f5c18c2f4cd1e79507c872fbdb105a3deb2a8c": {
-            "body": {
-                "resolution": {
-                    "artifacts": [
-                        {
-                            "id": "two-scope-flow",
-                            "kind": "scheme",
-                            "version": "1.0.0"
-                        }
-                    ],
-                    "contextId": "two-scope-flow",
-                    "requestedVersion": "0.0.0",
-                    "resolvedVersion": "1.0.0"
-                },
-                "result": {
-                    "appliedFixes": [],
-                    "assertions": [
-                        {
-                            "categoryId": "level",
-                            "conceptId": "HIGH",
-                            "confidence": "certain",
-                            "source": "aggregate"
-                        },
-                        {
-                            "categoryId": "origin_type",
-                            "conceptId": "COPIED",
-                            "confidence": "certain",
-                            "source": "aggregate"
-                        }
-                    ],
-                    "errors": [],
-                    "notices": [],
-                    "proposedFixes": [],
-                    "rendered": "HIGH",
-                    "valid": true,
-                    "warnings": []
-                }
-            },
-            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
-            "method": "POST",
-            "statusCode": 200
-        },
         "013346bae5f9b7fcfda716a91d0cf70af09dfe47c113303709726d4075e673c8": {
             "body": {
                 "resolution": {
@@ -692,6 +650,48 @@
                             "views": { "default": "Exempt" }
                         }
                     ],
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "10709087116e415354fbf1d9d6f5fa49179b1e58b69ac6932acf9e390ef54a56": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "two-scope-flow",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "two-scope-flow",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "HIGH",
+                            "confidence": "certain",
+                            "source": "aggregate"
+                        },
+                        {
+                            "categoryId": "origin_type",
+                            "conceptId": "COPIED",
+                            "confidence": "certain",
+                            "source": "aggregate"
+                        }
+                    ],
+                    "errors": [],
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "HIGH",
+                    "valid": true,
                     "warnings": []
                 }
             },
@@ -1909,42 +1909,6 @@
             "method": "POST",
             "statusCode": 200
         },
-        "4df87475c258a1742c3b14d626ddbaa46756f55ee35d7d66e97e2edfb80effc8": {
-            "body": {
-                "resolution": {
-                    "artifacts": [
-                        {
-                            "id": "two-scope-flow",
-                            "kind": "scheme",
-                            "version": "1.0.0"
-                        }
-                    ],
-                    "contextId": "two-scope-flow",
-                    "requestedVersion": "0.0.0",
-                    "resolvedVersion": "1.0.0"
-                },
-                "result": {
-                    "appliedFixes": [],
-                    "assertions": [
-                        {
-                            "categoryId": "level",
-                            "conceptId": "HIGH",
-                            "confidence": "certain",
-                            "source": "aggregate"
-                        }
-                    ],
-                    "errors": [],
-                    "notices": [],
-                    "proposedFixes": [],
-                    "rendered": "HIGH",
-                    "valid": true,
-                    "warnings": []
-                }
-            },
-            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
-            "method": "POST",
-            "statusCode": 200
-        },
         "505b0f4e402abfcd954a15401a8af2320655cbd8cb40793e595ff7f72064ef0f": {
             "body": {
                 "resolution": {
@@ -2194,37 +2158,6 @@
             ],
             "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "GET",
-            "statusCode": 200
-        },
-        "5a2db108cdb70c466656fe0d7dec67166b2dd72c9f93eb4fa9a922e48d9d8700": {
-            "body": {
-                "resolution": {
-                    "artifacts": [
-                        {
-                            "id": "two-scope-flow",
-                            "kind": "scheme",
-                            "version": "1.0.0"
-                        }
-                    ],
-                    "contextId": "two-scope-flow",
-                    "requestedVersion": "0.0.0",
-                    "resolvedVersion": "1.0.0"
-                },
-                "result": {
-                    "assessment": {
-                        "collapsed": [],
-                        "conflicts": [],
-                        "emitted": [
-                            { "categoryId": "level", "conceptId": "HIGH" }
-                        ],
-                        "omitted": [],
-                        "unrepresentable": []
-                    },
-                    "result": "HIGH"
-                }
-            },
-            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
-            "method": "POST",
             "statusCode": 200
         },
         "64a2f352c2344dcb694a4085ba7499db03569e447a213f9a2363a164fc6389e1": {
@@ -2829,54 +2762,6 @@
             "method": "POST",
             "statusCode": 200
         },
-        "833c5777863d2a31aa131db7a79b2e1ece8c8a44097ff4bc05a6e342ce51c162": {
-            "body": {
-                "resolution": {
-                    "artifacts": [
-                        {
-                            "id": "two-scope-flow",
-                            "kind": "scheme",
-                            "version": "1.0.0"
-                        }
-                    ],
-                    "contextId": "two-scope-flow",
-                    "requestedVersion": "0.0.0",
-                    "resolvedVersion": "1.0.0"
-                },
-                "result": {
-                    "appliedFixes": [],
-                    "assertions": [
-                        {
-                            "categoryId": "level",
-                            "conceptId": "HIGH",
-                            "confidence": "certain",
-                            "source": "aggregate"
-                        },
-                        {
-                            "categoryId": "release_type",
-                            "conceptId": "NEVER",
-                            "confidence": "certain",
-                            "source": "aggregate"
-                        },
-                        {
-                            "categoryId": "origin_type",
-                            "conceptId": "COPIED",
-                            "confidence": "certain",
-                            "source": "aggregate"
-                        }
-                    ],
-                    "errors": [],
-                    "notices": [],
-                    "proposedFixes": [],
-                    "rendered": "HIGH\nRelease: Never",
-                    "valid": true,
-                    "warnings": []
-                }
-            },
-            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
-            "method": "POST",
-            "statusCode": 200
-        },
         "8641fff005cb9e71cae70d7f89f506322646fb9d1663b7a845187be9f46bc39b": {
             "body": {
                 "resolution": {
@@ -3425,60 +3310,6 @@
                     "rendered": "",
                     "renders": {},
                     "valid": false,
-                    "warnings": []
-                }
-            },
-            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
-            "method": "POST",
-            "statusCode": 200
-        },
-        "9e037374c148855fde55ff154dd2a15342f8e7786c212df8c55da554ac5958bc": {
-            "body": {
-                "resolution": {
-                    "artifacts": [
-                        {
-                            "id": "two-scope-flow",
-                            "kind": "scheme",
-                            "version": "1.0.0"
-                        }
-                    ],
-                    "contextId": "two-scope-flow",
-                    "requestedVersion": "0.0.0",
-                    "resolvedVersion": "1.0.0"
-                },
-                "result": {
-                    "appliedFixes": [],
-                    "assertions": [
-                        {
-                            "categoryId": "level",
-                            "conceptId": "HIGH",
-                            "confidence": "certain",
-                            "source": "parse"
-                        }
-                    ],
-                    "assessment": {
-                        "collapsed": [],
-                        "conflicts": [],
-                        "emitted": [
-                            { "categoryId": "level", "conceptId": "HIGH" }
-                        ],
-                        "omitted": [],
-                        "unrepresentable": []
-                    },
-                    "errors": [],
-                    "inputWasValid": true,
-                    "notices": [],
-                    "proposedFixes": [],
-                    "recognition": {
-                        "corrections": [],
-                        "inputFormat": "label/line",
-                        "status": "complete",
-                        "surface": "label",
-                        "unmatched": []
-                    },
-                    "rendered": "HIGH",
-                    "renders": {},
-                    "valid": true,
                     "warnings": []
                 }
             },
@@ -4266,6 +4097,54 @@
             "method": "POST",
             "statusCode": 200
         },
+        "e2126d1b9a4eca5cd1885721d0e15ee007854dfd952272473e0c454e6527fe15": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "two-scope-flow",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "two-scope-flow",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "HIGH",
+                            "confidence": "certain",
+                            "source": "aggregate"
+                        },
+                        {
+                            "categoryId": "release_type",
+                            "conceptId": "NEVER",
+                            "confidence": "certain",
+                            "source": "aggregate"
+                        },
+                        {
+                            "categoryId": "origin_type",
+                            "conceptId": "COPIED",
+                            "confidence": "certain",
+                            "source": "aggregate"
+                        }
+                    ],
+                    "errors": [],
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "HIGH\nRelease: Never",
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
         "e45ba569a9d425066f9b5a87dfc61e7e632b0ab45f5b3592af6f7220a4f968f4": {
             "body": {
                 "resolution": {
@@ -4917,6 +4796,42 @@
                         "unrepresentable": []
                     },
                     "result": ""
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "f757d750f659765e68e55b9dd3e94758032a456acaa1cb69ba825d0aee97af86": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "two-scope-flow",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "two-scope-flow",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "HIGH",
+                            "confidence": "certain",
+                            "source": "aggregate"
+                        }
+                    ],
+                    "errors": [],
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "HIGH",
+                    "valid": true,
+                    "warnings": []
                 }
             },
             "headers": { "x-ezclassify-resolved-version": "1.0.0" },

@@ -616,58 +616,6 @@
             "method": "GET",
             "statusCode": 200
         },
-        "4d6107f9bf80aa441916338ac26e1afaeb53578a053c73264c46a864f9e88b89": {
-            "body": {
-                "resolution": {
-                    "artifacts": [
-                        {
-                            "id": "surfaces",
-                            "kind": "scheme",
-                            "version": "1.0.0"
-                        }
-                    ],
-                    "contextId": "surfaces",
-                    "requestedVersion": "0.0.0",
-                    "resolvedVersion": "1.0.0"
-                },
-                "result": {
-                    "appliedFixes": [],
-                    "assertions": [
-                        {
-                            "categoryId": "keep",
-                            "conceptId": "KEEP_7Y",
-                            "confidence": "certain",
-                            "source": "user"
-                        }
-                    ],
-                    "assessment": {
-                        "collapsed": [],
-                        "conflicts": [],
-                        "emitted": [],
-                        "omitted": [
-                            { "categoryId": "keep", "conceptId": "KEEP_7Y" }
-                        ],
-                        "unrepresentable": []
-                    },
-                    "errors": [
-                        {
-                            "constraintId": "required-category:level",
-                            "message": "Level is required: the marking asserts no concept in this category"
-                        }
-                    ],
-                    "inputWasValid": false,
-                    "notices": [],
-                    "proposedFixes": [],
-                    "rendered": "",
-                    "renders": {},
-                    "valid": false,
-                    "warnings": []
-                }
-            },
-            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
-            "method": "POST",
-            "statusCode": 200
-        },
         "50a29d44c7a184ddf0fffa3d9e982c24793ec6ddc09f0843068f790f12a167f1": {
             "body": {
                 "contextFormats": {
@@ -1628,6 +1576,57 @@
             "method": "PUT",
             "statusCode": 200
         },
+        "a67b472b855282232e5e28677818e6861cbd48a556893fcd3174719673d9b85e": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "two-scope-flow",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "two-scope-flow",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "HIGH",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            { "categoryId": "level", "conceptId": "HIGH" }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "recognition": {
+                        "inputFormat": "label/line",
+                        "status": "complete",
+                        "surface": "label",
+                        "unmatched": []
+                    },
+                    "rendered": "HIGH",
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
         "a7de8f6b55c3e6560a2eb771c228f645261250568292699112c089ade8dfe221": {
             "body": {
                 "resolution": {
@@ -1982,6 +1981,60 @@
             "method": "POST",
             "statusCode": 200
         },
+        "c8738f67f0f3fd17d3f6398273ba7c1cd339bef94537b6adec8b4f07dde4fad5": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "two-scope-flow",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "two-scope-flow",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "HIGH",
+                            "confidence": "certain",
+                            "source": "aggregate"
+                        },
+                        {
+                            "categoryId": "source_type",
+                            "conceptId": "MANY_SOURCES",
+                            "confidence": "certain",
+                            "source": "aggregate"
+                        },
+                        {
+                            "categoryId": "release_type",
+                            "conceptId": "NEVER",
+                            "confidence": "certain",
+                            "source": "aggregate"
+                        },
+                        {
+                            "categoryId": "origin_type",
+                            "conceptId": "COPIED",
+                            "confidence": "certain",
+                            "source": "aggregate"
+                        }
+                    ],
+                    "errors": [],
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "HIGH\nSource: Many Sources\nRelease: Never",
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
         "cb1b9340f725c11a14c5d2b7c409f5a902c9a51eabb62b9c887516aa15506be7": {
             "body": {
                 "resolution": {
@@ -2238,47 +2291,6 @@
                     "proposedFixes": [],
                     "rendered": "HIGH\nRelease: Never",
                     "valid": true,
-                    "warnings": []
-                }
-            },
-            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
-            "method": "POST",
-            "statusCode": 200
-        },
-        "e3d65dc754d8dec162af27d4cf431cfdbb3c05d88a6aa80af518a7bb91b01f1d": {
-            "body": {
-                "resolution": {
-                    "artifacts": [
-                        {
-                            "id": "surfaces",
-                            "kind": "scheme",
-                            "version": "1.0.0"
-                        }
-                    ],
-                    "contextId": "surfaces",
-                    "requestedVersion": "0.0.0",
-                    "resolvedVersion": "1.0.0"
-                },
-                "result": {
-                    "appliedFixes": [],
-                    "assertions": [
-                        {
-                            "categoryId": "keep",
-                            "conceptId": "KEEP_7Y",
-                            "confidence": "certain",
-                            "source": "aggregate"
-                        }
-                    ],
-                    "errors": [
-                        {
-                            "constraintId": "required-category:level",
-                            "message": "Level is required: the marking asserts no concept in this category"
-                        }
-                    ],
-                    "notices": [],
-                    "proposedFixes": [],
-                    "rendered": "KEEP 7 YEARS",
-                    "valid": false,
                     "warnings": []
                 }
             },

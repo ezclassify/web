@@ -6,7 +6,7 @@ import * as path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { buildKey, pinnedBuildLayout } from './demo-runtime-build';
 
-const BUILDS = '/work/runtime/target/web-recordings';
+const BUILDS = '/work/engine/target/web-recordings';
 const ARGS = ['build', '--release'];
 
 /** Whether `inner` is `outer` or lies beneath it. */

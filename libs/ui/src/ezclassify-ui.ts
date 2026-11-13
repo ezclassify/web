@@ -120,6 +120,7 @@ import {
 } from './format-resolver';
 import {
     factsInScopes,
+    factsOutsideScopes,
     inDeclarationOrder,
     parseScopeList,
     reachesPastScopes,
@@ -2828,6 +2829,51 @@ export class EzClassifyUI {
     }
 
     /**
+     * Whether a view writes scopes other than the scheme's default scope alone,
+     * so its text is not the marking's default-scope text.
+     *
+     * @param el - The view's host
+     */
+    private writesPastDefaultScope(el: HTMLElement): boolean {
+        const listed = parseScopeList(el.getAttribute('data-ezclassify-scope'));
+        if (listed.length === 0) return false;
+        const meta = schemeEngineOf(
+            this.resolveContext(el),
+            el,
+        ).getSchemeMeta();
+        return listed.length > 1 || listed[0] !== meta.defaultScope;
+    }
+
+    /**
+     * The facts a view's publish leaves in the store: the held facts of the
+     * scopes it does not write, which its own facts cannot state (see
+     * {@link factsOutsideScopes}).
+     *
+     * @param el - The view's host
+     * @param held - The marking's facts in the store
+     * @param own - The facts the view publishes
+     */
+    private factsOfOtherScopes(
+        el: HTMLElement,
+        held: readonly EngineAssertion[],
+        own: readonly EngineAssertion[],
+    ): EngineAssertion[] {
+        if (held.length === 0) return [];
+        const engine = schemeEngineOf(this.resolveContext(el), el);
+        const meta = engine.getSchemeMeta();
+        return factsOutsideScopes(
+            held,
+            own,
+            engine.listCategories(),
+            scopeSetOf(
+                parseScopeList(el.getAttribute('data-ezclassify-scope')),
+                meta,
+            ),
+            meta,
+        );
+    }
+
+    /**
      * A view's marking as the scopes it names write it: the facts that belong
      * to those scopes, written in the output of the first of them in the
      * scheme's declaration order, the view's own `data-ezclassify-format` when
@@ -3884,21 +3930,30 @@ export class EzClassifyUI {
                         .catch(() => {});
                 } else {
                     // A marking's text states its default scope only, so a
-                    // view whose facts reach past it (a decision flow across
-                    // scopes, a text field holding a fact of another scope)
-                    // publishes its facts, which carry every scope, as the
-                    // store keeps alternate scopes. Its text would lose them.
-                    handle.publishesFacts ||= this.statesOtherScopes(
-                        el,
-                        assertions,
-                    );
+                    // view of other scopes, or one whose facts reach past the
+                    // default (a decision flow across scopes, a text field
+                    // holding a fact of another scope), publishes its facts,
+                    // which carry every scope. Its text would lose them.
+                    handle.publishesFacts ||=
+                        this.writesPastDefaultScope(el) ||
+                        this.statesOtherScopes(el, assertions);
                     if (handle.publishesFacts) {
-                        const sig = signAssertions(assertions);
+                        // The view states the facts of its own scopes only,
+                        // so the store keeps the ones of every other scope.
+                        const facts = [
+                            ...this.factsOfOtherScopes(
+                                el,
+                                this.store.get(markingId).assertions,
+                                assertions,
+                            ),
+                            ...assertions,
+                        ];
+                        const sig = signAssertions(facts);
                         if (sig === handle.lastSeenFacetSig) return;
                         handle.lastSeenFacetSig = sig;
                         handle.lastSeenRendered = rendered;
                         this.store
-                            .publishAssertions(markingId, assertions, token)
+                            .publishAssertions(markingId, facts, token)
                             .catch(() => {});
                         return;
                     }

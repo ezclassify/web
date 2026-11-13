@@ -1,5 +1,6 @@
 import type {
     ContextSchemeEngineAdapter,
+    RenderFormatLayout,
     SchemeMetaView,
 } from '@ezclassify/types';
 import { inDeclarationOrder, scopesOfCategory } from './scopes';
@@ -185,6 +186,41 @@ export function suggestionSurfaces(
 }
 
 /**
+ * Whether the output a field's format spelling names can write a marking on
+ * more than one line, as the scheme's metadata lays that output out: a block of
+ * more than one category puts each on its own line, and any text the layout
+ * writes between or around values may hold a break. False when the metadata
+ * lists no layout for the spelling, which proves nothing either way.
+ *
+ * @param outputs - The outputs the scheme lists, with their layouts
+ * @param spelling - The format the field names
+ * @param surface - The scope id of the surface the field writes
+ */
+export function writesSeveralLines(
+    outputs: readonly RenderFormatLayout[],
+    spelling: string,
+    surface: string | undefined,
+): boolean {
+    const id = resolveOutput(outputs, spelling, surface);
+    const layout = outputs.find((output) => output.id === id);
+    if (!layout) return false;
+    if (layout.mode === 'block' && layout.categoryOrder.length > 1) return true;
+    const written = [
+        layout.prefix,
+        layout.suffix,
+        layout.separator,
+        ...Object.values(layout.categorySeparators ?? {}),
+        ...Object.values(layout.separatorBefore ?? {}),
+        ...Object.values(layout.categoryEach ?? {}).flatMap((each) =>
+            Object.values(each),
+        ),
+    ];
+    return written.some(
+        (text) => typeof text === 'string' && /[\r\n]/.test(text),
+    );
+}
+
+/**
  * Refuse a text field whose scopes its format cannot write as one string.
  *
  * A text field shows one string, so a field that lists several scopes shows
@@ -193,8 +229,12 @@ export function suggestionSurfaces(
  * reports for that format: a scheme whose one format carries every scope a host
  * lists renders them as one string, and a scheme that writes them in separate
  * places keeps them in separate fields. A coverage the view cannot report
- * proves nothing, so it refuses too. A field that lists one scope or none has
- * nothing to check.
+ * proves nothing, so it refuses too.
+ *
+ * A field writes only the scopes it lists, one or several, so a format on the
+ * surface of a scope it does not list, or one that writes a category of no
+ * listed scope, is refused as well. A field that lists no scope writes the
+ * default scope's own output and has nothing to check.
  *
  * @param engine - The field's scheme view
  * @param categories - The scheme's categories, with the scopes they declare
@@ -213,10 +253,11 @@ export function assertWritesScopes(
     scopes: readonly string[],
     component: string,
 ): void {
-    if (scopes.length < 2) return;
+    if (scopes.length === 0) return;
     const meta = engine.getSchemeMeta();
     const listed = inDeclarationOrder(scopes, meta);
     const declared = new Set((meta.scopes ?? []).map((scope) => scope.id));
+    if (meta.defaultScope) declared.add(meta.defaultScope);
     const quoted = (ids: readonly string[]) =>
         ids.map((id) => `"${id}"`).join(', ');
     const named = `[ezclassify] ${component}: data-ezclassify-scope lists ${quoted(listed)}`;
@@ -226,7 +267,46 @@ export function assertWritesScopes(
             `${named}, and the scheme declares no scope ${quoted(unknown)}.`,
         );
     }
+    const output = (meta.formats ?? []).find(
+        (format) =>
+            format.id ===
+            resolveOutput(meta.formats ?? [], spelling, listed[0]),
+    );
+    if (output?.surface && !listed.includes(output.surface)) {
+        throw new Error(
+            `${named}, but its format "${spelling}" writes the surface of ` +
+                `"${output.surface}". A field writes only the scopes it lists. ` +
+                'Name a format of those scopes in data-ezclassify-format, or ' +
+                'list the scope the format writes.',
+        );
+    }
     const covered = formatCoverage(engine, spelling, listed[0]);
+    // One scope needs no other written beside it, so a coverage the view
+    // cannot report leaves nothing to refuse.
+    if (covered === undefined && listed.length === 1) return;
+    const beyond =
+        covered === undefined
+            ? []
+            : categories
+                  .filter(
+                      (category) =>
+                          covered.has(category.id) &&
+                          !scopesOfCategory(category, meta).some((scope) =>
+                              listed.includes(scope),
+                          ),
+                  )
+                  .map((category) => category.id);
+    if (beyond.length > 0) {
+        throw new Error(
+            `${named}, but its format "${spelling}" also writes ` +
+                `${quoted(beyond)}, of no scope it lists. A field writes only ` +
+                'the scopes it lists. Name a format of those scopes in ' +
+                'data-ezclassify-format, or list the scopes it writes.',
+        );
+    }
+    // A field of one scope writes that scope's output, whichever of the
+    // scope's categories it leaves to other outputs.
+    if (listed.length === 1) return;
     const unwritten =
         covered === undefined
             ? listed

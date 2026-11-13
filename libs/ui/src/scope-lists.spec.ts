@@ -269,6 +269,119 @@ describe('a text field that lists several scopes', () => {
     });
 });
 
+describe('a text field that lists one scope', () => {
+    it('fails to mount on a text input when its format writes the marking on several lines', async () => {
+        const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+        const root = host();
+        root.innerHTML = `
+            <input type="text" id="field" data-ezclassify-controller="marking"
+                   data-ezclassify-scope="origin">`;
+        forms = new EzClassifyUI(await context(), { root });
+        await demoRuntimeSettled();
+
+        // A native input would drop the breaks of the origin block and read
+        // the run-together lines back as a different marking.
+        const logged = error.mock.calls.flat().join(' ');
+        expect(logged).toContain('"marking" failed to mount');
+        expect(logged).toContain(
+            'MarkingField: format "origin/block" can write the marking on more than one line, and a text input holds one line.',
+        );
+        expect(
+            root.querySelector('#field')?.closest('.marking-field-wrap'),
+        ).toBeNull();
+    });
+
+    it('mounts on a text input when its format writes one line', async () => {
+        const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+        const root = host();
+        root.innerHTML = `
+            <input type="text" id="field" data-ezclassify-controller="marking"
+                   data-ezclassify-scope="label">`;
+        forms = new EzClassifyUI(await context(), { root });
+        await demoRuntimeSettled();
+
+        expect(error.mock.calls.flat().join(' ')).not.toContain(
+            'failed to mount',
+        );
+        expect(
+            root.querySelector('#field')?.closest('.marking-field-wrap'),
+        ).not.toBeNull();
+    });
+
+    it("fails to mount when the format it names writes another scope's surface", async () => {
+        const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+        const root = host();
+        root.innerHTML = `
+            <textarea id="field" data-ezclassify-controller="marking"
+                      data-ezclassify-scope="origin"
+                      data-ezclassify-format="label/line"></textarea>`;
+        forms = new EzClassifyUI(await context(), { root });
+        await demoRuntimeSettled();
+
+        const logged = error.mock.calls.flat().join(' ');
+        expect(logged).toContain('"marking" failed to mount');
+        expect(logged).toContain(
+            'data-ezclassify-scope lists "origin", but its format "label/line" writes the surface of "label"',
+        );
+    });
+
+    it("refuses an embedded mark of one scope whose format writes another scope's surface", async () => {
+        const field = new MarkedInput();
+        destroyers.push(() => field.destroy());
+        const el = document.createElement('input');
+        document.body.appendChild(el);
+
+        await expect(
+            field.init(el as never, await context(), {
+                scopes: ['origin'],
+                formatId: 'label/line',
+            }),
+        ).rejects.toThrow(
+            'MarkedInput: data-ezclassify-scope lists "origin", but its format "label/line" writes the surface of "label"',
+        );
+    });
+});
+
+describe('a view that names no scope', () => {
+    it.each([
+        ['banner', 'div'],
+        ['text', 'span'],
+    ])(
+        'a %s of a rolled-up marking shows its default scope only',
+        async (controller, tag) => {
+            const root = host();
+            root.innerHTML = `
+                <${tag} id="view" data-ezclassify-controller="${controller}"
+                        data-ezclassify-aggregate></${tag}>
+                <input type="hidden" id="m" data-ezclassify-marking>`;
+            forms = new EzClassifyUI(await context(), { root });
+            await demoRuntimeSettled();
+            await forms.store.publishAssertions(
+                'm',
+                [
+                    ['level', 'HIGH'],
+                    ['origin_type', 'COPIED'],
+                    ['source_type', 'MANY_SOURCES'],
+                    ['release_type', 'NEVER'],
+                ].map(([categoryId, conceptId]) => ({
+                    categoryId: categoryId!,
+                    conceptId: conceptId!,
+                    confidence: 'certain' as const,
+                    source: 'user',
+                })),
+            );
+            await demoRuntimeSettled();
+
+            // A rollup names no output, so it is written on every surface its
+            // facts reach; the view shows the label line alone.
+            const shown = () => root.querySelector('#view')?.textContent ?? '';
+            await expect.poll(shown).toContain('HIGH');
+            expect(shown()).not.toContain('Release');
+            expect(shown()).not.toContain('Source');
+        },
+    );
+});
+
 describe('a view that lists several scopes', () => {
     it.each([
         ['banner', 'div'],
@@ -482,17 +595,15 @@ describe('a text field whose format writes every scope it lists', () => {
             ]);
 
             // The string it wrote reads back to the facts it was written
-            // from: none of the scopes it lists loses one.
+            // from, and a fact of a scope it does not list, which its text
+            // cannot state, stays in the store.
             await field.setValue(written);
             await demoRuntimeSettled();
             expect(el.value).toBe(written);
-            expect(held(forms!.store.get('field').assertions)).toEqual(
-                held(
-                    format
-                        ? facts
-                        : facts.filter((fact) => fact.categoryId === 'keep'),
-                ),
-            );
+            expect(held(forms!.store.get('field').assertions)).toEqual([
+                'CONFIDENTIAL',
+                'KEEP_7Y',
+            ]);
         },
     );
 
