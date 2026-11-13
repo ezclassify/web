@@ -140,7 +140,21 @@ export class SingleSelect extends ComponentBase {
             this.options.scope,
             this.options.scopes,
         );
-        if (!singleCategory) return;
+        if (!singleCategory) {
+            // A select with nothing to offer renders nothing, so say why
+            // rather than leave an empty spot on the page.
+            const listed = this.options.scopes?.length
+                ? this.options.scopes
+                : this.options.scope
+                  ? [this.options.scope]
+                  : [];
+            console.warn(
+                listed.length > 0
+                    ? `[ezclassify] SingleSelect: the scheme has no category in data-ezclassify-scope "${listed.join(' ')}", so the select shows nothing.`
+                    : '[ezclassify] SingleSelect: the scheme has no category to select in, so the select shows nothing.',
+            );
+            return;
+        }
         this.primaryCategory = {
             ...singleCategory,
             single: singleCategory.single === true,

@@ -127,6 +127,41 @@ describe('a single select that lists several scopes', () => {
         expect(await mount(['origin', 'label'])).toBe('Select Level');
         expect(await mount(['origin'])).toBe('Select Decision Type');
     });
+
+    it('picks the same category for one scope named alone or on the page', async () => {
+        // The level declares no scope, so it is on the default scope's surface
+        // only. A select of the origin scope offers the origin's own category
+        // however the host names that scope.
+        const el = host();
+        const select = new SingleSelect();
+        destroyers.push(() => select.destroy());
+        await select.init(el, await context(), { scope: 'origin' });
+
+        const root = host();
+        root.innerHTML = `
+            <div id="select" data-ezclassify-controller="select"
+                 data-ezclassify-scope="origin"></div>`;
+        forms = new EzClassifyUI(await context(), { root });
+        await demoRuntimeSettled();
+
+        const label = (from: Element) =>
+            from.querySelector('select')?.getAttribute('aria-label');
+        expect(label(el)).toBe('Select Decision Type');
+        expect(label(root)).toBe('Select Decision Type');
+    });
+
+    it('says so, and shows nothing, when the scheme has no category in the scopes it names', async () => {
+        const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+        const el = host();
+        const select = new SingleSelect();
+        destroyers.push(() => select.destroy());
+        await select.init(el, await context(), { scope: 'nowhere' });
+
+        expect(el.querySelector('select')).toBeNull();
+        expect(warn.mock.calls.flat().join(' ')).toContain(
+            'SingleSelect: the scheme has no category in data-ezclassify-scope "nowhere"',
+        );
+    });
 });
 
 describe('a text field that lists several scopes', () => {
@@ -146,7 +181,7 @@ describe('a text field that lists several scopes', () => {
         );
     });
 
-    it('is refused for a format it names that leaves a scope out', async () => {
+    it('is refused as an embedded mark, whatever format it names', async () => {
         const field = new MarkedInput();
         destroyers.push(() => field.destroy());
         const el = document.createElement('input');
@@ -158,7 +193,7 @@ describe('a text field that lists several scopes', () => {
                 formatId: 'origin/block',
             }),
         ).rejects.toThrow(
-            'MarkedInput: data-ezclassify-scope lists "label", "origin", but its format "origin/block" does not write the categories of "label"',
+            'MarkedInput: data-ezclassify-scope lists "label", "origin", but an embedded mark holds one part marking on one line',
         );
     });
 
@@ -197,6 +232,34 @@ describe('a text field that lists several scopes', () => {
             'data-ezclassify-scope lists "label", "origin", but its format "label/line" does not write the categories of "origin"',
         );
     });
+});
+
+describe('a view that lists several scopes', () => {
+    it.each([
+        ['banner', 'div'],
+        ['text', 'span'],
+    ])(
+        'a %s fails to mount, with the reason logged, when no one format writes them',
+        async (controller, tag) => {
+            const error = vi
+                .spyOn(console, 'error')
+                .mockImplementation(() => {});
+            const root = host();
+            root.innerHTML = `
+                <input type="hidden" id="m" data-ezclassify-marking>
+                <${tag} id="view" data-ezclassify-controller="${controller}"
+                        data-ezclassify-source="m"
+                        data-ezclassify-scope="label origin"></${tag}>`;
+            forms = new EzClassifyUI(await context(), { root });
+            await demoRuntimeSettled();
+
+            const logged = error.mock.calls.flat().join(' ');
+            expect(logged).toContain(`"${controller}" failed to mount`);
+            expect(logged).toContain(
+                'data-ezclassify-scope lists "label", "origin", but its format "label/line" does not write the categories of "origin"',
+            );
+        },
+    );
 });
 
 describe('a tag input that lists several scopes', () => {
@@ -357,6 +420,121 @@ describe('a text field whose format writes every scope it lists', () => {
         expect(
             forms.store.get('field').assertions.map((a) => a.conceptId),
         ).toEqual(expect.arrayContaining(['CONFIDENTIAL', 'KEEP_7Y']));
+    });
+
+    it.each([
+        ['marked-input', 'MarkedInput', '<input id="field"', '>'],
+        [
+            'marked-textarea',
+            'MarkedTextArea',
+            '<textarea id="field"',
+            '></textarea>',
+        ],
+    ])(
+        'a %s fails to mount, as its one-line mark cannot hold a surface per scope',
+        async (controller, label, open, close) => {
+            const error = vi
+                .spyOn(console, 'error')
+                .mockImplementation(() => {});
+            const root = host();
+            root.innerHTML = `${open} data-ezclassify-controller="${controller}"
+                data-ezclassify-scope="retention sensitivity"
+                data-ezclassify-format="kept"${close}`;
+            forms = new EzClassifyUI(await keptContext(), { root });
+            await demoRuntimeSettled();
+
+            const logged = error.mock.calls.flat().join(' ');
+            expect(logged).toContain(`"${controller}" failed to mount`);
+            expect(logged).toContain(
+                `${label}: data-ezclassify-scope lists "sensitivity", "retention", but an embedded mark holds one part marking on one line`,
+            );
+            expect(
+                root
+                    .querySelector('#field')
+                    ?.closest('.marked-input-wrap, .marked-textarea-wrap'),
+            ).toBeNull();
+        },
+    );
+
+    it('a banner and a text view of one marking write both scopes in the format they name', async () => {
+        const root = host();
+        root.innerHTML = `
+            <input type="hidden" id="m" data-ezclassify-marking>
+            <div id="banner" data-ezclassify-controller="banner"
+                 data-ezclassify-source="m"
+                 data-ezclassify-scope="retention sensitivity"
+                 data-ezclassify-format="kept"></div>
+            <span id="text" data-ezclassify-controller="text"
+                  data-ezclassify-source="m"
+                  data-ezclassify-scope="retention sensitivity"
+                  data-ezclassify-format="kept"></span>`;
+        forms = new EzClassifyUI(await keptContext(), { root });
+        await demoRuntimeSettled();
+        await forms.store.publishAssertions('m', facts);
+        await demoRuntimeSettled();
+
+        await expect
+            .poll(
+                () =>
+                    root.querySelector('#banner .status-banner-label')
+                        ?.textContent,
+            )
+            .toBe('CONFIDENTIAL // KEEP 7 YEARS\nKEEP 7 YEARS');
+        expect(root.querySelector('#text')?.textContent).toBe(
+            'CONFIDENTIAL // KEEP 7 YEARS\nKEEP 7 YEARS',
+        );
+        expect(
+            root.querySelector('#banner .status-banner-incomplete'),
+        ).toBeNull();
+    });
+
+    it('a level view says it is incomplete when a bucket holds facts its scheme cannot write in the scopes', async () => {
+        const plain = await connectDemoContext({
+            draft: { scheme: SURFACES_SCHEME },
+        });
+        const root = host();
+        root.innerHTML = `
+            <div id="level" data-ezclassify-controller="banner"
+                 data-ezclassify-aggregate
+                 data-ezclassify-scope="retention sensitivity"
+                 data-ezclassify-format="kept"></div>
+            <section data-ezclassify-context="kept">
+                <input type="hidden" id="a" data-ezclassify-marking>
+            </section>
+            <section data-ezclassify-context="plain">
+                <input type="hidden" id="b" data-ezclassify-marking>
+            </section>`;
+        forms = new EzClassifyUI(
+            { contexts: { kept: (await keptContext()) as never, plain } },
+            { root },
+        );
+        await demoRuntimeSettled();
+        await forms.store.publishAssertions('a', facts);
+        await forms.store.publishAssertions('b', facts);
+        await demoRuntimeSettled();
+
+        const lines = () =>
+            Array.from(
+                root.querySelectorAll('#level .status-banner-bucket'),
+            ).map((row) => [
+                row.querySelector('.status-banner-bucket-label')?.textContent,
+                row.querySelector('.status-banner-label')?.textContent,
+            ]);
+        // The plain scheme writes the keep only in its retention block, so no
+        // one of its formats writes both scopes. Its bucket has nothing to
+        // show, and the view says it may be missing a marking rather than
+        // passing for the whole page.
+        await expect
+            .poll(() => lines())
+            .toEqual([
+                [
+                    'kept: Surfaces',
+                    'CONFIDENTIAL // KEEP 7 YEARS\nKEEP 7 YEARS',
+                ],
+            ]);
+        expect(
+            root.querySelector('#level .status-banner-incomplete'),
+        ).not.toBeNull();
     });
 
     it('is refused when it names no format, as the default whole output leaves the keep out', async () => {

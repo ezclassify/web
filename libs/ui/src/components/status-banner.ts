@@ -208,6 +208,11 @@ export class StatusBanner extends ReadOnlyComponentBase {
         return meta.defaultWholeRenderFormat ?? meta.defaultRenderFormat ?? '';
     }
 
+    /** A banner shows its marking as one line of text. */
+    protected override writesScopesAsText(): boolean {
+        return true;
+    }
+
     override async init(
         container: HTMLDivElement,
         engineOrContext?: ComponentEngineSource | null,

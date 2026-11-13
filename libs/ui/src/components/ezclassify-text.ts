@@ -32,7 +32,7 @@ import {
     renderViewRefused,
 } from '../render-refusal';
 import textCss from './ezclassify-text.css?inline';
-import { viewOutputOf } from '../format-resolver';
+import { assertWritesScopes, viewOutputOf } from '../format-resolver';
 import { adoptStyles, type AdoptedStyles } from '../styles/adopt';
 
 const EZCLASSIFY_TEXT_CSS: string = textCss;
@@ -129,6 +129,15 @@ export class EzClassifyText implements ComponentInstance {
         } else {
             this.formatId = schemeMeta.defaultRenderFormat ?? '';
         }
+        // The host's text is one string, so several scopes need one format
+        // that writes them all.
+        assertWritesScopes(
+            this.engine,
+            this.engine.getScheme().categories,
+            this.formatId,
+            scopes,
+            'EzClassifyText',
+        );
 
         container.setAttribute('data-ezclassify', '');
 

@@ -109,6 +109,7 @@ import {
 } from './components/translated-view';
 import type { ContextReference } from './components/context-reference';
 import {
+    assertWritesScopes,
     defaultSurfaceOf,
     holdsPart,
     resolveFormatAttr,
@@ -171,14 +172,18 @@ function shownBuckets(
 /**
  * A marking as some of its scheme's scopes write it: the facts that belong to
  * those scopes, written in `format` when given, else in the default output of
- * the first of them for the role. Empty when no fact belongs to them, or the
- * output refuses to write them.
+ * the first of them for the role. Several scopes are written only by an output
+ * that writes every one of them (see `assertWritesScopes`).
  *
  * @param engine - The scheme view the marking is in
  * @param assertions - The marking's facts
  * @param scopes - The scope ids to write
  * @param format - The output to write them in, if the view names one
  * @param part - Whether the marking is a part
+ * @returns The text; empty when no fact belongs to the scopes, and null when
+ *   facts do but the output cannot or will not write them, so the view can say
+ *   its value is incomplete instead of showing a blank as if nothing were
+ *   there
  */
 async function writeFactsInScopes(
     engine: ContextSchemeEngineAdapter,
@@ -186,18 +191,21 @@ async function writeFactsInScopes(
     scopes: readonly string[],
     format: string | null,
     part: boolean,
-): Promise<string> {
+): Promise<string | null> {
     const meta = engine.getSchemeMeta();
-    const facts = factsInScopes(
-        assertions,
-        engine.listCategories(),
-        scopes,
-        meta,
-    );
+    const categories = engine.listCategories();
+    const facts = factsInScopes(assertions, categories, scopes, meta);
     if (facts.length === 0) return '';
     const output = format || viewOutputOf(meta, scopes, part);
-    const written = await Promise.resolve(engine.render(facts, output));
-    return renderViewRefused(written) ? '' : written.rendered;
+    try {
+        // A view checks its own scheme when it mounts. A level view also
+        // shows buckets of other schemes, which only a write can check.
+        assertWritesScopes(engine, categories, output, scopes, 'view');
+        const written = await Promise.resolve(engine.render(facts, output));
+        return renderViewRefused(written) ? null : written.rendered;
+    } catch {
+        return null;
+    }
 }
 
 /**
@@ -2815,13 +2823,14 @@ export class EzClassifyUI {
      * @param el - The view's host
      * @param assertions - The marking's facts
      * @param scopes - The scope ids the view names
-     * @returns The text the view shows
+     * @returns The text the view shows, or null when the facts of the scopes
+     *   could not be written (see `writeFactsInScopes`)
      */
     private writeInScopes(
         el: HTMLElement,
         assertions: readonly EngineAssertion[],
         scopes: readonly string[],
-    ): Promise<string> {
+    ): Promise<string | null> {
         return writeFactsInScopes(
             schemeEngineOf(this.resolveContext(el), el),
             assertions,
@@ -2836,7 +2845,8 @@ export class EzClassifyUI {
      * it, in that bucket's own scheme (see {@link writeInScopes}). The view's
      * `data-ezclassify-format` applies to a bucket whose scheme lists that
      * output; another bucket takes its own scheme's default for the scopes.
-     * Empty for a bucket whose scheme no longer resolves.
+     * Null, as for a write that fails, for a bucket with facts whose scheme no
+     * longer resolves.
      *
      * @param el - The view's host
      * @param bucket - The bucket
@@ -2848,9 +2858,9 @@ export class EzClassifyUI {
         bucket: BucketKey,
         assertions: readonly EngineAssertion[],
         scopes: readonly string[],
-    ): Promise<string> {
+    ): Promise<string | null> {
         const engine = this.bucketEngine(bucket);
-        if (!engine) return Promise.resolve('');
+        if (!engine) return Promise.resolve(assertions.length > 0 ? null : '');
         const meta = engine.getSchemeMeta();
         const format = resolveFormatAttr(el);
         const listed =
@@ -3624,10 +3634,14 @@ export class EzClassifyUI {
                             refused ? [] : s.assertions,
                             viewScopes,
                         )
-                            .catch(() => '')
+                            .catch(() => null)
                             .then((text) => {
-                                if (write === scopedWrite && !this._destroyed)
-                                    void setValue(text);
+                                if (write !== scopedWrite || this._destroyed)
+                                    return;
+                                // Facts the scopes hold but no write shows
+                                // leave the view's value incomplete.
+                                if (text === null) showIncomplete?.(true);
+                                void setValue(text ?? '');
                             });
                     } else if (
                         (controller === 'text' || controller === 'banner') &&
@@ -3704,11 +3718,18 @@ export class EzClassifyUI {
                                             ? []
                                             : state.assertions,
                                         viewScopes,
-                                    ).catch(() => ''),
+                                    ).catch(() => null),
                                 ),
                             ).then((texts) => {
                                 if (write !== scopedWrite || this._destroyed)
                                     return;
+                                // A bucket with facts that no write shows is a
+                                // blank line, so the view says it may be
+                                // missing markings.
+                                showIncomplete?.(
+                                    lines.some((line) => line.stale) ||
+                                        texts.some((text) => text === null),
+                                );
                                 showsBuckets(
                                     lines.map((line, at) => ({
                                         ...line,

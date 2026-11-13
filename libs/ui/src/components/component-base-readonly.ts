@@ -1113,7 +1113,13 @@ export abstract class ReadOnlyComponentBase implements ComponentInstance {
      * Resolve a category by explicit ID, or find the first single-select
      * category in scope. The categories of the listed scopes are searched scope
      * by scope in the scheme's declaration order; a category that declares no
-     * scope belongs to the default scope.
+     * scope belongs to the default scope. A lone `scope` is a list of one, so a
+     * host gets the same category whether it names its scope as a list or not.
+     *
+     * @param explicitId - The category the host names, if any
+     * @param scope - The one scope the host names, when it gives no list
+     * @param scopes - The scopes the host lists
+     * @returns The category, or undefined when none is in the named scopes
      */
     protected resolveCategory(
         explicitId?: string,
@@ -1123,21 +1129,15 @@ export abstract class ReadOnlyComponentBase implements ComponentInstance {
         if (explicitId) {
             return this.scheme.categories.find((f) => f.id === explicitId);
         }
-        let categories = this.scheme.categories;
-        if (scopes && scopes.length > 0) {
-            categories = categoriesByScope(
-                categories,
-                scopes,
-                this.schemeMeta,
-            ).flatMap((group) => group.categories);
-        } else if (scope) {
-            categories = categories.filter(
-                (f) =>
-                    !f.scopes ||
-                    f.scopes.length === 0 ||
-                    f.scopes.includes(scope),
-            );
-        }
+        const listed = scopes?.length ? scopes : scope ? [scope] : [];
+        const categories =
+            listed.length > 0
+                ? categoriesByScope(
+                      this.scheme.categories,
+                      listed,
+                      this.schemeMeta,
+                  ).flatMap((group) => group.categories)
+                : this.scheme.categories;
         const single = categories.find((f) => f.single);
         return single || categories[0];
     }
@@ -1172,9 +1172,9 @@ export abstract class ReadOnlyComponentBase implements ComponentInstance {
     }
 
     /**
-     * Whether the component shows its marking as one string a person reads and
-     * types, as a text field does. Such a component writes every scope it lists
-     * in that one string, so it is refused when its format cannot (see
+     * Whether the component shows its marking as one string, as a text field or
+     * a banner does. Such a component writes every scope it lists in that one
+     * string, so it is refused when its format cannot (see
      * `assertWritesScopes`). A picker offers each listed scope's categories
      * instead and answers false.
      */

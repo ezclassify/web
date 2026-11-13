@@ -47,12 +47,7 @@ import {
     assertDescribesConcepts,
     createConceptDescriber,
 } from './concept-description';
-import {
-    assertWritesScopes,
-    defaultSurfaceOf,
-    resolveOutput,
-    viewOutputOf,
-} from '../format-resolver';
+import { defaultSurfaceOf, resolveOutput } from '../format-resolver';
 import { inDeclarationOrder } from '../scopes';
 import type { InlineMarkingEditor } from './inline-marking-editor';
 import { createClearButton, type ClearButton } from './clear-button';
@@ -296,22 +291,20 @@ export abstract class MarkedFieldBase<
                               this.scheme.defaultRenderFormat,
                           ),
                   );
-        // A field that lists several scopes writes them in one string: the
-        // format it names, else the part default of the first of them, and
-        // only a format that writes every one of them.
+        // An embedded mark is one part marking on one line of the text. A
+        // marking across several scopes is written a surface per scope, which
+        // no one-line mark can hold: a single-line field would drop the break
+        // between them and run two surfaces together into one wrong marking.
         if (listed.length > 1) {
-            this.scanFormat =
-                requested ||
-                requestedFormat ||
-                viewOutputOf(meta, listed, true);
-            assertWritesScopes(
-                resolvedEngine,
-                resolvedScheme.categories,
-                this.scanFormat,
-                listed,
-                this.componentLabel,
+            const quoted = inDeclarationOrder(listed, meta)
+                .map((scope) => `"${scope}"`)
+                .join(', ');
+            throw new Error(
+                `[ezclassify] ${this.componentLabel}: data-ezclassify-scope lists ${quoted}, ` +
+                    'but an embedded mark holds one part marking on one line, and a ' +
+                    'marking across several scopes is written one surface per scope. ' +
+                    'Give each scope a field of its own.',
             );
-            return;
         }
         // Every fallback comes out of the scheme. A literal format id here
         // would be a data value in code: a scheme that declares no format under
