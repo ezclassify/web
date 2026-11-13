@@ -5,6 +5,7 @@ import {
     extractInner,
     applyRepairs,
     matchLeadingMark,
+    templateDelimiters,
     wrapPartMark,
     fixesNeedingCorrection,
     paragraphNumber,
@@ -42,6 +43,26 @@ describe('marked-text-area-logic', () => {
                 { pattern: '\\((.+?)\\)' },
             ];
             expect(extractInner('(FOXTROT)', patterns)).toBe('FOXTROT');
+        });
+    });
+
+    describe('templateDelimiters', () => {
+        it('reads the delimiters on both sides of the marking slot', () => {
+            expect(templateDelimiters('({marking}) ')).toEqual({
+                open: '(',
+                close: ')',
+            });
+            expect(templateDelimiters('[[{marking}]] ')).toEqual({
+                open: '[[',
+                close: ']]',
+            });
+        });
+
+        it('reads none for a template that writes the marking bare', () => {
+            expect(templateDelimiters('{marking} ')).toEqual({
+                open: '',
+                close: '',
+            });
         });
     });
 

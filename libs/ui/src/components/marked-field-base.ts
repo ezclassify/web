@@ -40,7 +40,7 @@ import { isMacPlatform } from './dom-helpers';
 import { takenFromWhole } from '../assertion-identity';
 import { renderViewRefused } from '../render-refusal';
 import { t } from '../i18n';
-import { wrapPartMark } from './marked-text-area-logic';
+import { templateDelimiters, wrapPartMark } from './marked-text-area-logic';
 import { adoptStylesOnce } from '../styles/adopt';
 import { attachTooltip, COMPONENT_CSS } from './component-utils';
 import {
@@ -595,6 +595,11 @@ export abstract class MarkedFieldBase<
     /** The embedded-marking template, defaulting to "{marking} " when none. */
     protected get template(): string {
         return this.embeddedStyle?.template ?? '{marking} ';
+    }
+
+    /** The delimiters the embedded-marking template writes around a mark. */
+    protected get delimiters(): { open: string; close: string } {
+        return templateDelimiters(this.template);
     }
 
     /** The scheme's embedded marking patterns, in declaration order. */

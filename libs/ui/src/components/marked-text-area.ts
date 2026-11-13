@@ -1886,12 +1886,12 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
                 const editorChip = document.createElement('span');
                 editorChip.className =
                     'marked-textarea-chip marked-textarea-chip--editing';
-                const openDelim = this.template.slice(0, 1);
-                editorChip.appendChild(document.createTextNode(openDelim));
+                const { open, close } = this.delimiters;
+                editorChip.appendChild(document.createTextNode(open));
                 if (this.pickerMount) {
                     editorChip.appendChild(this.pickerMount);
                 }
-                editorChip.appendChild(this.picker.closeDelimiter(')'));
+                editorChip.appendChild(this.picker.closeDelimiter(close));
                 const paragraph = document.createElement('span');
                 paragraph.className = 'marked-textarea-active-paragraph';
                 this.display.appendChild(paragraph);
@@ -2228,9 +2228,7 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
                     const range = this.activeRange;
                     if (!range) return;
                     const pos = Math.min(
-                        range.start +
-                            this.template.slice(0, 1).length +
-                            caretInMark,
+                        range.start + this.delimiters.open.length + caretInMark,
                         Math.max(range.start, range.end - 1),
                     );
                     this.textarea.focus();
@@ -2295,7 +2293,7 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
         );
         const seg = segIdx >= 0 ? this.segments[segIdx] : undefined;
         const caret = seg
-            ? pos - seg.start - this.template.slice(0, 1).length
+            ? pos - seg.start - this.delimiters.open.length
             : undefined;
         if (segIdx === this.activeSegmentIndex && seg && this.picker) {
             this.picker.showList(caret);
@@ -2715,12 +2713,8 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
             }
             const caret = selStart;
 
-            const template = this.template;
             const v = this.textarea.value;
-            const openDelim = template.slice(0, template.indexOf('{marking}'));
-            const closeDelim = template
-                .slice(template.indexOf('{marking}') + '{marking}'.length)
-                .trimEnd();
+            const { open: openDelim, close: closeDelim } = this.delimiters;
 
             // Scan backwards for an unmatched open delimiter
             const before = v.slice(0, caret);
@@ -2762,7 +2756,7 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
                     void this.openPicker(lastOpen, markingEnd);
                 }
             } else {
-                const insert = template.replace('{marking}', draft);
+                const insert = this.template.replace('{marking}', draft);
                 this._pickerDraft = draft || undefined;
                 // A new part mark leads the paragraph it marks, so insert it
                 // at the start of the caret's line rather than mid-line. When the line already begins with a

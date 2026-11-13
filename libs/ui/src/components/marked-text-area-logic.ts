@@ -65,6 +65,28 @@ export function extractInner(
 }
 
 /**
+ * The delimiters an embedded marking template writes around the marking, so a
+ * field draws the scheme's own and never assumes a parenthesis.
+ *
+ * @param template - The embedded marking template (e.g. "({marking}) ")
+ * @returns The text before the marking, and the text after it less the trailing
+ *   space that parts the mark from the text; both empty for a template with no
+ *   marking slot
+ */
+export function templateDelimiters(template: string): {
+    open: string;
+    close: string;
+} {
+    const slot = '{marking}';
+    const at = template.indexOf(slot);
+    if (at < 0) return { open: '', close: '' };
+    return {
+        open: template.slice(0, at),
+        close: template.slice(at + slot.length).trimEnd(),
+    };
+}
+
+/**
  * Write a rendered part marking as it appears in the field.
  *
  * Most schemes render a part marking bare ("S//NF") and the embedded template

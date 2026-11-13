@@ -1229,10 +1229,10 @@ export class MarkedInput extends MarkedFieldBase<HTMLTextAreaElement> {
                 const editorChip = document.createElement('span');
                 editorChip.className =
                     'marked-input-chip marked-input-chip--editing';
-                const openDelim = this.template.slice(0, 1);
-                editorChip.appendChild(document.createTextNode(openDelim));
+                const { open, close } = this.delimiters;
+                editorChip.appendChild(document.createTextNode(open));
                 editorChip.appendChild(this.pickerMount);
-                editorChip.appendChild(this.picker.closeDelimiter(')'));
+                editorChip.appendChild(this.picker.closeDelimiter(close));
                 this.display.appendChild(editorChip);
             } else {
                 const chip = document.createElement('span');
@@ -1637,7 +1637,7 @@ export class MarkedInput extends MarkedFieldBase<HTMLTextAreaElement> {
      */
     private caretInMark(): number | undefined {
         const pos = this.input.selectionStart ?? 0;
-        const open = this.template.slice(0, 1).length;
+        const open = this.delimiters.open.length;
         if (pos < open || pos >= this.markEnd) return undefined;
         return pos - open;
     }

@@ -319,10 +319,10 @@ export class InlineMarkingEditor {
 
     /**
      * The marking's closing delimiter, for the host to draw right after the
-     * editor's mount. The editor's chevron sits on it: while the chevron
-     * shows, the delimiter's glyph gives way to it but keeps its width, so the
-     * host's display stays in register with its text layer and the space after
-     * the marking stays where it was (see inline-marking-editor.css).
+     * editor's mount. The editor's chevron sits on it: while the chevron shows,
+     * the delimiter's glyph gives way to it but keeps its width, so the host's
+     * display stays in register with its text layer and the space after the
+     * marking stays where it was (see inline-marking-editor.css).
      *
      * @param text - The delimiter as the host writes it
      * @returns The element to append after the mount

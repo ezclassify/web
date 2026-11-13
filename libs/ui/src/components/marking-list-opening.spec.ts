@@ -17,6 +17,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { openContext } from '../../test-fixtures/context-doubles';
 import { MarkedTextArea } from './marked-text-area';
 import { MarkedInput } from './marked-input';
+import { SURFACES_SCHEME } from '../../test-fixtures/surfaces-scheme';
 import { openSurface, press, wait } from './composer/composer-harness';
 import {
     connectDemoContext,
@@ -59,8 +60,27 @@ async function settle(): Promise<void> {
     await wait(40);
 }
 
+/**
+ * The surfaces scheme marking its parts in square brackets, so a field that
+ * draws a parenthesis of its own shows a delimiter the text does not have.
+ */
+const BRACKETED_SCHEME = (() => {
+    const doc = structuredClone(SURFACES_SCHEME);
+    doc.scheme.embedded_marking = [
+        { pattern: '\\[(.+?)\\]', template: '[{marking}] ' },
+    ];
+    return doc;
+})();
+
+async function bracketedContext() {
+    return openContext(
+        await connectDemoContext({ draft: { scheme: BRACKETED_SCHEME } }),
+    );
+}
+
 async function mountTextArea(
     value: string,
+    ctx?: Awaited<ReturnType<typeof context>>,
 ): Promise<{ ta: HTMLTextAreaElement; container: HTMLDivElement }> {
     const container = document.createElement('div');
     root.appendChild(container);
@@ -69,13 +89,14 @@ async function mountTextArea(
     container.appendChild(ta);
     const field = new MarkedTextArea();
     fields.push(field);
-    await field.init(container, await context(), {});
+    await field.init(container, ctx ?? (await context()), {});
     await settle();
     return { ta, container };
 }
 
 async function mountInput(
     value: string,
+    ctx?: Awaited<ReturnType<typeof context>>,
 ): Promise<{ input: HTMLTextAreaElement; container: HTMLDivElement }> {
     const container = document.createElement('div');
     root.appendChild(container);
@@ -85,7 +106,7 @@ async function mountInput(
     container.appendChild(native);
     const field = new MarkedInput();
     fields.push(field);
-    await field.init(container, await context(), {});
+    await field.init(container, ctx ?? (await context()), {});
     await settle();
     const input = container.querySelector<HTMLTextAreaElement>(
         '.marked-input-native',
@@ -404,5 +425,33 @@ describe('the chevron at the end of the marking', () => {
         expect(
             container.querySelector('.marked-input-touch-add'),
         ).not.toBeNull();
+    });
+
+    it('stands on the delimiters the scheme writes in the single-line field', async () => {
+        const { input, container } = await mountInput(
+            '[CONFIDENTIAL] Budget figures.',
+            await bracketedContext(),
+        );
+        await caretTo(input, 1);
+        const chip = container.querySelector('.marked-input-chip--editing');
+        expect(chip?.firstChild?.textContent).toBe('[');
+        expect(chip?.querySelector('.inline-editor-close')?.textContent).toBe(
+            ']',
+        );
+        expect(chevron()).not.toBeNull();
+    });
+
+    it('stands on the delimiters the scheme writes in the text area', async () => {
+        const { ta, container } = await mountTextArea(
+            '[CONFIDENTIAL] Budget figures.\n[INTERNAL] Notes.',
+            await bracketedContext(),
+        );
+        await caretTo(ta, 1);
+        const chip = container.querySelector('.marked-textarea-chip--editing');
+        expect(chip?.firstChild?.textContent).toBe('[');
+        expect(chip?.querySelector('.inline-editor-close')?.textContent).toBe(
+            ']',
+        );
+        expect(chevron()).not.toBeNull();
     });
 });

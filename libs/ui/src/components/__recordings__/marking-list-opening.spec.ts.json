@@ -302,6 +302,85 @@
             "method": "POST",
             "statusCode": 200
         },
+        "1e3965db473a0ae902175171e1ea319e35a8868e4403d9a6b455b54f3dc1406e": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "surfaces",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "surfaces",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "CONFIDENTIAL",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            {
+                                "categoryId": "level",
+                                "conceptId": "CONFIDENTIAL"
+                            }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "CONF",
+                    "renders": {},
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "24420d083b65be85ffb7ed47804c37a36443e94e17d5958114bf2ac81f87ec56": {
+            "body": [
+                {
+                    "id": "level",
+                    "label": "Level",
+                    "required": true,
+                    "rollup": "max",
+                    "single": true
+                },
+                {
+                    "id": "sharing",
+                    "label": "Sharing",
+                    "required": false,
+                    "rollup": "first",
+                    "single": true
+                },
+                {
+                    "id": "keep",
+                    "label": "Keep for",
+                    "required": false,
+                    "rollup": "max",
+                    "scopes": ["retention"],
+                    "single": true
+                }
+            ],
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
         "2dc96128826dc40d1d945ce768add0d8b0314f9726b739923cd70e868048110d": {
             "body": {
                 "colorFrom": "level",
@@ -612,6 +691,34 @@
             },
             "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
+            "statusCode": 200
+        },
+        "30fc922605c9a0878853427106e3df3309eac3dd08cd0132ad42de6609e856ff": {
+            "body": [],
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "34f999427831176cfdbc1a3b2ca992e5ed960a5be56c7f16121f109e99592ccf": {
+            "body": {
+                "id": "surfaces",
+                "scheme": {
+                    "id": "surfaces",
+                    "resolvedVersion": "1.0.0",
+                    "version": "1.0.0"
+                },
+                "schemes": [
+                    {
+                        "id": "surfaces",
+                        "roles": ["primary"],
+                        "selector": "surfaces",
+                        "version": "1.0.0"
+                    }
+                ],
+                "version": "1.0.0"
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
             "statusCode": 200
         },
         "397c3641e0904fe1bb010cdeb70da77f074d79f51173500ae5b425cde1b596f6": {
@@ -929,6 +1036,60 @@
             "method": "GET",
             "statusCode": 200
         },
+        "46f61466c8d5c6a1e10324b4d9a96185ef9877b97189be2b8b7a3cfc0b7a4823": {
+            "body": [
+                {
+                    "categoryOrder": ["level"],
+                    "defaultFor": ["part"],
+                    "id": "sensitivity/short",
+                    "mode": "inline",
+                    "outputView": "short",
+                    "role": "part",
+                    "surface": "sensitivity",
+                    "view": "abbreviated"
+                },
+                {
+                    "categoryOrder": ["level", "sharing"],
+                    "categoryViews": {
+                        "level": "default",
+                        "sharing": "default"
+                    },
+                    "defaultFor": ["whole"],
+                    "id": "sensitivity/full",
+                    "mode": "inline",
+                    "outputView": "full",
+                    "role": "whole",
+                    "separator": " // ",
+                    "separatorBefore": { "sharing": " // " },
+                    "surface": "sensitivity"
+                },
+                {
+                    "categoryOrder": ["level", "sharing"],
+                    "categoryViews": {
+                        "level": "default",
+                        "sharing": "default"
+                    },
+                    "defaultFor": [],
+                    "id": "sensitivity/xml",
+                    "mode": "block",
+                    "outputView": "xml",
+                    "surface": "sensitivity",
+                    "syntax": { "type": "xml-attributes" }
+                },
+                {
+                    "categoryOrder": ["keep"],
+                    "categoryViews": { "keep": "default" },
+                    "defaultFor": ["whole", "part"],
+                    "id": "retention/block",
+                    "mode": "block",
+                    "outputView": "block",
+                    "surface": "retention"
+                }
+            ],
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
         "4f8a0880ec9bcd92c8e41a094d459fe407b37b78019ee213ad3c0ee2d7f1fcf4": {
             "body": [
                 {
@@ -1042,6 +1203,121 @@
             },
             "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "GET",
+            "statusCode": 200
+        },
+        "6dbe23cce5e0a47422af0029100bb83c72736bc8e1bc8a0d6355e0fa08461d9f": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "surfaces",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "surfaces",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "limits": { "regionsFound": 2, "status": "complete" },
+                    "results": [
+                        {
+                            "end": 14,
+                            "inner": "CONFIDENTIAL",
+                            "marking": "[CONFIDENTIAL]",
+                            "result": {
+                                "appliedFixes": [],
+                                "assertions": [
+                                    {
+                                        "categoryId": "level",
+                                        "conceptId": "CONFIDENTIAL",
+                                        "confidence": "certain",
+                                        "source": "parse"
+                                    }
+                                ],
+                                "assessment": {
+                                    "collapsed": [],
+                                    "conflicts": [],
+                                    "emitted": [
+                                        {
+                                            "categoryId": "level",
+                                            "conceptId": "CONFIDENTIAL"
+                                        }
+                                    ],
+                                    "omitted": [],
+                                    "unrepresentable": []
+                                },
+                                "errors": [],
+                                "inputWasValid": true,
+                                "notices": [],
+                                "recognition": {
+                                    "inputFormat": "sensitivity/full",
+                                    "role": "whole",
+                                    "status": "complete",
+                                    "surface": "sensitivity",
+                                    "unmatched": []
+                                },
+                                "rendered": "CONF",
+                                "valid": true,
+                                "warnings": []
+                            },
+                            "role": "part",
+                            "start": 0,
+                            "type": "sensitivity/full",
+                            "wrapped": true
+                        },
+                        {
+                            "end": 41,
+                            "inner": "INTERNAL",
+                            "marking": "[INTERNAL]",
+                            "result": {
+                                "appliedFixes": [],
+                                "assertions": [
+                                    {
+                                        "categoryId": "level",
+                                        "conceptId": "INTERNAL",
+                                        "confidence": "certain",
+                                        "source": "parse"
+                                    }
+                                ],
+                                "assessment": {
+                                    "collapsed": [],
+                                    "conflicts": [],
+                                    "emitted": [
+                                        {
+                                            "categoryId": "level",
+                                            "conceptId": "INTERNAL"
+                                        }
+                                    ],
+                                    "omitted": [],
+                                    "unrepresentable": []
+                                },
+                                "errors": [],
+                                "inputWasValid": true,
+                                "notices": [],
+                                "recognition": {
+                                    "inputFormat": "sensitivity/full",
+                                    "role": "whole",
+                                    "status": "complete",
+                                    "surface": "sensitivity",
+                                    "unmatched": []
+                                },
+                                "rendered": "INT",
+                                "valid": true,
+                                "warnings": []
+                            },
+                            "role": "part",
+                            "start": 31,
+                            "type": "sensitivity/full",
+                            "wrapped": true
+                        }
+                    ],
+                    "unread": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
             "statusCode": 200
         },
         "71c4c60cf95de874d4f681f29629284dd5fc5d3cfaec3bbc9f6cfb951465af4c": {
@@ -1986,6 +2262,13 @@
             "method": "POST",
             "statusCode": 200
         },
+        "b1850118df94e5d85c4015a58bf4c7ebea683094f117cd9ce2963537b9e46263": {
+            "body": {
+                "contextId": "sbx-c05f630894772e3c24a63f28b82cb2457cb944a740f0c6883cd38effb289c298"
+            },
+            "method": "PUT",
+            "statusCode": 200
+        },
         "b27b310c1665d875465f1b59c28adfbbe1430d06504c835c3f243fbfaec328ab": {
             "body": {
                 "resolution": {
@@ -2583,6 +2866,56 @@
             "method": "POST",
             "statusCode": 200
         },
+        "c2f26089c40d86a980a11cec4ef716eceaeffdb291384a4e9f08569eb49ee4e4": {
+            "body": [
+                {
+                    "aliases": [],
+                    "categories": ["level"],
+                    "id": "INTERNAL",
+                    "name": "Internal",
+                    "parents": [],
+                    "position": 1,
+                    "rank": 1,
+                    "views": { "abbreviated": "INT", "default": "INTERNAL" }
+                },
+                {
+                    "aliases": [],
+                    "categories": ["level"],
+                    "id": "CONFIDENTIAL",
+                    "name": "Confidential",
+                    "parents": [],
+                    "position": 2,
+                    "rank": 2,
+                    "views": {
+                        "abbreviated": "CONF",
+                        "default": "CONFIDENTIAL"
+                    }
+                },
+                {
+                    "aliases": [],
+                    "categories": ["sharing"],
+                    "id": "PARTNERS",
+                    "name": "Shared with partners",
+                    "parents": [],
+                    "position": 3,
+                    "rank": 3,
+                    "views": { "default": "PARTNERS" }
+                },
+                {
+                    "aliases": [],
+                    "categories": ["keep"],
+                    "id": "KEEP_7Y",
+                    "name": "Seven years",
+                    "parents": [],
+                    "position": 4,
+                    "rank": 4,
+                    "views": { "default": "KEEP 7 YEARS" }
+                }
+            ],
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
         "c523536a17a1f0589064648f55384c91d39217bdea38530a2fc7b5aa704617c7": {
             "body": {
                 "resolution": {
@@ -2776,6 +3109,73 @@
             },
             "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
+            "statusCode": 200
+        },
+        "cb62e21833296e0e6cdd87290a16fd7a45ef849b4832bcd49cebc04ff272243a": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "surfaces",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "surfaces",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "CONFIDENTIAL",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            {
+                                "categoryId": "level",
+                                "conceptId": "CONFIDENTIAL"
+                            }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "recognition": {
+                        "corrections": [],
+                        "inputFormat": "sensitivity/full",
+                        "role": "whole",
+                        "status": "complete",
+                        "surface": "sensitivity",
+                        "unmatched": []
+                    },
+                    "rendered": "CONF",
+                    "renders": {},
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "d2f84f5381638073f6981f919c4f95ea76d9efcb28b43562624140a8d3dadf27": {
+            "body": [
+                { "id": "sensitivity", "label": "Sensitivity" },
+                { "id": "retention", "label": "Retention" }
+            ],
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
             "statusCode": 200
         },
         "e070dec6e78862435e7c23c92a6e4a93a9667377aed0b78b533966687028c314": {
@@ -3514,8 +3914,90 @@
             "method": "POST",
             "statusCode": 200
         },
+        "f5116f7310a340447771e9910e837e0b20c2335d0e39bb25330f4557abe7596a": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "surfaces",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "surfaces",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "INTERNAL",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            { "categoryId": "level", "conceptId": "INTERNAL" }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "recognition": {
+                        "corrections": [],
+                        "inputFormat": "sensitivity/full",
+                        "role": "whole",
+                        "status": "complete",
+                        "surface": "sensitivity",
+                        "unmatched": []
+                    },
+                    "rendered": "INT",
+                    "renders": {},
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
         "f64766b6d4a0f5ab33e6a01d8d99d473a257fe272062a2e248230306eb7d9809": {
             "body": [{ "id": "marking", "label": "File marking" }],
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "faf2f72aaeec2853b3531711a344ad1078f63011c1ae2437a4c48cd50a3ec104": {
+            "body": {
+                "contextFormats": {
+                    "part": ["short_line", "short_shared_line"],
+                    "whole": ["full_line", "full_line_2019"]
+                },
+                "defaultPartRenderFormat": "sensitivity/short",
+                "defaultRenderFormat": "sensitivity/full",
+                "defaultScope": "sensitivity",
+                "defaultWholeRenderFormat": "sensitivity/full",
+                "description": "Surfaces test fixture.",
+                "embeddedMarking": [
+                    { "pattern": "\\[(.+?)\\]", "template": "[{marking}] " }
+                ],
+                "id": "surfaces",
+                "name": "Surfaces",
+                "referenceSurfaceLabel": {
+                    "plural": "Handbooks",
+                    "singular": "Handbook"
+                },
+                "roleAware": false,
+                "version": "1.0.0"
+            },
             "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "GET",
             "statusCode": 200
