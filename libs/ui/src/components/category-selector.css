@@ -35,11 +35,14 @@
 }
 
 /* ── Button container, flex wrap ─────────────────── */
+/* The buttons take the rest of the row, and drop below the label when less
+   than 8rem is left there; squeezed beside it, a button would run past its
+   column. */
 .category-selector-options {
     display: flex;
     flex-wrap: wrap;
     gap: 0.25rem;
-    flex: 1;
+    flex: 1 1 8rem;
     min-width: 0;
 }
 
