@@ -417,6 +417,42 @@ describe('MarkedInput', () => {
         ).toBeTruthy();
     });
 
+    it("keeps the display's typography identical to its control after enhancement", async () => {
+        // jsdom does not inherit fonts, so the owned editor textarea is given
+        // the face a browser would pass it from the authored input's styles.
+        const engine = await createTestEngine();
+        root.innerHTML = `
+      <style>
+        .demo input,
+        .demo textarea {
+          font-family: monospace;
+          font-size: 14px;
+          line-height: 23px;
+        }
+      </style>
+      <div class="demo">
+        <input type="text" id="field" data-ezclassify-controller="marked-input">
+      </div>
+    `;
+        const forms = new EzClassifyUI(asContext(engine as never), { root });
+        activeForms.push(forms);
+        await wait(50);
+        await new Promise<void>((resolve) =>
+            requestAnimationFrame(() => resolve()),
+        );
+
+        const control = editingField('field') as HTMLTextAreaElement;
+        const display = root.querySelector(
+            '.marked-input-display',
+        ) as HTMLDivElement;
+        const controlStyle = getComputedStyle(control);
+        const displayStyle = getComputedStyle(display);
+        expect(displayStyle.fontFamily).toBe('monospace');
+        expect(displayStyle.fontFamily).toBe(controlStyle.fontFamily);
+        expect(displayStyle.fontSize).toBe(controlStyle.fontSize);
+        expect(displayStyle.lineHeight).toBe(controlStyle.lineHeight);
+    });
+
     it('the field wraps and grows to show the full chip without ellipsis', () => {
         // The full marking and free-text tail must wrap and grow the field.
         // jsdom has no layout engine, so these checks inspect the stylesheet

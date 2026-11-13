@@ -4,7 +4,8 @@
  * UI components may be mounted inside cards, dialogs, tables, transformed
  * panels, or scroll containers. Dropdowns and tooltips therefore belong in
  * document.body, not in an arbitrary consumer layout ancestor. These helpers
- * preserve the source field's theme after that portal move.
+ * preserve the source field's theme after that portal move. The font is the
+ * exception: chrome takes the page's UI font, never a field control's own.
  */
 
 import { adoptStyles, type AdoptedStyles } from '../styles/adopt';
@@ -43,17 +44,71 @@ const THEME_PROPERTIES = [
     '--ez-z-tooltip',
 ] as const;
 
-/** Copy documented presentation tokens from an in-flow anchor to an overlay. */
+/** An EzClassify root: a host's themed region or a component's container. */
+const UI_ROOT = '.ez-root, [data-ezclassify]';
+
+/** Native controls whose own font a field's text layers mirror. */
+const FORM_CONTROL = 'input, textarea, select';
+
+/**
+ * A custom property that holds one of these names no family. Browsers resolve
+ * the root rule's `--ez-font-family: inherit` before reporting it, so this only
+ * matters where the cascade is not resolved, but a keyword must never reach
+ * `font-family` as if a host had chosen it.
+ */
+const CSS_WIDE_KEYWORD = /^(?:inherit|initial|unset|revert|revert-layer)$/;
+
+/**
+ * The font family library chrome uses for `owner`: the host's
+ * `--ez-font-family` when one is set, otherwise the page font around the
+ * EzClassify root that holds `owner`.
+ *
+ * A field's text layers mirror the native control's font on purpose, so the
+ * marked text keeps the control's metrics. Chrome is not field text, and a
+ * monospace textarea must not hand its face to the composer, a dropdown or a
+ * tooltip opened from inside it. The root is library or host owned and never
+ * mirrors a control, so its computed family is the surrounding page's. Outside
+ * any root, the nearest ancestor that is not a form control stands in for it.
+ *
+ * @param owner - The component the chrome belongs to: its root container, or an
+ *   element of it that sits outside the field's text layers
+ * @returns A `font-family` value
+ */
+function uiFontFamily(owner: HTMLElement): string {
+    let surrounding = owner.closest<HTMLElement>(UI_ROOT) ?? owner;
+    while (surrounding.matches(FORM_CONTROL) && surrounding.parentElement)
+        surrounding = surrounding.parentElement;
+    const style = window.getComputedStyle(surrounding);
+    const host = style.getPropertyValue('--ez-font-family').trim();
+    return host && !CSS_WIDE_KEYWORD.test(host) ? host : style.fontFamily;
+}
+
+/**
+ * Copy documented presentation tokens from an in-flow anchor to an overlay, and
+ * give the overlay the surrounding UI font (see {@link uiFontFamily}).
+ *
+ * Only the family travels. Size, weight and line height stay with the overlay's
+ * own stylesheet, so chrome reads at the library's scale whatever size the
+ * field it opened from uses.
+ *
+ * @param source - The in-flow element whose tokens the overlay takes
+ * @param overlay - The portaled element
+ * @param owner - Where the font is read from. Pass the component's root when
+ *   `source` sits inside a field's text (an inline editor, a marking in the
+ *   body): the root container of a text area is mounted beside its text layers,
+ *   not around them, so no ancestor of `source` reaches it.
+ */
 export function copyOverlayTheme(
     source: HTMLElement,
     overlay: HTMLElement,
+    owner: HTMLElement = source,
 ): void {
     const style = window.getComputedStyle(source);
     for (const property of THEME_PROPERTIES) {
         const value = style.getPropertyValue(property);
         if (value) overlay.style.setProperty(property, value);
     }
-    overlay.style.font = style.font;
+    overlay.style.fontFamily = uiFontFamily(owner);
 }
 
 /**
@@ -64,15 +119,17 @@ export function copyOverlayTheme(
  * document. Callers hold the returned handle while mounted and release it when
  * they remove the overlay.
  *
+ * @param owner - Where the font is read from (see {@link copyOverlayTheme})
  * @returns A handle to release during teardown, or null when no CSS was given
  */
 export function portalViewportOverlay(
     overlay: HTMLElement,
     source: HTMLElement,
     css?: string,
+    owner: HTMLElement = source,
 ): AdoptedStyles | null {
     const adopted = css ? adoptStyles(css, document) : null;
-    copyOverlayTheme(source, overlay);
+    copyOverlayTheme(source, overlay, owner);
     document.body.appendChild(overlay);
     return adopted;
 }

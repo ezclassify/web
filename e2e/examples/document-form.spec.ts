@@ -9,6 +9,10 @@
  * the title and body, then leave the form. The replay server answers recorded
  * requests and refuses the rest with a 501, so a run with no failed response is
  * proof the example sends exactly what the README promises.
+ *
+ * A second test loads the same form with the page's fields set in a monospace
+ * face, as a host that styles its textareas that way does, and checks that the
+ * library's chrome keeps the page font while the field text keeps the field's.
  */
 
 import {
@@ -427,3 +431,83 @@ for (const viewport of [
         });
     });
 }
+
+test.describe('README document form beside monospace fields', () => {
+    test.use({ viewport: { width: 1280, height: 900 } });
+
+    test("keeps the page font in the library's chrome and the field's font in its text", async ({
+        page,
+    }, info) => {
+        const observed = observe(page);
+        // A host stylesheet that sets its fields in a monospace face. Adopted
+        // before the page loads, so the fields mirror it when they enhance.
+        await page.addInitScript(() => {
+            const sheet = new CSSStyleSheet();
+            sheet.replaceSync(
+                'input, textarea { font-family: "Courier New", monospace; }',
+            );
+            document.adoptedStyleSheets = [
+                ...document.adoptedStyleSheets,
+                sheet,
+            ];
+        });
+        const family = (locator: Locator) =>
+            locator.evaluate((element) => getComputedStyle(element).fontFamily);
+
+        await page.goto('/');
+        const body = page.locator('textarea#body');
+        const summary = page.locator('input.tag-input-filter');
+        await expect(body).toBeVisible({ timeout: 60_000 });
+        await settle(observed);
+
+        const pageFont = await family(page.locator('body'));
+        const fieldFont = await family(body);
+        expect(fieldFont).toContain('monospace');
+        expect(pageFont).not.toContain('monospace');
+
+        // The field's own text keeps the control's face.
+        expect(await family(page.locator('.marked-textarea-display'))).toBe(
+            fieldFont,
+        );
+        // In-flow chrome beside the field reads the page font.
+        expect(await family(page.locator('.marked-textarea-kb-hint'))).toBe(
+            pageFont,
+        );
+
+        // The composer, portaled to the body, reads the page font whether it
+        // opens from the tag field or the text area's inline editor, in the
+        // README path's order.
+        const composer = page.locator('.ez-composer:not([hidden])');
+        observed.step = 'browse-summary';
+        await summary.focus();
+        await page.keyboard.press('Alt+ArrowDown');
+        await expect(composer).toBeVisible();
+        await settle(observed);
+        expect(await family(composer)).toBe(pageFont);
+        await page.keyboard.press('Escape');
+        await expect(composer).toHaveCount(0);
+        await settle(observed);
+
+        observed.step = 'marking-body';
+        await body.focus();
+        await page.keyboard.press('ControlOrMeta+Enter');
+        await expect(composer).toBeVisible();
+        await settle(observed);
+        expect(await family(composer)).toBe(pageFont);
+        expect(
+            await family(composer.locator('.ez-composer__group-label').first()),
+        ).toBe(pageFont);
+        await page.screenshot({
+            path: await evidencePath(
+                `${info.project.name}-monospace-marking-body.png`,
+            ),
+            animations: 'disabled',
+        });
+        await page.keyboard.press('Escape');
+        await expect(composer).toHaveCount(0);
+        await settle(observed);
+
+        expect(observed.failures).toEqual([]);
+        expect(observed.errors).toEqual([]);
+    });
+});

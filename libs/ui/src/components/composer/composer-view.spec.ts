@@ -1339,3 +1339,78 @@ describe('category navigation', () => {
         expect(activeRow(input)?.dataset.categoryId).toBe('level');
     });
 });
+
+describe('the UI font', () => {
+    /**
+     * A field shaped like MarkedTextArea's: a text layer that mirrors a
+     * monospace control, with the field's root container mounted beside it in a
+     * page whose font is Georgia. jsdom does not inherit fonts, so the root is
+     * given the family a browser would inherit from the page, and the layer the
+     * face it mirrors.
+     */
+    function monospaceField(rootCss = ''): {
+        layer: HTMLElement;
+        field: HTMLElement;
+    } {
+        const style = document.createElement('style');
+        style.textContent = `
+            .ez-root, [data-ezclassify] { --ez-font-family: inherit; }
+            .page [data-ezclassify] { font-family: Georgia, serif; ${rootCss} }
+            .page input { font: 13px "SF Mono", monospace; }
+        `;
+        root.appendChild(style);
+        root.classList.add('page');
+        const layer = document.createElement('div');
+        layer.style.font = getComputedStyle(input).font;
+        layer.appendChild(input);
+        const field = document.createElement('div');
+        field.setAttribute('data-ezclassify', '');
+        root.append(layer, field);
+        return { layer, field };
+    }
+
+    function mountIn({
+        layer,
+        field,
+    }: {
+        layer: HTMLElement;
+        field: HTMLElement;
+    }) {
+        controller = new ComposerController({
+            port,
+            shape: 'whole',
+            announce: (t) => view?.announce(t),
+        });
+        view = new ComposerView({
+            controller,
+            input,
+            anchor: layer,
+            field,
+            label: () => accessibleLabel(input, 'Marking'),
+            singleLine: true,
+        });
+    }
+
+    it("takes the page font around the field, not the field control's monospace", async () => {
+        const shape = monospaceField();
+        mountIn(shape);
+        input.focus();
+        await view.open('keyboard');
+        const surface = openSurface()!;
+        expect(surface.parentElement).toBe(document.body);
+        expect(getComputedStyle(surface).fontFamily).toBe('Georgia, serif');
+        // The field's own text keeps the control's face.
+        expect(getComputedStyle(shape.layer).fontFamily).toBe(
+            getComputedStyle(input).fontFamily,
+        );
+    });
+
+    it('takes the host --ez-font-family when one is set', async () => {
+        mountIn(monospaceField('--ez-font-family: Inter, sans-serif;'));
+        input.focus();
+        await view.open('keyboard');
+        expect(getComputedStyle(openSurface()!).fontFamily).toBe(
+            'Inter, sans-serif',
+        );
+    });
+});

@@ -58,6 +58,25 @@ describe('tooltip-manager', () => {
             expect(first.hasAttribute('aria-describedby')).toBe(false);
         });
 
+        it('takes the page font around its root, not the face of the field text it describes', () => {
+            // jsdom does not inherit fonts: the root carries the family a
+            // browser would inherit from the page, and the target (a marking
+            // in a field's text layer) the monospace face that layer mirrors.
+            // The layer sits beside the root, as a text area's does.
+            root.setAttribute('data-ezclassify', '');
+            root.style.fontFamily = 'Georgia, serif';
+            const layer = document.createElement('div');
+            const target = document.createElement('span');
+            target.style.font = '13px "SF Mono", monospace';
+            layer.appendChild(target);
+            root.before(layer);
+            showTooltip(target, 'Tip', root);
+            const tip =
+                document.body.querySelector<HTMLElement>('.ez-tooltip')!;
+            expect(getComputedStyle(tip).fontFamily).toBe('Georgia, serif');
+            layer.remove();
+        });
+
         it("leaves a target's own state alone: aria-expanded belongs to the target", () => {
             const disclosure = document.createElement('button');
             disclosure.setAttribute('aria-expanded', 'false');

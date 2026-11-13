@@ -323,6 +323,27 @@ describe('open()', () => {
     });
 });
 
+describe('the dropdown font', () => {
+    it('takes the page font around its root, not a field face its button sits in', async () => {
+        // jsdom does not inherit fonts: the root carries the family a browser
+        // would inherit from the page, and the chrome wrap a monospace face
+        // as if it sat inside a field's mirrored text layer.
+        const field = document.createElement('div');
+        field.setAttribute('data-ezclassify', '');
+        field.style.fontFamily = 'Georgia, serif';
+        document.body.appendChild(field);
+        field.appendChild(wrap);
+        wrap.style.font = '13px "SF Mono", monospace';
+        const panel = ensureFavoritesButton(wrap, makeHost())!;
+        await panel.open();
+        const dropdown = document.body.querySelector<HTMLElement>(
+            '.ez-favorites-panel',
+        )!;
+        expect(dropdown.parentElement).toBe(document.body);
+        expect(getComputedStyle(dropdown).fontFamily).toBe('Georgia, serif');
+    });
+});
+
 describe('accessibility roles inside the listbox', () => {
     it('gives non-option rows a role so assistive tech does not skip or misread them', async () => {
         // A role="listbox" only exposes role="option" children to assistive

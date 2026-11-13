@@ -364,6 +364,7 @@ export class ComposerView {
             this.surface,
             options.anchor,
             (options.css ?? '') + composerCss,
+            options.field ?? options.anchor,
         );
 
         this.wireInput(options.input);

@@ -110,7 +110,9 @@ export function showTooltip(
 
     const effectiveRoot = root ?? document.body;
     const tip = ensureTooltipForRoot(effectiveRoot);
-    copyOverlayTheme(target, tip);
+    // A target can sit in a field's text (a marking in a text area's body),
+    // which mirrors the control's font; the tooltip reads its root's.
+    copyOverlayTheme(target, tip, effectiveRoot);
 
     // Build structured content from the lines
     tip.innerHTML = '';
