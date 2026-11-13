@@ -1,0 +1,108 @@
+name: Recordings
+
+# The maintainer lane: record every spec's demo runtime traffic from nothing and
+# fail if the result differs from the committed recordings. It is the only
+# recorder and the only freshness check (DEVELOPMENT.md, "Engine behavior in
+# tests").
+#
+# It runs on demand in the official repository only. It reads private
+# checkouts (the engine the demo runtime is built from, and the content the
+# demo set is assembled from), so a fork has nothing to run here and needs no
+# secret: the job is skipped. Public CI replays the committed recordings and
+# needs none of this.
+#
+# A stale run uploads what it recorded, for a maintainer to review and commit.
+
+on:
+  workflow_dispatch: null
+
+permissions:
+  contents: read
+  packages: read
+
+concurrency:
+  group: recordings
+  cancel-in-progress: false
+
+jobs:
+  record:
+    if: ${{ github.repository == 'ezclassify/web' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          path: web
+          persist-credentials: false
+
+      - name: Read the community-content pin
+        id: pin
+        run: echo "commit=$(tr -d '[:space:]' < web/test-support/community-content.pin)" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          repository: ezclassify/community-content
+          ref: ${{ steps.pin.outputs.commit }}
+          path: community-content
+          persist-credentials: false
+
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          repository: ezclassify/engine
+          path: engine
+          token: ${{ secrets.EZ_REPOS_READ_TOKEN }}
+          persist-credentials: false
+
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          repository: ezclassify/orchestration
+          path: orchestration
+          token: ${{ secrets.EZ_REPOS_READ_TOKEN }}
+          persist-credentials: false
+
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          repository: ezclassify/enterprise-content
+          path: enterprise-content
+          token: ${{ secrets.EZ_REPOS_READ_TOKEN }}
+          persist-credentials: false
+
+      - uses: ezclassify/.github/actions/setup-node-npm@a42ece80f520858a2926723d12bba2af2dca0474
+        with:
+          node-version: '22'
+          registry-url: 'https://npm.pkg.github.com'
+          scope: '@ezclassify'
+
+      - name: Configure package registry
+        run: |
+          cat > "$RUNNER_TEMP/ci-npmrc" << 'NPMRC'
+          @ezclassify:registry=https://npm.pkg.github.com
+          //npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}
+          NPMRC
+          echo "NPM_CONFIG_USERCONFIG=$RUNNER_TEMP/ci-npmrc" >> "$GITHUB_ENV"
+
+      - name: Install dependencies
+        working-directory: web
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.EZ_GHPKG_TOKEN || github.token }}
+        run: |
+          npm run deps:relock
+          npm ci
+
+      - name: Install the engine's Rust toolchain
+        # rust-toolchain.toml in the engine checkout names it.
+        working-directory: engine
+        run: rustup toolchain install
+
+      - name: Record from nothing and compare with the committed recordings
+        working-directory: web
+        run: npm run check:recordings
+
+      - name: Upload what was recorded
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: recordings
+          path: web/**/__recordings__/*.json
+          if-no-files-found: ignore
+          retention-days: 7

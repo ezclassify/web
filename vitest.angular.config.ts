@@ -1,16 +1,5 @@
 import { defineConfig } from 'vitest/config';
 import * as path from 'path';
-import {
-    describePrivateRuntime,
-    siblingRuntimeAliases,
-    specsNeedingPrivateRuntime,
-} from './vitest.private-runtime.ts';
-
-// The Angular half of the private lane. Same derivation as the main config,
-// scoped to the specs this runner owns. See vitest.private-runtime.ts.
-const PRIVATE_LANE_SPECS = specsNeedingPrivateRuntime(['integrations/angular']);
-
-describePrivateRuntime(PRIVATE_LANE_SPECS);
 
 export default defineConfig({
     resolve: {
@@ -41,7 +30,6 @@ export default defineConfig({
                 import.meta.dirname,
                 'integrations/angular/src/index.ts',
             ),
-            ...siblingRuntimeAliases,
         },
     },
     test: {
@@ -58,6 +46,6 @@ export default defineConfig({
             'integrations/angular/**/*.spec.ts',
             'integrations/angular/**/*.spec.tsx',
         ],
-        exclude: ['node_modules/**', 'dist/**', ...PRIVATE_LANE_SPECS],
+        exclude: ['node_modules/**', 'dist/**'],
     },
 });

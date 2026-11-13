@@ -1,26 +1,30 @@
 # @ezclassify/ui-tools
 
-Shared Playwright tooling for first-party EzClassify browser tests. It provides
-page interaction helpers, accessibility scans, screenshot baseline management,
-crawler status logging and a run loop, plus a network replay transport.
-It does not mount UI components, start an application or supply an engine.
+Shared test tooling for first-party EzClassify tests. It provides page
+interaction helpers, accessibility scans, screenshot baseline management,
+crawler status logging and a run loop, plus HTTP record and replay with a fetch
+transport and a Playwright route transport. It does not mount UI components,
+start an application or supply an engine.
 
-This package is outside the public workspace install closure. It depends on
-private `@ezclassify/testing-utils` and is distributed through the development
-mirror, not npmjs.org. A public UI consumer does not need it.
+This package is outside the public workspace install closure and is
+distributed through the development mirror, not npmjs.org. A public UI
+consumer does not need it. Its record and replay core uses Node built-ins only,
+which is why the Web repository's own test harness imports that source
+directly without installing this package.
 
 ## Setup and verification
 
-Use Node.js 22 or 24 and the private registry configuration described in
-[DEVELOPMENT.md](../../DEVELOPMENT.md). From the Web repository root:
+Use Node.js 22 or 24. Its dependencies are all on the public registry. From the
+Web repository root:
 
 ```bash
-npm install --prefix libs/ui-tools --ignore-scripts --tag=dev
+npm install --prefix libs/ui-tools --ignore-scripts
 npm run build --prefix libs/ui-tools
 npm test --prefix libs/ui-tools
 ```
 
-The root install and test command exclude this package. Its build produces
+The root install excludes this package, and the root test run covers only its
+record and replay specs, which need nothing it installs. Its build produces
 ESM, CommonJS and TypeScript declarations under `dist/lib`. To check the package
 contents as well as the build and tests:
 
@@ -75,16 +79,54 @@ supplies the application's actual storage key. `enumerateInteractiveElements`
 and `exerciseInteractiveElements` can drive a bounded interaction pass; run
 these against test data because they fill fields and activate controls.
 
-## Replay recorded HTTP responses
+## Record and replay HTTP
 
-`installReplayer` serves matching browser requests from a recordings map and
-returns hit/miss tracking. The map uses the canonical recording keys from
-`@ezclassify/testing-utils/record-replay`, not URL strings as keys.
+A recording is keyed by the request's path with its query string and its JSON
+body, with object keys sorted (`computeRecordingKey`), so the same logical
+request always finds the same recording whatever the origin, the trailing slash
+or the key order. The method is not part of the key; the recorder refuses two
+methods that would share one.
+
+For a client that takes its own `fetch`, `createRecordingFetch(origin,
+recorder)` forwards each request to a live server and records the answer, and
+`createReplayFetch(recordings, onMiss)` answers from recordings with no network
+at all:
+
+```ts
+import {
+    Recorder,
+    createRecordingFetch,
+    createReplayFetch,
+} from '@ezclassify/ui-tools';
+
+const recorder = new Recorder();
+const live = createRecordingFetch('http://127.0.0.1:8080', recorder);
+await live('http://any.invalid/v1/health');
+const file = recorder.toFile('1.0.0');
+
+const replay = createReplayFetch(file.responses, (miss) => {
+    throw new Error(miss.message);
+});
+const answer = await replay('http://any.invalid/v1/health');
+```
+
+Every recorded answer must be JSON; the recorder refuses one that is not. It
+keeps the response headers a client reads (`x-ezclassify-*` and
+`retry-after`). A request the recorder already holds is answered from it
+without being sent, except a `PUT`, `PATCH` or `DELETE`, which always reaches
+the server. A request cancelled while in flight is still recorded, because a
+replay answers before its caller can cancel it. A replay rejects a request with
+no recording, the way a refused connection would, and reports it to `onMiss`.
+`readRecordingsFile` and `writeRecordingsFile` read and write the file shape
+(`engineVersion`, optional `openapiVersion`, `responses` by key), validating
+on read.
+
+`installReplayer` serves matching browser requests from the same recordings
+map and returns hit and miss tracking:
 
 ```ts
 import { test, expect } from '@playwright/test';
-import { computeRecordingKey } from '@ezclassify/testing-utils/record-replay';
-import { installReplayer } from '@ezclassify/ui-tools';
+import { computeRecordingKey, installReplayer } from '@ezclassify/ui-tools';
 
 test('replays the application response', async ({ page }) => {
     const recordings = {
@@ -108,13 +150,11 @@ test('replays the application response', async ({ page }) => {
 ```
 
 Install routes before navigation. The default allowlist matches `/api/` and
-`/studio/api/`; explicitly select other paths when needed. Matching uses the
-normalized path and parsed JSON request body. Non-JSON bodies are treated as
-`null`. An unrecorded matching request receives HTTP 404 with a `no_recording`
-envelope and appears in `misses`; requests outside the allowlist use the normal
-network. Hits identify paths, not individual recording keys. This package
-replays recordings; their generation and canonicalization belong to
-`@ezclassify/testing-utils`.
+`/studio/api/`; explicitly select other paths when needed. Non-JSON request
+bodies are treated as `null`. An unrecorded matching request receives HTTP 404
+with a `no_recording` envelope and appears in `misses`; requests outside the
+allowlist use the normal network. Hits identify paths, not individual recording
+keys.
 
 ## Baselines and crawler runs
 

@@ -53,7 +53,6 @@
         "e2e:golden-corpus": "EZ_INTEGRATION_SCENARIO=golden-corpus npm run test --workspace e2e",
         "format": "prettier --write .",
         "format:check": "prettier --check .",
-        "lane:private": "node scripts/private-lane.mjs",
         "link:local": "node scripts/link-publishable.mjs",
         "lint": "npx eslint --max-warnings=0 libs/ui integrations tests e2e",
         "notices": "node scripts/generate-third-party-notices.mjs",
@@ -68,9 +67,7 @@
         "test:ui-core": "vitest run libs/ui --exclude 'libs/ui/src/components/**' --pool=forks --maxWorkers=2",
         "test:verbose": "node scripts/run-test-projects.mjs --reporter=verbose",
         "typecheck": "npm run typecheck --workspaces --if-present && node scripts/typecheck-specs.mjs tests",
-        "typecheck:private": "node scripts/typecheck-specs.mjs libs/ui --lane=auto && node scripts/typecheck-specs.mjs integrations/react --lane=auto && node scripts/typecheck-specs.mjs integrations/vue --lane=auto && node scripts/typecheck-specs.mjs integrations/angular --lane=auto && node scripts/typecheck-specs.mjs tests --lane=auto",
-        "verify:pack-consume": "node scripts/verify-pack-consume.mjs",
-        "verify:private": "npm test && npm run typecheck:private && npm run test:integration"
+        "verify:pack-consume": "node scripts/verify-pack-consume.mjs"
     },
     "devDependencies": {
         "@ezclassify/rest-client": "^1.0.0-0",

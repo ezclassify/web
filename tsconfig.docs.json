@@ -25,7 +25,6 @@
         "scripts/**/*.tsx",
         "libs/*/build-*.mjs",
         "integrations/*/build-*.mjs",
-        "vitest.private-runtime.ts",
         "e2e/lanes.mjs",
         "e2e/hosts/**/*.mjs",
         "e2e/hosts/**/*.ts",

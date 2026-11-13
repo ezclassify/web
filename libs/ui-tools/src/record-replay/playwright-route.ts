@@ -37,7 +37,9 @@ export function installReplayer(
     for (const pattern of patterns) {
         page.route(pattern, async (route: Route) => {
             const request = route.request();
-            const path = new URL(request.url()).pathname;
+            // Path and query, as the fetch transport keys them.
+            const url = new URL(request.url());
+            const path = url.pathname + url.search;
             let body: unknown;
             try {
                 const raw = request.postData();

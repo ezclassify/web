@@ -24,10 +24,11 @@ globbing a directory, and that list is the whole install closure:
 
 Everything in the closure installs from a public registry. `npm run
 check:public-dependencies` enforces that by reading the committed manifests: no
-package in the closure may declare `@ezclassify/engine`,
-`@ezclassify/testing-utils`, or anything else
-that is not published publicly. If a spec needs one of those, it belongs to the
-private lane in [`DEVELOPMENT.md`](DEVELOPMENT.md), not in a dependency field.
+package in the closure may declare `@ezclassify/engine`, or anything else
+that is not published publicly. A spec that needs engine answers gets them from
+the demo runtime's committed recordings through
+[`test-support/demo-runtime.ts`](test-support/demo-runtime.ts), never from a package; see "Engine behavior
+in tests" in [`DEVELOPMENT.md`](DEVELOPMENT.md).
 
 The engine in particular is never a dependency of anything here, in any field,
 including a dev one. It is embedded in EzClassify's own applications and is not
@@ -42,13 +43,16 @@ which is what an integrator does.
 ## Outside the closure
 
 These directories are in the repository but are not workspaces, and a clean
-clone does not install them. Each installs and runs on its own, in the private
-lane.
+clone does not install them. Each installs and runs on its own.
 
-- [`libs/ui-tools/`](libs/ui-tools/) (`@ezclassify/ui-tools`): Playwright test tooling. It has no
-  consumer in this repository and it depends on `@ezclassify/testing-utils`,
-  which is not on a public registry, so it can never go to npmjs.org and it can
-  never join the closure above. Do not import it and do not depend on it here.
+- [`libs/ui-tools/`](libs/ui-tools/) (`@ezclassify/ui-tools`): first-party test tooling, Playwright
+  helpers plus HTTP record and replay. Do not depend on it here. The one
+  exception is its record and replay core
+  ([`libs/ui-tools/src/record-replay/`](libs/ui-tools/src/record-replay/)), which uses Node built-ins only;
+  [`test-support/demo-runtime.ts`](test-support/demo-runtime.ts) imports that source directly, and the
+  integration tier runs its specs. Keep what that directory's `index.ts`
+  exports free of any import but Node built-ins; the Playwright route
+  transport sits beside it and is exported from the package root only.
 
     Its consumers are first-party repositories that install it like any other
     dependency, so it does publish: `publish-mirror.yml` builds it in its own
@@ -59,7 +63,7 @@ lane.
     Keep that flag in the maintained manifest.
 
     It installs and tests on its own, from this directory. The root vitest
-    config excludes its specs because they resolve against
+    config excludes its Playwright specs because they resolve against
     `libs/ui-tools/node_modules`, which a clean clone does not have.
 
     A new package under [`libs/`](libs/) or [`integrations/`](integrations/) has to be published
