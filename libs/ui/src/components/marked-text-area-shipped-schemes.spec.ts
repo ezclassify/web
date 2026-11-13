@@ -6,8 +6,8 @@
  * render filter hides it, so no format ever writes it and no author can type
  * it. A scheme whose part view spells its own parentheses renders a concept as
  * "(INTERNAL)", the same text the field's wrapper adds around a part mark. No
- * shipped scheme does that, so those specs derive it from Cedar Valley's
- * protection levels.
+ * shipped scheme does that, so those specs use levels shaped like Cedar
+ * Valley's protection levels that do.
  *
  * Two field behaviors have to hold for those shapes. A marking loaded into the
  * field is flagged for correction only when the correction would change what
@@ -16,13 +16,10 @@
 
 import { asContext } from '../../test-fixtures/as-context';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { Context } from '@ezclassify/engine';
-import {
-    cedarValleyLevelsSchemeDocument,
-    loadCedarValleyContext,
-} from '../../../../test-support/community-content';
+import type { EzClassifyClient } from '@ezclassify/rest-client';
 import { EzClassifyUI } from '../ezclassify-ui';
 import { MarkedTextArea } from './marked-text-area';
+import { connectDemoContext } from '../../../../test-support/demo-runtime';
 
 function wait(ms = 30): Promise<void> {
     return new Promise((r) => setTimeout(r, ms));
@@ -45,32 +42,91 @@ afterEach(() => {
     document.body.innerHTML = '';
 });
 
-/**
- * Cedar Valley's protection levels with every concept's view spelling its own
- * parentheses.
- *
- * @returns A Context over the derived scheme
- */
-function loadSelfWrappedLevelsContext(): Context {
-    const document = structuredClone(cedarValleyLevelsSchemeDocument()) as {
-        scheme: {
-            data: { concepts: Array<{ views: Record<string, string> }> };
-            embedded_marking?: Array<{ pattern: string; template: string }>;
-        };
+/** A protection level whose every view spells its own parentheses. */
+function selfWrappedLevel(id: string, rank: unknown) {
+    const view = `(${id})`;
+    return {
+        id,
+        name: id.charAt(0) + id.slice(1).toLowerCase(),
+        views: { default: view, short: `(${id.charAt(0)})`, long: view },
+        aliases: [id.toLowerCase()],
+        categories: ['level'],
+        rank,
     };
-    document.scheme.embedded_marking = [
-        { pattern: '\\(([^)]+)\\)', template: '({marking})' },
-    ];
-    for (const concept of document.scheme.data.concepts) {
-        for (const [view, text] of Object.entries(concept.views)) {
-            concept.views[view] = `(${text})`;
-        }
-    }
-    return Context.fromComponents({ scheme: document });
+}
+
+/**
+ * Protection levels shaped like Cedar Valley's, with every concept's view
+ * spelling its own parentheses and an embedded marking that reads them.
+ */
+const SELF_WRAPPED_LEVELS = {
+    scheme: {
+        id: 'self-wrapped-levels',
+        version: '1.0.0',
+        name: 'Self-wrapped levels',
+        description: 'Levels whose views spell the part wrapper themselves.',
+        data: {
+            categories: [
+                {
+                    id: 'level',
+                    label: 'Protection',
+                    required: true,
+                    single: true,
+                    rollup: 'max',
+                    position: 0,
+                },
+            ],
+            concepts: [
+                selfWrappedLevel('PUBLIC', 'bottom'),
+                selfWrappedLevel('INTERNAL', { above: 'PUBLIC' }),
+                selfWrappedLevel('CONFIDENTIAL', { above: 'INTERNAL' }),
+                selfWrappedLevel('RESTRICTED', 'top'),
+            ],
+        },
+        rules: [
+            {
+                id: 'protection-level-required',
+                action: 'cardinality',
+                category: 'level',
+                min: 1,
+                message: 'Choose a protection level.',
+            },
+        ],
+        embedded_marking: [
+            { pattern: '\\(([^)]+)\\)', template: '({marking})' },
+        ],
+        parse: {},
+        render: {
+            default: 'default',
+            formats: [
+                {
+                    id: 'default',
+                    view: 'default',
+                    surface: 'marking',
+                    mode: 'inline',
+                    separator: '//',
+                    fields: [{ category: 'level', separator: '/' }],
+                },
+                {
+                    id: 'short',
+                    view: 'short',
+                    surface: 'marking',
+                    mode: 'inline',
+                    separator: '//',
+                    fields: [{ category: 'level', separator: '/' }],
+                },
+            ],
+        },
+    },
+};
+
+/** @returns A Context over {@link SELF_WRAPPED_LEVELS} */
+async function loadSelfWrappedLevelsContext(): Promise<EzClassifyClient> {
+    return await connectDemoContext({ draft: { scheme: SELF_WRAPPED_LEVELS } });
 }
 
 async function mountTextarea(
-    engine: ReturnType<typeof loadCedarValleyContext>['scheme'],
+    engine: EzClassifyClient['scheme'],
     value: string,
 ): Promise<{ ta: HTMLTextAreaElement; comp: MarkedTextArea }> {
     const ta = document.createElement('textarea');
@@ -91,7 +147,7 @@ describe('MarkedTextArea: loaded markings are flagged only for corrections that 
         const value =
             '(CONFIDENTIAL//FINANCIAL INFORMATION) Purchasing notes.\n(RESTRICTED//SECURE ASSESSMENTS//KEEP SEALED) Exam packet.';
         const { ta, comp } = await mountTextarea(
-            loadCedarValleyContext().scheme,
+            (await connectDemoContext({ contextId: 'cedar-valley' })).scheme,
             value,
         );
 
@@ -112,7 +168,7 @@ describe('MarkedTextArea: loaded markings are flagged only for corrections that 
     it('accepts a mark the engine read tolerantly, in any case or separator', async () => {
         const value = '(internal//oakwood, pinecrest) Bus plan.';
         const { comp } = await mountTextarea(
-            loadCedarValleyContext().scheme,
+            (await connectDemoContext({ contextId: 'cedar-valley' })).scheme,
             value,
         );
 
@@ -125,7 +181,7 @@ describe('MarkedTextArea: loaded markings are flagged only for corrections that 
         const value =
             '(INTERNAL)\n\nStaff plan.\n\n(CONFIDENTIAL)\n\nStudent records.';
         const { ta, comp } = await mountTextarea(
-            loadSelfWrappedLevelsContext().scheme,
+            (await loadSelfWrappedLevelsContext()).scheme,
             value,
         );
 
@@ -143,7 +199,7 @@ describe('MarkedTextArea: loaded markings are flagged only for corrections that 
 
     it('still flags a loaded mark the scheme rules refuse', async () => {
         const { comp } = await mountTextarea(
-            loadCedarValleyContext().scheme,
+            (await connectDemoContext({ contextId: 'cedar-valley' })).scheme,
             '(PUBLIC//OAKWOOD) Lunch menu.',
         );
 
@@ -158,7 +214,7 @@ describe('MarkedTextArea: loaded markings are flagged only for corrections that 
 describe('MarkedTextArea: a repair writes one wrapper', () => {
     it('keeps a typed level single-wrapped', async () => {
         const { ta, comp } = await mountTextarea(
-            loadSelfWrappedLevelsContext().scheme,
+            (await loadSelfWrappedLevelsContext()).scheme,
             '',
         );
 
@@ -173,7 +229,10 @@ describe('MarkedTextArea: a repair writes one wrapper', () => {
     });
 
     it('still normalizes a typed Cedar Valley mark into the field format', async () => {
-        const { ta } = await mountTextarea(loadCedarValleyContext().scheme, '');
+        const { ta } = await mountTextarea(
+            (await connectDemoContext({ contextId: 'cedar-valley' })).scheme,
+            '',
+        );
 
         ta.value = '(confidential//financial information) Notes.';
         ta.dispatchEvent(new Event('input', { bubbles: true }));

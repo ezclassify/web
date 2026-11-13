@@ -1,6 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { asContext } from '../../test-fixtures/as-context';
-import { Context } from '@ezclassify/engine';
 import { openContext } from '../../test-fixtures/context-doubles';
 import type { ComponentInstance, ComponentOptions } from './component-base';
 import { MarkingField } from './marking-field';
@@ -19,52 +18,61 @@ import {
     openSurface,
     press,
 } from './composer/composer-harness';
+import { connectDemoContext } from '../../../../test-support/demo-runtime';
 
-function engine() {
+async function engine() {
     return openContext(
-        Context.fromComponents({
-            scheme: {
+        await connectDemoContext({
+            draft: {
                 scheme: {
-                    id: 'clear-fields',
-                    name: 'Field Clear Test',
-                    version: '1.0.0',
-                    data: {
-                        concepts: ['LOW', 'HIGH'].map((id, index) => ({
-                            id,
-                            name: id,
-                            views: { default: id },
-                            categories: ['level'],
-                            parents: [],
-                            aliases: [],
-                            position: index,
-                            rank: index,
-                        })),
-                        categories: [
+                    scheme: {
+                        id: 'clear-fields',
+                        name: 'Field Clear Test',
+                        description: 'Field Clear Test test fixture.',
+                        version: '1.0.0',
+                        data: {
+                            concepts: ['LOW', 'HIGH'].map((id, index) => ({
+                                id,
+                                name: id,
+                                views: { default: id },
+                                categories: ['level'],
+                                parents: [],
+                                aliases: [],
+                                position: index,
+                                rank: index,
+                            })),
+                            categories: [
+                                {
+                                    id: 'level',
+                                    label: 'Level',
+                                    single: true,
+                                    required: false,
+                                    rollup: 'max',
+                                    position: 0,
+                                },
+                            ],
+                        },
+                        rules: [],
+                        embedded_marking: [
                             {
-                                id: 'level',
-                                label: 'Level',
-                                single: true,
-                                required: false,
-                                rollup: 'max',
-                                position: 0,
+                                pattern: '\\(([^)]+)\\)',
+                                template: '({marking}) ',
                             },
                         ],
-                    },
-                    rules: [],
-                    embedded_marking: [
-                        { pattern: '\\(([^)]+)\\)', template: '({marking}) ' },
-                    ],
-                    render: {
-                        default: 'portion',
-                        formats: [
-                            {
-                                id: 'portion',
-                                surface: 'marking',
-                                mode: 'inline',
-                                separator: '//',
-                                fields: [{ category: 'level', separator: '/' }],
-                            },
-                        ],
+                        render: {
+                            default: 'portion',
+                            formats: [
+                                {
+                                    id: 'portion',
+                                    surface: 'marking',
+                                    mode: 'inline',
+                                    separator: '//',
+                                    fields: [
+                                        { category: 'level', separator: '/' },
+                                    ],
+                                },
+                            ],
+                        },
                     },
                 },
             },
@@ -101,7 +109,9 @@ describe('editable component clear controls', () => {
         root.setAttribute('data-ezclassify-decisionflow-categories', '[]');
         document.body.appendChild(root);
         mounted = new DecisionFlow();
-        await expect(mounted.init(root, engine())).resolves.toBeUndefined();
+        await expect(
+            mounted.init(root, await engine()),
+        ).resolves.toBeUndefined();
         expect(root.querySelector('.ez-clear-button')).toBeNull();
     });
 
@@ -110,7 +120,7 @@ describe('editable component clear controls', () => {
         document.body.appendChild(root);
         root.innerHTML = '<input value="LOW">';
         mounted = new CategoryChecklist();
-        await mounted.init(root, engine(), {
+        await mounted.init(root, await engine(), {
             categoryId: 'level',
             initialValue: 'LOW',
         });
@@ -130,7 +140,7 @@ describe('editable component clear controls', () => {
             root.innerHTML = '<input value="LOW">';
             document.body.appendChild(root);
             mounted = field.create();
-            await mounted.init(root, engine(), { initialValue: 'LOW' });
+            await mounted.init(root, await engine(), { initialValue: 'LOW' });
             const editor = root.querySelector<HTMLElement>(
                 '.marking-field-host, .tag-input-filter, select',
             )!;
@@ -166,7 +176,7 @@ describe('editable component clear controls', () => {
                 if (!field.body) native.value = rendered;
             });
             mounted = field.create();
-            await mounted.init(root, engine(), {
+            await mounted.init(root, await engine(), {
                 ...field.options,
                 initialValue: field.body ? undefined : 'LOW',
                 onChange: changed,
@@ -214,7 +224,7 @@ it('does not restore a previous async read after Clear', async () => {
     const root = document.createElement('div');
     document.body.appendChild(root);
     root.innerHTML = '<input value="LOW">';
-    const source = engine();
+    const source = await engine();
     mounted = new MarkingField();
     await mounted.init(root, source, { initialValue: 'LOW' });
     const result = await source.process('HIGH');
@@ -238,7 +248,7 @@ it('clears an unfinished composer draft without committing or reopening it', asy
     document.body.appendChild(root);
     root.innerHTML = '<input value="LOW">';
     mounted = new MarkingField();
-    await mounted.init(root, engine(), { initialValue: 'LOW' });
+    await mounted.init(root, await engine(), { initialValue: 'LOW' });
     const field = root.querySelector<HTMLTextAreaElement>(
         '.marking-field-host',
     )!;
@@ -259,7 +269,9 @@ it('clears both bound views through the normal store path', async () => {
     document.body.appendChild(root);
     root.innerHTML =
         '<input id="doc" value="LOW" data-ezclassify-marking><input data-ezclassify-controller="marking" data-ezclassify-bound-to="doc"><input data-ezclassify-controller="tags" data-ezclassify-bound-to="doc">';
-    const forms = new EzClassifyUI(asContext(engine() as never), { root });
+    const forms = new EzClassifyUI(asContext((await engine()) as never), {
+        root,
+    });
     try {
         await vi.waitFor(() =>
             expect(root.querySelectorAll('.ez-clear-button').length).toBe(2),
@@ -285,7 +297,7 @@ for (const attribute of ['disabled', 'readonly']) {
         document.body.appendChild(root);
         root.innerHTML = `<input ${attribute} value="LOW">`;
         mounted = new MarkingField();
-        await mounted.init(root, engine());
+        await mounted.init(root, await engine());
         const clear =
             root.querySelector<HTMLButtonElement>('.ez-clear-button')!;
         expect(clear.disabled).toBe(true);
@@ -298,7 +310,7 @@ it('clears textarea portions and unregisters their store children without a runt
     const root = document.createElement('div');
     document.body.appendChild(root);
     root.innerHTML = '<textarea>(LOW) A note.</textarea>';
-    const source = engine();
+    const source = await engine();
     const unregister = vi.fn();
     const field = new MarkedTextArea();
     mounted = field;
@@ -323,7 +335,7 @@ it('clears an unfinished TagInput query when no marking has been committed', asy
     document.body.appendChild(root);
     root.innerHTML = '<input value="">';
     mounted = new TagInput();
-    await mounted.init(root, engine());
+    await mounted.init(root, await engine());
     const field = root.querySelector<HTMLInputElement>('.tag-input-filter')!;
     field.focus();
     typeText(field, 'unrecognized');
@@ -343,7 +355,7 @@ it('can edit a new first portion after clearing an open textarea editor', async 
     root.innerHTML = '<textarea>(LOW) A note.</textarea>';
     const field = new MarkedTextArea();
     mounted = field;
-    await field.init(root, engine());
+    await field.init(root, await engine());
     const input = root.querySelector<HTMLTextAreaElement>('textarea')!;
     await wait(250);
     input.focus();
@@ -377,7 +389,7 @@ it('does not restore a previous read after another bound view clears the marking
     const root = document.createElement('div');
     document.body.appendChild(root);
     root.innerHTML = '<input value="LOW">';
-    const source = engine();
+    const source = await engine();
     const field = new MarkingField();
     mounted = field;
     await field.init(root, source, { initialValue: 'LOW' });
@@ -403,7 +415,7 @@ it('clears a new uncommitted textarea marking without leaving its wrapper on scr
     root.innerHTML = '<textarea></textarea>';
     const field = new MarkedTextArea();
     mounted = field;
-    await field.init(root, engine());
+    await field.init(root, await engine());
     const input = root.querySelector<HTMLTextAreaElement>('textarea')!;
     input.focus();
     press(input, 'Enter', { ctrlKey: true });

@@ -7,20 +7,19 @@
  */
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import yaml from 'js-yaml';
-import { Context } from '@ezclassify/engine';
 import type {
     ContextAdapter,
     ContextCrosswalkDescriptor,
 } from '@ezclassify/types';
-import {
-    cedarValleyAccessYaml,
-    cedarValleyGuideYaml,
-    cedarValleySchemeYaml,
-} from '../../../../test-support/community-content';
 import { ContextReference } from './context-reference';
 import { EzClassifyUI } from '../ezclassify-ui';
 import { openContext } from '../../test-fixtures/context-doubles';
+import { connectDemoContext } from '../../../../test-support/demo-runtime';
+import {
+    referenceAccess,
+    referenceGuide,
+    referenceScheme,
+} from '../../test-fixtures/reference-documents';
 
 if (typeof window !== 'undefined' && !window.matchMedia) {
     Object.defineProperty(window, 'matchMedia', {
@@ -34,9 +33,7 @@ if (typeof window !== 'undefined' && !window.matchMedia) {
 }
 
 function schemeDoc(name?: string): unknown {
-    const doc = yaml.load(cedarValleySchemeYaml) as {
-        scheme: { name: string };
-    };
+    const doc = referenceScheme() as { scheme: { name: string } };
     if (name) doc.scheme.name = name;
     return doc;
 }
@@ -46,7 +43,7 @@ function crosswalk(id: string, name: string): ContextCrosswalkDescriptor {
         id,
         version: '1.0.0',
         name,
-        source: 'cedar-valley',
+        source: 'ref-scheme-1',
         target: 'county',
         mappings: [
             {
@@ -62,10 +59,10 @@ function crosswalk(id: string, name: string): ContextCrosswalkDescriptor {
 }
 
 /**
- * A Context over the cedar-valley composition whose crosswalk list a spec sets:
+ * A Context over the reference composition whose crosswalk list a spec sets:
  * the engine's own Context answers for everything else.
  */
-function contextWith(options: {
+async function contextWith(options: {
     schemeName?: string;
     guide?: boolean;
     access?: boolean;
@@ -73,17 +70,15 @@ function contextWith(options: {
         | ContextCrosswalkDescriptor[]
         | Promise<ContextCrosswalkDescriptor[]>
         | Error;
-}): ContextAdapter {
+}): Promise<ContextAdapter> {
     const context = openContext(
-        Context.fromComponents({
-            scheme: schemeDoc(options.schemeName),
-            ...(options.guide
-                ? { guides: [yaml.load(cedarValleyGuideYaml)] }
-                : {}),
-            ...(options.access
-                ? { access: yaml.load(cedarValleyAccessYaml) }
-                : {}),
-        }) as unknown as ContextAdapter,
+        (await connectDemoContext({
+            draft: {
+                scheme: schemeDoc(options.schemeName),
+                ...(options.guide ? { guides: [referenceGuide()] } : {}),
+                ...(options.access ? { access: referenceAccess() } : {}),
+            },
+        })) as unknown as ContextAdapter,
     );
     const crosswalks = options.crosswalks ?? [];
     context.describeCrosswalks = () => {
@@ -131,7 +126,7 @@ describe('ContextReference crosswalk handbook tab', () => {
     it('adds a crosswalk tab for a Context that holds a crosswalk', async () => {
         await drawer.init(
             host,
-            contextWith({
+            await contextWith({
                 crosswalks: [crosswalk('cv-to-county', 'To county')],
             }),
         );
@@ -149,7 +144,7 @@ describe('ContextReference crosswalk handbook tab', () => {
     it('shows each of several crosswalks in one tab', async () => {
         await drawer.init(
             host,
-            contextWith({
+            await contextWith({
                 crosswalks: [
                     crosswalk('cv-to-county', 'To county'),
                     crosswalk('county-to-cv', 'From county'),
@@ -168,7 +163,7 @@ describe('ContextReference crosswalk handbook tab', () => {
 
     it('adds the tab when a remote Context answers later', async () => {
         let answer!: (c: ContextCrosswalkDescriptor[]) => void;
-        const context = contextWith({});
+        const context = await contextWith({});
         context.describeCrosswalks = () =>
             new Promise<ContextCrosswalkDescriptor[]>((r) => (answer = r));
         await drawer.init(host, context);
@@ -179,7 +174,10 @@ describe('ContextReference crosswalk handbook tab', () => {
     });
 
     it('shows no crosswalk tab for a Context that holds none', async () => {
-        await drawer.init(host, contextWith({ guide: true, access: true }));
+        await drawer.init(
+            host,
+            await contextWith({ guide: true, access: true }),
+        );
         expect(tabIds(host)).toEqual(['handbook', 'guidebook', 'access']);
     });
 
@@ -187,7 +185,7 @@ describe('ContextReference crosswalk handbook tab', () => {
         const error = vi.spyOn(console, 'error').mockImplementation(() => {});
         await drawer.init(
             host,
-            contextWith({ crosswalks: new Error('route unavailable') }),
+            await contextWith({ crosswalks: new Error('route unavailable') }),
         );
         expect(tabIds(host)).toEqual(['handbook']);
         expect(error).toHaveBeenCalledWith(
@@ -211,15 +209,15 @@ describe('ContextReference with several Contexts', () => {
 
     afterEach(() => drawer.destroy());
 
-    function twoContexts() {
+    async function twoContexts() {
         return {
             contexts: {
-                records: contextWith({
+                records: await contextWith({
                     schemeName: 'Records Scheme',
                     guide: true,
                     access: true,
                 }),
-                county: contextWith({
+                county: await contextWith({
                     schemeName: 'County Scheme',
                     crosswalks: [crosswalk('cv-to-county', 'To county')],
                 }),
@@ -228,7 +226,7 @@ describe('ContextReference with several Contexts', () => {
     }
 
     it("groups each Context's tabs in host order, labeled and prefixed by its key", async () => {
-        await drawer.init(host, twoContexts());
+        await drawer.init(host, await twoContexts());
         await settle();
         expect(tabIds(host)).toEqual([
             'records-handbook',
@@ -263,7 +261,7 @@ describe('ContextReference with several Contexts', () => {
     });
 
     it("mounts each tab's handbook with its own Context", async () => {
-        await drawer.init(host, twoContexts());
+        await drawer.init(host, await twoContexts());
         await settle();
         const name = (id: string) =>
             panelOf(host, id).querySelector('.ez-handbook__overview-name')
@@ -283,14 +281,14 @@ describe('ContextReference with several Contexts', () => {
         custom.setAttribute('data-ezclassify-tab-id', 'developers');
         custom.setAttribute('data-ezclassify-tab-label', 'Developers');
         host.appendChild(custom);
-        await drawer.init(host, twoContexts());
+        await drawer.init(host, await twoContexts());
         expect(tabIds(host).at(-1)).toBe('developers');
         expect(tab(host, 'developers').dataset.contextKey).toBeUndefined();
         expect(tab(host, 'developers').hasAttribute('aria-label')).toBe(false);
     });
 
     it('orders and suppresses tabs by their prefixed ids', async () => {
-        await drawer.init(host, twoContexts(), {
+        await drawer.init(host, await twoContexts(), {
             tabs: ['county-crosswalk', 'records-handbook'],
         } as never);
         await settle();
@@ -302,7 +300,7 @@ describe('ContextReference with several Contexts', () => {
         custom.setAttribute('data-ezclassify-tab', '');
         custom.setAttribute('data-ezclassify-tab-id', 'county-crosswalk');
         host.appendChild(custom);
-        await expect(drawer.init(host, twoContexts())).rejects.toThrow(
+        await expect(drawer.init(host, await twoContexts())).rejects.toThrow(
             /custom tab id "county-crosswalk" is reserved/,
         );
     });
@@ -310,8 +308,8 @@ describe('ContextReference with several Contexts', () => {
     it('gives Context keys a DOM id cannot carry distinct tab and panel ids', async () => {
         await drawer.init(host, {
             contexts: {
-                'field office': contextWith({}),
-                'field_office': contextWith({}),
+                'field office': await contextWith({}),
+                'field_office': await contextWith({}),
             },
         });
         const ids = [...host.querySelectorAll('[role="tab"]')].map((t) => t.id);
@@ -366,8 +364,8 @@ describe('ContextReference through EzClassifyUI', () => {
         forms = new EzClassifyUI(
             {
                 contexts: {
-                    records: contextWith({ guide: true }),
-                    county: contextWith({
+                    records: await contextWith({ guide: true }),
+                    county: await contextWith({
                         crosswalks: [crosswalk('cv-to-county', 'To county')],
                     }),
                 },
@@ -404,8 +402,8 @@ describe('ContextReference through EzClassifyUI', () => {
         forms = new EzClassifyUI(
             {
                 contexts: {
-                    records: contextWith({}),
-                    county: contextWith({
+                    records: await contextWith({}),
+                    county: await contextWith({
                         crosswalks: [
                             crosswalk('cv-to-county', 'To county'),
                             crosswalk('county-to-cv', 'From county'),
@@ -435,6 +433,7 @@ function tinyScheme(id: string, category: string, concepts: string[]) {
             id,
             version: '1.0.0',
             name: `${id} scheme`,
+            description: 'Test test fixture.',
             data: {
                 categories: [
                     {
@@ -475,48 +474,54 @@ function tinyScheme(id: string, category: string, concepts: string[]) {
 }
 
 /** The engine's own Context over two schemes and the crosswalk between them. */
-function engineCrosswalkContext(): ContextAdapter {
-    return Context.fromComponents({
-        schemes: [
-            {
-                key: 'tier',
-                scheme: tinyScheme('tier', 'level', ['LOW', 'HIGH']),
-            },
-            {
-                key: 'label',
-                scheme: tinyScheme('label', 'tag', ['PUBLIC', 'LIMITED']),
-            },
-        ],
-        primaryScheme: 'tier',
-        crosswalks: [
-            {
-                crosswalk: {
-                    id: 'tier-to-label',
-                    version: '1.0.0',
-                    name: 'Tier to label',
-                    guidance: 'Route review outcomes to the owner.',
-                    source_scheme: { id: 'tier', version: '1.0.0' },
-                    target_scheme: { id: 'label', version: '1.0.0' },
-                    mappings: [
-                        {
-                            id: 'low-public',
-                            source: { category: 'level', concept: 'LOW' },
-                            targets: [{ category: 'tag', concept: 'PUBLIC' }],
-                            disposition: 'carry',
-                            reason: 'Low tier is releasable.',
-                        },
-                        {
-                            id: 'high-limited',
-                            source: { category: 'level', concept: 'HIGH' },
-                            targets: [{ category: 'tag', concept: 'LIMITED' }],
-                            disposition: 'review',
-                            reason: 'The owner decides the audience.',
-                        },
-                    ],
+async function engineCrosswalkContext(): Promise<ContextAdapter> {
+    return (await connectDemoContext({
+        draft: {
+            schemes: [
+                {
+                    key: 'tier',
+                    scheme: tinyScheme('tier', 'level', ['LOW', 'HIGH']),
                 },
-            },
-        ],
-    }) as unknown as ContextAdapter;
+                {
+                    key: 'label',
+                    scheme: tinyScheme('label', 'tag', ['PUBLIC', 'LIMITED']),
+                },
+            ],
+            primaryScheme: 'tier',
+            crosswalks: [
+                {
+                    crosswalk: {
+                        id: 'tier-to-label',
+                        version: '1.0.0',
+                        name: 'Tier to label',
+                        guidance: 'Route review outcomes to the owner.',
+                        source_scheme: { id: 'tier', version: '1.0.0' },
+                        target_scheme: { id: 'label', version: '1.0.0' },
+                        mappings: [
+                            {
+                                id: 'low-public',
+                                source: { category: 'level', concept: 'LOW' },
+                                targets: [
+                                    { category: 'tag', concept: 'PUBLIC' },
+                                ],
+                                disposition: 'carry',
+                                reason: 'Low tier is releasable.',
+                            },
+                            {
+                                id: 'high-limited',
+                                source: { category: 'level', concept: 'HIGH' },
+                                targets: [
+                                    { category: 'tag', concept: 'LIMITED' },
+                                ],
+                                disposition: 'review',
+                                reason: 'The owner decides the audience.',
+                            },
+                        ],
+                    },
+                },
+            ],
+        },
+    })) as unknown as ContextAdapter;
 }
 
 describe('ContextReference over the engine Context of a crosswalk', () => {
@@ -533,7 +538,7 @@ describe('ContextReference over the engine Context of a crosswalk', () => {
     afterEach(() => drawer.destroy());
 
     it('shows the crosswalk the engine describes, in declared order', async () => {
-        await drawer.init(host, engineCrosswalkContext());
+        await drawer.init(host, await engineCrosswalkContext());
         await settle();
         expect(tabIds(host)).toEqual(['handbook', 'crosswalk']);
         const handbook = panelOf(host, 'crosswalk').querySelector<HTMLElement>(

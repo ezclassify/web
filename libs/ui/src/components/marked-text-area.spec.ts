@@ -5,12 +5,12 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import type { ScanOutcome, SchemePublicView } from '@ezclassify/types';
 import type { LocalContextSchemeEngineAdapter } from '@ezclassify/types';
-import { Context } from '@ezclassify/engine';
 import { openContext } from '../../test-fixtures/context-doubles';
 import { EzClassifyUI } from '../ezclassify-ui';
 import { MarkedTextArea } from './marked-text-area';
 import { HiddenAssertionField } from './hidden-assertion-field';
 import { createAsyncMockEngine } from './async-engine-mock';
+import { connectDemoContext } from '../../../../test-support/demo-runtime';
 
 function wait(ms = 50): Promise<void> {
     return new Promise((r) => setTimeout(r, ms));
@@ -81,64 +81,72 @@ function createProfile(): SchemePublicView {
  * Engine that follows the bare-render architecture: the part format returns "U"
  * (no parens); MTA wraps once via embedded_marking.template → "(U) ".
  */
-function createBareFormatEngine(): LocalContextSchemeEngineAdapter {
+async function createBareFormatEngine(): Promise<LocalContextSchemeEngineAdapter> {
     return openContext(
-        Context.fromComponents({
-            scheme: {
+        await connectDemoContext({
+            draft: {
                 scheme: {
-                    id: 'marked-bare',
-                    version: '1.0.0',
-                    name: 'Marked Test Bare',
-                    data: {
-                        concepts: [
+                    scheme: {
+                        id: 'marked-bare',
+                        version: '1.0.0',
+                        name: 'Marked Test Bare',
+                        description: 'Marked Test Bare test fixture.',
+                        data: {
+                            concepts: [
+                                {
+                                    id: 'U',
+                                    name: 'Unclassified',
+                                    views: { default: 'U' },
+                                    categories: ['level'],
+                                    parents: [],
+                                    aliases: [],
+                                    position: 1,
+                                    rank: 1,
+                                },
+                                {
+                                    id: 'S',
+                                    name: 'Secret',
+                                    views: { default: 'S' },
+                                    categories: ['level'],
+                                    parents: [],
+                                    aliases: [],
+                                    position: 2,
+                                    rank: 2,
+                                },
+                            ],
+                            categories: [
+                                {
+                                    id: 'level',
+                                    label: 'Level',
+                                    required: false,
+                                    single: true,
+                                    rollup: 'max',
+                                    position: 1,
+                                },
+                            ],
+                        },
+                        rules: [],
+                        embedded_marking: [
                             {
-                                id: 'U',
-                                name: 'Unclassified',
-                                views: { default: 'U' },
-                                categories: ['level'],
-                                parents: [],
-                                aliases: [],
-                                position: 1,
-                                rank: 1,
-                            },
-                            {
-                                id: 'S',
-                                name: 'Secret',
-                                views: { default: 'S' },
-                                categories: ['level'],
-                                parents: [],
-                                aliases: [],
-                                position: 2,
-                                rank: 2,
-                            },
-                        ],
-                        categories: [
-                            {
-                                id: 'level',
-                                label: 'Level',
-                                required: false,
-                                single: true,
-                                rollup: 'max',
-                                position: 1,
-                            },
-                        ],
-                    },
-                    rules: [],
-                    embedded_marking: [
-                        { pattern: '\\(([^)]+)\\)', template: '({marking}) ' },
-                    ],
-                    render: {
-                        default: 'portion',
-                        formats: [
-                            // Bare format: engine.render() returns "U", never "(U)".
-                            {
-                                id: 'portion',
-                                surface: 'marking',
-                                mode: 'inline',
-                                separator: '//',
-                                fields: [{ category: 'level', separator: '/' }],
+                                pattern: '\\(([^)]+)\\)',
+                                template: '({marking}) ',
                             },
                         ],
+                        render: {
+                            default: 'portion',
+                            formats: [
+                                // Bare format: engine.render() returns "U", never "(U)".
+                                {
+                                    id: 'portion',
+                                    surface: 'marking',
+                                    mode: 'inline',
+                                    separator: '//',
+                                    fields: [
+                                        { category: 'level', separator: '/' },
+                                    ],
+                                },
+                            ],
+                        },
                     },
                 },
             },
@@ -146,63 +154,71 @@ function createBareFormatEngine(): LocalContextSchemeEngineAdapter {
     ).scheme as LocalContextSchemeEngineAdapter;
 }
 
-function createTestEngine(): LocalContextSchemeEngineAdapter {
+async function createTestEngine(): Promise<LocalContextSchemeEngineAdapter> {
     return openContext(
-        Context.fromComponents({
-            scheme: {
+        await connectDemoContext({
+            draft: {
                 scheme: {
-                    id: 'marked-test',
-                    version: '1.0.0',
-                    name: 'Marked Test',
-                    data: {
-                        concepts: [
+                    scheme: {
+                        id: 'marked-test',
+                        version: '1.0.0',
+                        name: 'Marked Test',
+                        description: 'Marked Test test fixture.',
+                        data: {
+                            concepts: [
+                                {
+                                    id: 'U',
+                                    name: 'Unclassified',
+                                    views: { default: 'U' },
+                                    categories: ['level'],
+                                    parents: [],
+                                    aliases: [],
+                                    position: 1,
+                                    rank: 1,
+                                },
+                                {
+                                    id: 'S',
+                                    name: 'Secret',
+                                    views: { default: 'S' },
+                                    categories: ['level'],
+                                    parents: [],
+                                    aliases: [],
+                                    position: 2,
+                                    rank: 2,
+                                },
+                            ],
+                            categories: [
+                                {
+                                    id: 'level',
+                                    label: 'Level',
+                                    required: false,
+                                    single: true,
+                                    rollup: 'max',
+                                    position: 1,
+                                },
+                            ],
+                        },
+                        rules: [],
+                        embedded_marking: [
                             {
-                                id: 'U',
-                                name: 'Unclassified',
-                                views: { default: 'U' },
-                                categories: ['level'],
-                                parents: [],
-                                aliases: [],
-                                position: 1,
-                                rank: 1,
-                            },
-                            {
-                                id: 'S',
-                                name: 'Secret',
-                                views: { default: 'S' },
-                                categories: ['level'],
-                                parents: [],
-                                aliases: [],
-                                position: 2,
-                                rank: 2,
-                            },
-                        ],
-                        categories: [
-                            {
-                                id: 'level',
-                                label: 'Level',
-                                required: false,
-                                single: true,
-                                rollup: 'max',
-                                position: 1,
-                            },
-                        ],
-                    },
-                    rules: [],
-                    embedded_marking: [
-                        { pattern: '\\(([^)]+)\\)', template: '({marking}) ' },
-                    ],
-                    render: {
-                        default: 'portion',
-                        formats: [
-                            {
-                                id: 'portion',
-                                surface: 'marking',
-                                mode: 'inline',
-                                separator: '//',
-                                fields: [{ category: 'level', separator: '/' }],
+                                pattern: '\\(([^)]+)\\)',
+                                template: '({marking}) ',
                             },
                         ],
+                        render: {
+                            default: 'portion',
+                            formats: [
+                                {
+                                    id: 'portion',
+                                    surface: 'marking',
+                                    mode: 'inline',
+                                    separator: '//',
+                                    fields: [
+                                        { category: 'level', separator: '/' },
+                                    ],
+                                },
+                            ],
+                        },
                     },
                 },
             },
@@ -216,63 +232,72 @@ function createTestEngine(): LocalContextSchemeEngineAdapter {
  * mount MarkedTextArea directly via `.init()`: favorites config is a plain JS
  * function with no declarative `data-ezclassify-*` equivalent.
  */
-function createTestContext() {
+async function createTestContext() {
     return openContext(
-        Context.fromComponents({
-            scheme: {
+        await connectDemoContext({
+            draft: {
                 scheme: {
-                    id: 'mta-fav-test',
-                    version: '1.0.0',
-                    name: 'MarkedTextArea Favorites Test',
-                    data: {
-                        concepts: [
+                    scheme: {
+                        id: 'mta-fav-test',
+                        version: '1.0.0',
+                        name: 'MarkedTextArea Favorites Test',
+                        description:
+                            'MarkedTextArea Favorites Test test fixture.',
+                        data: {
+                            concepts: [
+                                {
+                                    id: 'U',
+                                    name: 'Unclassified',
+                                    views: { default: 'U' },
+                                    categories: ['level'],
+                                    parents: [],
+                                    aliases: [],
+                                    position: 1,
+                                    rank: 1,
+                                },
+                                {
+                                    id: 'S',
+                                    name: 'Secret',
+                                    views: { default: 'S' },
+                                    categories: ['level'],
+                                    parents: [],
+                                    aliases: [],
+                                    position: 2,
+                                    rank: 2,
+                                },
+                            ],
+                            categories: [
+                                {
+                                    id: 'level',
+                                    label: 'Level',
+                                    required: false,
+                                    single: true,
+                                    rollup: 'max',
+                                    position: 1,
+                                },
+                            ],
+                        },
+                        rules: [],
+                        embedded_marking: [
                             {
-                                id: 'U',
-                                name: 'Unclassified',
-                                views: { default: 'U' },
-                                categories: ['level'],
-                                parents: [],
-                                aliases: [],
-                                position: 1,
-                                rank: 1,
-                            },
-                            {
-                                id: 'S',
-                                name: 'Secret',
-                                views: { default: 'S' },
-                                categories: ['level'],
-                                parents: [],
-                                aliases: [],
-                                position: 2,
-                                rank: 2,
-                            },
-                        ],
-                        categories: [
-                            {
-                                id: 'level',
-                                label: 'Level',
-                                required: false,
-                                single: true,
-                                rollup: 'max',
-                                position: 1,
-                            },
-                        ],
-                    },
-                    rules: [],
-                    embedded_marking: [
-                        { pattern: '\\(([^)]+)\\)', template: '({marking}) ' },
-                    ],
-                    render: {
-                        default: 'portion',
-                        formats: [
-                            {
-                                id: 'portion',
-                                surface: 'marking',
-                                mode: 'inline',
-                                separator: '//',
-                                fields: [{ category: 'level', separator: '/' }],
+                                pattern: '\\(([^)]+)\\)',
+                                template: '({marking}) ',
                             },
                         ],
+                        render: {
+                            default: 'portion',
+                            formats: [
+                                {
+                                    id: 'portion',
+                                    surface: 'marking',
+                                    mode: 'inline',
+                                    separator: '//',
+                                    fields: [
+                                        { category: 'level', separator: '/' },
+                                    ],
+                                },
+                            ],
+                        },
                     },
                 },
             },
@@ -341,7 +366,7 @@ describe('masked host theme paint', () => {
             });
         try {
             const forms = new EzClassifyUI(
-                asContext(createTestEngine() as never),
+                asContext((await createTestEngine()) as never),
                 {
                     root,
                 },
@@ -412,7 +437,7 @@ describe('HiddenAssertionField', () => {
 
 describe('MarkedTextArea', () => {
     it('keeps the touch Add marking button above the transparent input hit layer', async () => {
-        const engine = createBareFormatEngine();
+        const engine = await createBareFormatEngine();
         root.innerHTML = `
       <textarea id="body" data-ezclassify-controller="marked-textarea"></textarea>
     `;
@@ -437,7 +462,7 @@ describe('MarkedTextArea', () => {
     });
 
     it('the "to add marking" keyboard hint is a real button that opens the picker on click', async () => {
-        const engine = createBareFormatEngine();
+        const engine = await createBareFormatEngine();
         root.innerHTML = `
       <textarea id="body" data-ezclassify-controller="marked-textarea"></textarea>
     `;
@@ -465,7 +490,7 @@ describe('MarkedTextArea', () => {
     });
 
     it('omits the keyboard hint button entirely when hints are disabled', async () => {
-        const engine = createBareFormatEngine();
+        const engine = await createBareFormatEngine();
         root.innerHTML = `
       <textarea id="body" data-ezclassify-controller="marked-textarea" data-ezclassify-no-hints></textarea>
     `;
@@ -478,7 +503,7 @@ describe('MarkedTextArea', () => {
     });
 
     it('keeps the input and display typography metrics identical after enhancement', async () => {
-        const engine = createTestEngine();
+        const engine = await createTestEngine();
         root.innerHTML = `
       <style>
         .demo textarea {
@@ -514,7 +539,7 @@ describe('MarkedTextArea', () => {
     });
 
     it('scans the textarea, produces one segment per wrapped marking, and feeds rollup via hidden children', async () => {
-        const engine = createTestEngine();
+        const engine = await createTestEngine();
         root.innerHTML = `
       <textarea id="body" data-ezclassify-controller="marked-textarea" data-ezclassify-format="portion">(U) Para one.\n\n(S) Para two.</textarea>
       <input type="hidden" id="rollup" data-ezclassify-aggregate>
@@ -545,7 +570,7 @@ describe('MarkedTextArea', () => {
     });
 
     it('emits ezclassify:marked-change carrying per-segment assertions and rendered form', async () => {
-        const engine = createTestEngine();
+        const engine = await createTestEngine();
         root.innerHTML = `
       <textarea id="body" data-ezclassify-controller="marked-textarea" data-ezclassify-format="portion">(U) Para one.\n\n(S) Para two.</textarea>
       <input type="hidden" id="rollup" data-ezclassify-aggregate>
@@ -579,7 +604,7 @@ describe('MarkedTextArea', () => {
     });
 
     it('emits ezclassify:text-change on a body edit with the per-segment text slices', async () => {
-        const engine = createTestEngine();
+        const engine = await createTestEngine();
         root.innerHTML = `
       <textarea id="body" data-ezclassify-controller="marked-textarea" data-ezclassify-format="portion">(U) Para one.</textarea>
       <input type="hidden" id="rollup" data-ezclassify-aggregate>
@@ -613,7 +638,7 @@ describe('MarkedTextArea', () => {
     });
 
     it('preserves body text when an external store commit changes the bound marking', async () => {
-        const engine = createTestEngine();
+        const engine = await createTestEngine();
         const body = '(U) Para one.\n\n(S) Para two.';
         root.innerHTML = `
       <input type="hidden" id="doc-marking" data-ezclassify-marking />
@@ -644,7 +669,7 @@ describe('MarkedTextArea', () => {
         // Architecture rule: render formats return bare markings ("U", not "(U)").
         // The embedded_marking template is the single wrapping authority. The
         // picker write-back applies the template once → "(U)", never "((U))".
-        const engine = createBareFormatEngine();
+        const engine = await createBareFormatEngine();
         root.innerHTML = `
       <textarea id="body" data-ezclassify-controller="marked-textarea"></textarea>
     `;
@@ -707,7 +732,7 @@ describe('MarkedTextArea', () => {
     });
 
     it('resyncs hidden fields when the textarea changes', async () => {
-        const engine = createTestEngine();
+        const engine = await createTestEngine();
         root.innerHTML = `
       <textarea id="body" data-ezclassify-controller="marked-textarea" data-ezclassify-format="portion">(U) Just one paragraph.</textarea>
       <input type="hidden" id="rollup" data-ezclassify-aggregate>
@@ -743,7 +768,7 @@ describe('MarkedTextArea', () => {
         // Reproduces the ghost-chip bug: Ctrl+Enter on empty textarea inserts "()"
         // template and pushes a temp segment. Escaping without selecting clears the
         // template. The temp segment must be pruned so the display shows no chip.
-        const engine = createTestEngine();
+        const engine = await createTestEngine();
         root.innerHTML = `<textarea id="body" data-ezclassify-controller="marked-textarea"></textarea>`;
         const forms = new EzClassifyUI(asContext(engine as never), { root });
         activeForms.push(forms);
@@ -787,7 +812,7 @@ describe('MarkedTextArea', () => {
     it('keeps the status mark and ★ button in one slot, last in the wrap, while the editor opens and closes', async () => {
         Element.prototype.scrollIntoView = vi.fn();
 
-        const engine = createTestEngine();
+        const engine = await createTestEngine();
         root.innerHTML = `<textarea id="body" data-ezclassify-controller="marked-textarea"></textarea>`;
         const forms = new EzClassifyUI(asContext(engine as never), { root });
         activeForms.push(forms);
@@ -824,7 +849,7 @@ describe('MarkedTextArea', () => {
     it('clears the chip background on the editing chip, so a fresh template shows no stray selection-look highlight', async () => {
         // The editing chip has no selection-style fill, whether it represents a
         // fresh empty template or a reopened marking.
-        const engine = createTestEngine();
+        const engine = await createTestEngine();
         root.innerHTML = `<textarea id="body" data-ezclassify-controller="marked-textarea"></textarea>`;
         const forms = new EzClassifyUI(asContext(engine as never), { root });
         activeForms.push(forms);
@@ -885,7 +910,7 @@ describe('MarkedTextArea', () => {
     });
 
     it('shows a concept dwell tooltip on hover over a valid marking segment', async () => {
-        const engine = createTestEngine();
+        const engine = await createTestEngine();
         root.innerHTML = `<textarea id="body" data-ezclassify-controller="marked-textarea">(S) Para one.</textarea>`;
         const forms = new EzClassifyUI(asContext(engine as never), { root });
         activeForms.push(forms);
@@ -915,7 +940,7 @@ describe('MarkedTextArea', () => {
     it('removes a VISIBLE segment tooltip and its listeners on destroy (no leak)', async () => {
         // Destroy must clean up a visible segment tooltip and its listeners,
         // not only a pending dwell timer.
-        const engine = createTestEngine();
+        const engine = await createTestEngine();
         root.innerHTML = `<textarea id="body" data-ezclassify-controller="marked-textarea">(S) Para one.</textarea>`;
         const forms = new EzClassifyUI(asContext(engine as never), { root });
         await wait(80);
@@ -941,7 +966,7 @@ describe('MarkedTextArea', () => {
     });
 
     it('honors the data-ezclassify-no-tooltips opt-out for marking segments', async () => {
-        const engine = createTestEngine();
+        const engine = await createTestEngine();
         root.innerHTML = `<textarea id="body" data-ezclassify-controller="marked-textarea" data-ezclassify-no-tooltips>(S) Para one.</textarea>`;
         const forms = new EzClassifyUI(asContext(engine as never), { root });
         activeForms.push(forms);
@@ -970,7 +995,7 @@ describe('MarkedTextArea scan failures', () => {
         root.appendChild(container);
         const ta = document.createElement('textarea');
         container.appendChild(ta);
-        const ctx = createTestContext();
+        const ctx = await createTestContext();
         const field = new MarkedTextArea();
         await field.init(container, ctx, {});
         await wait(80);
@@ -1010,18 +1035,23 @@ describe('MarkedTextArea reads the text the scan found inside a wrapper', () => 
         root.appendChild(container);
         const ta = document.createElement('textarea');
         container.appendChild(ta);
-        const ctx = createTestContext();
+        const ctx = await createTestContext();
         const realScan = ctx.scheme.scan.bind(ctx.scheme);
-        vi.spyOn(ctx.scheme, 'scan').mockImplementation((text, options) => {
-            const outcome = realScan(
-                text.replace(/^<(\w+)>/, '($1)'),
-                options,
-            ) as ScanOutcome;
-            return {
-                ...outcome,
-                results: outcome.results.map((r) => ({ ...r, ...rewrite(r) })),
-            };
-        });
+        vi.spyOn(ctx.scheme, 'scan').mockImplementation(
+            async (text, options) => {
+                const outcome = (await realScan(
+                    text.replace(/^<(\w+)>/, '($1)'),
+                    options,
+                )) as ScanOutcome;
+                return {
+                    ...outcome,
+                    results: outcome.results.map((r) => ({
+                        ...r,
+                        ...rewrite(r),
+                    })),
+                };
+            },
+        );
         const process = vi.spyOn(ctx.scheme, 'process');
         const field = new MarkedTextArea();
         await field.init(container, ctx, {});
@@ -1064,7 +1094,7 @@ describe('MarkedTextArea scan freshness and document work', () => {
         root.appendChild(container);
         const ta = document.createElement('textarea');
         container.appendChild(ta);
-        const ctx = createTestContext();
+        const ctx = await createTestContext();
         const field = new MarkedTextArea();
         await field.init(container, ctx, {});
 
@@ -1115,7 +1145,7 @@ describe('MarkedTextArea scan freshness and document work', () => {
         root.appendChild(container);
         const ta = document.createElement('textarea');
         container.appendChild(ta);
-        const ctx = createTestContext();
+        const ctx = await createTestContext();
         const field = new MarkedTextArea();
         await field.init(container, ctx, {});
 
@@ -1157,7 +1187,7 @@ describe('MarkedTextArea favorites', () => {
         ta.value = initialValue;
         container.appendChild(ta);
         const field = new MarkedTextArea();
-        await field.init(container, createTestContext(), options);
+        await field.init(container, await createTestContext(), options);
         await wait(80);
         return { ta, field };
     }
@@ -1334,7 +1364,7 @@ describe('MarkedTextArea favorites: caret-scoped star fill and pinned row', () =
         ta.value = initialValue;
         container.appendChild(ta);
         const field = new MarkedTextArea();
-        await field.init(container, createTestContext(), options);
+        await field.init(container, await createTestContext(), options);
         await wait(80);
         return { ta, field };
     }
@@ -1470,7 +1500,9 @@ describe('MarkedTextArea registered mount hosts in mixed forms', () => {
             <textarea id="mixed-body-two" data-ezclassify-controller="marked-textarea" data-ezclassify-part-of="mixed-whole">(S) Second body.</textarea>
         `;
         document.body.appendChild(root);
-        const forms = new EzClassifyUI(asContext(createTestEngine()), { root });
+        const forms = new EzClassifyUI(asContext(await createTestEngine()), {
+            root,
+        });
         try {
             await waitFor(() => forms.isReady, 2000);
             for (const id of ['mixed-body-one', 'mixed-body-two']) {

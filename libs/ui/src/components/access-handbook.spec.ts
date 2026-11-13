@@ -6,11 +6,13 @@ import type {
 } from '@ezclassify/types';
 import type {
     ContextAdapter,
-    LocalContextSchemeEngineAdapter,
+    RemoteContextSchemeEngineAdapter,
 } from '@ezclassify/types';
-import { Context } from '@ezclassify/engine';
 import { schemeOnlyContext } from '../../test-fixtures/context-doubles';
-import { loadCedarValleyLevelsContext } from '../../../../test-support/community-content';
+import {
+    connectDemoContext,
+    demoRuntimeSettled,
+} from '../../../../test-support/demo-runtime';
 
 function makeRule(
     overrides: Partial<AccessRuleDescription> = {},
@@ -40,56 +42,62 @@ function makeRule(
     };
 }
 
-function makeEngine(): LocalContextSchemeEngineAdapter {
-    return Context.fromComponents({
-        scheme: {
-            scheme: {
-                id: 'test-access',
-                version: '1.0.0',
-                name: 'Test',
-                description: '',
-                data: {
-                    categories: [
-                        {
-                            id: 'level',
-                            label: 'Level',
-                            required: false,
-                            single: true,
-                            rollup: 'max',
-                            position: 0,
-                            hierarchy_root: true,
+async function makeEngine(): Promise<RemoteContextSchemeEngineAdapter> {
+    return (
+        await connectDemoContext({
+            draft: {
+                scheme: {
+                    scheme: {
+                        id: 'test-access',
+                        version: '1.0.0',
+                        name: 'Test',
+                        description: '',
+                        data: {
+                            categories: [
+                                {
+                                    id: 'level',
+                                    label: 'Level',
+                                    required: false,
+                                    single: true,
+                                    rollup: 'max',
+                                    position: 0,
+                                    hierarchy_root: true,
+                                },
+                            ],
+                            concepts: [
+                                {
+                                    id: 'l1',
+                                    name: 'L1',
+                                    views: { default: 'L1' },
+                                    aliases: [],
+                                    categories: ['level'],
+                                    parents: [],
+                                    position: 1,
+                                    rank: 0,
+                                },
+                            ],
                         },
-                    ],
-                    concepts: [
-                        {
-                            id: 'l1',
-                            name: 'L1',
-                            views: { default: 'L1' },
-                            aliases: [],
-                            categories: ['level'],
-                            parents: [],
-                            position: 1,
-                            rank: 0,
+                        rules: [],
+                        rollup_pipelines: [],
+                        render: {
+                            default: 'default',
+                            formats: [
+                                {
+                                    id: 'default',
+                                    surface: 'marking',
+                                    mode: 'inline',
+                                    separator: '//',
+                                    fields: [
+                                        { category: 'level', separator: '//' },
+                                    ],
+                                },
+                            ],
                         },
-                    ],
-                },
-                rules: [],
-                rollup_pipelines: [],
-                render: {
-                    default: 'default',
-                    formats: [
-                        {
-                            id: 'default',
-                            surface: 'marking',
-                            mode: 'inline',
-                            separator: '//',
-                            fields: [{ category: 'level', separator: '//' }],
-                        },
-                    ],
+                    },
                 },
             },
-        },
-    }).scheme as LocalContextSchemeEngineAdapter;
+        })
+    ).scheme as RemoteContextSchemeEngineAdapter;
 }
 
 function makeAccessEngine(rules: AccessRuleDescription[]): AccessEngineAdapter {
@@ -108,8 +116,10 @@ function makeAccessEngine(rules: AccessRuleDescription[]): AccessEngineAdapter {
 }
 
 /** A Context backed by a real scheme and a mock access policy. */
-function makeContext(rules: AccessRuleDescription[]): ContextAdapter {
-    const engine = makeEngine();
+async function makeContext(
+    rules: AccessRuleDescription[],
+): Promise<ContextAdapter> {
+    const engine = await makeEngine();
     const ctx = schemeOnlyContext(engine);
     (ctx as unknown as { access: AccessEngineAdapter }).access =
         makeAccessEngine(rules);
@@ -127,18 +137,19 @@ describe('AccessHandbook', () => {
     });
 
     it('renders an empty-state message when no access engine is bound', async () => {
-        const ctx = schemeOnlyContext(makeEngine());
+        const ctx = schemeOnlyContext(await makeEngine());
         await component.init(container, ctx);
+        await demoRuntimeSettled();
         const empty = container.querySelector('.ez-access-handbook__empty');
         expect(empty).not.toBeNull();
     });
 
     describe('overall marking', () => {
-        function markedContext(
+        async function markedContext(
             rules: AccessRuleDescription[],
             marking: string,
-        ): ContextAdapter {
-            const ctx = makeContext(rules);
+        ): Promise<ContextAdapter> {
+            const ctx = await makeContext(rules);
             Object.assign(ctx.access!, {
                 describeAccessMarking: () => marking,
             });
@@ -148,8 +159,9 @@ describe('AccessHandbook', () => {
         it('leads the overview with the policy document marking', async () => {
             await component.init(
                 container,
-                markedContext([makeRule()], '(U) NOTIONAL//TEST'),
+                await markedContext([makeRule()], '(U) NOTIONAL//TEST'),
             );
+            await demoRuntimeSettled();
             await vi.waitFor(() =>
                 expect(
                     container.querySelector('.ez-access-handbook__overview'),
@@ -171,8 +183,9 @@ describe('AccessHandbook', () => {
         it('still shows the marking of a policy with no rules', async () => {
             await component.init(
                 container,
-                markedContext([], '(U) NOTIONAL//TEST'),
+                await markedContext([], '(U) NOTIONAL//TEST'),
             );
+            await demoRuntimeSettled();
             await vi.waitFor(() =>
                 expect(
                     container.querySelector('.ez-access-handbook__empty'),
@@ -186,12 +199,13 @@ describe('AccessHandbook', () => {
         });
 
         it('waits for a marking the policy reports over the wire', async () => {
-            const ctx = makeContext([makeRule()]);
+            const ctx = await makeContext([makeRule()]);
             Object.assign(ctx.access!, {
                 describeAccessMarking: () =>
                     Promise.resolve('(U) NOTIONAL//TEST'),
             });
             await component.init(container, ctx);
+            await demoRuntimeSettled();
 
             await vi.waitFor(() =>
                 expect(
@@ -206,12 +220,13 @@ describe('AccessHandbook', () => {
             const consoleError = vi
                 .spyOn(console, 'error')
                 .mockImplementation(() => {});
-            const ctx = makeContext([makeRule()]);
+            const ctx = await makeContext([makeRule()]);
             Object.assign(ctx.access!, {
                 describeAccessMarking: () =>
                     Promise.reject(new Error('policy fetch failed')),
             });
             await component.init(container, ctx);
+            await demoRuntimeSettled();
 
             await vi.waitFor(() =>
                 expect(
@@ -225,7 +240,8 @@ describe('AccessHandbook', () => {
         });
 
         it('shows none for a policy that carries none', async () => {
-            await component.init(container, makeContext([makeRule()]));
+            await component.init(container, await makeContext([makeRule()]));
+            await demoRuntimeSettled();
             await vi.waitFor(() =>
                 expect(
                     container.querySelector('.ez-access-handbook__overview'),
@@ -260,8 +276,9 @@ describe('AccessHandbook', () => {
                 whenText: 'When TOP SECRET',
             }),
         ];
-        const ctx = makeContext(rules);
+        const ctx = await makeContext(rules);
         await component.init(container, ctx);
+        await demoRuntimeSettled();
 
         const headers = container.querySelectorAll<HTMLButtonElement>(
             '.ez-access-handbook__group-header',
@@ -288,9 +305,14 @@ describe('AccessHandbook', () => {
                 ruleId: 'r1',
             },
         });
-        await component.init(container, makeContext([baseRule, layerRule]), {
-            expandAll: true,
-        });
+        await component.init(
+            container,
+            await makeContext([baseRule, layerRule]),
+            {
+                expandAll: true,
+            },
+        );
+        await demoRuntimeSettled();
 
         const searchInput = container.querySelector<HTMLInputElement>(
             '.ez-access-handbook__search-input',
@@ -308,8 +330,9 @@ describe('AccessHandbook', () => {
     });
 
     it('rule entries are not tab stops (no tabIndex=0)', async () => {
-        const ctx = makeContext([makeRule()]);
+        const ctx = await makeContext([makeRule()]);
         await component.init(container, ctx);
+        await demoRuntimeSettled();
 
         const entries = container.querySelectorAll<HTMLElement>(
             '.ez-access-handbook__entry',
@@ -322,8 +345,9 @@ describe('AccessHandbook', () => {
     });
 
     it('toggling a group updates aria-expanded in place (no DOM rebuild)', async () => {
-        const ctx = makeContext([makeRule()]);
+        const ctx = await makeContext([makeRule()]);
         await component.init(container, ctx);
+        await demoRuntimeSettled();
 
         const header = container.querySelector<HTMLButtonElement>(
             '.ez-access-handbook__group-header',
@@ -354,8 +378,9 @@ describe('AccessHandbook', () => {
     });
 
     it('toggle back collapses the group again', async () => {
-        const ctx = makeContext([makeRule()]);
+        const ctx = await makeContext([makeRule()]);
         await component.init(container, ctx);
+        await demoRuntimeSettled();
 
         const header = container.querySelector<HTMLButtonElement>(
             '.ez-access-handbook__group-header',
@@ -378,10 +403,10 @@ describe('AccessHandbook', () => {
          * policy behind a runtime has. Every other mock in this file answers
          * synchronously, which never exercises a second turn of the loop.
          */
-        function makeAsyncContext(
+        async function makeAsyncContext(
             describeAllAccessRules: () => Promise<AccessRuleDescription[]>,
-        ): ContextAdapter {
-            const ctx = schemeOnlyContext(makeEngine());
+        ): Promise<ContextAdapter> {
+            const ctx = schemeOnlyContext(await makeEngine());
             (ctx as unknown as { access: AccessEngineAdapter }).access = {
                 schemeId: 'test',
                 describeAllAccessRules: vi.fn(describeAllAccessRules),
@@ -397,8 +422,9 @@ describe('AccessHandbook', () => {
             });
             await component.init(
                 container,
-                makeAsyncContext(() => pending),
+                await makeAsyncContext(() => pending),
             );
+            await demoRuntimeSettled();
 
             expect(
                 container.querySelector('.ez-access-handbook__group-header'),
@@ -420,10 +446,11 @@ describe('AccessHandbook', () => {
                 .mockImplementation(() => {});
             await component.init(
                 container,
-                makeAsyncContext(() =>
+                await makeAsyncContext(() =>
                     Promise.reject(new Error('policy fetch failed')),
                 ),
             );
+            await demoRuntimeSettled();
 
             const failed = await vi.waitFor(() => {
                 const el = container.querySelector<HTMLElement>(
@@ -451,8 +478,9 @@ describe('AccessHandbook', () => {
             });
             await component.init(
                 container,
-                makeAsyncContext(() => pending),
+                await makeAsyncContext(() => pending),
             );
+            await demoRuntimeSettled();
 
             component.destroy();
             release([makeRule()]);
@@ -464,8 +492,9 @@ describe('AccessHandbook', () => {
 
     describe('reference-surface vocabulary', () => {
         it('keeps the generic aria-label when the access policy declares no vocabulary (byte-identical default)', async () => {
-            const ctx = makeContext([makeRule()]);
+            const ctx = await makeContext([makeRule()]);
             await component.init(container, ctx);
+            await demoRuntimeSettled();
 
             const region = container.querySelector('[role="region"]');
             expect(region!.getAttribute('aria-label')).toBe('Access handbook');
@@ -478,8 +507,11 @@ describe('AccessHandbook', () => {
         });
 
         it('uses the generic Access Handbook noun when the policy declares no reference vocabulary', async () => {
-            const ctx = loadCedarValleyLevelsContext();
+            const ctx = await connectDemoContext({
+                contextId: 'cedar-valley-protection',
+            });
             await component.init(container, ctx);
+            await demoRuntimeSettled();
 
             const region = container.querySelector('[role="region"]');
             expect(region!.getAttribute('aria-label')).toBe('Access handbook');

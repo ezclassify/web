@@ -1,0 +1,1369 @@
+{
+    "engineVersion": "1.0.0-dev.30",
+    "openapiVersion": "1.0.0-dev.30",
+    "responses": {
+        "05ddd7dde44ecfc2c50fcc1972adda007959d978e31fb465d4baaaf4f9834e13": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "facet-composer",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "sbx-7df3c94ed4853000c46527a2d38284239b43d51368f4f5229d5e5a99b1682654",
+                            "kind": "context",
+                            "version": "0.0.0"
+                        }
+                    ],
+                    "contextId": "sbx-7df3c94ed4853000c46527a2d38284239b43d51368f4f5229d5e5a99b1682654",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "0.0.0"
+                },
+                "result": {
+                    "suggestions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "U",
+                            "description": "Unclassified",
+                            "group": "Level",
+                            "label": "UNCLASSIFIED",
+                            "name": "Unclassified",
+                            "order": 1,
+                            "selected": false,
+                            "views": { "default": "UNCLASSIFIED" }
+                        },
+                        {
+                            "categoryId": "level",
+                            "conceptId": "S",
+                            "description": "Secret",
+                            "group": "Level",
+                            "label": "SECRET",
+                            "name": "Secret",
+                            "order": 2,
+                            "selected": false,
+                            "views": { "default": "SECRET" }
+                        },
+                        {
+                            "categoryId": "caveat",
+                            "conceptId": "NF",
+                            "description": "Noforn",
+                            "group": "Caveat",
+                            "label": "NOFORN",
+                            "name": "Noforn",
+                            "order": 1,
+                            "selected": true,
+                            "views": { "default": "NOFORN" }
+                        },
+                        {
+                            "categoryId": "caveat",
+                            "conceptId": "OC",
+                            "description": "Orcon",
+                            "group": "Caveat",
+                            "label": "ORCON",
+                            "name": "Orcon",
+                            "order": 2,
+                            "selected": false,
+                            "views": { "default": "ORCON" }
+                        }
+                    ],
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "0685568cc3819e54a13c8b44ff05ff6f43390c45bcd8dcf0c92579b900c360b5": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "facet-composer",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "sbx-7df3c94ed4853000c46527a2d38284239b43d51368f4f5229d5e5a99b1682654",
+                            "kind": "context",
+                            "version": "0.0.0"
+                        }
+                    ],
+                    "contextId": "sbx-7df3c94ed4853000c46527a2d38284239b43d51368f4f5229d5e5a99b1682654",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "0.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "S",
+                            "confidence": "certain",
+                            "source": "aggregate"
+                        },
+                        {
+                            "categoryId": "caveat",
+                            "conceptId": "NF",
+                            "confidence": "certain",
+                            "source": "user"
+                        }
+                    ],
+                    "errors": [],
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "SECRET//NOFORN",
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "068e9344f3e24fee08e82223d55ad8dc54775a6a341ce9140e06656faabd559b": {
+            "body": {
+                "defaultRenderFormat": "default",
+                "id": "facet-composer",
+                "name": "Facet Composer",
+                "referenceSurfaceLabel": {
+                    "plural": "Handbooks",
+                    "singular": "Handbook"
+                },
+                "roleAware": false,
+                "version": "1.0.0"
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "0e777e1c3f0f9fc8d75f1151a056802b5cf5c84af864d09d9e9aa699b1978f7f": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "facet-composer",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "sbx-7df3c94ed4853000c46527a2d38284239b43d51368f4f5229d5e5a99b1682654",
+                            "kind": "context",
+                            "version": "0.0.0"
+                        }
+                    ],
+                    "contextId": "sbx-7df3c94ed4853000c46527a2d38284239b43d51368f4f5229d5e5a99b1682654",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "0.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [
+                        {
+                            "constraintId": "_recognition_incomplete",
+                            "message": "The input does not read as a marking."
+                        },
+                        {
+                            "constraintId": "_unmatched_token",
+                            "message": "\"nof\" was not recognized: it matched no known concept and will be kept visible in the rendered marking."
+                        }
+                    ],
+                    "inputWasValid": false,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "recognition": {
+                        "corrections": [],
+                        "status": "unrecognized",
+                        "unmatched": [{ "end": 3, "start": 0, "text": "nof" }]
+                    },
+                    "rendered": "nof",
+                    "renders": {},
+                    "valid": false,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "11b79c2d7712040138d39409be78bf918c7f0e8dd20f12d6d6be896c94276b6c": {
+            "body": [
+                {
+                    "aliases": [],
+                    "categories": ["level"],
+                    "id": "U",
+                    "name": "Unclassified",
+                    "parents": [],
+                    "position": 1,
+                    "rank": 1,
+                    "views": { "default": "UNCLASSIFIED" }
+                },
+                {
+                    "aliases": [],
+                    "categories": ["level"],
+                    "id": "S",
+                    "name": "Secret",
+                    "parents": [],
+                    "position": 2,
+                    "rank": 2,
+                    "views": { "default": "SECRET" }
+                },
+                {
+                    "aliases": [],
+                    "categories": ["caveat"],
+                    "id": "NF",
+                    "name": "Noforn",
+                    "parents": [],
+                    "position": 1,
+                    "rank": 1,
+                    "views": { "default": "NOFORN" }
+                },
+                {
+                    "aliases": [],
+                    "categories": ["caveat"],
+                    "id": "OC",
+                    "name": "Orcon",
+                    "parents": [],
+                    "position": 2,
+                    "rank": 2,
+                    "views": { "default": "ORCON" }
+                }
+            ],
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "2a321479cb9530ba0211c1a7097f3374cbb72268f07dc120b0378b963bdef6f9": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "facet-composer",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "sbx-7df3c94ed4853000c46527a2d38284239b43d51368f4f5229d5e5a99b1682654",
+                            "kind": "context",
+                            "version": "0.0.0"
+                        }
+                    ],
+                    "contextId": "sbx-7df3c94ed4853000c46527a2d38284239b43d51368f4f5229d5e5a99b1682654",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "0.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "caveat",
+                            "conceptId": "NF",
+                            "confidence": "certain",
+                            "source": "user"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            { "categoryId": "caveat", "conceptId": "NF" }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [
+                        {
+                            "constraintId": "required-category:level",
+                            "message": "Level is required: the marking asserts no concept in this category"
+                        }
+                    ],
+                    "inputWasValid": false,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "NOFORN",
+                    "renders": {},
+                    "valid": false,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "2b6c001118a0b05823cd71909d002ffeeeda1ee772ca5f224006969410821b29": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "facet-composer",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "sbx-7df3c94ed4853000c46527a2d38284239b43d51368f4f5229d5e5a99b1682654",
+                            "kind": "context",
+                            "version": "0.0.0"
+                        }
+                    ],
+                    "contextId": "sbx-7df3c94ed4853000c46527a2d38284239b43d51368f4f5229d5e5a99b1682654",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "0.0.0"
+                },
+                "result": {
+                    "appliedFixes": [
+                        {
+                            "action": "reorder",
+                            "message": "Read `noforn` as `NOFORN` (case).",
+                            "ruleId": "_recognition_case"
+                        }
+                    ],
+                    "assertions": [
+                        {
+                            "categoryId": "caveat",
+                            "conceptId": "NF",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            { "categoryId": "caveat", "conceptId": "NF" }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [
+                        {
+                            "constraintId": "required-category:level",
+                            "message": "Level is required: the marking asserts no concept in this category"
+                        }
+                    ],
+                    "inputWasValid": false,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "recognition": {
+                        "corrections": [
+                            {
+                                "end": 6,
+                                "original": "noforn",
+                                "reason": "case",
+                                "replacement": "NOFORN",
+                                "start": 0
+                            }
+                        ],
+                        "inputFormat": "default",
+                        "status": "complete",
+                        "surface": "marking",
+                        "unmatched": []
+                    },
+                    "rendered": "NOFORN",
+                    "renders": {},
+                    "valid": false,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "3bef2da0c6e31c11f33d1392caf3b3b752e480c297cf7bd44776beff9fd73e39": {
+            "body": [
+                {
+                    "id": "level",
+                    "label": "Level",
+                    "position": 1,
+                    "required": true,
+                    "rollup": "max",
+                    "single": true
+                },
+                {
+                    "id": "caveat",
+                    "label": "Caveat",
+                    "position": 2,
+                    "required": false,
+                    "rollup": "union",
+                    "single": false
+                }
+            ],
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "3cae37b599868a1ac714ddc90be801b3c06a6d5bc4744cd4c694a45657fc31e6": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "facet-composer",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "sbx-7df3c94ed4853000c46527a2d38284239b43d51368f4f5229d5e5a99b1682654",
+                            "kind": "context",
+                            "version": "0.0.0"
+                        }
+                    ],
+                    "contextId": "sbx-7df3c94ed4853000c46527a2d38284239b43d51368f4f5229d5e5a99b1682654",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "0.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "S",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "caveat",
+                            "conceptId": "NF",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            { "categoryId": "level", "conceptId": "S" },
+                            { "categoryId": "caveat", "conceptId": "NF" }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "recognition": {
+                        "corrections": [],
+                        "inputFormat": "default",
+                        "status": "complete",
+                        "surface": "marking",
+                        "unmatched": []
+                    },
+                    "rendered": "SECRET//NOFORN",
+                    "renders": {},
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "40a8857e619893a3fc83006770c2671ff473fcaa53828fe6c033b9a4c2973eeb": {
+            "body": [
+                {
+                    "categoryOrder": ["level", "caveat"],
+                    "categorySeparators": { "caveat": "/", "level": "/" },
+                    "categoryViews": {
+                        "caveat": "default",
+                        "level": "default"
+                    },
+                    "id": "default",
+                    "mode": "inline",
+                    "separator": "//",
+                    "separatorBefore": { "caveat": "//" },
+                    "surface": "marking"
+                }
+            ],
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "4524bccf4888153022b972da044c67c59ab5e8f0bf53c271a2d33121e11a175f": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "facet-composer",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "sbx-7df3c94ed4853000c46527a2d38284239b43d51368f4f5229d5e5a99b1682654",
+                            "kind": "context",
+                            "version": "0.0.0"
+                        }
+                    ],
+                    "contextId": "sbx-7df3c94ed4853000c46527a2d38284239b43d51368f4f5229d5e5a99b1682654",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "0.0.0"
+                },
+                "result": {
+                    "suggestions": [
+                        {
+                            "categoryId": "caveat",
+                            "conceptId": "NF",
+                            "description": "Noforn",
+                            "group": "Caveat",
+                            "label": "NOFORN",
+                            "name": "Noforn",
+                            "order": 1,
+                            "selected": true,
+                            "views": { "default": "NOFORN" }
+                        }
+                    ],
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "4931667ce21f2390e3a696ef91f219f8b0b87fc72ebfc5a09c49d931fac65cda": {
+            "body": [],
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "5123aaf35ad71f163f02fc86ce29da86943805b6e4d96cf02cc83be4de2e7c60": {
+            "body": [
+                {
+                    "categoryOrder": ["level", "caveat"],
+                    "categorySeparators": { "caveat": "/", "level": "/" },
+                    "categoryViews": {
+                        "caveat": "default",
+                        "level": "default"
+                    },
+                    "id": "default",
+                    "mode": "inline",
+                    "separator": "//",
+                    "separatorBefore": { "caveat": "//" },
+                    "surface": "marking"
+                }
+            ],
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "5687e6e46ee155518574bbdc52a3acc180b59ed7b3836fd98a47bcf0882e6cba": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "facet-composer",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "sbx-7df3c94ed4853000c46527a2d38284239b43d51368f4f5229d5e5a99b1682654",
+                            "kind": "context",
+                            "version": "0.0.0"
+                        }
+                    ],
+                    "contextId": "sbx-7df3c94ed4853000c46527a2d38284239b43d51368f4f5229d5e5a99b1682654",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "0.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "S",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            { "categoryId": "level", "conceptId": "S" }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "recognition": {
+                        "corrections": [],
+                        "inputFormat": "default",
+                        "status": "complete",
+                        "surface": "marking",
+                        "unmatched": []
+                    },
+                    "rendered": "SECRET",
+                    "renders": {},
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "58d0097652da2ffba1c807a77efc88cacf5652f286c7b2e7cc6924c94abc9bf1": {
+            "body": {
+                "contextId": "sbx-c3c04f2d854e6f689acd708586decfc00456c51ed83d73ba35285d353e75204d"
+            },
+            "method": "PUT",
+            "statusCode": 200
+        },
+        "5d91c2430907731dfc579541bb036be9c0c34188fbd500346cf5bb833fe2f8bf": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "facet-composer",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "sbx-7df3c94ed4853000c46527a2d38284239b43d51368f4f5229d5e5a99b1682654",
+                            "kind": "context",
+                            "version": "0.0.0"
+                        }
+                    ],
+                    "contextId": "sbx-7df3c94ed4853000c46527a2d38284239b43d51368f4f5229d5e5a99b1682654",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "0.0.0"
+                },
+                "result": {
+                    "suggestions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "U",
+                            "description": "Unclassified",
+                            "group": "Level",
+                            "label": "UNCLASSIFIED",
+                            "name": "Unclassified",
+                            "order": 1,
+                            "selected": false,
+                            "views": { "default": "UNCLASSIFIED" }
+                        },
+                        {
+                            "categoryId": "level",
+                            "conceptId": "S",
+                            "description": "Secret",
+                            "group": "Level",
+                            "label": "SECRET",
+                            "name": "Secret",
+                            "order": 2,
+                            "selected": false,
+                            "views": { "default": "SECRET" }
+                        },
+                        {
+                            "categoryId": "caveat",
+                            "conceptId": "NF",
+                            "description": "Noforn",
+                            "group": "Caveat",
+                            "label": "NOFORN",
+                            "name": "Noforn",
+                            "order": 1,
+                            "selected": true,
+                            "views": { "default": "NOFORN" }
+                        },
+                        {
+                            "categoryId": "caveat",
+                            "conceptId": "OC",
+                            "description": "Orcon",
+                            "group": "Caveat",
+                            "label": "ORCON",
+                            "name": "Orcon",
+                            "order": 2,
+                            "selected": false,
+                            "views": { "default": "ORCON" }
+                        }
+                    ],
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "658df630973211e9567bcab513029019f870d421497820a7f1c3cea8cea3d67f": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "facet-composer",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "sbx-7df3c94ed4853000c46527a2d38284239b43d51368f4f5229d5e5a99b1682654",
+                            "kind": "context",
+                            "version": "0.0.0"
+                        }
+                    ],
+                    "contextId": "sbx-7df3c94ed4853000c46527a2d38284239b43d51368f4f5229d5e5a99b1682654",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "0.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "S",
+                            "confidence": "certain",
+                            "source": "aggregate"
+                        },
+                        {
+                            "categoryId": "caveat",
+                            "conceptId": "NF",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "errors": [],
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "SECRET//NOFORN",
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "67f5139947b2679eac571c42c1e985664acf5ba4b1dc07d5a5b5ed977db5617e": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "facet-composer",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "sbx-7df3c94ed4853000c46527a2d38284239b43d51368f4f5229d5e5a99b1682654",
+                            "kind": "context",
+                            "version": "0.0.0"
+                        }
+                    ],
+                    "contextId": "sbx-7df3c94ed4853000c46527a2d38284239b43d51368f4f5229d5e5a99b1682654",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "0.0.0"
+                },
+                "result": {
+                    "appliedFixes": [
+                        {
+                            "action": "reorder",
+                            "message": "Read `noforn` as `NOFORN` (case).",
+                            "ruleId": "_recognition_case"
+                        }
+                    ],
+                    "assertions": [
+                        {
+                            "categoryId": "caveat",
+                            "conceptId": "NF",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            { "categoryId": "caveat", "conceptId": "NF" }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [
+                        {
+                            "constraintId": "required-category:level",
+                            "message": "Level is required: the marking asserts no concept in this category"
+                        }
+                    ],
+                    "inputWasValid": false,
+                    "notices": [],
+                    "recognition": {
+                        "inputFormat": "default",
+                        "status": "complete",
+                        "surface": "marking",
+                        "unmatched": []
+                    },
+                    "rendered": "NOFORN",
+                    "valid": false,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "75b42bec42b3cebf105c2bfba221c9017e1bbd9451aeb6c355ee9eed52eed45a": {
+            "body": {
+                "id": "sbx-c3c04f2d854e6f689acd708586decfc00456c51ed83d73ba35285d353e75204d",
+                "scheme": {
+                    "id": "facet-composer",
+                    "resolvedVersion": "1.0.0",
+                    "version": "1.0.0"
+                },
+                "schemes": [
+                    {
+                        "id": "facet-composer",
+                        "roles": ["primary"],
+                        "selector": "facet-composer",
+                        "version": "1.0.0"
+                    }
+                ],
+                "version": "0.0.0"
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "7dbca7f5dec8d872404675d7725dce5ae6eb54fd9391bf958eada607212017d1": {
+            "body": [],
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "94f74f4f73b708de1ea8f4fadba6625d6c494aaa3d94acc2b7680832ae5325d8": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "facet-composer",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "sbx-7df3c94ed4853000c46527a2d38284239b43d51368f4f5229d5e5a99b1682654",
+                            "kind": "context",
+                            "version": "0.0.0"
+                        }
+                    ],
+                    "contextId": "sbx-7df3c94ed4853000c46527a2d38284239b43d51368f4f5229d5e5a99b1682654",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "0.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [
+                        {
+                            "constraintId": "_recognition_incomplete",
+                            "message": "The input does not read as a marking."
+                        },
+                        {
+                            "constraintId": "_unmatched_token",
+                            "message": "\"nof\" was not recognized: it matched no known concept and will be kept visible in the rendered marking."
+                        }
+                    ],
+                    "inputWasValid": false,
+                    "notices": [],
+                    "recognition": {
+                        "status": "unrecognized",
+                        "unmatched": [{ "end": 3, "start": 0, "text": "nof" }]
+                    },
+                    "rendered": "nof",
+                    "valid": false,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "97d198c5ecac58c63d6cb414844ce65f83e5d93e0a44a1e8fa27474e5abcd32a": {
+            "body": [
+                {
+                    "id": "level",
+                    "label": "Level",
+                    "position": 1,
+                    "required": true,
+                    "rollup": "max",
+                    "single": true
+                },
+                {
+                    "id": "caveat",
+                    "label": "Caveat",
+                    "position": 2,
+                    "required": false,
+                    "rollup": "union",
+                    "single": false
+                }
+            ],
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "a0bc612560bc3d14796c3a6ec686d4990f3700a77027e8b6b58b4ba1ec94e564": {
+            "body": [],
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "a15e61f3ba7b2e7b2a9e3d40b8dd3a8903d91c1d33e4d251cf1040144bd88f43": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "facet-composer",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "sbx-7df3c94ed4853000c46527a2d38284239b43d51368f4f5229d5e5a99b1682654",
+                            "kind": "context",
+                            "version": "0.0.0"
+                        }
+                    ],
+                    "contextId": "sbx-7df3c94ed4853000c46527a2d38284239b43d51368f4f5229d5e5a99b1682654",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "0.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "S",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            { "categoryId": "level", "conceptId": "S" }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "SECRET",
+                    "renders": {},
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "b96c88f70d44c663395fc2f5d2faa6c0c73c510a98463cd690e03d97927847ce": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "facet-composer",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "sbx-7df3c94ed4853000c46527a2d38284239b43d51368f4f5229d5e5a99b1682654",
+                            "kind": "context",
+                            "version": "0.0.0"
+                        }
+                    ],
+                    "contextId": "sbx-7df3c94ed4853000c46527a2d38284239b43d51368f4f5229d5e5a99b1682654",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "0.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "S",
+                            "confidence": "certain",
+                            "source": "aggregate"
+                        }
+                    ],
+                    "errors": [],
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "SECRET",
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "d43cdef608efdae92558a5caa36d7a735ff40dae34d7b1815fa481f005e8c00b": {
+            "body": [
+                {
+                    "aliases": [],
+                    "categories": ["level"],
+                    "id": "U",
+                    "name": "Unclassified",
+                    "parents": [],
+                    "position": 1,
+                    "rank": 1,
+                    "views": { "default": "UNCLASSIFIED" }
+                },
+                {
+                    "aliases": [],
+                    "categories": ["level"],
+                    "id": "S",
+                    "name": "Secret",
+                    "parents": [],
+                    "position": 2,
+                    "rank": 2,
+                    "views": { "default": "SECRET" }
+                },
+                {
+                    "aliases": [],
+                    "categories": ["caveat"],
+                    "id": "NF",
+                    "name": "Noforn",
+                    "parents": [],
+                    "position": 1,
+                    "rank": 1,
+                    "views": { "default": "NOFORN" }
+                },
+                {
+                    "aliases": [],
+                    "categories": ["caveat"],
+                    "id": "OC",
+                    "name": "Orcon",
+                    "parents": [],
+                    "position": 2,
+                    "rank": 2,
+                    "views": { "default": "ORCON" }
+                }
+            ],
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "e070dec6e78862435e7c23c92a6e4a93a9667377aed0b78b533966687028c314": {
+            "body": {
+                "abiVersion": "v1",
+                "engineSha": "",
+                "engineVersion": "1.0.0-dev.30",
+                "gitTag": "",
+                "openapiVersion": "1.0.0-dev.30",
+                "status": "ok"
+            },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "e602950b5895a7ce94a15b2d81813e402da2ba0621669c285c9b890352abfc14": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "facet-composer",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "sbx-7df3c94ed4853000c46527a2d38284239b43d51368f4f5229d5e5a99b1682654",
+                            "kind": "context",
+                            "version": "0.0.0"
+                        }
+                    ],
+                    "contextId": "sbx-7df3c94ed4853000c46527a2d38284239b43d51368f4f5229d5e5a99b1682654",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "0.0.0"
+                },
+                "result": {
+                    "suggestions": [
+                        {
+                            "categoryId": "caveat",
+                            "conceptId": "NF",
+                            "description": "Noforn",
+                            "group": "Caveat",
+                            "label": "NOFORN",
+                            "name": "Noforn",
+                            "order": 1,
+                            "selected": false,
+                            "views": { "default": "NOFORN" }
+                        }
+                    ],
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "ec184e75fe2fee5165f1c68c3addefe1e5b164f3917b3ac3f0ad77e6761f13cc": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "facet-composer",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "sbx-7df3c94ed4853000c46527a2d38284239b43d51368f4f5229d5e5a99b1682654",
+                            "kind": "context",
+                            "version": "0.0.0"
+                        }
+                    ],
+                    "contextId": "sbx-7df3c94ed4853000c46527a2d38284239b43d51368f4f5229d5e5a99b1682654",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "0.0.0"
+                },
+                "result": {
+                    "categoryId": "caveat",
+                    "conceptId": "NF",
+                    "lines": ["Caveat: Noforn"],
+                    "name": "Noforn"
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "ef91944475c4178dd68e1470d1d652b97e053145e6c5f2c4df0df14e02c129f0": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "facet-composer",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "sbx-7df3c94ed4853000c46527a2d38284239b43d51368f4f5229d5e5a99b1682654",
+                            "kind": "context",
+                            "version": "0.0.0"
+                        }
+                    ],
+                    "contextId": "sbx-7df3c94ed4853000c46527a2d38284239b43d51368f4f5229d5e5a99b1682654",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "0.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "",
+                    "renders": {},
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "f10323d983581621ab016a8e1114dc90f7dc06401e5373fee9f909a38229246d": {
+            "body": {
+                "id": "sbx-7df3c94ed4853000c46527a2d38284239b43d51368f4f5229d5e5a99b1682654",
+                "scheme": {
+                    "id": "facet-composer",
+                    "resolvedVersion": "1.0.0",
+                    "version": "1.0.0"
+                },
+                "schemes": [
+                    {
+                        "id": "facet-composer",
+                        "roles": ["primary"],
+                        "selector": "facet-composer",
+                        "version": "1.0.0"
+                    }
+                ],
+                "version": "0.0.0"
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "f253fb131941bb1703f3069ee64a2c77a89608d17617f74aaea78cb3c013c89f": {
+            "body": {
+                "defaultRenderFormat": "default",
+                "description": "Facet Composer test fixture.",
+                "id": "facet-composer",
+                "name": "Facet Composer",
+                "referenceSurfaceLabel": {
+                    "plural": "Handbooks",
+                    "singular": "Handbook"
+                },
+                "roleAware": false,
+                "version": "1.0.0"
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "f577877eb6ebf3655e473bd492662a42639a8839cf880bf88bed96d263c12392": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "facet-composer",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "sbx-7df3c94ed4853000c46527a2d38284239b43d51368f4f5229d5e5a99b1682654",
+                            "kind": "context",
+                            "version": "0.0.0"
+                        }
+                    ],
+                    "contextId": "sbx-7df3c94ed4853000c46527a2d38284239b43d51368f4f5229d5e5a99b1682654",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "0.0.0"
+                },
+                "result": {
+                    "suggestions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "U",
+                            "description": "Unclassified",
+                            "group": "Level",
+                            "label": "UNCLASSIFIED",
+                            "name": "Unclassified",
+                            "order": 1,
+                            "selected": false,
+                            "views": { "default": "UNCLASSIFIED" }
+                        },
+                        {
+                            "categoryId": "level",
+                            "conceptId": "S",
+                            "description": "Secret",
+                            "group": "Level",
+                            "label": "SECRET",
+                            "name": "Secret",
+                            "order": 2,
+                            "selected": false,
+                            "views": { "default": "SECRET" }
+                        },
+                        {
+                            "categoryId": "caveat",
+                            "conceptId": "NF",
+                            "description": "Noforn",
+                            "group": "Caveat",
+                            "label": "NOFORN",
+                            "name": "Noforn",
+                            "order": 1,
+                            "selected": false,
+                            "views": { "default": "NOFORN" }
+                        },
+                        {
+                            "categoryId": "caveat",
+                            "conceptId": "OC",
+                            "description": "Orcon",
+                            "group": "Caveat",
+                            "label": "ORCON",
+                            "name": "Orcon",
+                            "order": 2,
+                            "selected": false,
+                            "views": { "default": "ORCON" }
+                        }
+                    ],
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "fa341f3215ff41c113c197e2d493022f30fc348cbe96312c6729283437317e10": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "facet-composer",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "sbx-7df3c94ed4853000c46527a2d38284239b43d51368f4f5229d5e5a99b1682654",
+                            "kind": "context",
+                            "version": "0.0.0"
+                        }
+                    ],
+                    "contextId": "sbx-7df3c94ed4853000c46527a2d38284239b43d51368f4f5229d5e5a99b1682654",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "0.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "S",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "caveat",
+                            "conceptId": "NF",
+                            "confidence": "certain",
+                            "source": "user"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            { "categoryId": "level", "conceptId": "S" },
+                            { "categoryId": "caveat", "conceptId": "NF" }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "SECRET//NOFORN",
+                    "renders": {},
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "fcbd7036783dfbda8a6d217dc55e18e92a3a1eba780e58c21d998bf805195b15": {
+            "body": [],
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "fda19a91b4f177c4ecc16041ef03d6cfe37ccebfbebfc5dc36c63566a9ca4bc5": {
+            "body": {
+                "contextId": "sbx-7df3c94ed4853000c46527a2d38284239b43d51368f4f5229d5e5a99b1682654"
+            },
+            "method": "PUT",
+            "statusCode": 200
+        }
+    }
+}

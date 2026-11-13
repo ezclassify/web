@@ -1,0 +1,3122 @@
+{
+    "engineVersion": "1.0.0-dev.30",
+    "openapiVersion": "1.0.0-dev.30",
+    "responses": {
+        "00bfbd0187a231b4ec32b37cd1705c181a78f5f90252d454115134d6152f1aa7": {
+            "body": {
+                "id": "sbx-6c681c841ca0bf1c6d3e67a15634dd29d507a7e10e5e59d2fddf8bd98b490dad",
+                "scheme": {
+                    "id": "mi-fav-test",
+                    "resolvedVersion": "1.0.0",
+                    "version": "1.0.0"
+                },
+                "schemes": [
+                    {
+                        "id": "mi-fav-test",
+                        "roles": ["primary"],
+                        "selector": "mi-fav-test",
+                        "version": "1.0.0"
+                    }
+                ],
+                "version": "0.0.0"
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "025003ed03e8ea55ad778667319c1bc602f538ed8d5f0c002eb4b0ebcf6ed658": {
+            "body": {
+                "defaultRenderFormat": "portion",
+                "description": "MarkedInput Bare Format Test test fixture.",
+                "embeddedMarking": [
+                    { "pattern": "\\(([^)]+)\\)", "template": "({marking}) " }
+                ],
+                "id": "mi-bare",
+                "name": "MarkedInput Bare Format Test",
+                "referenceSurfaceLabel": {
+                    "plural": "Handbooks",
+                    "singular": "Handbook"
+                },
+                "roleAware": false,
+                "version": "1.0.0"
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "02d5874a0212be78f52371e9cec2e0afe4d028361d5e1af203dc1b3b8d1171d4": {
+            "body": {
+                "defaultRenderFormat": "portion",
+                "embeddedMarking": [
+                    { "pattern": "\\(([^)]+)\\)", "template": "({marking})" }
+                ],
+                "id": "mi-bare",
+                "name": "MarkedInput Bare Format Test",
+                "referenceSurfaceLabel": {
+                    "plural": "Handbooks",
+                    "singular": "Handbook"
+                },
+                "roleAware": false,
+                "version": "1.0.0"
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "0ae9d86d4fd585c04e3c73eb23dfc1577c4650b6bcba34259e57deaab5857e98": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "mi-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "sbx-bb89dc2350a8df7ac3db257010c6f83bef3a9f8dcb3bd71db3b2f5e2875404d9",
+                            "kind": "context",
+                            "version": "0.0.0"
+                        }
+                    ],
+                    "contextId": "sbx-bb89dc2350a8df7ac3db257010c6f83bef3a9f8dcb3bd71db3b2f5e2875404d9",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "0.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "U",
+                            "confidence": "certain",
+                            "source": "aggregate"
+                        }
+                    ],
+                    "errors": [],
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "U",
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "0b17e79a5f2387cd5296dc3fc53045c052f754438939dbe12338d837c5021460": {
+            "body": {
+                "contextId": "sbx-1243dd66eda91c820ad8e49845e2e28e45c6a000ecb972da542c4a9dbff6cbf2"
+            },
+            "method": "PUT",
+            "statusCode": 200
+        },
+        "0cf48c662c33f5d2f369752a36c2550778c24ab6e7041b8842b6d5b47a22e0f4": {
+            "body": {
+                "id": "sbx-4a72e2f80726b45c95cbb1e4bc9b3dd468aab5f0904ca8fe5969744f4cdbb5eb",
+                "scheme": {
+                    "id": "mi-test",
+                    "resolvedVersion": "1.0.0",
+                    "version": "1.0.0"
+                },
+                "schemes": [
+                    {
+                        "id": "mi-test",
+                        "roles": ["primary"],
+                        "selector": "mi-test",
+                        "version": "1.0.0"
+                    }
+                ],
+                "version": "0.0.0"
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "0eafd4739dcd5bc8dd1e4390f21477999d762f4381d59a2423236ec52aff14ba": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "mi-fav-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "sbx-6c681c841ca0bf1c6d3e67a15634dd29d507a7e10e5e59d2fddf8bd98b490dad",
+                            "kind": "context",
+                            "version": "0.0.0"
+                        }
+                    ],
+                    "contextId": "sbx-6c681c841ca0bf1c6d3e67a15634dd29d507a7e10e5e59d2fddf8bd98b490dad",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "0.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "U",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            { "categoryId": "level", "conceptId": "U" }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "recognition": {
+                        "corrections": [],
+                        "inputFormat": "portion",
+                        "status": "complete",
+                        "surface": "marking",
+                        "unmatched": []
+                    },
+                    "rendered": "U",
+                    "renders": {},
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "0ebc7ffa0eaed9452b491821cbe6211415c7f8cacab6b8fc9103a6225361d508": {
+            "body": [
+                {
+                    "aliases": [],
+                    "categories": ["level"],
+                    "id": "U",
+                    "name": "Unclassified",
+                    "parents": [],
+                    "position": 1,
+                    "rank": 1,
+                    "views": { "default": "U" }
+                },
+                {
+                    "aliases": [],
+                    "categories": ["level"],
+                    "id": "S",
+                    "name": "Secret",
+                    "parents": [],
+                    "position": 2,
+                    "rank": 2,
+                    "views": { "default": "S" }
+                }
+            ],
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "0ecc3a984de23b6d21ba3df6db871036ee4638fef89c6194be71fc97d450ea05": {
+            "body": [
+                {
+                    "id": "level",
+                    "label": "Level",
+                    "position": 1,
+                    "required": false,
+                    "rollup": "max",
+                    "single": true
+                }
+            ],
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "11acce79d961d09c5a13a163a8336f4a06f8331a919d8a0b8d82848311eb395d": {
+            "body": [],
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "11b4c97dfd1370039dea204b6fd8ece1892542f34a907339bdfb85434e72bffb": {
+            "body": {
+                "defaultRenderFormat": "portion",
+                "description": "MarkedInput Favorites Test test fixture.",
+                "embeddedMarking": [
+                    { "pattern": "\\(([^)]+)\\)", "template": "({marking}) " }
+                ],
+                "id": "mi-fav-test",
+                "name": "MarkedInput Favorites Test",
+                "referenceSurfaceLabel": {
+                    "plural": "Handbooks",
+                    "singular": "Handbook"
+                },
+                "roleAware": false,
+                "version": "1.0.0"
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "13510e07a0bafea7a28ca3150d752bee61dd12ef1b6ed06de69bc65baf2eb6c6": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "mi-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "sbx-bb89dc2350a8df7ac3db257010c6f83bef3a9f8dcb3bd71db3b2f5e2875404d9",
+                            "kind": "context",
+                            "version": "0.0.0"
+                        }
+                    ],
+                    "contextId": "sbx-bb89dc2350a8df7ac3db257010c6f83bef3a9f8dcb3bd71db3b2f5e2875404d9",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "0.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "S",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            { "categoryId": "level", "conceptId": "S" }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "S",
+                    "renders": {},
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "14c3c784a309a48177810d151492117cbd3eb8ec764e44a3e71b8e88b66b9ef8": {
+            "body": [
+                {
+                    "categoryOrder": ["level"],
+                    "categorySeparators": { "level": "/" },
+                    "categoryViews": { "level": "default" },
+                    "id": "portion",
+                    "mode": "inline",
+                    "separator": "//",
+                    "surface": "marking"
+                }
+            ],
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "158ac3edbc5ac7c567693b27a3dbda4709d49fbaa91edb600b8c701703d19914": {
+            "body": [
+                {
+                    "aliases": [],
+                    "categories": ["level"],
+                    "id": "U",
+                    "name": "Unclassified",
+                    "parents": [],
+                    "position": 1,
+                    "rank": 1,
+                    "views": { "default": "U" }
+                },
+                {
+                    "aliases": [],
+                    "categories": ["level"],
+                    "id": "S",
+                    "name": "Secret",
+                    "parents": [],
+                    "position": 2,
+                    "rank": 2,
+                    "views": { "default": "S" }
+                }
+            ],
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "16aa59db33c6baa61d24f9a4709d28e50a8d45412b591b1d24e275a02c8f3af6": {
+            "body": {
+                "defaultRenderFormat": "portion",
+                "description": "MarkedInput Test test fixture.",
+                "embeddedMarking": [
+                    { "pattern": "\\(([^)]+)\\)", "template": "({marking}) " }
+                ],
+                "id": "mi-test",
+                "name": "MarkedInput Test",
+                "referenceSurfaceLabel": {
+                    "plural": "Handbooks",
+                    "singular": "Handbook"
+                },
+                "roleAware": false,
+                "version": "1.0.0"
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "18e1178516965189cd4491d3484e345a6a30a7c91aa470b6b679c6916077f19f": {
+            "body": [
+                {
+                    "aliases": [],
+                    "categories": ["level"],
+                    "id": "U",
+                    "name": "Unclassified",
+                    "parents": [],
+                    "position": 1,
+                    "rank": 1,
+                    "views": { "default": "U" }
+                },
+                {
+                    "aliases": [],
+                    "categories": ["level"],
+                    "id": "S",
+                    "name": "Secret",
+                    "parents": [],
+                    "position": 2,
+                    "rank": 2,
+                    "views": { "default": "S" }
+                }
+            ],
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "1aeebcb85d67cb2bd150059cea128e48af5739a6d8596f0262bd532d6d51f108": {
+            "body": [],
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "200096b818e1f7775959945a76f5b5efebb9c6f5b68fec13eb314cc30b9ad252": {
+            "body": {
+                "id": "sbx-0e114e9a9b746fb40f64fd247b22a255fbda9aab2580518a7b7eb9f49296cdbe",
+                "scheme": {
+                    "id": "mi-multi",
+                    "resolvedVersion": "1.0.0",
+                    "version": "1.0.0"
+                },
+                "schemes": [
+                    {
+                        "id": "mi-multi",
+                        "roles": ["primary"],
+                        "selector": "mi-multi",
+                        "version": "1.0.0"
+                    }
+                ],
+                "version": "0.0.0"
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "22fc63db431b0e29677b2d619cb458ca8348b182501e9e3e99fd2b95e8b5e504": {
+            "body": [
+                {
+                    "aliases": [],
+                    "categories": ["level"],
+                    "id": "U",
+                    "name": "Unclassified",
+                    "parents": [],
+                    "position": 1,
+                    "rank": 1,
+                    "views": { "default": "U" }
+                },
+                {
+                    "aliases": [],
+                    "categories": ["level"],
+                    "id": "S",
+                    "name": "Secret",
+                    "parents": [],
+                    "position": 2,
+                    "rank": 2,
+                    "views": { "default": "S" }
+                }
+            ],
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "2329dcc4bd976e441570953ccfd95d6622b235f7a511a2b29c1910eb63c86601": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "mi-bare",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "sbx-17b4975449e03d3e365ebaf2d35e88a4fcea065e3cd16cf66c7571f54cde8aea",
+                            "kind": "context",
+                            "version": "0.0.0"
+                        }
+                    ],
+                    "contextId": "sbx-17b4975449e03d3e365ebaf2d35e88a4fcea065e3cd16cf66c7571f54cde8aea",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "0.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "U",
+                            "confidence": "certain",
+                            "source": "aggregate"
+                        }
+                    ],
+                    "errors": [],
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "U",
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "245bc1adbfe3bc3e66385b34c360f680e459874277b0c0f8a8bf61a801e35543": {
+            "body": {
+                "id": "sbx-6556a926856a3365018335b5fa741f3c8f54f82c0cd0ab8916bae2af81cdc2c0",
+                "scheme": {
+                    "id": "mi-fav-test",
+                    "resolvedVersion": "1.0.0",
+                    "version": "1.0.0"
+                },
+                "schemes": [
+                    {
+                        "id": "mi-fav-test",
+                        "roles": ["primary"],
+                        "selector": "mi-fav-test",
+                        "version": "1.0.0"
+                    }
+                ],
+                "version": "0.0.0"
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "24a1b48697a6443e2930f98f6c7c5737ce8ebb21970fdc2e642464c7f5eb11a2": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "mi-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "sbx-bb89dc2350a8df7ac3db257010c6f83bef3a9f8dcb3bd71db3b2f5e2875404d9",
+                            "kind": "context",
+                            "version": "0.0.0"
+                        }
+                    ],
+                    "contextId": "sbx-bb89dc2350a8df7ac3db257010c6f83bef3a9f8dcb3bd71db3b2f5e2875404d9",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "0.0.0"
+                },
+                "result": {
+                    "categoryId": "level",
+                    "conceptId": "U",
+                    "lines": ["Level: Unclassified"],
+                    "name": "Unclassified"
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "2734a820cac11a2b919e64f88a916de07022c97bd460a2c89f582130e3d4236b": {
+            "body": {
+                "contextId": "sbx-6556a926856a3365018335b5fa741f3c8f54f82c0cd0ab8916bae2af81cdc2c0"
+            },
+            "method": "PUT",
+            "statusCode": 200
+        },
+        "2858e52d001e46377ce5e305d525142b8aeba19de5f1e9618e4a45db5669f22f": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "mi-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "sbx-bb89dc2350a8df7ac3db257010c6f83bef3a9f8dcb3bd71db3b2f5e2875404d9",
+                            "kind": "context",
+                            "version": "0.0.0"
+                        }
+                    ],
+                    "contextId": "sbx-bb89dc2350a8df7ac3db257010c6f83bef3a9f8dcb3bd71db3b2f5e2875404d9",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "0.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "U",
+                            "confidence": "certain",
+                            "source": "aggregate"
+                        }
+                    ],
+                    "errors": [],
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "U",
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "285bcdda24025796e0b44d27dd75f6244ca0d38639f3ac9435d5e6416278205f": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "mi-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "sbx-bb89dc2350a8df7ac3db257010c6f83bef3a9f8dcb3bd71db3b2f5e2875404d9",
+                            "kind": "context",
+                            "version": "0.0.0"
+                        }
+                    ],
+                    "contextId": "sbx-bb89dc2350a8df7ac3db257010c6f83bef3a9f8dcb3bd71db3b2f5e2875404d9",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "0.0.0"
+                },
+                "result": {
+                    "suggestions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "U",
+                            "description": "Unclassified",
+                            "group": "Level",
+                            "label": "U",
+                            "name": "Unclassified",
+                            "order": 1,
+                            "selected": true,
+                            "views": { "default": "U" }
+                        }
+                    ],
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "28a96434b4614c01886ef713a1aa82ea432d9bd0e4f977d6a3910300d9629d83": {
+            "body": {
+                "contextId": "sbx-bb89dc2350a8df7ac3db257010c6f83bef3a9f8dcb3bd71db3b2f5e2875404d9"
+            },
+            "method": "PUT",
+            "statusCode": 200
+        },
+        "2a997da82c66091eca3f87067208d112ff209410686e61b142ff2c4b25b3aae2": {
+            "body": [
+                {
+                    "categoryOrder": ["level"],
+                    "categorySeparators": { "level": "/" },
+                    "categoryViews": { "level": "default" },
+                    "id": "portion",
+                    "mode": "inline",
+                    "separator": "//",
+                    "surface": "marking"
+                }
+            ],
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "2bd329fd15859c5c618976d7c7c2b3e65d301264c1d4683f7d0c46cab3e02b9a": {
+            "body": {
+                "defaultRenderFormat": "portion",
+                "embeddedMarking": [
+                    { "pattern": "\\(([^)]+)\\)", "template": "({marking}) " }
+                ],
+                "id": "mi-test",
+                "name": "MarkedInput Test",
+                "referenceSurfaceLabel": {
+                    "plural": "Handbooks",
+                    "singular": "Handbook"
+                },
+                "roleAware": false,
+                "version": "1.0.0"
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "2d167681cbf4563492c6e2b7121b499b86eae5b4e5e9216b11f9be1bcd84da79": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "mi-multi",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "sbx-fbae5909fec1ecbb66d5557d6511693f6befbeaea62408d8bcba017989312a5f",
+                            "kind": "context",
+                            "version": "0.0.0"
+                        }
+                    ],
+                    "contextId": "sbx-fbae5909fec1ecbb66d5557d6511693f6befbeaea62408d8bcba017989312a5f",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "0.0.0"
+                },
+                "result": {
+                    "suggestions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "S",
+                            "description": "Secret",
+                            "group": "Level",
+                            "label": "S",
+                            "name": "Secret",
+                            "order": 2,
+                            "selected": true,
+                            "views": { "default": "S" }
+                        },
+                        {
+                            "categoryId": "scope",
+                            "conceptId": "REGIONAL",
+                            "description": "Regional",
+                            "group": "Scope",
+                            "label": "REGIONAL",
+                            "name": "Regional",
+                            "order": 2,
+                            "selected": true,
+                            "views": { "default": "REGIONAL" }
+                        }
+                    ],
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "301f907131c9d538a49862dd86eb473c6989966540cf8618675192837116fa28": {
+            "body": {
+                "contextId": "sbx-17b4975449e03d3e365ebaf2d35e88a4fcea065e3cd16cf66c7571f54cde8aea"
+            },
+            "method": "PUT",
+            "statusCode": 200
+        },
+        "3077fc046fd484ff8285e7f0370c2285d2d3d662e0227d592a689c2e53080adf": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "mi-multi",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "sbx-fbae5909fec1ecbb66d5557d6511693f6befbeaea62408d8bcba017989312a5f",
+                            "kind": "context",
+                            "version": "0.0.0"
+                        }
+                    ],
+                    "contextId": "sbx-fbae5909fec1ecbb66d5557d6511693f6befbeaea62408d8bcba017989312a5f",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "0.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "S",
+                            "confidence": "certain",
+                            "source": "aggregate"
+                        },
+                        {
+                            "categoryId": "scope",
+                            "conceptId": "REGIONAL",
+                            "confidence": "certain",
+                            "source": "aggregate"
+                        }
+                    ],
+                    "errors": [],
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "S//REGIONAL",
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "340add67a34997bee52cd45c23179f602c6ace6221752a3834aed288a9611f76": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "mi-multi",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "sbx-fbae5909fec1ecbb66d5557d6511693f6befbeaea62408d8bcba017989312a5f",
+                            "kind": "context",
+                            "version": "0.0.0"
+                        }
+                    ],
+                    "contextId": "sbx-fbae5909fec1ecbb66d5557d6511693f6befbeaea62408d8bcba017989312a5f",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "0.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "S",
+                            "confidence": "certain",
+                            "source": "user"
+                        },
+                        {
+                            "categoryId": "scope",
+                            "conceptId": "REGIONAL",
+                            "confidence": "certain",
+                            "source": "user"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            { "categoryId": "level", "conceptId": "S" },
+                            { "categoryId": "scope", "conceptId": "REGIONAL" }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "S//REGIONAL",
+                    "renders": {},
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "34ffbb9437614ca33a4a7ec6481b2143f383fbaf72f16997984553a70a793456": {
+            "body": [
+                {
+                    "id": "level",
+                    "label": "Level",
+                    "position": 1,
+                    "required": false,
+                    "rollup": "max",
+                    "single": true
+                }
+            ],
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "374d9bd1d08a129d834398cf2681c28beec7cf9e655a0d290741219e4ff09762": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "mi-fav-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "sbx-6c681c841ca0bf1c6d3e67a15634dd29d507a7e10e5e59d2fddf8bd98b490dad",
+                            "kind": "context",
+                            "version": "0.0.0"
+                        }
+                    ],
+                    "contextId": "sbx-6c681c841ca0bf1c6d3e67a15634dd29d507a7e10e5e59d2fddf8bd98b490dad",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "0.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "S",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            { "categoryId": "level", "conceptId": "S" }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "recognition": {
+                        "inputFormat": "portion",
+                        "status": "complete",
+                        "surface": "marking",
+                        "unmatched": []
+                    },
+                    "rendered": "S",
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "3a19eb9f39cc0df45d69dc41d64208a0d160e4505f0e41a768e741c41cb62e4f": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "mi-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "sbx-bb89dc2350a8df7ac3db257010c6f83bef3a9f8dcb3bd71db3b2f5e2875404d9",
+                            "kind": "context",
+                            "version": "0.0.0"
+                        }
+                    ],
+                    "contextId": "sbx-bb89dc2350a8df7ac3db257010c6f83bef3a9f8dcb3bd71db3b2f5e2875404d9",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "0.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "S",
+                            "confidence": "certain",
+                            "source": "aggregate"
+                        }
+                    ],
+                    "errors": [],
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "S",
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "3a52e8e03a18a8223dc9fd1f9f5185490d5e7f72c40a5c04666bba8559e30e43": {
+            "body": [],
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "3a810eb714a28e2183a89d681429612ec33fa80601586c3e151cdcc7a2516373": {
+            "body": [],
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "3b194a6f60108e5644ae8a182304150766440084a794d1cd75696f7d1116c815": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "mi-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "sbx-bb89dc2350a8df7ac3db257010c6f83bef3a9f8dcb3bd71db3b2f5e2875404d9",
+                            "kind": "context",
+                            "version": "0.0.0"
+                        }
+                    ],
+                    "contextId": "sbx-bb89dc2350a8df7ac3db257010c6f83bef3a9f8dcb3bd71db3b2f5e2875404d9",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "0.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [
+                        {
+                            "constraintId": "_recognition_incomplete",
+                            "message": "The input does not read as a marking."
+                        },
+                        {
+                            "constraintId": "_unmatched_token",
+                            "message": "\"X\" was not recognized: it matched no known concept and will be kept visible in the rendered marking."
+                        }
+                    ],
+                    "inputWasValid": false,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "recognition": {
+                        "corrections": [],
+                        "status": "unrecognized",
+                        "unmatched": [{ "end": 1, "start": 0, "text": "X" }]
+                    },
+                    "rendered": "X",
+                    "renders": {},
+                    "valid": false,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "3b217ff698cb35668801984ad749ca7d758fb13b2738f1f0e24fdaf9a427bd39": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "mi-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "sbx-bb89dc2350a8df7ac3db257010c6f83bef3a9f8dcb3bd71db3b2f5e2875404d9",
+                            "kind": "context",
+                            "version": "0.0.0"
+                        }
+                    ],
+                    "contextId": "sbx-bb89dc2350a8df7ac3db257010c6f83bef3a9f8dcb3bd71db3b2f5e2875404d9",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "0.0.0"
+                },
+                "result": {
+                    "suggestions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "U",
+                            "description": "Unclassified",
+                            "group": "Level",
+                            "label": "U",
+                            "name": "Unclassified",
+                            "order": 1,
+                            "selected": false,
+                            "views": { "default": "U" }
+                        },
+                        {
+                            "categoryId": "level",
+                            "conceptId": "S",
+                            "description": "Secret",
+                            "group": "Level",
+                            "label": "S",
+                            "name": "Secret",
+                            "order": 2,
+                            "selected": false,
+                            "views": { "default": "S" }
+                        }
+                    ],
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "3ef3c2c6fc03ac8f0de58e99c1a001216de9efa0fc7c9ed62a97b55a583842a2": {
+            "body": {
+                "contextId": "sbx-71a1e51b6e87d569f3af419b2513d772f4f7323601b771bb986c0df123ace665"
+            },
+            "method": "PUT",
+            "statusCode": 200
+        },
+        "47b876151cb3aa7154f94a15385eda3b4b40f9d5f29beded2c10ed18b97c0764": {
+            "body": [
+                {
+                    "id": "level",
+                    "label": "Level",
+                    "position": 1,
+                    "required": false,
+                    "rollup": "max",
+                    "single": true
+                },
+                {
+                    "id": "scope",
+                    "label": "Scope",
+                    "position": 2,
+                    "required": false,
+                    "rollup": "max",
+                    "single": true
+                }
+            ],
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "47f2ba12b0623efa4d47ad57b7a671b85c9f1fddff1334ba39bdef922173b568": {
+            "body": [],
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "48afef6db2445d77c5fba493662f27c7eb752b8c2a3f95d11504bd86ae918f2a": {
+            "body": [
+                {
+                    "id": "level",
+                    "label": "Level",
+                    "position": 1,
+                    "required": false,
+                    "rollup": "max",
+                    "single": true
+                }
+            ],
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "4a8df3778b82fb246f703ff01a37edebcb3ac60c6011157fc0bc509a38531d66": {
+            "body": [],
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "4ad5062050ab8eafcf0080450c121a6feef0c1d0c37a5d70b7839480fded999f": {
+            "body": [],
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "4b83cc594eaf18b39031bbe220d9b59fdb3347344ffbb2415456ee82d34fede3": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "mi-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "sbx-bb89dc2350a8df7ac3db257010c6f83bef3a9f8dcb3bd71db3b2f5e2875404d9",
+                            "kind": "context",
+                            "version": "0.0.0"
+                        }
+                    ],
+                    "contextId": "sbx-bb89dc2350a8df7ac3db257010c6f83bef3a9f8dcb3bd71db3b2f5e2875404d9",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "0.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "S",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            { "categoryId": "level", "conceptId": "S" }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "recognition": {
+                        "inputFormat": "portion",
+                        "status": "complete",
+                        "surface": "marking",
+                        "unmatched": []
+                    },
+                    "rendered": "S",
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "4e7f18f32c1d8fd7b552ffaf1edc8d41cf989f058ba82a84942429fbc8600c7a": {
+            "body": [
+                {
+                    "categoryOrder": ["level"],
+                    "categorySeparators": { "level": "/" },
+                    "categoryViews": { "level": "default" },
+                    "id": "portion",
+                    "mode": "inline",
+                    "separator": "//",
+                    "surface": "marking"
+                }
+            ],
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "5027ac0ac0544fed3a0255317863ddd240f3c6a953715ca4edd7b200393842f4": {
+            "body": [
+                {
+                    "id": "level",
+                    "label": "Level",
+                    "position": 1,
+                    "required": false,
+                    "rollup": "max",
+                    "single": true
+                }
+            ],
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "5481d56f541666fd2bf680f64f0e18f66ab8533bbc2d6c43f4d0db3d0de8b796": {
+            "body": [
+                {
+                    "categoryOrder": ["level", "scope"],
+                    "categorySeparators": { "level": "/", "scope": "/" },
+                    "categoryViews": { "level": "default", "scope": "default" },
+                    "id": "long",
+                    "mode": "inline",
+                    "separator": "//",
+                    "separatorBefore": { "scope": "//" },
+                    "surface": "marking"
+                },
+                {
+                    "categoryOrder": ["level", "scope"],
+                    "categorySeparators": { "level": "/", "scope": "/" },
+                    "categoryViews": { "level": "default", "scope": "default" },
+                    "id": "portion",
+                    "mode": "inline",
+                    "separator": "//",
+                    "separatorBefore": { "scope": "//" },
+                    "surface": "marking"
+                }
+            ],
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "54ac18fc15838ed37856f1867bebfd509919c60cae146e0490fb3cfa423ca745": {
+            "body": [
+                {
+                    "aliases": [],
+                    "categories": ["level"],
+                    "id": "U",
+                    "name": "Unclassified",
+                    "parents": [],
+                    "position": 1,
+                    "rank": 1,
+                    "views": { "default": "U" }
+                },
+                {
+                    "aliases": [],
+                    "categories": ["level"],
+                    "id": "S",
+                    "name": "Secret",
+                    "parents": [],
+                    "position": 2,
+                    "rank": 2,
+                    "views": { "default": "S" }
+                }
+            ],
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "585248228ad42fb71499c27bf98c766ffc6ba562007e5160e3806c4d5d0cd7e7": {
+            "body": {
+                "contextId": "sbx-fbae5909fec1ecbb66d5557d6511693f6befbeaea62408d8bcba017989312a5f"
+            },
+            "method": "PUT",
+            "statusCode": 200
+        },
+        "5990c557038ae971be7f983e5d16134684800d054a0b95635d86f733a1cabeda": {
+            "body": [
+                {
+                    "categoryOrder": ["level"],
+                    "categorySeparators": { "level": "/" },
+                    "categoryViews": { "level": "default" },
+                    "id": "portion",
+                    "mode": "inline",
+                    "separator": "//",
+                    "surface": "marking"
+                }
+            ],
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "59bc121c4dcf2875d65a2fe26ea1b52b4f7c3a0028b8980ead17c21ad31608b5": {
+            "body": [],
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "5bcf1fc77183bff1b56184ce58fb7e93bc91df5b45280f7182e8d6e1e1751132": {
+            "body": [
+                {
+                    "aliases": [],
+                    "categories": ["level"],
+                    "id": "U",
+                    "name": "Unclassified",
+                    "parents": [],
+                    "position": 1,
+                    "rank": 1,
+                    "views": { "default": "U" }
+                },
+                {
+                    "aliases": [],
+                    "categories": ["level"],
+                    "id": "S",
+                    "name": "Secret",
+                    "parents": [],
+                    "position": 2,
+                    "rank": 2,
+                    "views": { "default": "S" }
+                }
+            ],
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "5d596e5be7e756e9d763686d30224f04084cc907377db47e6de3102793794366": {
+            "body": {
+                "contextId": "sbx-0e114e9a9b746fb40f64fd247b22a255fbda9aab2580518a7b7eb9f49296cdbe"
+            },
+            "method": "PUT",
+            "statusCode": 200
+        },
+        "5ece22cef77b11cae861d49c935f89c87e182223727b27ad017205dabe2bbc37": {
+            "body": [],
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "6f45d33ecba4dd8f9596b00948745dcbe94b0040f91ba4bcfd73d0595eebe6fe": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "mi-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "sbx-bb89dc2350a8df7ac3db257010c6f83bef3a9f8dcb3bd71db3b2f5e2875404d9",
+                            "kind": "context",
+                            "version": "0.0.0"
+                        }
+                    ],
+                    "contextId": "sbx-bb89dc2350a8df7ac3db257010c6f83bef3a9f8dcb3bd71db3b2f5e2875404d9",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "0.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "recognition": {
+                        "corrections": [],
+                        "status": "complete",
+                        "unmatched": []
+                    },
+                    "rendered": "",
+                    "renders": {},
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "6fbf925a4de15dfa7dcf9c17151b684796d0b261e06c379d8af60d8199cbb898": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "mi-fav-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "sbx-6c681c841ca0bf1c6d3e67a15634dd29d507a7e10e5e59d2fddf8bd98b490dad",
+                            "kind": "context",
+                            "version": "0.0.0"
+                        }
+                    ],
+                    "contextId": "sbx-6c681c841ca0bf1c6d3e67a15634dd29d507a7e10e5e59d2fddf8bd98b490dad",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "0.0.0"
+                },
+                "result": {
+                    "suggestions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "U",
+                            "description": "Unclassified",
+                            "group": "Level",
+                            "label": "U",
+                            "name": "Unclassified",
+                            "order": 1,
+                            "selected": false,
+                            "views": { "default": "U" }
+                        },
+                        {
+                            "categoryId": "level",
+                            "conceptId": "S",
+                            "description": "Secret",
+                            "group": "Level",
+                            "label": "S",
+                            "name": "Secret",
+                            "order": 2,
+                            "selected": false,
+                            "views": { "default": "S" }
+                        }
+                    ],
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "779eadcde6d5800d03580153143235ddb09a8c8427cd6d93e5338027061b619d": {
+            "body": {
+                "id": "sbx-17b4975449e03d3e365ebaf2d35e88a4fcea065e3cd16cf66c7571f54cde8aea",
+                "scheme": {
+                    "id": "mi-bare",
+                    "resolvedVersion": "1.0.0",
+                    "version": "1.0.0"
+                },
+                "schemes": [
+                    {
+                        "id": "mi-bare",
+                        "roles": ["primary"],
+                        "selector": "mi-bare",
+                        "version": "1.0.0"
+                    }
+                ],
+                "version": "0.0.0"
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "7a5d48df0e569783ff16e0fb151b0b9cc66c1c3d9cba1af464041f59064838a2": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "mi-bare",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "sbx-1243dd66eda91c820ad8e49845e2e28e45c6a000ecb972da542c4a9dbff6cbf2",
+                            "kind": "context",
+                            "version": "0.0.0"
+                        }
+                    ],
+                    "contextId": "sbx-1243dd66eda91c820ad8e49845e2e28e45c6a000ecb972da542c4a9dbff6cbf2",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "0.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "S",
+                            "confidence": "certain",
+                            "source": "user"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            { "categoryId": "level", "conceptId": "S" }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "S",
+                    "renders": {},
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "7f5513529792c761f0bcbca4a27636b7ab7e07c6dd96a555d8bbc70777efa216": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "mi-fav-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "sbx-6c681c841ca0bf1c6d3e67a15634dd29d507a7e10e5e59d2fddf8bd98b490dad",
+                            "kind": "context",
+                            "version": "0.0.0"
+                        }
+                    ],
+                    "contextId": "sbx-6c681c841ca0bf1c6d3e67a15634dd29d507a7e10e5e59d2fddf8bd98b490dad",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "0.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "U",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            { "categoryId": "level", "conceptId": "U" }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "U",
+                    "renders": {},
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "84ff10d65f3b625a7266a0b549a6da5066b64347a8073ff3afabe1f45821d6ac": {
+            "body": [
+                {
+                    "id": "level",
+                    "label": "Level",
+                    "position": 1,
+                    "required": false,
+                    "rollup": "max",
+                    "single": true
+                }
+            ],
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "8770094a815ffa82712b6198575935e5cd6f8b5c360805259fffb27b5b2cc5f1": {
+            "body": {
+                "id": "sbx-71a1e51b6e87d569f3af419b2513d772f4f7323601b771bb986c0df123ace665",
+                "scheme": {
+                    "id": "mi-bare",
+                    "resolvedVersion": "1.0.0",
+                    "version": "1.0.0"
+                },
+                "schemes": [
+                    {
+                        "id": "mi-bare",
+                        "roles": ["primary"],
+                        "selector": "mi-bare",
+                        "version": "1.0.0"
+                    }
+                ],
+                "version": "0.0.0"
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "888959a5b4a69ab43f862eddddc5b94f8827a88eedfdb8c2217056f38703126f": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "mi-bare",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "sbx-1243dd66eda91c820ad8e49845e2e28e45c6a000ecb972da542c4a9dbff6cbf2",
+                            "kind": "context",
+                            "version": "0.0.0"
+                        }
+                    ],
+                    "contextId": "sbx-1243dd66eda91c820ad8e49845e2e28e45c6a000ecb972da542c4a9dbff6cbf2",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "0.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "U",
+                            "confidence": "certain",
+                            "source": "aggregate"
+                        }
+                    ],
+                    "errors": [],
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "U",
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "8a5f75c05888a8bf17952ef0aefb42f630100577329239937875375dcbf51dd9": {
+            "body": {
+                "id": "sbx-bb89dc2350a8df7ac3db257010c6f83bef3a9f8dcb3bd71db3b2f5e2875404d9",
+                "scheme": {
+                    "id": "mi-test",
+                    "resolvedVersion": "1.0.0",
+                    "version": "1.0.0"
+                },
+                "schemes": [
+                    {
+                        "id": "mi-test",
+                        "roles": ["primary"],
+                        "selector": "mi-test",
+                        "version": "1.0.0"
+                    }
+                ],
+                "version": "0.0.0"
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "8ad849cde4346cea18160ad6baad3b8fc84a2df66b607b28534e72998dadbf42": {
+            "body": {
+                "defaultRenderFormat": "long",
+                "description": "MarkedInput Multi-Category Test test fixture.",
+                "embeddedMarking": [
+                    { "pattern": "\\(([^)]+)\\)", "template": "({marking}) " }
+                ],
+                "id": "mi-multi",
+                "name": "MarkedInput Multi-Category Test",
+                "referenceSurfaceLabel": {
+                    "plural": "Handbooks",
+                    "singular": "Handbook"
+                },
+                "roleAware": false,
+                "version": "1.0.0"
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "8bfbc521e99660a27bf41ad25da8a33eeaf185fcb36a707f2bb464efd64e1970": {
+            "body": [
+                {
+                    "id": "level",
+                    "label": "Level",
+                    "position": 1,
+                    "required": false,
+                    "rollup": "max",
+                    "single": true
+                }
+            ],
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "8c7a4a3f7a8389c6cd93492b8addb8bedc83dbca4a51bf6815f4d305be0336e6": {
+            "body": {
+                "id": "sbx-b59734032e19bfb9c2766c10ed821a561bd00200decd7fb236341eecbbcf3e4a",
+                "scheme": {
+                    "id": "mi-bare",
+                    "resolvedVersion": "1.0.0",
+                    "version": "1.0.0"
+                },
+                "schemes": [
+                    {
+                        "id": "mi-bare",
+                        "roles": ["primary"],
+                        "selector": "mi-bare",
+                        "version": "1.0.0"
+                    }
+                ],
+                "version": "0.0.0"
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "8d078e996986ece41c8154c39fa59cf0cfff36334bdff06c170c7e580a070244": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "mi-bare",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "sbx-17b4975449e03d3e365ebaf2d35e88a4fcea065e3cd16cf66c7571f54cde8aea",
+                            "kind": "context",
+                            "version": "0.0.0"
+                        }
+                    ],
+                    "contextId": "sbx-17b4975449e03d3e365ebaf2d35e88a4fcea065e3cd16cf66c7571f54cde8aea",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "0.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "U",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            { "categoryId": "level", "conceptId": "U" }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "recognition": {
+                        "corrections": [],
+                        "inputFormat": "portion",
+                        "status": "complete",
+                        "surface": "marking",
+                        "unmatched": []
+                    },
+                    "rendered": "U",
+                    "renders": {},
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "8ef9309c3edf6ec0701ecd4a20269aff3984722e277345a256b6af013803b0b0": {
+            "body": [
+                {
+                    "aliases": [],
+                    "categories": ["level"],
+                    "id": "U",
+                    "name": "Unclassified",
+                    "parents": [],
+                    "position": 1,
+                    "rank": 1,
+                    "views": { "default": "U" }
+                },
+                {
+                    "aliases": [],
+                    "categories": ["level"],
+                    "id": "S",
+                    "name": "Secret",
+                    "parents": [],
+                    "position": 2,
+                    "rank": 2,
+                    "views": { "default": "S" }
+                },
+                {
+                    "aliases": [],
+                    "categories": ["scope"],
+                    "id": "LOCAL",
+                    "name": "Local",
+                    "parents": [],
+                    "position": 1,
+                    "rank": 1,
+                    "views": { "default": "LOCAL" }
+                },
+                {
+                    "aliases": [],
+                    "categories": ["scope"],
+                    "id": "REGIONAL",
+                    "name": "Regional",
+                    "parents": [],
+                    "position": 2,
+                    "rank": 2,
+                    "views": { "default": "REGIONAL" }
+                }
+            ],
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "90a908cec035bbff4c0e121a5df19078eded0083b740b4e5a918460363fe00c3": {
+            "body": [
+                {
+                    "categoryOrder": ["level"],
+                    "categorySeparators": { "level": "/" },
+                    "categoryViews": { "level": "default" },
+                    "id": "portion",
+                    "mode": "inline",
+                    "separator": "//",
+                    "surface": "marking"
+                }
+            ],
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "922bf1a2c4bdce889bfd60bb23148ca6feff97b1bbc01f339762cc29a6e03328": {
+            "body": [
+                {
+                    "aliases": [],
+                    "categories": ["level"],
+                    "id": "U",
+                    "name": "Unclassified",
+                    "parents": [],
+                    "position": 1,
+                    "rank": 1,
+                    "views": { "default": "U" }
+                },
+                {
+                    "aliases": [],
+                    "categories": ["level"],
+                    "id": "S",
+                    "name": "Secret",
+                    "parents": [],
+                    "position": 2,
+                    "rank": 2,
+                    "views": { "default": "S" }
+                }
+            ],
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "92609f1da7f5d25fa77638db1e6679656e59f68ab571dc91efd1bf1fef7298c9": {
+            "body": [],
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "92d42d4b89801eac6768e5f753af6daa5bca4db687c35ffd0f482208029e7d87": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "mi-bare",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "sbx-17b4975449e03d3e365ebaf2d35e88a4fcea065e3cd16cf66c7571f54cde8aea",
+                            "kind": "context",
+                            "version": "0.0.0"
+                        }
+                    ],
+                    "contextId": "sbx-17b4975449e03d3e365ebaf2d35e88a4fcea065e3cd16cf66c7571f54cde8aea",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "0.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "U",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            { "categoryId": "level", "conceptId": "U" }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "U",
+                    "renders": {},
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "95e76697bb96df3a07bbc69efa54e939a5e69125c5c6de67af753a4acf8aaf37": {
+            "body": [
+                {
+                    "categoryOrder": ["level"],
+                    "categorySeparators": { "level": "/" },
+                    "categoryViews": { "level": "default" },
+                    "id": "portion",
+                    "mode": "inline",
+                    "separator": "//",
+                    "surface": "marking"
+                }
+            ],
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "98d5e863d5bde5825065176f3b511ecbc9d48e2f15e6b63f2349b4c48f55c480": {
+            "body": [],
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "9e40193120ef5d1ea2963bc6eaa2e8cc75d51a9b7ad83d6043d2463546c588b9": {
+            "body": [],
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "9f0993e7ab9941150c7bd08ba06bb2f73c91579977a092203d463a2187339848": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "mi-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "sbx-bb89dc2350a8df7ac3db257010c6f83bef3a9f8dcb3bd71db3b2f5e2875404d9",
+                            "kind": "context",
+                            "version": "0.0.0"
+                        }
+                    ],
+                    "contextId": "sbx-bb89dc2350a8df7ac3db257010c6f83bef3a9f8dcb3bd71db3b2f5e2875404d9",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "0.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "U",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            { "categoryId": "level", "conceptId": "U" }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "recognition": {
+                        "corrections": [],
+                        "inputFormat": "portion",
+                        "status": "complete",
+                        "surface": "marking",
+                        "unmatched": []
+                    },
+                    "rendered": "U",
+                    "renders": {},
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "9f5ace59ee990c5e9fe93d45a008252c675de0fa8c10cb779ab2899dd0b0a0b8": {
+            "body": {
+                "defaultRenderFormat": "portion",
+                "description": "MarkedInput Bare Format Test test fixture.",
+                "embeddedMarking": [
+                    { "pattern": "\\(([^)]+)\\)", "template": "({marking})" }
+                ],
+                "id": "mi-bare",
+                "name": "MarkedInput Bare Format Test",
+                "referenceSurfaceLabel": {
+                    "plural": "Handbooks",
+                    "singular": "Handbook"
+                },
+                "roleAware": false,
+                "version": "1.0.0"
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "9fc063b29c5a026636b1d80b69ccfcf51e64cc616f80793e94db3cee3f43c56e": {
+            "body": {
+                "id": "sbx-fbae5909fec1ecbb66d5557d6511693f6befbeaea62408d8bcba017989312a5f",
+                "scheme": {
+                    "id": "mi-multi",
+                    "resolvedVersion": "1.0.0",
+                    "version": "1.0.0"
+                },
+                "schemes": [
+                    {
+                        "id": "mi-multi",
+                        "roles": ["primary"],
+                        "selector": "mi-multi",
+                        "version": "1.0.0"
+                    }
+                ],
+                "version": "0.0.0"
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "a127d1b61f920d03c3236373d99137a21a3d2f600500de8b0e9ce2129593e6a5": {
+            "body": {
+                "defaultRenderFormat": "portion",
+                "embeddedMarking": [
+                    { "pattern": "\\(([^)]+)\\)", "template": "({marking}) " }
+                ],
+                "id": "mi-bare",
+                "name": "MarkedInput Bare Format Test",
+                "referenceSurfaceLabel": {
+                    "plural": "Handbooks",
+                    "singular": "Handbook"
+                },
+                "roleAware": false,
+                "version": "1.0.0"
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "a1524e0f54e1dd0349306095b61c6efe3d5b79c354c0dd60ca6f3ad9f4fa330a": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "mi-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "sbx-bb89dc2350a8df7ac3db257010c6f83bef3a9f8dcb3bd71db3b2f5e2875404d9",
+                            "kind": "context",
+                            "version": "0.0.0"
+                        }
+                    ],
+                    "contextId": "sbx-bb89dc2350a8df7ac3db257010c6f83bef3a9f8dcb3bd71db3b2f5e2875404d9",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "0.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "S",
+                            "confidence": "certain",
+                            "source": "aggregate"
+                        }
+                    ],
+                    "errors": [],
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "S",
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "a2ea4d726a67cff774eb48fe2384431da9e5ad3a6d820e8236508c909d5833b8": {
+            "body": {
+                "contextId": "sbx-b59734032e19bfb9c2766c10ed821a561bd00200decd7fb236341eecbbcf3e4a"
+            },
+            "method": "PUT",
+            "statusCode": 200
+        },
+        "a4d02c9cc3fc41fc0137bdcc1ee1042af0998fa2b0e84bb035e0db4f3620e5c3": {
+            "body": [],
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "a6015484eab4b2176713439d96b89afe88a3fdfbf8759c2eb1dd130abdcc99a4": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "mi-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "sbx-bb89dc2350a8df7ac3db257010c6f83bef3a9f8dcb3bd71db3b2f5e2875404d9",
+                            "kind": "context",
+                            "version": "0.0.0"
+                        }
+                    ],
+                    "contextId": "sbx-bb89dc2350a8df7ac3db257010c6f83bef3a9f8dcb3bd71db3b2f5e2875404d9",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "0.0.0"
+                },
+                "result": {
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            { "categoryId": "level", "conceptId": "U" }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "result": "U"
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "a739f2462cb706df6e2e0ccbe15cbe1dd1e3c053fa7e00f2bedb0c467470fb7f": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "mi-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "sbx-bb89dc2350a8df7ac3db257010c6f83bef3a9f8dcb3bd71db3b2f5e2875404d9",
+                            "kind": "context",
+                            "version": "0.0.0"
+                        }
+                    ],
+                    "contextId": "sbx-bb89dc2350a8df7ac3db257010c6f83bef3a9f8dcb3bd71db3b2f5e2875404d9",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "0.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "",
+                    "renders": {},
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "aa64a562e7223d0127a2c998c2ec4df737d5e9573f26b59768fa4e0e2c0fc6e5": {
+            "body": [
+                {
+                    "id": "level",
+                    "label": "Level",
+                    "position": 1,
+                    "required": false,
+                    "rollup": "max",
+                    "single": true
+                }
+            ],
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "ab9733693b7189a8cbb2757679dc00316bfd281613a63878b95788b86c7d9871": {
+            "body": {
+                "contextId": "sbx-4a72e2f80726b45c95cbb1e4bc9b3dd468aab5f0904ca8fe5969744f4cdbb5eb"
+            },
+            "method": "PUT",
+            "statusCode": 200
+        },
+        "abb6727400fd4a4d4155f0d71208cda62f45fb3bb9f31d8ddaed329d0315e03a": {
+            "body": [
+                {
+                    "id": "level",
+                    "label": "Level",
+                    "position": 1,
+                    "required": false,
+                    "rollup": "max",
+                    "single": true
+                }
+            ],
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "ad9c65c79228fec065e8404c8fcf6ac7a8cc85e21734a42fb0598cff22faa26c": {
+            "body": {
+                "contextId": "sbx-6c681c841ca0bf1c6d3e67a15634dd29d507a7e10e5e59d2fddf8bd98b490dad"
+            },
+            "method": "PUT",
+            "statusCode": 200
+        },
+        "ae9c0991e35a1c71db246a67d99820bc7af9a86bed73044d833c0239bafe0aa0": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "mi-multi",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "sbx-fbae5909fec1ecbb66d5557d6511693f6befbeaea62408d8bcba017989312a5f",
+                            "kind": "context",
+                            "version": "0.0.0"
+                        }
+                    ],
+                    "contextId": "sbx-fbae5909fec1ecbb66d5557d6511693f6befbeaea62408d8bcba017989312a5f",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "0.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "S",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "scope",
+                            "conceptId": "REGIONAL",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            { "categoryId": "level", "conceptId": "S" },
+                            { "categoryId": "scope", "conceptId": "REGIONAL" }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "recognition": {
+                        "corrections": [],
+                        "status": "complete",
+                        "surface": "marking",
+                        "unmatched": []
+                    },
+                    "rendered": "S//REGIONAL",
+                    "renders": {},
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "b0bcdc1055804f6a48c5e7cca125e2569dabc8bb9e24ae262806e3425c5e6cf7": {
+            "body": [
+                {
+                    "categoryOrder": ["level", "scope"],
+                    "categorySeparators": { "level": "/", "scope": "/" },
+                    "categoryViews": { "level": "default", "scope": "default" },
+                    "id": "long",
+                    "mode": "inline",
+                    "separator": "//",
+                    "separatorBefore": { "scope": "//" },
+                    "surface": "marking"
+                },
+                {
+                    "categoryOrder": ["level", "scope"],
+                    "categorySeparators": { "level": "/", "scope": "/" },
+                    "categoryViews": { "level": "default", "scope": "default" },
+                    "id": "portion",
+                    "mode": "inline",
+                    "separator": "//",
+                    "separatorBefore": { "scope": "//" },
+                    "surface": "marking"
+                }
+            ],
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "b0f97e7b7bc952d219917745ed0b13fcf067a99b5af567ef4a7ea03a3e3063cf": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "mi-bare",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "sbx-1243dd66eda91c820ad8e49845e2e28e45c6a000ecb972da542c4a9dbff6cbf2",
+                            "kind": "context",
+                            "version": "0.0.0"
+                        }
+                    ],
+                    "contextId": "sbx-1243dd66eda91c820ad8e49845e2e28e45c6a000ecb972da542c4a9dbff6cbf2",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "0.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "U",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            { "categoryId": "level", "conceptId": "U" }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "U",
+                    "renders": {},
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "b3bfb3809212841e1c339b2ab97b3ac797f5ad41e53ebeb21e5e138ef66a3819": {
+            "body": [],
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "bb325d532386434e14cb20ee07a944ddedd4a6fb7535ee5b14e54b03782d68e8": {
+            "body": [],
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "becb3dc3b000bda2b4326e4ee7120773682e1e3d2aebb8a2c92af6c14f84257d": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "mi-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "sbx-bb89dc2350a8df7ac3db257010c6f83bef3a9f8dcb3bd71db3b2f5e2875404d9",
+                            "kind": "context",
+                            "version": "0.0.0"
+                        }
+                    ],
+                    "contextId": "sbx-bb89dc2350a8df7ac3db257010c6f83bef3a9f8dcb3bd71db3b2f5e2875404d9",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "0.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "S",
+                            "confidence": "certain",
+                            "source": "aggregate"
+                        }
+                    ],
+                    "errors": [],
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "S",
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "c0367d16d4cc55e7037dc0a14f7ea6ef6774c224f72b2539564553ab12bf0ca4": {
+            "body": [],
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "c164465ed9cb105568dae516e2b98e31f9edc3653219e488c2c2529759ddf35f": {
+            "body": [],
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "c3a7b5979b06923db11dcbbc654c2cd8239f706888b26d9bf2135d2351915aa9": {
+            "body": {
+                "defaultRenderFormat": "portion",
+                "embeddedMarking": [
+                    { "pattern": "\\(([^)]+)\\)", "template": "({marking}) " }
+                ],
+                "id": "mi-fav-test",
+                "name": "MarkedInput Favorites Test",
+                "referenceSurfaceLabel": {
+                    "plural": "Handbooks",
+                    "singular": "Handbook"
+                },
+                "roleAware": false,
+                "version": "1.0.0"
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "c43c45f02babd6159a92370fe5cf377aa2359d75d6da03f30c909f1c87775ee7": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "mi-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "sbx-bb89dc2350a8df7ac3db257010c6f83bef3a9f8dcb3bd71db3b2f5e2875404d9",
+                            "kind": "context",
+                            "version": "0.0.0"
+                        }
+                    ],
+                    "contextId": "sbx-bb89dc2350a8df7ac3db257010c6f83bef3a9f8dcb3bd71db3b2f5e2875404d9",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "0.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "S",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            { "categoryId": "level", "conceptId": "S" }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "recognition": {
+                        "corrections": [],
+                        "inputFormat": "portion",
+                        "status": "complete",
+                        "surface": "marking",
+                        "unmatched": []
+                    },
+                    "rendered": "S",
+                    "renders": {},
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "ccab07a6b068aebc76f13945da9a810701c95c089d99a35a406983f6783dc885": {
+            "body": {
+                "defaultRenderFormat": "long",
+                "embeddedMarking": [
+                    { "pattern": "\\(([^)]+)\\)", "template": "({marking}) " }
+                ],
+                "id": "mi-multi",
+                "name": "MarkedInput Multi-Category Test",
+                "referenceSurfaceLabel": {
+                    "plural": "Handbooks",
+                    "singular": "Handbook"
+                },
+                "roleAware": false,
+                "version": "1.0.0"
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "cf7f2fbecdedd784ebd53aaaba2d50ded11503c5e8317ddbecb23c9af24dd231": {
+            "body": [],
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "d0c73f99e64e5e1440ab3f8a31abf8db34f5fcbf1ae5c743d4101bebbbed115e": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "mi-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "sbx-bb89dc2350a8df7ac3db257010c6f83bef3a9f8dcb3bd71db3b2f5e2875404d9",
+                            "kind": "context",
+                            "version": "0.0.0"
+                        }
+                    ],
+                    "contextId": "sbx-bb89dc2350a8df7ac3db257010c6f83bef3a9f8dcb3bd71db3b2f5e2875404d9",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "0.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "S",
+                            "confidence": "certain",
+                            "source": "user"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            { "categoryId": "level", "conceptId": "S" }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "S",
+                    "renders": {},
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "d0d965c83eeff1bb2d86b64da097a1b04e22391c207eb493d3fc27fea2c1575b": {
+            "body": [
+                {
+                    "aliases": [],
+                    "categories": ["level"],
+                    "id": "U",
+                    "name": "Unclassified",
+                    "parents": [],
+                    "position": 1,
+                    "rank": 1,
+                    "views": { "default": "U" }
+                },
+                {
+                    "aliases": [],
+                    "categories": ["level"],
+                    "id": "S",
+                    "name": "Secret",
+                    "parents": [],
+                    "position": 2,
+                    "rank": 2,
+                    "views": { "default": "S" }
+                },
+                {
+                    "aliases": [],
+                    "categories": ["scope"],
+                    "id": "LOCAL",
+                    "name": "Local",
+                    "parents": [],
+                    "position": 1,
+                    "rank": 1,
+                    "views": { "default": "LOCAL" }
+                },
+                {
+                    "aliases": [],
+                    "categories": ["scope"],
+                    "id": "REGIONAL",
+                    "name": "Regional",
+                    "parents": [],
+                    "position": 2,
+                    "rank": 2,
+                    "views": { "default": "REGIONAL" }
+                }
+            ],
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "d1aa04eeb2bbeda9971775dea57bcf535b6e327c59a87865d000326dfede9ed7": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "mi-multi",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "sbx-fbae5909fec1ecbb66d5557d6511693f6befbeaea62408d8bcba017989312a5f",
+                            "kind": "context",
+                            "version": "0.0.0"
+                        }
+                    ],
+                    "contextId": "sbx-fbae5909fec1ecbb66d5557d6511693f6befbeaea62408d8bcba017989312a5f",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "0.0.0"
+                },
+                "result": {
+                    "suggestions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "U",
+                            "description": "Unclassified",
+                            "group": "Level",
+                            "label": "U",
+                            "name": "Unclassified",
+                            "order": 1,
+                            "selected": false,
+                            "views": { "default": "U" }
+                        },
+                        {
+                            "categoryId": "level",
+                            "conceptId": "S",
+                            "description": "Secret",
+                            "group": "Level",
+                            "label": "S",
+                            "name": "Secret",
+                            "order": 2,
+                            "selected": false,
+                            "views": { "default": "S" }
+                        },
+                        {
+                            "categoryId": "scope",
+                            "conceptId": "LOCAL",
+                            "description": "Local",
+                            "group": "Scope",
+                            "label": "LOCAL",
+                            "name": "Local",
+                            "order": 1,
+                            "selected": false,
+                            "views": { "default": "LOCAL" }
+                        },
+                        {
+                            "categoryId": "scope",
+                            "conceptId": "REGIONAL",
+                            "description": "Regional",
+                            "group": "Scope",
+                            "label": "REGIONAL",
+                            "name": "Regional",
+                            "order": 2,
+                            "selected": false,
+                            "views": { "default": "REGIONAL" }
+                        }
+                    ],
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "d72c4e0437014e6f17b69560f0e573b43911f06aa69c0eed8ad5321518daef6b": {
+            "body": [],
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "d83f79395f991aec638042a73d2d37da9e4e3cf4e22ae8c2f1f4f438af86b41f": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "mi-fav-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "sbx-6c681c841ca0bf1c6d3e67a15634dd29d507a7e10e5e59d2fddf8bd98b490dad",
+                            "kind": "context",
+                            "version": "0.0.0"
+                        }
+                    ],
+                    "contextId": "sbx-6c681c841ca0bf1c6d3e67a15634dd29d507a7e10e5e59d2fddf8bd98b490dad",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "0.0.0"
+                },
+                "result": {
+                    "suggestions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "U",
+                            "description": "Unclassified",
+                            "group": "Level",
+                            "label": "U",
+                            "name": "Unclassified",
+                            "order": 1,
+                            "selected": true,
+                            "views": { "default": "U" }
+                        }
+                    ],
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "dc887510a7f830807d605b0202afa8b3765fa93265e6e5afe6f72875f41c7af6": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "mi-bare",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "sbx-1243dd66eda91c820ad8e49845e2e28e45c6a000ecb972da542c4a9dbff6cbf2",
+                            "kind": "context",
+                            "version": "0.0.0"
+                        }
+                    ],
+                    "contextId": "sbx-1243dd66eda91c820ad8e49845e2e28e45c6a000ecb972da542c4a9dbff6cbf2",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "0.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "U",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            { "categoryId": "level", "conceptId": "U" }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "recognition": {
+                        "corrections": [],
+                        "inputFormat": "portion",
+                        "status": "complete",
+                        "surface": "marking",
+                        "unmatched": []
+                    },
+                    "rendered": "U",
+                    "renders": {},
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "dee5992da4e5a2e00c87ef1b675b08c35ddf32cf56f60e61af61bfe293b329c4": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "mi-bare",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "sbx-17b4975449e03d3e365ebaf2d35e88a4fcea065e3cd16cf66c7571f54cde8aea",
+                            "kind": "context",
+                            "version": "0.0.0"
+                        }
+                    ],
+                    "contextId": "sbx-17b4975449e03d3e365ebaf2d35e88a4fcea065e3cd16cf66c7571f54cde8aea",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "0.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "S",
+                            "confidence": "certain",
+                            "source": "user"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            { "categoryId": "level", "conceptId": "S" }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "S",
+                    "renders": {},
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "df254a64572362163471778e76d586284d08db21f8a82efabcf5339c5625c453": {
+            "body": {
+                "id": "sbx-1243dd66eda91c820ad8e49845e2e28e45c6a000ecb972da542c4a9dbff6cbf2",
+                "scheme": {
+                    "id": "mi-bare",
+                    "resolvedVersion": "1.0.0",
+                    "version": "1.0.0"
+                },
+                "schemes": [
+                    {
+                        "id": "mi-bare",
+                        "roles": ["primary"],
+                        "selector": "mi-bare",
+                        "version": "1.0.0"
+                    }
+                ],
+                "version": "0.0.0"
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "e070dec6e78862435e7c23c92a6e4a93a9667377aed0b78b533966687028c314": {
+            "body": {
+                "abiVersion": "v1",
+                "engineSha": "",
+                "engineVersion": "1.0.0-dev.30",
+                "gitTag": "",
+                "openapiVersion": "1.0.0-dev.30",
+                "status": "ok"
+            },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "e390a15ccd49d432ae2f442881ab3d6c48ccd56cf98f6a6049774c44b0581a67": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "mi-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "sbx-bb89dc2350a8df7ac3db257010c6f83bef3a9f8dcb3bd71db3b2f5e2875404d9",
+                            "kind": "context",
+                            "version": "0.0.0"
+                        }
+                    ],
+                    "contextId": "sbx-bb89dc2350a8df7ac3db257010c6f83bef3a9f8dcb3bd71db3b2f5e2875404d9",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "0.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "U",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            { "categoryId": "level", "conceptId": "U" }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "U",
+                    "renders": {},
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "ea18f89c769037ad98ad795550ef7aa7bc3822b82f8e32c30d0c687f50f46027": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "mi-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "sbx-bb89dc2350a8df7ac3db257010c6f83bef3a9f8dcb3bd71db3b2f5e2875404d9",
+                            "kind": "context",
+                            "version": "0.0.0"
+                        }
+                    ],
+                    "contextId": "sbx-bb89dc2350a8df7ac3db257010c6f83bef3a9f8dcb3bd71db3b2f5e2875404d9",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "0.0.0"
+                },
+                "result": {
+                    "suggestions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "U",
+                            "description": "Unclassified",
+                            "group": "Level",
+                            "label": "U",
+                            "name": "Unclassified",
+                            "order": 1,
+                            "selected": true,
+                            "views": { "default": "U" }
+                        }
+                    ],
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "eab9274306eee6731c7d9adb4ca30a2d9f01388bf05eea111de2ebd542646a82": {
+            "body": [
+                {
+                    "categoryOrder": ["level"],
+                    "categorySeparators": { "level": "/" },
+                    "categoryViews": { "level": "default" },
+                    "id": "portion",
+                    "mode": "inline",
+                    "separator": "//",
+                    "surface": "marking"
+                }
+            ],
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "f1f099d48f3ce6ef389da7e79d82c8c9ab814fc08ef32dee64d3aada83400f22": {
+            "body": [
+                {
+                    "categoryOrder": ["level"],
+                    "categorySeparators": { "level": "/" },
+                    "categoryViews": { "level": "default" },
+                    "id": "portion",
+                    "mode": "inline",
+                    "separator": "//",
+                    "surface": "marking"
+                }
+            ],
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "f85ab2e5b56cf0ac51cfa0dc2d1503ba120243b69924318c0ad631fccd014347": {
+            "body": [
+                {
+                    "aliases": [],
+                    "categories": ["level"],
+                    "id": "U",
+                    "name": "Unclassified",
+                    "parents": [],
+                    "position": 1,
+                    "rank": 1,
+                    "views": { "default": "U" }
+                },
+                {
+                    "aliases": [],
+                    "categories": ["level"],
+                    "id": "S",
+                    "name": "Secret",
+                    "parents": [],
+                    "position": 2,
+                    "rank": 2,
+                    "views": { "default": "S" }
+                }
+            ],
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "fb815191f78286f0e98ebd7d22276d91cddebdafab9c5b32632297a6103bfdb5": {
+            "body": [
+                {
+                    "id": "level",
+                    "label": "Level",
+                    "position": 1,
+                    "required": false,
+                    "rollup": "max",
+                    "single": true
+                },
+                {
+                    "id": "scope",
+                    "label": "Scope",
+                    "position": 2,
+                    "required": false,
+                    "rollup": "max",
+                    "single": true
+                }
+            ],
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "fe205e482accb7f15497c68e380f57797a27b7d18e02dfc724c6513e364d9529": {
+            "body": [],
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        }
+    }
+}

@@ -9,8 +9,8 @@
  */
 import { asContext } from '../../test-fixtures/as-context';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { Context } from '@ezclassify/engine';
 import { EzClassifyUI } from '../ezclassify-ui';
+import { connectDemoContext } from '../../../../test-support/demo-runtime';
 
 function wait(ms = 60): Promise<void> {
     return new Promise((r) => setTimeout(r, ms));
@@ -36,96 +36,107 @@ function concept(id: string, category: string, position: number) {
  * HOLD needs a partner. On a whole that is its own rule. On a part the partner
  * may come from the whole instead, so the part rule asks about the whole.
  */
-function createEngine() {
-    return Context.fromComponents({
-        scheme: {
-            scheme: {
-                id: 'bound-part-role',
-                version: '1.0.0',
-                name: 'Bound part role',
-                role_aware: true,
-                data: {
-                    concepts: [
-                        concept('LOW', 'level', 1),
-                        concept('HOLD', 'handling', 1),
-                        concept('ALPHA', 'partners', 1),
-                    ],
-                    categories: [
-                        {
-                            id: 'level',
-                            label: 'Level',
-                            single: true,
-                            rollup: 'max',
-                            position: 1,
-                        },
-                        {
-                            id: 'handling',
-                            label: 'Handling',
-                            single: false,
-                            rollup: 'union',
-                            position: 2,
-                        },
-                        {
-                            id: 'partners',
-                            label: 'Partners',
-                            single: false,
-                            rollup: 'intersection',
-                            position: 3,
-                        },
-                    ],
-                },
-                rules: [
-                    {
-                        id: 'whole-hold-needs-partner',
-                        action: 'cardinality',
-                        category: 'partners',
-                        min: 1,
-                        when: {
-                            all: [
-                                { role: 'whole' },
-                                { category: 'handling', has: 'HOLD' },
+async function createEngine() {
+    return (
+        await connectDemoContext({
+            draft: {
+                scheme: {
+                    scheme: {
+                        id: 'bound-part-role',
+                        version: '1.0.0',
+                        name: 'Bound part role',
+                        description: 'Bound part role test fixture.',
+                        role_aware: true,
+                        data: {
+                            concepts: [
+                                concept('LOW', 'level', 1),
+                                concept('HOLD', 'handling', 1),
+                                concept('ALPHA', 'partners', 1),
                             ],
-                        },
-                        message: WHOLE_RULE,
-                    },
-                    {
-                        id: 'part-hold-needs-partner',
-                        action: 'cardinality',
-                        category: 'partners',
-                        min: 1,
-                        when: {
-                            all: [
-                                { role: 'part' },
+                            categories: [
                                 {
-                                    target: 'context',
-                                    category: 'partners',
-                                    is: 'count_eq 0',
+                                    id: 'level',
+                                    label: 'Level',
+                                    single: true,
+                                    rollup: 'max',
+                                    position: 1,
                                 },
-                                { category: 'handling', has: 'HOLD' },
+                                {
+                                    id: 'handling',
+                                    label: 'Handling',
+                                    single: false,
+                                    rollup: 'union',
+                                    position: 2,
+                                },
+                                {
+                                    id: 'partners',
+                                    label: 'Partners',
+                                    single: false,
+                                    rollup: 'intersection',
+                                    position: 3,
+                                },
                             ],
                         },
-                        message: PART_RULE,
+                        rules: [
+                            {
+                                id: 'whole-hold-needs-partner',
+                                action: 'cardinality',
+                                category: 'partners',
+                                min: 1,
+                                when: {
+                                    all: [
+                                        { role: 'whole' },
+                                        { category: 'handling', has: 'HOLD' },
+                                    ],
+                                },
+                                message: WHOLE_RULE,
+                            },
+                            {
+                                id: 'part-hold-needs-partner',
+                                action: 'cardinality',
+                                category: 'partners',
+                                min: 1,
+                                when: {
+                                    all: [
+                                        { role: 'part' },
+                                        {
+                                            target: 'context',
+                                            category: 'partners',
+                                            is: 'count_eq 0',
+                                        },
+                                        { category: 'handling', has: 'HOLD' },
+                                    ],
+                                },
+                                message: PART_RULE,
+                            },
+                        ],
+                        render: {
+                            default: 'default',
+                            formats: [
+                                {
+                                    id: 'default',
+                                    surface: 'marking',
+                                    mode: 'inline',
+                                    separator: '//',
+                                    fields: [
+                                        { category: 'level', separator: '/' },
+                                        {
+                                            category: 'handling',
+                                            separator: '/',
+                                        },
+                                        {
+                                            category: 'partners',
+                                            separator: ', ',
+                                        },
+                                    ],
+                                },
+                            ],
+                        },
                     },
-                ],
-                render: {
-                    default: 'default',
-                    formats: [
-                        {
-                            id: 'default',
-                            surface: 'marking',
-                            mode: 'inline',
-                            separator: '//',
-                            fields: [
-                                { category: 'level', separator: '/' },
-                                { category: 'handling', separator: '/' },
-                                { category: 'partners', separator: ', ' },
-                            ],
-                        },
-                    ],
                 },
             },
-        },
-    }).scheme;
+        })
+    ).scheme;
 }
 
 let root: HTMLDivElement;
@@ -151,7 +162,9 @@ describe('a TagInput bound to a part whose whole holds nothing', () => {
             '<input type="hidden" id="part" data-ezclassify-marking data-ezclassify-part-of="whole" />',
             '<input id="f" data-ezclassify-controller="tags" data-ezclassify-bound-to="part" />',
         ].join('');
-        forms = new EzClassifyUI(asContext(createEngine() as never), { root });
+        forms = new EzClassifyUI(asContext((await createEngine()) as never), {
+            root,
+        });
         await wait(150);
 
         const field = document.getElementById('f') as HTMLInputElement;

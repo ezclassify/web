@@ -25,14 +25,14 @@ import {
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
-import type { LocalContextSchemeEngineAdapter } from '@ezclassify/types';
+import type { RemoteContextSchemeEngineAdapter } from '@ezclassify/types';
 import { EzClassifyUI } from '../ezclassify-ui';
 import { MarkingField } from './marking-field';
-import { Context } from '@ezclassify/engine';
 import {
     openContext,
     type OpenContext,
 } from '../../test-fixtures/context-doubles';
+import { connectDemoContext } from '../../../../test-support/demo-runtime';
 
 function wait(ms = 60): Promise<void> {
     return new Promise((r) => setTimeout(r, ms));
@@ -50,7 +50,7 @@ function wait(ms = 60): Promise<void> {
  * `from_school`) can suppress a concept from display without making it any less
  * part of the marking.
  */
-function createTestEngine(
+async function createTestEngine(
     opts: {
         withSuppressedCategory?: boolean;
         /**
@@ -86,7 +86,7 @@ function createTestEngine(
          */
         withCaveatFirstFormat?: boolean;
     } = {},
-): LocalContextSchemeEngineAdapter {
+): Promise<RemoteContextSchemeEngineAdapter> {
     const hasBranchCategory =
         opts.withSuppressedCategory || opts.withSuppressedCategoryDefault;
     const categories = [
@@ -241,70 +241,73 @@ function createTestEngine(
             : []),
     ];
     return openContext(
-        Context.fromComponents({
-            scheme: {
+        await connectDemoContext({
+            draft: {
                 scheme: {
-                    id: 'mf-test',
-                    version: '1.0.0',
-                    name: 'MarkingField Test',
-                    data: {
-                        concepts: concepts,
-                        categories,
-                    },
-                    rules: [],
-                    render: {
-                        default: 'default',
-                        formats: [
-                            {
-                                id: 'default',
-                                surface: 'marking',
-                                mode: 'inline',
-                                separator: '//',
-                                // Deliberately binds no field to 'branch' when that
-                                // category is present: its concept is
-                                // certain/asserted but never rendered.
-                                fields: [
-                                    { category: 'level', separator: '/' },
-                                    {
-                                        category: 'caveat',
-                                        separator: '/',
-                                        ...(opts.withEachAffix
-                                            ? {
-                                                  each: {
-                                                      prefix: '(',
-                                                      suffix: ')',
+                    scheme: {
+                        id: 'mf-test',
+                        version: '1.0.0',
+                        name: 'MarkingField Test',
+                        description: 'MarkingField Test test fixture.',
+                        data: {
+                            concepts: concepts,
+                            categories,
+                        },
+                        rules: [],
+                        render: {
+                            default: 'default',
+                            formats: [
+                                {
+                                    id: 'default',
+                                    surface: 'marking',
+                                    mode: 'inline',
+                                    separator: '//',
+                                    // Deliberately binds no field to 'branch' when that
+                                    // category is present: its concept is
+                                    // certain/asserted but never rendered.
+                                    fields: [
+                                        { category: 'level', separator: '/' },
+                                        {
+                                            category: 'caveat',
+                                            separator: '/',
+                                            ...(opts.withEachAffix
+                                                ? {
+                                                      each: {
+                                                          prefix: '(',
+                                                          suffix: ')',
+                                                      },
+                                                  }
+                                                : {}),
+                                        },
+                                    ],
+                                },
+                                ...(opts.withCaveatFirstFormat
+                                    ? [
+                                          {
+                                              id: 'caveat-first',
+                                              surface: 'marking',
+                                              mode: 'inline',
+                                              separator: '//',
+                                              fields: [
+                                                  {
+                                                      category: 'caveat',
+                                                      separator: '/',
                                                   },
-                                              }
-                                            : {}),
-                                    },
-                                ],
-                            },
-                            ...(opts.withCaveatFirstFormat
-                                ? [
-                                      {
-                                          id: 'caveat-first',
-                                          surface: 'marking',
-                                          mode: 'inline',
-                                          separator: '//',
-                                          fields: [
-                                              {
-                                                  category: 'caveat',
-                                                  separator: '/',
-                                              },
-                                              {
-                                                  category: 'level',
-                                                  separator: '/',
-                                              },
-                                          ],
-                                      },
-                                  ]
-                                : []),
-                        ],
+                                                  {
+                                                      category: 'level',
+                                                      separator: '/',
+                                                  },
+                                              ],
+                                          },
+                                      ]
+                                    : []),
+                            ],
+                        },
                     },
                 },
             },
         }),
-    ).scheme as LocalContextSchemeEngineAdapter;
+    ).scheme as RemoteContextSchemeEngineAdapter;
 }
 
 /**
@@ -317,9 +320,9 @@ function createTestEngine(
  * exactly where a remote adapter actually has it.
  */
 function toAsyncAdapter(
-    engine: LocalContextSchemeEngineAdapter,
+    engine: RemoteContextSchemeEngineAdapter,
     delayMs = 10,
-): LocalContextSchemeEngineAdapter {
+): RemoteContextSchemeEngineAdapter {
     const asyncMethods = new Set(['process', 'render', 'suggest']);
     return new Proxy(engine as object, {
         get(target, prop, receiver) {
@@ -337,7 +340,7 @@ function toAsyncAdapter(
             }
             return (value as (...a: unknown[]) => unknown).bind(target);
         },
-    }) as LocalContextSchemeEngineAdapter;
+    }) as RemoteContextSchemeEngineAdapter;
 }
 
 /**
@@ -351,8 +354,8 @@ function toAsyncAdapter(
  * Strips only the parentheses `withEachAffix` frames its values with.
  */
 function withUnframedRender(
-    engine: LocalContextSchemeEngineAdapter,
-): LocalContextSchemeEngineAdapter {
+    engine: RemoteContextSchemeEngineAdapter,
+): RemoteContextSchemeEngineAdapter {
     const unframe = (value: unknown): unknown => {
         if (typeof value === 'string') return value.replace(/[()]/g, '');
         if (value === null || typeof value !== 'object') return value;
@@ -372,12 +375,15 @@ function withUnframedRender(
             if (prop !== 'process' && prop !== 'render') {
                 return (value as (...a: unknown[]) => unknown).bind(target);
             }
-            return (...args: unknown[]) =>
+            return async (...args: unknown[]) =>
                 unframe(
-                    (value as (...a: unknown[]) => unknown).apply(target, args),
+                    await (value as (...a: unknown[]) => unknown).apply(
+                        target,
+                        args,
+                    ),
                 );
         },
-    }) as LocalContextSchemeEngineAdapter;
+    }) as RemoteContextSchemeEngineAdapter;
 }
 
 /**
@@ -387,71 +393,75 @@ function withUnframedRender(
  * `mountWithFavorites` (and the vanilla-declarative
  * `ezclassify-ui-favorites-option.spec.ts` it mirrors) exercise.
  */
-function createTestContext(): OpenContext {
+async function createTestContext(): Promise<OpenContext> {
     return openContext(
-        Context.fromComponents({
-            scheme: {
+        await connectDemoContext({
+            draft: {
                 scheme: {
-                    id: 'mf-fav-test',
-                    version: '1.0.0',
-                    name: 'MarkingField Favorites Test',
-                    data: {
-                        concepts: [
-                            {
-                                id: 'S',
-                                name: 'Secret',
-                                views: { default: 'SECRET' },
-                                categories: ['level'],
-                                parents: [],
-                                aliases: [],
-                                position: 1,
-                                rank: 2,
-                            },
-                            {
-                                id: 'NF',
-                                name: 'No Foreign',
-                                views: { default: 'NOFORN' },
-                                categories: ['caveat'],
-                                parents: [],
-                                aliases: [],
-                                position: 1,
-                                rank: 1,
-                            },
-                        ],
-                        categories: [
-                            {
-                                id: 'level',
-                                label: 'Level',
-                                required: false,
-                                single: true,
-                                rollup: 'max',
-                                position: 1,
-                            },
-                            {
-                                id: 'caveat',
-                                label: 'Caveat',
-                                required: false,
-                                single: false,
-                                rollup: 'union',
-                                position: 2,
-                            },
-                        ],
-                    },
-                    rules: [],
-                    render: {
-                        default: 'default',
-                        formats: [
-                            {
-                                id: 'default',
-                                surface: 'marking',
-                                mode: 'inline',
-                                separator: '//',
-                                fields: [
-                                    { category: 'level', separator: '/' },
-                                    { category: 'caveat', separator: '/' },
-                                ],
-                            },
-                        ],
+                    scheme: {
+                        id: 'mf-fav-test',
+                        version: '1.0.0',
+                        name: 'MarkingField Favorites Test',
+                        description:
+                            'MarkingField Favorites Test test fixture.',
+                        data: {
+                            concepts: [
+                                {
+                                    id: 'S',
+                                    name: 'Secret',
+                                    views: { default: 'SECRET' },
+                                    categories: ['level'],
+                                    parents: [],
+                                    aliases: [],
+                                    position: 1,
+                                    rank: 2,
+                                },
+                                {
+                                    id: 'NF',
+                                    name: 'No Foreign',
+                                    views: { default: 'NOFORN' },
+                                    categories: ['caveat'],
+                                    parents: [],
+                                    aliases: [],
+                                    position: 1,
+                                    rank: 1,
+                                },
+                            ],
+                            categories: [
+                                {
+                                    id: 'level',
+                                    label: 'Level',
+                                    required: false,
+                                    single: true,
+                                    rollup: 'max',
+                                    position: 1,
+                                },
+                                {
+                                    id: 'caveat',
+                                    label: 'Caveat',
+                                    required: false,
+                                    single: false,
+                                    rollup: 'union',
+                                    position: 2,
+                                },
+                            ],
+                        },
+                        rules: [],
+                        render: {
+                            default: 'default',
+                            formats: [
+                                {
+                                    id: 'default',
+                                    surface: 'marking',
+                                    mode: 'inline',
+                                    separator: '//',
+                                    fields: [
+                                        { category: 'level', separator: '/' },
+                                        { category: 'caveat', separator: '/' },
+                                    ],
+                                },
+                            ],
+                        },
                     },
                 },
             },
@@ -510,7 +520,9 @@ async function mount(
     initialValue = '',
 ): Promise<{ input: HTMLTextAreaElement; field: MarkingField }> {
     root.innerHTML = `<textarea id="mf" data-ezclassify-controller="marking">${initialValue}</textarea>`;
-    forms = new EzClassifyUI(asContext(createTestEngine() as never), { root });
+    forms = new EzClassifyUI(asContext((await createTestEngine()) as never), {
+        root,
+    });
     await wait();
     const input = document.getElementById('mf') as HTMLTextAreaElement;
     const field = forms.components.get(input) as MarkingField;
@@ -561,9 +573,12 @@ describe('MarkingField native text input', () => {
         root.innerHTML = `<form><label for="native-mark">Marking label</label><input id="native-mark" name="marking" type="text" value="SECRET" data-ezclassify-controller="marking" ${extra}></form>`;
         const input = root.querySelector<HTMLInputElement>('#native-mark')!;
         input.setCustomValidity(hostValidity);
-        forms = new EzClassifyUI(asContext(createTestEngine() as never), {
-            root,
-        });
+        forms = new EzClassifyUI(
+            asContext((await createTestEngine()) as never),
+            {
+                root,
+            },
+        );
         await wait();
         const editor = input
             .closest('.marking-field-wrap')
@@ -793,9 +808,12 @@ describe('MarkingField native text input', () => {
         const inputs = Array.from(root.querySelectorAll('input'));
         const nativeInput = vi.fn();
         inputs.forEach((input) => input.addEventListener('input', nativeInput));
-        forms = new EzClassifyUI(asContext(createTestEngine() as never), {
-            root,
-        });
+        forms = new EzClassifyUI(
+            asContext((await createTestEngine()) as never),
+            {
+                root,
+            },
+        );
         await wait(120);
         expect(inputs.map((input) => input.value)).toEqual([
             'SECRET',
@@ -835,7 +853,7 @@ describe('MarkingField native text input', () => {
         const error = vi.spyOn(console, 'error');
         root.innerHTML =
             '<input id="prefilled" type="text" value="UNCLASSIFIED" data-ezclassify-controller="marking">';
-        const context = asContext(createTestEngine() as never);
+        const context = asContext((await createTestEngine()) as never);
         new EzClassifyUI(context, { root }).destroy();
         forms = new EzClassifyUI(context, { root });
         await wait(120);
@@ -854,9 +872,12 @@ describe('MarkingField native text input', () => {
         await wait(200);
         expect(input.value).toBe('UNCLASSIFIED');
         expect(root.contains(editor)).toBe(false);
-        forms = new EzClassifyUI(asContext(createTestEngine() as never), {
-            root,
-        });
+        forms = new EzClassifyUI(
+            asContext((await createTestEngine()) as never),
+            {
+                root,
+            },
+        );
         await wait(120);
         expect(
             root.querySelectorAll('textarea.marking-field-host'),
@@ -894,9 +915,12 @@ describe('MarkingField native text input', () => {
         expect(input.getAttribute('style')).toBe('color: red');
         expect(input.value).toBe('UNCLASSIFIED');
         forms!.destroy();
-        forms = new EzClassifyUI(asContext(createTestEngine() as never), {
-            root,
-        });
+        forms = new EzClassifyUI(
+            asContext((await createTestEngine()) as never),
+            {
+                root,
+            },
+        );
         await wait();
         expect(
             root.querySelectorAll('textarea.marking-field-host'),
@@ -909,7 +933,7 @@ describe('MarkingField format', () => {
     it('writes its committed marking in the format data-ezclassify-format names', async () => {
         root.innerHTML = `<textarea id="mf" data-ezclassify-controller="marking" data-ezclassify-format="caveat-first"></textarea>`;
         forms = new EzClassifyUI(
-            asContext(createTestEngine({ withCaveatFirstFormat: true })),
+            asContext(await createTestEngine({ withCaveatFirstFormat: true })),
             { root },
         );
         await wait();
@@ -923,7 +947,7 @@ describe('MarkingField format', () => {
     it("writes the scheme's whole default when no format is named", async () => {
         root.innerHTML = `<textarea id="mf" data-ezclassify-controller="marking"></textarea>`;
         forms = new EzClassifyUI(
-            asContext(createTestEngine({ withCaveatFirstFormat: true })),
+            asContext(await createTestEngine({ withCaveatFirstFormat: true })),
             { root },
         );
         await wait();
@@ -939,9 +963,12 @@ describe('MarkingField', () => {
     it('keeps host block margins in the resting display and attached drawer', async () => {
         root.innerHTML =
             '<textarea id="mf" style="margin-top: 6px; margin-bottom: 8px" data-ezclassify-controller="marking">SECRET</textarea>';
-        forms = new EzClassifyUI(asContext(createTestEngine() as never), {
-            root,
-        });
+        forms = new EzClassifyUI(
+            asContext((await createTestEngine()) as never),
+            {
+                root,
+            },
+        );
         await wait();
         const display = root.querySelector<HTMLElement>(
             '.marking-field-display',
@@ -995,7 +1022,7 @@ describe('MarkingField', () => {
         input.type = 'number';
         container.appendChild(input);
         await expect(
-            new MarkingField().init(container, createTestContext(), {}),
+            new MarkingField().init(container, await createTestContext(), {}),
         ).rejects.toThrow(/textarea|text input/);
     });
 
@@ -1004,9 +1031,12 @@ describe('MarkingField', () => {
         // onto the display. Explicit host styles make the assertions check copied
         // values without relying on jsdom's incomplete textarea defaults.
         root.innerHTML = `<textarea id="mf" data-ezclassify-controller="marking" style="border: 3px solid rgb(10, 20, 30); background-color: rgb(40, 50, 60); padding: 7px;">SECRET</textarea>`;
-        forms = new EzClassifyUI(asContext(createTestEngine() as never), {
-            root,
-        });
+        forms = new EzClassifyUI(
+            asContext((await createTestEngine()) as never),
+            {
+                root,
+            },
+        );
         await wait();
         const display = root.querySelector(
             '.marking-field-display',
@@ -1130,9 +1160,12 @@ describe('MarkingField', () => {
     it('scopes the suggestion dropdown to the bound category', async () => {
         // A category-bound mount must offer only concepts accepted by that facet.
         root.innerHTML = `<textarea id="mf" data-ezclassify-controller="marking" data-ezclassify-category="caveat"></textarea>`;
-        forms = new EzClassifyUI(asContext(createTestEngine() as never), {
-            root,
-        });
+        forms = new EzClassifyUI(
+            asContext((await createTestEngine()) as never),
+            {
+                root,
+            },
+        );
         await wait();
         const input = document.getElementById('mf') as HTMLTextAreaElement;
         await openPicker(input);
@@ -1276,7 +1309,9 @@ describe('MarkingField', () => {
         root.innerHTML = `<textarea id="mf" data-ezclassify-controller="marking">SECRET</textarea>`;
         forms = new EzClassifyUI(
             asContext(
-                createTestEngine({ withOverlappingCaveat: true }) as never,
+                (await createTestEngine({
+                    withOverlappingCaveat: true,
+                })) as never,
             ),
             { root },
         );
@@ -1535,7 +1570,9 @@ describe('MarkingField', () => {
         // tooltip does not cover it.
         root.innerHTML = `<textarea id="mf" data-ezclassify-controller="marking"></textarea>`;
         forms = new EzClassifyUI(
-            asContext(createTestEngine({ withEachAffix: true }) as never),
+            asContext(
+                (await createTestEngine({ withEachAffix: true })) as never,
+            ),
             { root },
         );
         await wait();
@@ -1599,7 +1636,7 @@ describe('MarkingField', () => {
         forms = new EzClassifyUI(
             asContext(
                 withUnframedRender(
-                    createTestEngine({ withEachAffix: true }),
+                    await createTestEngine({ withEachAffix: true }),
                 ) as never,
             ),
             { root },
@@ -1735,9 +1772,12 @@ describe('MarkingField', () => {
 
     it('honors the data-ezclassify-no-tooltips opt-out for painted tokens', async () => {
         root.innerHTML = `<div data-ezclassify-no-tooltips><textarea id="mf" data-ezclassify-controller="marking">SECRET</textarea></div>`;
-        forms = new EzClassifyUI(asContext(createTestEngine() as never), {
-            root,
-        });
+        forms = new EzClassifyUI(
+            asContext((await createTestEngine()) as never),
+            {
+                root,
+            },
+        );
         await wait();
         const input = document.getElementById('mf') as HTMLTextAreaElement;
         expect(input).not.toBeNull();
@@ -1897,7 +1937,9 @@ describe('MarkingField', () => {
         root.innerHTML = `<textarea id="mf" data-ezclassify-controller="marking"></textarea>`;
         forms = new EzClassifyUI(
             asContext(
-                createTestEngine({ withSuppressedCategory: true }) as never,
+                (await createTestEngine({
+                    withSuppressedCategory: true,
+                })) as never,
             ),
             { root },
         );
@@ -1972,7 +2014,9 @@ describe('MarkingField', () => {
         root.innerHTML = `<textarea id="mf" data-ezclassify-controller="marking">SECRET//SI/TK/NOFORN</textarea>`;
         forms = new EzClassifyUI(
             asContext(
-                createTestEngine({ withReleasabilityConcepts: true }) as never,
+                (await createTestEngine({
+                    withReleasabilityConcepts: true,
+                })) as never,
             ),
             { root },
         );
@@ -2012,7 +2056,9 @@ describe('MarkingField', () => {
         root.innerHTML = `<textarea id="mf" data-ezclassify-controller="marking">SECRET//SI/TK/NOFORN</textarea>`;
         forms = new EzClassifyUI(
             asContext(
-                createTestEngine({ withReleasabilityConcepts: true }) as never,
+                (await createTestEngine({
+                    withReleasabilityConcepts: true,
+                })) as never,
             ),
             { root },
         );
@@ -2041,10 +2087,10 @@ describe('MarkingField', () => {
         root.innerHTML = `<textarea id="mf" data-ezclassify-controller="marking"></textarea>`;
         forms = new EzClassifyUI(
             asContext(
-                createTestEngine({
+                (await createTestEngine({
                     withSuppressedCategory: true,
                     withReleasabilityConcepts: true,
-                }) as never,
+                })) as never,
             ),
             { root },
         );
@@ -2121,9 +2167,9 @@ describe('MarkingField', () => {
             root.innerHTML = `<textarea id="mf" data-ezclassify-controller="marking">UNCLASSIFIED//ORCON</textarea>`;
             forms = new EzClassifyUI(
                 asContext(
-                    createTestEngine({
+                    (await createTestEngine({
                         withReleasabilityConcepts: true,
-                    }) as never,
+                    })) as never,
                 ),
                 { root },
             );
@@ -2222,7 +2268,9 @@ describe('MarkingField', () => {
         root.innerHTML = `<textarea id="mf" data-ezclassify-controller="marking">SECRET//SI/TK/NOFORN</textarea>`;
         forms = new EzClassifyUI(
             asContext(
-                createTestEngine({ withReleasabilityConcepts: true }) as never,
+                (await createTestEngine({
+                    withReleasabilityConcepts: true,
+                })) as never,
             ),
             { root },
         );
@@ -2257,7 +2305,9 @@ describe('MarkingField', () => {
         root.innerHTML = `<textarea id="mf" data-ezclassify-controller="marking"></textarea>`;
         forms = new EzClassifyUI(
             asContext(
-                createTestEngine({ withSuppressedCategory: true }) as never,
+                (await createTestEngine({
+                    withSuppressedCategory: true,
+                })) as never,
             ),
             { root },
         );
@@ -2296,9 +2346,9 @@ describe('MarkingField', () => {
         root.innerHTML = `<textarea id="mf" data-ezclassify-controller="marking">SECRET</textarea>`;
         forms = new EzClassifyUI(
             asContext(
-                createTestEngine({
+                (await createTestEngine({
                     withSuppressedCategoryDefault: true,
-                }) as never,
+                })) as never,
             ),
             { root },
         );
@@ -2368,9 +2418,12 @@ describe('MarkingField', () => {
         const eventsOnB: Event[] = [];
         inputB.addEventListener('input', (e) => eventsOnB.push(e));
 
-        forms = new EzClassifyUI(asContext(createTestEngine() as never), {
-            root,
-        });
+        forms = new EzClassifyUI(
+            asContext((await createTestEngine()) as never),
+            {
+                root,
+            },
+        );
         await wait();
 
         const fieldA = forms.components.get(inputA) as MarkingField;
@@ -2394,7 +2447,7 @@ describe('MarkingField', () => {
     it('accepting and committing through an async (remote-shaped) engine reaches the same end state as a local one', async () => {
         root.innerHTML = `<textarea id="mf" data-ezclassify-controller="marking"></textarea>`;
         forms = new EzClassifyUI(
-            asContext(toAsyncAdapter(createTestEngine()) as never),
+            asContext(toAsyncAdapter(await createTestEngine()) as never),
             {
                 root,
             },
@@ -2416,7 +2469,7 @@ describe('MarkingField', () => {
     });
 
     it('releases the re-entrancy guard only once an async accept write actually lands, not synchronously', async () => {
-        const real = createTestEngine();
+        const real = await createTestEngine();
         const suggestSpy = vi.spyOn(real, 'suggest');
         root.innerHTML = `<textarea id="mf" data-ezclassify-controller="marking"></textarea>`;
         forms = new EzClassifyUI(asContext(toAsyncAdapter(real) as never), {
@@ -2457,7 +2510,7 @@ describe('MarkingField', () => {
     it('keeps what is typed while a commit is still being stored', async () => {
         // Engine reads wait while `holding`, so the commit's store round trip
         // is still out when the user types again.
-        const real = createTestEngine();
+        const real = await createTestEngine();
         let holding = false;
         const held: Array<() => void> = [];
         const engine = new Proxy(real as object, {
@@ -2505,9 +2558,12 @@ describe('MarkingField', () => {
         // Setup applies the JS-sized rows floor while enhanced. Destroy must
         // restore the authored rows attribute when returning the plain textarea.
         root.innerHTML = `<textarea id="mf" rows="4" data-ezclassify-controller="marking">SECRET</textarea>`;
-        forms = new EzClassifyUI(asContext(createTestEngine() as never), {
-            root,
-        });
+        forms = new EzClassifyUI(
+            asContext((await createTestEngine()) as never),
+            {
+                root,
+            },
+        );
         await wait();
         const input = document.getElementById('mf') as HTMLTextAreaElement;
         const field = forms.components.get(input) as MarkingField;
@@ -2600,7 +2656,7 @@ async function mountWithFavorites(
     forms: EzClassifyUI;
 }> {
     root.innerHTML = `<textarea id="mf-fav" data-ezclassify-controller="marking">${initialValue}</textarea>`;
-    const forms = new EzClassifyUI(asContext(createTestContext()), {
+    const forms = new EzClassifyUI(asContext(await createTestContext()), {
         root,
         favorites,
     });

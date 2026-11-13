@@ -11,7 +11,6 @@
  */
 import { asContext } from '../../../test-fixtures/as-context';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { Context } from '@ezclassify/engine';
 import { openContext } from '../../../test-fixtures/context-doubles';
 import type { Assertion } from '@ezclassify/types';
 import { EzClassifyUI } from '../../ezclassify-ui';
@@ -22,8 +21,9 @@ import {
     rowFor,
     wait,
 } from './composer-harness';
+import { connectDemoContext } from '../../../../../test-support/demo-runtime';
 
-function createContext() {
+async function createContext() {
     const concept = (
         id: string,
         label: string,
@@ -40,138 +40,141 @@ function createContext() {
         rank: position,
     });
     return openContext(
-        Context.fromComponents({
-            scheme: {
+        await connectDemoContext({
+            draft: {
                 scheme: {
-                    id: 'composer-pick',
-                    version: '1.0.0',
-                    name: 'Composer Pick',
-                    data: {
-                        concepts: [
-                            concept('U', 'UNCLASSIFIED', 'level', 1),
-                            concept('S', 'SECRET', 'level', 2),
-                            concept('SI', 'SI', 'control', 1),
-                            concept('TK', 'TK', 'control', 2),
-                            concept('NF', 'NOFORN', 'dissem', 1),
-                            concept('REL', 'REL TO', 'dissem', 2),
-                            concept('DO', 'DISPLAY ONLY', 'dissem', 3),
-                            concept('USA', 'USA', 'rel', 0),
-                            // Two countries that belong to both lists.
-                            {
-                                ...concept('AUS', 'AUS', 'rel', 1),
-                                categories: ['rel', 'disp'],
-                            },
-                            {
-                                ...concept('CAN', 'CAN', 'rel', 2),
-                                categories: ['rel', 'disp'],
-                            },
-                        ],
-                        categories: [
-                            {
-                                id: 'level',
-                                label: 'Level',
-                                required: false,
-                                single: true,
-                                rollup: 'max',
-                                position: 1,
-                            },
-                            {
-                                id: 'control',
-                                label: 'Control system',
-                                required: false,
-                                single: false,
-                                rollup: 'union',
-                                position: 2,
-                            },
-                            {
-                                id: 'dissem',
-                                label: 'Dissemination',
-                                required: false,
-                                single: false,
-                                rollup: 'union',
-                                position: 3,
-                            },
-                            {
-                                id: 'rel',
-                                label: 'Releasable To',
-                                required: false,
-                                single: false,
-                                rollup: 'intersection',
-                                position: 4,
-                            },
-                            {
-                                id: 'disp',
-                                label: 'Display Only To',
-                                required: false,
-                                single: false,
-                                rollup: 'intersection',
-                                position: 5,
-                            },
-                        ],
-                    },
-                    // The two values of one category that cannot go together.
-                    rules: [
-                        {
-                            id: 'nf-excludes-do',
-                            name: 'NOFORN excludes DISPLAY ONLY',
-                            action: 'exclusive',
-                            target: ['NF', 'DO'],
-                            rank: ['NF', 'DO'],
-                            message:
-                                'NOFORN cannot be combined with DISPLAY ONLY.',
+                    scheme: {
+                        id: 'composer-pick',
+                        version: '1.0.0',
+                        name: 'Composer Pick',
+                        description: 'Composer Pick test fixture.',
+                        data: {
+                            concepts: [
+                                concept('U', 'UNCLASSIFIED', 'level', 1),
+                                concept('S', 'SECRET', 'level', 2),
+                                concept('SI', 'SI', 'control', 1),
+                                concept('TK', 'TK', 'control', 2),
+                                concept('NF', 'NOFORN', 'dissem', 1),
+                                concept('REL', 'REL TO', 'dissem', 2),
+                                concept('DO', 'DISPLAY ONLY', 'dissem', 3),
+                                concept('USA', 'USA', 'rel', 0),
+                                // Two countries that belong to both lists.
+                                {
+                                    ...concept('AUS', 'AUS', 'rel', 1),
+                                    categories: ['rel', 'disp'],
+                                },
+                                {
+                                    ...concept('CAN', 'CAN', 'rel', 2),
+                                    categories: ['rel', 'disp'],
+                                },
+                            ],
+                            categories: [
+                                {
+                                    id: 'level',
+                                    label: 'Level',
+                                    required: false,
+                                    single: true,
+                                    rollup: 'max',
+                                    position: 1,
+                                },
+                                {
+                                    id: 'control',
+                                    label: 'Control system',
+                                    required: false,
+                                    single: false,
+                                    rollup: 'union',
+                                    position: 2,
+                                },
+                                {
+                                    id: 'dissem',
+                                    label: 'Dissemination',
+                                    required: false,
+                                    single: false,
+                                    rollup: 'union',
+                                    position: 3,
+                                },
+                                {
+                                    id: 'rel',
+                                    label: 'Releasable To',
+                                    required: false,
+                                    single: false,
+                                    rollup: 'intersection',
+                                    position: 4,
+                                },
+                                {
+                                    id: 'disp',
+                                    label: 'Display Only To',
+                                    required: false,
+                                    single: false,
+                                    rollup: 'intersection',
+                                    position: 5,
+                                },
+                            ],
                         },
-                        // A REL TO list starts with USA: the engine infers it.
-                        {
-                            id: 'rel-starts-with-usa',
-                            name: 'REL TO starts with USA',
-                            when: 'REL',
-                            action: 'require',
-                            target: 'USA',
-                            category: 'rel',
-                        },
-                    ],
-                    render: {
-                        default: 'default',
-                        formats: [
+                        // The two values of one category that cannot go together.
+                        rules: [
                             {
-                                id: 'default',
-                                surface: 'marking',
-                                mode: 'inline',
-                                separator: '//',
-                                fields: [
-                                    { category: 'level', separator: '/' },
-                                    { category: 'control', separator: '/' },
-                                    {
-                                        category: 'dissem',
-                                        separator: '/',
-                                        // The country lists are written only
-                                        // under their own dissemination value.
-                                        phrases: [
-                                            {
-                                                head: 'REL',
-                                                separator: ' ',
-                                                fields: [
-                                                    {
-                                                        category: 'rel',
-                                                        separator: ', ',
-                                                    },
-                                                ],
-                                            },
-                                            {
-                                                head: 'DO',
-                                                separator: ' ',
-                                                fields: [
-                                                    {
-                                                        category: 'disp',
-                                                        separator: ', ',
-                                                    },
-                                                ],
-                                            },
-                                        ],
-                                    },
-                                ],
+                                id: 'nf-excludes-do',
+                                name: 'NOFORN excludes DISPLAY ONLY',
+                                action: 'exclusive',
+                                target: ['NF', 'DO'],
+                                rank: ['NF', 'DO'],
+                                message:
+                                    'NOFORN cannot be combined with DISPLAY ONLY.',
+                            },
+                            // A REL TO list starts with USA: the engine infers it.
+                            {
+                                id: 'rel-starts-with-usa',
+                                name: 'REL TO starts with USA',
+                                when: 'REL',
+                                action: 'require',
+                                target: 'USA',
+                                category: 'rel',
                             },
                         ],
+                        render: {
+                            default: 'default',
+                            formats: [
+                                {
+                                    id: 'default',
+                                    surface: 'marking',
+                                    mode: 'inline',
+                                    separator: '//',
+                                    fields: [
+                                        { category: 'level', separator: '/' },
+                                        { category: 'control', separator: '/' },
+                                        {
+                                            category: 'dissem',
+                                            separator: '/',
+                                            // The country lists are written only
+                                            // under their own dissemination value.
+                                            phrases: [
+                                                {
+                                                    head: 'REL',
+                                                    separator: ' ',
+                                                    fields: [
+                                                        {
+                                                            category: 'rel',
+                                                            separator: ', ',
+                                                        },
+                                                    ],
+                                                },
+                                                {
+                                                    head: 'DO',
+                                                    separator: ' ',
+                                                    fields: [
+                                                        {
+                                                            category: 'disp',
+                                                            separator: ', ',
+                                                        },
+                                                    ],
+                                                },
+                                            ],
+                                        },
+                                    ],
+                                },
+                            ],
+                        },
                     },
                 },
             },
@@ -200,7 +203,9 @@ const START = 'SECRET//SI/TK//NOFORN';
 async function open(kind: 'marking' | 'tags') {
     const tag = kind === 'tags' ? 'input' : 'textarea';
     root.innerHTML = `<input type="hidden" id="doc" data-ezclassify-marking /><label for="f">Marking</label><${tag} id="f" data-ezclassify-controller="${kind}" data-ezclassify-bound-to="doc"></${tag}>`;
-    forms = new EzClassifyUI(asContext(createContext() as never), { root });
+    forms = new EzClassifyUI(asContext((await createContext()) as never), {
+        root,
+    });
     await wait();
     await forms.store.publishRendered('doc', START);
     await wait();

@@ -6,23 +6,21 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import yaml from 'js-yaml';
-import { Context } from '@ezclassify/engine';
 import { AccessHandbook } from './access-handbook';
+import type { EzClassifyClient } from '@ezclassify/rest-client';
 import {
-    cedarValleySchemeYaml,
-    cedarValleyGuideYaml,
-    cedarValleyAccessYaml,
-} from '../../../../test-support/community-content';
+    connectDemoContext,
+    demoRuntimeSettled,
+} from '../../../../test-support/demo-runtime';
+import {
+    referenceAccess,
+    referenceScheme,
+} from '../../test-fixtures/reference-documents';
 
 // Keep the fixture self-contained; the canonical Context brand also recognizes
 // instances supplied by a separate engine package copy.
-function buildCtx(): Context {
-    return Context.fromComponents({
-        scheme: yaml.load(cedarValleySchemeYaml),
-        guides: [yaml.load(cedarValleyGuideYaml)],
-        access: yaml.load(cedarValleyAccessYaml),
-    });
+async function buildCtx(): Promise<EzClassifyClient> {
+    return await connectDemoContext({ contextId: 'cedar-valley' });
 }
 
 // JSDOM doesn't define matchMedia, stub it once.
@@ -58,22 +56,23 @@ describe('AccessHandbook', () => {
     });
 
     it('leads with the overall marking the engine loaded from the policy', async () => {
-        const policy = yaml.load(cedarValleyAccessYaml) as {
-            access: object;
-        };
+        const policy = referenceAccess();
         await component.init(
             container,
-            Context.fromComponents({
-                scheme: yaml.load(cedarValleySchemeYaml),
-                access: {
+            await connectDemoContext({
+                draft: {
+                    scheme: referenceScheme(),
                     access: {
-                        ...policy.access,
-                        marking: 'NOTIONAL',
-                        marking_scheme: { id: 'cedar-valley' },
+                        access: {
+                            ...policy.access,
+                            marking: 'NOTIONAL',
+                            marking_scheme: { id: 'ref-scheme-1' },
+                        },
                     },
                 },
             }),
         );
+        await demoRuntimeSettled();
 
         await vi.waitFor(() =>
             expect(
@@ -84,10 +83,11 @@ describe('AccessHandbook', () => {
     });
 
     it('renders rule entries from the access engine', async () => {
-        const ctx = buildCtx();
+        const ctx = await buildCtx();
         await component.init(container, ctx);
+        await demoRuntimeSettled();
 
-        // The cedarValley access policy has rules, at least one entry name should
+        // The Cedar Valley access policy has rules, at least one entry name should
         // appear in the rendered output.
         const entries = container.querySelectorAll(
             '.ez-access-handbook__entry',
@@ -107,8 +107,9 @@ describe('AccessHandbook', () => {
     });
 
     it('groups rules into always-evaluated and conditional sections', async () => {
-        const ctx = buildCtx();
+        const ctx = await buildCtx();
         await component.init(container, ctx);
+        await demoRuntimeSettled();
 
         const groups = container.querySelectorAll('.ez-access-handbook__group');
         // The state test has unconditional (level) and conditional (handling, test section, etc.) rules.
@@ -128,8 +129,9 @@ describe('AccessHandbook', () => {
     });
 
     it('starts with all groups collapsed by default', async () => {
-        const ctx = buildCtx();
+        const ctx = await buildCtx();
         await component.init(container, ctx);
+        await demoRuntimeSettled();
 
         const headers = container.querySelectorAll<HTMLButtonElement>(
             '.ez-access-handbook__group-header',
@@ -150,8 +152,9 @@ describe('AccessHandbook', () => {
     });
 
     it('expands a group on click and updates aria-expanded', async () => {
-        const ctx = buildCtx();
+        const ctx = await buildCtx();
         await component.init(container, ctx);
+        await demoRuntimeSettled();
 
         const firstHeader = container.querySelector<HTMLButtonElement>(
             '.ez-access-handbook__group-header',
@@ -177,8 +180,9 @@ describe('AccessHandbook', () => {
     });
 
     it('collapses an expanded group on second click', async () => {
-        const ctx = buildCtx();
+        const ctx = await buildCtx();
         await component.init(container, ctx);
+        await demoRuntimeSettled();
 
         const header = container.querySelector<HTMLButtonElement>(
             '.ez-access-handbook__group-header',
@@ -193,8 +197,9 @@ describe('AccessHandbook', () => {
     });
 
     it('expands all groups when expandAll option is set', async () => {
-        const ctx = buildCtx();
+        const ctx = await buildCtx();
         await component.init(container, ctx, { expandAll: true } as any);
+        await demoRuntimeSettled();
 
         const headers = container.querySelectorAll<HTMLButtonElement>(
             '.ez-access-handbook__group-header',
@@ -205,8 +210,9 @@ describe('AccessHandbook', () => {
     });
 
     it('filters rules by search term and hides non-matching entries', async () => {
-        const ctx = buildCtx();
+        const ctx = await buildCtx();
         await component.init(container, ctx, { expandAll: true } as any);
+        await demoRuntimeSettled();
 
         const searchInput = container.querySelector<HTMLInputElement>(
             '.ez-access-handbook__search-input',
@@ -236,10 +242,11 @@ describe('AccessHandbook', () => {
 
     it('shows empty-state message when no access engine is bound', async () => {
         // Scheme-only Context: no access policy bound.
-        const ctx = Context.fromComponents({
-            scheme: yaml.load(cedarValleySchemeYaml),
+        const ctx = await connectDemoContext({
+            draft: { scheme: referenceScheme() },
         });
         await component.init(container, ctx);
+        await demoRuntimeSettled();
 
         const empty = container.querySelector('.ez-access-handbook__empty');
         expect(empty).toBeTruthy();
@@ -247,8 +254,9 @@ describe('AccessHandbook', () => {
     });
 
     it('shows requirement text and attribute chips for each rule entry', async () => {
-        const ctx = buildCtx();
+        const ctx = await buildCtx();
         await component.init(container, ctx, { expandAll: true } as any);
+        await demoRuntimeSettled();
 
         const entries = container.querySelectorAll(
             '.ez-access-handbook__entry',
@@ -263,9 +271,10 @@ describe('AccessHandbook', () => {
     });
 
     it('auto-expands groups with search hits', async () => {
-        const ctx = buildCtx();
+        const ctx = await buildCtx();
         // Start collapsed.
         await component.init(container, ctx);
+        await demoRuntimeSettled();
 
         const headers = container.querySelectorAll<HTMLButtonElement>(
             '.ez-access-handbook__group-header',

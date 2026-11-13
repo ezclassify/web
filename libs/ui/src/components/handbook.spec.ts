@@ -13,11 +13,8 @@ import type { ConceptView, Assertion } from '@ezclassify/types';
 import type { Category, Concept, Scheme } from '@ezclassify/types/internal';
 import { schemeOnlyContext } from '../../test-fixtures/context-doubles';
 import { Handbook } from './handbook';
-import {
-    loadCedarValleyContext,
-    loadCedarValleyLevelsContext,
-} from '../../../../test-support/community-content';
 import { mockRenderFormats } from '../render-format-layout-mock';
+import { connectDemoContext } from '../../../../test-support/demo-runtime';
 
 /** Scheme with scopes and explicit defaultScope */
 function createScopedProfile(): Scheme {
@@ -1138,7 +1135,10 @@ describe('Handbook', () => {
 
     describe('context re-bind', () => {
         it('renders Cedar Valley scheme categories and concepts', async () => {
-            const ctxA = toCtx(loadCedarValleyContext().scheme);
+            const ctxA = toCtx(
+                (await connectDemoContext({ contextId: 'cedar-valley' }))
+                    .scheme,
+            );
             await handbook.init(container, ctxA, { expandAll: true });
 
             const headers = [
@@ -1159,7 +1159,10 @@ describe('Handbook', () => {
         });
 
         it('fully re-renders on Context change: the levels content appears, the district content disappears', async () => {
-            const ctxA = toCtx(loadCedarValleyContext().scheme);
+            const ctxA = toCtx(
+                (await connectDemoContext({ contextId: 'cedar-valley' }))
+                    .scheme,
+            );
             await handbook.init(container, ctxA, { expandAll: true });
 
             // Sanity: district-only content visible before re-bind
@@ -1168,7 +1171,13 @@ describe('Handbook', () => {
 
             // Re-bind to the protection-levels context
             handbook.destroy();
-            const ctxB = toCtx(loadCedarValleyLevelsContext().scheme);
+            const ctxB = toCtx(
+                (
+                    await connectDemoContext({
+                        contextId: 'cedar-valley-protection',
+                    })
+                ).scheme,
+            );
             await handbook.init(container, ctxB, { expandAll: true });
 
             // The levels category and concept must appear

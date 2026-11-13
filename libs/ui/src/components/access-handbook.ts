@@ -153,7 +153,12 @@ export class AccessHandbook extends ReadOnlyComponentBase {
     protected setup(): void {
         this.injectComponentStyles(ACCESS_HANDBOOK_CSS);
 
-        const accessEngine = this.context?.access ?? null;
+        // A remote Context's client always exposes access operations, so the
+        // resolved composition decides whether a policy is attached.
+        const accessEngine =
+            this.context?.compositionPresence?.access === false
+                ? null
+                : (this.context?.access ?? null);
 
         if (!accessEngine) {
             const empty = document.createElement('div');

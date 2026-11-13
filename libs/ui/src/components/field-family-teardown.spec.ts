@@ -11,11 +11,11 @@
 import { asContext } from '../../test-fixtures/as-context';
 import { describe, it, expect, vi } from 'vitest';
 import { EzClassifyUI } from '../ezclassify-ui';
-import { Context } from '@ezclassify/engine';
 import { openContext } from '../../test-fixtures/context-doubles';
 import type { LocalSchemeEngineAdapter } from '@ezclassify/types';
+import { connectDemoContext } from '../../../../test-support/demo-runtime';
 
-function createTestEngine(): LocalSchemeEngineAdapter {
+async function createTestEngine(): Promise<LocalSchemeEngineAdapter> {
     const categories = [
         {
             id: 'level',
@@ -77,31 +77,34 @@ function createTestEngine(): LocalSchemeEngineAdapter {
         },
     ];
     return openContext(
-        Context.fromComponents({
-            scheme: {
+        await connectDemoContext({
+            draft: {
                 scheme: {
-                    id: 'field-family-teardown-test',
-                    version: '1.0.0',
-                    name: 'Field Family Teardown Test',
-                    data: {
-                        concepts: concepts,
-                        categories,
-                    },
-                    rules: [],
-                    render: {
-                        default: 'default',
-                        formats: [
-                            {
-                                id: 'default',
-                                surface: 'marking',
-                                mode: 'inline',
-                                separator: '//',
-                                fields: [
-                                    { category: 'level', separator: '/' },
-                                    { category: 'caveat', separator: '/' },
-                                ],
-                            },
-                        ],
+                    scheme: {
+                        id: 'field-family-teardown-test',
+                        version: '1.0.0',
+                        name: 'Field Family Teardown Test',
+                        description: 'Field Family Teardown Test test fixture.',
+                        data: {
+                            concepts: concepts,
+                            categories,
+                        },
+                        rules: [],
+                        render: {
+                            default: 'default',
+                            formats: [
+                                {
+                                    id: 'default',
+                                    surface: 'marking',
+                                    mode: 'inline',
+                                    separator: '//',
+                                    fields: [
+                                        { category: 'level', separator: '/' },
+                                        { category: 'caveat', separator: '/' },
+                                    ],
+                                },
+                            ],
+                        },
                     },
                 },
             },
@@ -301,7 +304,7 @@ describe('field family: repeated mount/destroy leaves no teardown residue', () =
                 <textarea id="mf-${i}" data-ezclassify-controller="marking" data-ezclassify-format="default"></textarea>
             `;
             const forms = new EzClassifyUI(
-                asContext(createTestEngine() as never),
+                asContext((await createTestEngine()) as never),
                 {
                     root,
                     favorites: {
@@ -363,7 +366,10 @@ describe('field family: repeated mount/destroy leaves no teardown residue', () =
             `;
             const forms = new EzClassifyUI(
                 asContext(
-                    answersLate(createTestEngine(), ENGINE_LATENCY_MS) as never,
+                    answersLate(
+                        await createTestEngine(),
+                        ENGINE_LATENCY_MS,
+                    ) as never,
                 ),
                 {
                     root,

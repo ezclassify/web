@@ -8,11 +8,10 @@
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { InlineMarkingEditor } from './inline-marking-editor';
-import { Context } from '@ezclassify/engine';
 import { schemeOnlyContext } from '../../test-fixtures/context-doubles';
 import type {
     Assertion,
-    LocalContextSchemeEngineAdapter,
+    RemoteContextSchemeEngineAdapter,
 } from '@ezclassify/types';
 import {
     activeRow,
@@ -27,10 +26,14 @@ import {
     typeText,
     wait,
 } from './composer/composer-harness';
+import {
+    connectDemoContext,
+    demoRuntimeSettled,
+} from '../../../../test-support/demo-runtime';
 
 const toCtx = (eng: unknown) => schemeOnlyContext(eng as never);
 
-function createRealEngine(): LocalContextSchemeEngineAdapter {
+async function createRealEngine(): Promise<RemoteContextSchemeEngineAdapter> {
     const concepts = [
         {
             id: 'U',
@@ -157,72 +160,77 @@ function createRealEngine(): LocalContextSchemeEngineAdapter {
             position: 4,
         },
     ];
-    return Context.fromComponents({
-        scheme: {
-            scheme: {
-                id: 'ime-test',
-                version: '1.0.0',
-                name: 'InlineMarkingEditor Test',
-                data: { concepts: concepts, categories },
-                rules: [
-                    {
-                        id: 'rel-countries-require-rel',
-                        when: {
-                            category: 'rel_countries',
-                            is: 'has_content',
-                        },
-                        action: 'require',
-                        target: 'REL',
-                        category: 'caveat',
-                    },
-                ],
-                render: {
-                    default: 'default',
-                    formats: [
-                        {
-                            id: 'default',
-                            surface: 'marking',
-                            mode: 'inline',
-                            separator: '//',
-                            // Deliberately binds no field to 'branch':
-                            // that category's concept is
-                            // certain/asserted but never rendered.
-                            //
-                            // REL heads rel_countries, so a header and
-                            // the list it heads are paired in the
-                            // format tree: one fixed-concept field
-                            // beside one list field.
-                            fields: [
-                                {
-                                    category: 'level',
-                                    separator: '/',
+    return (
+        await connectDemoContext({
+            draft: {
+                scheme: {
+                    scheme: {
+                        id: 'ime-test',
+                        version: '1.0.0',
+                        name: 'InlineMarkingEditor Test',
+                        description: 'InlineMarkingEditor Test test fixture.',
+                        data: { concepts: concepts, categories },
+                        rules: [
+                            {
+                                id: 'rel-countries-require-rel',
+                                when: {
+                                    category: 'rel_countries',
+                                    is: 'has_content',
                                 },
+                                action: 'require',
+                                target: 'REL',
+                                category: 'caveat',
+                            },
+                        ],
+                        render: {
+                            default: 'default',
+                            formats: [
                                 {
-                                    category: 'caveat',
-                                    separator: '/',
-                                    exclude_concepts: ['REL'],
-                                },
-                                {
-                                    name: 'Releasability phrase',
+                                    id: 'default',
+                                    surface: 'marking',
+                                    mode: 'inline',
                                     separator: '//',
+                                    // Deliberately binds no field to 'branch':
+                                    // that category's concept is
+                                    // certain/asserted but never rendered.
+                                    //
+                                    // REL heads rel_countries, so a header and
+                                    // the list it heads are paired in the
+                                    // format tree: one fixed-concept field
+                                    // beside one list field.
                                     fields: [
                                         {
-                                            concept: 'REL',
-                                            category: 'caveat',
+                                            category: 'level',
+                                            separator: '/',
                                         },
                                         {
-                                            category: 'rel_countries',
+                                            category: 'caveat',
                                             separator: '/',
+                                            exclude_concepts: ['REL'],
+                                        },
+                                        {
+                                            name: 'Releasability phrase',
+                                            separator: '//',
+                                            fields: [
+                                                {
+                                                    concept: 'REL',
+                                                    category: 'caveat',
+                                                },
+                                                {
+                                                    category: 'rel_countries',
+                                                    separator: '/',
+                                                },
+                                            ],
                                         },
                                     ],
                                 },
                             ],
                         },
-                    ],
+                    },
                 },
             },
-        },
-    }).scheme as LocalContextSchemeEngineAdapter;
+        })
+    ).scheme as RemoteContextSchemeEngineAdapter;
 }
 
 function assertionsFor(ids: string[]): Assertion[] {
@@ -255,7 +263,7 @@ async function open(
     options: Partial<Parameters<InlineMarkingEditor['init']>[3]> = {},
 ): Promise<{ editor: InlineMarkingEditor; input: HTMLInputElement }> {
     editor = new InlineMarkingEditor();
-    await editor.init(container, toCtx(createRealEngine()), initial, {
+    await editor.init(container, toCtx(await createRealEngine()), initial, {
         formatId: 'default',
         assertions: ids.length ? assertionsFor(ids) : undefined,
         root,
@@ -417,7 +425,7 @@ describe('InlineMarkingEditor', () => {
             // the editor's first frame: the sheet it opens keeps focus.
             const late = new InlineMarkingEditor();
             editor = late;
-            await late.init(container, toCtx(createRealEngine()), '', {
+            await late.init(container, toCtx(await createRealEngine()), '', {
                 formatId: 'default',
                 root,
                 openList: false,
@@ -657,8 +665,10 @@ describe('InlineMarkingEditor under the commit table', () => {
         expect(editor.getRendered()).toBe('S//SI');
         await type(input, 'S//');
         rowFor('NF')!.click();
+        await demoRuntimeSettled();
         await wait(40);
         press(input, 'Enter');
+        await demoRuntimeSettled();
         await wait(80);
 
         // SI is gone; MAIN survives (carried forward, still invisible to the

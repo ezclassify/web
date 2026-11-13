@@ -10,7 +10,6 @@
  */
 import { asContext } from '../../../test-fixtures/as-context';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { Context } from '@ezclassify/engine';
 import type { Assertion } from '@ezclassify/types';
 import { EzClassifyUI } from '../../ezclassify-ui';
 import type { MarkedTextArea } from '../marked-text-area';
@@ -25,8 +24,9 @@ import {
     typeText,
     wait,
 } from './composer-harness';
+import { connectDemoContext } from '../../../../../test-support/demo-runtime';
 
-function createContext() {
+async function createContext() {
     const concept = (
         id: string,
         label: string,
@@ -42,56 +42,59 @@ function createContext() {
         position,
         rank: position,
     });
-    return Context.fromComponents({
-        scheme: {
+    return await connectDemoContext({
+        draft: {
             scheme: {
-                id: 'composer-contract',
-                version: '1.0.0',
-                name: 'Composer Contract',
-                data: {
-                    concepts: [
-                        concept('U', 'UNCLASSIFIED', 'level', 1),
-                        concept('S', 'SECRET', 'level', 2),
-                        concept('NF', 'NOFORN', 'caveat', 1),
-                        concept('OC', 'ORCON', 'caveat', 2),
+                scheme: {
+                    id: 'composer-contract',
+                    version: '1.0.0',
+                    name: 'Composer Contract',
+                    description: 'Composer Contract test fixture.',
+                    data: {
+                        concepts: [
+                            concept('U', 'UNCLASSIFIED', 'level', 1),
+                            concept('S', 'SECRET', 'level', 2),
+                            concept('NF', 'NOFORN', 'caveat', 1),
+                            concept('OC', 'ORCON', 'caveat', 2),
+                        ],
+                        categories: [
+                            {
+                                id: 'level',
+                                label: 'Level',
+                                required: false,
+                                single: true,
+                                rollup: 'max',
+                                position: 1,
+                            },
+                            {
+                                id: 'caveat',
+                                label: 'Caveat',
+                                required: false,
+                                single: false,
+                                rollup: 'union',
+                                position: 2,
+                            },
+                        ],
+                    },
+                    rules: [],
+                    embedded_marking: [
+                        { pattern: '\\(([^)]+)\\)', template: '({marking}) ' },
                     ],
-                    categories: [
-                        {
-                            id: 'level',
-                            label: 'Level',
-                            required: false,
-                            single: true,
-                            rollup: 'max',
-                            position: 1,
-                        },
-                        {
-                            id: 'caveat',
-                            label: 'Caveat',
-                            required: false,
-                            single: false,
-                            rollup: 'union',
-                            position: 2,
-                        },
-                    ],
-                },
-                rules: [],
-                embedded_marking: [
-                    { pattern: '\\(([^)]+)\\)', template: '({marking}) ' },
-                ],
-                render: {
-                    default: 'default',
-                    formats: [
-                        {
-                            id: 'default',
-                            surface: 'marking',
-                            mode: 'inline',
-                            separator: '//',
-                            fields: [
-                                { category: 'level', separator: '/' },
-                                { category: 'caveat', separator: '/' },
-                            ],
-                        },
-                    ],
+                    render: {
+                        default: 'default',
+                        formats: [
+                            {
+                                id: 'default',
+                                surface: 'marking',
+                                mode: 'inline',
+                                separator: '//',
+                                fields: [
+                                    { category: 'level', separator: '/' },
+                                    { category: 'caveat', separator: '/' },
+                                ],
+                            },
+                        ],
+                    },
                 },
             },
         },
@@ -128,7 +131,9 @@ function ids(assertions: readonly Assertion[]): string[] {
 async function mountField(kind: Kind): Promise<Field> {
     const tag = kind === 'marked-textarea' ? 'textarea' : 'input';
     root.innerHTML = `<label for="f">Marking</label><${tag} id="f" data-ezclassify-controller="${kind}"></${tag}>`;
-    forms = new EzClassifyUI(asContext(createContext() as never), { root });
+    forms = new EzClassifyUI(asContext((await createContext()) as never), {
+        root,
+    });
     await wait();
     const host = document.getElementById('f') as
         HTMLInputElement | HTMLTextAreaElement;

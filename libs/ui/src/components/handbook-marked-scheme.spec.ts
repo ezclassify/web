@@ -8,8 +8,9 @@ import { readFileSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { afterEach, describe, expect, it } from 'vitest';
-import { Context } from '@ezclassify/engine';
 import { EzClassifyUI } from '../ezclassify-ui';
+import type { EzClassifyClient } from '@ezclassify/rest-client';
+import { connectDemoContext } from '../../../../test-support/demo-runtime';
 
 const fixtures = resolve(
     dirname(fileURLToPath(import.meta.url)),
@@ -29,14 +30,16 @@ describe('the handbook over a marked scheme', () => {
         root?.remove();
     });
 
-    function mount(name: string): {
-        context: ReturnType<typeof Context.fromComponents>;
+    async function mount(name: string): Promise<{
+        context: EzClassifyClient;
         page: HTMLElement;
-    } {
+    }> {
         root = document.createElement('div');
         root.innerHTML = `<div data-ezclassify-controller="handbook"></div>`;
         document.body.appendChild(root);
-        const context = Context.fromComponents({ scheme: scheme(name) });
+        const context = await connectDemoContext({
+            draft: { scheme: scheme(name) },
+        });
         ui = new EzClassifyUI(context, { root });
         return {
             context,
@@ -46,7 +49,7 @@ describe('the handbook over a marked scheme', () => {
     }
 
     it('shows the overall marking the engine reports for the scheme', async () => {
-        const { context, page } = mount('ref-marked-1');
+        const { context, page } = await mount('ref-marked-1');
         const reported = context.scheme.getScheme().marking;
         expect(reported).toBeTruthy();
         await expect
@@ -59,7 +62,7 @@ describe('the handbook over a marked scheme', () => {
     });
 
     it('shows no overall marking for a scheme that carries none', async () => {
-        const { page } = mount('ref-scheme-1');
+        const { page } = await mount('ref-scheme-1');
         await expect
             .poll(() => page.querySelector('.ez-handbook__overview'))
             .not.toBeNull();

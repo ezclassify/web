@@ -17,10 +17,10 @@
  */
 import { asContext } from '../../test-fixtures/as-context';
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import type { LocalContextSchemeEngineAdapter } from '@ezclassify/types';
+import type { RemoteContextSchemeEngineAdapter } from '@ezclassify/types';
 import { EzClassifyUI } from '../ezclassify-ui';
 import { MarkingField } from './marking-field';
-import { Context } from '@ezclassify/engine';
+import { connectDemoContext } from '../../../../test-support/demo-runtime';
 
 function wait(ms = 60): Promise<void> {
     return new Promise((r) => setTimeout(r, ms));
@@ -31,119 +31,125 @@ function wait(ms = 60): Promise<void> {
  * token tree lays its concepts out as a tiered group) while the concepts in
  * play are plain siblings joined by the format's own "/" concept separator.
  */
-function createTieredEngine(): LocalContextSchemeEngineAdapter {
-    return Context.fromComponents({
-        scheme: {
-            scheme: {
-                id: 'mf-tiered',
-                version: '1.0.0',
-                name: 'MarkingField tiered-category fixture',
-                data: {
-                    categories: [
-                        {
-                            id: 'level',
-                            label: 'Level',
-                            required: false,
-                            single: true,
-                            rollup: 'max',
-                            position: 0,
-                        },
-                        {
-                            id: 'sci',
-                            label: 'SCI Control System',
-                            required: false,
-                            single: false,
-                            rollup: 'union',
-                            sort: 'position',
-                            position: 1,
-                        },
-                        {
-                            id: 'dissem',
-                            label: 'Dissemination Control',
-                            required: false,
-                            single: false,
-                            rollup: 'union',
-                            sort: 'position',
-                            position: 2,
-                        },
-                    ],
-                    concepts: [
-                        {
-                            id: 'SECRET',
-                            name: 'Secret',
-                            views: { default: 'SECRET' },
-                            categories: ['level'],
-                            parents: [],
-                            aliases: [],
-                            position: 0,
-                            rank: 2,
-                        },
-                        {
-                            id: 'SI',
-                            name: 'Special Intelligence',
-                            views: { default: 'SI' },
-                            categories: ['sci'],
-                            parents: [],
-                            aliases: [],
-                            position: 0,
-                            rank: 1,
-                        },
-                        {
-                            id: 'TK',
-                            name: 'Talent Keyhole',
-                            views: { default: 'TK' },
-                            categories: ['sci'],
-                            parents: [],
-                            aliases: [],
-                            position: 1,
-                            rank: 1,
-                        },
-                        {
-                            id: 'NOFORN',
-                            name: 'No Foreign',
-                            views: { default: 'NOFORN' },
-                            categories: ['dissem'],
-                            parents: [],
-                            aliases: [],
-                            position: 0,
-                            rank: 1,
-                        },
-                    ],
-                },
-                rules: [],
-                render: {
-                    default: 'banner',
-                    formats: [
-                        {
-                            id: 'banner',
-                            surface: 'marking',
-                            mode: 'inline',
-                            view: 'default',
-                            separator: '//',
-                            fields: [
-                                { category: 'level', separator: '/' },
+async function createTieredEngine(): Promise<RemoteContextSchemeEngineAdapter> {
+    return (
+        await connectDemoContext({
+            draft: {
+                scheme: {
+                    scheme: {
+                        id: 'mf-tiered',
+                        version: '1.0.0',
+                        name: 'MarkingField tiered-category fixture',
+                        description:
+                            'MarkingField tiered-category fixture test fixture.',
+                        data: {
+                            categories: [
                                 {
-                                    category: 'sci',
-                                    separator: '/',
-                                    tiers: [
-                                        {
-                                            tier: 'subcontrol',
-                                            attached_by: '-',
-                                        },
-                                        {
-                                            tier: 'subcompartment',
-                                            attached_by: ' ',
-                                        },
-                                    ],
+                                    id: 'level',
+                                    label: 'Level',
+                                    required: false,
+                                    single: true,
+                                    rollup: 'max',
+                                    position: 0,
                                 },
-                                { category: 'dissem', separator: '/' },
+                                {
+                                    id: 'sci',
+                                    label: 'SCI Control System',
+                                    required: false,
+                                    single: false,
+                                    rollup: 'union',
+                                    sort: 'position',
+                                    position: 1,
+                                },
+                                {
+                                    id: 'dissem',
+                                    label: 'Dissemination Control',
+                                    required: false,
+                                    single: false,
+                                    rollup: 'union',
+                                    sort: 'position',
+                                    position: 2,
+                                },
+                            ],
+                            concepts: [
+                                {
+                                    id: 'SECRET',
+                                    name: 'Secret',
+                                    views: { default: 'SECRET' },
+                                    categories: ['level'],
+                                    parents: [],
+                                    aliases: [],
+                                    position: 0,
+                                    rank: 2,
+                                },
+                                {
+                                    id: 'SI',
+                                    name: 'Special Intelligence',
+                                    views: { default: 'SI' },
+                                    categories: ['sci'],
+                                    parents: [],
+                                    aliases: [],
+                                    position: 0,
+                                    rank: 1,
+                                },
+                                {
+                                    id: 'TK',
+                                    name: 'Talent Keyhole',
+                                    views: { default: 'TK' },
+                                    categories: ['sci'],
+                                    parents: [],
+                                    aliases: [],
+                                    position: 1,
+                                    rank: 1,
+                                },
+                                {
+                                    id: 'NOFORN',
+                                    name: 'No Foreign',
+                                    views: { default: 'NOFORN' },
+                                    categories: ['dissem'],
+                                    parents: [],
+                                    aliases: [],
+                                    position: 0,
+                                    rank: 1,
+                                },
                             ],
                         },
-                    ],
+                        rules: [],
+                        render: {
+                            default: 'banner',
+                            formats: [
+                                {
+                                    id: 'banner',
+                                    surface: 'marking',
+                                    mode: 'inline',
+                                    view: 'default',
+                                    separator: '//',
+                                    fields: [
+                                        { category: 'level', separator: '/' },
+                                        {
+                                            category: 'sci',
+                                            separator: '/',
+                                            tiers: [
+                                                {
+                                                    tier: 'subcontrol',
+                                                    attached_by: '-',
+                                                },
+                                                {
+                                                    tier: 'subcompartment',
+                                                    attached_by: ' ',
+                                                },
+                                            ],
+                                        },
+                                        { category: 'dissem', separator: '/' },
+                                    ],
+                                },
+                            ],
+                        },
+                    },
                 },
             },
-        },
-    }).scheme as LocalContextSchemeEngineAdapter;
+        })
+    ).scheme as RemoteContextSchemeEngineAdapter;
 }
 
 /**
@@ -152,166 +158,175 @@ function createTieredEngine(): LocalContextSchemeEngineAdapter {
  * `dissem` sorts alphabetically, which puts the multi-word "FED ONLY" ahead of
  * "NOFORN" even though its concept position is higher.
  */
-function createPrefixedEngine(): LocalContextSchemeEngineAdapter {
-    return Context.fromComponents({
-        scheme: {
-            scheme: {
-                id: 'mf-prefixed',
-                version: '1.0.0',
-                name: 'MarkingField prefixed-category fixture',
-                data: {
-                    categories: [
-                        {
-                            id: 'cui_designator',
-                            label: 'CUI Designator',
-                            required: false,
-                            single: true,
-                            rollup: 'union',
-                            position: 0,
-                        },
-                        {
-                            id: 'specified_category',
-                            label: 'CUI Specified Category',
-                            required: false,
-                            single: false,
-                            rollup: 'union',
-                            sort: 'alphabetical',
-                            position: 1,
-                        },
-                        {
-                            id: 'basic_category',
-                            label: 'CUI Basic Category',
-                            required: false,
-                            single: false,
-                            rollup: 'union',
-                            sort: 'alphabetical',
-                            position: 2,
-                        },
-                        {
-                            id: 'dissem',
-                            label: 'Limited Dissemination Control',
-                            required: false,
-                            single: false,
-                            rollup: 'union',
-                            sort: 'alphabetical',
-                            position: 3,
-                        },
-                    ],
-                    concepts: [
-                        {
-                            id: 'CUI',
-                            name: 'Controlled Unclassified Information',
-                            views: { default: 'CUI' },
-                            categories: ['cui_designator'],
-                            parents: [],
-                            aliases: [],
-                            position: 0,
-                            rank: 1,
-                        },
-                        {
-                            id: 'PROPIN',
-                            name: 'Proprietary Business Information',
-                            views: { default: 'PROPIN' },
-                            categories: ['basic_category'],
-                            parents: [],
-                            aliases: [],
-                            position: 2,
-                            rank: 1,
-                        },
-                        {
-                            id: 'EXPT',
-                            name: 'Export Controlled',
-                            views: { default: 'EXPT' },
+async function createPrefixedEngine(): Promise<RemoteContextSchemeEngineAdapter> {
+    return (
+        await connectDemoContext({
+            draft: {
+                scheme: {
+                    scheme: {
+                        id: 'mf-prefixed',
+                        version: '1.0.0',
+                        name: 'MarkingField prefixed-category fixture',
+                        description:
+                            'MarkingField prefixed-category fixture test fixture.',
+                        data: {
                             categories: [
-                                'basic_category',
-                                'specified_category',
-                            ],
-                            parents: [],
-                            aliases: [],
-                            position: 4,
-                            rank: 1,
-                        },
-                        {
-                            id: 'NOFORN',
-                            name: 'Not Releasable to Foreign Nationals',
-                            views: { default: 'NOFORN' },
-                            categories: ['dissem'],
-                            parents: [],
-                            aliases: [],
-                            position: 0,
-                            rank: 1,
-                        },
-                        {
-                            id: 'FED-ONLY',
-                            name: 'Federal Employees Only',
-                            views: { default: 'FED ONLY' },
-                            categories: ['dissem'],
-                            parents: [],
-                            aliases: [],
-                            position: 1,
-                            rank: 1,
-                        },
-                        // Deliberately a two-letter label that also occurs
-                        // INSIDE two other labels rendered next to it
-                        // ("NOFORN", "FED ONLY"): the paint must underline
-                        // this concept's own occurrence and nothing else.
-                        {
-                            id: 'ONSITE',
-                            name: 'On-Site Access Only',
-                            views: { default: 'ON' },
-                            categories: ['dissem'],
-                            parents: [],
-                            aliases: [],
-                            position: 2,
-                            rank: 1,
-                        },
-                    ],
-                },
-                rules: [],
-                render: {
-                    default: 'banner',
-                    formats: [
-                        {
-                            id: 'banner',
-                            surface: 'marking',
-                            mode: 'inline',
-                            view: 'default',
-                            separator: '//',
-                            joins: [
                                 {
-                                    between: [
-                                        'specified_category',
+                                    id: 'cui_designator',
+                                    label: 'CUI Designator',
+                                    required: false,
+                                    single: true,
+                                    rollup: 'union',
+                                    position: 0,
+                                },
+                                {
+                                    id: 'specified_category',
+                                    label: 'CUI Specified Category',
+                                    required: false,
+                                    single: false,
+                                    rollup: 'union',
+                                    sort: 'alphabetical',
+                                    position: 1,
+                                },
+                                {
+                                    id: 'basic_category',
+                                    label: 'CUI Basic Category',
+                                    required: false,
+                                    single: false,
+                                    rollup: 'union',
+                                    sort: 'alphabetical',
+                                    position: 2,
+                                },
+                                {
+                                    id: 'dissem',
+                                    label: 'Limited Dissemination Control',
+                                    required: false,
+                                    single: false,
+                                    rollup: 'union',
+                                    sort: 'alphabetical',
+                                    position: 3,
+                                },
+                            ],
+                            concepts: [
+                                {
+                                    id: 'CUI',
+                                    name: 'Controlled Unclassified Information',
+                                    views: { default: 'CUI' },
+                                    categories: ['cui_designator'],
+                                    parents: [],
+                                    aliases: [],
+                                    position: 0,
+                                    rank: 1,
+                                },
+                                {
+                                    id: 'PROPIN',
+                                    name: 'Proprietary Business Information',
+                                    views: { default: 'PROPIN' },
+                                    categories: ['basic_category'],
+                                    parents: [],
+                                    aliases: [],
+                                    position: 2,
+                                    rank: 1,
+                                },
+                                {
+                                    id: 'EXPT',
+                                    name: 'Export Controlled',
+                                    views: { default: 'EXPT' },
+                                    categories: [
                                         'basic_category',
+                                        'specified_category',
                                     ],
-                                    separator: '/',
-                                },
-                            ],
-                            fields: [
-                                {
-                                    category: 'cui_designator',
-                                    separator: '/',
+                                    parents: [],
+                                    aliases: [],
+                                    position: 4,
+                                    rank: 1,
                                 },
                                 {
-                                    category: 'specified_category',
-                                    separator: '/',
-                                    each: { prefix: 'SP-' },
+                                    id: 'NOFORN',
+                                    name: 'Not Releasable to Foreign Nationals',
+                                    views: { default: 'NOFORN' },
+                                    categories: ['dissem'],
+                                    parents: [],
+                                    aliases: [],
+                                    position: 0,
+                                    rank: 1,
                                 },
-                                { category: 'basic_category', separator: '/' },
-                                { category: 'dissem', separator: '/' },
+                                {
+                                    id: 'FED-ONLY',
+                                    name: 'Federal Employees Only',
+                                    views: { default: 'FED ONLY' },
+                                    categories: ['dissem'],
+                                    parents: [],
+                                    aliases: [],
+                                    position: 1,
+                                    rank: 1,
+                                },
+                                // Deliberately a two-letter label that also occurs
+                                // INSIDE two other labels rendered next to it
+                                // ("NOFORN", "FED ONLY"): the paint must underline
+                                // this concept's own occurrence and nothing else.
+                                {
+                                    id: 'ONSITE',
+                                    name: 'On-Site Access Only',
+                                    views: { default: 'ON' },
+                                    categories: ['dissem'],
+                                    parents: [],
+                                    aliases: [],
+                                    position: 2,
+                                    rank: 1,
+                                },
                             ],
                         },
-                    ],
+                        rules: [],
+                        render: {
+                            default: 'banner',
+                            formats: [
+                                {
+                                    id: 'banner',
+                                    surface: 'marking',
+                                    mode: 'inline',
+                                    view: 'default',
+                                    separator: '//',
+                                    joins: [
+                                        {
+                                            between: [
+                                                'specified_category',
+                                                'basic_category',
+                                            ],
+                                            separator: '/',
+                                        },
+                                    ],
+                                    fields: [
+                                        {
+                                            category: 'cui_designator',
+                                            separator: '/',
+                                        },
+                                        {
+                                            category: 'specified_category',
+                                            separator: '/',
+                                            each: { prefix: 'SP-' },
+                                        },
+                                        {
+                                            category: 'basic_category',
+                                            separator: '/',
+                                        },
+                                        { category: 'dissem', separator: '/' },
+                                    ],
+                                },
+                            ],
+                        },
+                    },
                 },
             },
-        },
-    }).scheme as LocalContextSchemeEngineAdapter;
+        })
+    ).scheme as RemoteContextSchemeEngineAdapter;
 }
 
 let root: HTMLDivElement;
 let forms: EzClassifyUI | null = null;
 
 async function mount(
-    engine: LocalContextSchemeEngineAdapter,
+    engine: RemoteContextSchemeEngineAdapter,
 ): Promise<{ input: HTMLTextAreaElement; field: MarkingField }> {
     root.innerHTML =
         '<textarea id="mf" data-ezclassify-controller="marking"></textarea>';
@@ -357,7 +372,7 @@ afterEach(() => {
 
 describe('MarkingField at-rest paint fidelity', () => {
     it('paints unrecognized text even when the reading has no assertions', async () => {
-        const { input, field } = await mount(createPrefixedEngine());
+        const { input, field } = await mount(await createPrefixedEngine());
         await field.setValue('UNKNOWN-MARKING');
         input.dispatchEvent(new FocusEvent('blur'));
         await wait(200);
@@ -369,7 +384,7 @@ describe('MarkingField at-rest paint fidelity', () => {
         expect(root.querySelector('[data-ezclassify-invalid]')).not.toBeNull();
     });
     it('paints the single "/" between two concepts of the same category, not a space', async () => {
-        const { input, field } = await mount(createTieredEngine());
+        const { input, field } = await mount(await createTieredEngine());
         const display = await rest(input, field, [
             { conceptId: 'SECRET', categoryId: 'level' },
             { conceptId: 'SI', categoryId: 'sci' },
@@ -382,7 +397,7 @@ describe('MarkingField at-rest paint fidelity', () => {
     });
 
     it("keeps a category's concept prefix and its alphabetical order in the paint", async () => {
-        const { input, field } = await mount(createPrefixedEngine());
+        const { input, field } = await mount(await createPrefixedEngine());
         const display = await rest(input, field, [
             { conceptId: 'CUI', categoryId: 'cui_designator' },
             { conceptId: 'EXPT', categoryId: 'specified_category' },
@@ -398,7 +413,7 @@ describe('MarkingField at-rest paint fidelity', () => {
     });
 
     it("colors a value's own framing with it, and leaves separators plain text", async () => {
-        const { input, field } = await mount(createPrefixedEngine());
+        const { input, field } = await mount(await createPrefixedEngine());
         const display = await rest(input, field, [
             { conceptId: 'CUI', categoryId: 'cui_designator' },
             { conceptId: 'EXPT', categoryId: 'specified_category' },
@@ -432,7 +447,7 @@ describe('MarkingField at-rest paint fidelity', () => {
     });
 
     it('never paints a short token label where it only occurs inside a longer word', async () => {
-        const { input, field } = await mount(createPrefixedEngine());
+        const { input, field } = await mount(await createPrefixedEngine());
         const display = await rest(input, field, [
             { conceptId: 'CUI', categoryId: 'cui_designator' },
             { conceptId: 'NOFORN', categoryId: 'dissem' },

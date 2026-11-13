@@ -1,0 +1,555 @@
+{
+    "engineVersion": "1.0.0-dev.30",
+    "openapiVersion": "1.0.0-dev.30",
+    "responses": {
+        "0764a78c51e4fc7a812bae8ec4a3d878098667f794cb44af0c93f0344312b96b": {
+            "body": {
+                "contextId": "sbx-a37c46dd28ecfa17a2c700d4d5fd7c805c70904b46e4f6edc2ef1371942b4c85"
+            },
+            "method": "PUT",
+            "statusCode": 200
+        },
+        "17e1cb25ba9fe9f09444f1c57e90b24104497022cf04aec15b60642d8af61362": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "bound-part-role",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "sbx-a37c46dd28ecfa17a2c700d4d5fd7c805c70904b46e4f6edc2ef1371942b4c85",
+                            "kind": "context",
+                            "version": "0.0.0"
+                        }
+                    ],
+                    "contextId": "sbx-a37c46dd28ecfa17a2c700d4d5fd7c805c70904b46e4f6edc2ef1371942b4c85",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "0.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "recognition": {
+                        "corrections": [],
+                        "status": "complete",
+                        "unmatched": []
+                    },
+                    "rendered": "",
+                    "renders": {},
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "33f556c45d9909883246fff8485b9f35fff42cc698113ec861cb93efeb378112": {
+            "body": [
+                {
+                    "aliases": [],
+                    "categories": ["level"],
+                    "id": "LOW",
+                    "name": "LOW",
+                    "parents": [],
+                    "position": 1,
+                    "rank": 1,
+                    "views": { "default": "LOW" }
+                },
+                {
+                    "aliases": [],
+                    "categories": ["handling"],
+                    "id": "HOLD",
+                    "name": "HOLD",
+                    "parents": [],
+                    "position": 1,
+                    "rank": 1,
+                    "views": { "default": "HOLD" }
+                },
+                {
+                    "aliases": [],
+                    "categories": ["partners"],
+                    "id": "ALPHA",
+                    "name": "ALPHA",
+                    "parents": [],
+                    "position": 1,
+                    "rank": 1,
+                    "views": { "default": "ALPHA" }
+                }
+            ],
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "452eab890daa52e375bac0ac452676102de987f5dc8abe9dd4147b78cf9af47f": {
+            "body": [
+                {
+                    "categoryOrder": ["level", "handling", "partners"],
+                    "categorySeparators": {
+                        "handling": "/",
+                        "level": "/",
+                        "partners": ", "
+                    },
+                    "categoryViews": {
+                        "handling": "default",
+                        "level": "default",
+                        "partners": "default"
+                    },
+                    "id": "default",
+                    "mode": "inline",
+                    "separator": "//",
+                    "separatorBefore": { "handling": "//", "partners": "//" },
+                    "surface": "marking"
+                }
+            ],
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "4cb31121344300406fd9381534b94b8d9cf72d433150c6b9518f8c320e0abfca": {
+            "body": {
+                "id": "sbx-fe96ea96c7104cbf045e47cbe79c6615be4f89e9d738e392f7aacca751ecc31f",
+                "scheme": {
+                    "id": "bound-part-role",
+                    "resolvedVersion": "1.0.0",
+                    "version": "1.0.0"
+                },
+                "schemes": [
+                    {
+                        "id": "bound-part-role",
+                        "roles": ["primary"],
+                        "selector": "bound-part-role",
+                        "version": "1.0.0"
+                    }
+                ],
+                "version": "0.0.0"
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "510a0ce7f4de4655c9351a10fa85947b7b7cf59c5601cf325c3b1640ca446c26": {
+            "body": {
+                "contextId": "sbx-fe96ea96c7104cbf045e47cbe79c6615be4f89e9d738e392f7aacca751ecc31f"
+            },
+            "method": "PUT",
+            "statusCode": 200
+        },
+        "5a071da540e42b725028e2273153155d5f993f5c45e792a1b9ecacd78f836ff4": {
+            "body": [
+                {
+                    "aliases": [],
+                    "categories": ["level"],
+                    "id": "LOW",
+                    "name": "LOW",
+                    "parents": [],
+                    "position": 1,
+                    "rank": 1,
+                    "views": { "default": "LOW" }
+                },
+                {
+                    "aliases": [],
+                    "categories": ["handling"],
+                    "id": "HOLD",
+                    "name": "HOLD",
+                    "parents": [],
+                    "position": 1,
+                    "rank": 1,
+                    "views": { "default": "HOLD" }
+                },
+                {
+                    "aliases": [],
+                    "categories": ["partners"],
+                    "id": "ALPHA",
+                    "name": "ALPHA",
+                    "parents": [],
+                    "position": 1,
+                    "rank": 1,
+                    "views": { "default": "ALPHA" }
+                }
+            ],
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "5bc2654f6897b7d8586229d7b46d549fd88c82bc60fd5da23840b06812547cdd": {
+            "body": [],
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "68e382f142b5d7ee9f1959708a4c91b81def04153617f521c553ad7524726ada": {
+            "body": [
+                {
+                    "id": "level",
+                    "label": "Level",
+                    "position": 1,
+                    "required": false,
+                    "rollup": "max",
+                    "single": true
+                },
+                {
+                    "id": "handling",
+                    "label": "Handling",
+                    "position": 2,
+                    "required": false,
+                    "rollup": "union",
+                    "single": false
+                },
+                {
+                    "id": "partners",
+                    "label": "Partners",
+                    "position": 3,
+                    "required": false,
+                    "rollup": "intersection",
+                    "single": false
+                }
+            ],
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "705d863e7f51a2d29446c485328b62c7e2654b7126f74d73cc025655538c1c01": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "bound-part-role",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "sbx-a37c46dd28ecfa17a2c700d4d5fd7c805c70904b46e4f6edc2ef1371942b4c85",
+                            "kind": "context",
+                            "version": "0.0.0"
+                        }
+                    ],
+                    "contextId": "sbx-a37c46dd28ecfa17a2c700d4d5fd7c805c70904b46e4f6edc2ef1371942b4c85",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "0.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "LOW",
+                            "confidence": "certain",
+                            "source": "aggregate"
+                        },
+                        {
+                            "categoryId": "handling",
+                            "conceptId": "HOLD",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "errors": [
+                        {
+                            "affectedConcepts": ["LOW", "HOLD"],
+                            "constraintId": "_invalid_contributor",
+                            "message": "Contributor 1 did not produce a complete valid input outcome."
+                        },
+                        {
+                            "categoryId": "partners",
+                            "constraintId": "whole-hold-needs-partner",
+                            "message": "Contributor 1: HOLD needs a partner on the whole."
+                        },
+                        {
+                            "categoryId": "partners",
+                            "constraintId": "whole-hold-needs-partner",
+                            "message": "HOLD needs a partner on the whole."
+                        }
+                    ],
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "LOW//HOLD",
+                    "valid": false,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "833ecf45362dc9dadab72e8256e25c16c9660416ca69b4cbb19709d6d5f7e670": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "bound-part-role",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "sbx-a37c46dd28ecfa17a2c700d4d5fd7c805c70904b46e4f6edc2ef1371942b4c85",
+                            "kind": "context",
+                            "version": "0.0.0"
+                        }
+                    ],
+                    "contextId": "sbx-a37c46dd28ecfa17a2c700d4d5fd7c805c70904b46e4f6edc2ef1371942b4c85",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "0.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "LOW",
+                            "confidence": "certain",
+                            "source": "aggregate"
+                        },
+                        {
+                            "categoryId": "handling",
+                            "conceptId": "HOLD",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "errors": [],
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "LOW//HOLD",
+                    "valid": true,
+                    "warnings": [
+                        {
+                            "kind": "notice",
+                            "message": "Unable to compare with whole: none given.",
+                            "ruleId": "_whole_unverified"
+                        }
+                    ]
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "86410ef54b4e53563d3e50e3be3459d365fea32daefa144308369045ef7abc01": {
+            "body": [],
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "91687c18ce872774383431e336a48d04e1b4218e36ab487d4d20ab4e5c56b1ba": {
+            "body": {
+                "defaultRenderFormat": "default",
+                "description": "Bound part role test fixture.",
+                "id": "bound-part-role",
+                "name": "Bound part role",
+                "referenceSurfaceLabel": {
+                    "plural": "Handbooks",
+                    "singular": "Handbook"
+                },
+                "roleAware": true,
+                "version": "1.0.0"
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "9ed71c038850c6cd88575a9052f5ac5e7e26bb4185cf17552b1faf5e5bbdea8b": {
+            "body": {
+                "id": "sbx-a37c46dd28ecfa17a2c700d4d5fd7c805c70904b46e4f6edc2ef1371942b4c85",
+                "scheme": {
+                    "id": "bound-part-role",
+                    "resolvedVersion": "1.0.0",
+                    "version": "1.0.0"
+                },
+                "schemes": [
+                    {
+                        "id": "bound-part-role",
+                        "roles": ["primary"],
+                        "selector": "bound-part-role",
+                        "version": "1.0.0"
+                    }
+                ],
+                "version": "0.0.0"
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "b9e57c999bd28b244d6f96d61687e71cef6ad000464184203f5fcff6d144034b": {
+            "body": [],
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "be27e5e7c38ab598a3e43a5419d6829dc457276473c0ca65a0b1cb1f3b0a8cb8": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "bound-part-role",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "sbx-a37c46dd28ecfa17a2c700d4d5fd7c805c70904b46e4f6edc2ef1371942b4c85",
+                            "kind": "context",
+                            "version": "0.0.0"
+                        }
+                    ],
+                    "contextId": "sbx-a37c46dd28ecfa17a2c700d4d5fd7c805c70904b46e4f6edc2ef1371942b4c85",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "0.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "LOW",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "handling",
+                            "conceptId": "HOLD",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            { "categoryId": "level", "conceptId": "LOW" },
+                            { "categoryId": "handling", "conceptId": "HOLD" }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "recognition": {
+                        "corrections": [],
+                        "inputFormat": "default",
+                        "status": "complete",
+                        "surface": "marking",
+                        "unmatched": []
+                    },
+                    "rendered": "LOW//HOLD",
+                    "renders": {},
+                    "valid": true,
+                    "warnings": [
+                        {
+                            "kind": "notice",
+                            "message": "Unable to compare with whole: none given.",
+                            "ruleId": "_whole_unverified"
+                        }
+                    ]
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "be6687f20c5ded5d9730fe46660f574d765fa330340f57e27d7a105893043429": {
+            "body": [
+                {
+                    "categoryOrder": ["level", "handling", "partners"],
+                    "categorySeparators": {
+                        "handling": "/",
+                        "level": "/",
+                        "partners": ", "
+                    },
+                    "categoryViews": {
+                        "handling": "default",
+                        "level": "default",
+                        "partners": "default"
+                    },
+                    "id": "default",
+                    "mode": "inline",
+                    "separator": "//",
+                    "separatorBefore": { "handling": "//", "partners": "//" },
+                    "surface": "marking"
+                }
+            ],
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "cf87545a9e62f33fca3aefb31541632349ef7d005da8c596e2be4b20f04563e0": {
+            "body": [
+                {
+                    "id": "level",
+                    "label": "Level",
+                    "position": 1,
+                    "required": false,
+                    "rollup": "max",
+                    "single": true
+                },
+                {
+                    "id": "handling",
+                    "label": "Handling",
+                    "position": 2,
+                    "required": false,
+                    "rollup": "union",
+                    "single": false
+                },
+                {
+                    "id": "partners",
+                    "label": "Partners",
+                    "position": 3,
+                    "required": false,
+                    "rollup": "intersection",
+                    "single": false
+                }
+            ],
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "e070dec6e78862435e7c23c92a6e4a93a9667377aed0b78b533966687028c314": {
+            "body": {
+                "abiVersion": "v1",
+                "engineSha": "",
+                "engineVersion": "1.0.0-dev.30",
+                "gitTag": "",
+                "openapiVersion": "1.0.0-dev.30",
+                "status": "ok"
+            },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "e10991212881ac851db47ca4dc16b6019b1c9bf3f4c647d382f2124978bb5418": {
+            "body": {
+                "defaultRenderFormat": "default",
+                "id": "bound-part-role",
+                "name": "Bound part role",
+                "referenceSurfaceLabel": {
+                    "plural": "Handbooks",
+                    "singular": "Handbook"
+                },
+                "roleAware": true,
+                "version": "1.0.0"
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "e22921e88eca4329a64a6cc8acfe6448dc73abb9f3831e596828dbddd54a84ea": {
+            "body": [],
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        }
+    }
+}

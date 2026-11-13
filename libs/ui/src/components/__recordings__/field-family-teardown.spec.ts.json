@@ -1,0 +1,382 @@
+{
+    "engineVersion": "1.0.0-dev.30",
+    "openapiVersion": "1.0.0-dev.30",
+    "responses": {
+        "103585eb783cbe97d0ecae72d7114b054f64c08efa0460353fb88a09bfc1de22": {
+            "body": [
+                {
+                    "categoryOrder": ["level", "caveat"],
+                    "categorySeparators": { "caveat": "/", "level": "/" },
+                    "categoryViews": {
+                        "caveat": "default",
+                        "level": "default"
+                    },
+                    "id": "default",
+                    "mode": "inline",
+                    "separator": "//",
+                    "separatorBefore": { "caveat": "//" },
+                    "surface": "marking"
+                }
+            ],
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "1328ab89a733b8034ae24c2795f4b4d3df86e3c3ea78a09d8a6fe0893eb0e6ef": {
+            "body": {
+                "contextId": "sbx-a298386c6daa1f1767671dcbc5f6373846b7e7699323532a437c196a660890a5"
+            },
+            "method": "PUT",
+            "statusCode": 200
+        },
+        "169025907efc3efff954c1d634ca1f46ae7fc777d8d46bc71454b210ba0e17ab": {
+            "body": {
+                "contextId": "sbx-35cd808c6b3735c45d417e761a9a61bb1ff21ebd73fd2503e99bdad7b1921e0c"
+            },
+            "method": "PUT",
+            "statusCode": 200
+        },
+        "1efeaabe09b5416009155b3132bfc5a0dd4a9cd23c585793c59e5d4d3214f917": {
+            "body": [],
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "31b966afbe0bd33fce6b6e5ce8fa213ab83c5e0d4428edf56c7c06bd15b56473": {
+            "body": [
+                {
+                    "aliases": [],
+                    "categories": ["level"],
+                    "id": "U",
+                    "name": "Unclassified",
+                    "parents": [],
+                    "position": 1,
+                    "rank": 1,
+                    "views": { "default": "UNCLASSIFIED" }
+                },
+                {
+                    "aliases": [],
+                    "categories": ["level"],
+                    "id": "S",
+                    "name": "Secret",
+                    "parents": [],
+                    "position": 2,
+                    "rank": 2,
+                    "views": { "default": "SECRET" }
+                },
+                {
+                    "aliases": [],
+                    "categories": ["caveat"],
+                    "id": "NF",
+                    "name": "No Foreign",
+                    "parents": [],
+                    "position": 1,
+                    "rank": 1,
+                    "views": { "default": "NOFORN" }
+                },
+                {
+                    "aliases": [],
+                    "categories": ["caveat"],
+                    "id": "ORCON",
+                    "name": "Originator Controlled",
+                    "parents": [],
+                    "position": 2,
+                    "rank": 1,
+                    "views": { "default": "ORCON" }
+                }
+            ],
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "39f05c8d1442f2cb25abd9d8d8a6a5ca50b7e509075a11055ba150b2e01b8ec7": {
+            "body": [],
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "62dc4e6f7cbc0d43840238257205d379cb547c9dd545b83f54d8598ce131612d": {
+            "body": [
+                {
+                    "id": "level",
+                    "label": "Level",
+                    "position": 1,
+                    "required": false,
+                    "rollup": "max",
+                    "single": true
+                },
+                {
+                    "id": "caveat",
+                    "label": "Caveat",
+                    "position": 2,
+                    "required": false,
+                    "rollup": "union",
+                    "single": false
+                }
+            ],
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "7aa73aa694871fde3377b9d8f166905cbdb60e42e8ad3273937071329519ed2f": {
+            "body": [
+                {
+                    "id": "level",
+                    "label": "Level",
+                    "position": 1,
+                    "required": false,
+                    "rollup": "max",
+                    "single": true
+                },
+                {
+                    "id": "caveat",
+                    "label": "Caveat",
+                    "position": 2,
+                    "required": false,
+                    "rollup": "union",
+                    "single": false
+                }
+            ],
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "7e2f165f7792547c32a8a173f2fd01db179aef8ec112d9e26d954d889c23730e": {
+            "body": [],
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "835367b46b782d8230b32340b895db0ce72c7a1dcd14811204a05c6ae7591048": {
+            "body": [
+                {
+                    "categoryOrder": ["level", "caveat"],
+                    "categorySeparators": { "caveat": "/", "level": "/" },
+                    "categoryViews": {
+                        "caveat": "default",
+                        "level": "default"
+                    },
+                    "id": "default",
+                    "mode": "inline",
+                    "separator": "//",
+                    "separatorBefore": { "caveat": "//" },
+                    "surface": "marking"
+                }
+            ],
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "84b5176e62b19adce8457472cad95ffe4f894aa15d13f46e1e2777affb72db5c": {
+            "body": {
+                "defaultRenderFormat": "default",
+                "description": "Field Family Teardown Test test fixture.",
+                "id": "field-family-teardown-test",
+                "name": "Field Family Teardown Test",
+                "referenceSurfaceLabel": {
+                    "plural": "Handbooks",
+                    "singular": "Handbook"
+                },
+                "roleAware": false,
+                "version": "1.0.0"
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "919d48dbf6eba3cced2df051ea236e4c46df80f58a5253c888d020551bfdf3b7": {
+            "body": {
+                "id": "sbx-35cd808c6b3735c45d417e761a9a61bb1ff21ebd73fd2503e99bdad7b1921e0c",
+                "scheme": {
+                    "id": "field-family-teardown-test",
+                    "resolvedVersion": "1.0.0",
+                    "version": "1.0.0"
+                },
+                "schemes": [
+                    {
+                        "id": "field-family-teardown-test",
+                        "roles": ["primary"],
+                        "selector": "field-family-teardown-test",
+                        "version": "1.0.0"
+                    }
+                ],
+                "version": "0.0.0"
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "94dc35733f0bcf2d86ea25bea0983f5881f414d1557b5fb4072dea9940cf93fb": {
+            "body": {
+                "id": "sbx-a298386c6daa1f1767671dcbc5f6373846b7e7699323532a437c196a660890a5",
+                "scheme": {
+                    "id": "field-family-teardown-test",
+                    "resolvedVersion": "1.0.0",
+                    "version": "1.0.0"
+                },
+                "schemes": [
+                    {
+                        "id": "field-family-teardown-test",
+                        "roles": ["primary"],
+                        "selector": "field-family-teardown-test",
+                        "version": "1.0.0"
+                    }
+                ],
+                "version": "0.0.0"
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "9b5923b70c778bf5416b89350ed93599da87061d40849ff7e0a82c4f72656770": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "field-family-teardown-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "sbx-35cd808c6b3735c45d417e761a9a61bb1ff21ebd73fd2503e99bdad7b1921e0c",
+                            "kind": "context",
+                            "version": "0.0.0"
+                        }
+                    ],
+                    "contextId": "sbx-35cd808c6b3735c45d417e761a9a61bb1ff21ebd73fd2503e99bdad7b1921e0c",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "0.0.0"
+                },
+                "result": {
+                    "appliedFixes": [
+                        {
+                            "action": "reorder",
+                            "message": "Read `/` as `//` (separator).",
+                            "ruleId": "_recognition_separator"
+                        }
+                    ],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "S",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "caveat",
+                            "conceptId": "NF",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            { "categoryId": "level", "conceptId": "S" },
+                            { "categoryId": "caveat", "conceptId": "NF" }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": false,
+                    "notices": [],
+                    "recognition": {
+                        "inputFormat": "default",
+                        "status": "complete",
+                        "surface": "marking",
+                        "unmatched": []
+                    },
+                    "rendered": "SECRET//NOFORN",
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "a5adfd0c10b1c1eafbf823abb69adc3cef9ab6dda04a9fb824f0f3bd2841304c": {
+            "body": [],
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "d1079ba6ebb3ce10974a4de7fd6e36e6dd30aa93580fba676ab6681ec3167d15": {
+            "body": [
+                {
+                    "aliases": [],
+                    "categories": ["level"],
+                    "id": "U",
+                    "name": "Unclassified",
+                    "parents": [],
+                    "position": 1,
+                    "rank": 1,
+                    "views": { "default": "UNCLASSIFIED" }
+                },
+                {
+                    "aliases": [],
+                    "categories": ["level"],
+                    "id": "S",
+                    "name": "Secret",
+                    "parents": [],
+                    "position": 2,
+                    "rank": 2,
+                    "views": { "default": "SECRET" }
+                },
+                {
+                    "aliases": [],
+                    "categories": ["caveat"],
+                    "id": "NF",
+                    "name": "No Foreign",
+                    "parents": [],
+                    "position": 1,
+                    "rank": 1,
+                    "views": { "default": "NOFORN" }
+                },
+                {
+                    "aliases": [],
+                    "categories": ["caveat"],
+                    "id": "ORCON",
+                    "name": "Originator Controlled",
+                    "parents": [],
+                    "position": 2,
+                    "rank": 1,
+                    "views": { "default": "ORCON" }
+                }
+            ],
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "e070dec6e78862435e7c23c92a6e4a93a9667377aed0b78b533966687028c314": {
+            "body": {
+                "abiVersion": "v1",
+                "engineSha": "",
+                "engineVersion": "1.0.0-dev.30",
+                "gitTag": "",
+                "openapiVersion": "1.0.0-dev.30",
+                "status": "ok"
+            },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "efc6ac55cb60eafa03440837402dd39305093a7b5cf535525f044bb4b33041c1": {
+            "body": {
+                "defaultRenderFormat": "default",
+                "id": "field-family-teardown-test",
+                "name": "Field Family Teardown Test",
+                "referenceSurfaceLabel": {
+                    "plural": "Handbooks",
+                    "singular": "Handbook"
+                },
+                "roleAware": false,
+                "version": "1.0.0"
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        }
+    }
+}

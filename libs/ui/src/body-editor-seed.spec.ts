@@ -16,78 +16,88 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import type { LocalContextSchemeEngineAdapter } from '@ezclassify/types';
-import { Context } from '@ezclassify/engine';
+import type { RemoteContextSchemeEngineAdapter } from '@ezclassify/types';
 import { EzClassifyUI } from './ezclassify-ui';
 import { MarkedInput } from './components/marked-input';
 import { asContext } from '../test-fixtures/as-context';
 import { levelState } from './store/page-rollup-harness';
+import { connectDemoContext } from '../../../test-support/demo-runtime';
 
 function wait(ms = 30): Promise<void> {
     return new Promise((r) => setTimeout(r, ms));
 }
 
 /** Engine with an embedded-marking pattern so marked fields can scan segments. */
-function createMarkedEngine(): LocalContextSchemeEngineAdapter {
-    return Context.fromComponents({
-        scheme: {
-            scheme: {
-                id: 'marked-seed-test',
-                version: '1.0.0',
-                name: 'Marked Seed Test',
-                data: {
-                    concepts: [
-                        {
-                            id: 'U',
-                            name: 'Unclassified',
-                            views: { default: 'U' },
-                            categories: ['level'],
-                            parents: [],
-                            aliases: [],
-                            position: 1,
-                            rank: 1,
+async function createMarkedEngine(): Promise<RemoteContextSchemeEngineAdapter> {
+    return (
+        await connectDemoContext({
+            draft: {
+                scheme: {
+                    scheme: {
+                        id: 'marked-seed-test',
+                        version: '1.0.0',
+                        name: 'Marked Seed Test',
+                        description: 'Marked Seed Test test fixture.',
+                        data: {
+                            concepts: [
+                                {
+                                    id: 'U',
+                                    name: 'Unclassified',
+                                    views: { default: 'U' },
+                                    categories: ['level'],
+                                    parents: [],
+                                    aliases: [],
+                                    position: 1,
+                                    rank: 1,
+                                },
+                                {
+                                    id: 'S',
+                                    name: 'Secret',
+                                    views: { default: 'S' },
+                                    categories: ['level'],
+                                    parents: [],
+                                    aliases: [],
+                                    position: 2,
+                                    rank: 2,
+                                },
+                            ],
+                            categories: [
+                                {
+                                    id: 'level',
+                                    label: 'Level',
+                                    required: false,
+                                    single: true,
+                                    rollup: 'max',
+                                    position: 1,
+                                },
+                            ],
                         },
-                        {
-                            id: 'S',
-                            name: 'Secret',
-                            views: { default: 'S' },
-                            categories: ['level'],
-                            parents: [],
-                            aliases: [],
-                            position: 2,
-                            rank: 2,
+                        rules: [],
+                        embedded_marking: [
+                            {
+                                pattern: '\\(([^)]+)\\)',
+                                template: '({marking}) ',
+                            },
+                        ],
+                        render: {
+                            default: 'portion',
+                            formats: [
+                                {
+                                    id: 'portion',
+                                    surface: 'marking',
+                                    mode: 'inline',
+                                    separator: '//',
+                                    fields: [
+                                        { category: 'level', separator: '/' },
+                                    ],
+                                },
+                            ],
                         },
-                    ],
-                    categories: [
-                        {
-                            id: 'level',
-                            label: 'Level',
-                            required: false,
-                            single: true,
-                            rollup: 'max',
-                            position: 1,
-                        },
-                    ],
-                },
-                rules: [],
-                embedded_marking: [
-                    { pattern: '\\(([^)]+)\\)', template: '({marking}) ' },
-                ],
-                render: {
-                    default: 'portion',
-                    formats: [
-                        {
-                            id: 'portion',
-                            surface: 'marking',
-                            mode: 'inline',
-                            separator: '//',
-                            fields: [{ category: 'level', separator: '/' }],
-                        },
-                    ],
+                    },
                 },
             },
-        },
-    }).scheme as LocalContextSchemeEngineAdapter;
+        })
+    ).scheme as RemoteContextSchemeEngineAdapter;
 }
 
 let root: HTMLDivElement;
@@ -109,7 +119,7 @@ afterEach(() => {
 
 describe('the initial seed reads a body editor mark, never its body', () => {
     it('leaves an authored mark on the field after mount', async () => {
-        const engine = createMarkedEngine();
+        const engine = await createMarkedEngine();
         root.innerHTML = `<div class="field"><input type="text" id="mi-seed" data-ezclassify-controller="marked-input" value="(S) quarterly report"></div>`;
         const forms = new EzClassifyUI(asContext(engine as never), { root });
         activeForms.push(forms);
@@ -120,7 +130,7 @@ describe('the initial seed reads a body editor mark, never its body', () => {
     });
 
     it('seeds the store with the mark the field carries, not an empty set', async () => {
-        const engine = createMarkedEngine();
+        const engine = await createMarkedEngine();
         root.innerHTML = `<div class="field"><input type="text" id="mi-seed" data-ezclassify-controller="marked-input" value="(S) quarterly report"></div>`;
         const forms = new EzClassifyUI(asContext(engine as never), { root });
         activeForms.push(forms);
@@ -134,7 +144,7 @@ describe('the initial seed reads a body editor mark, never its body', () => {
     });
 
     it('keeps the component assertions the field parsed for itself', async () => {
-        const engine = createMarkedEngine();
+        const engine = await createMarkedEngine();
         root.innerHTML = `<div class="field"><input type="text" id="mi-seed" data-ezclassify-controller="marked-input" value="(S) quarterly report"></div>`;
         const forms = new EzClassifyUI(asContext(engine as never), { root });
         activeForms.push(forms);
@@ -150,7 +160,7 @@ describe('the initial seed reads a body editor mark, never its body', () => {
         // The reason a body editor cannot simply be skipped: this seed is the
         // only thing that puts an already-authored mark into the aggregate
         // before the user touches anything.
-        const engine = createMarkedEngine();
+        const engine = await createMarkedEngine();
         root.innerHTML = `<div class="field"><input type="text" id="mi-seed" data-ezclassify-controller="marked-input" value="(S) quarterly report"></div>`;
         const forms = new EzClassifyUI(asContext(engine as never), { root });
         activeForms.push(forms);
@@ -163,7 +173,7 @@ describe('the initial seed reads a body editor mark, never its body', () => {
     });
 
     it('commits an empty body editor once so facet subscribers get their signal', async () => {
-        const engine = createMarkedEngine();
+        const engine = await createMarkedEngine();
         root.innerHTML = `<div class="field"><input type="text" id="mi-empty" data-ezclassify-controller="marked-input"></div>`;
         const forms = new EzClassifyUI(asContext(engine as never), { root });
         activeForms.push(forms);
@@ -181,7 +191,7 @@ describe('the initial seed reads a body editor mark, never its body', () => {
     it('seeds a plain rendered host from its raw value, unchanged', async () => {
         // The control: a host that is NOT a body editor holds a marking string
         // and nothing else, so the raw value is exactly what the store wants.
-        const engine = createMarkedEngine();
+        const engine = await createMarkedEngine();
         root.innerHTML = `<input id="plain-host" data-ezclassify-marking value="S" />`;
         const forms = new EzClassifyUI(asContext(engine as never), { root });
         activeForms.push(forms);

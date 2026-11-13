@@ -16,8 +16,10 @@ import type {
 } from '@ezclassify/types';
 import { Guidebook } from './guidebook';
 import { resetLocale, setLocale } from '../i18n';
-import { loadCedarValleyContext } from '../../../../test-support/community-content';
-import { loadCedarValleyLevelsContext } from '../../../../test-support/community-content';
+import {
+    connectDemoContext,
+    demoRuntimeSettled,
+} from '../../../../test-support/demo-runtime';
 
 describe('Guidebook', () => {
     let container: HTMLDivElement;
@@ -30,8 +32,11 @@ describe('Guidebook', () => {
     });
 
     it('renders a region with rule entries from the loaded guide', async () => {
-        const ctx = openContext(loadCedarValleyContext());
+        const ctx = openContext(
+            await connectDemoContext({ contextId: 'cedar-valley' }),
+        );
         await guidebook.init(container, ctx);
+        await demoRuntimeSettled();
 
         const region = container.querySelector('[role="region"]');
         expect(region).toBeTruthy();
@@ -41,8 +46,11 @@ describe('Guidebook', () => {
 
     describe('reference-surface vocabulary', () => {
         it('keeps the generic aria-label when the guide declares no vocabulary (byte-identical default)', async () => {
-            const ctx = openContext(loadCedarValleyContext());
+            const ctx = openContext(
+                await connectDemoContext({ contextId: 'cedar-valley' }),
+            );
             await guidebook.init(container, ctx);
+            await demoRuntimeSettled();
 
             const region = container.querySelector('[role="region"]');
             expect(region!.getAttribute('aria-label')).toBe('guide reference');
@@ -55,8 +63,13 @@ describe('Guidebook', () => {
         });
 
         it('uses the generic Guidebook noun when the guide declares no reference vocabulary', async () => {
-            const ctx = openContext(loadCedarValleyLevelsContext());
+            const ctx = openContext(
+                await connectDemoContext({
+                    contextId: 'cedar-valley-protection',
+                }),
+            );
             await guidebook.init(container, ctx);
+            await demoRuntimeSettled();
 
             const region = container.querySelector('[role="region"]');
             expect(region!.getAttribute('aria-label')).toBe('guide reference');
@@ -73,7 +86,9 @@ describe('Guidebook', () => {
         });
 
         it("prefers the guide engine's own getGuideMeta().referenceSurfaceLabel over re-deriving from the view's raw vocabulary map", async () => {
-            const ctx = openContext(loadCedarValleyContext());
+            const ctx = openContext(
+                await connectDemoContext({ contextId: 'cedar-valley' }),
+            );
             const guideEngine = ctx.guide!;
             // Stub getGuideMeta to report a renamed surface even though the
             // underlying vocabulary the structural view carries declares none.
@@ -96,6 +111,7 @@ describe('Guidebook', () => {
             }) as typeof guideEngine.getGuideMeta;
 
             await guidebook.init(container, ctx);
+            await demoRuntimeSettled();
 
             const region = container.querySelector('[role="region"]');
             expect(region!.getAttribute('aria-label')).toBe(
@@ -136,11 +152,14 @@ describe('Guidebook', () => {
         }
 
         it('renders the rule entries once the views resolve', async () => {
-            const ctx = openContext(loadCedarValleyContext());
+            const ctx = openContext(
+                await connectDemoContext({ contextId: 'cedar-valley' }),
+            );
             const { guide, release } = remoteGuide(ctx.guide!);
             ctx.guide = guide as unknown as typeof ctx.guide;
 
             await guidebook.init(container, ctx);
+            await demoRuntimeSettled();
             expect(container.querySelector('.ez-guidebook__entry')).toBeNull();
 
             release();
@@ -160,11 +179,14 @@ describe('Guidebook', () => {
             const consoleError = vi
                 .spyOn(console, 'error')
                 .mockImplementation(() => {});
-            const ctx = openContext(loadCedarValleyContext());
+            const ctx = openContext(
+                await connectDemoContext({ contextId: 'cedar-valley' }),
+            );
             const { guide, fail } = remoteGuide(ctx.guide!);
             ctx.guide = guide as unknown as typeof ctx.guide;
 
             await guidebook.init(container, ctx);
+            await demoRuntimeSettled();
             fail(new Error('guide fetch failed'));
 
             const failed = await vi.waitFor(() => {
@@ -184,11 +206,14 @@ describe('Guidebook', () => {
         });
 
         it('does not resurrect a panel destroyed while the views were in flight', async () => {
-            const ctx = openContext(loadCedarValleyContext());
+            const ctx = openContext(
+                await connectDemoContext({ contextId: 'cedar-valley' }),
+            );
             const { guide, release } = remoteGuide(ctx.guide!);
             ctx.guide = guide as unknown as typeof ctx.guide;
 
             await guidebook.init(container, ctx);
+            await demoRuntimeSettled();
             guidebook.destroy();
             release();
             await new Promise((resolve) => setTimeout(resolve, 0));
@@ -218,11 +243,14 @@ describe('Guidebook', () => {
         it('leads a lone guide with its document marking', async () => {
             await guidebook.init(
                 container,
-                openContext(loadCedarValleyContext()),
+                openContext(
+                    await connectDemoContext({ contextId: 'cedar-valley' }),
+                ),
                 {
                     guides: view('a', '(U) NOTIONAL//TEST'),
                 },
             );
+            await demoRuntimeSettled();
 
             const section = container.querySelector('[data-guide-id="a"]')!;
             expect(section.firstElementChild).toBe(shownMarking('a'));
@@ -236,9 +264,12 @@ describe('Guidebook', () => {
             try {
                 await guidebook.init(
                     container,
-                    openContext(loadCedarValleyContext()),
+                    openContext(
+                        await connectDemoContext({ contextId: 'cedar-valley' }),
+                    ),
                     { guides: view('a', '(U) NOTIONAL//TEST') },
                 );
+                await demoRuntimeSettled();
                 expect(shownMarking('a')!.textContent).toBe(
                     'Marquage global : (U) NOTIONAL//TEST',
                 );
@@ -250,11 +281,14 @@ describe('Guidebook', () => {
         it('keeps each guide marking visible while its guide is collapsed', async () => {
             await guidebook.init(
                 container,
-                openContext(loadCedarValleyContext()),
+                openContext(
+                    await connectDemoContext({ contextId: 'cedar-valley' }),
+                ),
                 {
                     guides: [view('a'), view('b', '(U) NOTIONAL//B')],
                 },
             );
+            await demoRuntimeSettled();
 
             const body = container.querySelector(
                 '[data-guide-id="b"] .ez-guidebook__guide-body',

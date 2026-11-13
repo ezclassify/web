@@ -1,73 +1,76 @@
 import { afterEach, describe, expect, it } from 'vitest';
-import { Context } from '@ezclassify/engine';
 import { CategoryChecklist } from './category-checklist';
+import { connectDemoContext } from '../../../../test-support/demo-runtime';
 
-function context(conditional: boolean) {
-    return Context.fromComponents({
-        scheme: {
+async function context(conditional: boolean) {
+    return await connectDemoContext({
+        draft: {
             scheme: {
-                id: 'checklist-defaults',
-                version: '1.0.0',
-                name: 'Checklist defaults',
-                data: {
-                    categories: [
-                        {
-                            id: 'level',
-                            label: 'Level',
-                            single: true,
-                            rollup: 'max',
-                        },
-                        {
-                            id: 'origin',
-                            label: 'Origin',
-                            rollup: 'union',
-                            default_concept: conditional
-                                ? {
-                                      concept: 'HOME',
-                                      when: {
-                                          category: 'level',
-                                          is: 'has_content',
-                                      },
-                                  }
-                                : 'HOME',
-                        },
-                    ],
-                    concepts: [
-                        {
-                            id: 'LOW',
-                            name: 'Low',
-                            views: { default: 'LOW' },
-                            categories: ['level'],
-                            rank: 0,
-                        },
-                        {
-                            id: 'HOME',
-                            name: 'Home',
-                            views: { default: 'HOME' },
-                            categories: ['origin'],
-                        },
-                        {
-                            id: 'PARTNER',
-                            name: 'Partner',
-                            views: { default: 'PARTNER' },
-                            categories: ['origin'],
-                        },
-                    ],
-                },
-                render: {
-                    default: 'banner',
-                    formats: [
-                        {
-                            id: 'banner',
-                            surface: 'banner',
-                            mode: 'inline',
-                            separator: '//',
-                            fields: [
-                                { category: 'level' },
-                                { category: 'origin', separator: ',' },
-                            ],
-                        },
-                    ],
+                scheme: {
+                    id: 'checklist-defaults',
+                    version: '1.0.0',
+                    name: 'Checklist defaults',
+                    description: 'Checklist defaults test fixture.',
+                    data: {
+                        categories: [
+                            {
+                                id: 'level',
+                                label: 'Level',
+                                single: true,
+                                rollup: 'max',
+                            },
+                            {
+                                id: 'origin',
+                                label: 'Origin',
+                                rollup: 'union',
+                                default_concept: conditional
+                                    ? {
+                                          concept: 'HOME',
+                                          when: {
+                                              category: 'level',
+                                              is: 'has_content',
+                                          },
+                                      }
+                                    : 'HOME',
+                            },
+                        ],
+                        concepts: [
+                            {
+                                id: 'LOW',
+                                name: 'Low',
+                                views: { default: 'LOW' },
+                                categories: ['level'],
+                                rank: 0,
+                            },
+                            {
+                                id: 'HOME',
+                                name: 'Home',
+                                views: { default: 'HOME' },
+                                categories: ['origin'],
+                            },
+                            {
+                                id: 'PARTNER',
+                                name: 'Partner',
+                                views: { default: 'PARTNER' },
+                                categories: ['origin'],
+                            },
+                        ],
+                    },
+                    render: {
+                        default: 'banner',
+                        formats: [
+                            {
+                                id: 'banner',
+                                surface: 'banner',
+                                mode: 'inline',
+                                separator: '//',
+                                fields: [
+                                    { category: 'level' },
+                                    { category: 'origin', separator: ',' },
+                                ],
+                            },
+                        ],
+                    },
                 },
             },
         },
@@ -91,7 +94,7 @@ describe('category clearing through engine defaults', () => {
         async ({ conditional, level, defaults }) => {
             const root = document.createElement('div');
             document.body.appendChild(root);
-            const ctx = context(conditional);
+            const ctx = await context(conditional);
             checklist = new CategoryChecklist();
             await checklist.init(root, ctx, {
                 categoryId: 'origin',
