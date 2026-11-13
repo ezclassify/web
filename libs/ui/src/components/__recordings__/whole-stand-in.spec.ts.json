@@ -1615,111 +1615,6 @@
             "method": "POST",
             "statusCode": 200
         },
-        "1b4b30a22761b24541c3863dc52d70e716494ccd2d649645a435d52071c13c09": {
-            "body": {
-                "resolution": {
-                    "artifacts": [
-                        {
-                            "id": "whole-stand-in",
-                            "kind": "scheme",
-                            "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-7733d856b74ad475c76087fe0ae43fd99d4d2184c3e4d315cd5eaa602e868138",
-                            "kind": "context",
-                            "version": "0.0.0"
-                        }
-                    ],
-                    "contextId": "sbx-7733d856b74ad475c76087fe0ae43fd99d4d2184c3e4d315cd5eaa602e868138",
-                    "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
-                },
-                "result": {
-                    "appliedFixes": [],
-                    "assertions": [
-                        {
-                            "categoryId": "level",
-                            "conceptId": "LOW",
-                            "confidence": "certain",
-                            "source": "parse"
-                        },
-                        {
-                            "categoryId": "owners",
-                            "conceptId": "NORTH",
-                            "confidence": "inferred",
-                            "source": "context"
-                        },
-                        {
-                            "categoryId": "owners",
-                            "conceptId": "SOUTH",
-                            "confidence": "inferred",
-                            "source": "context"
-                        },
-                        {
-                            "categoryId": "handling",
-                            "conceptId": "SHARE",
-                            "confidence": "certain",
-                            "source": "parse"
-                        },
-                        {
-                            "categoryId": "partners",
-                            "conceptId": "ALPHA",
-                            "confidence": "inferred",
-                            "source": "context"
-                        },
-                        {
-                            "categoryId": "partners",
-                            "conceptId": "BRAVO",
-                            "confidence": "inferred",
-                            "source": "context"
-                        },
-                        {
-                            "categoryId": "owner_shorthand",
-                            "conceptId": "JOINT-AS-WHOLE",
-                            "confidence": "certain",
-                            "source": "parse"
-                        }
-                    ],
-                    "assessment": {
-                        "collapsed": [],
-                        "conflicts": [],
-                        "emitted": [
-                            { "categoryId": "level", "conceptId": "LOW" },
-                            { "categoryId": "handling", "conceptId": "SHARE" }
-                        ],
-                        "omitted": [
-                            { "categoryId": "partners", "conceptId": "ALPHA" },
-                            { "categoryId": "partners", "conceptId": "BRAVO" },
-                            { "categoryId": "owners", "conceptId": "NORTH" },
-                            { "categoryId": "owners", "conceptId": "SOUTH" },
-                            {
-                                "categoryId": "owner_shorthand",
-                                "conceptId": "JOINT-AS-WHOLE"
-                            }
-                        ],
-                        "unrepresentable": []
-                    },
-                    "errors": [],
-                    "inputWasValid": true,
-                    "notices": [],
-                    "proposedFixes": [],
-                    "recognition": {
-                        "corrections": [],
-                        "inputFormat": "portion_joint",
-                        "status": "complete",
-                        "surface": "classification",
-                        "unmatched": []
-                    },
-                    "rendered": "JOINT L//SHARE",
-                    "renders": {},
-                    "valid": true,
-                    "warnings": []
-                }
-            },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
-            "method": "POST",
-            "statusCode": 200
-        },
         "1b9b6cd754b35f20d17b40699a726bbc47e6d373478b881661ac54ea2b9e46b4": {
             "body": {
                 "resolution": {
@@ -2148,6 +2043,111 @@
                     "notices": [],
                     "proposedFixes": [],
                     "rendered": "JOINT H//SHARE WITH ALPHA, BRAVO",
+                    "renders": {},
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "20b84c3f7651e75648f044ad6f16993907881300f9ec139012d7208a7a39e680": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "whole-stand-in",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "sbx-7733d856b74ad475c76087fe0ae43fd99d4d2184c3e4d315cd5eaa602e868138",
+                            "kind": "context",
+                            "version": "0.0.0"
+                        }
+                    ],
+                    "contextId": "sbx-7733d856b74ad475c76087fe0ae43fd99d4d2184c3e4d315cd5eaa602e868138",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "0.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "LOW",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "owners",
+                            "conceptId": "NORTH",
+                            "confidence": "inferred",
+                            "source": "context"
+                        },
+                        {
+                            "categoryId": "owners",
+                            "conceptId": "SOUTH",
+                            "confidence": "inferred",
+                            "source": "context"
+                        },
+                        {
+                            "categoryId": "handling",
+                            "conceptId": "SHARE",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "partners",
+                            "conceptId": "ALPHA",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "partners",
+                            "conceptId": "BRAVO",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "owner_shorthand",
+                            "conceptId": "JOINT-AS-WHOLE",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            { "categoryId": "level", "conceptId": "LOW" },
+                            { "categoryId": "handling", "conceptId": "SHARE" },
+                            { "categoryId": "partners", "conceptId": "ALPHA" },
+                            { "categoryId": "partners", "conceptId": "BRAVO" }
+                        ],
+                        "omitted": [
+                            { "categoryId": "owners", "conceptId": "NORTH" },
+                            { "categoryId": "owners", "conceptId": "SOUTH" },
+                            {
+                                "categoryId": "owner_shorthand",
+                                "conceptId": "JOINT-AS-WHOLE"
+                            }
+                        ],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "recognition": {
+                        "corrections": [],
+                        "inputFormat": "portion_joint",
+                        "status": "complete",
+                        "surface": "classification",
+                        "unmatched": []
+                    },
+                    "rendered": "JOINT L//SHARE WITH ALPHA, BRAVO",
                     "renders": {},
                     "valid": true,
                     "warnings": []
@@ -3504,6 +3504,113 @@
             "method": "POST",
             "statusCode": 200
         },
+        "365a491fb554045ec677a25bd029b7e8dc3f91f6fb536777f44d46a7bdcf746b": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "whole-stand-in",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "sbx-7733d856b74ad475c76087fe0ae43fd99d4d2184c3e4d315cd5eaa602e868138",
+                            "kind": "context",
+                            "version": "0.0.0"
+                        }
+                    ],
+                    "contextId": "sbx-7733d856b74ad475c76087fe0ae43fd99d4d2184c3e4d315cd5eaa602e868138",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "0.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "LOW",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "owner_shorthand",
+                            "conceptId": "JOINT-AS-WHOLE",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            { "categoryId": "level", "conceptId": "LOW" }
+                        ],
+                        "omitted": [
+                            {
+                                "categoryId": "owner_shorthand",
+                                "conceptId": "JOINT-AS-WHOLE"
+                            }
+                        ],
+                        "unrepresentable": [
+                            {
+                                "conceptId": "LOW",
+                                "detail": "this output does not read back as what was written: nothing in it says which of the fields that share a spelling, or which of the values a field takes, was meant.",
+                                "reason": "ambiguous-identity"
+                            }
+                        ]
+                    },
+                    "errors": [
+                        {
+                            "categoryId": "owners",
+                            "constraintId": "joint-names-owners",
+                            "message": "Name the joint owners in this part or in its whole."
+                        },
+                        {
+                            "affectedConcepts": ["JOINT-AS-WHOLE"],
+                            "categoryId": "owner_shorthand",
+                            "constraintId": "_stand_in_requires_whole",
+                            "message": "JOINT stands for the whole's Owners, so this part needs a valid whole to take them from."
+                        },
+                        {
+                            "constraintId": "_invalid_render",
+                            "message": "`portion` could not write `LOW` (ambiguous-identity): this output does not read back as what was written: nothing in it says which of the fields that share a spelling, or which of the values a field takes, was meant."
+                        }
+                    ],
+                    "inputWasValid": false,
+                    "notices": [],
+                    "proposedFixes": [
+                        {
+                            "adds": [],
+                            "keeps": [
+                                { "categoryId": "level", "conceptId": "LOW" }
+                            ],
+                            "message": "Remove JOINT.",
+                            "removes": [
+                                {
+                                    "categoryId": "owner_shorthand",
+                                    "conceptId": "JOINT-AS-WHOLE"
+                                }
+                            ],
+                            "rendered": "L"
+                        }
+                    ],
+                    "recognition": {
+                        "corrections": [],
+                        "inputFormat": "portion",
+                        "status": "complete",
+                        "surface": "classification",
+                        "unmatched": []
+                    },
+                    "rendered": "[unrepresentable:ambiguous-identity]",
+                    "renders": {},
+                    "valid": false,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
         "389c9716316fe34f861be8293b235d6cd62b1644c57cb615fb67967d5980fd72": {
             "body": {
                 "resolution": {
@@ -3848,6 +3955,111 @@
                         "unrepresentable": []
                     },
                     "result": "JOINT L//SHARE"
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "3c307bb4389b309cbdc9baa5922ac88e8d9792b2900f3908b03e54f872704635": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "whole-stand-in",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "sbx-7733d856b74ad475c76087fe0ae43fd99d4d2184c3e4d315cd5eaa602e868138",
+                            "kind": "context",
+                            "version": "0.0.0"
+                        }
+                    ],
+                    "contextId": "sbx-7733d856b74ad475c76087fe0ae43fd99d4d2184c3e4d315cd5eaa602e868138",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "0.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "HIGH",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "owners",
+                            "conceptId": "NORTH",
+                            "confidence": "inferred",
+                            "source": "context"
+                        },
+                        {
+                            "categoryId": "owners",
+                            "conceptId": "SOUTH",
+                            "confidence": "inferred",
+                            "source": "context"
+                        },
+                        {
+                            "categoryId": "handling",
+                            "conceptId": "SHARE",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "partners",
+                            "conceptId": "ALPHA",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "partners",
+                            "conceptId": "BRAVO",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "owner_shorthand",
+                            "conceptId": "JOINT-AS-WHOLE",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            { "categoryId": "level", "conceptId": "HIGH" },
+                            { "categoryId": "handling", "conceptId": "SHARE" },
+                            { "categoryId": "partners", "conceptId": "ALPHA" },
+                            { "categoryId": "partners", "conceptId": "BRAVO" }
+                        ],
+                        "omitted": [
+                            { "categoryId": "owners", "conceptId": "NORTH" },
+                            { "categoryId": "owners", "conceptId": "SOUTH" },
+                            {
+                                "categoryId": "owner_shorthand",
+                                "conceptId": "JOINT-AS-WHOLE"
+                            }
+                        ],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "recognition": {
+                        "corrections": [],
+                        "inputFormat": "portion_joint",
+                        "status": "complete",
+                        "surface": "classification",
+                        "unmatched": []
+                    },
+                    "rendered": "JOINT H//SHARE WITH ALPHA, BRAVO",
+                    "renders": {},
+                    "valid": true,
+                    "warnings": []
                 }
             },
             "headers": { "x-ezclassify-resolved-version": "0.0.0" },
@@ -7473,111 +7685,6 @@
             "method": "POST",
             "statusCode": 200
         },
-        "79a727ac2e361252dfcaae4c25237f0a5d9b874c4e92beca3501e9fcd1271b34": {
-            "body": {
-                "resolution": {
-                    "artifacts": [
-                        {
-                            "id": "whole-stand-in",
-                            "kind": "scheme",
-                            "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-7733d856b74ad475c76087fe0ae43fd99d4d2184c3e4d315cd5eaa602e868138",
-                            "kind": "context",
-                            "version": "0.0.0"
-                        }
-                    ],
-                    "contextId": "sbx-7733d856b74ad475c76087fe0ae43fd99d4d2184c3e4d315cd5eaa602e868138",
-                    "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
-                },
-                "result": {
-                    "appliedFixes": [],
-                    "assertions": [
-                        {
-                            "categoryId": "level",
-                            "conceptId": "LOW",
-                            "confidence": "certain",
-                            "source": "parse"
-                        },
-                        {
-                            "categoryId": "owners",
-                            "conceptId": "NORTH",
-                            "confidence": "inferred",
-                            "source": "context"
-                        },
-                        {
-                            "categoryId": "owners",
-                            "conceptId": "SOUTH",
-                            "confidence": "inferred",
-                            "source": "context"
-                        },
-                        {
-                            "categoryId": "handling",
-                            "conceptId": "SHARE",
-                            "confidence": "certain",
-                            "source": "parse"
-                        },
-                        {
-                            "categoryId": "partners",
-                            "conceptId": "ALPHA",
-                            "confidence": "certain",
-                            "source": "parse"
-                        },
-                        {
-                            "categoryId": "partners",
-                            "conceptId": "BRAVO",
-                            "confidence": "certain",
-                            "source": "parse"
-                        },
-                        {
-                            "categoryId": "owner_shorthand",
-                            "conceptId": "JOINT-AS-WHOLE",
-                            "confidence": "certain",
-                            "source": "parse"
-                        }
-                    ],
-                    "assessment": {
-                        "collapsed": [],
-                        "conflicts": [],
-                        "emitted": [
-                            { "categoryId": "level", "conceptId": "LOW" },
-                            { "categoryId": "handling", "conceptId": "SHARE" },
-                            { "categoryId": "partners", "conceptId": "ALPHA" },
-                            { "categoryId": "partners", "conceptId": "BRAVO" }
-                        ],
-                        "omitted": [
-                            { "categoryId": "owners", "conceptId": "NORTH" },
-                            { "categoryId": "owners", "conceptId": "SOUTH" },
-                            {
-                                "categoryId": "owner_shorthand",
-                                "conceptId": "JOINT-AS-WHOLE"
-                            }
-                        ],
-                        "unrepresentable": []
-                    },
-                    "errors": [],
-                    "inputWasValid": true,
-                    "notices": [],
-                    "proposedFixes": [],
-                    "recognition": {
-                        "corrections": [],
-                        "inputFormat": "portion_joint",
-                        "status": "complete",
-                        "surface": "classification",
-                        "unmatched": []
-                    },
-                    "rendered": "JOINT L//SHARE WITH ALPHA, BRAVO",
-                    "renders": {},
-                    "valid": true,
-                    "warnings": []
-                }
-            },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
-            "method": "POST",
-            "statusCode": 200
-        },
         "7ac6caf22d1dcfcdf2c00996938eeb7299ebc50993b2f053a36cdf34d6697ba2": {
             "body": {
                 "resolution": {
@@ -7873,6 +7980,140 @@
                     "proposedFixes": [],
                     "rendered": "JOINT HIGH NORTH SOUTH//SHARE WITH ALPHA, BRAVO",
                     "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "7e1176d18deffe236725729a3325b5e617e53dd899759df34f1029de0d6751fb": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "whole-stand-in",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "sbx-7733d856b74ad475c76087fe0ae43fd99d4d2184c3e4d315cd5eaa602e868138",
+                            "kind": "context",
+                            "version": "0.0.0"
+                        }
+                    ],
+                    "contextId": "sbx-7733d856b74ad475c76087fe0ae43fd99d4d2184c3e4d315cd5eaa602e868138",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "0.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "HIGH",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "handling",
+                            "conceptId": "SHARE",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "owner_shorthand",
+                            "conceptId": "JOINT-AS-WHOLE",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            { "categoryId": "level", "conceptId": "HIGH" },
+                            { "categoryId": "handling", "conceptId": "SHARE" }
+                        ],
+                        "omitted": [
+                            {
+                                "categoryId": "owner_shorthand",
+                                "conceptId": "JOINT-AS-WHOLE"
+                            }
+                        ],
+                        "unrepresentable": [
+                            {
+                                "conceptId": "HIGH",
+                                "detail": "this output does not read back as what was written: nothing in it says which of the fields that share a spelling, or which of the values a field takes, was meant.",
+                                "reason": "ambiguous-identity"
+                            },
+                            {
+                                "conceptId": "SHARE",
+                                "detail": "this output does not read back as what was written: nothing in it says which of the fields that share a spelling, or which of the values a field takes, was meant.",
+                                "reason": "ambiguous-identity"
+                            }
+                        ]
+                    },
+                    "errors": [
+                        {
+                            "categoryId": "partners",
+                            "constraintId": "share-names-partners",
+                            "message": "Name the partners in this part or in its whole."
+                        },
+                        {
+                            "categoryId": "owners",
+                            "constraintId": "joint-names-owners",
+                            "message": "Name the joint owners in this part or in its whole."
+                        },
+                        {
+                            "affectedConcepts": ["SHARE"],
+                            "categoryId": "handling",
+                            "constraintId": "_stand_in_requires_whole",
+                            "message": "SHARE stands for the whole's Partners, so this part needs a valid whole to take them from."
+                        },
+                        {
+                            "affectedConcepts": ["JOINT-AS-WHOLE"],
+                            "categoryId": "owner_shorthand",
+                            "constraintId": "_stand_in_requires_whole",
+                            "message": "JOINT stands for the whole's Owners, so this part needs a valid whole to take them from."
+                        },
+                        {
+                            "constraintId": "_invalid_render",
+                            "message": "`portion` could not write `HIGH` (ambiguous-identity): this output does not read back as what was written: nothing in it says which of the fields that share a spelling, or which of the values a field takes, was meant."
+                        }
+                    ],
+                    "inputWasValid": false,
+                    "notices": [],
+                    "proposedFixes": [
+                        {
+                            "adds": [],
+                            "keeps": [
+                                { "categoryId": "level", "conceptId": "HIGH" }
+                            ],
+                            "message": "Remove SHARE and remove JOINT.",
+                            "removes": [
+                                {
+                                    "categoryId": "handling",
+                                    "conceptId": "SHARE"
+                                },
+                                {
+                                    "categoryId": "owner_shorthand",
+                                    "conceptId": "JOINT-AS-WHOLE"
+                                }
+                            ],
+                            "rendered": "H"
+                        }
+                    ],
+                    "recognition": {
+                        "corrections": [],
+                        "inputFormat": "portion_joint",
+                        "status": "complete",
+                        "surface": "classification",
+                        "unmatched": []
+                    },
+                    "rendered": "[unrepresentable:ambiguous-identity]",
+                    "renders": {},
+                    "valid": false,
                     "warnings": []
                 }
             },
@@ -9277,6 +9518,111 @@
             "method": "POST",
             "statusCode": 200
         },
+        "985bc6339014b29d5ff9befcc87767d818bbe1ecf6173b28d0fd8ed5d63ebb12": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "whole-stand-in",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "sbx-7733d856b74ad475c76087fe0ae43fd99d4d2184c3e4d315cd5eaa602e868138",
+                            "kind": "context",
+                            "version": "0.0.0"
+                        }
+                    ],
+                    "contextId": "sbx-7733d856b74ad475c76087fe0ae43fd99d4d2184c3e4d315cd5eaa602e868138",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "0.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "HIGH",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "owners",
+                            "conceptId": "NORTH",
+                            "confidence": "inferred",
+                            "source": "context"
+                        },
+                        {
+                            "categoryId": "owners",
+                            "conceptId": "SOUTH",
+                            "confidence": "inferred",
+                            "source": "context"
+                        },
+                        {
+                            "categoryId": "handling",
+                            "conceptId": "SHARE",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "partners",
+                            "conceptId": "ALPHA",
+                            "confidence": "inferred",
+                            "source": "context"
+                        },
+                        {
+                            "categoryId": "partners",
+                            "conceptId": "BRAVO",
+                            "confidence": "inferred",
+                            "source": "context"
+                        },
+                        {
+                            "categoryId": "owner_shorthand",
+                            "conceptId": "JOINT-AS-WHOLE",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            { "categoryId": "level", "conceptId": "HIGH" },
+                            { "categoryId": "handling", "conceptId": "SHARE" }
+                        ],
+                        "omitted": [
+                            { "categoryId": "partners", "conceptId": "ALPHA" },
+                            { "categoryId": "partners", "conceptId": "BRAVO" },
+                            { "categoryId": "owners", "conceptId": "NORTH" },
+                            { "categoryId": "owners", "conceptId": "SOUTH" },
+                            {
+                                "categoryId": "owner_shorthand",
+                                "conceptId": "JOINT-AS-WHOLE"
+                            }
+                        ],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "recognition": {
+                        "corrections": [],
+                        "inputFormat": "portion_joint",
+                        "status": "complete",
+                        "surface": "classification",
+                        "unmatched": []
+                    },
+                    "rendered": "JOINT H//SHARE",
+                    "renders": {},
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
         "98741bf035a765a409af815d5467b11b089415a764b19ef8737c1e6f8c3abd29": {
             "body": {
                 "resolution": {
@@ -9903,6 +10249,111 @@
             "method": "POST",
             "statusCode": 200
         },
+        "a517d2753e6e4c0d64df1e1d5e166630309a34e44859a1ccf1630c5a0ecad2ef": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "whole-stand-in",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "sbx-7733d856b74ad475c76087fe0ae43fd99d4d2184c3e4d315cd5eaa602e868138",
+                            "kind": "context",
+                            "version": "0.0.0"
+                        }
+                    ],
+                    "contextId": "sbx-7733d856b74ad475c76087fe0ae43fd99d4d2184c3e4d315cd5eaa602e868138",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "0.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "LOW",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "owners",
+                            "conceptId": "NORTH",
+                            "confidence": "inferred",
+                            "source": "context"
+                        },
+                        {
+                            "categoryId": "owners",
+                            "conceptId": "SOUTH",
+                            "confidence": "inferred",
+                            "source": "context"
+                        },
+                        {
+                            "categoryId": "handling",
+                            "conceptId": "SHARE",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "partners",
+                            "conceptId": "ALPHA",
+                            "confidence": "inferred",
+                            "source": "context"
+                        },
+                        {
+                            "categoryId": "partners",
+                            "conceptId": "BRAVO",
+                            "confidence": "inferred",
+                            "source": "context"
+                        },
+                        {
+                            "categoryId": "owner_shorthand",
+                            "conceptId": "JOINT-AS-WHOLE",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            { "categoryId": "level", "conceptId": "LOW" },
+                            { "categoryId": "handling", "conceptId": "SHARE" }
+                        ],
+                        "omitted": [
+                            { "categoryId": "partners", "conceptId": "ALPHA" },
+                            { "categoryId": "partners", "conceptId": "BRAVO" },
+                            { "categoryId": "owners", "conceptId": "NORTH" },
+                            { "categoryId": "owners", "conceptId": "SOUTH" },
+                            {
+                                "categoryId": "owner_shorthand",
+                                "conceptId": "JOINT-AS-WHOLE"
+                            }
+                        ],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "recognition": {
+                        "corrections": [],
+                        "inputFormat": "portion_joint",
+                        "status": "complete",
+                        "surface": "classification",
+                        "unmatched": []
+                    },
+                    "rendered": "JOINT L//SHARE",
+                    "renders": {},
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
         "a5639bf994d0c9bd10e840e389a2b7621548aa4b01ae098281e0ff250c2a86cb": {
             "body": {
                 "resolution": {
@@ -10485,6 +10936,200 @@
                     "missing": [],
                     "missingLabels": [],
                     "rendered": "JOINT LOW NORTH SOUTH//SHARE WITH ALPHA, BRAVO"
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "a8c5f1b678be676c9449d199b8ec7cca4596d2582e6fff1a8ed191bff969001e": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "whole-stand-in",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "sbx-7733d856b74ad475c76087fe0ae43fd99d4d2184c3e4d315cd5eaa602e868138",
+                            "kind": "context",
+                            "version": "0.0.0"
+                        }
+                    ],
+                    "contextId": "sbx-7733d856b74ad475c76087fe0ae43fd99d4d2184c3e4d315cd5eaa602e868138",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "0.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "LOW",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "owner_shorthand",
+                            "conceptId": "JOINT-AS-WHOLE",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            { "categoryId": "level", "conceptId": "LOW" }
+                        ],
+                        "omitted": [
+                            {
+                                "categoryId": "owner_shorthand",
+                                "conceptId": "JOINT-AS-WHOLE"
+                            }
+                        ],
+                        "unrepresentable": [
+                            {
+                                "conceptId": "LOW",
+                                "detail": "this output does not read back as what was written: nothing in it says which of the fields that share a spelling, or which of the values a field takes, was meant.",
+                                "reason": "ambiguous-identity"
+                            }
+                        ]
+                    },
+                    "errors": [
+                        {
+                            "categoryId": "owners",
+                            "constraintId": "joint-names-owners",
+                            "message": "Name the joint owners in this part or in its whole."
+                        },
+                        {
+                            "affectedConcepts": ["JOINT-AS-WHOLE"],
+                            "categoryId": "owner_shorthand",
+                            "constraintId": "_stand_in_requires_whole",
+                            "message": "JOINT stands for the whole's Owners, so this part needs a valid whole to take them from."
+                        },
+                        {
+                            "constraintId": "_invalid_render",
+                            "message": "`portion` could not write `LOW` (ambiguous-identity): this output does not read back as what was written: nothing in it says which of the fields that share a spelling, or which of the values a field takes, was meant."
+                        }
+                    ],
+                    "inputWasValid": false,
+                    "notices": [],
+                    "proposedFixes": [
+                        {
+                            "adds": [],
+                            "keeps": [
+                                { "categoryId": "level", "conceptId": "LOW" }
+                            ],
+                            "message": "Remove JOINT.",
+                            "removes": [
+                                {
+                                    "categoryId": "owner_shorthand",
+                                    "conceptId": "JOINT-AS-WHOLE"
+                                }
+                            ],
+                            "rendered": "L"
+                        }
+                    ],
+                    "rendered": "[unrepresentable:ambiguous-identity]",
+                    "renders": {},
+                    "suggestionsFor": {
+                        "handling": {
+                            "suggestions": [
+                                {
+                                    "categoryId": "handling",
+                                    "conceptId": "SHARE",
+                                    "description": "Share",
+                                    "group": "Handling",
+                                    "label": "SHARE",
+                                    "name": "Share",
+                                    "order": 0,
+                                    "selected": false,
+                                    "views": { "default": "SHARE" }
+                                },
+                                {
+                                    "categoryId": "handling",
+                                    "conceptId": "CLOSED",
+                                    "description": "Closed",
+                                    "group": "Handling",
+                                    "label": "CLOSED",
+                                    "name": "Closed",
+                                    "order": 0,
+                                    "selected": false,
+                                    "views": { "default": "CLOSED" }
+                                }
+                            ],
+                            "warnings": []
+                        },
+                        "level": {
+                            "suggestions": [
+                                {
+                                    "categoryId": "level",
+                                    "conceptId": "LOW",
+                                    "description": "Low",
+                                    "group": "Level",
+                                    "label": "L",
+                                    "name": "Low",
+                                    "order": 0,
+                                    "selected": false,
+                                    "views": {
+                                        "default": "LOW",
+                                        "portion": "L"
+                                    }
+                                },
+                                {
+                                    "categoryId": "level",
+                                    "conceptId": "HIGH",
+                                    "description": "High",
+                                    "group": "Level",
+                                    "label": "H",
+                                    "name": "High",
+                                    "order": 0,
+                                    "selected": false,
+                                    "views": {
+                                        "default": "HIGH",
+                                        "portion": "H"
+                                    }
+                                }
+                            ],
+                            "warnings": []
+                        },
+                        "owner_shorthand": {
+                            "suggestions": [],
+                            "warnings": []
+                        },
+                        "owners": {
+                            "suggestions": [
+                                {
+                                    "categoryId": "owners",
+                                    "conceptId": "NORTH",
+                                    "description": "Owner NORTH",
+                                    "group": "Owners",
+                                    "label": "NORTH",
+                                    "name": "Owner NORTH",
+                                    "order": 0,
+                                    "selected": false,
+                                    "views": { "default": "NORTH" }
+                                },
+                                {
+                                    "categoryId": "owners",
+                                    "conceptId": "SOUTH",
+                                    "description": "Owner SOUTH",
+                                    "group": "Owners",
+                                    "label": "SOUTH",
+                                    "name": "Owner SOUTH",
+                                    "order": 0,
+                                    "selected": false,
+                                    "views": { "default": "SOUTH" }
+                                }
+                            ],
+                            "warnings": []
+                        },
+                        "partners": { "suggestions": [], "warnings": [] }
+                    },
+                    "valid": false,
+                    "warnings": []
                 }
             },
             "headers": { "x-ezclassify-resolved-version": "0.0.0" },

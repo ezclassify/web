@@ -186,6 +186,100 @@
             "method": "GET",
             "statusCode": 200
         },
+        "3d5e7c04c90a4c630e959e269ac5ddb32387af08803270b4f9551127095878a1": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "multi-scope-regression",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "sbx-d439b2590804695e96e6172d9fb1c5c6277e8331758fac94a953613284d9bda6",
+                            "kind": "context",
+                            "version": "0.0.0"
+                        }
+                    ],
+                    "contextId": "sbx-d439b2590804695e96e6172d9fb1c5c6277e8331758fac94a953613284d9bda6",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "0.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "STATE_ASSESSMENT_STAFF",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "from_school",
+                            "conceptId": "OUR_SCHOOL",
+                            "confidence": "certain",
+                            "source": "default"
+                        },
+                        {
+                            "categoryId": "filing_status",
+                            "conceptId": "FILED",
+                            "confidence": "certain",
+                            "source": "default"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            {
+                                "categoryId": "level",
+                                "conceptId": "STATE_ASSESSMENT_STAFF"
+                            }
+                        ],
+                        "omitted": [
+                            {
+                                "categoryId": "from_school",
+                                "conceptId": "OUR_SCHOOL"
+                            },
+                            {
+                                "categoryId": "filing_status",
+                                "conceptId": "FILED"
+                            }
+                        ],
+                        "unrepresentable": []
+                    },
+                    "displayColor": {
+                        "background": "#ff8c00",
+                        "text": "#000000"
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [
+                        {
+                            "conceptId": "STATE_ASSESSMENT_STAFF",
+                            "conceptName": "State Assessment Staff",
+                            "required": true,
+                            "text": "Record access according to the state assessment program’s procedures.",
+                            "type": "admonition"
+                        }
+                    ],
+                    "proposedFixes": [],
+                    "recognition": {
+                        "corrections": [],
+                        "status": "complete",
+                        "surface": "marking",
+                        "unmatched": []
+                    },
+                    "rendered": "STATE ASSESSMENT STAFF",
+                    "renders": {},
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
         "4703e0482d8a397dd202f448d7b8d25685298225f3a621c64645d26e5d1b5df3": {
             "body": {
                 "resolution": {

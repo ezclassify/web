@@ -415,6 +415,101 @@
             "method": "POST",
             "statusCode": 200
         },
+        "1fb59cf040ae6f8e9dadf660a78af93a819a82506e6baaf9c3317dcceda2841d": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "ime-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "sbx-cdff2da37dc6982df07d3c7656381d68c1ec481309333af18e51e7db0fd94846",
+                            "kind": "context",
+                            "version": "0.0.0"
+                        }
+                    ],
+                    "contextId": "sbx-cdff2da37dc6982df07d3c7656381d68c1ec481309333af18e51e7db0fd94846",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "0.0.0"
+                },
+                "result": {
+                    "suggestions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "S",
+                            "description": "Secret",
+                            "group": "Level",
+                            "label": "S",
+                            "name": "Secret",
+                            "order": 2,
+                            "selected": true,
+                            "views": { "default": "S" }
+                        },
+                        {
+                            "categoryId": "caveat",
+                            "conceptId": "NF",
+                            "description": "No Foreign",
+                            "group": "Caveat",
+                            "label": "NF",
+                            "name": "No Foreign",
+                            "order": 1,
+                            "selected": true,
+                            "views": { "default": "NF" }
+                        },
+                        {
+                            "categoryId": "caveat",
+                            "conceptId": "SI",
+                            "description": "Special Intelligence",
+                            "group": "Caveat",
+                            "label": "SI",
+                            "name": "Special Intelligence",
+                            "order": 5,
+                            "selected": false,
+                            "views": { "default": "SI" }
+                        },
+                        {
+                            "categoryId": "caveat",
+                            "conceptId": "TK",
+                            "description": "Talent Keyhole",
+                            "group": "Caveat",
+                            "label": "TK",
+                            "name": "Talent Keyhole",
+                            "order": 6,
+                            "selected": false,
+                            "views": { "default": "TK" }
+                        },
+                        {
+                            "categoryId": "caveat",
+                            "conceptId": "REL",
+                            "description": "Releasable",
+                            "group": "Caveat",
+                            "label": "REL",
+                            "name": "Releasable",
+                            "order": 7,
+                            "selected": false,
+                            "views": { "default": "REL" }
+                        },
+                        {
+                            "categoryId": "branch",
+                            "conceptId": "MAIN",
+                            "description": "Our School",
+                            "group": "Branch",
+                            "label": "OUR SCHOOL",
+                            "name": "Our School",
+                            "order": 1,
+                            "selected": true,
+                            "views": { "default": "OUR SCHOOL" }
+                        }
+                    ],
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
         "210cf54c5097abad477e83b7bd46cebde504ea7c354373836e9cfa320fc8bc49": {
             "body": {
                 "resolution": {
@@ -472,6 +567,73 @@
                     "notices": [],
                     "proposedFixes": [],
                     "rendered": "U//SI/TK",
+                    "renders": {},
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "210f5be7cb9489934ae67e095496c1190b5983ce983b6d8cb322384a1c6a8171": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "ime-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "sbx-cdff2da37dc6982df07d3c7656381d68c1ec481309333af18e51e7db0fd94846",
+                            "kind": "context",
+                            "version": "0.0.0"
+                        }
+                    ],
+                    "contextId": "sbx-cdff2da37dc6982df07d3c7656381d68c1ec481309333af18e51e7db0fd94846",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "0.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "S",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "caveat",
+                            "conceptId": "NF",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "branch",
+                            "conceptId": "MAIN",
+                            "confidence": "certain",
+                            "source": "user"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            { "categoryId": "level", "conceptId": "S" },
+                            { "categoryId": "caveat", "conceptId": "NF" }
+                        ],
+                        "omitted": [
+                            { "categoryId": "branch", "conceptId": "MAIN" }
+                        ],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "S//NF",
                     "renders": {},
                     "valid": true,
                     "warnings": []
@@ -1495,6 +1657,80 @@
             "method": "POST",
             "statusCode": 200
         },
+        "48d0ef6932ec7f116f78bd96a8ac476475f207171d0913cbf1ada703777ebf8b": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "ime-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "sbx-cdff2da37dc6982df07d3c7656381d68c1ec481309333af18e51e7db0fd94846",
+                            "kind": "context",
+                            "version": "0.0.0"
+                        }
+                    ],
+                    "contextId": "sbx-cdff2da37dc6982df07d3c7656381d68c1ec481309333af18e51e7db0fd94846",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "0.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "S",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "caveat",
+                            "conceptId": "NF",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "branch",
+                            "conceptId": "MAIN",
+                            "confidence": "certain",
+                            "source": "user"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            { "categoryId": "level", "conceptId": "S" },
+                            { "categoryId": "caveat", "conceptId": "NF" }
+                        ],
+                        "omitted": [
+                            { "categoryId": "branch", "conceptId": "MAIN" }
+                        ],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "recognition": {
+                        "corrections": [],
+                        "inputFormat": "default",
+                        "status": "complete",
+                        "surface": "marking",
+                        "unmatched": []
+                    },
+                    "rendered": "S//NF",
+                    "renders": {},
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
         "4ac8c62fdcc0ea9aa160a6e5ce0858861bfb83f25008a2a3bef3074e64b4c628": {
             "body": [
                 {
@@ -2305,6 +2541,101 @@
             "method": "POST",
             "statusCode": 200
         },
+        "70989815c2cf63bc99e518d9f44f1af758602f63a16ad28ca053f1e0032c629b": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "ime-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "sbx-cdff2da37dc6982df07d3c7656381d68c1ec481309333af18e51e7db0fd94846",
+                            "kind": "context",
+                            "version": "0.0.0"
+                        }
+                    ],
+                    "contextId": "sbx-cdff2da37dc6982df07d3c7656381d68c1ec481309333af18e51e7db0fd94846",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "0.0.0"
+                },
+                "result": {
+                    "suggestions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "S",
+                            "description": "Secret",
+                            "group": "Level",
+                            "label": "S",
+                            "name": "Secret",
+                            "order": 2,
+                            "selected": true,
+                            "views": { "default": "S" }
+                        },
+                        {
+                            "categoryId": "caveat",
+                            "conceptId": "NF",
+                            "description": "No Foreign",
+                            "group": "Caveat",
+                            "label": "NF",
+                            "name": "No Foreign",
+                            "order": 1,
+                            "selected": false,
+                            "views": { "default": "NF" }
+                        },
+                        {
+                            "categoryId": "caveat",
+                            "conceptId": "SI",
+                            "description": "Special Intelligence",
+                            "group": "Caveat",
+                            "label": "SI",
+                            "name": "Special Intelligence",
+                            "order": 5,
+                            "selected": false,
+                            "views": { "default": "SI" }
+                        },
+                        {
+                            "categoryId": "caveat",
+                            "conceptId": "TK",
+                            "description": "Talent Keyhole",
+                            "group": "Caveat",
+                            "label": "TK",
+                            "name": "Talent Keyhole",
+                            "order": 6,
+                            "selected": false,
+                            "views": { "default": "TK" }
+                        },
+                        {
+                            "categoryId": "caveat",
+                            "conceptId": "REL",
+                            "description": "Releasable",
+                            "group": "Caveat",
+                            "label": "REL",
+                            "name": "Releasable",
+                            "order": 7,
+                            "selected": false,
+                            "views": { "default": "REL" }
+                        },
+                        {
+                            "categoryId": "branch",
+                            "conceptId": "MAIN",
+                            "description": "Our School",
+                            "group": "Branch",
+                            "label": "OUR SCHOOL",
+                            "name": "Our School",
+                            "order": 1,
+                            "selected": true,
+                            "views": { "default": "OUR SCHOOL" }
+                        }
+                    ],
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
         "712ff6f706c7649a7d3d8473ef335da284a4d79fced8b75e233669552a908233": {
             "body": [
                 {
@@ -2857,6 +3188,87 @@
             "method": "POST",
             "statusCode": 200
         },
+        "8d3ab6c02f6e0601f6c660763bde23a4b328e9fe2ef28aa516ac480293330d3a": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "ime-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "sbx-cdff2da37dc6982df07d3c7656381d68c1ec481309333af18e51e7db0fd94846",
+                            "kind": "context",
+                            "version": "0.0.0"
+                        }
+                    ],
+                    "contextId": "sbx-cdff2da37dc6982df07d3c7656381d68c1ec481309333af18e51e7db0fd94846",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "0.0.0"
+                },
+                "result": {
+                    "appliedFixes": [
+                        {
+                            "action": "reorder",
+                            "message": "Moved `//` out of this position (separator).",
+                            "ruleId": "_recognition_separator"
+                        }
+                    ],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "S",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "branch",
+                            "conceptId": "MAIN",
+                            "confidence": "certain",
+                            "source": "user"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            { "categoryId": "level", "conceptId": "S" }
+                        ],
+                        "omitted": [
+                            { "categoryId": "branch", "conceptId": "MAIN" }
+                        ],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": false,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "recognition": {
+                        "corrections": [
+                            {
+                                "end": 3,
+                                "original": "//",
+                                "reason": "separator",
+                                "replacement": "",
+                                "start": 1
+                            }
+                        ],
+                        "inputFormat": "default",
+                        "status": "complete",
+                        "surface": "marking",
+                        "unmatched": []
+                    },
+                    "rendered": "S",
+                    "renders": {},
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
         "8d9be9a86a29e7c54827c55ab281719e35e30e85759e8c85d84fa56e254faad7": {
             "body": {
                 "resolution": {
@@ -3161,43 +3573,6 @@
             "method": "POST",
             "statusCode": 200
         },
-        "a709b57d06f4c4ec6363438455d5ce350c5723e7df52f6483a1bbe306c3729f1": {
-            "body": {
-                "resolution": {
-                    "artifacts": [
-                        {
-                            "id": "ime-test",
-                            "kind": "scheme",
-                            "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-cdff2da37dc6982df07d3c7656381d68c1ec481309333af18e51e7db0fd94846",
-                            "kind": "context",
-                            "version": "0.0.0"
-                        }
-                    ],
-                    "contextId": "sbx-cdff2da37dc6982df07d3c7656381d68c1ec481309333af18e51e7db0fd94846",
-                    "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
-                },
-                "result": {
-                    "assessment": {
-                        "collapsed": [],
-                        "conflicts": [],
-                        "emitted": [
-                            { "categoryId": "level", "conceptId": "S" },
-                            { "categoryId": "caveat", "conceptId": "NF" }
-                        ],
-                        "omitted": [],
-                        "unrepresentable": []
-                    },
-                    "result": "S//NF"
-                }
-            },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
-            "method": "POST",
-            "statusCode": 200
-        },
         "a71af55bb5bb1f3554415b81f071bc9fc4348d1df995b306ac2d32e4508e0406": {
             "body": {
                 "resolution": {
@@ -3372,6 +3747,80 @@
                             "views": { "default": "OUR SCHOOL" }
                         }
                     ],
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "a80e5cb4d3aac2f21842805734e3b401c5e5a951fea08f578fc5c22943a2f5e1": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "ime-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "sbx-cdff2da37dc6982df07d3c7656381d68c1ec481309333af18e51e7db0fd94846",
+                            "kind": "context",
+                            "version": "0.0.0"
+                        }
+                    ],
+                    "contextId": "sbx-cdff2da37dc6982df07d3c7656381d68c1ec481309333af18e51e7db0fd94846",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "0.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "S",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "caveat",
+                            "conceptId": "SI",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "branch",
+                            "conceptId": "MAIN",
+                            "confidence": "certain",
+                            "source": "user"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            { "categoryId": "level", "conceptId": "S" },
+                            { "categoryId": "caveat", "conceptId": "SI" }
+                        ],
+                        "omitted": [
+                            { "categoryId": "branch", "conceptId": "MAIN" }
+                        ],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "recognition": {
+                        "corrections": [],
+                        "inputFormat": "default",
+                        "status": "complete",
+                        "surface": "marking",
+                        "unmatched": []
+                    },
+                    "rendered": "S//SI",
+                    "renders": {},
+                    "valid": true,
                     "warnings": []
                 }
             },
@@ -4133,6 +4582,101 @@
                     "rendered": "S//NF/TK",
                     "renders": {},
                     "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "c77484442172d3d700eb2dc916c8ec64974a6ea1897a8ee9d94e65d0df3fe244": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "ime-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "sbx-cdff2da37dc6982df07d3c7656381d68c1ec481309333af18e51e7db0fd94846",
+                            "kind": "context",
+                            "version": "0.0.0"
+                        }
+                    ],
+                    "contextId": "sbx-cdff2da37dc6982df07d3c7656381d68c1ec481309333af18e51e7db0fd94846",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "0.0.0"
+                },
+                "result": {
+                    "suggestions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "S",
+                            "description": "Secret",
+                            "group": "Level",
+                            "label": "S",
+                            "name": "Secret",
+                            "order": 2,
+                            "selected": true,
+                            "views": { "default": "S" }
+                        },
+                        {
+                            "categoryId": "caveat",
+                            "conceptId": "NF",
+                            "description": "No Foreign",
+                            "group": "Caveat",
+                            "label": "NF",
+                            "name": "No Foreign",
+                            "order": 1,
+                            "selected": false,
+                            "views": { "default": "NF" }
+                        },
+                        {
+                            "categoryId": "caveat",
+                            "conceptId": "SI",
+                            "description": "Special Intelligence",
+                            "group": "Caveat",
+                            "label": "SI",
+                            "name": "Special Intelligence",
+                            "order": 5,
+                            "selected": true,
+                            "views": { "default": "SI" }
+                        },
+                        {
+                            "categoryId": "caveat",
+                            "conceptId": "TK",
+                            "description": "Talent Keyhole",
+                            "group": "Caveat",
+                            "label": "TK",
+                            "name": "Talent Keyhole",
+                            "order": 6,
+                            "selected": false,
+                            "views": { "default": "TK" }
+                        },
+                        {
+                            "categoryId": "caveat",
+                            "conceptId": "REL",
+                            "description": "Releasable",
+                            "group": "Caveat",
+                            "label": "REL",
+                            "name": "Releasable",
+                            "order": 7,
+                            "selected": false,
+                            "views": { "default": "REL" }
+                        },
+                        {
+                            "categoryId": "branch",
+                            "conceptId": "MAIN",
+                            "description": "Our School",
+                            "group": "Branch",
+                            "label": "OUR SCHOOL",
+                            "name": "Our School",
+                            "order": 1,
+                            "selected": true,
+                            "views": { "default": "OUR SCHOOL" }
+                        }
+                    ],
                     "warnings": []
                 }
             },
@@ -4911,6 +5455,45 @@
                         }
                     ],
                     "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "f2b0c9845d547ee61e09abd2c6994c4a67fea9f44312875d09cd3150e2fdc303": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "ime-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "sbx-cdff2da37dc6982df07d3c7656381d68c1ec481309333af18e51e7db0fd94846",
+                            "kind": "context",
+                            "version": "0.0.0"
+                        }
+                    ],
+                    "contextId": "sbx-cdff2da37dc6982df07d3c7656381d68c1ec481309333af18e51e7db0fd94846",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "0.0.0"
+                },
+                "result": {
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            { "categoryId": "level", "conceptId": "S" },
+                            { "categoryId": "caveat", "conceptId": "NF" }
+                        ],
+                        "omitted": [
+                            { "categoryId": "branch", "conceptId": "MAIN" }
+                        ],
+                        "unrepresentable": []
+                    },
+                    "result": "S//NF"
                 }
             },
             "headers": { "x-ezclassify-resolved-version": "0.0.0" },
