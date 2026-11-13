@@ -1,4 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import { dirname, join } from 'node:path';
 import { GuideChecklist, type GuideRuleSelection } from './guide-helper';
 import type { SchemeEngineAdapter } from '@ezclassify/types';
 import type { GuideStructuralView, GuideRuleView } from '@ezclassify/types';
@@ -1381,5 +1384,30 @@ describe('GuideChecklist', () => {
         expect(firstCheckbox).not.toBeNull();
         const label = firstCheckbox?.closest('label');
         expect(label?.textContent).toContain('Rule Alpha');
+    });
+});
+
+describe('GuideChecklist marking typography', () => {
+    it('writes the computed marking and each outcome in the chrome font, not a code font', () => {
+        // A marking is not code. It reads in the font of the rest of the
+        // helper, which the host sets through --ez-font-family.
+        const css = readFileSync(
+            join(dirname(fileURLToPath(import.meta.url)), 'guide-helper.css'),
+            'utf8',
+        ).replace(/\/\*[\s\S]*?\*\//g, '');
+        const rule = (selector: string) =>
+            css.match(new RegExp(`\\${selector}\\s*\\{([^}]*)\\}`))?.[1];
+        for (const selector of [
+            '.ezc-guide-result-value',
+            '.ezc-guide-breakdown-outcome',
+        ]) {
+            const body = rule(selector);
+            expect(body, selector).toBeDefined();
+            expect(body, selector).not.toMatch(/font-family/);
+        }
+        expect(css).not.toMatch(/mono/);
+        expect(rule('.ezc-guide-helper')).toMatch(
+            /font-family:\s*var\(--ez-font-family, inherit\)/,
+        );
     });
 });

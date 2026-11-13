@@ -351,7 +351,6 @@
     border-radius: 0.1875rem;
     background: var(--ezc-guide-outcome-bg, var(--ez-color-surface-active));
     color: var(--ezc-guide-outcome-fg, var(--ez-color-text));
-    font-family: var(--ez-font-mono, monospace);
 }
 
 .ezc-guide-breakdown-rationale {
@@ -391,7 +390,6 @@
     overflow-wrap: anywhere;
     font-size: 1rem;
     font-weight: 700;
-    font-family: var(--ez-font-mono, monospace);
     color: var(--ez-color-text);
 }
 

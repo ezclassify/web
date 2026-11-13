@@ -1,6 +1,7 @@
 /* EquivalencyMap: read-only cross-profile mapping table */
 
 .ez-equivalency-map {
+    font-family: var(--ez-font-family, inherit);
     border: 0.0625rem solid var(--ez-color-border, #d1d5db);
     border-radius: 0.5rem;
     overflow: hidden;
@@ -47,7 +48,6 @@
 .ez-equivalency-map__target {
     font-weight: 500;
     color: var(--ez-color-text, #1e293b);
-    font-family: var(--ez-font-mono, monospace);
 }
 
 .ez-equivalency-map__confidence {
