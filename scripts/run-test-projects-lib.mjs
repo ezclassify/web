@@ -19,6 +19,7 @@ export const TEST_PROJECTS = [
     'test:frameworks',
     'test:angular',
     'test:scripts',
+    'test:integration',
 ];
 
 /**

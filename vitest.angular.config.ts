@@ -47,9 +47,12 @@ export default defineConfig({
     test: {
         globals: true,
         environment: 'jsdom',
+        // The demo runtime's recordings, as in vitest.config.ts.
+        globalSetup: ['./test-support/demo-runtime-global-setup.ts'],
         setupFiles: [
             './tests/setup/constructable-stylesheets.ts',
             './integrations/angular/vitest.setup.ts',
+            './test-support/demo-runtime-setup-file.ts',
         ],
         include: [
             'integrations/angular/**/*.spec.ts',

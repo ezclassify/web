@@ -1,5 +1,5 @@
 /**
- * The UI store, driven through `EzClassifyClient`, against a running REST API.
+ * The UI store, driven through `EzClassifyClient`, against the demo runtime.
  *
  * This is the configuration the product ships for a REST deployment.
  * `@ezclassify/ui` has a store suite that runs on hand-written engines and
@@ -14,20 +14,21 @@
  * subscription that drives every picker receives options, and that the headless
  * binding a third-party control uses works over the wire.
  */
-import { describe, it, expect, beforeAll, afterAll, inject } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import {
     SOLE_BUCKET,
     VanillaEzClassifyStore,
     createEzClassifyFacetBinding,
     type FacetState,
 } from '@ezclassify/ui';
-import { connectContext, type EzClassifyClient } from '@ezclassify/rest-client';
+import type { EzClassifyClient } from '@ezclassify/rest-client';
 import type { Assertion } from '@ezclassify/types';
+import { connectDemoContext } from '../../test-support/demo-runtime';
 
 const SCHEME_ID = 'cedar-valley-handling';
 const CATEGORY = 'level';
 
-describe('EzClassifyStore over a REST deployment', () => {
+describe('EzClassifyStore over the demo runtime', () => {
     let client: EzClassifyClient;
     let store: VanillaEzClassifyStore;
     let low: string;
@@ -36,13 +37,10 @@ describe('EzClassifyStore over a REST deployment', () => {
     let highRendered: string;
 
     beforeAll(async () => {
-        client = await connectContext({
-            baseUrl: inject('restApiBaseUrl'),
+        // A built-in demo Context: the one the Playground serves.
+        client = await connectDemoContext({
             contextId: SCHEME_ID,
             contextVersion: '1.0.0',
-            contextToken: inject('restApiContextTokens')[SCHEME_ID],
-            applicationId: 'web-parity',
-            headers: inject('restApiCallerHeaders'),
         });
         // The client's scheme operations are the store's engine: this is the
         // supported deployment shape, `@ezclassify/ui` pointed at the REST API.

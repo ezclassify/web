@@ -5,8 +5,7 @@
  * so a spec can assert coverage.
  */
 import type { Page, Route } from '@playwright/test';
-import { lookup } from '@ezclassify/testing-utils/record-replay';
-import type { ReplayerRecording } from '@ezclassify/testing-utils/record-replay';
+import { lookup, type ReplayerRecording } from './replayer';
 
 /** Options for {@link installReplayer}. */
 export interface PlaywrightReplayerOptions {

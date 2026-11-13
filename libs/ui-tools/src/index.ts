@@ -3,12 +3,12 @@
  * packages.
  *
  * Bundles the shared crawler runtime (browser helpers, a11y scan, screenshot
- * baselines, status logging, and the resilient run loop) with the Playwright
- * record/replay transport. The record/replay canonicalization core stays in
- * `@ezclassify/testing-utils/record-replay`; this package layers the browser-
- * facing route handler on top of it.
+ * baselines, status logging, and the resilient run loop) with HTTP record and
+ * replay: one canonicalization core, a fetch transport and a Playwright route
+ * transport.
  */
 export * from './crawler-runtime';
+export * from './record-replay';
 export { installReplayer } from './record-replay/playwright-route';
 export type {
     PlaywrightReplayerOptions,

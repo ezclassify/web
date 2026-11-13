@@ -58,7 +58,14 @@ export default defineConfig({
     test: {
         globals: true,
         environment: 'jsdom',
-        setupFiles: ['./tests/setup/constructable-stylesheets.ts'],
+        // The demo runtime's recordings: replayed in the public lane, recorded
+        // against a local runtime with EZCLASSIFY_RECORD=1. See
+        // test-support/demo-runtime.ts.
+        globalSetup: ['./test-support/demo-runtime-global-setup.ts'],
+        setupFiles: [
+            './tests/setup/constructable-stylesheets.ts',
+            './test-support/demo-runtime-setup-file.ts',
+        ],
         include: [
             'libs/**/*.spec.ts',
             'libs/**/*.spec.tsx',
