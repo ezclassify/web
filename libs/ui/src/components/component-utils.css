@@ -34,7 +34,10 @@
     outline: 1px dashed currentColor;
     outline-offset: -1px;
 }
+/* A chip that holds a typed value never grows past its field: its value
+   field gives up width first and scrolls its text. */
 .proto-tag--editable {
+    max-width: 100%;
     padding-right: 0.25rem;
 }
 /* The field holds this fact but the rendered marking leaves it out, as a
@@ -77,6 +80,7 @@
     padding: 0 0.125rem;
     margin-left: 0.125rem;
     outline: none;
+    flex: 1 1 auto;
     min-width: 3rem;
     border-bottom: 1px dashed currentColor;
 }

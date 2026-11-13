@@ -75,6 +75,7 @@ export function createTag(opts: {
     }
 
     const label = document.createElement('span');
+    label.className = 'proto-tag-label';
     label.textContent = opts.label;
     tag.appendChild(label);
 
