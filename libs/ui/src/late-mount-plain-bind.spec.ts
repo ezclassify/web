@@ -128,6 +128,9 @@ describe('a plain bound input mounted after construction', () => {
         // The reserve is a rule on the wrap's input (status-mark.css), so it
         // follows the host's later styles instead of freezing them at bind.
         expect(input.parentElement?.classList).toContain('ez-plain-field-wrap');
+        // The wrap's layout is the stylesheet's too: an inline display would
+        // outrank the rule that keeps the wrap to the input's box.
+        expect(input.parentElement?.getAttribute('style')).toBeNull();
         expect(input.style.paddingInlineEnd).toBe('0.5rem');
         forms.destroy();
         forms = null;

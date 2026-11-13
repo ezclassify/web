@@ -193,6 +193,23 @@ describe('dot and sparkle occupy separate corners', () => {
         );
     });
 
+    it("lays the plain input's wrap out as the input's own box, so the mark stays on the input in a grid or flex form", () => {
+        const css = readFileSync(join(here, 'status-mark.css'), 'utf8').replace(
+            /\/\*[\s\S]*?\*\//g,
+            '',
+        );
+        const wrapRule =
+            css.match(/\.ez-plain-field-wrap\s*\{([^}]*)\}/)?.[1] ?? '';
+        // The positioning box the mark's inset is measured from.
+        expect(wrapRule).toMatch(/position:\s*relative/);
+        // An inline column flexbox: as wide as the input in a line, and when a
+        // grid or flex form stretches the wrap, the input stretches with it
+        // instead of leaving the mark at the far end of an empty row.
+        expect(wrapRule).toMatch(/display:\s*inline-flex/);
+        expect(wrapRule).toMatch(/flex-direction:\s*column/);
+        expect(wrapRule).toMatch(/align-items:\s*stretch/);
+    });
+
     it('the corner dot anchors bottom-left in the stylesheet, not top-right', () => {
         const css = readFileSync(join(here, 'status-mark.css'), 'utf8');
         const dotRule = css.match(/\.ez-status-mark__dot\s*\{[^}]*\}/);

@@ -55,11 +55,29 @@
 }
 /* A plain enhanced input places the mark at the trailing edge, centered on
    the field's first line: the only self-positioning shape. The field
-   components mount theirs in their inline chrome (field-chrome.css). */
+   components mount theirs in their inline chrome (field-chrome.css). The wrap
+   is the input's box, so half its height is the input's middle; a row that
+   stretches the wrap taller than the input keeps the mark within the first
+   line's 1rem instead. */
 .ez-status-mark--input {
-    top: 1rem;
+    top: min(50%, 1rem);
     inset-inline-end: 0.375rem;
     transform: translateY(-50%);
+}
+/* The wrap the behavior pass puts around a plain input, and the box the mark
+   positions against. It has to be the input's box in whatever layout holds
+   it, or the mark lands past the input's end. A column flexbox does that both
+   ways: inline, it is as wide as the input; as a grid or flex item that the
+   host's layout stretches, an input with no width of its own stretches with
+   it, as the bare input would have, and a percentage width resolves against
+   the room the host gave. The input keeps its own height at the top of a
+   taller row, where the mark is centered on its first line. */
+.ez-plain-field-wrap {
+    position: relative;
+    display: inline-flex;
+    flex-direction: column;
+    align-items: stretch;
+    vertical-align: baseline;
 }
 /* The plain input's text stops short of the mark: its width (1.25rem) and
    inset (0.375rem), and a little air. Logical, like the mark's own inset, so a

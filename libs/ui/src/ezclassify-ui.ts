@@ -2219,9 +2219,8 @@ export class EzClassifyUI {
                 const priorParent = input.parentNode;
                 const nextSibling = input.nextSibling;
                 const statusWrap = document.createElement('span');
+                // Its layout is status-mark.css's, adopted with the mark.
                 statusWrap.className = 'ez-plain-field-wrap';
-                statusWrap.style.position = 'relative';
-                statusWrap.style.display = 'inline-block';
                 priorParent?.insertBefore(statusWrap, input);
                 statusWrap.appendChild(input);
                 ensureStatusMark(statusWrap, {
