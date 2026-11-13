@@ -52,6 +52,37 @@ import {
 import { levelState } from '../store/page-rollup-harness';
 import { demoRuntimeSettled } from '../../../../test-support/demo-runtime';
 
+/**
+ * How long an answer may take to start a follow-up request through a short UI
+ * timer (a rollup's debounce) before the follow-up is waited for too.
+ */
+const FOLLOW_UP_MS = 60;
+
+/**
+ * Wait until the UI has heard every answer it asked the runtime for, including
+ * a request an answer started through a short timer, and has painted them.
+ */
+async function settled(): Promise<void> {
+    await demoRuntimeSettled();
+    await wait(FOLLOW_UP_MS);
+    await demoRuntimeSettled();
+}
+
+/**
+ * Let the UI's own timers run for `ms` (a debounce, an editor opening), then
+ * wait for every answer they asked for.
+ */
+async function settle(ms: number): Promise<void> {
+    await wait(ms);
+    await settled();
+}
+
+/** Leave `input` the way a user does, then wait for every answer it asked for. */
+async function leaveField(input: HTMLElement, ms: number): Promise<void> {
+    await leave(input, ms);
+    await settled();
+}
+
 let root: HTMLDivElement;
 let forms: EzClassifyUI | null = null;
 let editor: InlineMarkingEditor | null = null;
@@ -119,7 +150,7 @@ async function mountPart(
         partMarkup(kind, value),
     ].join('');
     forms = new EzClassifyUI(asContext(context as never), { root });
-    await wait(450);
+    await settle(450);
     return document.getElementById('f') as HTMLTextAreaElement;
 }
 
@@ -151,16 +182,24 @@ function shownErrors(host: HTMLTextAreaElement): string {
     return list && !list.hidden ? (list.textContent ?? '') : '';
 }
 
-/** Open the editor on the leading mark the way a keyboard user does. */
+/**
+ * Open the editor on the leading mark the way a keyboard user does: move the
+ * caret into the mark, then ask for the list. A caret landing in a mark opens
+ * its editor without the list (a MarkedInput does), and the list then waits for
+ * ArrowDown; where it does not, Ctrl+Enter opens the editor with its list.
+ */
 async function openEditor(
     host: HTMLTextAreaElement,
 ): Promise<HTMLInputElement> {
-    await demoRuntimeSettled();
+    await settled();
     host.focus();
-    const editor = document.activeElement as HTMLTextAreaElement;
-    editor.setSelectionRange(0, 0);
-    press(editor, 'Enter', { ctrlKey: true });
-    await wait(200);
+    const field = document.activeElement as HTMLTextAreaElement;
+    field.setSelectionRange(0, 0);
+    await settled();
+    const opened = root.querySelector<HTMLInputElement>('.inline-editor-input');
+    if (opened) press(opened, 'ArrowDown');
+    else press(field, 'Enter', { ctrlKey: true });
+    await settle(200);
     expect(openSurface()).not.toBeNull();
     return root.querySelector('.inline-editor-input') as HTMLInputElement;
 }
@@ -175,7 +214,7 @@ async function pickRow(input: HTMLElement, label: string): Promise<void> {
     }
     expect(activeRow(input)).toBe(row);
     press(input, 'Enter');
-    await wait(200);
+    await settle(200);
 }
 
 /**
@@ -257,7 +296,7 @@ describe.each(['marked-input', 'marked-textarea'] as const)(
             const input = await openEditor(host);
             expect(input.value).toBe('L//SHARE');
             press(input, 'Enter');
-            await wait(450);
+            await settle(450);
             expect(host.value).toBe('(L//SHARE) Quarterly notes');
             expect(partners(fieldAssertions(host))).toEqual(TAKEN);
         });
@@ -268,7 +307,7 @@ describe.each(['marked-input', 'marked-textarea'] as const)(
             await pickRow(input, 'H');
             expect(input.value).toBe('H//SHARE');
             press(input, 'Enter');
-            await wait(450);
+            await settle(450);
             expect(host.value).toBe('(H//SHARE) Quarterly notes');
             expect(partners(fieldAssertions(host))).toEqual(TAKEN);
         });
@@ -276,7 +315,7 @@ describe.each(['marked-input', 'marked-textarea'] as const)(
         it('keeps the word when focus leaves the editor', async () => {
             const host = await mountPart(kind, '(L//SHARE) Quarterly notes');
             const input = await openEditor(host);
-            await leave(input, 450);
+            await leaveField(input, 450);
             expect(host.value).toBe('(L//SHARE) Quarterly notes');
         });
     },
@@ -380,7 +419,7 @@ describe('nothing taken from a whole is read back', () => {
             const input = await openEditor(host);
             await pickRow(input, 'H');
             press(input, 'Enter');
-            await wait(450);
+            await settle(450);
             expect(host.value).toBe('(H//SHARE) Quarterly notes');
             expect(reads(seen).length).toBeGreaterThan(0);
             const sent = reads(seen).filter(({ assertions }) =>
@@ -401,7 +440,7 @@ describe('nothing taken from a whole is read back', () => {
         const input = await openEditor(host);
         await pickRow(input, 'H');
         press(input, 'Enter');
-        await wait(450);
+        await settle(450);
         expect(host.value).toBe('(H//SHARE) Quarterly notes');
         const written = seen
             .filter(({ call }) => call === 'render')
@@ -418,7 +457,7 @@ describe('nothing taken from a whole is read back', () => {
         '%s: a part never holds a value a rollup carried',
         async (kind) => {
             const host = await mountPart(kind, '(L//SHARE) Quarterly notes');
-            await wait(200);
+            await settle(200);
             // The rollup over the part states the partners as its own.
             const rollup = forms!.store.getWholeRollup('doc');
             expect(partners(rollup.assertions)).toEqual([
@@ -445,7 +484,7 @@ describe('nothing taken from a whole is read back', () => {
                 partners(forms!.store.getWholeRollup('doc').assertions)
                     .map((one) => one.split(':')[0])
                     .sort();
-            await wait(200);
+            await settle(200);
             expect(rollup()).toEqual(['ALPHA', 'BRAVO']);
 
             // The whole changes its partners; the part still says SHARE.
@@ -453,7 +492,7 @@ describe('nothing taken from a whole is read back', () => {
                 'doc',
                 'HIGH//SHARE WITH ALPHA, CHARLIE',
             );
-            await wait(200);
+            await settle(200);
             expect(rollup()).toEqual(['ALPHA', 'CHARLIE']);
         },
     );
@@ -467,7 +506,7 @@ describe('the store reads parts against their whole', () => {
             await wholeStandInContext(),
             CLOSED_WHOLE,
         );
-        await wait(200);
+        await settle(200);
         const rollup = forms!.store.getWholeRollup('doc');
         expect(rollup.valid).toBe(false);
         expect(rollup.errors.map((one) => one.message)).toContain(
@@ -477,7 +516,7 @@ describe('the store reads parts against their whole', () => {
 
     it('never judges a part in the rollup by the whole rules', async () => {
         await mountPart('marked-input', '(L) Quarterly notes');
-        await wait(200);
+        await settle(200);
         const rollup = forms!.store.getWholeRollup('doc');
         expect(rollup.errors.map((one) => one.message)).not.toContain(
             'Contributor 1: Say how the whole is handled.',
@@ -486,7 +525,7 @@ describe('the store reads parts against their whole', () => {
 
     it('rolls the page up in the whole when every marking is it or its part', async () => {
         await mountPart('marked-input', '(L//SHARE) Quarterly notes');
-        await wait(200);
+        await settle(200);
         const page = levelState(forms!.store);
         expect(page.valid).toBe(true);
         expect(page.rendered).toBe('HIGH//SHARE WITH ALPHA, BRAVO');
@@ -507,7 +546,7 @@ describe('the store reads parts against their whole', () => {
                 asContext((await wholeStandInContext()) as never),
                 { root },
             );
-            await wait(450);
+            await settle(450);
             const host = document.getElementById('f') as HTMLTextAreaElement;
             const part = () => {
                 const ids = [
@@ -522,7 +561,7 @@ describe('the store reads parts against their whole', () => {
             const doc = document.getElementById('doc') as HTMLInputElement;
             doc.value = STAND_IN_WHOLE;
             await forms.store.publishRendered('doc', STAND_IN_WHOLE);
-            await wait(600);
+            await settle(600);
             expect(part().rendered).toBe('L//SHARE');
             expect(partners(part().assertions)).toEqual(TAKEN);
             expect(
@@ -548,7 +587,7 @@ describe('a mark the field cannot read whole', () => {
         const doc = document.getElementById('doc') as HTMLInputElement;
         doc.value = 'HIGH//SHARE WITH ALPHA, CHARLIE';
         await forms!.store.publishRendered('doc', doc.value);
-        await wait(450);
+        await settle(450);
         expect(changes).toEqual([]);
         expect(host.value).toBe('(L//SHARE/XYZ) Quarterly notes');
     });
@@ -567,7 +606,7 @@ describe('MarkingField: an editable field that holds a part', () => {
                 root,
             },
         );
-        await wait(450);
+        await settle(450);
         const host = document.getElementById('f') as HTMLTextAreaElement;
         const field = forms.components.get(host)!;
         expect(partners(field.getAssertions())).toEqual(TAKEN);
@@ -575,15 +614,15 @@ describe('MarkingField: an editable field that holds a part', () => {
         // An edit runs the field's own pass over what the part states.
         host.focus();
         press(host, 'ArrowDown');
-        await wait(200);
+        await settle(200);
         await pickRow(host, 'H');
-        await leave(host, 450);
+        await leaveField(host, 450);
         expect(host.value).toBe('H//SHARE');
         expect(partners(field.getAssertions())).toEqual(TAKEN);
 
         host.focus();
         press(host, 'ArrowDown');
-        await wait(200);
+        await settle(200);
         expect(openSurface()).not.toBeNull();
         for (const label of ['ALPHA', 'BRAVO']) {
             expect(rowState(label)).toEqual({
@@ -626,7 +665,7 @@ describe('InlineMarkingEditor: a part read against its whole', () => {
                     changes.push({ rendered, assertions }),
             },
         );
-        await wait(80);
+        await settle(80);
         const input = container.querySelector(
             '.inline-editor-input',
         ) as HTMLInputElement;
@@ -661,7 +700,7 @@ describe('InlineMarkingEditor: a part read against its whole', () => {
         await pickRow(input, 'H');
         expect(input.value).toBe('H//SHARE');
         press(input, 'Enter');
-        await wait(200);
+        await settle(200);
         expect(changes.at(-1)?.rendered).toBe('H//SHARE');
         expect(partners(changes.at(-1)!.assertions)).toEqual(TAKEN);
     });
@@ -674,7 +713,7 @@ describe('InlineMarkingEditor: a part read against its whole', () => {
         await pickRow(input, 'CHARLIE');
         expect(input.value).toBe('L//SHARE WITH CHARLIE');
         press(input, 'Enter');
-        await wait(200);
+        await settle(200);
         expect(changes.at(-1)?.rendered).toBe('L//SHARE WITH CHARLIE');
         // The part names its own partner now, so it takes none from the whole.
         const held = changes.at(-1)!.assertions;
@@ -700,7 +739,7 @@ describe('a whole that stops sharing: the store reads its part again (R-1)', () 
         store: VanillaEzClassifyStore,
     ): Promise<void> {
         await store.publishRendered('doc', CLOSED_WHOLE);
-        await wait(100);
+        await settle(100);
         const part = store.get('p');
         expect(part.rendered).toBe('L//SHARE');
         expect(part.valid).toBe(false);
@@ -752,7 +791,7 @@ describe('a whole that stops sharing: the store reads its part again (R-1)', () 
         expect(store.get('p').valid).toBe(true);
 
         await store.publishRendered('doc', STAND_IN_WHOLE);
-        await wait(100);
+        await settle(100);
         const part = store.get('p');
         expect(part.rendered).toBe('JOINT H//SHARE');
         expect(part.valid).toBe(false);
@@ -794,7 +833,7 @@ describe('a whole that stops sharing: the store reads its part again (R-1)', () 
             expect(store.get('p').valid).toBe(true);
 
             await store.publishRendered('doc', whole);
-            await wait(100);
+            await settle(100);
             let part = store.get('p');
             expect(part.rendered).toBe('JOINT H//SHARE');
             expect(part.valid).toBe(false);
@@ -803,7 +842,7 @@ describe('a whole that stops sharing: the store reads its part again (R-1)', () 
             expect(partners(part.assertions)).toEqual([]);
 
             await store.publishRendered('doc', JOINT_WHOLE);
-            await wait(100);
+            await settle(100);
             part = store.get('p');
             expect(part.valid).toBe(true);
             expect(part.errors).toEqual([]);
@@ -835,7 +874,7 @@ describe('a whole that stops sharing: the store reads its part again (R-1)', () 
             const doc = document.getElementById('doc') as HTMLInputElement;
             doc.value = JOINT_WHOLE;
             await forms!.store.publishRendered('doc', JOINT_WHOLE);
-            await wait(600);
+            await settle(600);
             [part] = partStates(host);
             expect(part.valid).toBe(true);
             expect(owners(part.assertions)).toEqual([
@@ -855,7 +894,7 @@ describe('a whole that stops sharing: the store reads its part again (R-1)', () 
             const doc = document.getElementById('doc') as HTMLInputElement;
             doc.value = CLOSED_WHOLE;
             await forms!.store.publishRendered('doc', CLOSED_WHOLE);
-            await wait(600);
+            await settle(600);
             const [part] = partStates(host);
             expect(part.rendered).toBe('L//SHARE');
             expect(part.valid).toBe(false);
@@ -926,13 +965,13 @@ describe.each([
             expect(host.value).toBe(`(${form.mark}) Quarterly notes`);
             expect(owners(fieldAssertions(host))).toEqual(TAKEN_OWNERS);
             expectPart(host, form.mark);
-            await wait(200);
+            await settle(200);
             expectRollup('HIGH');
 
             let input = await openEditor(host);
             expect(input.value).toBe(form.mark);
             press(input, 'Enter');
-            await wait(450);
+            await settle(450);
             expect(host.value).toBe(`(${form.mark}) Quarterly notes`);
             expectPart(host, form.mark);
 
@@ -941,10 +980,10 @@ describe.each([
             // The draft is written short too: the word stays for the owners.
             expect(input.value).toBe(form.picked);
             press(input, 'Enter');
-            await wait(450);
+            await settle(450);
             expect(host.value).toBe(`(${form.picked}) Quarterly notes`);
             expectPart(host, form.picked);
-            await wait(200);
+            await settle(200);
             expectRollup('LOW');
         },
     );
@@ -961,7 +1000,7 @@ describe.each([
                 root,
             },
         );
-        await wait(450);
+        await settle(450);
         const host = document.getElementById('f') as HTMLTextAreaElement;
         const field = forms.components.get(host)!;
         expect(host.value).toBe(form.mark);
@@ -970,13 +1009,13 @@ describe.each([
 
         host.focus();
         press(host, 'ArrowDown');
-        await wait(200);
+        await settle(200);
         await pickRow(host, 'L');
-        await leave(host, 450);
+        await leaveField(host, 450);
         expect(host.value).toBe(form.picked);
         expect(owners(field.getAssertions())).toEqual(TAKEN_OWNERS);
         expectPart(host, form.picked);
-        await wait(200);
+        await settle(200);
         expectRollup('LOW');
     });
 });
@@ -1014,11 +1053,11 @@ describe('contextual stand-in options', () => {
             const whole = document.getElementById('doc') as HTMLInputElement;
             whole.value = JOINT_WHOLE;
             await forms!.store.publishRendered('doc', whole.value);
-            await wait(650);
+            await settle(650);
             expect(rowFor('JOINT')).toBeDefined();
             whole.value = CLOSED_WHOLE;
             await forms!.store.publishRendered('doc', whole.value);
-            await wait(650);
+            await settle(650);
             expect(rowFor('JOINT')).toBeUndefined();
         },
     );
@@ -1041,7 +1080,7 @@ describe('a marking its format cannot write', () => {
                 root,
             },
         );
-        await wait(450);
+        await settle(450);
         return document.getElementById('f') as HTMLTextAreaElement;
     }
 
@@ -1069,11 +1108,11 @@ describe('a marking its format cannot write', () => {
             const host = await mountRefusing(markup);
             const input = await openEditor(host);
             typeText(input, REFUSED);
-            await wait(200);
+            await settle(200);
             expect(resultValue()).toBe(REFUSED);
             expect(resultState()).toBe('invalid');
             press(input, 'Enter');
-            await wait(450);
+            await settle(450);
 
             expect(host.value).toBe(expected);
             expect(host.value).not.toContain(MARKER);
@@ -1090,9 +1129,9 @@ describe('a marking its format cannot write', () => {
             const host = await mountRefusing(markup);
             const input = await openEditor(host);
             typeText(input, REFUSED);
-            await wait(200);
+            await settle(200);
             press(input, 'Enter');
-            await wait(450);
+            await settle(450);
             if (root.querySelector('[data-ezclassify-role="part"]')) return;
 
             const held = partStates(host).flatMap((one) => one.assertions);
@@ -1103,7 +1142,7 @@ describe('a marking its format cannot write', () => {
     /** Type the draft into an open editor. */
     async function draftIn(input: HTMLInputElement): Promise<void> {
         typeText(input, REFUSED);
-        await wait(200);
+        await settle(200);
         expect(input.value).toBe(REFUSED);
     }
 
@@ -1113,11 +1152,11 @@ describe('a marking its format cannot write', () => {
         label: string,
     ): Promise<void> {
         typeText(input, `${REFUSED} `);
-        await wait(200);
+        await settle(200);
         press(input, 'ArrowDown');
-        await wait(100);
+        await settle(100);
         rowFor(label)!.click();
-        await wait(200);
+        await settle(200);
     }
 
     it('an editor keeps the draft and says why when a pick cannot be written', async () => {
@@ -1136,12 +1175,12 @@ describe('a marking its format cannot write', () => {
                 onChange: (rendered) => changes.push(rendered),
             },
         );
-        await wait(80);
+        await settle(80);
         const input = container.querySelector(
             '.inline-editor-input',
         ) as HTMLInputElement;
         input.focus();
-        await wait(80);
+        await settle(80);
         await draftIn(input);
 
         await browseAndPick(input, 'L');
@@ -1160,7 +1199,7 @@ describe('a marking its format cannot write', () => {
             'textarea.marking-field-host',
         ) as HTMLInputElement;
         input.focus();
-        await wait(200);
+        await settle(200);
         await draftIn(input);
 
         await browseAndPick(input, 'L');
@@ -1179,9 +1218,9 @@ describe('a marking its format cannot write', () => {
             'textarea.marking-field-host',
         ) as HTMLInputElement;
         input.focus();
-        await wait(200);
+        await settle(200);
         typeText(input, 'H//SHARE');
-        await wait(200);
+        await settle(200);
         expect(field.pendingDraft()).toBe('H//SHARE');
 
         await draftIn(input);
@@ -1197,10 +1236,10 @@ describe('a marking its format cannot write', () => {
             'textarea.marking-field-host',
         ) as HTMLInputElement;
         input.focus();
-        await wait(200);
+        await settle(200);
         await draftIn(input);
         press(input, 'Enter');
-        await wait(450);
+        await settle(450);
 
         expect(host.value).toBe('L');
         expect(root.textContent).toContain(REASON);
