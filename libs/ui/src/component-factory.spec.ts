@@ -33,8 +33,19 @@ describe('parseComponentOptions', () => {
     it('reads scope from data-ezclassify-scope on the host element', () => {
         el.setAttribute('data-ezclassify-scope', 'my-scope');
         expect(parseComponentOptions(el, {})).toEqual(
-            expect.objectContaining({ scope: 'my-scope' }),
+            expect.objectContaining({
+                scope: 'my-scope',
+                scopes: ['my-scope'],
+            }),
         );
+    });
+
+    it('reads data-ezclassify-scope as a space-separated list of scopes', () => {
+        el.setAttribute('data-ezclassify-scope', ' marking  record marking ');
+        const opts = parseComponentOptions(el, {});
+        expect(opts.scopes).toEqual(['marking', 'record']);
+        // One surface a field reads as exists only when one scope is named.
+        expect(opts.scope).toBeUndefined();
     });
 
     it('maps `parent-concept` to parentConcept', () => {

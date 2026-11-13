@@ -183,6 +183,39 @@ describe('EzClassifyText (standalone)', () => {
         host.remove();
     });
 
+    it('reads a host that names one scope as that scope, in its output', async () => {
+        const meta = engine.getSchemeMeta();
+        engine.getSchemeMeta = () => ({
+            ...meta,
+            defaultScope: 'line',
+            scopes: [
+                { id: 'line', label: 'Line' },
+                { id: 'block', label: 'Block' },
+            ],
+            formats: [
+                ...(meta.formats ?? []),
+                {
+                    id: 'block/full',
+                    surface: 'block',
+                    mode: 'block',
+                    categoryOrder: ['cat1'],
+                    defaultFor: ['whole', 'part'],
+                },
+            ],
+        });
+        host.textContent = 'c1';
+
+        await field.init(host as HTMLDivElement, toCtx(engine), {
+            scope: 'block',
+            scopes: ['block'],
+        });
+
+        expect(engine.validate).toHaveBeenCalledWith('c1', {
+            outputFormat: 'block/full',
+            surface: 'block',
+        });
+    });
+
     describe('a marking the engine cannot write', () => {
         const MARKER = '[unrepresentable:ambiguous-representation]';
         const refused = {

@@ -32,6 +32,7 @@ import {
     renderViewRefused,
 } from '../render-refusal';
 import textCss from './ezclassify-text.css?inline';
+import { viewOutputOf } from '../format-resolver';
 import { adoptStyles, type AdoptedStyles } from '../styles/adopt';
 
 const EZCLASSIFY_TEXT_CSS: string = textCss;
@@ -41,6 +42,11 @@ export interface EzClassifyTextOptions extends Omit<
     ComponentOptions,
     'onChange'
 > {
+    /**
+     * The scope ids `data-ezclassify-scope` lists. A host that names scopes
+     * holds the text those scopes write, in the output of the first of them.
+     */
+    scopes?: readonly string[];
     /**
      * Notified after every read: initial mount, refresh(), setValue(),
      * setAssertions(), and destroy(). Errors come from the engine's validate
@@ -114,8 +120,12 @@ export class EzClassifyText implements ComponentInstance {
               : undefined;
 
         const schemeMeta = this.engine.getSchemeMeta();
+        const scopes = this.options.scopes ?? [];
         if (options?.formatId) {
             this.formatId = options.formatId;
+        } else if (scopes.length > 0) {
+            // A host that names scopes holds what they write.
+            this.formatId = viewOutputOf(schemeMeta, scopes, readsAsPart);
         } else if (readsAsPart) {
             this.formatId =
                 schemeMeta.defaultPartRenderFormat ??
@@ -391,8 +401,18 @@ export class EzClassifyText implements ComponentInstance {
      */
     private callValidate(input: string, options?: { outputFormat?: string }) {
         const context = this.resolveRoleContext?.();
-        const merged = context ? { ...options, context } : options;
-        return this.engine.validate(input, merged);
+        // A host that names one scope holds that scope's surface, and is read
+        // as it; one naming several holds the marking they write together.
+        const surface = this.options.scope;
+        const merged = {
+            ...options,
+            ...(context ? { context } : {}),
+            ...(surface ? { surface } : {}),
+        };
+        return this.engine.validate(
+            input,
+            Object.keys(merged).length > 0 ? merged : undefined,
+        );
     }
 
     private callRender(assertions: Assertion[], options?: { format?: string }) {

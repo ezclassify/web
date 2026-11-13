@@ -1,11 +1,13 @@
 import { afterEach, describe, it, expect, vi } from 'vitest';
 import {
     coveredCategoriesOf,
+    defaultOutputOf,
     defaultSurfaceOf,
     getFormat,
     holdsPart,
     resolveFormatAttr,
     resolveOutput,
+    viewOutputOf,
 } from './format-resolver';
 import type { FormsContext } from './forms/types';
 import { mockRenderFormats } from './render-format-layout-mock';
@@ -335,5 +337,68 @@ describe('defaultSurfaceOf', () => {
     it('is undefined when the scheme lists no default output', () => {
         expect(defaultSurfaceOf(outputs, undefined)).toBeUndefined();
         expect(defaultSurfaceOf(outputs, 'sensitivity/xml')).toBeUndefined();
+    });
+});
+
+describe("a scope's default output", () => {
+    const outputs = [
+        { id: 'label/short', surface: 'label', defaultFor: ['part'] },
+        { id: 'label/full', surface: 'label', defaultFor: ['whole'] },
+        { id: 'label/xml', surface: 'label', defaultFor: [] },
+        {
+            id: 'record/block',
+            surface: 'record',
+            defaultFor: ['whole', 'part'],
+        },
+    ];
+
+    it("is the view its surface writes for the marking's role", () => {
+        expect(defaultOutputOf(outputs, 'label', 'whole', 'label/full')).toBe(
+            'label/full',
+        );
+        expect(defaultOutputOf(outputs, 'label', 'part', 'label/full')).toBe(
+            'label/short',
+        );
+        expect(defaultOutputOf(outputs, 'record', 'part', 'label/full')).toBe(
+            'record/block',
+        );
+        expect(
+            defaultOutputOf(outputs, 'other', 'whole', 'label/full'),
+        ).toBeUndefined();
+    });
+
+    it('is the first format of the surface when formats are the outputs', () => {
+        const formats = [
+            { id: 'line', surface: 'label' },
+            { id: 'block', surface: 'record' },
+            { id: 'block_wide', surface: 'record' },
+        ];
+        expect(defaultOutputOf(formats, 'label', 'whole', 'line')).toBe('line');
+        expect(defaultOutputOf(formats, 'record', 'whole', 'line')).toBe(
+            'block',
+        );
+    });
+
+    it("writes a view of several scopes in the first one's output", () => {
+        const meta = {
+            formats: outputs.map((o) => ({
+                ...o,
+                mode: 'inline' as const,
+                categoryOrder: [],
+            })),
+            scopes: [
+                { id: 'label', label: 'Label' },
+                { id: 'record', label: 'Record' },
+            ],
+            defaultScope: 'label',
+            defaultRenderFormat: 'label/full',
+            defaultPartRenderFormat: 'label/short',
+            defaultWholeRenderFormat: 'label/full',
+        } as never;
+        expect(viewOutputOf(meta, ['record'], false)).toBe('record/block');
+        expect(viewOutputOf(meta, ['record', 'label'], true)).toBe(
+            'label/short',
+        );
+        expect(viewOutputOf(meta, [], false)).toBe('label/full');
     });
 });

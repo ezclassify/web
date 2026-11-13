@@ -21,6 +21,8 @@
 /* ── Single-concept mode elements ──────────────── */
 .status-banner-label {
     font-weight: 700;
+    /* A marking written as a block (one line per field) keeps its lines. */
+    white-space: pre-line;
 }
 
 .status-banner--prominent .status-banner-label {

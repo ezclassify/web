@@ -1766,16 +1766,89 @@ describe('DecisionFlow: scope filtering', () => {
         expect(label?.textContent).not.toContain('Admin');
     });
 
-    it('shows the out-of-active-scope category when its scope is explicitly activated', async () => {
+    it('walks only the scope it names', async () => {
         const engine = createScopedEngine();
         const flow = new DecisionFlow();
-        // Pass scope='admin' explicitly, now admin_cat is included
+        // 'level' declares no scope, so it belongs to the default scope.
         await flow.init(container, toCtx(engine), { scope: 'admin' });
         await enterFlow(container);
 
+        expect(
+            container.querySelector('.ez-decision-flow__progress')?.textContent,
+        ).toBe('Step 1 of 1');
+        expect(
+            container.querySelector('.ez-decision-flow__question-label')
+                ?.textContent,
+        ).toBe('Step 1 of 1: Admin Category');
+    });
+
+    it('walks every scope a space-separated list names, labeling each step', async () => {
+        const engine = createScopedEngine();
+        const flow = new DecisionFlow();
+        await flow.init(container, toCtx(engine), { scope: 'admin marking' });
+        await enterFlow(container);
+
         const dots = container.querySelectorAll('.ez-decision-flow__step-dot');
-        // Both 'level' (no scope) and 'admin_cat' (scope: admin) are visible
         expect(dots.length).toBe(2);
+        // Declaration order, not the order the list was written in.
+        expect(
+            container.querySelector('.ez-decision-flow__scope')?.textContent,
+        ).toBe('Marking');
+        expect(
+            container.querySelector('.ez-decision-flow__question-label')
+                ?.textContent,
+        ).toBe('Step 1 of 2: Level');
+        // Every engine call names the surface of the step it is for.
+        const surfaces = (engine.suggest as any).mock.calls.map(
+            ([, options]: [unknown, { surface?: string }]) => options.surface,
+        );
+        expect(new Set(surfaces)).toEqual(new Set(['marking', 'admin']));
+    });
+
+    it('judges a committed store state on its own scope, not the store surface', async () => {
+        const engine = createScopedEngine();
+        (engine.process as any).mockImplementation(
+            (
+                _input: string,
+                opts?: { assertions?: Assertion[]; surface?: string },
+            ) => ({
+                assertions: [...(opts?.assertions ?? [])],
+                rendered: (opts?.assertions ?? [])
+                    .map((a) => a.conceptId)
+                    .join('/'),
+                valid: false,
+                errors: [
+                    {
+                        constraintId: 'surface',
+                        message: `Judged on ${opts?.surface ?? 'the whole marking'}`,
+                    },
+                ],
+            }),
+        );
+        const flow = new DecisionFlow();
+        await flow.init(container, toCtx(engine), { scope: 'admin' });
+        flow.applyStoreState({
+            rendered: 'AX',
+            renders: {},
+            assertions: [
+                {
+                    conceptId: 'ADM_X',
+                    categoryId: 'admin_cat',
+                    confidence: 'certain',
+                    source: 'user',
+                },
+            ],
+            valid: false,
+            errors: [{ constraintId: 'store', message: 'The store says so' }],
+        });
+        await vi.waitFor(() =>
+            expect(
+                Array.from(
+                    document.querySelectorAll('.ez-validation-errors__message'),
+                ).map((el) => el.textContent),
+            ).toEqual(['Judged on admin']),
+        );
+        flow.destroy();
     });
 
     it('shows all categories when the scheme has no defaultScope', async () => {
@@ -1794,6 +1867,24 @@ describe('DecisionFlow: scope filtering', () => {
         // No scope filter → both categories shown
         const dots = container.querySelectorAll('.ez-decision-flow__step-dot');
         expect(dots.length).toBe(2);
+    });
+
+    it('reads the category list harvested from its host', async () => {
+        // The runtime mounts the flow in a container beside its host, so the
+        // list arrives as the harvested option, not as an attribute on the
+        // container or one of its ancestors.
+        const engine = createScopedEngine();
+        const flow = new DecisionFlow();
+        await flow.init(container, toCtx(engine), {
+            categories: 'admin_cat, level',
+        } as never);
+        await enterFlow(container);
+
+        expect(
+            Array.from(
+                container.querySelectorAll('.ez-decision-flow__summary-chip'),
+            ).map((chip) => chip.textContent?.split(':')[0]),
+        ).toEqual(['Level', 'Admin Category']);
     });
 
     it('explicit categoryOrder attribute bypasses scope filtering', async () => {

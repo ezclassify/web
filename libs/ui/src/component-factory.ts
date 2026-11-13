@@ -9,6 +9,7 @@
 
 import type { ControllerName } from './element-scanner';
 import { resolveFormatAttr } from './format-resolver';
+import { parseScopeList } from './scopes';
 import { setMountHost } from './mount-host-registry';
 import type {
     ComponentInstance,
@@ -104,8 +105,12 @@ export function parseComponentOptions(
     if (el.closest('[data-ezclassify-no-hints]')) opts.hints = false;
 
     // Shared binding attributes (live on the host element, not under the controller prefix).
-    const scope = el.getAttribute('data-ezclassify-scope');
-    if (scope) opts.scope = scope;
+    // `data-ezclassify-scope` lists scope ids the way `class` lists class
+    // names. `scopes` carries the list; `scope` is the one surface a field
+    // reads as, so it is set only when the list names exactly one.
+    const scopes = parseScopeList(el.getAttribute('data-ezclassify-scope'));
+    if (scopes.length > 0) opts.scopes = scopes;
+    if (scopes.length === 1) opts.scope = scopes[0];
     // The category a facet picker selects in is a host attribute, never a
     // controller-prefixed option.
     const category = el.getAttribute('data-ezclassify-category');

@@ -71,6 +71,7 @@ import {
     type ValidationError,
 } from '@ezclassify/types';
 import { resolveMarkingColor } from '../color-resolver';
+import { viewOutputOf } from '../format-resolver';
 import { getMountHost } from '../mount-host-registry';
 import { EMPTY_VALUE } from '../text-utils';
 import { t } from '../i18n';
@@ -125,6 +126,11 @@ export interface StatusBannerBucket {
 
 /** Options accepted by StatusBanner. */
 export interface StatusBannerOptions extends ComponentOptions {
+    /**
+     * The scope ids `data-ezclassify-scope` lists. A banner that names scopes
+     * shows what they write, in the output of the first of them.
+     */
+    scopes?: readonly string[];
     /**
      * Providing a category switches the banner to single-concept mode: the
      * banner shows the bound assertion's concept in this category instead of
@@ -197,8 +203,13 @@ export class StatusBanner extends ReadOnlyComponentBase {
      */
     private _buckets: readonly StatusBannerBucket[] | null = null;
 
-    /** Banner is a whole-document context: use the scheme's whole-role default. */
+    /**
+     * Banner is a whole-document context: use the scheme's whole-role default,
+     * on the surface of the scopes it names when it names any.
+     */
     protected override resolveDefaultFormatId(meta: SchemeMetaView): string {
+        const scopes = (this.options as StatusBannerOptions).scopes;
+        if (scopes?.length) return viewOutputOf(meta, scopes, false);
         return meta.defaultWholeRenderFormat ?? meta.defaultRenderFormat ?? '';
     }
 

@@ -1,4 +1,8 @@
-import type { ContextSchemeEngineAdapter } from '@ezclassify/types';
+import type {
+    ContextSchemeEngineAdapter,
+    SchemeMetaView,
+} from '@ezclassify/types';
+import { inDeclarationOrder } from './scopes';
 import { isStandalonePart, partWholeOf } from './binding-model';
 import type { FormsContext } from './forms/types';
 
@@ -66,6 +70,83 @@ export function defaultSurfaceOf(
     defaultOutput: string | undefined,
 ): string | undefined {
     return outputs.find((output) => output.id === defaultOutput)?.surface;
+}
+
+/**
+ * The output a scope's surface writes a marking of a role in when a request
+ * names none, as the scheme's metadata lists its outputs.
+ *
+ * For a scheme that declares its outputs by surface, that is the view on the
+ * scope's surface whose `defaultFor` includes the role. A scheme whose formats
+ * are its outputs has one default, `defaultOutput`, which answers for its own
+ * surface; another surface takes the first format that writes it. Undefined
+ * when the scheme lists no output for the scope.
+ *
+ * @param outputs - The outputs the scheme lists, as `formats` in its metadata
+ * @param scope - The scope id of the surface
+ * @param role - The role of the marking written
+ * @param defaultOutput - The scheme's `defaultRenderFormat`
+ * @returns The output's id, or undefined
+ */
+export function defaultOutputOf(
+    outputs: readonly {
+        id: string;
+        surface?: string;
+        defaultFor?: readonly string[];
+    }[],
+    scope: string,
+    role: 'whole' | 'part',
+    defaultOutput: string | undefined,
+): string | undefined {
+    const onSurface = outputs.filter((output) => output.surface === scope);
+    return (
+        onSurface.find((output) => output.defaultFor?.includes(role))?.id ??
+        onSurface.find((output) => output.id === defaultOutput)?.id ??
+        onSurface[0]?.id
+    );
+}
+
+/**
+ * The output a view of some of a scheme's scopes is written in: the default
+ * output, for the view's role, of the first of those scopes in the scheme's
+ * declaration order (see {@link defaultOutputOf}). With no scope named, or none
+ * the scheme lists an output for, the scheme's own default for the role.
+ *
+ * @param meta - The scheme's metadata
+ * @param scopes - The scope ids the view names
+ * @param part - Whether the view shows a part
+ * @returns The output's id
+ */
+export function viewOutputOf(
+    meta: Pick<
+        SchemeMetaView,
+        | 'formats'
+        | 'scopes'
+        | 'defaultScope'
+        | 'defaultRenderFormat'
+        | 'defaultPartRenderFormat'
+        | 'defaultWholeRenderFormat'
+    >,
+    scopes: readonly string[],
+    part: boolean,
+): string {
+    const first = inDeclarationOrder(scopes, meta)[0];
+    const role = part ? 'part' : 'whole';
+    const scoped =
+        first === undefined
+            ? undefined
+            : defaultOutputOf(
+                  meta.formats ?? [],
+                  first,
+                  role,
+                  meta.defaultRenderFormat,
+              );
+    return (
+        scoped ??
+        (part ? meta.defaultPartRenderFormat : meta.defaultWholeRenderFormat) ??
+        meta.defaultRenderFormat ??
+        ''
+    );
 }
 
 /**

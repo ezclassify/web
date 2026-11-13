@@ -113,8 +113,10 @@ import {
     resolveFormatAttr,
     resolveOutput,
     showsStandalonePart,
+    viewOutputOf,
     wholeOfShownMarking,
 } from './format-resolver';
+import { factsInScopes, parseScopeList } from './scopes';
 import { renderViewRefusalMessages, renderViewRefused } from './render-refusal';
 import {
     setMountOwner,
@@ -199,6 +201,12 @@ interface StoreBinding {
     lastSeenViewSignature: string;
     viewRequest: number;
     lastSeenFacetSig: string;
+    /**
+     * The view, a decision flow, states facts outside the scheme's default
+     * scope. Text carries only the default scope, so from the first such
+     * publish on, the binding publishes the view's facts instead of its text.
+     */
+    publishesFacts: boolean;
     publish(assertions: EngineAssertion[], rendered: string): void;
 }
 
@@ -2714,6 +2722,65 @@ export class EzClassifyUI {
     }
 
     /**
+     * Whether a view's facts include one of a scope other than the scheme's
+     * default, by the scope its category belongs to.
+     *
+     * @param el - The view's host
+     * @param assertions - The facts the view publishes
+     */
+    private statesOtherScopes(
+        el: HTMLElement,
+        assertions: readonly EngineAssertion[],
+    ): boolean {
+        if (assertions.length === 0) return false;
+        const engine = schemeEngineOf(this.resolveContext(el), el);
+        const meta = engine.getSchemeMeta();
+        if (!meta.defaultScope) return false;
+        const others = (meta.scopes ?? [])
+            .map((s) => s.id)
+            .filter((id) => id !== meta.defaultScope);
+        return (
+            others.length > 0 &&
+            factsInScopes(assertions, engine.listCategories(), others, meta)
+                .length > 0
+        );
+    }
+
+    /**
+     * A view's marking as the scopes it names write it: the facts that belong
+     * to those scopes, written in the output of the first of them in the
+     * scheme's declaration order, the view's own `data-ezclassify-format` when
+     * it names one. A marking spans its scopes, and the text a view of one
+     * scope reads is that scope's own surface, not the marking's whole text: an
+     * authority view shows the authority block, not the classification line
+     * beside it. Empty when no fact belongs to the named scopes.
+     *
+     * @param el - The view's host
+     * @param assertions - The marking's facts
+     * @param scopes - The scope ids the view names
+     * @returns The text the view shows
+     */
+    private async writeInScopes(
+        el: HTMLElement,
+        assertions: readonly EngineAssertion[],
+        scopes: readonly string[],
+    ): Promise<string> {
+        const engine = schemeEngineOf(this.resolveContext(el), el);
+        const meta = engine.getSchemeMeta();
+        const facts = factsInScopes(
+            assertions,
+            engine.listCategories(),
+            scopes,
+            meta,
+        );
+        if (facts.length === 0) return '';
+        const output =
+            resolveFormatAttr(el) || viewOutputOf(meta, scopes, holdsPart(el));
+        const written = await Promise.resolve(engine.render(facts, output));
+        return renderViewRefused(written) ? '' : written.rendered;
+    }
+
+    /**
      * Warn when a control names a scope its category does not belong to.
      *
      * `data-ezclassify-scope` on a control says which scope the author means
@@ -3421,6 +3488,15 @@ export class EzClassifyUI {
                 const showIncomplete = (
                     component as { setIncomplete?: (value: boolean) => void }
                 ).setIncomplete?.bind(component);
+                // A view that names scopes shows those scopes' own output (see
+                // writeInScopes). Only the newest state's write is shown.
+                const viewScopes =
+                    controller === 'text' || controller === 'banner'
+                        ? parseScopeList(
+                              el.getAttribute('data-ezclassify-scope'),
+                          )
+                        : [];
+                let scopedWrite = 0;
                 const applyState = (s: EzClassifyState) => {
                     // Body editors (marked-input, marked-textarea) own their content,
                     // pushing aggregate/source state into them would overwrite the user's
@@ -3442,8 +3518,24 @@ export class EzClassifyUI {
                     // displayColor for rule-driven schemes. Route both through
                     // setValue(rendered), which reads the marking with validate,
                     // so that state tracks.
+                    const write = ++scopedWrite;
                     if (refused && controller === 'text') {
                         component!.setAssertions(s.assertions ?? []);
+                    } else if (
+                        viewScopes.length > 0 &&
+                        typeof component.setValue === 'function'
+                    ) {
+                        const setValue = component.setValue.bind(component);
+                        void this.writeInScopes(
+                            el,
+                            refused ? [] : s.assertions,
+                            viewScopes,
+                        )
+                            .catch(() => '')
+                            .then((text) => {
+                                if (write === scopedWrite && !this._destroyed)
+                                    void setValue(text);
+                            });
                     } else if (
                         (controller === 'text' || controller === 'banner') &&
                         typeof component.setValue === 'function'
@@ -3579,6 +3671,8 @@ export class EzClassifyUI {
         category: string | undefined,
     ): StoreBinding {
         const token: PublishSource = { token: el };
+        const stepsAcrossScopes =
+            el.getAttribute('data-ezclassify-controller') === 'decisionflow';
         const handle: StoreBinding = {
             markingId,
             isFacet,
@@ -3588,6 +3682,7 @@ export class EzClassifyUI {
             lastSeenViewSignature: '',
             viewRequest: 0,
             lastSeenFacetSig: '',
+            publishesFacts: false,
             publish: (assertions: EngineAssertion[], rendered: string) => {
                 if (isFacet) {
                     const cat = category ?? '';
@@ -3610,6 +3705,23 @@ export class EzClassifyUI {
                         )
                         .catch(() => {});
                 } else {
+                    // A marking's text states its default scope only. A
+                    // decision flow that states facts of another scope
+                    // publishes its facts, which carry every scope, as the
+                    // store keeps alternate scopes.
+                    handle.publishesFacts ||=
+                        stepsAcrossScopes &&
+                        this.statesOtherScopes(el, assertions);
+                    if (handle.publishesFacts) {
+                        const sig = signAssertions(assertions);
+                        if (sig === handle.lastSeenFacetSig) return;
+                        handle.lastSeenFacetSig = sig;
+                        handle.lastSeenRendered = rendered;
+                        this.store
+                            .publishAssertions(markingId, assertions, token)
+                            .catch(() => {});
+                        return;
+                    }
                     if (rendered === handle.lastSeenRendered) return;
                     handle.lastSeenRendered = rendered;
                     this.store
@@ -3690,6 +3802,17 @@ export class EzClassifyUI {
                     source: 'user' as const,
                 }));
                 component.setAssertions(promoted);
+            } else if (binding.publishesFacts) {
+                // The view publishes facts, so its own echo is the same facts.
+                const sig = signAssertions(state.assertions);
+                if (sig === binding.lastSeenFacetSig) return;
+                binding.lastSeenFacetSig = sig;
+                binding.lastSeenRendered = state.rendered;
+                if (!state.valid && component.applyStoreState) {
+                    component.applyStoreState(state);
+                    return;
+                }
+                component.setAssertions(state.assertions ?? []);
             } else {
                 if (state.rendered === binding.lastSeenRendered) return;
                 // A refused state's text is the engine's marker. The field
