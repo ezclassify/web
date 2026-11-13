@@ -8,6 +8,11 @@
 // be installed from a public registry, and a source that needs one fails for
 // every outside contributor.
 //
+// Every source must also stay inside this repository: a relative import that
+// climbs out of it (`../../engine/...`) reads a sibling checkout an outside
+// contributor does not have. The roots below are scanned, and so is every
+// source file at the repository root, such as the Vitest configurations.
+//
 // The scan reads source text only and needs no installed dependency, so CI
 // runs it first, before `npm ci`, and it holds whether or not such a package
 // happens to exist on the machine running it. Strings, template literals and
@@ -106,13 +111,42 @@ export function forbiddenImports(text) {
 }
 
 /**
- * Every `file: specifier` offence under the roots of `repoRoot`.
+ * The relative specifiers `text` imports that resolve outside `repoRoot`, for a
+ * source at `file`.
+ *
+ * @param {string} text
+ * @param {string} file - The source's absolute path
+ * @param {string} repoRoot - The repository root, absolute
+ * @returns {string[]}
+ */
+export function escapingImports(text, file, repoRoot) {
+    return importedSpecifiers(text).filter((s) => {
+        if (!s.startsWith('./') && !s.startsWith('../')) return false;
+        const target = path.relative(
+            repoRoot,
+            path.resolve(path.dirname(file), s),
+        );
+        return target === '..' || target.startsWith(`..${path.sep}`);
+    });
+}
+
+/**
+ * Every `file: specifier` offence under the roots of `repoRoot`, and in the
+ * source files at its top level.
  *
  * @param {string} repoRoot
  * @returns {string[]}
  */
 export function findOffenders(repoRoot) {
     const offenders = [];
+    const scan = (full) => {
+        const text = readFileSync(full, 'utf8');
+        const where = path.relative(repoRoot, full);
+        for (const s of forbiddenImports(text))
+            offenders.push(`${where}: ${s}`);
+        for (const s of escapingImports(text, full, repoRoot))
+            offenders.push(`${where}: ${s} (outside the repository)`);
+    };
     const walk = (dir) => {
         let entries;
         try {
@@ -124,12 +158,14 @@ export function findOffenders(repoRoot) {
             if (entry.name.startsWith('.') || SKIP.has(entry.name)) continue;
             const full = path.join(dir, entry.name);
             if (entry.isDirectory()) walk(full);
-            else if (SOURCE_FILE.test(entry.name))
-                for (const s of forbiddenImports(readFileSync(full, 'utf8')))
-                    offenders.push(`${path.relative(repoRoot, full)}: ${s}`);
+            else if (SOURCE_FILE.test(entry.name)) scan(full);
         }
     };
     for (const root of ROOTS) walk(path.join(repoRoot, root));
+    for (const entry of readdirSync(repoRoot, { withFileTypes: true })) {
+        if (entry.isFile() && SOURCE_FILE.test(entry.name))
+            scan(path.join(repoRoot, entry.name));
+    }
     return offenders;
 }
 
@@ -142,7 +178,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
     const offenders = findOffenders(repoRoot);
     if (offenders.length > 0) {
         console.error(
-            'Spec, fixture and test-support sources import a package the public cannot install:',
+            'Spec, fixture and test-support sources import a package the public cannot install, or a file outside this repository:',
         );
         for (const offender of offenders) console.error(`  ${offender}`);
         console.error(
@@ -151,6 +187,6 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
         process.exit(1);
     }
     console.log(
-        'Spec imports: no engine, engine-wasm or testing-utils import.',
+        'Spec imports: no engine, engine-wasm or testing-utils import, and none from outside the repository.',
     );
 }

@@ -101,6 +101,37 @@ describe('check-spec-imports command', () => {
         expect(result.stderr).toContain('h.mjs: @ezclassify/engine-wasm');
     });
 
+    it('fails on a root Vitest configuration that imports the engine', () => {
+        const root = plant({
+            'vitest.config.ts': "import '@ezclassify/engine-wasm';\n",
+        });
+        const result = run(root);
+        expect(result.status).toBe(1);
+        expect(result.stderr).toContain(
+            'vitest.config.ts: @ezclassify/engine-wasm',
+        );
+    });
+
+    it('fails on a relative import that climbs out of the repository', () => {
+        const root = plant({
+            'test-support/helper.ts':
+                "import { x } from '../../engine/packages/engine-js/src';\n",
+            'libs/ui/src/inside.spec.ts':
+                "import { y } from '../../../test-support/helper';\n",
+            'vitest.integration.config.ts':
+                "export * from '../orchestration/scripts/lib/x.mjs';\n",
+        });
+        const result = run(root);
+        expect(result.status).toBe(1);
+        expect(result.stderr).toContain(
+            `${path.join('test-support', 'helper.ts')}: ../../engine/packages/engine-js/src (outside the repository)`,
+        );
+        expect(result.stderr).toContain(
+            'vitest.integration.config.ts: ../orchestration/scripts/lib/x.mjs (outside the repository)',
+        );
+        expect(result.stderr).not.toContain('inside.spec.ts');
+    });
+
     it('passes on a tree with no such import', () => {
         const root = plant({ 'libs/ui/src/ok.spec.ts': "import 'vitest';\n" });
         expect(run(root).status).toBe(0);
