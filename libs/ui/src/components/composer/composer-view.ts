@@ -1602,7 +1602,7 @@ export class ComposerView {
         const parts: string[] = [s.mode, s.scope ?? ''];
         if (s.scope) parts.push(JSON.stringify(s.categories.map((c) => c.id)));
         for (const group of s.groups) {
-            parts.push(`g:${group.id}:${group.label}`);
+            parts.push(`g:${group.id}:${group.scope ?? ''}:${group.label}`);
             for (const row of group.rows) {
                 if (row.kind === 'concept') {
                     parts.push(
@@ -1671,6 +1671,19 @@ export class ComposerView {
             const title = this.span('ez-composer__group-title', group.label);
             title.id = `${this.id}-${group.id}-label`;
             title.setAttribute('role', 'presentation');
+            // A field across scopes names the scope beside each category, and
+            // the group's accessible name carries it.
+            const labelledBy = [title.id];
+            if (group.scope) {
+                const scope = this.span(
+                    'ez-composer__group-scope',
+                    group.scope,
+                );
+                scope.id = `${this.id}-${group.id}-scope`;
+                scope.setAttribute('role', 'presentation');
+                heading.append(scope);
+                labelledBy.unshift(scope.id);
+            }
             heading.append(title);
             const first = group.rows[0];
             if (s.mode === 'browse' && first.kind === 'concept') {
@@ -1692,7 +1705,7 @@ export class ComposerView {
                 );
                 heading.append(nav);
             }
-            g.setAttribute('aria-labelledby', title.id);
+            g.setAttribute('aria-labelledby', labelledBy.join(' '));
             g.appendChild(heading);
             for (const row of group.rows) {
                 g.appendChild(this.rowElement(row, row === activeRow, s));

@@ -7,7 +7,7 @@
                 { "id": "sensitivity", "label": "Sensitivity" },
                 { "id": "retention", "label": "Retention" }
             ],
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "GET",
             "statusCode": 200
         },
@@ -19,16 +19,11 @@
                             "id": "surfaces",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-b75503240aef95d569b628c3a6f7fd65f8632ecc3e1401462511710b19f4a231",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-b75503240aef95d569b628c3a6f7fd65f8632ecc3e1401462511710b19f4a231",
+                    "contextId": "surfaces",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [],
@@ -55,7 +50,55 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "093a4f52483dae04bdec3cdab28e163b1e5d464c582e1361585476936e2eb6bf": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "surfaces",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "surfaces",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "CONFIDENTIAL",
+                            "confidence": "certain",
+                            "source": "aggregate"
+                        },
+                        {
+                            "categoryId": "sharing",
+                            "conceptId": "PARTNERS",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "keep",
+                            "conceptId": "KEEP_7Y",
+                            "confidence": "certain",
+                            "source": "aggregate"
+                        }
+                    ],
+                    "errors": [],
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "CONFIDENTIAL // PARTNERS\nKEEP 7 YEARS",
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -67,16 +110,11 @@
                             "id": "surfaces",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-b75503240aef95d569b628c3a6f7fd65f8632ecc3e1401462511710b19f4a231",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-b75503240aef95d569b628c3a6f7fd65f8632ecc3e1401462511710b19f4a231",
+                    "contextId": "surfaces",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "suggestions": [
@@ -123,7 +161,80 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "10ab0bf035d5fe58ae377e25b0613df6369187dbd0b8e43dc052462a469bf4b2": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "surfaces",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "surfaces",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "CONFIDENTIAL",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "sharing",
+                            "conceptId": "PARTNERS",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "keep",
+                            "conceptId": "KEEP_7Y",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            {
+                                "categoryId": "level",
+                                "conceptId": "CONFIDENTIAL"
+                            },
+                            {
+                                "categoryId": "sharing",
+                                "conceptId": "PARTNERS"
+                            },
+                            { "categoryId": "keep", "conceptId": "KEEP_7Y" }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "recognition": {
+                        "corrections": [],
+                        "role": "whole",
+                        "status": "complete",
+                        "unmatched": []
+                    },
+                    "rendered": "CONFIDENTIAL // PARTNERS\nKEEP 7 YEARS",
+                    "renders": {},
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -135,16 +246,11 @@
                             "id": "surfaces",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-fcc5e3711e9b70a7bc70acf3de7afadc4c7bfe9962e686d571c974b02dc58d3a",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-fcc5e3711e9b70a7bc70acf3de7afadc4c7bfe9962e686d571c974b02dc58d3a",
+                    "contextId": "surfaces",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [],
@@ -193,7 +299,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -205,16 +311,11 @@
                             "id": "surfaces",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-fcc5e3711e9b70a7bc70acf3de7afadc4c7bfe9962e686d571c974b02dc58d3a",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-fcc5e3711e9b70a7bc70acf3de7afadc4c7bfe9962e686d571c974b02dc58d3a",
+                    "contextId": "surfaces",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [],
@@ -240,7 +341,74 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "17d057dfc139c78c29e1c65adea173c101a82b9ebb19274925cf3e2ff7380a4b": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "surfaces",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "surfaces",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "CONFIDENTIAL",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "sharing",
+                            "conceptId": "PARTNERS",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "keep",
+                            "conceptId": "KEEP_7Y",
+                            "confidence": "certain",
+                            "source": "user"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            {
+                                "categoryId": "level",
+                                "conceptId": "CONFIDENTIAL"
+                            },
+                            {
+                                "categoryId": "sharing",
+                                "conceptId": "PARTNERS"
+                            },
+                            { "categoryId": "keep", "conceptId": "KEEP_7Y" }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "CONFIDENTIAL // PARTNERS\nKEEP 7 YEARS",
+                    "renders": {},
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -252,16 +420,11 @@
                             "id": "surfaces",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-fcc5e3711e9b70a7bc70acf3de7afadc4c7bfe9962e686d571c974b02dc58d3a",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-fcc5e3711e9b70a7bc70acf3de7afadc4c7bfe9962e686d571c974b02dc58d3a",
+                    "contextId": "surfaces",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [],
@@ -287,7 +450,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -299,16 +462,11 @@
                             "id": "surfaces",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-fcc5e3711e9b70a7bc70acf3de7afadc4c7bfe9962e686d571c974b02dc58d3a",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-fcc5e3711e9b70a7bc70acf3de7afadc4c7bfe9962e686d571c974b02dc58d3a",
+                    "contextId": "surfaces",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [],
@@ -349,7 +507,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -361,16 +519,11 @@
                             "id": "surfaces",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-b75503240aef95d569b628c3a6f7fd65f8632ecc3e1401462511710b19f4a231",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-b75503240aef95d569b628c3a6f7fd65f8632ecc3e1401462511710b19f4a231",
+                    "contextId": "surfaces",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [],
@@ -412,13 +565,13 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
         "1fa14de25a08b2726dd9013c23bbc7c6ee8dd9c9e6907fa5687acea963760084": {
             "body": [],
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "GET",
             "statusCode": 200
         },
@@ -430,16 +583,11 @@
                             "id": "surfaces",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-b75503240aef95d569b628c3a6f7fd65f8632ecc3e1401462511710b19f4a231",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-b75503240aef95d569b628c3a6f7fd65f8632ecc3e1401462511710b19f4a231",
+                    "contextId": "surfaces",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "suggestions": [
@@ -458,7 +606,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -470,16 +618,11 @@
                             "id": "surfaces",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-fcc5e3711e9b70a7bc70acf3de7afadc4c7bfe9962e686d571c974b02dc58d3a",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-fcc5e3711e9b70a7bc70acf3de7afadc4c7bfe9962e686d571c974b02dc58d3a",
+                    "contextId": "surfaces",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [],
@@ -548,7 +691,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -560,16 +703,11 @@
                             "id": "surfaces",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-fcc5e3711e9b70a7bc70acf3de7afadc4c7bfe9962e686d571c974b02dc58d3a",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-fcc5e3711e9b70a7bc70acf3de7afadc4c7bfe9962e686d571c974b02dc58d3a",
+                    "contextId": "surfaces",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "suggestions": [
@@ -602,7 +740,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -629,7 +767,7 @@
                 "roleAware": false,
                 "version": "1.0.0"
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "GET",
             "statusCode": 200
         },
@@ -658,14 +796,14 @@
                     "single": true
                 }
             ],
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "GET",
             "statusCode": 200
         },
         "3ab5dbe176b168ff674b1c2fc966e0cdc4c42bdb57acd700679806e1c36ec51d": {
             "body": [
                 {
-                    "categoryOrder": ["level", "sharing"],
+                    "categoryOrder": ["level"],
                     "defaultFor": ["part"],
                     "id": "sensitivity/short",
                     "mode": "inline",
@@ -712,7 +850,7 @@
                     "surface": "retention"
                 }
             ],
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "GET",
             "statusCode": 200
         },
@@ -721,6 +859,48 @@
                 "contextId": "sbx-fcc5e3711e9b70a7bc70acf3de7afadc4c7bfe9962e686d571c974b02dc58d3a"
             },
             "method": "PUT",
+            "statusCode": 200
+        },
+        "3f0d07b673d2de815892c1d660b432435397d72dd0e873716b2727281752e100": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "surfaces",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "surfaces",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "CONFIDENTIAL",
+                            "confidence": "certain",
+                            "source": "aggregate"
+                        },
+                        {
+                            "categoryId": "keep",
+                            "conceptId": "KEEP_7Y",
+                            "confidence": "certain",
+                            "source": "aggregate"
+                        }
+                    ],
+                    "errors": [],
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "CONFIDENTIAL\nKEEP 7 YEARS",
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
             "statusCode": 200
         },
         "449c3a9d1903c58a9dfef19763cb36d4568892c3f0f373c826c78bef559caa08": {
@@ -769,7 +949,7 @@
                     "views": { "default": "KEEP 7 YEARS" }
                 }
             ],
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "GET",
             "statusCode": 200
         },
@@ -781,16 +961,11 @@
                             "id": "surfaces",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-fcc5e3711e9b70a7bc70acf3de7afadc4c7bfe9962e686d571c974b02dc58d3a",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-fcc5e3711e9b70a7bc70acf3de7afadc4c7bfe9962e686d571c974b02dc58d3a",
+                    "contextId": "surfaces",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [],
@@ -839,13 +1014,13 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
         "478cfa84cfef322450980693daf5d8d4d4a57d51d7bb32783086f4ec28e84094": {
             "body": [],
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "GET",
             "statusCode": 200
         },
@@ -857,16 +1032,11 @@
                             "id": "surfaces",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-b75503240aef95d569b628c3a6f7fd65f8632ecc3e1401462511710b19f4a231",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-b75503240aef95d569b628c3a6f7fd65f8632ecc3e1401462511710b19f4a231",
+                    "contextId": "surfaces",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "suggestions": [
@@ -913,7 +1083,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -925,16 +1095,11 @@
                             "id": "surfaces",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-fcc5e3711e9b70a7bc70acf3de7afadc4c7bfe9962e686d571c974b02dc58d3a",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-fcc5e3711e9b70a7bc70acf3de7afadc4c7bfe9962e686d571c974b02dc58d3a",
+                    "contextId": "surfaces",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [],
@@ -960,7 +1125,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -972,16 +1137,11 @@
                             "id": "surfaces",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-fcc5e3711e9b70a7bc70acf3de7afadc4c7bfe9962e686d571c974b02dc58d3a",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-fcc5e3711e9b70a7bc70acf3de7afadc4c7bfe9962e686d571c974b02dc58d3a",
+                    "contextId": "surfaces",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [],
@@ -1008,7 +1168,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -1035,7 +1195,7 @@
                 "roleAware": false,
                 "version": "1.0.0"
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "GET",
             "statusCode": 200
         },
@@ -1047,16 +1207,11 @@
                             "id": "surfaces",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-fcc5e3711e9b70a7bc70acf3de7afadc4c7bfe9962e686d571c974b02dc58d3a",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-fcc5e3711e9b70a7bc70acf3de7afadc4c7bfe9962e686d571c974b02dc58d3a",
+                    "contextId": "surfaces",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [
@@ -1111,7 +1266,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -1123,16 +1278,11 @@
                             "id": "surfaces",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-fcc5e3711e9b70a7bc70acf3de7afadc4c7bfe9962e686d571c974b02dc58d3a",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-fcc5e3711e9b70a7bc70acf3de7afadc4c7bfe9962e686d571c974b02dc58d3a",
+                    "contextId": "surfaces",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "suggestions": [
@@ -1151,7 +1301,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -1163,16 +1313,11 @@
                             "id": "surfaces",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-fcc5e3711e9b70a7bc70acf3de7afadc4c7bfe9962e686d571c974b02dc58d3a",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-fcc5e3711e9b70a7bc70acf3de7afadc4c7bfe9962e686d571c974b02dc58d3a",
+                    "contextId": "surfaces",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "suggestions": [
@@ -1219,13 +1364,13 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
         "85df44a85d2aac1c3915c3e279296709ff801ba95f6b34f8291be73a0f50ecb9": {
             "body": {
-                "id": "sbx-b75503240aef95d569b628c3a6f7fd65f8632ecc3e1401462511710b19f4a231",
+                "id": "surfaces",
                 "scheme": {
                     "id": "surfaces",
                     "resolvedVersion": "1.0.0",
@@ -1239,9 +1384,9 @@
                         "version": "1.0.0"
                     }
                 ],
-                "version": "0.0.0"
+                "version": "1.0.0"
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "GET",
             "statusCode": 200
         },
@@ -1250,7 +1395,7 @@
                 { "id": "sensitivity", "label": "Sensitivity" },
                 { "id": "retention", "label": "Retention" }
             ],
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "GET",
             "statusCode": 200
         },
@@ -1262,16 +1407,11 @@
                             "id": "surfaces",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-fcc5e3711e9b70a7bc70acf3de7afadc4c7bfe9962e686d571c974b02dc58d3a",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-fcc5e3711e9b70a7bc70acf3de7afadc4c7bfe9962e686d571c974b02dc58d3a",
+                    "contextId": "surfaces",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [],
@@ -1297,7 +1437,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -1309,16 +1449,11 @@
                             "id": "surfaces",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-fcc5e3711e9b70a7bc70acf3de7afadc4c7bfe9962e686d571c974b02dc58d3a",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-fcc5e3711e9b70a7bc70acf3de7afadc4c7bfe9962e686d571c974b02dc58d3a",
+                    "contextId": "surfaces",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [
@@ -1373,7 +1508,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -1385,16 +1520,11 @@
                             "id": "surfaces",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-fcc5e3711e9b70a7bc70acf3de7afadc4c7bfe9962e686d571c974b02dc58d3a",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-fcc5e3711e9b70a7bc70acf3de7afadc4c7bfe9962e686d571c974b02dc58d3a",
+                    "contextId": "surfaces",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [],
@@ -1443,7 +1573,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -1493,7 +1623,7 @@
                     "views": { "default": "KEEP 7 YEARS" }
                 }
             ],
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "GET",
             "statusCode": 200
         },
@@ -1505,16 +1635,11 @@
                             "id": "surfaces",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-fcc5e3711e9b70a7bc70acf3de7afadc4c7bfe9962e686d571c974b02dc58d3a",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-fcc5e3711e9b70a7bc70acf3de7afadc4c7bfe9962e686d571c974b02dc58d3a",
+                    "contextId": "surfaces",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [],
@@ -1583,7 +1708,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -1595,16 +1720,11 @@
                             "id": "surfaces",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-fcc5e3711e9b70a7bc70acf3de7afadc4c7bfe9962e686d571c974b02dc58d3a",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-fcc5e3711e9b70a7bc70acf3de7afadc4c7bfe9962e686d571c974b02dc58d3a",
+                    "contextId": "surfaces",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [],
@@ -1645,14 +1765,14 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
         "d070c6c09a019c790c075999be8a4cc3dac51acb7abec5923bb4651deeb3fe88": {
             "body": [
                 {
-                    "categoryOrder": ["level", "sharing"],
+                    "categoryOrder": ["level"],
                     "defaultFor": ["part"],
                     "id": "sensitivity/short",
                     "mode": "inline",
@@ -1699,49 +1819,8 @@
                     "surface": "retention"
                 }
             ],
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "GET",
-            "statusCode": 200
-        },
-        "d3772b8028f6d9b9be24a15b489f74ea07b8367d393915853bfc492b4e79556a": {
-            "body": {
-                "resolution": {
-                    "artifacts": [
-                        {
-                            "id": "surfaces",
-                            "kind": "scheme",
-                            "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-fcc5e3711e9b70a7bc70acf3de7afadc4c7bfe9962e686d571c974b02dc58d3a",
-                            "kind": "context",
-                            "version": "0.0.0"
-                        }
-                    ],
-                    "contextId": "sbx-fcc5e3711e9b70a7bc70acf3de7afadc4c7bfe9962e686d571c974b02dc58d3a",
-                    "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
-                },
-                "result": {
-                    "appliedFixes": [],
-                    "assertions": [
-                        {
-                            "categoryId": "level",
-                            "conceptId": "CONFIDENTIAL",
-                            "confidence": "certain",
-                            "source": "aggregate"
-                        }
-                    ],
-                    "errors": [],
-                    "notices": [],
-                    "proposedFixes": [],
-                    "rendered": "CONFIDENTIAL",
-                    "valid": true,
-                    "warnings": []
-                }
-            },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
-            "method": "POST",
             "statusCode": 200
         },
         "e070dec6e78862435e7c23c92a6e4a93a9667377aed0b78b533966687028c314": {
@@ -1756,7 +1835,7 @@
             "method": "GET",
             "statusCode": 200
         },
-        "e452098589fe9886d3586b0bc9d47fe4f4281cdddc0345596a4ccaee941562ec": {
+        "e15150ee5915f731379455f5d8a71127e8225220a5a91d5ddbafab4a7686b07c": {
             "body": {
                 "resolution": {
                     "artifacts": [
@@ -1764,16 +1843,11 @@
                             "id": "surfaces",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-fcc5e3711e9b70a7bc70acf3de7afadc4c7bfe9962e686d571c974b02dc58d3a",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-fcc5e3711e9b70a7bc70acf3de7afadc4c7bfe9962e686d571c974b02dc58d3a",
+                    "contextId": "surfaces",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [],
@@ -1782,13 +1856,7 @@
                             "categoryId": "level",
                             "conceptId": "CONFIDENTIAL",
                             "confidence": "certain",
-                            "source": "parse"
-                        },
-                        {
-                            "categoryId": "keep",
-                            "conceptId": "KEEP_7Y",
-                            "confidence": "certain",
-                            "source": "parse"
+                            "source": "user"
                         }
                     ],
                     "assessment": {
@@ -1798,8 +1866,7 @@
                             {
                                 "categoryId": "level",
                                 "conceptId": "CONFIDENTIAL"
-                            },
-                            { "categoryId": "keep", "conceptId": "KEEP_7Y" }
+                            }
                         ],
                         "omitted": [],
                         "unrepresentable": []
@@ -1808,19 +1875,13 @@
                     "inputWasValid": true,
                     "notices": [],
                     "proposedFixes": [],
-                    "recognition": {
-                        "corrections": [],
-                        "role": "whole",
-                        "status": "complete",
-                        "unmatched": []
-                    },
-                    "rendered": "CONFIDENTIAL\nKEEP 7 YEARS",
+                    "rendered": "CONFIDENTIAL",
                     "renders": {},
                     "valid": true,
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -1849,13 +1910,70 @@
                     "single": true
                 }
             ],
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "GET",
+            "statusCode": 200
+        },
+        "ea1f81c404b219619a35b45a6cf413fd83aaa44ac57ee822396328b148d3dba5": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "surfaces",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "surfaces",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "CONFIDENTIAL",
+                            "confidence": "certain",
+                            "source": "user"
+                        },
+                        {
+                            "categoryId": "sharing",
+                            "conceptId": "PARTNERS",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            {
+                                "categoryId": "level",
+                                "conceptId": "CONFIDENTIAL"
+                            },
+                            { "categoryId": "sharing", "conceptId": "PARTNERS" }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "CONFIDENTIAL // PARTNERS",
+                    "renders": {},
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
             "statusCode": 200
         },
         "ef8bc34ce12a9dd454dd7e2297e9644ba156e967ef977fab1c647e1e27a80aa1": {
             "body": {
-                "id": "sbx-fcc5e3711e9b70a7bc70acf3de7afadc4c7bfe9962e686d571c974b02dc58d3a",
+                "id": "surfaces",
                 "scheme": {
                     "id": "surfaces",
                     "resolvedVersion": "1.0.0",
@@ -1869,9 +1987,9 @@
                         "version": "1.0.0"
                     }
                 ],
-                "version": "0.0.0"
+                "version": "1.0.0"
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "GET",
             "statusCode": 200
         },
@@ -1883,16 +2001,11 @@
                             "id": "surfaces",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-fcc5e3711e9b70a7bc70acf3de7afadc4c7bfe9962e686d571c974b02dc58d3a",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-fcc5e3711e9b70a7bc70acf3de7afadc4c7bfe9962e686d571c974b02dc58d3a",
+                    "contextId": "surfaces",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [],
@@ -1949,7 +2062,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -1961,16 +2074,11 @@
                             "id": "surfaces",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-fcc5e3711e9b70a7bc70acf3de7afadc4c7bfe9962e686d571c974b02dc58d3a",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-fcc5e3711e9b70a7bc70acf3de7afadc4c7bfe9962e686d571c974b02dc58d3a",
+                    "contextId": "surfaces",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [],
@@ -2011,7 +2119,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },

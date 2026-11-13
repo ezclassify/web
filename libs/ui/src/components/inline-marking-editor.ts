@@ -47,7 +47,11 @@ import { recordAppliedFixes } from './status-mark';
 import { createComposerPort } from './composer/composer-port';
 import { withoutTakenFromWhole } from '../assertion-identity';
 import { renderViewRefused } from '../render-refusal';
-import { coveredCategoriesOf } from '../format-resolver';
+import {
+    coveredCategoriesOf,
+    suggestionSurfaces,
+    type SuggestionSurface,
+} from '../format-resolver';
 import { t } from '../i18n';
 import {
     ComposerController,
@@ -62,7 +66,10 @@ import { ComposerView, accessibleLabel } from './composer/composer-view';
 /** Options for the inline marking editor. */
 export interface InlineMarkingEditorOptions {
     formatId: string;
+    /** The host field's one scope, as its surface (see `ComponentOptions`). */
     scope?: string;
+    /** The scope ids the host field lists (see `ComponentOptions`). */
+    scopes?: readonly string[];
     /** The current whole, resolved again when the host marking changes. */
     resolveContext?: () => ProcessingContext | undefined;
     /** See `ComponentOptions.resolveParts`: the whole's parts, at call time. */
@@ -394,49 +401,59 @@ export class InlineMarkingEditor {
             meta: () => this.callGetProfile(),
             formatId: () => this.options.formatId,
             scope: () => this.options.scope,
+            scopes: () => this.options.scopes ?? [],
             suggestions: async (live) => {
                 const context = this.options.resolveContext?.();
-                const options = {
-                    outputFormat: this.options.formatId,
-                    surface: this.options.scope,
-                };
-                const suggestions =
-                    context?.role === 'part' || context?.partOf
-                        ? Object.values(
-                              (
+                const asked = await Promise.all(
+                    this.suggestionSurfaces().map(async (options) =>
+                        context?.role === 'part' || context?.partOf
+                            ? Object.values(
+                                  (
+                                      await Promise.resolve(
+                                          this.callProcess('', {
+                                              ...options,
+                                              context,
+                                              assertions: [...(live ?? [])],
+                                              suggestFor: this.engine
+                                                  .getScheme()
+                                                  .categories.map(
+                                                      (category) => category.id,
+                                                  ),
+                                          }),
+                                      )
+                                  ).suggestionsFor ?? {},
+                              ).flatMap((result) => result.suggestions)
+                            : (
                                   await Promise.resolve(
-                                      this.callProcess('', {
-                                          ...options,
-                                          context,
-                                          assertions: [...(live ?? [])],
-                                          suggestFor: this.engine
-                                              .getScheme()
-                                              .categories.map(
-                                                  (category) => category.id,
-                                              ),
-                                      }),
+                                      this.callSuggest(
+                                          [...(live ?? [])],
+                                          options,
+                                      ),
                                   )
-                              ).suggestionsFor ?? {},
-                          ).flatMap((result) => result.suggestions)
-                        : (
-                              await Promise.resolve(
-                                  this.callSuggest([...(live ?? [])], options),
-                              )
-                          ).suggestions;
-                return suggestions.filter(
-                    (s: Suggestion) => !s.conceptId.startsWith('preset:'),
+                              ).suggestions,
+                    ),
                 );
+                return asked
+                    .flat()
+                    .filter(
+                        (s: Suggestion) => !s.conceptId.startsWith('preset:'),
+                    );
             },
             gated: async (query, live) => {
-                const result = await Promise.resolve(
-                    this.callSuggest([...live], {
-                        outputFormat: this.options.formatId,
-                        filter: query,
-                        surface: this.options.scope,
-                        includeGated: true,
-                    }),
+                const asked = await Promise.all(
+                    this.suggestionSurfaces().map((options) =>
+                        Promise.resolve(
+                            this.callSuggest([...live], {
+                                ...options,
+                                filter: query,
+                                includeGated: true,
+                            }),
+                        ),
+                    ),
                 );
-                return result.suggestions.filter((s: Suggestion) => s.gated);
+                return asked.flatMap((result) =>
+                    result.suggestions.filter((s: Suggestion) => s.gated),
+                );
             },
             committed: () => ({
                 assertions: this.assertions,
@@ -491,6 +508,17 @@ export class InlineMarkingEditor {
         const read =
             typeof input === 'string' ? input : statedAssertions(input);
         return this.engine.suggest(read, options);
+    }
+
+    /** Where the composer asks what the host field offers. */
+    private suggestionSurfaces(): SuggestionSurface[] {
+        return suggestionSurfaces(
+            this.callGetProfile(),
+            this.options.formatId,
+            this.options.scope,
+            this.options.scopes,
+            true,
+        );
     }
 
     private callGetProfile() {

@@ -62,6 +62,8 @@ import {
     renderViewRefused,
 } from '../render-refusal';
 import { getMountHost } from '../mount-host-registry';
+import { assertWritesScopes, viewOutputOf } from '../format-resolver';
+import { categoriesByScope } from '../scopes';
 
 /**
  * Scheme operations a component marks with: a Context's scheme view.
@@ -189,7 +191,19 @@ export interface ComponentOptions {
      */
     holdsPart?: boolean;
     categoryId?: string;
+    /**
+     * The one scope the field authors, as its surface: set only when
+     * {@link scopes} names exactly one.
+     */
     scope?: string;
+    /**
+     * The scope ids `data-ezclassify-scope` lists, in the order written. A
+     * picker offers the categories of every listed scope, in the scheme's
+     * declaration order. A text field writes them as one string when its format
+     * writes them all, and refuses them at init when it does not. A field that
+     * lists several is judged as the whole marking.
+     */
+    scopes?: readonly string[];
     onChange?: (assertions: Assertion[], rendered: string) => void;
     /**
      * Id of the parent field that holds the complete marking this component is
@@ -472,6 +486,25 @@ export abstract class ReadOnlyComponentBase implements ComponentInstance {
                 ? schemeMeta.defaultPartRenderFormat
                 : undefined) ??
             this.resolveDefaultFormatId(schemeMeta);
+        // A text field that lists several scopes writes them in one string,
+        // the default output of the first of them unless it names a format,
+        // and only when that format writes every one of them.
+        const listed = options?.scopes ?? [];
+        if (this.writesScopesAsText() && listed.length > 1) {
+            if (!options?.formatId)
+                this.formatId = viewOutputOf(
+                    schemeMeta,
+                    listed,
+                    !!options?.holdsPart,
+                );
+            assertWritesScopes(
+                this.engine,
+                this.scheme.categories,
+                this.formatId,
+                listed,
+                componentLabel,
+            );
+        }
         this.colorFrom = schemeMeta.colorFrom;
         this._resolveContext = options?.resolveContext;
         this._resolveParts = options?.resolveParts;
@@ -1078,17 +1111,26 @@ export abstract class ReadOnlyComponentBase implements ComponentInstance {
 
     /**
      * Resolve a category by explicit ID, or find the first single-select
-     * category in scope
+     * category in scope. The categories of the listed scopes are searched scope
+     * by scope in the scheme's declaration order; a category that declares no
+     * scope belongs to the default scope.
      */
     protected resolveCategory(
         explicitId?: string,
         scope?: string,
+        scopes?: readonly string[],
     ): CategoryView | undefined {
         if (explicitId) {
             return this.scheme.categories.find((f) => f.id === explicitId);
         }
         let categories = this.scheme.categories;
-        if (scope) {
+        if (scopes && scopes.length > 0) {
+            categories = categoriesByScope(
+                categories,
+                scopes,
+                this.schemeMeta,
+            ).flatMap((group) => group.categories);
+        } else if (scope) {
             categories = categories.filter(
                 (f) =>
                     !f.scopes ||
@@ -1127,6 +1169,17 @@ export abstract class ReadOnlyComponentBase implements ComponentInstance {
      */
     protected resolveDefaultFormatId(meta: SchemeMetaView): string {
         return meta.defaultRenderFormat ?? '';
+    }
+
+    /**
+     * Whether the component shows its marking as one string a person reads and
+     * types, as a text field does. Such a component writes every scope it lists
+     * in that one string, so it is refused when its format cannot (see
+     * `assertWritesScopes`). A picker offers each listed scope's categories
+     * instead and answers false.
+     */
+    protected writesScopesAsText(): boolean {
+        return false;
     }
 
     protected onAssertionsChanged(): void {

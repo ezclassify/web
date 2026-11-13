@@ -47,7 +47,13 @@ import {
     assertDescribesConcepts,
     createConceptDescriber,
 } from './concept-description';
-import { defaultSurfaceOf, resolveOutput } from '../format-resolver';
+import {
+    assertWritesScopes,
+    defaultSurfaceOf,
+    resolveOutput,
+    viewOutputOf,
+} from '../format-resolver';
+import { inDeclarationOrder } from '../scopes';
 import type { InlineMarkingEditor } from './inline-marking-editor';
 import { createClearButton, type ClearButton } from './clear-button';
 import { mountFieldChrome, type FieldChrome } from './field-chrome';
@@ -241,9 +247,12 @@ export abstract class MarkedFieldBase<
                 }
             ).embeddedMarking?.[0] ?? null;
         const formats = this.scheme.formats ?? [];
+        const listed = this.options.scopes ?? [];
+        const meta = resolvedEngine.getSchemeMeta();
         // The host's spelling is resolved to the output it names: an output id
-        // as it is, a bare view id to that view on the field's surface. A
-        // scheme that lists no formats leaves nothing to check it against.
+        // as it is, a bare view id to that view on the field's surface (the
+        // first of the scopes it lists). A scheme that lists no formats leaves
+        // nothing to check it against.
         const requested =
             requestedFormat !== undefined && formats.length === 0
                 ? requestedFormat
@@ -252,11 +261,29 @@ export abstract class MarkedFieldBase<
                       formats,
                       requestedFormat,
                       this.options.scope ??
+                          inDeclarationOrder(listed, meta)[0] ??
                           defaultSurfaceOf(
                               formats,
                               this.scheme.defaultRenderFormat,
                           ),
                   );
+        // A field that lists several scopes writes them in one string: the
+        // format it names, else the part default of the first of them, and
+        // only a format that writes every one of them.
+        if (listed.length > 1) {
+            this.scanFormat =
+                requested ||
+                requestedFormat ||
+                viewOutputOf(meta, listed, true);
+            assertWritesScopes(
+                resolvedEngine,
+                resolvedScheme.categories,
+                this.scanFormat,
+                listed,
+                this.componentLabel,
+            );
+            return;
+        }
         // Every fallback comes out of the scheme. A literal format id here
         // would be a data value in code: a scheme that declares no format under
         // that name gets an id it never heard of. Both fields write parts, so a

@@ -43,11 +43,6 @@ export interface EzClassifyTextOptions extends Omit<
     'onChange'
 > {
     /**
-     * The scope ids `data-ezclassify-scope` lists. A host that names scopes
-     * holds the text those scopes write, in the output of the first of them.
-     */
-    scopes?: readonly string[];
-    /**
      * Notified after every read: initial mount, refresh(), setValue(),
      * setAssertions(), and destroy(). Errors come from the engine's validate
      * result and are empty when the marking is valid or empty.

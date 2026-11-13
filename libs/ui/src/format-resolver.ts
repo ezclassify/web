@@ -2,7 +2,7 @@ import type {
     ContextSchemeEngineAdapter,
     SchemeMetaView,
 } from '@ezclassify/types';
-import { inDeclarationOrder } from './scopes';
+import { inDeclarationOrder, scopesOfCategory } from './scopes';
 import { isStandalonePart, partWholeOf } from './binding-model';
 import type { FormsContext } from './forms/types';
 
@@ -147,6 +147,131 @@ export function viewOutputOf(
         meta.defaultRenderFormat ??
         ''
     );
+}
+
+/** One surface a field asks the engine what it offers on. */
+export interface SuggestionSurface {
+    /** The output the answer is written for. */
+    outputFormat: string;
+    /** The scope id of the surface; absent for the whole marking. */
+    surface?: string;
+}
+
+/**
+ * Where a field asks what it offers: on its own surface in its own format, or,
+ * for a field across several scopes, on each listed scope in that scope's own
+ * output (see {@link viewOutputOf}). The scheme offers a scope's categories on
+ * that scope's surface, so a field across scopes asks each of them.
+ *
+ * @param meta - The scheme's metadata
+ * @param formatId - The field's format
+ * @param scope - The field's one scope, if it lists exactly one
+ * @param scopes - The scope ids the field lists
+ * @param part - Whether the field shows a part
+ */
+export function suggestionSurfaces(
+    meta: Parameters<typeof viewOutputOf>[0],
+    formatId: string,
+    scope: string | undefined,
+    scopes: readonly string[] | undefined,
+    part: boolean,
+): SuggestionSurface[] {
+    if (!scopes || scopes.length < 2)
+        return [{ outputFormat: formatId, surface: scope }];
+    return inDeclarationOrder(scopes, meta).map((listed) => ({
+        outputFormat: viewOutputOf(meta, [listed], part),
+        surface: listed,
+    }));
+}
+
+/**
+ * Refuse a text field whose scopes its format cannot write as one string.
+ *
+ * A text field shows one string, so a field that lists several scopes shows
+ * them together only when its format writes the categories of every one of
+ * them. Whether it does is the scheme's to say, through the coverage its view
+ * reports for that format: a scheme whose one format carries every scope a host
+ * lists renders them as one string, and a scheme that writes them in separate
+ * places keeps them in separate fields. A coverage the view cannot report
+ * proves nothing, so it refuses too. A field that lists one scope or none has
+ * nothing to check.
+ *
+ * @param engine - The field's scheme view
+ * @param categories - The scheme's categories, with the scopes they declare
+ * @param spelling - The format the field writes, as it names it
+ * @param scopes - The scope ids the field lists
+ * @param component - Names the field in the error
+ * @throws Error naming the scopes and the format, and the scopes it leaves out
+ */
+export function assertWritesScopes(
+    engine: Pick<
+        ContextSchemeEngineAdapter,
+        'getSchemeMeta' | 'getFormatCoverage'
+    >,
+    categories: ReadonlyArray<{ id: string; scopes?: readonly string[] }>,
+    spelling: string,
+    scopes: readonly string[],
+    component: string,
+): void {
+    if (scopes.length < 2) return;
+    const meta = engine.getSchemeMeta();
+    const listed = inDeclarationOrder(scopes, meta);
+    const declared = new Set((meta.scopes ?? []).map((scope) => scope.id));
+    const quoted = (ids: readonly string[]) =>
+        ids.map((id) => `"${id}"`).join(', ');
+    const named = `[ezclassify] ${component}: data-ezclassify-scope lists ${quoted(listed)}`;
+    const unknown = listed.filter((scope) => !declared.has(scope));
+    if (unknown.length > 0) {
+        throw new Error(
+            `${named}, and the scheme declares no scope ${quoted(unknown)}.`,
+        );
+    }
+    const covered = formatCoverage(engine, spelling, listed[0]);
+    const unwritten =
+        covered === undefined
+            ? listed
+            : listed.filter((scope) =>
+                  categories.some(
+                      (category) =>
+                          scopesOfCategory(category, meta).includes(scope) &&
+                          !covered.has(category.id),
+                  ),
+              );
+    if (unwritten.length === 0) return;
+    const gap =
+        covered === undefined
+            ? `the scheme reports no coverage for its format "${spelling}"`
+            : `its format "${spelling}" does not write the categories of ${quoted(unwritten)}`;
+    throw new Error(
+        `${named}, but ${gap}. A text field shows its scopes as one string, ` +
+            'so one format has to write them all. Name such a format in ' +
+            'data-ezclassify-format, or give each scope a field of its own.',
+    );
+}
+
+/**
+ * The categories one format writes, by the coverage the view reports for the
+ * output its spelling names, else for the spelling itself. Undefined when the
+ * view reports none for it.
+ */
+function formatCoverage(
+    engine: Pick<
+        ContextSchemeEngineAdapter,
+        'getSchemeMeta' | 'getFormatCoverage'
+    >,
+    spelling: string,
+    surface: string | undefined,
+): Set<string> | undefined {
+    if (!engine.getFormatCoverage) return undefined;
+    const meta = engine.getSchemeMeta();
+    const output = resolveOutput(meta.formats ?? [], spelling, surface);
+    try {
+        return new Set(
+            engine.getFormatCoverage(output ?? spelling).coveredCategories,
+        );
+    } catch {
+        return undefined;
+    }
 }
 
 /**

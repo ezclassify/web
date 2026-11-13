@@ -247,9 +247,16 @@ describe('DecisionFlow across scopes', () => {
             )!,
             '20451231',
         );
+        // Stored in the encoding's canonical spelling, and shown in the
+        // summary the way the origin block writes it.
         expect(
             flow!.getAssertions().find((a) => a.conceptId === 'ON_DATE')?.value,
-        ).toBeTruthy();
+        ).toBe('2045-12-31');
+        expect(
+            Array.from(host.querySelectorAll('.ez-decision-flow__summary-chip'))
+                .map((chip) => chip.textContent)
+                .find((text) => text?.startsWith('Release:')),
+        ).toBe('Release: 20451231');
         // No request ever stated the value-taking choice without its value.
         const stated = process.mock.calls.flatMap(
             ([, options]) =>

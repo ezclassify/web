@@ -1,5 +1,6 @@
 import { afterEach, describe, it, expect, vi } from 'vitest';
 import {
+    assertWritesScopes,
     coveredCategoriesOf,
     defaultOutputOf,
     defaultSurfaceOf,
@@ -400,5 +401,81 @@ describe("a scope's default output", () => {
             'label/short',
         );
         expect(viewOutputOf(meta, [], false)).toBe('label/full');
+    });
+});
+
+describe('a text field that lists several scopes', () => {
+    /**
+     * A scheme of two scopes. `vector` writes both together; `line` writes the
+     * base scope only. `extra` has a category of its own.
+     */
+    const meta = {
+        scopes: [
+            { id: 'base', label: 'Base' },
+            { id: 'extra', label: 'Extra' },
+        ],
+        defaultScope: 'base',
+        formats: [
+            { id: 'base/vector', surface: 'base', outputView: 'vector' },
+            { id: 'base/line', surface: 'base', outputView: 'line' },
+        ],
+    };
+    const categories = [
+        { id: 'impact' },
+        { id: 'reach', scopes: ['base'] },
+        { id: 'adjust', scopes: ['extra'] },
+    ];
+    const coverage: Record<string, string[]> = {
+        'base/vector': ['impact', 'reach', 'adjust'],
+        'base/line': ['impact', 'reach'],
+    };
+    const engine = {
+        getSchemeMeta: () => meta,
+        getFormatCoverage: (id: string) => {
+            const covered = coverage[id];
+            if (!covered) throw new Error(`no format ${id}`);
+            return { coveredCategories: covered };
+        },
+    } as never;
+    const check =
+        (spelling: string, scopes: string[], view = engine) =>
+        () =>
+            assertWritesScopes(
+                view,
+                categories,
+                spelling,
+                scopes,
+                'MarkingField',
+            );
+
+    it('writes them as one string when its format writes every listed scope', () => {
+        expect(check('base/vector', ['extra', 'base'])).not.toThrow();
+        // A bare view id names that view on the first listed scope.
+        expect(check('vector', ['base', 'extra'])).not.toThrow();
+    });
+
+    it('is refused, naming the scopes and the format, when its format leaves one out', () => {
+        expect(check('base/line', ['extra', 'base'])).toThrow(
+            /MarkingField: data-ezclassify-scope lists "base", "extra", but its format "base\/line" does not write the categories of "extra"/,
+        );
+    });
+
+    it('is refused when the scheme reports no coverage for its format, or names no such scope', () => {
+        expect(check('base/xml', ['base', 'extra'])).toThrow(
+            /reports no coverage for its format "base\/xml"/,
+        );
+        expect(
+            check('base/vector', ['base', 'extra'], {
+                getSchemeMeta: () => meta,
+            } as never),
+        ).toThrow(/reports no coverage/);
+        expect(check('base/vector', ['base', 'other'])).toThrow(
+            /declares no scope "other"/,
+        );
+    });
+
+    it('has nothing to check for one scope or none', () => {
+        expect(check('base/line', ['extra'])).not.toThrow();
+        expect(check('base/line', [])).not.toThrow();
     });
 });

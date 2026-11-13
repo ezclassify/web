@@ -117,6 +117,11 @@ export interface ComposerCategory {
     readonly label: string;
     readonly single: boolean;
     readonly required: boolean;
+    /**
+     * The label of the scope the category belongs to, for a field that edits
+     * several scopes; absent for a field of one.
+     */
+    readonly scope?: string;
 }
 
 /** The committed value a field holds right now. */
@@ -235,6 +240,8 @@ export type ComposerRow =
 export interface ComposerGroup {
     readonly id: string;
     readonly label: string;
+    /** The label of the scope a category's group belongs to, if it names one. */
+    readonly scope?: string;
     readonly rows: ComposerRow[];
 }
 
@@ -1120,10 +1127,12 @@ export class ComposerController {
             mode = 'browse';
             const rank = new Map<string, number>();
             const labels = new Map<string, string>();
+            const scopes = new Map<string, string>();
             categories.forEach((c, index) => {
                 const id = c.id;
                 rank.set(id, index);
                 labels.set(id, c.label);
+                if (c.scope) scopes.set(id, c.scope);
             });
             const byGroup = new Map<string, ComposerRow[]>();
             const order: string[] = [];
@@ -1162,6 +1171,7 @@ export class ComposerController {
                 groups.push({
                     id: `g-${idPart(id)}`,
                     label: labels.get(id)!,
+                    scope: scopes.get(id),
                     rows: byGroup.get(id)!,
                 });
             }

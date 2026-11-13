@@ -8,7 +8,9 @@
  * behavior).
  *
  * Supports grouping categories under headings via `categoryGroups` option, and
- * an optional preview bar showing the rendered marking string.
+ * an optional preview bar showing the rendered marking string. A host that
+ * lists several scopes in `data-ezclassify-scope` gets the categories of each,
+ * grouped under the scope's label when they fall in more than one.
  */
 
 import { ComponentBase, type ComponentOptions } from './component-base';
@@ -16,6 +18,7 @@ import { createAnnouncer, announce } from './component-utils';
 import type { CategoryView, ConceptView, Suggestion } from '@ezclassify/types';
 import type { ComponentEngineSource } from './component-base-readonly';
 import { fieldSurfaces, ownedElsewhere } from './composer/composer-port';
+import { categoriesByScope, scopeLabel } from '../scopes';
 import categorySelectorCss from './category-selector.css?inline';
 
 const CATEGORY_SELECTOR_CSS: string = categorySelectorCss;
@@ -55,6 +58,11 @@ export class CategorySelector extends ComponentBase {
     private announcer!: HTMLDivElement;
     /** Ordered category rows */
     private categoryRows: CategoryRow[] = [];
+    /**
+     * The rows' categories by scope label, for a host that lists several scopes
+     * whose categories fall in more than one of them; else null.
+     */
+    private scopeGroups: Record<string, string[]> | null = null;
     /** Focus tracking: [rowIndex, buttonIndex] */
     private focusRow = 0;
     private focusCol = 0;
@@ -78,20 +86,42 @@ export class CategorySelector extends ComponentBase {
         // Build category rows. A bound categoryId (facet-of usage) is that one
         // category, whose own declared scope decides where it lands. Otherwise
         // the rows are the categories of the scope the host writes: a category
-        // of another scope has no place in this field's marking. Rows left out
-        // are never rendered and never commit.
+        // of another scope has no place in this field's marking. A host that
+        // lists several scopes gets each one's categories, scope by scope in
+        // the scheme's declaration order, under the scope's label. Rows left
+        // out are never rendered and never commit.
         const boundCategoryId = _opts.categoryId;
+        const listed = _opts.scopes ?? [];
+        const byScope =
+            !boundCategoryId && listed.length > 1
+                ? categoriesByScope(
+                      this.scheme.categories,
+                      listed,
+                      this.schemeMeta,
+                  )
+                : null;
+        this.scopeGroups =
+            byScope && byScope.length > 1
+                ? Object.fromEntries(
+                      byScope.map((group) => [
+                          scopeLabel(group.scope, this.schemeMeta),
+                          group.categories.map((c) => c.id),
+                      ]),
+                  )
+                : null;
         const { surface, defaultSurface } = fieldSurfaces(
             this.schemeMeta,
             this.formatId,
             _opts.scope,
         );
-        this.categoryRows = this.scheme.categories
-            .filter((cat) =>
-                boundCategoryId
-                    ? cat.id === boundCategoryId
-                    : !ownedElsewhere(cat, surface, defaultSurface),
-            )
+        const categories = byScope
+            ? byScope.flatMap((group) => group.categories)
+            : this.scheme.categories.filter((cat) =>
+                  boundCategoryId
+                      ? cat.id === boundCategoryId
+                      : !ownedElsewhere(cat, surface, defaultSurface),
+              );
+        this.categoryRows = categories
             .map((category) => ({
                 category,
                 concepts: this.scheme.concepts
@@ -172,7 +202,11 @@ export class CategorySelector extends ComponentBase {
         this.bodyEl.innerHTML = '';
 
         const opts = this.options as CategorySelectorOptions;
-        const groups = opts.categoryGroups;
+        // The host's own grouping wins over the one by scope.
+        const groups =
+            opts.categoryGroups && Object.keys(opts.categoryGroups).length > 0
+                ? opts.categoryGroups
+                : this.scopeGroups;
 
         if (groups && Object.keys(groups).length > 0) {
             this.renderGrouped(groups);

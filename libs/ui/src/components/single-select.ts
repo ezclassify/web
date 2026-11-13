@@ -138,6 +138,7 @@ export class SingleSelect extends ComponentBase {
         const singleCategory = this.resolveCategory(
             this.options.categoryId,
             this.options.scope,
+            this.options.scopes,
         );
         if (!singleCategory) return;
         this.primaryCategory = {

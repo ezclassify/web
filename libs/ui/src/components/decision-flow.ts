@@ -52,13 +52,15 @@ import type {
 } from '@ezclassify/types';
 import { applyTextInputAttributes } from './text-input-attributes';
 import decisionFlowCss from './decision-flow.css?inline';
-import { getPublicFormatLayout } from '../format-layout';
+import { getPublicFormatLayout, viewForCategory } from '../format-layout';
 import { observeNativeLock } from './dom-helpers';
 import { EMPTY_VALUE } from '../text-utils';
 import type { EzClassifyState } from '../store/ezclassify-store';
 import { viewOutputOf } from '../format-resolver';
 import { renderViewRefused } from '../render-refusal';
+import { writtenValue } from '../value-spelling';
 import {
+    categoriesByScope,
     factsInScopes,
     inDeclarationOrder,
     parseScopeList,
@@ -75,11 +77,6 @@ export interface DecisionFlowOptions extends ComponentOptions {
      * JSON array, or a comma or space list, of category IDs in step order.
      */
     categories?: string;
-    /**
-     * The scope ids the flow walks, as `data-ezclassify-scope` lists them. A
-     * flow mounted directly may instead list them in `scope`, space-separated.
-     */
-    scopes?: readonly string[];
 }
 
 interface ConceptDef {
@@ -243,9 +240,10 @@ export class DecisionFlow extends ComponentBase {
     };
 
     /**
-     * A flow names its scopes as a list. Every engine call for a step names
-     * that step's scope, so the base's single surface is the flow's scope only
-     * when it walks exactly one.
+     * A flow names its scopes as a list, in `scopes`; a flow mounted directly
+     * may list them in `scope` instead, space-separated. Every engine call for
+     * a step names that step's scope, so the base's single surface is the
+     * flow's scope only when it walks exactly one.
      */
     override async init(
         container: HTMLDivElement,
@@ -930,13 +928,8 @@ export class DecisionFlow extends ComponentBase {
 
         const categories = this.scheme.categories;
         if (listed.length === 0) return categories.map((c) => c.id);
-        return listed.flatMap((scope) =>
-            categories
-                .filter((c) =>
-                    scopesOfCategory(c, this.schemeMeta).includes(scope),
-                )
-                .filter((c) => this.stepScopeOf(c, listed) === scope)
-                .map((c) => c.id),
+        return categoriesByScope(categories, listed, this.schemeMeta).flatMap(
+            (group) => group.categories.map((c) => c.id),
         );
     }
 
@@ -1455,10 +1448,16 @@ export class DecisionFlow extends ComponentBase {
         const stepAssertions = this.assertions.filter(
             (a) => a.categoryId === step.categoryId,
         );
+        // A typed value shows the way the step's scope writes it, not in the
+        // spelling it is stored in.
+        const view = viewForCategory(
+            getPublicFormatLayout(this.schemeMeta, this.outputFor(step.scope)),
+            step.categoryId,
+        );
         const names = stepAssertions.map((a) => {
             const concept = step.concepts.find((c) => c.id === a.conceptId);
-            // For text_input concepts, show the user-typed value.
-            if (concept?.textInput && a.value) return a.value;
+            if (concept?.textInput && a.value)
+                return writtenValue(a.value, concept.textInput.encoding, view);
             return concept?.name ?? a.conceptId;
         });
         const chip = document.createElement('span');

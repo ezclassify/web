@@ -37,7 +37,11 @@ import type { EzClassifyState } from '../store/ezclassify-store';
 import { createComposerPort } from './composer/composer-port';
 import { judgedAsHeld } from '../loaded-value';
 import { renderViewRefused } from '../render-refusal';
-import { coveredCategoriesOf } from '../format-resolver';
+import {
+    coveredCategoriesOf,
+    suggestionSurfaces,
+    type SuggestionSurface,
+} from '../format-resolver';
 import {
     replacesStated,
     statedAssertions,
@@ -843,6 +847,7 @@ export abstract class ComponentBase extends ReadOnlyComponentBase {
             meta: () => this.schemeMeta,
             formatId: () => this.formatId,
             scope: () => this.options.scope,
+            scopes: () => this.options.scopes ?? [],
             categoryId: () => this.options.categoryId,
             suggestions: (live) => this.composerSuggestions(live),
             gated: (query, live) => this.composerGated(query, live),
@@ -873,33 +878,33 @@ export abstract class ComponentBase extends ReadOnlyComponentBase {
         live?: readonly Assertion[],
     ): Promise<Suggestion[]> {
         const context = this.getProcessingContext();
-        const options = {
-            outputFormat: this.formatId,
-            surface: this.options.scope,
-        };
-        const suggestions =
-            context?.role === 'part' || context?.partOf
-                ? Object.values(
-                      (
+        const asked = await Promise.all(
+            this.suggestionSurfaces().map(async (options) =>
+                context?.role === 'part' || context?.partOf
+                    ? Object.values(
+                          (
+                              await Promise.resolve(
+                                  this.callProcess('', {
+                                      ...options,
+                                      context,
+                                      assertions: [...(live ?? [])],
+                                      suggestFor: this.engine
+                                          .getScheme()
+                                          .categories.map(
+                                              (category) => category.id,
+                                          ),
+                                  }),
+                              )
+                          ).suggestionsFor ?? {},
+                      ).flatMap((result) => result.suggestions)
+                    : (
                           await Promise.resolve(
-                              this.callProcess('', {
-                                  ...options,
-                                  context,
-                                  assertions: [...(live ?? [])],
-                                  suggestFor: this.engine
-                                      .getScheme()
-                                      .categories.map(
-                                          (category) => category.id,
-                                      ),
-                              }),
+                              this.callSuggest([...(live ?? [])], options),
                           )
-                      ).suggestionsFor ?? {},
-                  ).flatMap((result) => result.suggestions)
-                : (
-                      await Promise.resolve(
-                          this.callSuggest([...(live ?? [])], options),
-                      )
-                  ).suggestions;
+                      ).suggestions,
+            ),
+        );
+        const suggestions = asked.flat();
         const bound = this.options.categoryId;
         return this.disambiguateSuggestions(
             suggestions.filter(
@@ -915,15 +920,34 @@ export abstract class ComponentBase extends ReadOnlyComponentBase {
         query: string,
         live: readonly Assertion[],
     ): Promise<Suggestion[]> {
-        const result = await Promise.resolve(
-            this.callSuggest([...live], {
-                outputFormat: this.formatId,
-                filter: query,
-                surface: this.options.scope,
-                includeGated: true,
-            }),
+        const asked = await Promise.all(
+            this.suggestionSurfaces().map((options) =>
+                Promise.resolve(
+                    this.callSuggest([...live], {
+                        ...options,
+                        filter: query,
+                        includeGated: true,
+                    }),
+                ),
+            ),
         );
-        return result.suggestions.filter((s) => s.gated);
+        return asked.flatMap((result) =>
+            result.suggestions.filter((s) => s.gated),
+        );
+    }
+
+    /**
+     * Where the composer asks what this field offers (see
+     * `suggestionSurfaces`).
+     */
+    private suggestionSurfaces(): SuggestionSurface[] {
+        return suggestionSurfaces(
+            this.schemeMeta,
+            this.formatId,
+            this.options.scope,
+            this.options.scopes,
+            !!this.options.holdsPart,
+        );
     }
 
     /**

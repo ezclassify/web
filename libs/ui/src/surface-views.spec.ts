@@ -267,6 +267,50 @@ describe('a marking field that names a bare view on that scheme', () => {
             assertions: [expect.objectContaining({ conceptId: 'KEEP_7Y' })],
         });
     });
+    it('keeps in the store the fact of another scope its text does not write', async () => {
+        Element.prototype.scrollIntoView = vi.fn();
+        const engine = await createEngine();
+        const root = document.createElement('div');
+        root.innerHTML = `
+            <textarea id="overall" data-ezclassify-controller="marking"
+                      data-ezclassify-format="full"></textarea>`;
+        document.body.appendChild(root);
+        forms = new EzClassifyUI(asContext(engine as never), { root });
+        await wait();
+        const host = root.querySelector<HTMLTextAreaElement>('#overall')!;
+        const field = forms.components.get(host) as MarkingField;
+        const held = () =>
+            forms!.store.get('overall').assertions.map((a) => a.conceptId);
+
+        field.setAssertions([
+            {
+                conceptId: 'CONFIDENTIAL',
+                categoryId: 'level',
+                confidence: 'certain',
+                source: 'user',
+            },
+            {
+                conceptId: 'KEEP_7Y',
+                categoryId: 'keep',
+                confidence: 'certain',
+                source: 'user',
+            },
+        ]);
+        await wait();
+        expect(held()).toEqual(
+            expect.arrayContaining(['CONFIDENTIAL', 'KEEP_7Y']),
+        );
+
+        host.focus();
+        typeText(host, 'CONFIDENTIAL // PARTNERS');
+        await wait(300);
+        press(host, 'Enter');
+        await wait(300);
+
+        expect(held()).toEqual(
+            expect.arrayContaining(['CONFIDENTIAL', 'PARTNERS', 'KEEP_7Y']),
+        );
+    });
 });
 
 describe('fields that show a part on that scheme and name no format', () => {

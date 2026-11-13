@@ -93,6 +93,11 @@ export class MarkingField extends ComponentBase {
         return meta.defaultWholeRenderFormat ?? meta.defaultRenderFormat ?? '';
     }
 
+    /** A marking field shows its marking as one string of text. */
+    protected override writesScopesAsText(): boolean {
+        return true;
+    }
+
     /** Editable presentation; enhancedInput remains the authoritative control. */
     private get host(): HTMLTextAreaElement {
         return (

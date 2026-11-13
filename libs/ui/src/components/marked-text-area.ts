@@ -2220,6 +2220,7 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
             {
                 formatId: this.scanFormat,
                 scope: this.options.scope,
+                scopes: this.options.scopes,
                 assertions: existingAssertions,
                 draft,
                 openList,

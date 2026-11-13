@@ -120,3 +120,49 @@ it('orders categories by the active format before stable scheme-order fallbacks'
     ]);
     expect(source.formats?.[0].categoryOrder).toEqual(['handling', 'level']);
 });
+
+describe('a composer port for a field that lists several scopes', () => {
+    const scoped = {
+        ...meta,
+        scopes: [
+            { id: 'sensitivity', label: 'Sensitivity' },
+            { id: 'retention', label: 'Retention' },
+        ],
+        defaultScope: 'sensitivity',
+    };
+    const port = (scopes: string[]) =>
+        createComposerPort({
+            shape: 'whole',
+            binding: { process: async () => ({}) },
+            scheme: () => ({ categories, concepts: [] }),
+            meta: () => scoped,
+            formatId: () => 'sensitivity/full',
+            scopes: () => scopes,
+        } as unknown as ComposerPortField);
+
+    it("reports every listed scope's categories, scope by scope, each with its scope's label", () => {
+        // Listed out of order on purpose: the scheme declares sensitivity first.
+        expect(
+            port(['retention', 'sensitivity'])
+                .categories()
+                .map((c) => [c.scope, c.id]),
+        ).toEqual([
+            ['Sensitivity', 'level'],
+            ['Sensitivity', 'sharing'],
+            ['Sensitivity', 'handling'],
+            ['Retention', 'keep'],
+        ]);
+    });
+
+    it('names no scope for a field that lists one', () => {
+        expect(
+            port(['sensitivity'])
+                .categories()
+                .map((c) => [c.scope, c.id]),
+        ).toEqual([
+            [undefined, 'level'],
+            [undefined, 'sharing'],
+            [undefined, 'handling'],
+        ]);
+    });
+});

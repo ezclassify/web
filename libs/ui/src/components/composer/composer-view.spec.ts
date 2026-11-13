@@ -1414,3 +1414,56 @@ describe('the UI font', () => {
         );
     });
 });
+
+describe('the browse list of a field across scopes', () => {
+    it("names each category's scope in its group heading and accessible name", async () => {
+        port.categories = () => [
+            {
+                id: 'level',
+                label: 'Level',
+                single: true,
+                required: true,
+                scope: 'Label Line',
+            },
+            {
+                id: 'caveat',
+                label: 'Caveat',
+                single: false,
+                required: false,
+                scope: 'Origin Block',
+            },
+        ];
+        mount();
+        input.focus();
+        await view.open('keyboard');
+        await wait();
+        const groups = [
+            ...openSurface()!.querySelectorAll<HTMLElement>(
+                '.ez-composer__group',
+            ),
+        ];
+        expect(
+            groups.map((g) =>
+                (g.getAttribute('aria-labelledby') ?? '')
+                    .split(' ')
+                    .map((id) => document.getElementById(id)?.textContent),
+            ),
+        ).toEqual([
+            ['Label Line', 'Level'],
+            ['Origin Block', 'Caveat'],
+        ]);
+    });
+
+    it('names no scope for a field of one', async () => {
+        mount();
+        input.focus();
+        await view.open('keyboard');
+        await wait();
+        expect(
+            openSurface()!.querySelector('.ez-composer__group-scope'),
+        ).toBeNull();
+        expect(
+            openSurface()!.querySelectorAll('.ez-composer__group').length,
+        ).toBeGreaterThan(0);
+    });
+});

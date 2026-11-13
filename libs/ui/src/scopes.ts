@@ -105,3 +105,34 @@ export function factsInScopes<T extends { categoryId: string }>(
         );
     });
 }
+
+/**
+ * The categories of the listed scopes, scope by scope in the scheme's
+ * declaration order and each scope's categories in category order. A category
+ * that belongs to several listed scopes is listed once, under the first of
+ * them. A scope with no category of its own is left out.
+ *
+ * @param categories - The scheme's categories, in category order
+ * @param scopes - The scope ids to list
+ * @param meta - The scheme's scope metadata
+ */
+export function categoriesByScope<
+    T extends { id: string; scopes?: readonly string[] },
+>(
+    categories: readonly T[],
+    scopes: readonly string[],
+    meta: ScopeSource,
+): Array<{ scope: string; categories: T[] }> {
+    const placed = new Set<string>();
+    const groups: Array<{ scope: string; categories: T[] }> = [];
+    for (const scope of inDeclarationOrder(scopes, meta)) {
+        const own = categories.filter(
+            (category) =>
+                !placed.has(category.id) &&
+                scopesOfCategory(category, meta).includes(scope),
+        );
+        for (const category of own) placed.add(category.id);
+        if (own.length > 0) groups.push({ scope, categories: own });
+    }
+    return groups;
+}

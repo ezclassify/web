@@ -127,11 +127,6 @@ export interface StatusBannerBucket {
 /** Options accepted by StatusBanner. */
 export interface StatusBannerOptions extends ComponentOptions {
     /**
-     * The scope ids `data-ezclassify-scope` lists. A banner that names scopes
-     * shows what they write, in the output of the first of them.
-     */
-    scopes?: readonly string[];
-    /**
      * Providing a category switches the banner to single-concept mode: the
      * banner shows the bound assertion's concept in this category instead of
      * the full rendered marking. In boundary mode, also used for color
@@ -208,7 +203,7 @@ export class StatusBanner extends ReadOnlyComponentBase {
      * on the surface of the scopes it names when it names any.
      */
     protected override resolveDefaultFormatId(meta: SchemeMetaView): string {
-        const scopes = (this.options as StatusBannerOptions).scopes;
+        const scopes = this.options.scopes;
         if (scopes?.length) return viewOutputOf(meta, scopes, false);
         return meta.defaultWholeRenderFormat ?? meta.defaultRenderFormat ?? '';
     }

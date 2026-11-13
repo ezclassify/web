@@ -19,6 +19,7 @@
 import { acceptedValue, judgedAsHeld } from './loaded-value';
 import {
     type Assertion as EngineAssertion,
+    type ContextSchemeEngineAdapter,
     type RenderAssessment,
     type RenderResult,
 } from '@ezclassify/types';
@@ -116,7 +117,7 @@ import {
     viewOutputOf,
     wholeOfShownMarking,
 } from './format-resolver';
-import { factsInScopes, parseScopeList } from './scopes';
+import { factsInScopes, inDeclarationOrder, parseScopeList } from './scopes';
 import { renderViewRefusalMessages, renderViewRefused } from './render-refusal';
 import {
     setMountOwner,
@@ -165,6 +166,38 @@ function shownBuckets(
                 state.assertions.length > 0 ||
                 state.stale === true),
     );
+}
+
+/**
+ * A marking as some of its scheme's scopes write it: the facts that belong to
+ * those scopes, written in `format` when given, else in the default output of
+ * the first of them for the role. Empty when no fact belongs to them, or the
+ * output refuses to write them.
+ *
+ * @param engine - The scheme view the marking is in
+ * @param assertions - The marking's facts
+ * @param scopes - The scope ids to write
+ * @param format - The output to write them in, if the view names one
+ * @param part - Whether the marking is a part
+ */
+async function writeFactsInScopes(
+    engine: ContextSchemeEngineAdapter,
+    assertions: readonly EngineAssertion[],
+    scopes: readonly string[],
+    format: string | null,
+    part: boolean,
+): Promise<string> {
+    const meta = engine.getSchemeMeta();
+    const facts = factsInScopes(
+        assertions,
+        engine.listCategories(),
+        scopes,
+        meta,
+    );
+    if (facts.length === 0) return '';
+    const output = format || viewOutputOf(meta, scopes, part);
+    const written = await Promise.resolve(engine.render(facts, output));
+    return renderViewRefused(written) ? '' : written.rendered;
 }
 
 /**
@@ -842,23 +875,34 @@ export class EzClassifyUI {
      */
     private bucketLabel(bucket: BucketKey): string {
         const { contextKey, schemeSelector } = bucketParts(bucket);
-        const context = this.contexts.get(contextKey);
         let name = schemeSelector;
-        if (context) {
-            try {
-                name =
-                    schemeEngineOf({
-                        contextKey,
-                        context,
-                        schemeSelector,
-                        primary: schemeSelector === PRIMARY_SCHEME_SELECTOR,
-                        bucket,
-                    }).getSchemeMeta().name || schemeSelector;
-            } catch {
-                // A label never fails the view it names.
-            }
+        try {
+            name =
+                this.bucketEngine(bucket)?.getSchemeMeta().name ||
+                schemeSelector;
+        } catch {
+            // A label never fails the view it names.
         }
         return contextKey ? `${contextKey}: ${name}` : name;
+    }
+
+    /**
+     * The scheme view a bucket marks in, or null when its Context is gone.
+     *
+     * @throws ContextResolutionError when the Context no longer offers the
+     *   bucket's scheme
+     */
+    private bucketEngine(bucket: BucketKey): ContextSchemeEngineAdapter | null {
+        const { contextKey, schemeSelector } = bucketParts(bucket);
+        const context = this.contexts.get(contextKey);
+        if (!context) return null;
+        return schemeEngineOf({
+            contextKey,
+            context,
+            schemeSelector,
+            primary: schemeSelector === PRIMARY_SCHEME_SELECTOR,
+            bucket,
+        });
     }
 
     /**
@@ -2760,28 +2804,60 @@ export class EzClassifyUI {
      * @param scopes - The scope ids the view names
      * @returns The text the view shows
      */
-    private async writeInScopes(
+    private writeInScopes(
         el: HTMLElement,
         assertions: readonly EngineAssertion[],
         scopes: readonly string[],
     ): Promise<string> {
-        const engine = schemeEngineOf(this.resolveContext(el), el);
-        const meta = engine.getSchemeMeta();
-        const facts = factsInScopes(
+        return writeFactsInScopes(
+            schemeEngineOf(this.resolveContext(el), el),
             assertions,
-            engine.listCategories(),
             scopes,
-            meta,
+            resolveFormatAttr(el),
+            holdsPart(el),
         );
-        if (facts.length === 0) return '';
-        const output =
-            resolveFormatAttr(el) || viewOutputOf(meta, scopes, holdsPart(el));
-        const written = await Promise.resolve(engine.render(facts, output));
-        return renderViewRefused(written) ? '' : written.rendered;
     }
 
     /**
-     * Warn when a control names a scope its category does not belong to.
+     * One bucket of a level view's marking as the scopes the view names write
+     * it, in that bucket's own scheme (see {@link writeInScopes}). The view's
+     * `data-ezclassify-format` applies to a bucket whose scheme lists that
+     * output; another bucket takes its own scheme's default for the scopes.
+     * Empty for a bucket whose scheme no longer resolves.
+     *
+     * @param el - The view's host
+     * @param bucket - The bucket
+     * @param assertions - The bucket's facts
+     * @param scopes - The scope ids the view names
+     */
+    private writeBucketInScopes(
+        el: HTMLElement,
+        bucket: BucketKey,
+        assertions: readonly EngineAssertion[],
+        scopes: readonly string[],
+    ): Promise<string> {
+        const engine = this.bucketEngine(bucket);
+        if (!engine) return Promise.resolve('');
+        const meta = engine.getSchemeMeta();
+        const format = resolveFormatAttr(el);
+        const listed =
+            format &&
+            resolveOutput(
+                meta.formats ?? [],
+                format,
+                inDeclarationOrder(scopes, meta)[0],
+            ) !== undefined;
+        return writeFactsInScopes(
+            engine,
+            assertions,
+            scopes,
+            listed ? format : null,
+            false,
+        );
+    }
+
+    /**
+     * Warn when a control names only scopes its category does not belong to.
      *
      * `data-ezclassify-scope` on a control says which scope the author means
      * that control to author in. It is not what routes the assertions: the
@@ -2800,16 +2876,18 @@ export class EzClassifyUI {
      * Warn-once per element, like the scanner's own advisories.
      *
      * @param el - The control host being enhanced.
-     * @param opts - Its parsed options, carrying the declared scope and
+     * @param opts - Its parsed options, carrying the listed scopes and the
      *   category.
      */
     private warnOnScopeMismatch(
         el: HTMLElement,
         opts: Record<string, unknown>,
     ): void {
-        const declaredScope = opts.scope;
+        const listed = Array.isArray(opts.scopes)
+            ? (opts.scopes as string[])
+            : [];
         const categoryId = opts.categoryId;
-        if (typeof declaredScope !== 'string' || !declaredScope) return;
+        if (listed.length === 0) return;
         if (typeof categoryId !== 'string' || !categoryId) return;
         if (warnedScopeMismatch.has(el)) return;
 
@@ -2820,14 +2898,18 @@ export class EzClassifyUI {
         // An unknown category is a different mistake, and the components report
         // it themselves with better context than this could.
         if (!category) return;
-        if (category.scopes?.includes(declaredScope)) return;
-
         const defaultScope = engine.getSchemeMeta().defaultScope;
-        if (declaredScope === defaultScope) return;
+        if (
+            listed.some(
+                (scope) =>
+                    category.scopes?.includes(scope) || scope === defaultScope,
+            )
+        )
+            return;
 
         warnedScopeMismatch.add(el);
         console.warn(
-            `[ezclassify] control declares data-ezclassify-scope="${declaredScope}" for ` +
+            `[ezclassify] control declares data-ezclassify-scope="${listed.join(' ')}" for ` +
                 `category "${categoryId}", but the loaded scheme reports that category in ` +
                 `${category.scopes?.length ? `scope(s) ${category.scopes.join(', ')}` : 'no scope of its own'}. ` +
                 'Scope routing follows the scheme, not this attribute, so assertions from this ' +
@@ -3168,8 +3250,6 @@ export class EzClassifyUI {
         // whole-format resolution still applies when none is declared and every
         // other controller honors the attribute the same way.
         if (controller === 'tags') {
-            const scope = el.getAttribute('data-ezclassify-scope');
-            if (scope) componentOpts.scope = scope;
             // Category color coding is on by default; author opts out with
             // data-ezclassify-tags-color-coding="false".
             if ('color-coding' in rawOptions)
@@ -3585,18 +3665,44 @@ export class EzClassifyUI {
                         ) {
                             // Every bucket on its own labeled line, in its own
                             // scheme's colors. Buckets never merge.
-                            showsBuckets(
-                                shown.map(([key, state]) => ({
-                                    key,
-                                    label: this.bucketLabel(key),
-                                    rendered: state.rendered,
-                                    colors: state.displayColor ?? null,
-                                    stale: state.stale === true,
-                                })),
-                            );
+                            const lines = shown.map(([key, state]) => ({
+                                key,
+                                label: this.bucketLabel(key),
+                                rendered: state.rendered,
+                                colors: state.displayColor ?? null,
+                                stale: state.stale === true,
+                            }));
                             showIncomplete?.(
                                 shown.some(([, state]) => state.stale === true),
                             );
+                            if (viewScopes.length === 0) {
+                                showsBuckets(lines);
+                                return;
+                            }
+                            // A view that names scopes shows each bucket as
+                            // those scopes write it, once every write lands.
+                            const write = ++scopedWrite;
+                            void Promise.all(
+                                shown.map(([key, state]) =>
+                                    this.writeBucketInScopes(
+                                        el,
+                                        key,
+                                        renderViewRefused(state)
+                                            ? []
+                                            : state.assertions,
+                                        viewScopes,
+                                    ).catch(() => ''),
+                                ),
+                            ).then((texts) => {
+                                if (write !== scopedWrite || this._destroyed)
+                                    return;
+                                showsBuckets(
+                                    lines.map((line, at) => ({
+                                        ...line,
+                                        rendered: texts[at] ?? '',
+                                    })),
+                                );
+                            });
                             return;
                         }
                         showsBuckets?.([]);
@@ -3671,8 +3777,6 @@ export class EzClassifyUI {
         category: string | undefined,
     ): StoreBinding {
         const token: PublishSource = { token: el };
-        const stepsAcrossScopes =
-            el.getAttribute('data-ezclassify-controller') === 'decisionflow';
         const handle: StoreBinding = {
             markingId,
             isFacet,
@@ -3705,13 +3809,15 @@ export class EzClassifyUI {
                         )
                         .catch(() => {});
                 } else {
-                    // A marking's text states its default scope only. A
-                    // decision flow that states facts of another scope
+                    // A marking's text states its default scope only, so a
+                    // view whose facts reach past it (a decision flow across
+                    // scopes, a text field holding a fact of another scope)
                     // publishes its facts, which carry every scope, as the
-                    // store keeps alternate scopes.
-                    handle.publishesFacts ||=
-                        stepsAcrossScopes &&
-                        this.statesOtherScopes(el, assertions);
+                    // store keeps alternate scopes. Its text would lose them.
+                    handle.publishesFacts ||= this.statesOtherScopes(
+                        el,
+                        assertions,
+                    );
                     if (handle.publishesFacts) {
                         const sig = signAssertions(assertions);
                         if (sig === handle.lastSeenFacetSig) return;

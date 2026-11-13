@@ -36,6 +36,7 @@ import {
 } from '../../format-layout';
 import { defaultSurfaceOf } from '../../format-resolver';
 import { renderViewRefusalMessages } from '../../render-refusal';
+import { categoriesByScope, scopeLabel, type ScopeSource } from '../../scopes';
 
 /** What a field provides for its composer port. Read on every call. */
 export interface ComposerPortField {
@@ -44,14 +45,19 @@ export interface ComposerPortField {
     /** The engine calls, in the field's own format and context. */
     readonly binding: ComposerEngineBinding;
     scheme(): Pick<SchemePublicView, 'categories' | 'concepts'>;
-    /** The scheme metadata the field's render formats come from. */
-    meta(): FormatLayoutSource;
+    /** The scheme metadata the field's render formats and scopes come from. */
+    meta(): FormatLayoutSource & ScopeSource;
     formatId(): string;
     /**
      * The surface the field declares it authors, with `data-ezclassify-scope`.
      * Without one, the field writes the surface of its format.
      */
     scope?(): string | undefined;
+    /**
+     * The scope ids the field lists with `data-ezclassify-scope`. A field that
+     * lists several edits the categories of every one of them.
+     */
+    scopes?(): readonly string[];
     /** The one category the field is bound to, if any. */
     categoryId?(): string | undefined;
     /** See ComposerPort.suggestions. */
@@ -232,6 +238,26 @@ export function createComposerPort(field: ComposerPortField): ComposerPort {
         categories: () => {
             const bound = field.categoryId?.();
             const meta = field.meta();
+            const listed = field.scopes?.() ?? [];
+            if (listed.length > 1) {
+                // A field across scopes edits each scope's categories, scope
+                // by scope, and names the scope each one belongs to.
+                return categoriesByScope(
+                    field
+                        .scheme()
+                        .categories.filter((c) => !bound || c.id === bound),
+                    listed,
+                    meta,
+                ).flatMap((group) =>
+                    group.categories.map((c) => ({
+                        id: c.id,
+                        label: c.label,
+                        single: c.single === true,
+                        required: c.required === true,
+                        scope: scopeLabel(group.scope, meta),
+                    })),
+                );
+            }
             const { surface, defaultSurface } = fieldSurfaces(
                 meta,
                 field.formatId(),

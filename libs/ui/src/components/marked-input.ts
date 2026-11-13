@@ -1396,6 +1396,7 @@ export class MarkedInput extends MarkedFieldBase<HTMLTextAreaElement> {
                 openList,
                 formatId: this.scanFormat,
                 scope: this.options.scope,
+                scopes: this.options.scopes,
                 resolveParts: this.options.resolveParts,
                 resolveContext: this.options.resolveContext,
                 assertions:
