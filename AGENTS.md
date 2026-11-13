@@ -90,10 +90,10 @@ The README examples follow their own rules:
   field rules identical across the four examples and never style anything
   inside a control.
 
-    The README path is the free developer runtime, started with `docker run
-  --rm -p 3000:8080 -e EZCLASSIFY_DEMO_ALLOWED_ORIGINS=<the example's
-  origin> ghcr.io/ezclassify/developer-runtime`. The e2e lane below does not
-    use it: its replay server is test tooling that stands in for the runtime.
+    The README path is the free developer runtime, started with
+    `docker run --rm -p 3000:8080 -e EZCLASSIFY_DEMO_ALLOWED_ORIGINS=<origin> ghcr.io/ezclassify/developer-runtime`,
+    where `<origin>` is the example's own. The e2e lane below does not use it:
+    its replay server is test tooling that stands in for the runtime.
 
     They carry NO engine (not as a dependency, not in a bundle), and
     `npm run check:consumer-engine-free` enforces it. That gate runs in CI and
