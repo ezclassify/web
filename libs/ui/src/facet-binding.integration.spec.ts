@@ -1,20 +1,16 @@
-import { describe, expect, it } from 'vitest';
-import { Context } from '@ezclassify/engine';
-import {
-    cedarValleyHandlingSchemeDocument,
-    loadCedarValleyContext,
-} from '../../../test-support/community-content';
+import { beforeAll, describe, expect, it } from 'vitest';
 import {
     EzClassifyUI,
     VanillaEzClassifyStore,
     createEzClassifyFacetBinding,
 } from '@ezclassify/ui';
 import { asContext } from '../test-fixtures/as-context';
+import { connectDemoContext } from '../../../test-support/demo-runtime';
 
 describe('third-party control integration', () => {
     it('drives native single and multiple selects without controller attributes', async () => {
-        const context = Context.fromComponents({
-            scheme: cedarValleyHandlingSchemeDocument(),
+        const context = await connectDemoContext({
+            contextId: 'cedar-valley-handling',
         });
         const store = new VanillaEzClassifyStore(context.scheme);
         const tierBinding = createEzClassifyFacetBinding(
@@ -121,8 +117,8 @@ describe('third-party control integration', () => {
     });
 
     it('gives a binding created on an already-resolved facet the same values as the first', async () => {
-        const context = Context.fromComponents({
-            scheme: cedarValleyHandlingSchemeDocument(),
+        const context = await connectDemoContext({
+            contextId: 'cedar-valley-handling',
         });
         const store = new VanillaEzClassifyStore(context.scheme);
 
@@ -194,11 +190,12 @@ function markingHost(value: string): HTMLInputElement {
  * after it. `pickFirst` picks before the runtime exists at all; otherwise the
  * test picks while the runtime is still initializing its fields.
  */
-function mountPage(served: string, pickFirst = false) {
+async function mountPage(served: string, pickFirst = false) {
     const root = document.createElement('div');
     root.appendChild(markingHost(served));
     document.body.appendChild(root);
-    const engine = loadCedarValleyContext().scheme;
+    const engine = (await connectDemoContext({ contextId: 'cedar-valley' }))
+        .scheme;
     const store = new VanillaEzClassifyStore(engine);
     const binding = createEzClassifyFacetBinding(
         store,
@@ -226,7 +223,7 @@ function mountPage(served: string, pickFirst = false) {
 
 describe('facet binding before the runtime has seeded the store', () => {
     it('lands the pick on top of the other served categories', async () => {
-        const page = mountPage('INTERNAL//DO NOT FORWARD');
+        const page = await mountPage('INTERNAL//DO NOT FORWARD');
         void page.binding.setSelected(['CONFIDENTIAL']);
         await settle(page.ready);
 
@@ -237,7 +234,7 @@ describe('facet binding before the runtime has seeded the store', () => {
     });
 
     it('keeps a pick made before the runtime exists', async () => {
-        const page = mountPage('INTERNAL//DO NOT FORWARD', true);
+        const page = await mountPage('INTERNAL//DO NOT FORWARD', true);
         await settle(page.ready);
 
         expect(page.store.get('doc-marking').rendered).toBe(
@@ -253,7 +250,11 @@ describe('facet binding before the runtime has seeded the store', () => {
  * document under the same marking id.
  */
 describe('a store shared by one page after another', () => {
-    const engine = loadCedarValleyContext().scheme;
+    let engine: Awaited<ReturnType<typeof connectDemoContext>>['scheme'];
+    beforeAll(async () => {
+        engine = (await connectDemoContext({ contextId: 'cedar-valley' }))
+            .scheme;
+    });
 
     function openPage(store: VanillaEzClassifyStore, served: string) {
         const root = document.createElement('div');

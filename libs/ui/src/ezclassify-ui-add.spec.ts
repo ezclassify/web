@@ -12,19 +12,21 @@ import { readFileSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { Context } from '@ezclassify/engine';
 import { EzClassifyUI } from './ezclassify-ui';
+import { connectDemoContext } from '../../../test-support/demo-runtime';
 
 const fixtures = resolve(
     dirname(fileURLToPath(import.meta.url)),
     '../../../vendor/spec/fixtures/v1',
 );
 
-function reference() {
-    return Context.fromComponents({
-        scheme: JSON.parse(
-            readFileSync(resolve(fixtures, 'ref-scheme-1.json'), 'utf8'),
-        ),
+async function reference() {
+    return await connectDemoContext({
+        draft: {
+            scheme: JSON.parse(
+                readFileSync(resolve(fixtures, 'ref-scheme-1.json'), 'utf8'),
+            ),
+        },
     });
 }
 
@@ -34,8 +36,8 @@ let errors: string[] = [];
 const collect = (e: Event) =>
     errors.push((e as CustomEvent<{ code: string }>).detail.code);
 
-function mount(): EzClassifyUI {
-    const ui = new EzClassifyUI(reference(), { root });
+async function mount(): Promise<EzClassifyUI> {
+    const ui = new EzClassifyUI(await reference(), { root });
     instances.push(ui);
     return ui;
 }
@@ -68,7 +70,7 @@ describe('ui.add', () => {
             <input id="memo" data-ezclassify-marking value="LOW">
             <input id="title" value="HIGH">
             <input type="hidden" id="page" data-ezclassify-aggregate>`;
-        const ui = mount();
+        const ui = await mount();
         await ready(ui);
         await expect.poll(() => el('page').value).toBe('LOW');
 
@@ -86,7 +88,7 @@ describe('ui.add', () => {
         root.innerHTML = `
             <input id="title" value="HIGH">
             <input type="hidden" id="page" data-ezclassify-aggregate>`;
-        const ui = mount();
+        const ui = await mount();
         expect(ui.isReady).toBe(false);
 
         ui.add(el('title'), 'marking');
@@ -102,7 +104,7 @@ describe('ui.add', () => {
                 <input id="section" value="HIGH">
                 <input type="hidden" id="doc-parts" data-ezclassify-aggregate="doc">
             </form>`;
-        const ui = mount();
+        const ui = await mount();
         await ready(ui);
 
         ui.add(el('section'), 'marking');
@@ -116,7 +118,7 @@ describe('ui.add', () => {
                 <input id="memo" value="MED">
                 <input type="hidden" id="folder-out" data-ezclassify-aggregate="folder">
             </section>`;
-        const ui = mount();
+        const ui = await mount();
         await ready(ui);
 
         ui.add(el('memo'), 'marking');
@@ -129,7 +131,7 @@ describe('ui.add', () => {
             <input id="doc" data-ezclassify-marking value="LOW">
             <input id="section" value="HIGH">
             <input type="hidden" id="doc-parts" data-ezclassify-aggregate="doc">`;
-        const ui = mount();
+        const ui = await mount();
         await ready(ui);
 
         ui.add(el('section'), 'marking', { partOf: 'doc' });
@@ -147,7 +149,7 @@ describe('ui.add', () => {
                 <input id="quoted" value="HIGH">
             </div>
             <input type="hidden" id="page" data-ezclassify-aggregate>`;
-        const ui = mount();
+        const ui = await mount();
         await ready(ui);
         await expect.poll(() => el('page').value).toBe('LOW');
 
@@ -163,7 +165,7 @@ describe('ui.add', () => {
 
     it('refuses a controller it does not know and leaves the element as it was', async () => {
         root.innerHTML = `<input id="title" value="HIGH">`;
-        const ui = mount();
+        const ui = await mount();
 
         expect(() => ui.add(el('title'), 'MarkingField' as never)).toThrowError(
             TypeError,
@@ -177,8 +179,8 @@ describe('ui.add', () => {
         expect(el('title').getAttributeNames()).toEqual(['id', 'value']);
     });
 
-    it('refuses an element outside its root', () => {
-        const ui = mount();
+    it('refuses an element outside its root', async () => {
+        const ui = await mount();
         const outside = document.createElement('input');
         document.body.appendChild(outside);
         try {
@@ -200,7 +202,7 @@ describe('ui.remove', () => {
             <input id="memo" data-ezclassify-marking value="LOW">
             <input id="title" value="HIGH">
             <input type="hidden" id="page" data-ezclassify-aggregate>`;
-        const ui = mount();
+        const ui = await mount();
         await ready(ui);
         ui.add(el('title'), 'marking');
         await expect.poll(() => el('page').value).toBe('HIGH');
@@ -218,7 +220,7 @@ describe('ui.remove', () => {
             <input id="other" data-ezclassify-marking value="LOW">
             <input id="section" data-ezclassify-part-of="doc" value="HIGH">
             <input type="hidden" id="doc-parts" data-ezclassify-aggregate="doc">`;
-        const ui = mount();
+        const ui = await mount();
         await ready(ui);
         ui.add(el('section'), 'marking', { partOf: 'other' });
 
@@ -236,7 +238,7 @@ describe('ui.remove', () => {
         root.innerHTML = `
             <input id="memo" data-ezclassify-controller="marking" value="LOW">
             <input type="hidden" id="page" data-ezclassify-aggregate>`;
-        const ui = mount();
+        const ui = await mount();
         await ready(ui);
         await expect.poll(() => el('page').value).toBe('LOW');
 
@@ -250,7 +252,7 @@ describe('ui.remove', () => {
 
     it('goes with the runtime when it is destroyed', async () => {
         root.innerHTML = `<input id="title" value="HIGH">`;
-        const ui = mount();
+        const ui = await mount();
         await ready(ui);
         ui.add(el('title'), 'marking', { partOf: 'doc' });
 
@@ -266,7 +268,7 @@ describe('attributes a script sets after initialization', () => {
             <input id="memo" data-ezclassify-marking value="LOW">
             <input id="title" value="HIGH">
             <input type="hidden" id="page" data-ezclassify-aggregate>`;
-        const ui = mount();
+        const ui = await mount();
         await ready(ui);
         await expect.poll(() => el('page').value).toBe('LOW');
 
@@ -286,7 +288,7 @@ describe('attributes a script sets after initialization', () => {
                 <input id="section" data-ezclassify-marking value="HIGH">
             </form>
             <input type="hidden" id="doc-parts" data-ezclassify-aggregate="doc">`;
-        const ui = mount();
+        const ui = await mount();
         await ready(ui);
 
         el('form').setAttribute('data-ezclassify-whole', 'doc');
@@ -296,7 +298,7 @@ describe('attributes a script sets after initialization', () => {
 
     it('shows a picker host again when its controller is taken off', async () => {
         root.innerHTML = `<input id="pick" value="">`;
-        const ui = mount();
+        const ui = await mount();
         await ready(ui);
         const field = el('pick');
 

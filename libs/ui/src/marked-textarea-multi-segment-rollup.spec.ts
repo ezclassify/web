@@ -7,12 +7,13 @@
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import type {
-    LocalContextSchemeEngineAdapter,
+    RemoteContextSchemeEngineAdapter,
     SchemeEngineAdapter,
 } from '@ezclassify/types';
 import { loadMultiScopeRegression } from '../test-fixtures/load-multi-scope-regression';
 import { EzClassifyUI } from './ezclassify-ui';
 import { asContext } from '../test-fixtures/as-context';
+import { demoRuntimeSettled } from '../../../test-support/demo-runtime';
 
 const HTML = `
   <input type="hidden" id="doc-marking" data-ezclassify-marking />
@@ -21,7 +22,7 @@ const HTML = `
 `;
 
 async function flush(): Promise<void> {
-    for (let i = 0; i < 8; i++) await Promise.resolve();
+    await demoRuntimeSettled();
     await new Promise((r) => setTimeout(r, 20));
 }
 
@@ -49,7 +50,7 @@ describe('MarkedTextArea bound-to: multi-segment publish rolls up per the docume
     });
 
     it("two segments asserting the same single-select category resolve via that category's rollup rule (max rank), not typing order", async () => {
-        forms = new EzClassifyUI(asContext(loadMultiScopeRegression()), {
+        forms = new EzClassifyUI(asContext(await loadMultiScopeRegression()), {
             root,
         });
         await flush();
@@ -79,7 +80,7 @@ describe('MarkedTextArea bound-to: multi-segment publish rolls up per the docume
     });
 
     it('reversed typing order (higher-rank segment typed SECOND) still resolves to the higher rank, ruling out first-segment-wins too', async () => {
-        forms = new EzClassifyUI(asContext(loadMultiScopeRegression()), {
+        forms = new EzClassifyUI(asContext(await loadMultiScopeRegression()), {
             root,
         });
         await flush();
@@ -107,8 +108,8 @@ describe('MarkedTextArea bound-to: multi-segment publish rolls up per the docume
     });
 
     it('ignores an older portion aggregate that answers after a replacement', async () => {
-        const engine: LocalContextSchemeEngineAdapter =
-            loadMultiScopeRegression();
+        const engine: RemoteContextSchemeEngineAdapter =
+            await loadMultiScopeRegression();
         const aggregate = engine.aggregateAssertions.bind(engine);
         let release!: () => void;
         const gate = new Promise<void>((resolve) => {
@@ -157,7 +158,7 @@ describe('MarkedTextArea bound-to: multi-segment publish rolls up per the docume
     });
 
     it('two segments asserting different categories union together on doc-marking', async () => {
-        forms = new EzClassifyUI(asContext(loadMultiScopeRegression()), {
+        forms = new EzClassifyUI(asContext(await loadMultiScopeRegression()), {
             root,
         });
         await flush();
@@ -209,7 +210,7 @@ describe('MarkedTextArea bound-to: replacement parts cannot be cleared by stale 
     });
 
     it('keeps the replacement segment set in the parent aggregate', async () => {
-        forms = new EzClassifyUI(asContext(loadMultiScopeRegression()), {
+        forms = new EzClassifyUI(asContext(await loadMultiScopeRegression()), {
             root,
         });
         await flush();

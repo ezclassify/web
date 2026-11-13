@@ -1,0 +1,701 @@
+{
+    "engineVersion": "1.0.0-dev.30",
+    "openapiVersion": "1.0.0-dev.30",
+    "responses": {
+        "02082b58858a67dedadd0bcaabe52c9bf80ff98128bfae2bfa4366cefd24764b": {
+            "body": [],
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "08ec79934f85ae9de386f3673be6683ba7623a498f49f0f2392a8b3dc3449939": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "contract-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "sbx-29ccf26a2fd69ff4481b8e05fd10fb17ed3857aab5341c031f3db2364c7429b1",
+                            "kind": "context",
+                            "version": "0.0.0"
+                        }
+                    ],
+                    "contextId": "sbx-29ccf26a2fd69ff4481b8e05fd10fb17ed3857aab5341c031f3db2364c7429b1",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "0.0.0"
+                },
+                "result": {
+                    "suggestions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "U",
+                            "description": "Unclassified",
+                            "group": "Level",
+                            "label": "U",
+                            "name": "Unclassified",
+                            "order": 1,
+                            "selected": true,
+                            "views": { "default": "U" }
+                        }
+                    ],
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "093c49779cc9a6014b3c483044eee854a793a5923fdb892c89262ec015bf674f": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "contract-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "sbx-29ccf26a2fd69ff4481b8e05fd10fb17ed3857aab5341c031f3db2364c7429b1",
+                            "kind": "context",
+                            "version": "0.0.0"
+                        }
+                    ],
+                    "contextId": "sbx-29ccf26a2fd69ff4481b8e05fd10fb17ed3857aab5341c031f3db2364c7429b1",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "0.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "S",
+                            "confidence": "certain",
+                            "source": "user"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            { "categoryId": "level", "conceptId": "S" }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "S",
+                    "renders": {},
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "095c0f2b7eecdc0d5598de25572509e3380b09e4d80813d2c4a67e7861e4e26d": {
+            "body": {
+                "defaultRenderFormat": "portion",
+                "description": "Contract Test test fixture.",
+                "embeddedMarking": [
+                    { "pattern": "\\(([^)]+)\\)", "template": "({marking}) " }
+                ],
+                "id": "contract-test",
+                "name": "Contract Test",
+                "referenceSurfaceLabel": {
+                    "plural": "Handbooks",
+                    "singular": "Handbook"
+                },
+                "roleAware": false,
+                "version": "1.0.0"
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "1fa9067b9830472606ab107cedc859fe32c62294dd0e1c8bec279fad4118a47b": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "contract-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "sbx-29ccf26a2fd69ff4481b8e05fd10fb17ed3857aab5341c031f3db2364c7429b1",
+                            "kind": "context",
+                            "version": "0.0.0"
+                        }
+                    ],
+                    "contextId": "sbx-29ccf26a2fd69ff4481b8e05fd10fb17ed3857aab5341c031f3db2364c7429b1",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "0.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "U",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            { "categoryId": "level", "conceptId": "U" }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "recognition": {
+                        "corrections": [],
+                        "inputFormat": "portion",
+                        "status": "complete",
+                        "surface": "marking",
+                        "unmatched": []
+                    },
+                    "rendered": "U",
+                    "renders": {},
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "23d8228139d05dfea0a4245a5d96f608e9e6132cc2022a329a305bc070439000": {
+            "body": [
+                {
+                    "aliases": [],
+                    "categories": ["level"],
+                    "id": "U",
+                    "name": "Unclassified",
+                    "parents": [],
+                    "position": 1,
+                    "rank": 1,
+                    "views": { "default": "U" }
+                },
+                {
+                    "aliases": [],
+                    "categories": ["level"],
+                    "id": "S",
+                    "name": "Secret",
+                    "parents": [],
+                    "position": 2,
+                    "rank": 2,
+                    "views": { "default": "S" }
+                }
+            ],
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "480028cd0ca9e8cd46f7a8c1ebff8e9a9ec43a8b014640540bc26a249d67d7ca": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "contract-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "sbx-29ccf26a2fd69ff4481b8e05fd10fb17ed3857aab5341c031f3db2364c7429b1",
+                            "kind": "context",
+                            "version": "0.0.0"
+                        }
+                    ],
+                    "contextId": "sbx-29ccf26a2fd69ff4481b8e05fd10fb17ed3857aab5341c031f3db2364c7429b1",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "0.0.0"
+                },
+                "result": {
+                    "suggestions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "U",
+                            "description": "Unclassified",
+                            "group": "Level",
+                            "label": "U",
+                            "name": "Unclassified",
+                            "order": 1,
+                            "selected": true,
+                            "views": { "default": "U" }
+                        }
+                    ],
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "492a4d5aa024576406a2a7f8e5e7421c328560deda17229c2f41f42625471b16": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "contract-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "sbx-29ccf26a2fd69ff4481b8e05fd10fb17ed3857aab5341c031f3db2364c7429b1",
+                            "kind": "context",
+                            "version": "0.0.0"
+                        }
+                    ],
+                    "contextId": "sbx-29ccf26a2fd69ff4481b8e05fd10fb17ed3857aab5341c031f3db2364c7429b1",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "0.0.0"
+                },
+                "result": {
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            { "categoryId": "level", "conceptId": "U" }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "result": "U"
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "4d55a448d82e0f1b861d2910c7d84d54dddedc7cc87a2338c661ccdeea270a0e": {
+            "body": {
+                "contextId": "sbx-29ccf26a2fd69ff4481b8e05fd10fb17ed3857aab5341c031f3db2364c7429b1"
+            },
+            "method": "PUT",
+            "statusCode": 200
+        },
+        "4f39c6111dc532271d5f246ebe21d4605d35abe586871b9c414b40ac722ad101": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "contract-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "sbx-29ccf26a2fd69ff4481b8e05fd10fb17ed3857aab5341c031f3db2364c7429b1",
+                            "kind": "context",
+                            "version": "0.0.0"
+                        }
+                    ],
+                    "contextId": "sbx-29ccf26a2fd69ff4481b8e05fd10fb17ed3857aab5341c031f3db2364c7429b1",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "0.0.0"
+                },
+                "result": {
+                    "suggestions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "U",
+                            "description": "Unclassified",
+                            "group": "Level",
+                            "label": "U",
+                            "name": "Unclassified",
+                            "order": 1,
+                            "selected": false,
+                            "views": { "default": "U" }
+                        },
+                        {
+                            "categoryId": "level",
+                            "conceptId": "S",
+                            "description": "Secret",
+                            "group": "Level",
+                            "label": "S",
+                            "name": "Secret",
+                            "order": 2,
+                            "selected": false,
+                            "views": { "default": "S" }
+                        }
+                    ],
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "98ac9ccb770041516f9eba5957f67ba3f26ddb78fd07cc46232da74ec094e14c": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "contract-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "sbx-29ccf26a2fd69ff4481b8e05fd10fb17ed3857aab5341c031f3db2364c7429b1",
+                            "kind": "context",
+                            "version": "0.0.0"
+                        }
+                    ],
+                    "contextId": "sbx-29ccf26a2fd69ff4481b8e05fd10fb17ed3857aab5341c031f3db2364c7429b1",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "0.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "recognition": {
+                        "corrections": [],
+                        "status": "complete",
+                        "unmatched": []
+                    },
+                    "rendered": "",
+                    "renders": {},
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "9e9103f9ae649ea01d5858f4d69c9c585c788f6229009c7e0c3d80cb4fcb814b": {
+            "body": {
+                "id": "sbx-29ccf26a2fd69ff4481b8e05fd10fb17ed3857aab5341c031f3db2364c7429b1",
+                "scheme": {
+                    "id": "contract-test",
+                    "resolvedVersion": "1.0.0",
+                    "version": "1.0.0"
+                },
+                "schemes": [
+                    {
+                        "id": "contract-test",
+                        "roles": ["primary"],
+                        "selector": "contract-test",
+                        "version": "1.0.0"
+                    }
+                ],
+                "version": "0.0.0"
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "a555050cc44e3a4b4b19b9e761d420d8cd389b4b435f4f00a64ba1f11e1975c4": {
+            "body": [
+                {
+                    "categoryOrder": ["level"],
+                    "categorySeparators": { "level": "/" },
+                    "categoryViews": { "level": "default" },
+                    "id": "portion",
+                    "mode": "inline",
+                    "separator": "//",
+                    "surface": "marking"
+                }
+            ],
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "ab22af5de89de26519871334c1d08e248abf4e8efa5829e299fd6fd24ca298d3": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "contract-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "sbx-29ccf26a2fd69ff4481b8e05fd10fb17ed3857aab5341c031f3db2364c7429b1",
+                            "kind": "context",
+                            "version": "0.0.0"
+                        }
+                    ],
+                    "contextId": "sbx-29ccf26a2fd69ff4481b8e05fd10fb17ed3857aab5341c031f3db2364c7429b1",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "0.0.0"
+                },
+                "result": {
+                    "appliedFixes": [
+                        {
+                            "action": "reorder",
+                            "message": "Read `u` as `U` (case).",
+                            "ruleId": "_recognition_case"
+                        }
+                    ],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "U",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            { "categoryId": "level", "conceptId": "U" }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "recognition": {
+                        "corrections": [
+                            {
+                                "end": 1,
+                                "original": "u",
+                                "reason": "case",
+                                "replacement": "U",
+                                "start": 0
+                            }
+                        ],
+                        "inputFormat": "portion",
+                        "status": "complete",
+                        "surface": "marking",
+                        "unmatched": []
+                    },
+                    "rendered": "U",
+                    "renders": {},
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "c7995d3e4b49f09b41e0c0d10b642944110db6c8a60f061efee911942b9797b7": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "contract-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "sbx-29ccf26a2fd69ff4481b8e05fd10fb17ed3857aab5341c031f3db2364c7429b1",
+                            "kind": "context",
+                            "version": "0.0.0"
+                        }
+                    ],
+                    "contextId": "sbx-29ccf26a2fd69ff4481b8e05fd10fb17ed3857aab5341c031f3db2364c7429b1",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "0.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "",
+                    "renders": {},
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "d7733a26d887aa625416ff6f9d3452f77bd115a1536b78d2216b8319f8d18835": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "contract-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "sbx-29ccf26a2fd69ff4481b8e05fd10fb17ed3857aab5341c031f3db2364c7429b1",
+                            "kind": "context",
+                            "version": "0.0.0"
+                        }
+                    ],
+                    "contextId": "sbx-29ccf26a2fd69ff4481b8e05fd10fb17ed3857aab5341c031f3db2364c7429b1",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "0.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "U",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            { "categoryId": "level", "conceptId": "U" }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "U",
+                    "renders": {},
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "df2fdd16975ba851d30333f95bbc433f7ee8ef1f621fb745470ae712bec3240a": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "contract-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "sbx-29ccf26a2fd69ff4481b8e05fd10fb17ed3857aab5341c031f3db2364c7429b1",
+                            "kind": "context",
+                            "version": "0.0.0"
+                        }
+                    ],
+                    "contextId": "sbx-29ccf26a2fd69ff4481b8e05fd10fb17ed3857aab5341c031f3db2364c7429b1",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "0.0.0"
+                },
+                "result": {
+                    "limits": { "regionsFound": 1, "status": "complete" },
+                    "results": [],
+                    "unread": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "dfafa394f9f231bef0e01fc1bcf8a11263f33c93b892c2c4dccd40e2ace6cc07": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "contract-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "sbx-29ccf26a2fd69ff4481b8e05fd10fb17ed3857aab5341c031f3db2364c7429b1",
+                            "kind": "context",
+                            "version": "0.0.0"
+                        }
+                    ],
+                    "contextId": "sbx-29ccf26a2fd69ff4481b8e05fd10fb17ed3857aab5341c031f3db2364c7429b1",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "0.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "U",
+                            "confidence": "certain",
+                            "source": "aggregate"
+                        }
+                    ],
+                    "errors": [],
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "U",
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "e070dec6e78862435e7c23c92a6e4a93a9667377aed0b78b533966687028c314": {
+            "body": {
+                "abiVersion": "v1",
+                "engineSha": "",
+                "engineVersion": "1.0.0-dev.30",
+                "gitTag": "",
+                "openapiVersion": "1.0.0-dev.30",
+                "status": "ok"
+            },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "e38577cbf95283871f3c286cdb87208514420bfa18a321077d7680e31aa061b4": {
+            "body": [],
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "f9f3d284e95d73ba2673c3baf3a06fdf83db1a42a791b8934c1218fdde0c8f58": {
+            "body": [
+                {
+                    "id": "level",
+                    "label": "Level",
+                    "position": 1,
+                    "required": false,
+                    "rollup": "max",
+                    "single": true
+                }
+            ],
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        }
+    }
+}

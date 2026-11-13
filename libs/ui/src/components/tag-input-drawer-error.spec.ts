@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { TagInput } from './tag-input';
-import { Context } from '@ezclassify/engine';
+import { connectDemoContext } from '../../../../test-support/demo-runtime';
 
 /**
  * The star drawer must not hang over the validation error below the field,
@@ -13,6 +13,7 @@ const scheme = {
         id: 'drawer-error-test',
         version: '1.0.0',
         name: 'Drawer error test',
+        description: 'Drawer error test test fixture.',
         data: {
             categories: [
                 {
@@ -80,7 +81,10 @@ describe('TagInput drawer vs validation errors', () => {
     });
 
     it('flips the drawer to the top edge while an error is visible and back when it clears', async () => {
-        await component.init(host, Context.fromComponents({ scheme }));
+        await component.init(
+            host,
+            await connectDemoContext({ draft: { scheme } }),
+        );
 
         // A caveat with no tier: the required-category constraint fires.
         component.updateValidationErrors([
@@ -105,7 +109,10 @@ describe('TagInput drawer vs validation errors', () => {
     });
 
     it('tolerates errors delivered before setup builds the drawer', async () => {
-        await component.init(host, Context.fromComponents({ scheme }));
+        await component.init(
+            host,
+            await connectDemoContext({ draft: { scheme } }),
+        );
         // Simulate the pre-setup window: container exists, chrome not yet built.
         (component as unknown as { drawer?: unknown }).drawer = undefined;
         expect(() =>

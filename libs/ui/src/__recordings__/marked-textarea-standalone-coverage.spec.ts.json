@@ -1,0 +1,2403 @@
+{
+    "engineVersion": "1.0.0-dev.30",
+    "openapiVersion": "1.0.0-dev.30",
+    "responses": {
+        "0f1e6f504eae7aee536837e35446a4b5e99c180599ab6f6863659ad2bc5fd84a": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "multi-scope-regression",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "sbx-d439b2590804695e96e6172d9fb1c5c6277e8331758fac94a953613284d9bda6",
+                            "kind": "context",
+                            "version": "0.0.0"
+                        }
+                    ],
+                    "contextId": "sbx-d439b2590804695e96e6172d9fb1c5c6277e8331758fac94a953613284d9bda6",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "0.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "STATE_ASSESSMENT_STAFF",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "from_school",
+                            "conceptId": "OUR_SCHOOL",
+                            "confidence": "certain",
+                            "source": "default"
+                        },
+                        {
+                            "categoryId": "filing_status",
+                            "conceptId": "FILED",
+                            "confidence": "certain",
+                            "source": "default"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            {
+                                "categoryId": "level",
+                                "conceptId": "STATE_ASSESSMENT_STAFF"
+                            }
+                        ],
+                        "omitted": [
+                            {
+                                "categoryId": "from_school",
+                                "conceptId": "OUR_SCHOOL"
+                            },
+                            {
+                                "categoryId": "filing_status",
+                                "conceptId": "FILED"
+                            }
+                        ],
+                        "unrepresentable": []
+                    },
+                    "displayColor": {
+                        "background": "#ff8c00",
+                        "text": "#000000"
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [
+                        {
+                            "conceptId": "STATE_ASSESSMENT_STAFF",
+                            "conceptName": "State Assessment Staff",
+                            "required": true,
+                            "text": "Record access according to the state assessment program’s procedures.",
+                            "type": "admonition"
+                        }
+                    ],
+                    "proposedFixes": [],
+                    "rendered": "SA",
+                    "renders": {},
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "228b30eebb5126fb2a955ffb305bd74e4fb44b48f0df02a0da3c13c360f3b1b9": {
+            "body": [
+                {
+                    "id": "level",
+                    "label": "Minimum audience level",
+                    "position": 0,
+                    "required": true,
+                    "rollup": "max",
+                    "single": true
+                },
+                {
+                    "id": "status",
+                    "label": "Release Status",
+                    "required": false,
+                    "rollup": "max",
+                    "single": true
+                },
+                {
+                    "id": "artifact",
+                    "label": "What It Is",
+                    "required": false,
+                    "rollup": "union",
+                    "single": false,
+                    "sort": "alphabetical"
+                },
+                {
+                    "defaultConcept": "OUR_SCHOOL",
+                    "id": "from_school",
+                    "label": "From School",
+                    "required": false,
+                    "rollup": "pipeline",
+                    "single": true,
+                    "sort": "alphabetical"
+                },
+                {
+                    "id": "questions_from",
+                    "label": "Questions From",
+                    "required": false,
+                    "rollup": "union",
+                    "single": false,
+                    "sort": "alphabetical"
+                },
+                {
+                    "id": "test_section",
+                    "label": "Test Section",
+                    "required": false,
+                    "rollup": "union",
+                    "single": false,
+                    "sort": "position"
+                },
+                {
+                    "id": "sharing",
+                    "label": "Sharing",
+                    "required": false,
+                    "rollup": "pipeline",
+                    "single": false,
+                    "sort": "position"
+                },
+                {
+                    "id": "share_recipients",
+                    "label": "Share With",
+                    "required": false,
+                    "rollup": "intersection",
+                    "single": false,
+                    "sort": "alphabetical"
+                },
+                {
+                    "id": "in_class_recipients",
+                    "label": "Read In Class With",
+                    "required": false,
+                    "rollup": "intersection",
+                    "single": false,
+                    "sort": "alphabetical"
+                },
+                {
+                    "id": "marked_by",
+                    "label": "Marked By",
+                    "required": false,
+                    "rollup": "union",
+                    "scopes": ["office_record"],
+                    "single": true
+                },
+                {
+                    "id": "comes_from",
+                    "label": "Comes From",
+                    "required": false,
+                    "rollup": "first",
+                    "scopes": ["office_record"],
+                    "single": true
+                },
+                {
+                    "id": "open_up",
+                    "label": "Open Up",
+                    "required": false,
+                    "rollup": "first",
+                    "scopes": ["office_record"],
+                    "single": true
+                },
+                {
+                    "id": "then_do",
+                    "label": "Then",
+                    "required": false,
+                    "rollup": "first",
+                    "scopes": ["office_record"],
+                    "single": true
+                },
+                {
+                    "defaultConcept": "FILED",
+                    "id": "filing_status",
+                    "label": "Filing",
+                    "required": false,
+                    "rollup": "first",
+                    "single": true
+                }
+            ],
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "2b9db8ae69ae3b1efbf4d3a424ee3f5de2b1c8a77e739b8bd09b0fa368cdf60f": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "multi-scope-regression",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "sbx-d439b2590804695e96e6172d9fb1c5c6277e8331758fac94a953613284d9bda6",
+                            "kind": "context",
+                            "version": "0.0.0"
+                        }
+                    ],
+                    "contextId": "sbx-d439b2590804695e96e6172d9fb1c5c6277e8331758fac94a953613284d9bda6",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "0.0.0"
+                },
+                "result": {
+                    "limits": { "regionsFound": 2, "status": "complete" },
+                    "results": [
+                        {
+                            "end": 24,
+                            "inner": "STATE ASSESSMENT STAFF",
+                            "marking": "(STATE ASSESSMENT STAFF)",
+                            "result": {
+                                "appliedFixes": [],
+                                "assertions": [
+                                    {
+                                        "categoryId": "level",
+                                        "conceptId": "STATE_ASSESSMENT_STAFF",
+                                        "confidence": "certain",
+                                        "source": "parse"
+                                    },
+                                    {
+                                        "categoryId": "from_school",
+                                        "conceptId": "OUR_SCHOOL",
+                                        "confidence": "certain",
+                                        "source": "default"
+                                    },
+                                    {
+                                        "categoryId": "filing_status",
+                                        "conceptId": "FILED",
+                                        "confidence": "certain",
+                                        "source": "default"
+                                    }
+                                ],
+                                "assessment": {
+                                    "collapsed": [],
+                                    "conflicts": [],
+                                    "emitted": [
+                                        {
+                                            "categoryId": "level",
+                                            "conceptId": "STATE_ASSESSMENT_STAFF"
+                                        }
+                                    ],
+                                    "omitted": [
+                                        {
+                                            "categoryId": "from_school",
+                                            "conceptId": "OUR_SCHOOL"
+                                        },
+                                        {
+                                            "categoryId": "filing_status",
+                                            "conceptId": "FILED"
+                                        }
+                                    ],
+                                    "unrepresentable": []
+                                },
+                                "displayColor": {
+                                    "background": "#ff8c00",
+                                    "text": "#000000"
+                                },
+                                "errors": [],
+                                "inputWasValid": true,
+                                "notices": [
+                                    {
+                                        "conceptId": "STATE_ASSESSMENT_STAFF",
+                                        "conceptName": "State Assessment Staff",
+                                        "required": true,
+                                        "text": "Record access according to the state assessment program’s procedures.",
+                                        "type": "admonition"
+                                    }
+                                ],
+                                "recognition": {
+                                    "status": "complete",
+                                    "surface": "marking",
+                                    "unmatched": []
+                                },
+                                "rendered": "SA",
+                                "valid": true,
+                                "warnings": []
+                            },
+                            "role": "part",
+                            "start": 0,
+                            "type": "long",
+                            "wrapped": true
+                        },
+                        {
+                            "end": 65,
+                            "inner": "DISTRICT COORDINATORS",
+                            "marking": "(DISTRICT COORDINATORS)",
+                            "result": {
+                                "appliedFixes": [],
+                                "assertions": [
+                                    {
+                                        "categoryId": "level",
+                                        "conceptId": "DISTRICT_COORDINATORS",
+                                        "confidence": "certain",
+                                        "source": "parse"
+                                    },
+                                    {
+                                        "categoryId": "from_school",
+                                        "conceptId": "OUR_SCHOOL",
+                                        "confidence": "certain",
+                                        "source": "default"
+                                    },
+                                    {
+                                        "categoryId": "filing_status",
+                                        "conceptId": "FILED",
+                                        "confidence": "certain",
+                                        "source": "default"
+                                    }
+                                ],
+                                "assessment": {
+                                    "collapsed": [],
+                                    "conflicts": [],
+                                    "emitted": [
+                                        {
+                                            "categoryId": "level",
+                                            "conceptId": "DISTRICT_COORDINATORS"
+                                        }
+                                    ],
+                                    "omitted": [
+                                        {
+                                            "categoryId": "from_school",
+                                            "conceptId": "OUR_SCHOOL"
+                                        },
+                                        {
+                                            "categoryId": "filing_status",
+                                            "conceptId": "FILED"
+                                        }
+                                    ],
+                                    "unrepresentable": []
+                                },
+                                "displayColor": {
+                                    "background": "#546e7a",
+                                    "text": "#ffffff"
+                                },
+                                "errors": [],
+                                "inputWasValid": true,
+                                "notices": [],
+                                "recognition": {
+                                    "status": "complete",
+                                    "surface": "marking",
+                                    "unmatched": []
+                                },
+                                "rendered": "DC",
+                                "valid": true,
+                                "warnings": []
+                            },
+                            "role": "part",
+                            "start": 42,
+                            "type": "long",
+                            "wrapped": true
+                        }
+                    ],
+                    "unread": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "2c0ea6371b711c80af38eb462598990aaeea0a96f4f8b23936081b78e673fe3b": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "multi-scope-regression",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "sbx-d439b2590804695e96e6172d9fb1c5c6277e8331758fac94a953613284d9bda6",
+                            "kind": "context",
+                            "version": "0.0.0"
+                        }
+                    ],
+                    "contextId": "sbx-d439b2590804695e96e6172d9fb1c5c6277e8331758fac94a953613284d9bda6",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "0.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "STATE_ASSESSMENT_STAFF",
+                            "confidence": "certain",
+                            "source": "aggregate"
+                        },
+                        {
+                            "categoryId": "from_school",
+                            "conceptId": "OUR_SCHOOL",
+                            "confidence": "certain",
+                            "source": "default"
+                        },
+                        {
+                            "categoryId": "filing_status",
+                            "conceptId": "FILED",
+                            "confidence": "certain",
+                            "source": "default"
+                        }
+                    ],
+                    "displayColor": {
+                        "background": "#ff8c00",
+                        "text": "#000000"
+                    },
+                    "errors": [],
+                    "notices": [
+                        {
+                            "conceptId": "STATE_ASSESSMENT_STAFF",
+                            "conceptName": "State Assessment Staff",
+                            "required": true,
+                            "text": "Record access according to the state assessment program’s procedures.",
+                            "type": "admonition"
+                        }
+                    ],
+                    "proposedFixes": [],
+                    "rendered": "STATE ASSESSMENT STAFF",
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "3ac0cf344828ce1adf703ee41b31c6bdec43d3e7bebe3dbac5ec2c11308383bb": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "multi-scope-regression",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "sbx-d439b2590804695e96e6172d9fb1c5c6277e8331758fac94a953613284d9bda6",
+                            "kind": "context",
+                            "version": "0.0.0"
+                        }
+                    ],
+                    "contextId": "sbx-d439b2590804695e96e6172d9fb1c5c6277e8331758fac94a953613284d9bda6",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "0.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "DISTRICT_COORDINATORS",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "from_school",
+                            "conceptId": "OUR_SCHOOL",
+                            "confidence": "certain",
+                            "source": "default"
+                        },
+                        {
+                            "categoryId": "filing_status",
+                            "conceptId": "FILED",
+                            "confidence": "certain",
+                            "source": "default"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            {
+                                "categoryId": "level",
+                                "conceptId": "DISTRICT_COORDINATORS"
+                            }
+                        ],
+                        "omitted": [
+                            {
+                                "categoryId": "from_school",
+                                "conceptId": "OUR_SCHOOL"
+                            },
+                            {
+                                "categoryId": "filing_status",
+                                "conceptId": "FILED"
+                            }
+                        ],
+                        "unrepresentable": []
+                    },
+                    "displayColor": {
+                        "background": "#546e7a",
+                        "text": "#ffffff"
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "recognition": {
+                        "corrections": [],
+                        "inputFormat": "short",
+                        "status": "complete",
+                        "surface": "marking",
+                        "unmatched": []
+                    },
+                    "rendered": "DISTRICT COORDINATORS",
+                    "renders": {},
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "3f35c1b1691a4d32e468fb213828e528183e31f8f33c726b924887cf7cf0d89e": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "multi-scope-regression",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "sbx-d439b2590804695e96e6172d9fb1c5c6277e8331758fac94a953613284d9bda6",
+                            "kind": "context",
+                            "version": "0.0.0"
+                        }
+                    ],
+                    "contextId": "sbx-d439b2590804695e96e6172d9fb1c5c6277e8331758fac94a953613284d9bda6",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "0.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "DISTRICT_COORDINATORS",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "from_school",
+                            "conceptId": "OUR_SCHOOL",
+                            "confidence": "certain",
+                            "source": "default"
+                        },
+                        {
+                            "categoryId": "filing_status",
+                            "conceptId": "FILED",
+                            "confidence": "certain",
+                            "source": "default"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            {
+                                "categoryId": "level",
+                                "conceptId": "DISTRICT_COORDINATORS"
+                            }
+                        ],
+                        "omitted": [
+                            {
+                                "categoryId": "from_school",
+                                "conceptId": "OUR_SCHOOL"
+                            },
+                            {
+                                "categoryId": "filing_status",
+                                "conceptId": "FILED"
+                            }
+                        ],
+                        "unrepresentable": []
+                    },
+                    "displayColor": {
+                        "background": "#546e7a",
+                        "text": "#ffffff"
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "recognition": {
+                        "corrections": [],
+                        "status": "complete",
+                        "surface": "marking",
+                        "unmatched": []
+                    },
+                    "rendered": "DC",
+                    "renders": {},
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "4d32dc2d4e44b948042645256406bb5508ddbc97cf205228d61093e52dcf0934": {
+            "body": [
+                { "id": "marking", "label": "Marking" },
+                { "id": "office_record", "label": "Office Record Block" }
+            ],
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "5aa25f3239be35f5b5a2b0b1cd2af1436cf236563dd5e531f4acad3d3f7a9f21": {
+            "body": {
+                "contextId": "sbx-d439b2590804695e96e6172d9fb1c5c6277e8331758fac94a953613284d9bda6"
+            },
+            "method": "PUT",
+            "statusCode": 200
+        },
+        "5ee431909d7d00410908e4535e25435bd63cb0225b7da6f9c69a94e9d96dee46": {
+            "body": {
+                "id": "sbx-d439b2590804695e96e6172d9fb1c5c6277e8331758fac94a953613284d9bda6",
+                "scheme": {
+                    "id": "multi-scope-regression",
+                    "resolvedVersion": "1.0.0",
+                    "version": "1.0.0"
+                },
+                "schemes": [
+                    {
+                        "id": "multi-scope-regression",
+                        "roles": ["primary"],
+                        "selector": "multi-scope-regression",
+                        "version": "1.0.0"
+                    }
+                ],
+                "version": "0.0.0"
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "643e53de93870cb79751ac77608593e941e18a495338c21e1ebac7c3bc71c187": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "multi-scope-regression",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "sbx-d439b2590804695e96e6172d9fb1c5c6277e8331758fac94a953613284d9bda6",
+                            "kind": "context",
+                            "version": "0.0.0"
+                        }
+                    ],
+                    "contextId": "sbx-d439b2590804695e96e6172d9fb1c5c6277e8331758fac94a953613284d9bda6",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "0.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "DISTRICT_COORDINATORS",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "from_school",
+                            "conceptId": "OUR_SCHOOL",
+                            "confidence": "certain",
+                            "source": "default"
+                        },
+                        {
+                            "categoryId": "filing_status",
+                            "conceptId": "FILED",
+                            "confidence": "certain",
+                            "source": "default"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            {
+                                "categoryId": "level",
+                                "conceptId": "DISTRICT_COORDINATORS"
+                            }
+                        ],
+                        "omitted": [
+                            {
+                                "categoryId": "from_school",
+                                "conceptId": "OUR_SCHOOL"
+                            },
+                            {
+                                "categoryId": "filing_status",
+                                "conceptId": "FILED"
+                            }
+                        ],
+                        "unrepresentable": []
+                    },
+                    "displayColor": {
+                        "background": "#546e7a",
+                        "text": "#ffffff"
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "recognition": {
+                        "corrections": [],
+                        "inputFormat": "short",
+                        "status": "complete",
+                        "surface": "marking",
+                        "unmatched": []
+                    },
+                    "rendered": "DC",
+                    "renders": {},
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "64ec60d147d3e7b4b239f4fd6727841c1f07b9808e2d641db9729c75486fc81f": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "multi-scope-regression",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "sbx-d439b2590804695e96e6172d9fb1c5c6277e8331758fac94a953613284d9bda6",
+                            "kind": "context",
+                            "version": "0.0.0"
+                        }
+                    ],
+                    "contextId": "sbx-d439b2590804695e96e6172d9fb1c5c6277e8331758fac94a953613284d9bda6",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "0.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "STATE_ASSESSMENT_STAFF",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "from_school",
+                            "conceptId": "OUR_SCHOOL",
+                            "confidence": "certain",
+                            "source": "default"
+                        },
+                        {
+                            "categoryId": "filing_status",
+                            "conceptId": "FILED",
+                            "confidence": "certain",
+                            "source": "default"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            {
+                                "categoryId": "level",
+                                "conceptId": "STATE_ASSESSMENT_STAFF"
+                            }
+                        ],
+                        "omitted": [
+                            {
+                                "categoryId": "from_school",
+                                "conceptId": "OUR_SCHOOL"
+                            },
+                            {
+                                "categoryId": "filing_status",
+                                "conceptId": "FILED"
+                            }
+                        ],
+                        "unrepresentable": []
+                    },
+                    "displayColor": {
+                        "background": "#ff8c00",
+                        "text": "#000000"
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [
+                        {
+                            "conceptId": "STATE_ASSESSMENT_STAFF",
+                            "conceptName": "State Assessment Staff",
+                            "required": true,
+                            "text": "Record access according to the state assessment program’s procedures.",
+                            "type": "admonition"
+                        }
+                    ],
+                    "proposedFixes": [],
+                    "recognition": {
+                        "corrections": [],
+                        "inputFormat": "short",
+                        "status": "complete",
+                        "surface": "marking",
+                        "unmatched": []
+                    },
+                    "rendered": "STATE ASSESSMENT STAFF",
+                    "renders": {},
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "6722737a1b401fe52ddeb6c73d8474610a2d46ce849e630d247312d6ee98a633": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "multi-scope-regression",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "sbx-d439b2590804695e96e6172d9fb1c5c6277e8331758fac94a953613284d9bda6",
+                            "kind": "context",
+                            "version": "0.0.0"
+                        }
+                    ],
+                    "contextId": "sbx-d439b2590804695e96e6172d9fb1c5c6277e8331758fac94a953613284d9bda6",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "0.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "DISTRICT_COORDINATORS",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "from_school",
+                            "conceptId": "OUR_SCHOOL",
+                            "confidence": "certain",
+                            "source": "default"
+                        },
+                        {
+                            "categoryId": "filing_status",
+                            "conceptId": "FILED",
+                            "confidence": "certain",
+                            "source": "default"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            {
+                                "categoryId": "level",
+                                "conceptId": "DISTRICT_COORDINATORS"
+                            }
+                        ],
+                        "omitted": [
+                            {
+                                "categoryId": "from_school",
+                                "conceptId": "OUR_SCHOOL"
+                            },
+                            {
+                                "categoryId": "filing_status",
+                                "conceptId": "FILED"
+                            }
+                        ],
+                        "unrepresentable": []
+                    },
+                    "displayColor": {
+                        "background": "#546e7a",
+                        "text": "#ffffff"
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "DC",
+                    "renders": {},
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "7abd87a9a534444e20a13ff9111abe818c081c5e5abcad51a6ead078cc409de5": {
+            "body": [],
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "8b974aaafd8a8b76a6f35831b722ba3e1c7abae0f7bf60a945f000c4423e57ec": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "multi-scope-regression",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "sbx-d439b2590804695e96e6172d9fb1c5c6277e8331758fac94a953613284d9bda6",
+                            "kind": "context",
+                            "version": "0.0.0"
+                        }
+                    ],
+                    "contextId": "sbx-d439b2590804695e96e6172d9fb1c5c6277e8331758fac94a953613284d9bda6",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "0.0.0"
+                },
+                "result": {
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            {
+                                "categoryId": "level",
+                                "conceptId": "DISTRICT_COORDINATORS"
+                            }
+                        ],
+                        "omitted": [
+                            {
+                                "categoryId": "from_school",
+                                "conceptId": "OUR_SCHOOL"
+                            },
+                            {
+                                "categoryId": "filing_status",
+                                "conceptId": "FILED"
+                            }
+                        ],
+                        "unrepresentable": []
+                    },
+                    "result": "DC"
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "8f2ea1743ccad7bb7c88210eb646470face831d4bc28de8826598edc6811de23": {
+            "body": [
+                {
+                    "aliases": ["students", "student"],
+                    "categories": ["level"],
+                    "color": { "background": "#2e7d32", "text": "#ffffff" },
+                    "definition": "Students may read released practice material and the active test assigned to them. This is the lowest audience level in a fictional state assessment program.",
+                    "id": "STUDENTS",
+                    "name": "Students",
+                    "parents": [],
+                    "position": 0,
+                    "rank": -200,
+                    "views": {
+                        "default": "STUDENTS",
+                        "long": "STUDENTS",
+                        "short": "ST"
+                    }
+                },
+                {
+                    "aliases": ["school staff"],
+                    "categories": ["level"],
+                    "color": { "background": "#1565c0", "text": "#ffffff" },
+                    "definition": "Authorized teachers, school test coordinators, and principals may read school administration material and scoring rubrics. Students may not. The level represents granted access, not automatic access for every school employee.",
+                    "id": "SCHOOL_STAFF",
+                    "name": "School Staff",
+                    "parents": [],
+                    "position": 0,
+                    "rank": 100,
+                    "views": {
+                        "default": "SCHOOL STAFF",
+                        "long": "SCHOOL STAFF",
+                        "short": "SS"
+                    }
+                },
+                {
+                    "aliases": ["district coordinators"],
+                    "categories": ["level"],
+                    "color": { "background": "#546e7a", "text": "#ffffff" },
+                    "definition": "Authorized district assessment coordinators may read distribution plans, test-security arrangements, and material under review. School staff and students may not.",
+                    "id": "DISTRICT_COORDINATORS",
+                    "name": "District Coordinators",
+                    "parents": [],
+                    "position": 0,
+                    "rank": 300,
+                    "views": {
+                        "default": "DISTRICT COORDINATORS",
+                        "long": "DISTRICT COORDINATORS",
+                        "short": "DC"
+                    }
+                },
+                {
+                    "aliases": ["state assessment staff"],
+                    "categories": ["level"],
+                    "color": { "background": "#ff8c00", "text": "#000000" },
+                    "definition": "Authorized staff of the state education agency manage the assessment program and may read unreleased item banks, answer keys, and statewide review material. This is the highest audience level; district and school audiences may not read it.",
+                    "id": "STATE_ASSESSMENT_STAFF",
+                    "name": "State Assessment Staff",
+                    "notices": [
+                        {
+                            "required": true,
+                            "text": "Record access according to the state assessment program’s procedures.",
+                            "type": "admonition"
+                        }
+                    ],
+                    "parents": [],
+                    "position": 0,
+                    "rank": 400,
+                    "views": {
+                        "default": "STATE ASSESSMENT STAFF",
+                        "long": "STATE ASSESSMENT STAFF",
+                        "short": "SA"
+                    }
+                },
+                {
+                    "aliases": ["final", "released"],
+                    "categories": ["status"],
+                    "definition": "Final. The approved version used as the official record.",
+                    "id": "FINAL",
+                    "name": "Final",
+                    "parents": [],
+                    "position": 0,
+                    "rank": -100,
+                    "views": {
+                        "default": "FINAL",
+                        "long": "FINAL",
+                        "short": "FINAL"
+                    }
+                },
+                {
+                    "aliases": ["draft"],
+                    "categories": ["status"],
+                    "definition": "Draft. Still being written or reviewed; not ready to use.",
+                    "id": "DRAFT",
+                    "name": "Draft",
+                    "parents": [],
+                    "position": 0,
+                    "rank": 200,
+                    "views": {
+                        "default": "DRAFT",
+                        "long": "DRAFT",
+                        "short": "DRAFT"
+                    }
+                },
+                {
+                    "aliases": ["pre-release", "prerelease", "unreleased"],
+                    "categories": ["status"],
+                    "definition": "Pre-release. Finished for controlled review but not released for use.",
+                    "id": "PRE_RELEASE",
+                    "name": "Pre-release",
+                    "parents": [],
+                    "position": 0,
+                    "rank": 500,
+                    "views": {
+                        "default": "PRE-RELEASE",
+                        "long": "PRE-RELEASE",
+                        "short": "PRE"
+                    }
+                },
+                {
+                    "aliases": ["test", "test booklet", "test questions"],
+                    "categories": ["artifact"],
+                    "definition": "The test or test booklet itself, including its questions.",
+                    "id": "TEST",
+                    "name": "Test",
+                    "parents": [],
+                    "position": 0,
+                    "views": {
+                        "default": "TEST",
+                        "long": "TEST",
+                        "short": "TEST"
+                    }
+                },
+                {
+                    "aliases": ["answer key", "answers"],
+                    "categories": ["artifact"],
+                    "definition": "The official answers used to score the test.",
+                    "id": "ANSWER_KEY",
+                    "name": "Answer Key",
+                    "parents": [],
+                    "position": 0,
+                    "views": {
+                        "default": "ANSWER KEY",
+                        "long": "ANSWER KEY",
+                        "short": "KEY"
+                    }
+                },
+                {
+                    "aliases": [
+                        "individual results",
+                        "student results",
+                        "student score details"
+                    ],
+                    "categories": ["artifact"],
+                    "definition": "The detailed score record for one student.",
+                    "id": "INDIVIDUAL_RESULTS",
+                    "name": "Individual Results",
+                    "parents": [],
+                    "position": 0,
+                    "views": {
+                        "default": "INDIVIDUAL RESULTS",
+                        "long": "INDIVIDUAL RESULTS",
+                        "short": "RES-ONE"
+                    }
+                },
+                {
+                    "aliases": [
+                        "aggregate results",
+                        "district results",
+                        "district scores"
+                    ],
+                    "categories": ["artifact"],
+                    "definition": "Combined score results for a class, school, or district.",
+                    "id": "AGGREGATE_RESULTS",
+                    "name": "Aggregate Results",
+                    "parents": [],
+                    "position": 0,
+                    "views": {
+                        "default": "AGGREGATE RESULTS",
+                        "long": "AGGREGATE RESULTS",
+                        "short": "RES-MANY"
+                    }
+                },
+                {
+                    "aliases": [],
+                    "categories": ["from_school", "questions_from"],
+                    "definition": "Our School. The school you are standing in. Questions written here, and anything the district hands us that is not tied to one of the other four schools.\n",
+                    "id": "OUR_SCHOOL",
+                    "name": "Our School",
+                    "parents": [],
+                    "position": 0,
+                    "views": {
+                        "default": "OUR SCHOOL",
+                        "long": "OUR SCHOOL",
+                        "short": "OURS"
+                    }
+                },
+                {
+                    "aliases": [],
+                    "categories": [
+                        "from_school",
+                        "share_recipients",
+                        "questions_from"
+                    ],
+                    "definition": "Oakwood. Another elementary school in the district. They prepare local reading practice materials.\n",
+                    "id": "OAKWOOD",
+                    "name": "Oakwood",
+                    "parents": [],
+                    "position": 0,
+                    "views": {
+                        "default": "OAKWOOD",
+                        "long": "OAKWOOD",
+                        "short": "OAK"
+                    }
+                },
+                {
+                    "aliases": [],
+                    "categories": [
+                        "from_school",
+                        "share_recipients",
+                        "questions_from"
+                    ],
+                    "definition": "Lincoln. Another elementary school in the district. They prepare local math word problems for practice.\n",
+                    "id": "LINCOLN",
+                    "name": "Lincoln",
+                    "parents": [],
+                    "position": 0,
+                    "views": {
+                        "default": "LINCOLN",
+                        "long": "LINCOLN",
+                        "short": "LIN"
+                    }
+                },
+                {
+                    "aliases": [],
+                    "categories": [
+                        "from_school",
+                        "share_recipients",
+                        "questions_from"
+                    ],
+                    "definition": "Riverside. Another elementary school in the district. They prepare local science practice questions.\n",
+                    "id": "RIVERSIDE",
+                    "name": "Riverside",
+                    "parents": [],
+                    "position": 0,
+                    "views": {
+                        "default": "RIVERSIDE",
+                        "long": "RIVERSIDE",
+                        "short": "RIV"
+                    }
+                },
+                {
+                    "aliases": [],
+                    "categories": [
+                        "from_school",
+                        "share_recipients",
+                        "questions_from"
+                    ],
+                    "definition": "Hilltop. Another elementary school in the district. They run the makeup test day for the whole district.\n",
+                    "id": "HILLTOP",
+                    "name": "Hilltop",
+                    "parents": [],
+                    "position": 0,
+                    "views": {
+                        "default": "HILLTOP",
+                        "long": "HILLTOP",
+                        "short": "HILL"
+                    }
+                },
+                {
+                    "aliases": [],
+                    "categories": ["test_section"],
+                    "definition": "The math section of the test. A student assigned to math may open student-level math material; staff still need the section on their access list for more restricted math material.\n",
+                    "guidance": "The section identifies subject matter and never changes who may see it. Choose the audience level separately. Math has a Part 2 sub-section with its own assignment list.\n",
+                    "id": "MATH",
+                    "name": "Math",
+                    "parents": [],
+                    "position": 0,
+                    "tier": "compartment",
+                    "views": {
+                        "default": "MATH",
+                        "long": "MATH",
+                        "short": "MATH"
+                    }
+                },
+                {
+                    "aliases": [],
+                    "categories": ["test_section"],
+                    "definition": "Part 2 of the math section. Students taking Part 2 may open its student-level test material. Anyone opening more restricted Part 2 material must also satisfy that material's audience level.\n",
+                    "guidance": "Part 2 narrows the section assignment without changing the audience level. You must be on both the math and Part 2 lists.\n",
+                    "id": "MATH_PART_2",
+                    "name": "Part 2",
+                    "parents": ["MATH"],
+                    "position": 0,
+                    "tier": "subcompartment",
+                    "views": { "default": "PART 2", "short": "P2" }
+                },
+                {
+                    "aliases": [],
+                    "categories": ["test_section"],
+                    "definition": "The reading section of the test. Students assigned to reading may open student-level reading material. Being on the math list tells you nothing about reading.\n",
+                    "guidance": "The section does not change the audience level.",
+                    "id": "READING",
+                    "name": "Reading",
+                    "parents": [],
+                    "position": 0,
+                    "tier": "compartment",
+                    "views": { "default": "READING", "short": "READ" }
+                },
+                {
+                    "aliases": [],
+                    "categories": ["test_section"],
+                    "definition": "The science section of the test, including the lab questions. Students assigned to science may open student-level science material.\n",
+                    "guidance": "The section does not change the audience level.",
+                    "id": "SCIENCE",
+                    "name": "Science",
+                    "parents": [],
+                    "position": 0,
+                    "tier": "compartment",
+                    "views": { "default": "SCIENCE", "short": "SCI" }
+                },
+                {
+                    "aliases": [],
+                    "categories": ["sharing"],
+                    "definition": "School Only. This stays in our building. Do not send it to another school, do not send it to a school group, do not take it home. Read it here or not at all.\n",
+                    "guidance": "Beats every other sharing instruction. If a test has even one question marked School Only, the whole test is School Only.\n",
+                    "id": "SCHOOL_ONLY",
+                    "name": "School Only",
+                    "parents": [],
+                    "position": 0,
+                    "views": {
+                        "default": "SCHOOL ONLY",
+                        "long": "SCHOOL ONLY",
+                        "short": "SCHOOL"
+                    }
+                },
+                {
+                    "aliases": [],
+                    "categories": ["sharing"],
+                    "definition": "Share With (list follows). You may send this to any school or school group named in the list. They may take it back to their own building and use it there.\n",
+                    "guidance": "The list mixes single schools and school groups. When several questions go into one test, the engine keeps only the schools that appear on every question's list, since a test may only go where every question is allowed to go.\n",
+                    "id": "SHARE_WITH",
+                    "name": "Share With",
+                    "parents": [],
+                    "position": 1,
+                    "views": {
+                        "default": "SHARE WITH",
+                        "long": "SHARE WITH",
+                        "short": "SHARE"
+                    }
+                },
+                {
+                    "aliases": [],
+                    "categories": ["sharing"],
+                    "definition": "Read In Class (list follows). Anyone at a school or school group in the list may look at this in a classroom, with a teacher watching. They may not take it away and they may not copy it.\n",
+                    "guidance": "Like Share With, but nobody gets to keep it. Used for questions the district wants people to see without letting them leave the room.\n",
+                    "id": "READ_IN_CLASS",
+                    "name": "Read In Class",
+                    "parents": [],
+                    "position": 2,
+                    "views": { "default": "READ IN CLASS", "short": "IN CLASS" }
+                },
+                {
+                    "aliases": [],
+                    "categories": ["share_recipients", "in_class_recipients"],
+                    "definition": "North Schools. The group of schools on the north side of the district. Naming the group is the same as naming every school in it.\n",
+                    "id": "NORTH_SCHOOLS",
+                    "name": "North Schools",
+                    "parents": [],
+                    "position": 0,
+                    "views": { "default": "NORTH SCHOOLS", "short": "NORTH" }
+                },
+                {
+                    "aliases": [],
+                    "categories": ["share_recipients", "in_class_recipients"],
+                    "definition": "South Schools. The group of schools on the south side of the district. Naming the group is the same as naming every school in it.\n",
+                    "id": "SOUTH_SCHOOLS",
+                    "name": "South Schools",
+                    "parents": [],
+                    "position": 0,
+                    "views": { "default": "SOUTH SCHOOLS", "short": "SOUTH" }
+                },
+                {
+                    "aliases": [],
+                    "categories": ["marked_by"],
+                    "definition": "Marked By. The name or initials of the person who wrote the marking on this question. Whoever wrote it is the person to ask about it.\n",
+                    "id": "MARKED_BY_TEXT",
+                    "name": "Marked By",
+                    "parents": [],
+                    "position": 0,
+                    "textInput": {
+                        "label": "Marked By",
+                        "placeholder": "Name or initials (e.g., Ruiz, M.)",
+                        "required": false
+                    },
+                    "views": { "default": "{value}" }
+                },
+                {
+                    "aliases": ["test rules", "rules"],
+                    "categories": ["comes_from"],
+                    "definition": "Test Rules. This question is marked the way the district's test rules book says to mark it. The ordinary case.\n",
+                    "id": "TEST_RULES",
+                    "name": "Test Rules",
+                    "parents": [],
+                    "position": 0,
+                    "views": { "default": "TEST RULES", "short": "RULES" }
+                },
+                {
+                    "aliases": ["new item", "new"],
+                    "categories": ["comes_from"],
+                    "definition": "New Item. Somebody wrote this question this year. Nobody has seen it before, so it is the easiest one to ruin by leaking it.\n",
+                    "id": "NEW_ITEM",
+                    "name": "New Item",
+                    "parents": [],
+                    "position": 0,
+                    "views": { "default": "NEW ITEM", "short": "NEW" }
+                },
+                {
+                    "aliases": ["from test bank", "test bank", "bank"],
+                    "categories": ["comes_from"],
+                    "definition": "From Test Bank. Borrowed from the district's shared pile of questions. It goes back when we are done with it.\n",
+                    "id": "FROM_TEST_BANK",
+                    "name": "From Test Bank",
+                    "parents": [],
+                    "position": 0,
+                    "views": { "default": "FROM TEST BANK", "short": "BANK" }
+                },
+                {
+                    "aliases": ["from last year", "last year"],
+                    "categories": ["comes_from"],
+                    "definition": "From Last Year. Reused from a test we already gave. Nobody wrote down where it came from before that, so be careful with it.\n",
+                    "id": "FROM_LAST_YEAR",
+                    "name": "From Last Year",
+                    "parents": [],
+                    "position": 0,
+                    "views": { "default": "FROM LAST YEAR", "short": "LAST YR" }
+                },
+                {
+                    "aliases": ["from state office", "state office", "state"],
+                    "categories": ["comes_from"],
+                    "definition": "From State Office. The state sent us this question. The state still gets to say what happens to it.\n",
+                    "id": "FROM_STATE_OFFICE",
+                    "name": "From State Office",
+                    "parents": [],
+                    "position": 0,
+                    "views": {
+                        "default": "FROM STATE OFFICE",
+                        "short": "STATE"
+                    }
+                },
+                {
+                    "aliases": ["end of year", "year end"],
+                    "categories": ["open_up"],
+                    "definition": "End of Year. This stops being a secret when the school year ends. Until then, treat it like any other test question.\n",
+                    "guidance": "Only use this when Comes From is New Item. A borrowed or reused question is not ours to open up.\n",
+                    "id": "END_OF_YEAR",
+                    "name": "End of Year",
+                    "parents": [],
+                    "position": 0,
+                    "views": { "default": "END OF YEAR", "short": "YEAR END" }
+                },
+                {
+                    "aliases": ["after test day", "test day"],
+                    "categories": ["open_up"],
+                    "definition": "After Test Day. This stops being a secret once everyone has taken the test. The ordinary answer.\n",
+                    "id": "AFTER_TEST_DAY",
+                    "name": "After Test Day",
+                    "parents": [],
+                    "position": 0,
+                    "views": {
+                        "default": "AFTER TEST DAY",
+                        "short": "TEST DAY"
+                    }
+                },
+                {
+                    "aliases": ["after makeup day", "makeup day", "makeup"],
+                    "categories": ["open_up"],
+                    "definition": "After Makeup Day. Kids who were sick take the test later, so this stays a secret until the makeup day is over too.\n",
+                    "guidance": "Only use this when Comes From is From Test Bank.",
+                    "id": "AFTER_MAKEUP_DAY",
+                    "name": "After Makeup Day",
+                    "parents": [],
+                    "position": 0,
+                    "views": {
+                        "default": "AFTER MAKEUP DAY",
+                        "short": "MAKEUP"
+                    }
+                },
+                {
+                    "aliases": [
+                        "when state assessment staff says",
+                        "state assessment staff says"
+                    ],
+                    "categories": ["open_up"],
+                    "definition": "When State Assessment Staff Says. Nobody has picked a date. The state assessment staff decides when this opens up, and until they do, it stays shut.\n",
+                    "guidance": "The only answer allowed while a question is Being Checked. The check has to finish before anyone can put a date on it.\n",
+                    "id": "WHEN_BOARD_SAYS",
+                    "name": "When State Assessment Staff Says",
+                    "parents": [],
+                    "position": 0,
+                    "views": { "default": "WHEN BOARD SAYS", "short": "BOARD" }
+                },
+                {
+                    "aliases": ["never"],
+                    "categories": ["open_up"],
+                    "definition": "Never. This one never opens up. The district gives it again next year and the year after, so it has to stay secret forever.\n",
+                    "id": "NEVER",
+                    "name": "Never",
+                    "parents": [],
+                    "position": 0,
+                    "views": { "default": "NEVER", "short": "NEVER" }
+                },
+                {
+                    "aliases": ["lock in office", "lock"],
+                    "categories": ["then_do"],
+                    "definition": "Lock In Office. The paper goes in the locked cabinet in the front office and stays there. Nobody takes it out without the district coordinators.\n",
+                    "guidance": "The right answer whenever Open Up is Never. For a question in a test section, check whether the section has its own cabinet first.\n",
+                    "id": "LOCK_IN_OFFICE",
+                    "name": "Lock In Office",
+                    "parents": [],
+                    "position": 0,
+                    "views": { "default": "LOCK IN OFFICE", "short": "LOCK" }
+                },
+                {
+                    "aliases": ["send home", "home"],
+                    "categories": ["then_do"],
+                    "definition": "Send Home. The paper goes home with the student so their family can see how they did. Once it leaves the building it is not coming back.\n",
+                    "guidance": "Use with the End of Year open-up and the New Item source.",
+                    "id": "SEND_HOME",
+                    "name": "Send Home",
+                    "parents": [],
+                    "position": 0,
+                    "views": { "default": "SEND HOME", "short": "HOME" }
+                },
+                {
+                    "aliases": ["other school", "other"],
+                    "categories": ["then_do"],
+                    "definition": "Other School. The paper goes to another school in the district that still needs it. From then on, that school decides who may see it.\n",
+                    "guidance": "Use with the From Test Bank source and the After Makeup Day open-up.",
+                    "id": "OTHER_SCHOOL",
+                    "name": "Other School",
+                    "parents": [],
+                    "position": 0,
+                    "views": { "default": "OTHER SCHOOL", "short": "OTHER" }
+                },
+                {
+                    "aliases": ["practice test", "practice"],
+                    "categories": ["then_do"],
+                    "definition": "Practice Test. The question moves into the practice packet that students study from. It is not a secret anymore.\n",
+                    "guidance": "Check that the question is not scheduled to be reused before you put it in the practice packet. A State Assessment Staff question needs the state assessment staff to sign off first.\n",
+                    "id": "PRACTICE_TEST",
+                    "name": "Practice Test",
+                    "parents": [],
+                    "position": 0,
+                    "views": { "default": "PRACTICE TEST", "short": "PRACTICE" }
+                },
+                {
+                    "aliases": ["recycle"],
+                    "categories": ["then_do"],
+                    "definition": "Recycle. The paper gets shredded and recycled. Used for spare copies and for questions nobody is going to use again. Shred it, do not just drop it in the bin.\n",
+                    "id": "RECYCLE",
+                    "name": "Recycle",
+                    "parents": [],
+                    "position": 0,
+                    "views": { "default": "RECYCLE", "short": "RECYC" }
+                },
+                {
+                    "aliases": ["filed"],
+                    "categories": ["filing_status"],
+                    "definition": "Filed. The office has put this in the binder where it belongs. The ordinary state; not worth telling anyone about.\n",
+                    "id": "FILED",
+                    "name": "Filed",
+                    "parents": [],
+                    "position": 0,
+                    "views": { "default": "FILED", "short": "FILED" }
+                },
+                {
+                    "aliases": ["not filed"],
+                    "categories": ["filing_status"],
+                    "definition": "Not Filed. The office has not put this in the binder yet. Nobody is sure where it belongs, so say so before anyone relies on it.\n",
+                    "id": "NOT_FILED",
+                    "name": "Not Filed",
+                    "parents": [],
+                    "position": 0,
+                    "views": { "default": "NOT FILED", "short": "NOT FILED" }
+                }
+            ],
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "9988342e8042ffa7fc97d47eb6edd75e4e2f40abebe446f15aba9b75f1754590": {
+            "body": [
+                {
+                    "categoryOrder": [
+                        "from_school",
+                        "level",
+                        "test_section",
+                        "status",
+                        "artifact",
+                        "questions_from",
+                        "sharing",
+                        "share_recipients",
+                        "in_class_recipients"
+                    ],
+                    "categorySeparators": {
+                        "artifact": "/",
+                        "in_class_recipients": "/",
+                        "questions_from": ", ",
+                        "share_recipients": ", ",
+                        "sharing": "/",
+                        "test_section": "/"
+                    },
+                    "categoryTiers": {
+                        "test_section": [
+                            { "attachedBy": "-", "tier": "compartment" },
+                            { "attachedBy": "-", "tier": "subcompartment" }
+                        ]
+                    },
+                    "headers": [
+                        {
+                            "category": "share_recipients",
+                            "concept": "SHARE_WITH",
+                            "headerCategory": "sharing",
+                            "position": "prefix"
+                        },
+                        {
+                            "category": "in_class_recipients",
+                            "concept": "READ_IN_CLASS",
+                            "headerCategory": "sharing",
+                            "position": "prefix"
+                        }
+                    ],
+                    "id": "short",
+                    "mode": "inline",
+                    "separator": "//",
+                    "separatorBefore": {
+                        "artifact": "//",
+                        "in_class_recipients": " ",
+                        "level": " ",
+                        "questions_from": "//",
+                        "share_recipients": " ",
+                        "sharing": "//",
+                        "status": "//",
+                        "test_section": "//"
+                    },
+                    "surface": "marking",
+                    "view": "short"
+                },
+                {
+                    "categoryOrder": [
+                        "from_school",
+                        "level",
+                        "test_section",
+                        "status",
+                        "artifact",
+                        "questions_from",
+                        "sharing",
+                        "share_recipients",
+                        "in_class_recipients"
+                    ],
+                    "categorySeparators": {
+                        "artifact": "/",
+                        "in_class_recipients": "/",
+                        "questions_from": ", ",
+                        "share_recipients": ", ",
+                        "sharing": "/",
+                        "test_section": "/"
+                    },
+                    "categoryTiers": {
+                        "test_section": [
+                            { "attachedBy": "-", "tier": "compartment" },
+                            {
+                                "attachedBy": "-",
+                                "tier": "subcompartment",
+                                "view": "default"
+                            }
+                        ]
+                    },
+                    "headers": [
+                        {
+                            "category": "share_recipients",
+                            "concept": "SHARE_WITH",
+                            "headerCategory": "sharing",
+                            "position": "prefix"
+                        },
+                        {
+                            "category": "in_class_recipients",
+                            "concept": "READ_IN_CLASS",
+                            "headerCategory": "sharing",
+                            "position": "prefix"
+                        }
+                    ],
+                    "id": "long",
+                    "mode": "inline",
+                    "separator": "//",
+                    "separatorBefore": {
+                        "artifact": "//",
+                        "in_class_recipients": " ",
+                        "level": " ",
+                        "questions_from": "//",
+                        "share_recipients": " ",
+                        "sharing": "//",
+                        "status": "//",
+                        "test_section": "//"
+                    },
+                    "surface": "marking",
+                    "view": "long"
+                },
+                {
+                    "categoryOrder": [
+                        "from_school",
+                        "level",
+                        "test_section",
+                        "status",
+                        "artifact",
+                        "questions_from",
+                        "sharing",
+                        "share_recipients",
+                        "in_class_recipients"
+                    ],
+                    "categorySeparators": {
+                        "artifact": ", ",
+                        "in_class_recipients": ", ",
+                        "questions_from": ", ",
+                        "share_recipients": ", ",
+                        "sharing": ", ",
+                        "test_section": ", "
+                    },
+                    "categoryTiers": {
+                        "test_section": [
+                            { "attachedBy": "-", "tier": "compartment" },
+                            {
+                                "attachedBy": "-",
+                                "tier": "subcompartment",
+                                "view": "default"
+                            }
+                        ]
+                    },
+                    "headers": [
+                        {
+                            "category": "share_recipients",
+                            "concept": "SHARE_WITH",
+                            "headerCategory": "sharing",
+                            "position": "prefix"
+                        },
+                        {
+                            "category": "in_class_recipients",
+                            "concept": "READ_IN_CLASS",
+                            "headerCategory": "sharing",
+                            "position": "prefix"
+                        }
+                    ],
+                    "id": "instructions",
+                    "mode": "inline",
+                    "separator": " // ",
+                    "separatorBefore": {
+                        "artifact": " // ",
+                        "in_class_recipients": " ",
+                        "level": ": ",
+                        "questions_from": " // ",
+                        "share_recipients": " ",
+                        "sharing": " // ",
+                        "status": " // ",
+                        "test_section": " // "
+                    },
+                    "surface": "marking",
+                    "view": "long"
+                },
+                {
+                    "categoryOrder": [
+                        "from_school",
+                        "level",
+                        "test_section",
+                        "status",
+                        "artifact",
+                        "questions_from",
+                        "sharing",
+                        "share_recipients",
+                        "in_class_recipients",
+                        "marked_by",
+                        "comes_from",
+                        "open_up",
+                        "then_do"
+                    ],
+                    "categorySeparators": {
+                        "artifact": ", ",
+                        "in_class_recipients": ", ",
+                        "questions_from": ", ",
+                        "share_recipients": ", ",
+                        "sharing": ", ",
+                        "test_section": ", "
+                    },
+                    "categoryTiers": {
+                        "test_section": [
+                            { "attachedBy": "-", "tier": "compartment" },
+                            {
+                                "attachedBy": "-",
+                                "tier": "subcompartment",
+                                "view": "default"
+                            }
+                        ]
+                    },
+                    "headers": [
+                        {
+                            "category": "share_recipients",
+                            "concept": "SHARE_WITH",
+                            "headerCategory": "sharing",
+                            "position": "prefix"
+                        },
+                        {
+                            "category": "in_class_recipients",
+                            "concept": "READ_IN_CLASS",
+                            "headerCategory": "sharing",
+                            "position": "prefix"
+                        }
+                    ],
+                    "id": "instructions-with-office-record",
+                    "mode": "inline",
+                    "separator": "\n--- OFFICE RECORD ---\n",
+                    "separatorBefore": {
+                        "artifact": " // ",
+                        "comes_from": "\n",
+                        "in_class_recipients": " ",
+                        "level": ": ",
+                        "marked_by": "\n--- OFFICE RECORD ---\n",
+                        "open_up": "\n",
+                        "questions_from": " // ",
+                        "share_recipients": " ",
+                        "sharing": " // ",
+                        "status": " // ",
+                        "test_section": " // ",
+                        "then_do": "\n"
+                    },
+                    "surface": "marking",
+                    "view": "long"
+                },
+                {
+                    "categoryOrder": ["level", "filing_status"],
+                    "id": "student-notice",
+                    "mode": "inline",
+                    "separator": " — ",
+                    "separatorBefore": { "filing_status": " — " },
+                    "surface": "marking",
+                    "view": "default"
+                }
+            ],
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "a0d3cba57b04a56363f4f233b3780384fd15f7c18ea394abf5258a85a680d2de": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "multi-scope-regression",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "sbx-d439b2590804695e96e6172d9fb1c5c6277e8331758fac94a953613284d9bda6",
+                            "kind": "context",
+                            "version": "0.0.0"
+                        }
+                    ],
+                    "contextId": "sbx-d439b2590804695e96e6172d9fb1c5c6277e8331758fac94a953613284d9bda6",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "0.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "STATE_ASSESSMENT_STAFF",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "from_school",
+                            "conceptId": "OUR_SCHOOL",
+                            "confidence": "certain",
+                            "source": "default"
+                        },
+                        {
+                            "categoryId": "filing_status",
+                            "conceptId": "FILED",
+                            "confidence": "certain",
+                            "source": "default"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            {
+                                "categoryId": "level",
+                                "conceptId": "STATE_ASSESSMENT_STAFF"
+                            }
+                        ],
+                        "omitted": [
+                            {
+                                "categoryId": "from_school",
+                                "conceptId": "OUR_SCHOOL"
+                            },
+                            {
+                                "categoryId": "filing_status",
+                                "conceptId": "FILED"
+                            }
+                        ],
+                        "unrepresentable": []
+                    },
+                    "displayColor": {
+                        "background": "#ff8c00",
+                        "text": "#000000"
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [
+                        {
+                            "conceptId": "STATE_ASSESSMENT_STAFF",
+                            "conceptName": "State Assessment Staff",
+                            "required": true,
+                            "text": "Record access according to the state assessment program’s procedures.",
+                            "type": "admonition"
+                        }
+                    ],
+                    "proposedFixes": [],
+                    "recognition": {
+                        "corrections": [],
+                        "inputFormat": "short",
+                        "status": "complete",
+                        "surface": "marking",
+                        "unmatched": []
+                    },
+                    "rendered": "SA",
+                    "renders": {},
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "ad4d440775527a6bbd5c7796a5af2810eb8f30e3b4ba47e3280044deb6fc7a85": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "multi-scope-regression",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "sbx-d439b2590804695e96e6172d9fb1c5c6277e8331758fac94a953613284d9bda6",
+                            "kind": "context",
+                            "version": "0.0.0"
+                        }
+                    ],
+                    "contextId": "sbx-d439b2590804695e96e6172d9fb1c5c6277e8331758fac94a953613284d9bda6",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "0.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "STATE_ASSESSMENT_STAFF",
+                            "confidence": "certain",
+                            "source": "aggregate"
+                        },
+                        {
+                            "categoryId": "from_school",
+                            "conceptId": "OUR_SCHOOL",
+                            "confidence": "certain",
+                            "source": "default"
+                        },
+                        {
+                            "categoryId": "filing_status",
+                            "conceptId": "FILED",
+                            "confidence": "certain",
+                            "source": "default"
+                        }
+                    ],
+                    "displayColor": {
+                        "background": "#ff8c00",
+                        "text": "#000000"
+                    },
+                    "errors": [],
+                    "notices": [
+                        {
+                            "conceptId": "STATE_ASSESSMENT_STAFF",
+                            "conceptName": "State Assessment Staff",
+                            "required": true,
+                            "text": "Record access according to the state assessment program’s procedures.",
+                            "type": "admonition"
+                        }
+                    ],
+                    "proposedFixes": [],
+                    "rendered": "STATE ASSESSMENT STAFF",
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "b349596ecac7703e02395bd44e14d3353b3b8d419c1d5e0702f4369e9918bb24": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "multi-scope-regression",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "sbx-d439b2590804695e96e6172d9fb1c5c6277e8331758fac94a953613284d9bda6",
+                            "kind": "context",
+                            "version": "0.0.0"
+                        }
+                    ],
+                    "contextId": "sbx-d439b2590804695e96e6172d9fb1c5c6277e8331758fac94a953613284d9bda6",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "0.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "STATE_ASSESSMENT_STAFF",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "from_school",
+                            "conceptId": "OUR_SCHOOL",
+                            "confidence": "certain",
+                            "source": "default"
+                        },
+                        {
+                            "categoryId": "filing_status",
+                            "conceptId": "FILED",
+                            "confidence": "certain",
+                            "source": "default"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            {
+                                "categoryId": "level",
+                                "conceptId": "STATE_ASSESSMENT_STAFF"
+                            }
+                        ],
+                        "omitted": [
+                            {
+                                "categoryId": "from_school",
+                                "conceptId": "OUR_SCHOOL"
+                            },
+                            {
+                                "categoryId": "filing_status",
+                                "conceptId": "FILED"
+                            }
+                        ],
+                        "unrepresentable": []
+                    },
+                    "displayColor": {
+                        "background": "#ff8c00",
+                        "text": "#000000"
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [
+                        {
+                            "conceptId": "STATE_ASSESSMENT_STAFF",
+                            "conceptName": "State Assessment Staff",
+                            "required": true,
+                            "text": "Record access according to the state assessment program’s procedures.",
+                            "type": "admonition"
+                        }
+                    ],
+                    "proposedFixes": [],
+                    "recognition": {
+                        "corrections": [],
+                        "status": "complete",
+                        "surface": "marking",
+                        "unmatched": []
+                    },
+                    "rendered": "SA",
+                    "renders": {},
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "b3a5b748cdbff45943df622dcb3486c907ea0e0879afdfe964e47cec5a89f306": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "multi-scope-regression",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "sbx-d439b2590804695e96e6172d9fb1c5c6277e8331758fac94a953613284d9bda6",
+                            "kind": "context",
+                            "version": "0.0.0"
+                        }
+                    ],
+                    "contextId": "sbx-d439b2590804695e96e6172d9fb1c5c6277e8331758fac94a953613284d9bda6",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "0.0.0"
+                },
+                "result": {
+                    "limits": { "regionsFound": 2, "status": "complete" },
+                    "results": [
+                        {
+                            "end": 4,
+                            "inner": "SA",
+                            "marking": "(SA)",
+                            "result": {
+                                "appliedFixes": [],
+                                "assertions": [
+                                    {
+                                        "categoryId": "level",
+                                        "conceptId": "STATE_ASSESSMENT_STAFF",
+                                        "confidence": "certain",
+                                        "source": "parse"
+                                    },
+                                    {
+                                        "categoryId": "from_school",
+                                        "conceptId": "OUR_SCHOOL",
+                                        "confidence": "certain",
+                                        "source": "default"
+                                    },
+                                    {
+                                        "categoryId": "filing_status",
+                                        "conceptId": "FILED",
+                                        "confidence": "certain",
+                                        "source": "default"
+                                    }
+                                ],
+                                "assessment": {
+                                    "collapsed": [],
+                                    "conflicts": [],
+                                    "emitted": [
+                                        {
+                                            "categoryId": "level",
+                                            "conceptId": "STATE_ASSESSMENT_STAFF"
+                                        }
+                                    ],
+                                    "omitted": [
+                                        {
+                                            "categoryId": "from_school",
+                                            "conceptId": "OUR_SCHOOL"
+                                        },
+                                        {
+                                            "categoryId": "filing_status",
+                                            "conceptId": "FILED"
+                                        }
+                                    ],
+                                    "unrepresentable": []
+                                },
+                                "displayColor": {
+                                    "background": "#ff8c00",
+                                    "text": "#000000"
+                                },
+                                "errors": [],
+                                "inputWasValid": true,
+                                "notices": [
+                                    {
+                                        "conceptId": "STATE_ASSESSMENT_STAFF",
+                                        "conceptName": "State Assessment Staff",
+                                        "required": true,
+                                        "text": "Record access according to the state assessment program’s procedures.",
+                                        "type": "admonition"
+                                    }
+                                ],
+                                "recognition": {
+                                    "inputFormat": "short",
+                                    "status": "complete",
+                                    "surface": "marking",
+                                    "unmatched": []
+                                },
+                                "rendered": "SA",
+                                "valid": true,
+                                "warnings": []
+                            },
+                            "role": "part",
+                            "start": 0,
+                            "type": "short",
+                            "wrapped": true
+                        },
+                        {
+                            "end": 26,
+                            "inner": "DC",
+                            "marking": "(DC)",
+                            "result": {
+                                "appliedFixes": [],
+                                "assertions": [
+                                    {
+                                        "categoryId": "level",
+                                        "conceptId": "DISTRICT_COORDINATORS",
+                                        "confidence": "certain",
+                                        "source": "parse"
+                                    },
+                                    {
+                                        "categoryId": "from_school",
+                                        "conceptId": "OUR_SCHOOL",
+                                        "confidence": "certain",
+                                        "source": "default"
+                                    },
+                                    {
+                                        "categoryId": "filing_status",
+                                        "conceptId": "FILED",
+                                        "confidence": "certain",
+                                        "source": "default"
+                                    }
+                                ],
+                                "assessment": {
+                                    "collapsed": [],
+                                    "conflicts": [],
+                                    "emitted": [
+                                        {
+                                            "categoryId": "level",
+                                            "conceptId": "DISTRICT_COORDINATORS"
+                                        }
+                                    ],
+                                    "omitted": [
+                                        {
+                                            "categoryId": "from_school",
+                                            "conceptId": "OUR_SCHOOL"
+                                        },
+                                        {
+                                            "categoryId": "filing_status",
+                                            "conceptId": "FILED"
+                                        }
+                                    ],
+                                    "unrepresentable": []
+                                },
+                                "displayColor": {
+                                    "background": "#546e7a",
+                                    "text": "#ffffff"
+                                },
+                                "errors": [],
+                                "inputWasValid": true,
+                                "notices": [],
+                                "recognition": {
+                                    "inputFormat": "short",
+                                    "status": "complete",
+                                    "surface": "marking",
+                                    "unmatched": []
+                                },
+                                "rendered": "DC",
+                                "valid": true,
+                                "warnings": []
+                            },
+                            "role": "part",
+                            "start": 22,
+                            "type": "short",
+                            "wrapped": true
+                        }
+                    ],
+                    "unread": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "d24100a85c48f464bd0e07fc0810102387c77e2f6dd6db03dbe977acc60630f3": {
+            "body": {
+                "colorFrom": "level",
+                "contextFormats": { "part": ["short"], "whole": ["long"] },
+                "defaultRenderFormat": "long",
+                "defaultScope": "marking",
+                "description": "An authored UI regression fixture with marking and office-record scopes, gated category choices, free-text capture, alternate render views, and whole/part rollup behavior.",
+                "embeddedMarking": [
+                    { "pattern": "\\(([^)]+)\\)", "template": "({marking})" }
+                ],
+                "id": "multi-scope-regression",
+                "name": "Multi-scope UI regression",
+                "referenceSurfaceLabel": {
+                    "plural": "Handbooks",
+                    "singular": "Handbook"
+                },
+                "roleAware": true,
+                "version": "1.0.0",
+                "vocabulary": {
+                    "part": { "plural": "questions", "singular": "question" },
+                    "whole": { "plural": "tests", "singular": "test" }
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "e070dec6e78862435e7c23c92a6e4a93a9667377aed0b78b533966687028c314": {
+            "body": {
+                "abiVersion": "v1",
+                "engineSha": "",
+                "engineVersion": "1.0.0-dev.30",
+                "gitTag": "",
+                "openapiVersion": "1.0.0-dev.30",
+                "status": "ok"
+            },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "f508055eb62b660ca316f60420fc478123ca0b581fe520e8959b4d8b7c581b47": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "multi-scope-regression",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "sbx-d439b2590804695e96e6172d9fb1c5c6277e8331758fac94a953613284d9bda6",
+                            "kind": "context",
+                            "version": "0.0.0"
+                        }
+                    ],
+                    "contextId": "sbx-d439b2590804695e96e6172d9fb1c5c6277e8331758fac94a953613284d9bda6",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "0.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "DISTRICT_COORDINATORS",
+                            "confidence": "certain",
+                            "source": "aggregate"
+                        },
+                        {
+                            "categoryId": "from_school",
+                            "conceptId": "OUR_SCHOOL",
+                            "confidence": "certain",
+                            "source": "default"
+                        },
+                        {
+                            "categoryId": "filing_status",
+                            "conceptId": "FILED",
+                            "confidence": "certain",
+                            "source": "default"
+                        }
+                    ],
+                    "displayColor": {
+                        "background": "#546e7a",
+                        "text": "#ffffff"
+                    },
+                    "errors": [],
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "DISTRICT COORDINATORS",
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "fc157460061552f38bcf6676436b2fb55fc7c517fece0aa9f98fdcd823277eb6": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "multi-scope-regression",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "sbx-d439b2590804695e96e6172d9fb1c5c6277e8331758fac94a953613284d9bda6",
+                            "kind": "context",
+                            "version": "0.0.0"
+                        }
+                    ],
+                    "contextId": "sbx-d439b2590804695e96e6172d9fb1c5c6277e8331758fac94a953613284d9bda6",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "0.0.0"
+                },
+                "result": {
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            {
+                                "categoryId": "level",
+                                "conceptId": "STATE_ASSESSMENT_STAFF"
+                            }
+                        ],
+                        "omitted": [
+                            {
+                                "categoryId": "from_school",
+                                "conceptId": "OUR_SCHOOL"
+                            },
+                            {
+                                "categoryId": "filing_status",
+                                "conceptId": "FILED"
+                            }
+                        ],
+                        "unrepresentable": []
+                    },
+                    "result": "SA"
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        }
+    }
+}

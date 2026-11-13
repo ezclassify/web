@@ -5,7 +5,6 @@
  * name the view it is for.
  */
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { Context } from '@ezclassify/engine';
 import { openContext } from '../test-fixtures/context-doubles';
 import { SURFACES_SCHEME } from '../test-fixtures/surfaces-scheme';
 import { EzClassifyUI } from './ezclassify-ui';
@@ -16,17 +15,19 @@ import {
     typeText,
 } from './components/composer/composer-harness';
 import { asContext } from '../test-fixtures/as-context';
+import { connectDemoContext } from '../../../test-support/demo-runtime';
 
 const wait = (ms = 150) => new Promise((r) => setTimeout(r, ms));
 
-function createEngine() {
-    return openContext(Context.fromComponents({ scheme: SURFACES_SCHEME }))
-        .scheme;
+async function createEngine() {
+    return openContext(
+        await connectDemoContext({ draft: { scheme: SURFACES_SCHEME } }),
+    ).scheme;
 }
 
 describe('a store over a scheme that writes each role in its own view', () => {
     it('writes a whole marking in the whole default, whatever role its text reads as', async () => {
-        const store = new VanillaEzClassifyStore(createEngine());
+        const store = new VanillaEzClassifyStore(await createEngine());
 
         await store.publishRendered('doc', 'CONF // PARTNERS');
 
@@ -36,7 +37,7 @@ describe('a store over a scheme that writes each role in its own view', () => {
     });
 
     it('writes a part in the part default', async () => {
-        const store = new VanillaEzClassifyStore(createEngine());
+        const store = new VanillaEzClassifyStore(await createEngine());
         await store.publishRendered('doc', 'CONFIDENTIAL // PARTNERS');
         store.setPartOf('para', 'doc');
 
@@ -47,7 +48,7 @@ describe('a store over a scheme that writes each role in its own view', () => {
     });
 
     it('writes a held output beside rendered, and refuses one the scheme does not declare', async () => {
-        const store = new VanillaEzClassifyStore(createEngine());
+        const store = new VanillaEzClassifyStore(await createEngine());
         store.requestOutput('doc', 'sensitivity/short');
         // A bare view id is a valid outputFormat, but a publish names an
         // output by its address.
@@ -87,7 +88,7 @@ describe('plain inputs bound to a marking on that scheme', () => {
                    data-ezclassify-format="${shortFormat}" />
             <input id="plain" data-ezclassify-bound-to="doc" />`;
         document.body.appendChild(root);
-        const engine = createEngine();
+        const engine = await createEngine();
         forms = new EzClassifyUI(asContext(engine as never), { root });
         await wait();
         return {
@@ -189,7 +190,7 @@ describe('a marked field that names a bare view on that scheme', () => {
     });
 
     it('reads and writes its mark in that view on the default surface', async () => {
-        const engine = createEngine();
+        const engine = await createEngine();
         const process = vi.spyOn(engine, 'process');
         const root = document.createElement('div');
         root.innerHTML = `
@@ -230,7 +231,7 @@ describe('fields that show a part on that scheme and name no format', () => {
                    data-ezclassify-part-of="doc" />
             ${fields}`;
         document.body.appendChild(root);
-        const engine = createEngine();
+        const engine = await createEngine();
         forms = new EzClassifyUI(asContext(engine as never), { root });
         await wait();
         return {
@@ -297,11 +298,12 @@ describe('the needed strip of a field that writes one surface', () => {
     });
 
     /** The surfaces scheme with a category the retention surface requires. */
-    function retentionRequired() {
+    async function retentionRequired() {
         const doc = structuredClone(SURFACES_SCHEME);
         const keep = doc.scheme.data.categories.find((c) => c.id === 'keep')!;
         (keep as { required?: boolean }).required = true;
-        return openContext(Context.fromComponents({ scheme: doc })).scheme;
+        return openContext(await connectDemoContext({ draft: { scheme: doc } }))
+            .scheme;
     }
 
     it("names what the field's own surface lacks and nothing another surface requires", async () => {
@@ -311,9 +313,12 @@ describe('the needed strip of a field that writes one surface', () => {
             <label for="overall">Overall</label>
             <textarea id="overall" data-ezclassify-controller="marking"></textarea>`;
         document.body.appendChild(root);
-        forms = new EzClassifyUI(asContext(retentionRequired() as never), {
-            root,
-        });
+        forms = new EzClassifyUI(
+            asContext((await retentionRequired()) as never),
+            {
+                root,
+            },
+        );
         await wait();
         const host = root.querySelector<HTMLTextAreaElement>('#overall')!;
 

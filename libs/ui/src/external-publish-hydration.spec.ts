@@ -30,6 +30,7 @@ import type { Assertion } from '@ezclassify/types';
 import { loadMultiScopeRegression } from '../test-fixtures/load-multi-scope-regression';
 import { EzClassifyUI } from './ezclassify-ui';
 import { asContext } from '../test-fixtures/as-context';
+import { demoRuntimeSettled } from '../../../test-support/demo-runtime';
 
 const MARKING_ID = 'doc-marking';
 
@@ -84,7 +85,7 @@ const VIEWS_HTML = `
 `;
 
 async function flush(): Promise<void> {
-    for (let i = 0; i < 40; i++) await Promise.resolve();
+    await demoRuntimeSettled();
 }
 
 describe('externally published store state reaches bound views', () => {
@@ -181,7 +182,7 @@ describe('externally published store state reaches bound views', () => {
     }
 
     it('hydrates a view that mounts AFTER the state was published', async () => {
-        forms = new EzClassifyUI(asContext(loadMultiScopeRegression()), {
+        forms = new EzClassifyUI(asContext(await loadMultiScopeRegression()), {
             root,
         });
         await flush();
@@ -209,7 +210,7 @@ describe('externally published store state reaches bound views', () => {
     });
 
     it('hydrates a view when the state is published AFTER it mounts', async () => {
-        forms = new EzClassifyUI(asContext(loadMultiScopeRegression()), {
+        forms = new EzClassifyUI(asContext(await loadMultiScopeRegression()), {
             root,
         });
         await flush();
@@ -232,7 +233,7 @@ describe('externally published store state reaches bound views', () => {
     });
 
     it('leaves an unpublished marking alone when a view mounts against it', async () => {
-        forms = new EzClassifyUI(asContext(loadMultiScopeRegression()), {
+        forms = new EzClassifyUI(asContext(await loadMultiScopeRegression()), {
             root,
         });
         await flush();
@@ -246,7 +247,7 @@ describe('externally published store state reaches bound views', () => {
     });
 
     it('does not fight an edit the view itself published', async () => {
-        forms = new EzClassifyUI(asContext(loadMultiScopeRegression()), {
+        forms = new EzClassifyUI(asContext(await loadMultiScopeRegression()), {
             root,
         });
         await flush();
@@ -316,7 +317,7 @@ describe('hydrate-at-mount covers every marking-bound controller', () => {
      * the mutation observer mount it against the already-populated marking.
      */
     async function mountAfterPublish(html: string): Promise<void> {
-        forms = new EzClassifyUI(asContext(loadMultiScopeRegression()), {
+        forms = new EzClassifyUI(asContext(await loadMultiScopeRegression()), {
             root,
         });
         await flush();

@@ -22,8 +22,8 @@ import { readFileSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { Context } from '@ezclassify/engine';
 import { EzClassifyUI } from './ezclassify-ui';
+import { connectDemoContext } from '../../../test-support/demo-runtime';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 // From libs/ui/src/ up to repo root is three hops.
@@ -38,8 +38,8 @@ function loadScheme(): unknown {
     );
 }
 
-function newEngine() {
-    return Context.fromComponents({ scheme: loadScheme() });
+async function newEngine() {
+    return await connectDemoContext({ draft: { scheme: loadScheme() } });
 }
 
 /** Flush EzClassifyUI's async component-init chain and the rollup debounce. */
@@ -136,12 +136,12 @@ describe('nested-mount harness (DOM/SDK level)', () => {
         inner.appendChild(field);
 
         track(
-            new EzClassifyUI(newEngine(), {
+            new EzClassifyUI(await newEngine(), {
                 root: withOutput(outer, 'c1-outer-rollup'),
             }),
         );
         track(
-            new EzClassifyUI(newEngine(), {
+            new EzClassifyUI(await newEngine(), {
                 root: withOutput(inner, 'c1-inner-rollup'),
             }),
         );
@@ -178,12 +178,12 @@ describe('nested-mount harness (DOM/SDK level)', () => {
         inner.appendChild(field);
 
         const outerUI = track(
-            new EzClassifyUI(newEngine(), {
+            new EzClassifyUI(await newEngine(), {
                 root: withOutput(outer, 'c2-outer-rollup'),
             }),
         );
         const innerUI = track(
-            new EzClassifyUI(newEngine(), {
+            new EzClassifyUI(await newEngine(), {
                 root: withOutput(inner, 'c2-inner-rollup'),
             }),
         );
@@ -220,7 +220,7 @@ describe('nested-mount harness (DOM/SDK level)', () => {
         root.appendChild(field);
 
         const ui = track(
-            new EzClassifyUI(newEngine(), {
+            new EzClassifyUI(await newEngine(), {
                 root: withOutput(root, 'c3-rollup'),
             }),
         );
@@ -273,12 +273,12 @@ describe('nested-mount harness (DOM/SDK level)', () => {
         right.appendChild(rightField);
 
         const leftUI = track(
-            new EzClassifyUI(newEngine(), {
+            new EzClassifyUI(await newEngine(), {
                 root: withOutput(left, 'c4-left-rollup'),
             }),
         );
         const rightUI = track(
-            new EzClassifyUI(newEngine(), {
+            new EzClassifyUI(await newEngine(), {
                 root: withOutput(right, 'c4-right-rollup'),
             }),
         );
@@ -330,7 +330,7 @@ describe('nested-mount harness (DOM/SDK level)', () => {
         refWrap.appendChild(reference);
 
         track(
-            new EzClassifyUI(newEngine(), {
+            new EzClassifyUI(await newEngine(), {
                 root: withOutput(root, 'c6-rollup'),
             }),
         );
@@ -372,12 +372,12 @@ describe('nested-mount harness (DOM/SDK level)', () => {
         inner.appendChild(innerRef);
 
         track(
-            new EzClassifyUI(newEngine(), {
+            new EzClassifyUI(await newEngine(), {
                 root: withOutput(outer, 'c7-outer-rollup'),
             }),
         );
         track(
-            new EzClassifyUI(newEngine(), {
+            new EzClassifyUI(await newEngine(), {
                 root: withOutput(inner, 'c7-inner-rollup'),
             }),
         );

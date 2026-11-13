@@ -33,6 +33,7 @@ import { EzClassifyUI } from './ezclassify-ui';
 import type { TagInput } from './components/tag-input';
 import type { MarkingField } from './components/marking-field';
 import { asContext } from '../test-fixtures/as-context';
+import { demoRuntimeSettled } from '../../../test-support/demo-runtime';
 
 const HTML = `
   <input type="hidden" id="doc-marking" data-ezclassify-marking />
@@ -43,7 +44,7 @@ const HTML = `
 `;
 
 async function flush(): Promise<void> {
-    for (let i = 0; i < 8; i++) await Promise.resolve();
+    await demoRuntimeSettled();
     await new Promise((r) => setTimeout(r, 20));
 }
 
@@ -65,7 +66,7 @@ describe('suppressed default-fill assertion never leaks into a rendered surface'
     });
 
     it('deleting OAKWOOD auto-fills OUR_SCHOOL as state, absent from every rendered surface, on both TagInput and MarkingField', async () => {
-        forms = new EzClassifyUI(asContext(loadMultiScopeRegression()), {
+        forms = new EzClassifyUI(asContext(await loadMultiScopeRegression()), {
             root,
         });
         await flush();

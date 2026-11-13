@@ -17,15 +17,9 @@ import {
     vi,
     type Mock,
 } from 'vitest';
-import { Context } from '@ezclassify/engine';
 import { openContext } from '../../test-fixtures/context-doubles';
-import {
-    cedarValleyAccessYaml,
-    cedarValleyGuideYaml,
-    cedarValleySchemeYaml,
-} from '../../../../test-support/community-content';
-import * as jsYaml from 'js-yaml';
 import { EzClassifyUI } from '../ezclassify-ui';
+import { connectDemoContext } from '../../../../test-support/demo-runtime';
 
 const wait = (ms = 80) => new Promise((r) => setTimeout(r, ms));
 
@@ -51,11 +45,7 @@ afterEach(() => {
  */
 async function mount(field: string, partIds: string[]): Promise<HTMLElement> {
     const ctx = openContext(
-        Context.fromComponents({
-            scheme: jsYaml.load(cedarValleySchemeYaml),
-            guides: [jsYaml.load(cedarValleyGuideYaml)],
-            access: jsYaml.load(cedarValleyAccessYaml),
-        }),
+        await connectDemoContext({ contextId: 'cedar-valley' }),
     );
     const scheme = ctx.scheme as unknown as {
         process: (...args: unknown[]) => unknown;

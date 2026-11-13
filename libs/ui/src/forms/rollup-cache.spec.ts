@@ -5,12 +5,12 @@
  * format) tuples within a session to avoid repeated engine processing.
  */
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { loadCedarValleyContext } from '../../../../test-support/community-content';
 import { openContext } from '../../test-fixtures/context-doubles';
 import { clearRollupProcessCache, processRollupMarking } from './rollup';
 import { EzClassifyUI } from '../ezclassify-ui';
 import { bucketKey } from '../store/store-shared';
 import type { BucketScheme } from './types';
+import { connectDemoContext } from '../../../../test-support/demo-runtime';
 
 function mockCtx(processSpy: ReturnType<typeof vi.fn>) {
     return {
@@ -181,9 +181,14 @@ describe('forms/rollup process cache', () => {
     it('returns the real scheme result for an empty whole', async () => {
         const root = document.createElement('div');
         document.body.appendChild(root);
-        const forms = new EzClassifyUI(openContext(loadCedarValleyContext()), {
-            root,
-        });
+        const forms = new EzClassifyUI(
+            openContext(
+                await connectDemoContext({ contextId: 'cedar-valley' }),
+            ),
+            {
+                root,
+            },
+        );
         try {
             const expected = await Promise.resolve(
                 forms.engine.process('', {
@@ -264,9 +269,14 @@ describe('forms/rollup process cache', () => {
     it('EzClassifyUI.destroy() clears its own engine partition (documented teardown contract)', async () => {
         const root = document.createElement('div');
         document.body.appendChild(root);
-        const forms = new EzClassifyUI(openContext(loadCedarValleyContext()), {
-            root,
-        });
+        const forms = new EzClassifyUI(
+            openContext(
+                await connectDemoContext({ contextId: 'cedar-valley' }),
+            ),
+            {
+                root,
+            },
+        );
         const spy = vi.spyOn(forms.engine, 'process').mockResolvedValue({
             valid: true,
             rendered: 'R',

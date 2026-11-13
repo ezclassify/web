@@ -1,0 +1,170 @@
+{
+    "engineVersion": "1.0.0-dev.30",
+    "openapiVersion": "1.0.0-dev.30",
+    "responses": {
+        "4bd199aae1ba43bffff6732d779ff5c5456e371f6ee682b08c17f5677beb350a": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "optout-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "sbx-3638353fa93332fa0e2a618ef38b05334d68f0351be7d757be64de6ea418dd09",
+                            "kind": "context",
+                            "version": "0.0.0"
+                        }
+                    ],
+                    "contextId": "sbx-3638353fa93332fa0e2a618ef38b05334d68f0351be7d757be64de6ea418dd09",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "0.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "",
+                    "renders": {},
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "6361035121003e912c4f69e4b3a5fc1e17653e29be98b42641fbc4b4c158fa31": {
+            "body": [
+                {
+                    "id": "level",
+                    "label": "Level",
+                    "position": 1,
+                    "required": false,
+                    "rollup": "max",
+                    "single": true
+                }
+            ],
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "63f544fafe738392a896e5baa2ed0ed8dc2af9a26546257d54b1b1eab0d8abd8": {
+            "body": [],
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "6dc2dafa0f07689a96cc4b0bd7dc141e9fd0d1aad7a222bd652df6208acbeee8": {
+            "body": {
+                "defaultRenderFormat": "portion",
+                "description": "Opt-out Test test fixture.",
+                "embeddedMarking": [
+                    { "pattern": "\\(([^)]+)\\)", "template": "({marking}) " }
+                ],
+                "id": "optout-test",
+                "name": "Opt-out Test",
+                "referenceSurfaceLabel": {
+                    "plural": "Handbooks",
+                    "singular": "Handbook"
+                },
+                "roleAware": false,
+                "version": "1.0.0"
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "7a26585b7e81c105a43cb14ed72a42057b4d31549b3d5e3780848f79fa47d194": {
+            "body": [],
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "a3cc304a04ffa80f31d7859e709c011134f5587db3a11227d3563247f60a0309": {
+            "body": [
+                {
+                    "aliases": [],
+                    "categories": ["level"],
+                    "id": "U",
+                    "name": "Unclassified",
+                    "parents": [],
+                    "position": 1,
+                    "rank": 1,
+                    "views": { "default": "U" }
+                }
+            ],
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "d4ce2dc803306508b65487f2511eba3c9caaac558c3f939ca3608e7c8ecbf574": {
+            "body": {
+                "id": "sbx-3638353fa93332fa0e2a618ef38b05334d68f0351be7d757be64de6ea418dd09",
+                "scheme": {
+                    "id": "optout-test",
+                    "resolvedVersion": "1.0.0",
+                    "version": "1.0.0"
+                },
+                "schemes": [
+                    {
+                        "id": "optout-test",
+                        "roles": ["primary"],
+                        "selector": "optout-test",
+                        "version": "1.0.0"
+                    }
+                ],
+                "version": "0.0.0"
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "e070dec6e78862435e7c23c92a6e4a93a9667377aed0b78b533966687028c314": {
+            "body": {
+                "abiVersion": "v1",
+                "engineSha": "",
+                "engineVersion": "1.0.0-dev.30",
+                "gitTag": "",
+                "openapiVersion": "1.0.0-dev.30",
+                "status": "ok"
+            },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "e9e0b514ee4f250d8b121ddc77448882170a7dc23bfcff1068ad003761932079": {
+            "body": {
+                "contextId": "sbx-3638353fa93332fa0e2a618ef38b05334d68f0351be7d757be64de6ea418dd09"
+            },
+            "method": "PUT",
+            "statusCode": 200
+        },
+        "f17bd32df522bfa60425dd752627fb83e39584da632b76ecf337a49bea45616c": {
+            "body": [
+                {
+                    "categoryOrder": ["level"],
+                    "categorySeparators": { "level": "/" },
+                    "categoryViews": { "level": "default" },
+                    "id": "portion",
+                    "mode": "inline",
+                    "separator": "//",
+                    "surface": "marking"
+                }
+            ],
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        }
+    }
+}

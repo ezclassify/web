@@ -50,6 +50,7 @@ import {
     wholeStandInContext,
 } from '../../test-fixtures/whole-stand-in-scheme';
 import { levelState } from '../store/page-rollup-harness';
+import { demoRuntimeSettled } from '../../../../test-support/demo-runtime';
 
 let root: HTMLDivElement;
 let forms: EzClassifyUI | null = null;
@@ -108,9 +109,10 @@ function partMarkup(kind: FieldKind, value: string): string {
 async function mountPart(
     kind: FieldKind,
     value: string,
-    context: ReturnType<typeof wholeStandInContext> = wholeStandInContext(),
+    given?: Awaited<ReturnType<typeof wholeStandInContext>>,
     whole: string = STAND_IN_WHOLE,
 ): Promise<HTMLTextAreaElement> {
+    const context = given ?? (await wholeStandInContext());
     root.innerHTML = [
         `<input type="hidden" id="doc" data-ezclassify-marking value="${whole}" />`,
         `<label for="f">Title</label>`,
@@ -194,6 +196,7 @@ function rowState(label: string): {
 
 /** Hover the field's chip and return the tooltip text it shows. */
 async function chipTooltip(host: HTMLTextAreaElement): Promise<string> {
+    await demoRuntimeSettled();
     const chip = host
         .closest('.marked-input-wrap, .marked-textarea-wrap')!
         .querySelector<HTMLElement>(
@@ -201,10 +204,15 @@ async function chipTooltip(host: HTMLTextAreaElement): Promise<string> {
         );
     expect(chip).not.toBeNull();
     chip!.dispatchEvent(new Event('mouseenter'));
-    await wait(400);
+    // The tooltip waits for the description the runtime answers, then shows.
+    await expect
+        .poll(
+            () =>
+                document.body.querySelector<HTMLElement>('.ez-tooltip')?.hidden,
+            { timeout: 5000 },
+        )
+        .toBe(false);
     const tip = document.body.querySelector<HTMLElement>('.ez-tooltip');
-    expect(tip).not.toBeNull();
-    expect(tip!.hidden).toBe(false);
     return tip!.textContent ?? '';
 }
 
@@ -307,7 +315,7 @@ describe('nothing taken from a whole is read back', () => {
      * what each render call wrote.
      */
     function recordEngineInputs(
-        context: ReturnType<typeof wholeStandInContext>,
+        context: Awaited<ReturnType<typeof wholeStandInContext>>,
     ): Array<{ call: string; assertions: Assertion[]; wrote?: string }> {
         const seen: Array<{
             call: string;
@@ -334,9 +342,9 @@ describe('nothing taken from a whole is read back', () => {
             'aggregateAssertions',
         ]) {
             const real = engine[call].bind(engine);
-            engine[call] = (...args: unknown[]) => {
+            engine[call] = async (...args: unknown[]) => {
                 const handed = args.flatMap(lists);
-                const result = real(...args);
+                const result = await real(...args);
                 const wrote =
                     call === 'render'
                         ? (result as { rendered?: string }).rendered
@@ -361,7 +369,7 @@ describe('nothing taken from a whole is read back', () => {
     it.each(['marked-input', 'marked-textarea'] as const)(
         '%s reads, edits, commits and rolls up without handing them to a read',
         async (kind) => {
-            const context = wholeStandInContext();
+            const context = await wholeStandInContext();
             const seen = recordEngineInputs(context);
             const host = await mountPart(
                 kind,
@@ -382,7 +390,7 @@ describe('nothing taken from a whole is read back', () => {
     );
 
     it('render is handed a MarkedTextArea part as read, and writes it with the word (no render-side filter)', async () => {
-        const context = wholeStandInContext();
+        const context = await wholeStandInContext();
         const seen = recordEngineInputs(context);
         const host = await mountPart(
             'marked-textarea',
@@ -455,7 +463,7 @@ describe('the store reads parts against their whole', () => {
         await mountPart(
             'marked-input',
             '(L//SHARE) Quarterly notes',
-            wholeStandInContext(),
+            await wholeStandInContext(),
             CLOSED_WHOLE,
         );
         await wait(200);
@@ -495,7 +503,7 @@ describe('the store reads parts against their whole', () => {
                 partMarkup(kind, '(L//SHARE) Quarterly notes'),
             ].join('');
             forms = new EzClassifyUI(
-                asContext(wholeStandInContext() as never),
+                asContext((await wholeStandInContext()) as never),
                 { root },
             );
             await wait(450);
@@ -552,9 +560,12 @@ describe('MarkingField: an editable field that holds a part', () => {
             `<label for="f">Part marking</label>`,
             `<textarea id="f" data-ezclassify-controller="marking" data-ezclassify-part-of="doc" data-ezclassify-format="portion">L//SHARE</textarea>`,
         ].join('');
-        forms = new EzClassifyUI(asContext(wholeStandInContext() as never), {
-            root,
-        });
+        forms = new EzClassifyUI(
+            asContext((await wholeStandInContext()) as never),
+            {
+                root,
+            },
+        );
         await wait(450);
         const host = document.getElementById('f') as HTMLTextAreaElement;
         const field = forms.components.get(host)!;
@@ -601,14 +612,19 @@ describe('InlineMarkingEditor: a part read against its whole', () => {
         const changes: Array<{ rendered: string; assertions: Assertion[] }> =
             [];
         editor = new InlineMarkingEditor();
-        await editor.init(container, wholeStandInContext() as never, initial, {
-            formatId: 'portion',
-            resolveContext: whole,
-            assertions: seed,
-            root,
-            onChange: (rendered, assertions) =>
-                changes.push({ rendered, assertions }),
-        });
+        await editor.init(
+            container,
+            (await wholeStandInContext()) as never,
+            initial,
+            {
+                formatId: 'portion',
+                resolveContext: whole,
+                assertions: seed,
+                root,
+                onChange: (rendered, assertions) =>
+                    changes.push({ rendered, assertions }),
+            },
+        );
         await wait(80);
         const input = container.querySelector(
             '.inline-editor-input',
@@ -617,17 +633,19 @@ describe('InlineMarkingEditor: a part read against its whole', () => {
     }
 
     /** What a field hands the editor: the part as it read it, partners taken. */
-    function fieldSeed(): Assertion[] {
-        const read = wholeStandInContext().scheme.process('L//SHARE', {
+    async function fieldSeed(): Promise<Assertion[]> {
+        const read = (await (
+            await wholeStandInContext()
+        ).scheme.process('L//SHARE', {
             outputFormat: 'portion',
             context: whole(),
-        }) as { assertions: Assertion[] };
+        })) as { assertions: Assertion[] };
         expect(partners(read.assertions)).toEqual(TAKEN);
         return read.assertions;
     }
 
     it('does not offer the whole partners as values the part holds', async () => {
-        await openEditorOn('L//SHARE', fieldSeed());
+        await openEditorOn('L//SHARE', await fieldSeed());
         for (const label of ['ALPHA', 'BRAVO']) {
             expect(rowState(label).check).toBe('');
             expect(rowState(label).inferred).toBe(false);
@@ -635,7 +653,10 @@ describe('InlineMarkingEditor: a part read against its whole', () => {
     });
 
     it('commits a pick with the word, never the whole partners', async () => {
-        const { input, changes } = await openEditorOn('L//SHARE', fieldSeed());
+        const { input, changes } = await openEditorOn(
+            'L//SHARE',
+            await fieldSeed(),
+        );
         await pickRow(input, 'H');
         expect(input.value).toBe('H//SHARE');
         press(input, 'Enter');
@@ -645,7 +666,10 @@ describe('InlineMarkingEditor: a part read against its whole', () => {
     });
 
     it('states a partner only when the author adds one', async () => {
-        const { input, changes } = await openEditorOn('L//SHARE', fieldSeed());
+        const { input, changes } = await openEditorOn(
+            'L//SHARE',
+            await fieldSeed(),
+        );
         await pickRow(input, 'CHARLIE');
         expect(input.value).toBe('L//SHARE WITH CHARLIE');
         press(input, 'Enter');
@@ -664,7 +688,7 @@ describe('a whole that stops sharing: the store reads its part again (R-1)', () 
     /** A store over the stand-in scheme with `p` a part of `doc`. */
     async function storeWithPart() {
         const store = new VanillaEzClassifyStore(
-            wholeStandInContext().scheme as never,
+            (await wholeStandInContext()).scheme as never,
         );
         await store.publishRendered('doc', STAND_IN_WHOLE);
         store.setPartOf('p', 'doc');
@@ -700,10 +724,12 @@ describe('a whole that stops sharing: the store reads its part again (R-1)', () 
 
     it('a part published as the assertions a field read', async () => {
         const store = await storeWithPart();
-        const read = wholeStandInContext().scheme.process('L//SHARE', {
+        const read = (await (
+            await wholeStandInContext()
+        ).scheme.process('L//SHARE', {
             outputFormat: 'portion',
             context: { role: 'part', partOf: { rendered: STAND_IN_WHOLE } },
-        }) as { assertions: Assertion[] };
+        })) as { assertions: Assertion[] };
         expect(partners(read.assertions)).toEqual(TAKEN);
         await store.publishAssertions('p', read.assertions);
         expect(partners(store.get('p').assertions)).toEqual(TAKEN);
@@ -713,7 +739,7 @@ describe('a whole that stops sharing: the store reads its part again (R-1)', () 
 
     it('a joint part whose whole loses its owners', async () => {
         const store = new VanillaEzClassifyStore(
-            wholeStandInContext().scheme as never,
+            (await wholeStandInContext()).scheme as never,
         );
         await store.publishRendered('doc', JOINT_WHOLE);
         store.setPartOf('p', 'doc');
@@ -759,7 +785,7 @@ describe('a whole that stops sharing: the store reads its part again (R-1)', () 
         'a joint part whose whole %s is refused, and reads again once the whole is valid',
         async (_why, whole) => {
             const store = new VanillaEzClassifyStore(
-                wholeStandInContext().scheme as never,
+                (await wholeStandInContext()).scheme as never,
             );
             await store.publishRendered('doc', JOINT_WHOLE);
             store.setPartOf('p', 'doc');
@@ -795,7 +821,7 @@ describe('a whole that stops sharing: the store reads its part again (R-1)', () 
             const host = await mountPart(
                 kind,
                 '(JOINT H//SHARE) Quarterly notes',
-                wholeStandInContext(),
+                await wholeStandInContext(),
                 '',
             );
             let [part] = partStates(host);
@@ -893,7 +919,7 @@ describe.each([
             const host = await mountPart(
                 kind,
                 `(${form.mark}) Quarterly notes`,
-                wholeStandInContext(),
+                await wholeStandInContext(),
                 JOINT_WHOLE,
             );
             expect(host.value).toBe(`(${form.mark}) Quarterly notes`);
@@ -928,9 +954,12 @@ describe.each([
             `<label for="f">Part marking</label>`,
             `<textarea id="f" data-ezclassify-controller="marking" data-ezclassify-marking data-ezclassify-part-of="doc" data-ezclassify-format="portion">${form.mark}</textarea>`,
         ].join('');
-        forms = new EzClassifyUI(asContext(wholeStandInContext() as never), {
-            root,
-        });
+        forms = new EzClassifyUI(
+            asContext((await wholeStandInContext()) as never),
+            {
+                root,
+            },
+        );
         await wait(450);
         const host = document.getElementById('f') as HTMLTextAreaElement;
         const field = forms.components.get(host)!;
@@ -976,7 +1005,7 @@ describe('contextual stand-in options', () => {
             const host = await mountPart(
                 kind,
                 '(L) Title.',
-                wholeStandInContext(),
+                await wholeStandInContext(),
                 CLOSED_WHOLE,
             );
             await openEditor(host);
@@ -1005,9 +1034,12 @@ describe('a marking its format cannot write', () => {
     /** Mount a field holding `value` that reads in the part role. */
     async function mountRefusing(markup: string): Promise<HTMLTextAreaElement> {
         root.innerHTML = markup;
-        forms = new EzClassifyUI(asContext(wholeStandInContext() as never), {
-            root,
-        });
+        forms = new EzClassifyUI(
+            asContext((await wholeStandInContext()) as never),
+            {
+                root,
+            },
+        );
         await wait(450);
         return document.getElementById('f') as HTMLTextAreaElement;
     }
@@ -1092,12 +1124,17 @@ describe('a marking its format cannot write', () => {
         root.appendChild(container);
         const changes: string[] = [];
         editor = new InlineMarkingEditor();
-        await editor.init(container, wholeStandInContext() as never, 'L', {
-            formatId: 'portion',
-            resolveContext: () => ({ role: 'part' }),
-            root,
-            onChange: (rendered) => changes.push(rendered),
-        });
+        await editor.init(
+            container,
+            (await wholeStandInContext()) as never,
+            'L',
+            {
+                formatId: 'portion',
+                resolveContext: () => ({ role: 'part' }),
+                root,
+                onChange: (rendered) => changes.push(rendered),
+            },
+        );
         await wait(80);
         const input = container.querySelector(
             '.inline-editor-input',

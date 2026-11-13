@@ -1,6 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { asContext } from '../../test-fixtures/as-context';
-import { Context } from '@ezclassify/engine';
 import {
     openContext,
     type OpenContext,
@@ -12,63 +11,70 @@ import type {
 } from '@ezclassify/types';
 import { SingleSelect } from './single-select';
 import { EzClassifyUI } from '../ezclassify-ui';
+import {
+    connectDemoContext,
+    demoRuntimeSettled,
+} from '../../../../test-support/demo-runtime';
 
 /** A short warehouse identifier, unrelated to calendar or authority policy. */
-function warehouseContext(): OpenContext {
+async function warehouseContext(): Promise<OpenContext> {
     return openContext(
-        Context.fromComponents({
-            scheme: {
+        await connectDemoContext({
+            draft: {
                 scheme: {
-                    id: 'warehouse-entry',
-                    version: '1.0.0',
-                    name: 'Warehouse Entry',
-                    data: {
-                        categories: [
-                            {
-                                id: 'item',
-                                label: 'Item',
-                                single: true,
-                                required: false,
-                                rollup: 'union',
-                            },
-                        ],
-                        concepts: [
-                            {
-                                id: 'identifier',
-                                name: 'Identifier',
-                                categories: ['item'],
-                                views: {
-                                    default: 'ID:{value}',
-                                    compact: 'ID:{value}',
+                    scheme: {
+                        id: 'warehouse-entry',
+                        version: '1.0.0',
+                        name: 'Warehouse Entry',
+                        description: 'Warehouse Entry test fixture.',
+                        data: {
+                            categories: [
+                                {
+                                    id: 'item',
+                                    label: 'Item',
+                                    single: true,
+                                    required: false,
+                                    rollup: 'union',
                                 },
-                                text_input: {
-                                    label: 'Warehouse identifier',
-                                    encoding: {
-                                        type: 'text',
-                                        max_length: 3,
+                            ],
+                            concepts: [
+                                {
+                                    id: 'identifier',
+                                    name: 'Identifier',
+                                    categories: ['item'],
+                                    views: {
+                                        default: 'ID:{value}',
+                                        compact: 'ID:{value}',
                                     },
-                                    required: true,
+                                    text_input: {
+                                        label: 'Warehouse identifier',
+                                        encoding: {
+                                            type: 'text',
+                                            max_length: 3,
+                                        },
+                                        required: true,
+                                    },
                                 },
-                            },
-                            {
-                                id: 'unlabeled',
-                                name: 'Unlabeled',
-                                categories: ['item'],
-                                views: { default: 'NONE', compact: 'NONE' },
-                            },
-                        ],
-                    },
-                    rules: [],
-                    render: {
-                        default: 'compact',
-                        formats: [
-                            {
-                                id: 'compact',
-                                surface: 'marking',
-                                mode: 'inline',
-                                fields: [{ category: 'item' }],
-                            },
-                        ],
+                                {
+                                    id: 'unlabeled',
+                                    name: 'Unlabeled',
+                                    categories: ['item'],
+                                    views: { default: 'NONE', compact: 'NONE' },
+                                },
+                            ],
+                        },
+                        rules: [],
+                        render: {
+                            default: 'compact',
+                            formats: [
+                                {
+                                    id: 'compact',
+                                    surface: 'marking',
+                                    mode: 'inline',
+                                    fields: [{ category: 'item' }],
+                                },
+                            ],
+                        },
                     },
                 },
             },
@@ -85,7 +91,7 @@ const chosen = (value: string): Assertion => ({
 });
 
 async function mount(facet = true) {
-    const context = warehouseContext();
+    const context = await warehouseContext();
     const target = document.createElement('div');
     document.body.append(target);
     const component = new SingleSelect();
@@ -94,6 +100,7 @@ async function mount(facet = true) {
         ...(facet ? { facetOf: 'warehouse' } : {}),
     });
     component.setAssertions([chosen('ABC')]);
+    await demoRuntimeSettled();
     const process = vi.spyOn(context.scheme!, 'process');
     const input = () =>
         target.querySelector<HTMLInputElement>('.select-card-text-field')!;
@@ -105,7 +112,7 @@ async function mount(facet = true) {
 }
 
 async function delayedMount(initial: Assertion = chosen('AA')) {
-    const context = warehouseContext();
+    const context = await warehouseContext();
     const local = context.scheme;
     const replies: Array<() => void> = [];
     const requests: unknown[][] = [];
@@ -132,10 +139,12 @@ async function delayedMount(initial: Assertion = chosen('AA')) {
         facetOf: 'warehouse',
     });
     component.setAssertions([initial]);
+    await demoRuntimeSettled();
     replies[0]();
     await vi.waitFor(() =>
         expect(component.getAssertions()).toEqual([initial]),
     );
+    await demoRuntimeSettled();
     const input = () =>
         target.querySelector<HTMLInputElement>('.select-card-text-field')!;
     const edit = (value: string) => {
@@ -163,6 +172,7 @@ describe('supplemental draft canonical errors', () => {
             expect(component.getAssertions()).toEqual(refused.assertions),
         );
         component.setAssertions([...component.getAssertions()]);
+        await demoRuntimeSettled();
         expect(input().value).toBe('TOOLONG');
         expect(input().getAttribute('aria-invalid')).toBe('true');
         expect(
@@ -181,6 +191,7 @@ describe('supplemental draft canonical errors', () => {
         const { component, target, input, edit, process } = await mount();
         edit('TOOLONG');
         component.setAssertions([...component.getAssertions()]);
+        await demoRuntimeSettled();
         edit('XYZ');
         await vi.waitFor(() =>
             expect(component.getAssertions()).toEqual([chosen('XYZ')]),
@@ -198,9 +209,11 @@ describe('supplemental draft canonical errors', () => {
                 confidence: 'certain',
             },
         ]);
+        await demoRuntimeSettled();
         expect(target.querySelector('.select-card-text-field')).toBeNull();
         expect(component.getRendered()).toBe('NONE');
         component.setAssertions([chosen('ABC')]);
+        await demoRuntimeSettled();
         edit('TOOLONG');
         const select =
             target.querySelector<HTMLSelectElement>('.select-dropdown')!;
@@ -224,7 +237,7 @@ describe('supplemental draft canonical errors', () => {
         component.destroy();
     });
     it('keeps the canonical rejection visible through the real facet store while its accepted marking stays empty', async () => {
-        const context = warehouseContext();
+        const context = await warehouseContext();
         const refused = await context.scheme!.process([chosen('TOOLONG')]);
         const root = document.createElement('div');
         root.innerHTML =
@@ -286,7 +299,7 @@ describe('supplemental draft canonical errors', () => {
     });
 
     it('ignores a late rejected reading after a newer correction with exactly one read per edit', async () => {
-        const context = warehouseContext();
+        const context = await warehouseContext();
         const replies: Array<() => void> = [];
         const transport: ContextSchemeEngineAdapter = context.scheme;
         const remote = new Proxy(transport, {
@@ -311,6 +324,7 @@ describe('supplemental draft canonical errors', () => {
             facetOf: 'warehouse',
         });
         component.setAssertions([chosen('ABC')]);
+        await demoRuntimeSettled();
         replies[0]();
         // The first reading has landed once its text field is drawn.
         const input = await vi.waitFor(() => {
@@ -357,6 +371,7 @@ describe('supplemental draft canonical errors', () => {
             const supplied: Assertion = { ...chosen('XY'), ...update };
             const frozen = structuredClone(supplied);
             component.setAssertions([supplied]);
+            await demoRuntimeSettled();
             expect(component.getAssertions()).toEqual([frozen]);
             replies[1]();
             await Promise.resolve();

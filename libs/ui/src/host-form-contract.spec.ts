@@ -10,76 +10,86 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { rowFor } from './components/composer/composer-harness';
-import type { LocalContextSchemeEngineAdapter } from '@ezclassify/types';
-import { Context } from '@ezclassify/engine';
+import type { RemoteContextSchemeEngineAdapter } from '@ezclassify/types';
 import { EzClassifyUI } from './ezclassify-ui';
 import { MarkedInput } from './components/marked-input';
 import { asContext } from '../test-fixtures/as-context';
+import { connectDemoContext } from '../../../test-support/demo-runtime';
 
 function wait(ms = 50): Promise<void> {
     return new Promise((r) => setTimeout(r, ms));
 }
 
-function createMarkedEngine(): LocalContextSchemeEngineAdapter {
-    return Context.fromComponents({
-        scheme: {
-            scheme: {
-                id: 'contract-test',
-                version: '1.0.0',
-                name: 'Contract Test',
-                data: {
-                    concepts: [
-                        {
-                            id: 'U',
-                            name: 'Unclassified',
-                            views: { default: 'U' },
-                            categories: ['level'],
-                            parents: [],
-                            aliases: [],
-                            position: 1,
-                            rank: 1,
+async function createMarkedEngine(): Promise<RemoteContextSchemeEngineAdapter> {
+    return (
+        await connectDemoContext({
+            draft: {
+                scheme: {
+                    scheme: {
+                        id: 'contract-test',
+                        version: '1.0.0',
+                        name: 'Contract Test',
+                        description: 'Contract Test test fixture.',
+                        data: {
+                            concepts: [
+                                {
+                                    id: 'U',
+                                    name: 'Unclassified',
+                                    views: { default: 'U' },
+                                    categories: ['level'],
+                                    parents: [],
+                                    aliases: [],
+                                    position: 1,
+                                    rank: 1,
+                                },
+                                {
+                                    id: 'S',
+                                    name: 'Secret',
+                                    views: { default: 'S' },
+                                    categories: ['level'],
+                                    parents: [],
+                                    aliases: [],
+                                    position: 2,
+                                    rank: 2,
+                                },
+                            ],
+                            categories: [
+                                {
+                                    id: 'level',
+                                    label: 'Level',
+                                    required: false,
+                                    single: true,
+                                    rollup: 'max',
+                                    position: 1,
+                                },
+                            ],
                         },
-                        {
-                            id: 'S',
-                            name: 'Secret',
-                            views: { default: 'S' },
-                            categories: ['level'],
-                            parents: [],
-                            aliases: [],
-                            position: 2,
-                            rank: 2,
+                        rules: [],
+                        embedded_marking: [
+                            {
+                                pattern: '\\(([^)]+)\\)',
+                                template: '({marking}) ',
+                            },
+                        ],
+                        render: {
+                            default: 'portion',
+                            formats: [
+                                {
+                                    id: 'portion',
+                                    surface: 'marking',
+                                    mode: 'inline',
+                                    separator: '//',
+                                    fields: [
+                                        { category: 'level', separator: '/' },
+                                    ],
+                                },
+                            ],
                         },
-                    ],
-                    categories: [
-                        {
-                            id: 'level',
-                            label: 'Level',
-                            required: false,
-                            single: true,
-                            rollup: 'max',
-                            position: 1,
-                        },
-                    ],
-                },
-                rules: [],
-                embedded_marking: [
-                    { pattern: '\\(([^)]+)\\)', template: '({marking}) ' },
-                ],
-                render: {
-                    default: 'portion',
-                    formats: [
-                        {
-                            id: 'portion',
-                            surface: 'marking',
-                            mode: 'inline',
-                            separator: '//',
-                            fields: [{ category: 'level', separator: '/' }],
-                        },
-                    ],
+                    },
                 },
             },
-        },
-    }).scheme as LocalContextSchemeEngineAdapter;
+        })
+    ).scheme as RemoteContextSchemeEngineAdapter;
 }
 
 let root: HTMLDivElement;
@@ -113,7 +123,7 @@ function collectFieldInputEvents(
 
 describe('Host Form Contract: native input events', () => {
     it('marked-input: a picker-applied marking emits a native bubbling input event', async () => {
-        const engine = createMarkedEngine();
+        const engine = await createMarkedEngine();
         root.innerHTML = `<form id="f"><input type="text" id="mi" data-ezclassify-controller="marked-input"></form>`;
         const forms = new EzClassifyUI(asContext(engine as never), { root });
         activeForms.push(forms);
@@ -168,7 +178,7 @@ describe('Host Form Contract: native input events', () => {
     it('marked-input: an external setAssertions reflection stays silent', async () => {
         // External state (a store push, a host setAssertions call) is not a
         // change this field originated; re-announcing it would echo.
-        const engine = createMarkedEngine();
+        const engine = await createMarkedEngine();
         root.innerHTML = `<form id="f"><input type="text" id="mi" data-ezclassify-controller="marked-input" value="(U) memo"></form>`;
         const forms = new EzClassifyUI(asContext(engine as never), { root });
         activeForms.push(forms);
@@ -194,7 +204,7 @@ describe('Host Form Contract: native input events', () => {
     });
 
     it('marked-textarea: the add-marking template insert emits a native input event', async () => {
-        const engine = createMarkedEngine();
+        const engine = await createMarkedEngine();
         root.innerHTML = `<form id="f"><textarea id="ta" data-ezclassify-controller="marked-textarea">Body text.</textarea></form>`;
         const forms = new EzClassifyUI(asContext(engine as never), { root });
         activeForms.push(forms);
@@ -215,7 +225,7 @@ describe('Host Form Contract: native input events', () => {
     });
 
     it('plain bind: the blur-commit reformat emits a native input event; unchanged value emits none', async () => {
-        const engine = createMarkedEngine();
+        const engine = await createMarkedEngine();
         root.innerHTML = `<form id="f"><input id="p" data-ezclassify-marking type="text" value="u" /></form>`;
         const forms = new EzClassifyUI(asContext(engine as never), { root });
         activeForms.push(forms);

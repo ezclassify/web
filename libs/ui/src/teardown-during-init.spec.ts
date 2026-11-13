@@ -16,18 +16,20 @@ import { readFileSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { Context } from '@ezclassify/engine';
 import { EzClassifyUI } from './ezclassify-ui';
 import { VanillaEzClassifyStore } from './store/ezclassify-store';
+import { connectDemoContext } from '../../../test-support/demo-runtime';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const fixturesDir = resolve(__dirname, '../../../vendor/spec/fixtures/v1');
 
-function newContext() {
-    return Context.fromComponents({
-        scheme: JSON.parse(
-            readFileSync(resolve(fixturesDir, 'ref-scheme-1.json'), 'utf8'),
-        ),
+async function newContext() {
+    return await connectDemoContext({
+        draft: {
+            scheme: JSON.parse(
+                readFileSync(resolve(fixturesDir, 'ref-scheme-1.json'), 'utf8'),
+            ),
+        },
     });
 }
 
@@ -68,8 +70,8 @@ function destroyedStoreErrors(): string[] {
 }
 
 /** One instance over the fixture above, sharing a store the caller owns. */
-function mount(store: VanillaEzClassifyStore): EzClassifyUI {
-    return new EzClassifyUI(newContext(), {
+async function mount(store: VanillaEzClassifyStore): Promise<EzClassifyUI> {
+    return new EzClassifyUI(await newContext(), {
         root: container,
         store,
     });
@@ -77,12 +79,12 @@ function mount(store: VanillaEzClassifyStore): EzClassifyUI {
 
 describe('an instance destroyed while its fields are initializing', () => {
     it('reaches no store at all once it is torn down', async () => {
-        const context = newContext();
+        const context = await newContext();
         const store = new VanillaEzClassifyStore(context.scheme);
         const subscribe = vi.spyOn(store, 'subscribe');
         const subscribeAggregate = vi.spyOn(store, 'subscribeAggregate');
 
-        const ui = mount(store);
+        const ui = await mount(store);
         // Destroyed in the same tick as the scan, before any init resolves.
         ui.destroy();
         const callsAtTeardown =
@@ -96,10 +98,10 @@ describe('an instance destroyed while its fields are initializing', () => {
     });
 
     it('reports no failed mount when its store went with it', async () => {
-        const context = newContext();
+        const context = await newContext();
         const store = new VanillaEzClassifyStore(context.scheme);
 
-        const ui = mount(store);
+        const ui = await mount(store);
         // The order every integration tears down in: the instance, then the
         // store it owned alongside it.
         ui.destroy();
@@ -110,15 +112,15 @@ describe('an instance destroyed while its fields are initializing', () => {
     });
 
     it('leaves the replacement instance free to wire the same fields', async () => {
-        const first = new VanillaEzClassifyStore(newContext().scheme);
-        const firstUi = mount(first);
+        const first = new VanillaEzClassifyStore((await newContext()).scheme);
+        const firstUi = await mount(first);
         firstUi.destroy();
         first.destroy();
 
         // The StrictMode sequence: a second instance over the same committed
         // DOM, while the first one's inits are still in flight.
-        const second = new VanillaEzClassifyStore(newContext().scheme);
-        const secondUi = mount(second);
+        const second = new VanillaEzClassifyStore((await newContext()).scheme);
+        const secondUi = await mount(second);
         await settle();
 
         expect(destroyedStoreErrors()).toEqual([]);

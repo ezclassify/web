@@ -5,9 +5,9 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { loadCedarValleyContext } from '../../../test-support/community-content';
 import type { ContextAdapter } from '@ezclassify/types';
 import { EzClassifyUI } from './ezclassify-ui';
+import { connectDemoContext } from '../../../test-support/demo-runtime';
 
 function waitForReady(root: HTMLElement): Promise<void> {
     return new Promise((resolve) => {
@@ -51,8 +51,8 @@ describe('EzClassifyUI Contexts', () => {
     });
 
     it('mounts each field with the Context its nearest data-ezclassify-context names', async () => {
-        const first = loadCedarValleyContext();
-        const second = loadCedarValleyContext();
+        const first = await connectDemoContext({ contextId: 'cedar-valley' });
+        const second = await connectDemoContext({ contextId: 'cedar-valley' });
         root.setAttribute('data-ezclassify-context', 'first');
         const outer = field(root, 'outer');
         const section = document.createElement('section');
@@ -79,8 +79,12 @@ describe('EzClassifyUI Contexts', () => {
         forms = new EzClassifyUI(
             {
                 contexts: {
-                    first: loadCedarValleyContext(),
-                    second: loadCedarValleyContext(),
+                    first: await connectDemoContext({
+                        contextId: 'cedar-valley',
+                    }),
+                    second: await connectDemoContext({
+                        contextId: 'cedar-valley',
+                    }),
                 },
             },
             { root },
@@ -95,10 +99,10 @@ describe('EzClassifyUI Contexts', () => {
 
     describe('a level view on a page with two Contexts and no wrapper', () => {
         const MARKING = 'CONFIDENTIAL';
-        const contexts = () => ({
+        const contexts = async () => ({
             contexts: {
-                first: loadCedarValleyContext(),
-                second: loadCedarValleyContext(),
+                first: await connectDemoContext({ contextId: 'cedar-valley' }),
+                second: await connectDemoContext({ contextId: 'cedar-valley' }),
             },
         });
 
@@ -117,7 +121,7 @@ describe('EzClassifyUI Contexts', () => {
                     <input id="b" data-ezclassify-marking value="${MARKING}">
                 </section>`;
             const ready = waitForReady(root);
-            forms = new EzClassifyUI(contexts(), { root });
+            forms = new EzClassifyUI(await contexts(), { root });
             await ready;
             return errors;
         }
@@ -150,7 +154,7 @@ describe('EzClassifyUI Contexts', () => {
     });
 
     it('mounts every field with the only Context when given one', async () => {
-        const context = loadCedarValleyContext();
+        const context = await connectDemoContext({ contextId: 'cedar-valley' });
         const only = field(root, 'only');
 
         const ready = waitForReady(root);
@@ -160,10 +164,11 @@ describe('EzClassifyUI Contexts', () => {
         expect(contextOf(forms, only)).toBe(context);
     });
 
-    it('refuses a scheme view in place of a Context', () => {
+    it('refuses a scheme view in place of a Context', async () => {
+        const context = await connectDemoContext({ contextId: 'cedar-valley' });
         expect(
             () =>
-                new EzClassifyUI(loadCedarValleyContext().scheme as never, {
+                new EzClassifyUI(context.scheme as never, {
                     root,
                 }),
         ).toThrow(TypeError);

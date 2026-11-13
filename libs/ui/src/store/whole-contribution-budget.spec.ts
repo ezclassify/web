@@ -1,71 +1,82 @@
 import { describe, expect, it, vi } from 'vitest';
-import { Context } from '@ezclassify/engine';
 import { openOperations } from '../../test-fixtures/context-doubles';
 import { VanillaEzClassifyStore } from './ezclassify-store';
+import {
+    connectDemoContext,
+    demoRuntimeSettled,
+} from '../../../../test-support/demo-runtime';
 
-function engine(roleAware: boolean, hideValues = false) {
-    const context = Context.fromComponents({
-        scheme: {
+async function engine(roleAware: boolean, hideValues = false) {
+    const context = await connectDemoContext({
+        draft: {
             scheme: {
-                id: 'whole-dependency-test',
-                version: '1.0.0',
-                name: 'Whole dependency test',
-                role_aware: roleAware,
-                data: {
-                    categories: [
-                        {
-                            id: 'head',
-                            label: 'Head',
-                            single: true,
-                            required: false,
-                            rollup: 'union',
-                        },
-                        {
-                            id: 'values',
-                            label: 'Values',
-                            single: false,
-                            required: false,
-                            rollup: 'union',
-                        },
-                    ],
-                    concepts: [
-                        {
-                            id: 'SAME',
-                            name: 'Same',
-                            categories: ['head'],
-                            stands_for_whole: 'values',
-                            views: { default: 'SAME' },
-                        },
-                        {
-                            id: 'A',
-                            name: 'A',
-                            categories: ['values'],
-                            views: { default: 'A' },
-                        },
-                        {
-                            id: 'B',
-                            name: 'B',
-                            categories: ['values'],
-                            views: { default: 'B' },
-                        },
-                    ],
-                },
-                render: {
-                    default: 'default',
-                    formats: [
-                        {
-                            id: 'default',
-                            surface: 'default',
-                            mode: 'inline',
-                            separator: '/',
-                            fields: [
-                                { category: 'head' },
-                                ...(hideValues
-                                    ? []
-                                    : [{ category: 'values', separator: ',' }]),
-                            ],
-                        },
-                    ],
+                scheme: {
+                    id: 'whole-dependency-test',
+                    version: '1.0.0',
+                    name: 'Whole dependency test',
+                    description: 'Whole dependency test test fixture.',
+                    role_aware: roleAware,
+                    data: {
+                        categories: [
+                            {
+                                id: 'head',
+                                label: 'Head',
+                                single: true,
+                                required: false,
+                                rollup: 'union',
+                            },
+                            {
+                                id: 'values',
+                                label: 'Values',
+                                single: false,
+                                required: false,
+                                rollup: 'union',
+                            },
+                        ],
+                        concepts: [
+                            {
+                                id: 'SAME',
+                                name: 'Same',
+                                categories: ['head'],
+                                stands_for_whole: 'values',
+                                views: { default: 'SAME' },
+                            },
+                            {
+                                id: 'A',
+                                name: 'A',
+                                categories: ['values'],
+                                views: { default: 'A' },
+                            },
+                            {
+                                id: 'B',
+                                name: 'B',
+                                categories: ['values'],
+                                views: { default: 'B' },
+                            },
+                        ],
+                    },
+                    render: {
+                        default: 'default',
+                        formats: [
+                            {
+                                id: 'default',
+                                surface: 'default',
+                                mode: 'inline',
+                                separator: '/',
+                                fields: [
+                                    { category: 'head' },
+                                    ...(hideValues
+                                        ? []
+                                        : [
+                                              {
+                                                  category: 'values',
+                                                  separator: ',',
+                                              },
+                                          ]),
+                                ],
+                            },
+                        ],
+                    },
                 },
             },
         },
@@ -73,14 +84,14 @@ function engine(roleAware: boolean, hideValues = false) {
     return openOperations(context.scheme);
 }
 async function settle() {
-    for (let i = 0; i < 50; i++) await Promise.resolve();
+    await demoRuntimeSettled();
 }
 
 describe('whole edit contribution work', () => {
     it.each([4, 40])(
         'does not reread %i independent parts or recompute their whole rollup',
         async (count) => {
-            const source = engine(false);
+            const source = await engine(false);
             const process = vi.spyOn(source, 'process');
             const aggregate = vi.spyOn(source, 'aggregateAssertions');
             const store = new VanillaEzClassifyStore(source);
@@ -103,7 +114,7 @@ describe('whole edit contribution work', () => {
         },
     );
     it('takes a changed whole list again, including a stand-in first read without a whole', async () => {
-        const source = engine(true);
+        const source = await engine(true);
         const store = new VanillaEzClassifyStore(source);
         store.setPartOf('part', 'whole');
         await store.publishRendered('part', 'SAME');
@@ -127,7 +138,7 @@ describe('whole edit contribution work', () => {
         store.destroy();
     });
     it('recomputes conservatively when an adapter omits dependency metadata', async () => {
-        const source = engine(false);
+        const source = await engine(false);
         const getMeta = source.getSchemeMeta.bind(source);
         vi.spyOn(source, 'getSchemeMeta').mockImplementation(() => ({
             ...getMeta(),
@@ -145,7 +156,7 @@ describe('whole edit contribution work', () => {
         store.destroy();
     });
     it('rereads inherited facts when the whole changes without a rendering change', async () => {
-        const source = engine(true, true);
+        const source = await engine(true, true);
         const store = new VanillaEzClassifyStore(source);
         const fact = (conceptId: string, categoryId: string) =>
             ({

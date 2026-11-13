@@ -32,8 +32,8 @@ afterEach(() => {
 });
 
 /** A store that counts the seeds it is sent, and the reads it sends. */
-function countingStore() {
-    const engine = loadMultiScopeRegression();
+async function countingStore() {
+    const engine = await loadMultiScopeRegression();
     let reads = 0;
     const counted = new Proxy(engine, {
         get(target, key, receiver) {
@@ -79,7 +79,7 @@ describe('seeding marking hosts on mount', () => {
     it('seeds each host once on the initial mount', async () => {
         document.body.innerHTML = FORM;
         const root = document.querySelector<HTMLElement>('#root')!;
-        const { engine, store, seeds, reads } = countingStore();
+        const { engine, store, seeds, reads } = await countingStore();
         const isReady = ready(root);
         ui = new EzClassifyUI(asContext(engine), { root, store });
         await isReady;
@@ -123,7 +123,7 @@ describe('seeding marking hosts on mount', () => {
     it('seeds a host mounted after the initial sweep once, the same way', async () => {
         document.body.innerHTML = FORM;
         const root = document.querySelector<HTMLElement>('#root')!;
-        const { engine, store, seeds } = countingStore();
+        const { engine, store, seeds } = await countingStore();
         const isReady = ready(root);
         ui = new EzClassifyUI(asContext(engine), { root, store });
         await isReady;
@@ -157,7 +157,7 @@ describe('seeding marking hosts on mount', () => {
     it('rolls a whole up without a part the application registered and never seeded', async () => {
         document.body.innerHTML = FORM;
         const root = document.querySelector<HTMLElement>('#root')!;
-        const { engine, store } = countingStore();
+        const { engine, store } = await countingStore();
         store.setPartOf('never-seeded', 'document');
         const isReady = ready(root);
         ui = new EzClassifyUI(asContext(engine), { root, store });

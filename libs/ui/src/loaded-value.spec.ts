@@ -1,5 +1,4 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { Context } from '@ezclassify/engine';
 import type { ProcessResult } from '@ezclassify/types';
 import { EzClassifyUI } from './ezclassify-ui';
 import { VanillaEzClassifyStore } from './store/ezclassify-store';
@@ -7,6 +6,7 @@ import { ComponentBase } from './components/component-base';
 import { acceptedValue, judgedAsHeld } from './loaded-value';
 import { mockProcessResult } from './engine-result-mock';
 import { asContext } from '../test-fixtures/as-context';
+import { connectDemoContext } from '../../../test-support/demo-runtime';
 
 /** A recognition that read every character. */
 function complete(): ProcessResult['recognition'] {
@@ -28,99 +28,105 @@ function unread(
 }
 
 /** Neutral real-engine fixture: no policy vocabulary or external deployment. */
-function engine(repair = false) {
-    return Context.fromComponents({
-        scheme: {
-            scheme: {
-                id: 'loaded-values',
-                version: '1.0.0',
-                name: 'Loaded values',
-                data: {
-                    categories: [
-                        {
-                            id: 'level',
-                            label: 'Level',
-                            single: true,
-                            required: false,
-                            rollup: 'max',
-                        },
-                        {
-                            id: 'tag',
-                            label: 'Tag',
-                            single: false,
-                            required: false,
-                            rollup: 'union',
-                        },
-                        {
-                            id: 'hidden',
-                            label: 'Hidden',
-                            single: false,
-                            required: false,
-                            rollup: 'union',
-                        },
-                    ],
-                    concepts: [
-                        {
-                            id: 'A',
-                            name: 'Level A',
-                            categories: ['level'],
-                            views: { default: 'LEVEL A' },
-                            rank: 1,
-                        },
-                        {
-                            id: 'B',
-                            name: 'Level B',
-                            categories: ['level'],
-                            views: { default: 'LEVEL B' },
-                            rank: 2,
-                        },
-                        {
-                            id: 'X',
-                            name: 'Tag X',
-                            categories: ['tag'],
-                            views: { default: 'TAG-X' },
-                        },
-                        {
-                            id: 'H',
-                            name: 'Hidden fact',
-                            categories: ['hidden'],
-                            views: { default: 'HIDDEN' },
-                        },
-                    ],
-                },
-                rules: [],
-                parse: {
-                    ...(repair
-                        ? {
-                              normalize: [
-                                  {
-                                      id: 'dedup',
-                                      type: 'dedup',
-                                      description: 'Remove duplicate facts',
-                                      explanation: 'Repeated fact',
-                                  },
-                              ],
-                          }
-                        : {}),
-                },
-                render: {
-                    default: 'default',
-                    formats: [
-                        {
-                            id: 'default',
-                            surface: 'marking',
-                            mode: 'inline',
-                            separator: '//',
-                            fields: [
-                                { category: 'level', separator: '/' },
-                                { category: 'tag', separator: '/' },
+async function engine(repair = false) {
+    return (
+        await connectDemoContext({
+            draft: {
+                scheme: {
+                    scheme: {
+                        id: 'loaded-values',
+                        version: '1.0.0',
+                        name: 'Loaded values',
+                        description: 'Loaded values test fixture.',
+                        data: {
+                            categories: [
+                                {
+                                    id: 'level',
+                                    label: 'Level',
+                                    single: true,
+                                    required: false,
+                                    rollup: 'max',
+                                },
+                                {
+                                    id: 'tag',
+                                    label: 'Tag',
+                                    single: false,
+                                    required: false,
+                                    rollup: 'union',
+                                },
+                                {
+                                    id: 'hidden',
+                                    label: 'Hidden',
+                                    single: false,
+                                    required: false,
+                                    rollup: 'union',
+                                },
+                            ],
+                            concepts: [
+                                {
+                                    id: 'A',
+                                    name: 'Level A',
+                                    categories: ['level'],
+                                    views: { default: 'LEVEL A' },
+                                    rank: 1,
+                                },
+                                {
+                                    id: 'B',
+                                    name: 'Level B',
+                                    categories: ['level'],
+                                    views: { default: 'LEVEL B' },
+                                    rank: 2,
+                                },
+                                {
+                                    id: 'X',
+                                    name: 'Tag X',
+                                    categories: ['tag'],
+                                    views: { default: 'TAG-X' },
+                                },
+                                {
+                                    id: 'H',
+                                    name: 'Hidden fact',
+                                    categories: ['hidden'],
+                                    views: { default: 'HIDDEN' },
+                                },
                             ],
                         },
-                    ],
+                        rules: [],
+                        parse: {
+                            ...(repair
+                                ? {
+                                      normalize: [
+                                          {
+                                              id: 'dedup',
+                                              type: 'dedup',
+                                              description:
+                                                  'Remove duplicate facts',
+                                              explanation: 'Repeated fact',
+                                          },
+                                      ],
+                                  }
+                                : {}),
+                        },
+                        render: {
+                            default: 'default',
+                            formats: [
+                                {
+                                    id: 'default',
+                                    surface: 'marking',
+                                    mode: 'inline',
+                                    separator: '//',
+                                    fields: [
+                                        { category: 'level', separator: '/' },
+                                        { category: 'tag', separator: '/' },
+                                    ],
+                                },
+                            ],
+                        },
+                    },
                 },
             },
-        },
-    }).scheme;
+        })
+    ).scheme;
 }
 const mounted: EzClassifyUI[] = [];
 afterEach(() => {
@@ -151,7 +157,7 @@ async function mount(
         form.append(receiver);
     }
     document.body.append(form);
-    const ui = new EzClassifyUI(asContext(engine(repair) as never), {
+    const ui = new EzClassifyUI(asContext((await engine(repair)) as never), {
         root: form,
     });
     mounted.push(ui);
@@ -160,7 +166,7 @@ async function mount(
 }
 
 it('keeps an unproven string read in bound MF/TI receivers but accepts structured state without recognition', async () => {
-    const real = engine();
+    const real = await engine();
     const missingRecognition = new Proxy(real, {
         get(target, key) {
             const member = Reflect.get(target, key);
@@ -395,7 +401,7 @@ describe('supplied marking acceptance', () => {
             protected render(): void {}
             destroy(): void {}
         }
-        const real = engine();
+        const real = await engine();
         let release: (() => void) | undefined;
         let first = true;
         const delayed = new Proxy(real, {
@@ -484,7 +490,7 @@ describe('supplied marking acceptance', () => {
         expect(ui.store.get('loaded').rendered).toBe(input.value);
     });
     it('refuses a category edit that would discard unread seeded text, then allows it after correction', async () => {
-        const store = new VanillaEzClassifyStore(engine() as never);
+        const store = new VanillaEzClassifyStore((await engine()) as never);
         const source = '  LEVEL A//BOGUS-TOKEN//TAG-X  ';
         await store.seedRendered('doc', source);
         await store.publishAssertions(
@@ -540,7 +546,7 @@ describe('supplied marking acceptance', () => {
         expect(ui.store.get('loaded').valid).toBe(false);
     });
     it('keeps render-suppressed assertions when accepting structured state', async () => {
-        const store = new VanillaEzClassifyStore(engine() as never);
+        const store = new VanillaEzClassifyStore((await engine()) as never);
         await store.publishAssertions('doc', [
             {
                 conceptId: 'A',
@@ -569,7 +575,7 @@ describe('supplied marking acceptance', () => {
  * written, HOME is left out of the written marking by a render filter, the way
  * a scheme suppresses a fact from print.
  */
-function ruledEngine() {
+async function ruledEngine() {
     let position = 0;
     const concept = (id: string, category: string, view: string) => ({
         id,
@@ -590,92 +596,114 @@ function ruledEngine() {
         ...extra,
     });
     const whenLevel = { when: { category: 'level', is: 'has_content' } };
-    return Context.fromComponents({
-        scheme: {
-            scheme: {
-                id: 'settled-values',
-                version: '1.0.0',
-                name: 'Settled values',
-                default_scope: 'marking',
-                scopes: [{ id: 'marking', label: 'Marking' }],
-                data: {
-                    categories: [
-                        category('level'),
-                        category('tag'),
-                        category('handling', {
-                            default_concept: { concept: 'STD', ...whenLevel },
-                        }),
-                        category('origin', {
-                            default_concept: { concept: 'HOME', ...whenLevel },
-                        }),
-                    ],
-                    concepts: [
-                        concept('A', 'level', 'LEVEL A'),
-                        concept('B', 'level', 'LEVEL B'),
-                        concept('X', 'tag', 'TAG-X'),
-                        concept('G', 'tag', 'TAG-G'),
-                        concept('O', 'tag', 'TAG-O'),
-                        concept('R', 'tag', 'TAG-R'),
-                        concept('STD', 'handling', 'STD'),
-                        concept('HOME', 'origin', 'HOME'),
-                    ],
-                },
-                rules: [
-                    {
-                        id: 'g-needs-b',
-                        action: 'require_any',
-                        when: 'G',
-                        target: ['B'],
-                        phases: ['validate'],
-                        message: 'TAG-G requires LEVEL B.',
-                    },
-                    {
-                        id: 'g-adds-o',
-                        action: 'require',
-                        when: 'G',
-                        target: 'O',
-                        category: 'tag',
-                        message: 'TAG-G requires TAG-O.',
-                    },
-                    {
-                        id: 'o-forbids-r',
-                        action: 'forbid',
-                        when: 'O',
-                        target: 'R',
-                        message: 'TAG-O and TAG-R cannot appear together.',
-                    },
-                ],
-                render: {
-                    default: 'default',
-                    formats: [
-                        {
-                            id: 'default',
-                            surface: 'marking',
-                            mode: 'inline',
-                            separator: '//',
-                            fields: ['level', 'tag', 'handling', 'origin'].map(
-                                (id) => ({ category: id, separator: '/' }),
-                            ),
-                        },
-                    ],
-                },
-                filters: [
-                    {
-                        id: 'home-origin-unprinted',
-                        in: ['render'],
-                        remove: ['origin'],
-                        when: {
-                            all: [
-                                { category: 'origin', is: 'count_eq 1' },
-                                { category: 'origin', has: 'HOME' },
+    return (
+        await connectDemoContext({
+            draft: {
+                scheme: {
+                    scheme: {
+                        id: 'settled-values',
+                        version: '1.0.0',
+                        name: 'Settled values',
+                        description: 'Settled values test fixture.',
+                        default_scope: 'marking',
+                        scopes: [{ id: 'marking', label: 'Marking' }],
+                        data: {
+                            categories: [
+                                category('level'),
+                                category('tag'),
+                                category('handling', {
+                                    default_concept: {
+                                        concept: 'STD',
+                                        ...whenLevel,
+                                    },
+                                }),
+                                category('origin', {
+                                    default_concept: {
+                                        concept: 'HOME',
+                                        ...whenLevel,
+                                    },
+                                }),
+                            ],
+                            concepts: [
+                                concept('A', 'level', 'LEVEL A'),
+                                concept('B', 'level', 'LEVEL B'),
+                                concept('X', 'tag', 'TAG-X'),
+                                concept('G', 'tag', 'TAG-G'),
+                                concept('O', 'tag', 'TAG-O'),
+                                concept('R', 'tag', 'TAG-R'),
+                                concept('STD', 'handling', 'STD'),
+                                concept('HOME', 'origin', 'HOME'),
                             ],
                         },
-                        explanation: 'Home origin alone goes without saying.',
+                        rules: [
+                            {
+                                id: 'g-needs-b',
+                                action: 'require_any',
+                                when: 'G',
+                                target: ['B'],
+                                phases: ['validate'],
+                                message: 'TAG-G requires LEVEL B.',
+                            },
+                            {
+                                id: 'g-adds-o',
+                                action: 'require',
+                                when: 'G',
+                                target: 'O',
+                                category: 'tag',
+                                message: 'TAG-G requires TAG-O.',
+                            },
+                            {
+                                id: 'o-forbids-r',
+                                action: 'forbid',
+                                when: 'O',
+                                target: 'R',
+                                message:
+                                    'TAG-O and TAG-R cannot appear together.',
+                            },
+                        ],
+                        render: {
+                            default: 'default',
+                            formats: [
+                                {
+                                    id: 'default',
+                                    surface: 'marking',
+                                    mode: 'inline',
+                                    separator: '//',
+                                    fields: [
+                                        'level',
+                                        'tag',
+                                        'handling',
+                                        'origin',
+                                    ].map((id) => ({
+                                        category: id,
+                                        separator: '/',
+                                    })),
+                                },
+                            ],
+                        },
+                        filters: [
+                            {
+                                id: 'home-origin-unprinted',
+                                in: ['render'],
+                                remove: ['origin'],
+                                when: {
+                                    all: [
+                                        {
+                                            category: 'origin',
+                                            is: 'count_eq 1',
+                                        },
+                                        { category: 'origin', has: 'HOME' },
+                                    ],
+                                },
+                                explanation:
+                                    'Home origin alone goes without saying.',
+                            },
+                        ],
                     },
-                ],
+                },
             },
-        },
-    }).scheme;
+        })
+    ).scheme;
 }
 
 /** Mount `markup` over the ruled fixture and wait for it to settle. */
@@ -686,7 +714,7 @@ async function mountRuled(markup: string, publish?: [string, string]) {
     const ready = new Promise((resolve) =>
         form.addEventListener('ezclassify:ready', resolve, { once: true }),
     );
-    const ui = new EzClassifyUI(asContext(ruledEngine() as never), {
+    const ui = new EzClassifyUI(asContext((await ruledEngine()) as never), {
         root: form,
     });
     mounted.push(ui);
@@ -843,7 +871,7 @@ describe('a loaded marking takes what the engine fixed and says so', () => {
 });
 
 it('holds the conflicting marking in the store with author choices and no applied repair', async () => {
-    const store = new VanillaEzClassifyStore(ruledEngine() as never);
+    const store = new VanillaEzClassifyStore((await ruledEngine()) as never);
     await store.publishRendered('doc', 'LEVEL B//TAG-G/TAG-R');
     const state = store.get('doc');
     expect(state.rendered).toBe('LEVEL B//TAG-G/TAG-R//STD');
@@ -860,7 +888,7 @@ it('holds the conflicting marking in the store with author choices and no applie
 });
 
 it('takes a category edit over a fully read marking that breaks a rule', async () => {
-    const store = new VanillaEzClassifyStore(ruledEngine() as never);
+    const store = new VanillaEzClassifyStore((await ruledEngine()) as never);
     await store.seedRendered('doc', 'LEVEL A//TAG-G');
     expect(store.get('doc').valid).toBe(false);
     await store.publishAssertions(

@@ -18,8 +18,11 @@
  */
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import type { Assertion } from '@ezclassify/types';
-import { loadCedarValleyContext } from '../../../test-support/community-content';
 import { EzClassifyUI } from './ezclassify-ui';
+import {
+    connectDemoContext,
+    demoRuntimeSettled,
+} from '../../../test-support/demo-runtime';
 
 const MARKING_ID = 'doc-marking';
 
@@ -34,7 +37,7 @@ const STAGED: Assertion[] = [
 ];
 
 async function flush(): Promise<void> {
-    for (let i = 0; i < 40; i++) await Promise.resolve();
+    await demoRuntimeSettled();
 }
 
 describe('a plain bound input mounted after construction', () => {
@@ -65,7 +68,10 @@ describe('a plain bound input mounted after construction', () => {
     }
 
     it('settles instead of looping the observer forever', async () => {
-        forms = new EzClassifyUI(loadCedarValleyContext(), { root });
+        forms = new EzClassifyUI(
+            await connectDemoContext({ contextId: 'cedar-valley' }),
+            { root },
+        );
         await flush();
 
         const input = await mountLateInput();
@@ -89,7 +95,10 @@ describe('a plain bound input mounted after construction', () => {
         input.setAttribute('data-ezclassify-bound-to', MARKING_ID);
         root.appendChild(input);
 
-        forms = new EzClassifyUI(loadCedarValleyContext(), { root });
+        forms = new EzClassifyUI(
+            await connectDemoContext({ contextId: 'cedar-valley' }),
+            { root },
+        );
         await flush();
 
         expect(root.querySelectorAll('.ez-plain-field-wrap')).toHaveLength(1);
@@ -104,7 +113,10 @@ describe('a plain bound input mounted after construction', () => {
     });
 
     it('hydrates from state published before it mounted', async () => {
-        forms = new EzClassifyUI(loadCedarValleyContext(), { root });
+        forms = new EzClassifyUI(
+            await connectDemoContext({ contextId: 'cedar-valley' }),
+            { root },
+        );
         await flush();
 
         await forms.store.publishAssertions(MARKING_ID, STAGED);
@@ -119,7 +131,10 @@ describe('a plain bound input mounted after construction', () => {
     });
 
     it('leaves an unpublished marking alone', async () => {
-        forms = new EzClassifyUI(loadCedarValleyContext(), { root });
+        forms = new EzClassifyUI(
+            await connectDemoContext({ contextId: 'cedar-valley' }),
+            { root },
+        );
         await flush();
 
         const input = await mountLateInput();
@@ -128,7 +143,10 @@ describe('a plain bound input mounted after construction', () => {
     });
 
     it('still reflects a commit that lands after it mounted', async () => {
-        forms = new EzClassifyUI(loadCedarValleyContext(), { root });
+        forms = new EzClassifyUI(
+            await connectDemoContext({ contextId: 'cedar-valley' }),
+            { root },
+        );
         await flush();
 
         const input = await mountLateInput();
@@ -148,7 +166,10 @@ describe('a plain bound input mounted after construction', () => {
         input.setAttribute('data-ezclassify-bound-to', MARKING_ID);
         root.appendChild(input);
 
-        forms = new EzClassifyUI(loadCedarValleyContext(), { root });
+        forms = new EzClassifyUI(
+            await connectDemoContext({ contextId: 'cedar-valley' }),
+            { root },
+        );
         await flush();
 
         forms.destroy();
@@ -160,7 +181,10 @@ describe('a plain bound input mounted after construction', () => {
     });
 
     it('unwraps the late input on destroy and leaves no residue', async () => {
-        forms = new EzClassifyUI(loadCedarValleyContext(), { root });
+        forms = new EzClassifyUI(
+            await connectDemoContext({ contextId: 'cedar-valley' }),
+            { root },
+        );
         await flush();
 
         const input = await mountLateInput();

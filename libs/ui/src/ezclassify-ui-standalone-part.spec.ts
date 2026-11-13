@@ -6,8 +6,8 @@
  */
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { Context } from '@ezclassify/engine';
 import { EzClassifyUI } from './ezclassify-ui';
+import { connectDemoContext } from '../../../test-support/demo-runtime';
 
 const WHOLE_ONLY = 'WHOLE-ONLY belongs on a whole.';
 
@@ -25,59 +25,62 @@ function concept(id: string, category: string, position: number) {
 }
 
 /** A scheme with a form the part role refuses and the whole role takes. */
-function context() {
-    return Context.fromComponents({
-        scheme: {
+async function context() {
+    return await connectDemoContext({
+        draft: {
             scheme: {
-                id: 'standalone-part',
-                version: '1.0.0',
-                name: 'Standalone part',
-                role_aware: true,
-                data: {
-                    concepts: [
-                        concept('LOW', 'level', 1),
-                        concept('WHOLE-ONLY', 'handling', 1),
-                    ],
-                    categories: [
-                        {
-                            id: 'level',
-                            label: 'Level',
-                            single: true,
-                            rollup: 'max',
-                            position: 1,
-                        },
-                        {
-                            id: 'handling',
-                            label: 'Handling',
-                            single: false,
-                            rollup: 'union',
-                            position: 2,
-                        },
-                    ],
-                },
-                rules: [
-                    {
-                        id: 'whole-only-on-parts',
-                        action: 'forbid',
-                        target: 'WHOLE-ONLY',
-                        when: { role: 'part' },
-                        message: WHOLE_ONLY,
+                scheme: {
+                    id: 'standalone-part',
+                    version: '1.0.0',
+                    name: 'Standalone part',
+                    description: 'Standalone part test fixture.',
+                    role_aware: true,
+                    data: {
+                        concepts: [
+                            concept('LOW', 'level', 1),
+                            concept('WHOLE-ONLY', 'handling', 1),
+                        ],
+                        categories: [
+                            {
+                                id: 'level',
+                                label: 'Level',
+                                single: true,
+                                rollup: 'max',
+                                position: 1,
+                            },
+                            {
+                                id: 'handling',
+                                label: 'Handling',
+                                single: false,
+                                rollup: 'union',
+                                position: 2,
+                            },
+                        ],
                     },
-                ],
-                render: {
-                    default: 'default',
-                    formats: [
+                    rules: [
                         {
-                            id: 'default',
-                            surface: 'marking',
-                            mode: 'inline',
-                            separator: '//',
-                            fields: [
-                                { category: 'level', separator: '/' },
-                                { category: 'handling', separator: '/' },
-                            ],
+                            id: 'whole-only-on-parts',
+                            action: 'forbid',
+                            target: 'WHOLE-ONLY',
+                            when: { role: 'part' },
+                            message: WHOLE_ONLY,
                         },
                     ],
+                    render: {
+                        default: 'default',
+                        formats: [
+                            {
+                                id: 'default',
+                                surface: 'marking',
+                                mode: 'inline',
+                                separator: '//',
+                                fields: [
+                                    { category: 'level', separator: '/' },
+                                    { category: 'handling', separator: '/' },
+                                ],
+                            },
+                        ],
+                    },
                 },
             },
         },
@@ -90,9 +93,9 @@ let root: HTMLDivElement;
 let ui: EzClassifyUI | null;
 let errors: Array<{ code: string; message: string }>;
 
-function mount(markup: string): EzClassifyUI {
+async function mount(markup: string): Promise<EzClassifyUI> {
     root.innerHTML = markup;
-    ui = new EzClassifyUI(context(), { root });
+    ui = new EzClassifyUI(await context(), { root });
     return ui;
 }
 
@@ -119,63 +122,66 @@ afterEach(() => {
 });
 
 /** The same marking written differently in a whole and in a part. */
-function twoFormatContext() {
+async function twoFormatContext() {
     const level = {
         ...concept('LOW', 'level', 1),
         views: { default: 'LOW', portion: 'L' },
     };
-    return Context.fromComponents({
-        scheme: {
+    return await connectDemoContext({
+        draft: {
             scheme: {
-                id: 'two-format-part',
-                version: '1.0.0',
-                name: 'Two formats',
-                role_aware: true,
-                role_detection: {
-                    whole: { views: ['whole'] },
-                    part: { views: ['portion'] },
-                },
-                data: {
-                    concepts: [level],
-                    categories: [
-                        {
-                            id: 'level',
-                            label: 'Level',
-                            single: true,
-                            rollup: 'max',
-                            position: 1,
-                        },
-                    ],
-                },
-                rules: [
-                    {
-                        id: 'low-on-parts-only',
-                        action: 'forbid',
-                        target: 'LOW',
-                        when: { role: 'whole' },
-                        message: 'LOW belongs on a part.',
+                scheme: {
+                    id: 'two-format-part',
+                    version: '1.0.0',
+                    name: 'Two formats',
+                    description: 'Two formats test fixture.',
+                    role_aware: true,
+                    role_detection: {
+                        whole: { views: ['whole'] },
+                        part: { views: ['portion'] },
                     },
-                ],
-                render: {
-                    default: 'whole',
-                    formats: [
+                    data: {
+                        concepts: [level],
+                        categories: [
+                            {
+                                id: 'level',
+                                label: 'Level',
+                                single: true,
+                                rollup: 'max',
+                                position: 1,
+                            },
+                        ],
+                    },
+                    rules: [
                         {
-                            id: 'whole',
-                            surface: 'marking',
-                            mode: 'inline',
-                            separator: '//',
-                            view: 'default',
-                            fields: [{ category: 'level', separator: '/' }],
-                        },
-                        {
-                            id: 'portion',
-                            surface: 'marking',
-                            mode: 'inline',
-                            separator: '//',
-                            view: 'portion',
-                            fields: [{ category: 'level', separator: '/' }],
+                            id: 'low-on-parts-only',
+                            action: 'forbid',
+                            target: 'LOW',
+                            when: { role: 'whole' },
+                            message: 'LOW belongs on a part.',
                         },
                     ],
+                    render: {
+                        default: 'whole',
+                        formats: [
+                            {
+                                id: 'whole',
+                                surface: 'marking',
+                                mode: 'inline',
+                                separator: '//',
+                                view: 'default',
+                                fields: [{ category: 'level', separator: '/' }],
+                            },
+                            {
+                                id: 'portion',
+                                surface: 'marking',
+                                mode: 'inline',
+                                separator: '//',
+                                view: 'portion',
+                                fields: [{ category: 'level', separator: '/' }],
+                            },
+                        ],
+                    },
                 },
             },
         },
@@ -183,14 +189,14 @@ function twoFormatContext() {
 }
 
 describe('a part in a scheme with a part format', () => {
-    function mountTwoFormats(markup: string): EzClassifyUI {
+    async function mountTwoFormats(markup: string): Promise<EzClassifyUI> {
         root.innerHTML = markup;
-        ui = new EzClassifyUI(twoFormatContext(), { root });
+        ui = new EzClassifyUI(await twoFormatContext(), { root });
         return ui;
     }
 
     it('writes a plain input in the part format', async () => {
-        mountTwoFormats(
+        await mountTwoFormats(
             `<input id="part" data-ezclassify-marking data-ezclassify-role="part" value="L">`,
         );
         const input = byId<HTMLInputElement>('part');
@@ -203,7 +209,7 @@ describe('a part in a scheme with a part format', () => {
     });
 
     it('writes a controller field in the part format', async () => {
-        mountTwoFormats(
+        await mountTwoFormats(
             `<input id="part" data-ezclassify-controller="marking" data-ezclassify-role="part" value="LOW">`,
         );
         const input = byId<HTMLInputElement>('part');
@@ -219,7 +225,7 @@ describe('a part in a scheme with a part format', () => {
             configurable: true,
             value: { writeText },
         });
-        mountTwoFormats(
+        await mountTwoFormats(
             `<input id="part" data-ezclassify-marking data-ezclassify-role="part" value="L">`,
         );
         const input = byId<HTMLInputElement>('part');
@@ -235,7 +241,7 @@ describe('a part in a scheme with a part format', () => {
     });
 
     it('shows a view the part format the host holds', async () => {
-        mountTwoFormats(`
+        await mountTwoFormats(`
             <input type="hidden" id="part" data-ezclassify-marking data-ezclassify-role="part" value="low">
             <output id="shown" data-ezclassify-source="part"></output>`);
 
@@ -244,7 +250,7 @@ describe('a part in a scheme with a part format', () => {
     });
 
     it('writes a field bound to the part in the part format', async () => {
-        mountTwoFormats(`
+        await mountTwoFormats(`
             <input type="hidden" id="part" data-ezclassify-marking data-ezclassify-role="part" value="low">
             <input id="edit" data-ezclassify-controller="marking" data-ezclassify-bound-to="part">`);
         const edit = byId<HTMLInputElement>('edit');
@@ -257,7 +263,7 @@ describe('a part in a scheme with a part format', () => {
 
 describe('a part whose whole is not on the page', () => {
     it('refuses a whole-only form in a plain input, and in a plain input with no role takes it', async () => {
-        mount(`
+        await mount(`
             <input id="part" data-ezclassify-marking data-ezclassify-role="part" value="${FORM}">
             <input id="whole" data-ezclassify-marking value="${FORM}">`);
 
@@ -271,7 +277,7 @@ describe('a part whose whole is not on the page', () => {
     });
 
     it('refuses a whole-only form typed into a plain input', async () => {
-        mount(
+        await mount(
             `<input id="part" data-ezclassify-marking data-ezclassify-role="part" value="LOW">`,
         );
         const input = byId<HTMLInputElement>('part');
@@ -288,7 +294,7 @@ describe('a part whose whole is not on the page', () => {
 
     it('reads a plain input with no id in the part role', async () => {
         root.innerHTML = `<input data-ezclassify-marking data-ezclassify-role="part" value="LOW">`;
-        ui = new EzClassifyUI(context(), { root });
+        ui = new EzClassifyUI(await context(), { root });
         const input = root.querySelector<HTMLInputElement>('input')!;
         await expect.poll(() => input.value).toBe('LOW');
         expect(input.getAttribute('aria-invalid')).not.toBe('true');
@@ -304,7 +310,7 @@ describe('a part whose whole is not on the page', () => {
     it.each(['marking', 'tags'])(
         'refuses a whole-only form in a %s field',
         async (controller) => {
-            mount(
+            await mount(
                 `<input id="part" data-ezclassify-controller="${controller}" data-ezclassify-role="part" value="${FORM}">`,
             );
 
@@ -320,7 +326,7 @@ describe('a part whose whole is not on the page', () => {
     );
 
     it('refuses a whole-only form in a text host', async () => {
-        mount(
+        await mount(
             `<code id="part" data-ezclassify-controller="text" data-ezclassify-role="part">${FORM}</code>`,
         );
 
@@ -330,7 +336,7 @@ describe('a part whose whole is not on the page', () => {
     });
 
     it('mounts a marked input in the part role', async () => {
-        mount(
+        await mount(
             `<input id="part" data-ezclassify-controller="marked-input" data-ezclassify-role="part" value="">`,
         );
         await expect.poll(() => ui!.mounted.has(byId('part'))).toBe(true);
@@ -342,7 +348,7 @@ describe('a part whose whole is not on the page', () => {
     });
 
     it('feeds no rollup, and a whole beside it still does', async () => {
-        mount(`
+        await mount(`
             <input type="hidden" id="page" data-ezclassify-aggregate>
             <input id="part" data-ezclassify-controller="marking" data-ezclassify-role="part" value="LOW">
             <input id="plain" data-ezclassify-marking data-ezclassify-role="part" value="LOW">
@@ -361,7 +367,7 @@ describe('a part whose whole is not on the page', () => {
     });
 
     it('leaves its level when the attribute arrives, and rejoins when it goes', async () => {
-        mount(`
+        await mount(`
             <input type="hidden" id="page" data-ezclassify-aggregate>
             <input id="host" data-ezclassify-marking value="LOW">`);
         const page = byId<HTMLInputElement>('page');
@@ -375,7 +381,7 @@ describe('a part whose whole is not on the page', () => {
     });
 
     it('shows its marking to a view, which feeds nothing either', async () => {
-        mount(`
+        await mount(`
             <input type="hidden" id="page" data-ezclassify-aggregate>
             <input id="part" data-ezclassify-marking data-ezclassify-role="part" value="LOW">
             <output id="shown" data-ezclassify-source="part"></output>`);
@@ -386,7 +392,7 @@ describe('a part whose whole is not on the page', () => {
     });
 
     it('reads a hidden host in the part role, for its views', async () => {
-        mount(`
+        await mount(`
             <input type="hidden" id="page" data-ezclassify-aggregate>
             <input type="hidden" id="part" data-ezclassify-marking data-ezclassify-role="part" value="${FORM}">
             <input type="hidden" id="good" data-ezclassify-marking data-ezclassify-role="part" value="LOW">
@@ -404,7 +410,7 @@ describe('a part whose whole is not on the page', () => {
     });
 
     it('judges a field bound to one in the part role', async () => {
-        mount(`
+        await mount(`
             <input type="hidden" id="part" data-ezclassify-marking data-ezclassify-role="part" value="LOW">
             <input id="edit" data-ezclassify-controller="marking" data-ezclassify-bound-to="part">`);
         await expect.poll(() => ui!.mounted.has(byId('edit'))).toBe(true);
@@ -416,7 +422,7 @@ describe('a part whose whole is not on the page', () => {
     });
 
     it('takes its marking and its role out of the store with its host', async () => {
-        mount(`
+        await mount(`
             <input type="hidden" id="page" data-ezclassify-aggregate>
             <input type="hidden" id="part" data-ezclassify-marking data-ezclassify-role="part" value="LOW">`);
         const store = ui!.store;

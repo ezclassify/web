@@ -1,0 +1,3476 @@
+{
+    "engineVersion": "1.0.0-dev.30",
+    "openapiVersion": "1.0.0-dev.30",
+    "responses": {
+        "0178fc61719d378d4093e6a814d570281dd6c8308ba338b724a7be4e55d73689": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "ti-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "sbx-096479e13e824b8ee17bae8985d368fd6dc8bf9411eb4cde5650f008287ea23e",
+                            "kind": "context",
+                            "version": "0.0.0"
+                        }
+                    ],
+                    "contextId": "sbx-096479e13e824b8ee17bae8985d368fd6dc8bf9411eb4cde5650f008287ea23e",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "0.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "U",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            { "categoryId": "level", "conceptId": "U" }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "recognition": {
+                        "inputFormat": "default",
+                        "status": "complete",
+                        "surface": "marking",
+                        "unmatched": []
+                    },
+                    "rendered": "UNCLASSIFIED",
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "01c553a4791c82d9b7488f1da872a465fa424d35b8fb5575e88bc23cfaec18a3": {
+            "body": [],
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "09cd7dd0e4e3a4be7b991fccee32349c4f3ba4ac2f82e8b860ac126bc94b1acb": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "ti-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "sbx-096479e13e824b8ee17bae8985d368fd6dc8bf9411eb4cde5650f008287ea23e",
+                            "kind": "context",
+                            "version": "0.0.0"
+                        }
+                    ],
+                    "contextId": "sbx-096479e13e824b8ee17bae8985d368fd6dc8bf9411eb4cde5650f008287ea23e",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "0.0.0"
+                },
+                "result": {
+                    "suggestions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "S",
+                            "description": "Secret",
+                            "group": "Level",
+                            "label": "SECRET",
+                            "name": "Secret",
+                            "order": 2,
+                            "selected": true,
+                            "views": { "default": "SECRET" }
+                        },
+                        {
+                            "categoryId": "caveat",
+                            "conceptId": "NF",
+                            "description": "No Foreign",
+                            "group": "Caveat",
+                            "label": "NOFORN",
+                            "name": "No Foreign",
+                            "order": 1,
+                            "selected": false,
+                            "views": { "default": "NOFORN" }
+                        },
+                        {
+                            "categoryId": "caveat",
+                            "conceptId": "ORCON",
+                            "description": "Originator Controlled",
+                            "group": "Caveat",
+                            "label": "ORCON",
+                            "name": "Originator Controlled",
+                            "order": 2,
+                            "selected": false,
+                            "views": { "default": "ORCON" }
+                        },
+                        {
+                            "categoryId": "caveat",
+                            "conceptId": "REL",
+                            "description": "Releasable",
+                            "group": "Caveat",
+                            "label": "REL",
+                            "name": "Releasable",
+                            "order": 3,
+                            "selected": false,
+                            "views": { "default": "REL" }
+                        }
+                    ],
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "147a9bbd00edb39d42632cf56c813eda9dddc2d71fed98698d993ce5cce680ac": {
+            "body": {
+                "defaultRenderFormat": "default",
+                "description": "TagInput Favorites Test test fixture.",
+                "id": "ti-fav-test",
+                "name": "TagInput Favorites Test",
+                "referenceSurfaceLabel": {
+                    "plural": "Handbooks",
+                    "singular": "Handbook"
+                },
+                "roleAware": false,
+                "version": "1.0.0"
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "14ffc610daf7b2b81d7b950f4e574186804dee52523388558b8955c234dcf96f": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "ti-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "sbx-096479e13e824b8ee17bae8985d368fd6dc8bf9411eb4cde5650f008287ea23e",
+                            "kind": "context",
+                            "version": "0.0.0"
+                        }
+                    ],
+                    "contextId": "sbx-096479e13e824b8ee17bae8985d368fd6dc8bf9411eb4cde5650f008287ea23e",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "0.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [
+                        {
+                            "constraintId": "_recognition_incomplete",
+                            "message": "The input does not read as a marking."
+                        },
+                        {
+                            "constraintId": "_unmatched_token",
+                            "message": "\"not a marking at all\" was not recognized: it matched no known concept and will be kept visible in the rendered marking."
+                        }
+                    ],
+                    "inputWasValid": false,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "recognition": {
+                        "corrections": [],
+                        "status": "unrecognized",
+                        "unmatched": [
+                            {
+                                "end": 20,
+                                "start": 0,
+                                "text": "not a marking at all"
+                            }
+                        ]
+                    },
+                    "rendered": "not a marking at all",
+                    "renders": {},
+                    "valid": false,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "16439b58516b1f6bd99eeac4bbccab1344d2a9f4e663e13732995b7f69656139": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "ti-fav-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "sbx-017948e06acc532721fd20916de8dff71831fb6392a7dc60da0be2240b29376a",
+                            "kind": "context",
+                            "version": "0.0.0"
+                        }
+                    ],
+                    "contextId": "sbx-017948e06acc532721fd20916de8dff71831fb6392a7dc60da0be2240b29376a",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "0.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "S",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "caveat",
+                            "conceptId": "NF",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            { "categoryId": "level", "conceptId": "S" },
+                            { "categoryId": "caveat", "conceptId": "NF" }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "recognition": {
+                        "inputFormat": "default",
+                        "status": "complete",
+                        "surface": "marking",
+                        "unmatched": []
+                    },
+                    "rendered": "SECRET//NOFORN",
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "17be9aa5c38e1b4d34387c0dec93bc470fa80f31885059808cf5aafebfc4bbca": {
+            "body": [
+                {
+                    "id": "level",
+                    "label": "Level",
+                    "position": 1,
+                    "required": false,
+                    "rollup": "max",
+                    "single": true
+                },
+                {
+                    "id": "caveat",
+                    "label": "Caveat",
+                    "position": 2,
+                    "required": false,
+                    "rollup": "union",
+                    "single": false
+                },
+                {
+                    "id": "rel_countries",
+                    "label": "REL Countries",
+                    "position": 3,
+                    "required": false,
+                    "rollup": "union",
+                    "single": false
+                }
+            ],
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "1ac0800b6dd835e585346e7db546042afceca4fccd8b6abc440bba0f86839fbe": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "ti-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "sbx-096479e13e824b8ee17bae8985d368fd6dc8bf9411eb4cde5650f008287ea23e",
+                            "kind": "context",
+                            "version": "0.0.0"
+                        }
+                    ],
+                    "contextId": "sbx-096479e13e824b8ee17bae8985d368fd6dc8bf9411eb4cde5650f008287ea23e",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "0.0.0"
+                },
+                "result": {
+                    "suggestions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "S",
+                            "description": "Secret",
+                            "group": "Level",
+                            "label": "SECRET",
+                            "name": "Secret",
+                            "order": 2,
+                            "selected": true,
+                            "views": { "default": "SECRET" }
+                        },
+                        {
+                            "categoryId": "caveat",
+                            "conceptId": "NF",
+                            "description": "No Foreign",
+                            "group": "Caveat",
+                            "label": "NOFORN",
+                            "name": "No Foreign",
+                            "order": 1,
+                            "selected": true,
+                            "views": { "default": "NOFORN" }
+                        },
+                        {
+                            "categoryId": "caveat",
+                            "conceptId": "ORCON",
+                            "description": "Originator Controlled",
+                            "group": "Caveat",
+                            "label": "ORCON",
+                            "name": "Originator Controlled",
+                            "order": 2,
+                            "selected": false,
+                            "views": { "default": "ORCON" }
+                        },
+                        {
+                            "categoryId": "caveat",
+                            "conceptId": "REL",
+                            "description": "Releasable",
+                            "group": "Caveat",
+                            "label": "REL",
+                            "name": "Releasable",
+                            "order": 3,
+                            "selected": false,
+                            "views": { "default": "REL" }
+                        }
+                    ],
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "1c0ab4377ffc87e6b5798bc20de96695c7d16ae4357c0cf693164aa390fc48f8": {
+            "body": [],
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "1f635d637d982705683cd66072ab883544e4f509137353030316a021e519bfdb": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "ti-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "sbx-096479e13e824b8ee17bae8985d368fd6dc8bf9411eb4cde5650f008287ea23e",
+                            "kind": "context",
+                            "version": "0.0.0"
+                        }
+                    ],
+                    "contextId": "sbx-096479e13e824b8ee17bae8985d368fd6dc8bf9411eb4cde5650f008287ea23e",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "0.0.0"
+                },
+                "result": {
+                    "suggestions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "S",
+                            "description": "Secret",
+                            "group": "Level",
+                            "label": "SECRET",
+                            "name": "Secret",
+                            "order": 2,
+                            "selected": true,
+                            "views": { "default": "SECRET" }
+                        },
+                        {
+                            "categoryId": "caveat",
+                            "conceptId": "NF",
+                            "description": "No Foreign",
+                            "group": "Caveat",
+                            "label": "NOFORN",
+                            "name": "No Foreign",
+                            "order": 1,
+                            "selected": false,
+                            "views": { "default": "NOFORN" }
+                        },
+                        {
+                            "categoryId": "caveat",
+                            "conceptId": "ORCON",
+                            "description": "Originator Controlled",
+                            "group": "Caveat",
+                            "label": "ORCON",
+                            "name": "Originator Controlled",
+                            "order": 2,
+                            "selected": false,
+                            "views": { "default": "ORCON" }
+                        },
+                        {
+                            "categoryId": "caveat",
+                            "conceptId": "REL",
+                            "description": "Releasable",
+                            "group": "Caveat",
+                            "label": "REL",
+                            "name": "Releasable",
+                            "order": 3,
+                            "selected": true,
+                            "views": { "default": "REL" }
+                        },
+                        {
+                            "categoryId": "rel_countries",
+                            "conceptId": "USA",
+                            "description": "United States",
+                            "group": "REL Countries",
+                            "label": "USA",
+                            "name": "United States",
+                            "order": 1,
+                            "selected": true,
+                            "views": { "default": "USA" }
+                        },
+                        {
+                            "categoryId": "rel_countries",
+                            "conceptId": "GBR",
+                            "description": "United Kingdom",
+                            "group": "REL Countries",
+                            "label": "GBR",
+                            "name": "United Kingdom",
+                            "order": 2,
+                            "selected": true,
+                            "views": { "default": "GBR" }
+                        }
+                    ],
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "210a6e03bc330fc316defd288e597250864d3102c3f8e333a5a45630267120d5": {
+            "body": [
+                {
+                    "categoryOrder": ["level", "caveat", "rel_countries"],
+                    "categorySeparators": {
+                        "level": "/",
+                        "rel_countries": "/"
+                    },
+                    "categoryViews": {
+                        "level": "default",
+                        "rel_countries": "default"
+                    },
+                    "headers": [
+                        {
+                            "category": "rel_countries",
+                            "concept": "REL",
+                            "headerCategory": "caveat",
+                            "position": "prefix"
+                        }
+                    ],
+                    "id": "default",
+                    "mode": "inline",
+                    "separator": "//",
+                    "separatorBefore": { "rel_countries": "//" },
+                    "surface": "marking"
+                }
+            ],
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "23c264c47270f7ffee3b3dda53b33c01dac28fe7542f84820c29c1af9d47685f": {
+            "body": [
+                {
+                    "id": "level",
+                    "label": "Level",
+                    "position": 1,
+                    "required": false,
+                    "rollup": "max",
+                    "single": true
+                },
+                {
+                    "id": "caveat",
+                    "label": "Caveat",
+                    "position": 2,
+                    "required": false,
+                    "rollup": "union",
+                    "single": false
+                }
+            ],
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "244d29659fa5317808dc62f95f2e6c83725a0b84f622ed2c21c920f3c3846dfd": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "ti-fav-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "sbx-017948e06acc532721fd20916de8dff71831fb6392a7dc60da0be2240b29376a",
+                            "kind": "context",
+                            "version": "0.0.0"
+                        }
+                    ],
+                    "contextId": "sbx-017948e06acc532721fd20916de8dff71831fb6392a7dc60da0be2240b29376a",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "0.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "S",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            { "categoryId": "level", "conceptId": "S" }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "recognition": {
+                        "corrections": [],
+                        "inputFormat": "default",
+                        "status": "complete",
+                        "surface": "marking",
+                        "unmatched": []
+                    },
+                    "rendered": "SECRET",
+                    "renders": {},
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "2a40736b7253b2f47c478b0dba2d749355765843525123525c129e01e8cf6ee7": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "ti-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "sbx-096479e13e824b8ee17bae8985d368fd6dc8bf9411eb4cde5650f008287ea23e",
+                            "kind": "context",
+                            "version": "0.0.0"
+                        }
+                    ],
+                    "contextId": "sbx-096479e13e824b8ee17bae8985d368fd6dc8bf9411eb4cde5650f008287ea23e",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "0.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "S",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "caveat",
+                            "conceptId": "REL",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "rel_countries",
+                            "conceptId": "USA",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "rel_countries",
+                            "conceptId": "GBR",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            { "categoryId": "level", "conceptId": "S" },
+                            { "categoryId": "caveat", "conceptId": "REL" },
+                            {
+                                "categoryId": "rel_countries",
+                                "conceptId": "USA"
+                            },
+                            {
+                                "categoryId": "rel_countries",
+                                "conceptId": "GBR"
+                            }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "SECRET//REL//USA/GBR",
+                    "renders": {},
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "2bc610115784926af36d50737b55a26af8df18eb8fbd202c3d0c5650680ba5d7": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "ti-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "sbx-096479e13e824b8ee17bae8985d368fd6dc8bf9411eb4cde5650f008287ea23e",
+                            "kind": "context",
+                            "version": "0.0.0"
+                        }
+                    ],
+                    "contextId": "sbx-096479e13e824b8ee17bae8985d368fd6dc8bf9411eb4cde5650f008287ea23e",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "0.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [
+                        {
+                            "constraintId": "_recognition_incomplete",
+                            "message": "The input does not read as a marking."
+                        },
+                        {
+                            "constraintId": "_unmatched_token",
+                            "message": "\"not a marking at all\" was not recognized: it matched no known concept and will be kept visible in the rendered marking."
+                        }
+                    ],
+                    "inputWasValid": false,
+                    "notices": [],
+                    "recognition": {
+                        "status": "unrecognized",
+                        "unmatched": [
+                            {
+                                "end": 20,
+                                "start": 0,
+                                "text": "not a marking at all"
+                            }
+                        ]
+                    },
+                    "rendered": "not a marking at all",
+                    "valid": false,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "2e2df0191e85ce6471021b7b4ad705158222377fea0aae804e44c45a5ce2afd9": {
+            "body": {
+                "id": "sbx-096479e13e824b8ee17bae8985d368fd6dc8bf9411eb4cde5650f008287ea23e",
+                "scheme": {
+                    "id": "ti-test",
+                    "resolvedVersion": "1.0.0",
+                    "version": "1.0.0"
+                },
+                "schemes": [
+                    {
+                        "id": "ti-test",
+                        "roles": ["primary"],
+                        "selector": "ti-test",
+                        "version": "1.0.0"
+                    }
+                ],
+                "version": "0.0.0"
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "2e900260fd3fec391bc379a13e2c2515deae8bc9a9cb504fa5ab8a5cbc63694a": {
+            "body": [],
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "30c53bf59383721d3cda0b5e5d3886734a471621bfa6fbda901848360b706a16": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "ti-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "sbx-096479e13e824b8ee17bae8985d368fd6dc8bf9411eb4cde5650f008287ea23e",
+                            "kind": "context",
+                            "version": "0.0.0"
+                        }
+                    ],
+                    "contextId": "sbx-096479e13e824b8ee17bae8985d368fd6dc8bf9411eb4cde5650f008287ea23e",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "0.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "caveat",
+                            "conceptId": "ORCON",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            { "categoryId": "caveat", "conceptId": "ORCON" }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "recognition": {
+                        "inputFormat": "default",
+                        "status": "complete",
+                        "surface": "marking",
+                        "unmatched": []
+                    },
+                    "rendered": "ORCON",
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "413238bc5644e275027abc9fb8ecc7bfa27cd4f4129599f493a79ff72e024e2e": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "ti-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "sbx-096479e13e824b8ee17bae8985d368fd6dc8bf9411eb4cde5650f008287ea23e",
+                            "kind": "context",
+                            "version": "0.0.0"
+                        }
+                    ],
+                    "contextId": "sbx-096479e13e824b8ee17bae8985d368fd6dc8bf9411eb4cde5650f008287ea23e",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "0.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "S",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "caveat",
+                            "conceptId": "NF",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            { "categoryId": "level", "conceptId": "S" },
+                            { "categoryId": "caveat", "conceptId": "NF" }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "recognition": {
+                        "corrections": [],
+                        "inputFormat": "default",
+                        "status": "complete",
+                        "surface": "marking",
+                        "unmatched": []
+                    },
+                    "rendered": "SECRET//NOFORN",
+                    "renders": {},
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "413433226ebb4f41001bff8a123b62bbcdea0b3ba9d569728c7cd787cac03525": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "ti-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "sbx-096479e13e824b8ee17bae8985d368fd6dc8bf9411eb4cde5650f008287ea23e",
+                            "kind": "context",
+                            "version": "0.0.0"
+                        }
+                    ],
+                    "contextId": "sbx-096479e13e824b8ee17bae8985d368fd6dc8bf9411eb4cde5650f008287ea23e",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "0.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "S",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            { "categoryId": "level", "conceptId": "S" }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "SECRET",
+                    "renders": {},
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "4140e58cef0290a57c4b5e31c901a349639ccc7012b7453ceaa8407fb546f7c6": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "ti-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "sbx-096479e13e824b8ee17bae8985d368fd6dc8bf9411eb4cde5650f008287ea23e",
+                            "kind": "context",
+                            "version": "0.0.0"
+                        }
+                    ],
+                    "contextId": "sbx-096479e13e824b8ee17bae8985d368fd6dc8bf9411eb4cde5650f008287ea23e",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "0.0.0"
+                },
+                "result": { "suggestions": [], "warnings": [] }
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "426e52fb36a048720a7961ba2d3e0a96c4b4b6c6ecca83cc08e4cdfba7ca23a8": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "ti-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "sbx-096479e13e824b8ee17bae8985d368fd6dc8bf9411eb4cde5650f008287ea23e",
+                            "kind": "context",
+                            "version": "0.0.0"
+                        }
+                    ],
+                    "contextId": "sbx-096479e13e824b8ee17bae8985d368fd6dc8bf9411eb4cde5650f008287ea23e",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "0.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [
+                        {
+                            "constraintId": "_recognition_incomplete",
+                            "message": "The input does not read as a marking."
+                        },
+                        {
+                            "constraintId": "_unmatched_token",
+                            "message": "\"zzz\" was not recognized: it matched no known concept and will be kept visible in the rendered marking."
+                        }
+                    ],
+                    "inputWasValid": false,
+                    "notices": [],
+                    "recognition": {
+                        "status": "unrecognized",
+                        "unmatched": [{ "end": 3, "start": 0, "text": "zzz" }]
+                    },
+                    "rendered": "zzz",
+                    "valid": false,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "51d247aac1141f345017e2873ae115922c3f289835d81bb68704c15c63508a1e": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "ti-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "sbx-096479e13e824b8ee17bae8985d368fd6dc8bf9411eb4cde5650f008287ea23e",
+                            "kind": "context",
+                            "version": "0.0.0"
+                        }
+                    ],
+                    "contextId": "sbx-096479e13e824b8ee17bae8985d368fd6dc8bf9411eb4cde5650f008287ea23e",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "0.0.0"
+                },
+                "result": { "suggestions": [], "warnings": [] }
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "52cfabacaeb02b98edad25abe5bd146cb97a3db3bfe76e52099a1ca607a5199f": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "ti-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "sbx-096479e13e824b8ee17bae8985d368fd6dc8bf9411eb4cde5650f008287ea23e",
+                            "kind": "context",
+                            "version": "0.0.0"
+                        }
+                    ],
+                    "contextId": "sbx-096479e13e824b8ee17bae8985d368fd6dc8bf9411eb4cde5650f008287ea23e",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "0.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "U",
+                            "confidence": "certain",
+                            "source": "aggregate"
+                        },
+                        {
+                            "categoryId": "caveat",
+                            "conceptId": "ORCON",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "errors": [],
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "UNCLASSIFIED//ORCON",
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "56bdbbad58328163fe0c1f4a371bc98e0f0daa7b84915d150a34b9859d618c40": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "ti-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "sbx-096479e13e824b8ee17bae8985d368fd6dc8bf9411eb4cde5650f008287ea23e",
+                            "kind": "context",
+                            "version": "0.0.0"
+                        }
+                    ],
+                    "contextId": "sbx-096479e13e824b8ee17bae8985d368fd6dc8bf9411eb4cde5650f008287ea23e",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "0.0.0"
+                },
+                "result": {
+                    "suggestions": [
+                        {
+                            "categoryId": "caveat",
+                            "conceptId": "NF",
+                            "description": "No Foreign",
+                            "group": "Caveat",
+                            "label": "NOFORN",
+                            "name": "No Foreign",
+                            "order": 1,
+                            "selected": true,
+                            "views": { "default": "NOFORN" }
+                        }
+                    ],
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "5cc25abb7e81946ab39dca2f9db69780f85a393209d1af6daf72821748705bdd": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "ti-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "sbx-096479e13e824b8ee17bae8985d368fd6dc8bf9411eb4cde5650f008287ea23e",
+                            "kind": "context",
+                            "version": "0.0.0"
+                        }
+                    ],
+                    "contextId": "sbx-096479e13e824b8ee17bae8985d368fd6dc8bf9411eb4cde5650f008287ea23e",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "0.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "S",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            { "categoryId": "level", "conceptId": "S" }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [
+                        {
+                            "affectedConcepts": ["S"],
+                            "constraintId": "_recognition_incomplete",
+                            "message": "Only part of the input reads as a marking in the \"default\" format; the rest is not recognized."
+                        },
+                        {
+                            "constraintId": "_unmatched_token",
+                            "message": "\"BOGUS\" was not recognized: it matched no known concept and will be kept visible in the rendered marking."
+                        }
+                    ],
+                    "inputWasValid": false,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "recognition": {
+                        "corrections": [],
+                        "inputFormat": "default",
+                        "status": "partial",
+                        "surface": "marking",
+                        "unmatched": [
+                            { "end": 13, "start": 8, "text": "BOGUS" }
+                        ]
+                    },
+                    "rendered": "SECRET//BOGUS",
+                    "renders": {},
+                    "valid": false,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "610451296b8343395fe81be0ca57c028c9270c420e43b72617ca34869adcdff4": {
+            "body": [],
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "6489ec8956ba53ab4d7f8da856b87acce47d393ad9a9cd2578a51f1ce366d8ad": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "ti-fav-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "sbx-017948e06acc532721fd20916de8dff71831fb6392a7dc60da0be2240b29376a",
+                            "kind": "context",
+                            "version": "0.0.0"
+                        }
+                    ],
+                    "contextId": "sbx-017948e06acc532721fd20916de8dff71831fb6392a7dc60da0be2240b29376a",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "0.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "S",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            { "categoryId": "level", "conceptId": "S" }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "SECRET",
+                    "renders": {},
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "6b66a79c5eaa570842cac0d2f874fcef5448681dd191f4ffd0984d7d92775980": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "ti-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "sbx-096479e13e824b8ee17bae8985d368fd6dc8bf9411eb4cde5650f008287ea23e",
+                            "kind": "context",
+                            "version": "0.0.0"
+                        }
+                    ],
+                    "contextId": "sbx-096479e13e824b8ee17bae8985d368fd6dc8bf9411eb4cde5650f008287ea23e",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "0.0.0"
+                },
+                "result": {
+                    "suggestions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "S",
+                            "description": "Secret",
+                            "group": "Level",
+                            "label": "SECRET",
+                            "name": "Secret",
+                            "order": 2,
+                            "selected": false,
+                            "views": { "default": "SECRET" }
+                        }
+                    ],
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "6c57ae1ce2dc869cf9787d955507b709cbff556ce7e17e0d16b7a9ff4cc728ab": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "ti-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "sbx-096479e13e824b8ee17bae8985d368fd6dc8bf9411eb4cde5650f008287ea23e",
+                            "kind": "context",
+                            "version": "0.0.0"
+                        }
+                    ],
+                    "contextId": "sbx-096479e13e824b8ee17bae8985d368fd6dc8bf9411eb4cde5650f008287ea23e",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "0.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "S",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            { "categoryId": "level", "conceptId": "S" }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "recognition": {
+                        "corrections": [],
+                        "inputFormat": "default",
+                        "status": "complete",
+                        "surface": "marking",
+                        "unmatched": []
+                    },
+                    "rendered": "SECRET",
+                    "renders": {},
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "74a420e29e311ad5468c049ea03d432b9988f57f4a940e2a38fcffd97101eac2": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "ti-fav-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "sbx-017948e06acc532721fd20916de8dff71831fb6392a7dc60da0be2240b29376a",
+                            "kind": "context",
+                            "version": "0.0.0"
+                        }
+                    ],
+                    "contextId": "sbx-017948e06acc532721fd20916de8dff71831fb6392a7dc60da0be2240b29376a",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "0.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "S",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            { "categoryId": "level", "conceptId": "S" }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "recognition": {
+                        "inputFormat": "default",
+                        "status": "complete",
+                        "surface": "marking",
+                        "unmatched": []
+                    },
+                    "rendered": "SECRET",
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "7bf1901ee60f762462b86ec70a2a8da529898d4b21ddf1c9609be15dd3d985e7": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "ti-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "sbx-096479e13e824b8ee17bae8985d368fd6dc8bf9411eb4cde5650f008287ea23e",
+                            "kind": "context",
+                            "version": "0.0.0"
+                        }
+                    ],
+                    "contextId": "sbx-096479e13e824b8ee17bae8985d368fd6dc8bf9411eb4cde5650f008287ea23e",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "0.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [
+                        {
+                            "constraintId": "_recognition_incomplete",
+                            "message": "The input does not read as a marking."
+                        },
+                        {
+                            "constraintId": "_unmatched_token",
+                            "message": "\"SEC\" was not recognized: it matched no known concept and will be kept visible in the rendered marking."
+                        }
+                    ],
+                    "inputWasValid": false,
+                    "notices": [],
+                    "recognition": {
+                        "status": "unrecognized",
+                        "unmatched": [{ "end": 3, "start": 0, "text": "SEC" }]
+                    },
+                    "rendered": "SEC",
+                    "valid": false,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "806b8a8de9f59197d508e31914c3aebb98bd360eed0cc3045b053b1504f28aba": {
+            "body": [
+                {
+                    "aliases": [],
+                    "categories": ["level"],
+                    "id": "U",
+                    "name": "Unclassified",
+                    "parents": [],
+                    "position": 1,
+                    "rank": 1,
+                    "views": { "default": "UNCLASSIFIED" }
+                },
+                {
+                    "aliases": [],
+                    "categories": ["level"],
+                    "id": "S",
+                    "name": "Secret",
+                    "parents": [],
+                    "position": 2,
+                    "rank": 2,
+                    "views": { "default": "SECRET" }
+                },
+                {
+                    "aliases": [],
+                    "categories": ["caveat"],
+                    "id": "NF",
+                    "name": "No Foreign",
+                    "parents": [],
+                    "position": 1,
+                    "rank": 1,
+                    "views": { "default": "NOFORN" }
+                },
+                {
+                    "aliases": [],
+                    "categories": ["caveat"],
+                    "id": "ORCON",
+                    "name": "Originator Controlled",
+                    "parents": [],
+                    "position": 2,
+                    "rank": 1,
+                    "views": { "default": "ORCON" }
+                },
+                {
+                    "aliases": [],
+                    "categories": ["caveat"],
+                    "id": "REL",
+                    "name": "Releasable",
+                    "parents": [],
+                    "position": 3,
+                    "rank": 1,
+                    "views": { "default": "REL" }
+                },
+                {
+                    "aliases": [],
+                    "categories": ["rel_countries"],
+                    "id": "USA",
+                    "name": "United States",
+                    "parents": [],
+                    "position": 1,
+                    "rank": 1,
+                    "views": { "default": "USA" }
+                },
+                {
+                    "aliases": [],
+                    "categories": ["rel_countries"],
+                    "id": "GBR",
+                    "name": "United Kingdom",
+                    "parents": [],
+                    "position": 2,
+                    "rank": 1,
+                    "views": { "default": "GBR" }
+                }
+            ],
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "850cffcbd60b0e8cee0975d119a1d0a382b463cce7bbb04f274e9cd07728e7bd": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "ti-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "sbx-096479e13e824b8ee17bae8985d368fd6dc8bf9411eb4cde5650f008287ea23e",
+                            "kind": "context",
+                            "version": "0.0.0"
+                        }
+                    ],
+                    "contextId": "sbx-096479e13e824b8ee17bae8985d368fd6dc8bf9411eb4cde5650f008287ea23e",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "0.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "U",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "caveat",
+                            "conceptId": "NF",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            { "categoryId": "level", "conceptId": "U" },
+                            { "categoryId": "caveat", "conceptId": "NF" }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "recognition": {
+                        "corrections": [],
+                        "inputFormat": "default",
+                        "status": "complete",
+                        "surface": "marking",
+                        "unmatched": []
+                    },
+                    "rendered": "UNCLASSIFIED//NOFORN",
+                    "renders": {},
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "861b9c685294eea71ce3a6b186e5dae3a78a3adff76c9df7b0fcea31634a1d0b": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "ti-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "sbx-096479e13e824b8ee17bae8985d368fd6dc8bf9411eb4cde5650f008287ea23e",
+                            "kind": "context",
+                            "version": "0.0.0"
+                        }
+                    ],
+                    "contextId": "sbx-096479e13e824b8ee17bae8985d368fd6dc8bf9411eb4cde5650f008287ea23e",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "0.0.0"
+                },
+                "result": {
+                    "suggestions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "U",
+                            "description": "Unclassified",
+                            "group": "Level",
+                            "label": "UNCLASSIFIED",
+                            "name": "Unclassified",
+                            "order": 1,
+                            "selected": true,
+                            "views": { "default": "UNCLASSIFIED" }
+                        }
+                    ],
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "8e4321ceab83fd28b993db71036b3495720a64eebb3c40ef9d0b545a2c959079": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "ti-fav-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "sbx-017948e06acc532721fd20916de8dff71831fb6392a7dc60da0be2240b29376a",
+                            "kind": "context",
+                            "version": "0.0.0"
+                        }
+                    ],
+                    "contextId": "sbx-017948e06acc532721fd20916de8dff71831fb6392a7dc60da0be2240b29376a",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "0.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "S",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "caveat",
+                            "conceptId": "NF",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            { "categoryId": "level", "conceptId": "S" },
+                            { "categoryId": "caveat", "conceptId": "NF" }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "recognition": {
+                        "corrections": [],
+                        "inputFormat": "default",
+                        "status": "complete",
+                        "surface": "marking",
+                        "unmatched": []
+                    },
+                    "rendered": "SECRET//NOFORN",
+                    "renders": {},
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "91db05d226dc37d2cda57a9f6261b5941a7a173f021980ec9baceb251e11d735": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "ti-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "sbx-096479e13e824b8ee17bae8985d368fd6dc8bf9411eb4cde5650f008287ea23e",
+                            "kind": "context",
+                            "version": "0.0.0"
+                        }
+                    ],
+                    "contextId": "sbx-096479e13e824b8ee17bae8985d368fd6dc8bf9411eb4cde5650f008287ea23e",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "0.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "S",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "caveat",
+                            "conceptId": "REL",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "rel_countries",
+                            "conceptId": "USA",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "rel_countries",
+                            "conceptId": "GBR",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            { "categoryId": "level", "conceptId": "S" },
+                            { "categoryId": "caveat", "conceptId": "REL" },
+                            {
+                                "categoryId": "rel_countries",
+                                "conceptId": "USA"
+                            },
+                            {
+                                "categoryId": "rel_countries",
+                                "conceptId": "GBR"
+                            }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "recognition": {
+                        "corrections": [],
+                        "inputFormat": "default",
+                        "status": "complete",
+                        "surface": "marking",
+                        "unmatched": []
+                    },
+                    "rendered": "SECRET//REL//USA/GBR",
+                    "renders": {},
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "9a7b7f8c0dcc116d52dd0bca618afa34a7ca9b743d59f82eef0fd651af09eac9": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "ti-fav-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "sbx-017948e06acc532721fd20916de8dff71831fb6392a7dc60da0be2240b29376a",
+                            "kind": "context",
+                            "version": "0.0.0"
+                        }
+                    ],
+                    "contextId": "sbx-017948e06acc532721fd20916de8dff71831fb6392a7dc60da0be2240b29376a",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "0.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "S",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "caveat",
+                            "conceptId": "NF",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            { "categoryId": "level", "conceptId": "S" },
+                            { "categoryId": "caveat", "conceptId": "NF" }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "SECRET//NOFORN",
+                    "renders": {},
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "9d80a11c0d8187712fb05b1b4b3246d1704404f36033db9b65c38ff3fefed677": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "ti-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "sbx-096479e13e824b8ee17bae8985d368fd6dc8bf9411eb4cde5650f008287ea23e",
+                            "kind": "context",
+                            "version": "0.0.0"
+                        }
+                    ],
+                    "contextId": "sbx-096479e13e824b8ee17bae8985d368fd6dc8bf9411eb4cde5650f008287ea23e",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "0.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "U",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "caveat",
+                            "conceptId": "NF",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            { "categoryId": "level", "conceptId": "U" },
+                            { "categoryId": "caveat", "conceptId": "NF" }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "recognition": {
+                        "corrections": [],
+                        "inputFormat": "default",
+                        "status": "complete",
+                        "surface": "marking",
+                        "unmatched": []
+                    },
+                    "rendered": "UNCLASSIFIED//NOFORN",
+                    "renders": {},
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "9e6031bd985b1187b7d78d3c07c640e0a3a571217504ac78a6acec519e515dcf": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "ti-fav-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "sbx-017948e06acc532721fd20916de8dff71831fb6392a7dc60da0be2240b29376a",
+                            "kind": "context",
+                            "version": "0.0.0"
+                        }
+                    ],
+                    "contextId": "sbx-017948e06acc532721fd20916de8dff71831fb6392a7dc60da0be2240b29376a",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "0.0.0"
+                },
+                "result": {
+                    "suggestions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "S",
+                            "description": "Secret",
+                            "group": "Level",
+                            "label": "SECRET",
+                            "name": "Secret",
+                            "order": 1,
+                            "selected": false,
+                            "views": { "default": "SECRET" }
+                        },
+                        {
+                            "categoryId": "caveat",
+                            "conceptId": "NF",
+                            "description": "No Foreign",
+                            "group": "Caveat",
+                            "label": "NOFORN",
+                            "name": "No Foreign",
+                            "order": 1,
+                            "selected": false,
+                            "views": { "default": "NOFORN" }
+                        }
+                    ],
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "a0bc814191873db0084a0c5467ede78421dd2f9035a544f45029a795a2f87558": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "ti-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "sbx-096479e13e824b8ee17bae8985d368fd6dc8bf9411eb4cde5650f008287ea23e",
+                            "kind": "context",
+                            "version": "0.0.0"
+                        }
+                    ],
+                    "contextId": "sbx-096479e13e824b8ee17bae8985d368fd6dc8bf9411eb4cde5650f008287ea23e",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "0.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "",
+                    "renders": {},
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "a36b861179f367624a2dee7f7f8fb0be457e11ec0d0b7cd4e00bbb43397b5e25": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "ti-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "sbx-096479e13e824b8ee17bae8985d368fd6dc8bf9411eb4cde5650f008287ea23e",
+                            "kind": "context",
+                            "version": "0.0.0"
+                        }
+                    ],
+                    "contextId": "sbx-096479e13e824b8ee17bae8985d368fd6dc8bf9411eb4cde5650f008287ea23e",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "0.0.0"
+                },
+                "result": {
+                    "suggestions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "U",
+                            "description": "Unclassified",
+                            "group": "Level",
+                            "label": "UNCLASSIFIED",
+                            "name": "Unclassified",
+                            "order": 1,
+                            "selected": true,
+                            "views": { "default": "UNCLASSIFIED" }
+                        },
+                        {
+                            "categoryId": "caveat",
+                            "conceptId": "NF",
+                            "description": "No Foreign",
+                            "group": "Caveat",
+                            "label": "NOFORN",
+                            "name": "No Foreign",
+                            "order": 1,
+                            "selected": true,
+                            "views": { "default": "NOFORN" }
+                        },
+                        {
+                            "categoryId": "caveat",
+                            "conceptId": "ORCON",
+                            "description": "Originator Controlled",
+                            "group": "Caveat",
+                            "label": "ORCON",
+                            "name": "Originator Controlled",
+                            "order": 2,
+                            "selected": false,
+                            "views": { "default": "ORCON" }
+                        },
+                        {
+                            "categoryId": "caveat",
+                            "conceptId": "REL",
+                            "description": "Releasable",
+                            "group": "Caveat",
+                            "label": "REL",
+                            "name": "Releasable",
+                            "order": 3,
+                            "selected": false,
+                            "views": { "default": "REL" }
+                        }
+                    ],
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "a4ea1a4eb90d7a152df18128bfe0fc43d6d273c8adcf854a31bd93a9e3e093fb": {
+            "body": [
+                {
+                    "aliases": [],
+                    "categories": ["level"],
+                    "id": "S",
+                    "name": "Secret",
+                    "parents": [],
+                    "position": 1,
+                    "rank": 2,
+                    "views": { "default": "SECRET" }
+                },
+                {
+                    "aliases": [],
+                    "categories": ["caveat"],
+                    "id": "NF",
+                    "name": "No Foreign",
+                    "parents": [],
+                    "position": 1,
+                    "rank": 1,
+                    "views": { "default": "NOFORN" }
+                }
+            ],
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "a50b602bbe02f8b7b50bf3db5f02fc83b9bfc934a932aeb3a14f4d9daacb9d6c": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "ti-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "sbx-096479e13e824b8ee17bae8985d368fd6dc8bf9411eb4cde5650f008287ea23e",
+                            "kind": "context",
+                            "version": "0.0.0"
+                        }
+                    ],
+                    "contextId": "sbx-096479e13e824b8ee17bae8985d368fd6dc8bf9411eb4cde5650f008287ea23e",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "0.0.0"
+                },
+                "result": { "suggestions": [], "warnings": [] }
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "aa1b9ca3ac360cd3d3f4ca25b27dee776012c97361a7a02eb6f0ae22b95a0af6": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "ti-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "sbx-096479e13e824b8ee17bae8985d368fd6dc8bf9411eb4cde5650f008287ea23e",
+                            "kind": "context",
+                            "version": "0.0.0"
+                        }
+                    ],
+                    "contextId": "sbx-096479e13e824b8ee17bae8985d368fd6dc8bf9411eb4cde5650f008287ea23e",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "0.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "U",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "caveat",
+                            "conceptId": "ORCON",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            { "categoryId": "level", "conceptId": "U" },
+                            { "categoryId": "caveat", "conceptId": "ORCON" }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "recognition": {
+                        "corrections": [],
+                        "inputFormat": "default",
+                        "status": "complete",
+                        "surface": "marking",
+                        "unmatched": []
+                    },
+                    "rendered": "UNCLASSIFIED//ORCON",
+                    "renders": {},
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "aeca6d58b4e999d698adc98d2f33eeb8eabb2162b51ced945c84dd81caadb181": {
+            "body": [
+                {
+                    "categoryOrder": ["level", "caveat"],
+                    "categorySeparators": { "caveat": "/", "level": "/" },
+                    "categoryViews": {
+                        "caveat": "default",
+                        "level": "default"
+                    },
+                    "id": "default",
+                    "mode": "inline",
+                    "separator": "//",
+                    "separatorBefore": { "caveat": "//" },
+                    "surface": "marking"
+                }
+            ],
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "aff3362c2aff9cea86af8bfb591793b69cf4fac41e7a16cfd859954ceb653a42": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "ti-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "sbx-096479e13e824b8ee17bae8985d368fd6dc8bf9411eb4cde5650f008287ea23e",
+                            "kind": "context",
+                            "version": "0.0.0"
+                        }
+                    ],
+                    "contextId": "sbx-096479e13e824b8ee17bae8985d368fd6dc8bf9411eb4cde5650f008287ea23e",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "0.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "S",
+                            "confidence": "certain",
+                            "source": "aggregate"
+                        }
+                    ],
+                    "errors": [],
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "SECRET",
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "b3d71ff0dc6467c40ef9e3b92e1e284b1fd86bfde6ff804ecab2fe0a8d863da1": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "ti-fav-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "sbx-017948e06acc532721fd20916de8dff71831fb6392a7dc60da0be2240b29376a",
+                            "kind": "context",
+                            "version": "0.0.0"
+                        }
+                    ],
+                    "contextId": "sbx-017948e06acc532721fd20916de8dff71831fb6392a7dc60da0be2240b29376a",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "0.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "",
+                    "renders": {},
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "b931591047463b420e5edca505271600d15891b33005073969cf359c17fbf61b": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "ti-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "sbx-096479e13e824b8ee17bae8985d368fd6dc8bf9411eb4cde5650f008287ea23e",
+                            "kind": "context",
+                            "version": "0.0.0"
+                        }
+                    ],
+                    "contextId": "sbx-096479e13e824b8ee17bae8985d368fd6dc8bf9411eb4cde5650f008287ea23e",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "0.0.0"
+                },
+                "result": {
+                    "suggestions": [
+                        {
+                            "categoryId": "caveat",
+                            "conceptId": "ORCON",
+                            "description": "Originator Controlled",
+                            "group": "Caveat",
+                            "label": "ORCON",
+                            "name": "Originator Controlled",
+                            "order": 2,
+                            "selected": true,
+                            "views": { "default": "ORCON" }
+                        }
+                    ],
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "b9ca04b2d6160632919e6766d70307339a8bd7eea61a6190fe6d07d96f2736a9": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "ti-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "sbx-096479e13e824b8ee17bae8985d368fd6dc8bf9411eb4cde5650f008287ea23e",
+                            "kind": "context",
+                            "version": "0.0.0"
+                        }
+                    ],
+                    "contextId": "sbx-096479e13e824b8ee17bae8985d368fd6dc8bf9411eb4cde5650f008287ea23e",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "0.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "S",
+                            "confidence": "certain",
+                            "source": "user"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            { "categoryId": "level", "conceptId": "S" }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "SECRET",
+                    "renders": {},
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "bd2735bbf795874fc29799b7b8e004ebbf212b239889f3a2b6262e50c7b596bb": {
+            "body": {
+                "defaultRenderFormat": "default",
+                "description": "TagInput Test test fixture.",
+                "id": "ti-test",
+                "name": "TagInput Test",
+                "referenceSurfaceLabel": {
+                    "plural": "Handbooks",
+                    "singular": "Handbook"
+                },
+                "roleAware": false,
+                "version": "1.0.0"
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "be5540bc1fe83faea2e40a16abfdbbb1aab61d5d54bffd2753b5ff3e93dc7372": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "ti-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "sbx-096479e13e824b8ee17bae8985d368fd6dc8bf9411eb4cde5650f008287ea23e",
+                            "kind": "context",
+                            "version": "0.0.0"
+                        }
+                    ],
+                    "contextId": "sbx-096479e13e824b8ee17bae8985d368fd6dc8bf9411eb4cde5650f008287ea23e",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "0.0.0"
+                },
+                "result": {
+                    "categoryId": "level",
+                    "conceptId": "S",
+                    "lines": ["Level: Secret"],
+                    "name": "Secret"
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "bf52d2be981de25c2eb8dae78ccf7c1775c086c08128665554f518a9b57ec9cb": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "ti-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "sbx-096479e13e824b8ee17bae8985d368fd6dc8bf9411eb4cde5650f008287ea23e",
+                            "kind": "context",
+                            "version": "0.0.0"
+                        }
+                    ],
+                    "contextId": "sbx-096479e13e824b8ee17bae8985d368fd6dc8bf9411eb4cde5650f008287ea23e",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "0.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "S",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "caveat",
+                            "conceptId": "NF",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            { "categoryId": "level", "conceptId": "S" },
+                            { "categoryId": "caveat", "conceptId": "NF" }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "SECRET//NOFORN",
+                    "renders": {},
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "c1a6bbc9b64dd76f0db9097491f1357832c8d0e58f954a369ad666753b72ba85": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "ti-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "sbx-096479e13e824b8ee17bae8985d368fd6dc8bf9411eb4cde5650f008287ea23e",
+                            "kind": "context",
+                            "version": "0.0.0"
+                        }
+                    ],
+                    "contextId": "sbx-096479e13e824b8ee17bae8985d368fd6dc8bf9411eb4cde5650f008287ea23e",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "0.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "U",
+                            "confidence": "certain",
+                            "source": "aggregate"
+                        },
+                        {
+                            "categoryId": "caveat",
+                            "conceptId": "NF",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "errors": [],
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "UNCLASSIFIED//NOFORN",
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "ce93ff6439184f52485980371f7331225e677aa89f3c24436295421e9d76e739": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "ti-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "sbx-096479e13e824b8ee17bae8985d368fd6dc8bf9411eb4cde5650f008287ea23e",
+                            "kind": "context",
+                            "version": "0.0.0"
+                        }
+                    ],
+                    "contextId": "sbx-096479e13e824b8ee17bae8985d368fd6dc8bf9411eb4cde5650f008287ea23e",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "0.0.0"
+                },
+                "result": {
+                    "categoryId": "caveat",
+                    "conceptId": "NF",
+                    "lines": ["Caveat: No Foreign"],
+                    "name": "No Foreign"
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "cf60af5a16753060b0dc3aa6bd44c483347e48586102e919d74d8b0740aa49bf": {
+            "body": {
+                "contextId": "sbx-017948e06acc532721fd20916de8dff71831fb6392a7dc60da0be2240b29376a"
+            },
+            "method": "PUT",
+            "statusCode": 200
+        },
+        "cf733db15a7cf137f0d617927151196d93fec201cb97a99ed9d8f819c3b68fc5": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "ti-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "sbx-096479e13e824b8ee17bae8985d368fd6dc8bf9411eb4cde5650f008287ea23e",
+                            "kind": "context",
+                            "version": "0.0.0"
+                        }
+                    ],
+                    "contextId": "sbx-096479e13e824b8ee17bae8985d368fd6dc8bf9411eb4cde5650f008287ea23e",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "0.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [
+                        {
+                            "constraintId": "_recognition_incomplete",
+                            "message": "The input does not read as a marking."
+                        },
+                        {
+                            "constraintId": "_unmatched_token",
+                            "message": "\"SEC\" was not recognized: it matched no known concept and will be kept visible in the rendered marking."
+                        }
+                    ],
+                    "inputWasValid": false,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "recognition": {
+                        "corrections": [],
+                        "status": "unrecognized",
+                        "unmatched": [{ "end": 3, "start": 0, "text": "SEC" }]
+                    },
+                    "rendered": "SEC",
+                    "renders": {},
+                    "valid": false,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "d069bc625fa330585f8ea4377416c614a47808bd2c8646b91ad13f0c45c96f3f": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "ti-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "sbx-096479e13e824b8ee17bae8985d368fd6dc8bf9411eb4cde5650f008287ea23e",
+                            "kind": "context",
+                            "version": "0.0.0"
+                        }
+                    ],
+                    "contextId": "sbx-096479e13e824b8ee17bae8985d368fd6dc8bf9411eb4cde5650f008287ea23e",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "0.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "S",
+                            "confidence": "certain",
+                            "source": "aggregate"
+                        },
+                        {
+                            "categoryId": "caveat",
+                            "conceptId": "NF",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "errors": [],
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "SECRET//NOFORN",
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "d25cd0539502247009fb54ca2a335f3ef2067e9a5519d9b8a4a9b717fc2cebe8": {
+            "body": {
+                "id": "sbx-017948e06acc532721fd20916de8dff71831fb6392a7dc60da0be2240b29376a",
+                "scheme": {
+                    "id": "ti-fav-test",
+                    "resolvedVersion": "1.0.0",
+                    "version": "1.0.0"
+                },
+                "schemes": [
+                    {
+                        "id": "ti-fav-test",
+                        "roles": ["primary"],
+                        "selector": "ti-fav-test",
+                        "version": "1.0.0"
+                    }
+                ],
+                "version": "0.0.0"
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "d68c9f1eda8a5f268dbd91d6bfa61af49362c9acbcff6e174f15edb082b1ed6e": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "ti-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "sbx-096479e13e824b8ee17bae8985d368fd6dc8bf9411eb4cde5650f008287ea23e",
+                            "kind": "context",
+                            "version": "0.0.0"
+                        }
+                    ],
+                    "contextId": "sbx-096479e13e824b8ee17bae8985d368fd6dc8bf9411eb4cde5650f008287ea23e",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "0.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "S",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            { "categoryId": "level", "conceptId": "S" }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [
+                        {
+                            "affectedConcepts": ["S"],
+                            "constraintId": "_recognition_incomplete",
+                            "message": "Only part of the input reads as a marking in the \"default\" format; the rest is not recognized."
+                        },
+                        {
+                            "constraintId": "_unmatched_token",
+                            "message": "\"BOGUS\" was not recognized: it matched no known concept and will be kept visible in the rendered marking."
+                        }
+                    ],
+                    "inputWasValid": false,
+                    "notices": [],
+                    "recognition": {
+                        "inputFormat": "default",
+                        "status": "partial",
+                        "surface": "marking",
+                        "unmatched": [
+                            { "end": 13, "start": 8, "text": "BOGUS" }
+                        ]
+                    },
+                    "rendered": "SECRET//BOGUS",
+                    "valid": false,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "da5b24b86e9bba8568023a33f1abff58d63d622a5d3b20df40e50486a2501390": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "ti-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "sbx-096479e13e824b8ee17bae8985d368fd6dc8bf9411eb4cde5650f008287ea23e",
+                            "kind": "context",
+                            "version": "0.0.0"
+                        }
+                    ],
+                    "contextId": "sbx-096479e13e824b8ee17bae8985d368fd6dc8bf9411eb4cde5650f008287ea23e",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "0.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "S",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "caveat",
+                            "conceptId": "NF",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "caveat",
+                            "conceptId": "ORCON",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            { "categoryId": "level", "conceptId": "S" },
+                            { "categoryId": "caveat", "conceptId": "NF" },
+                            { "categoryId": "caveat", "conceptId": "ORCON" }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "recognition": {
+                        "corrections": [],
+                        "inputFormat": "default",
+                        "status": "complete",
+                        "surface": "marking",
+                        "unmatched": []
+                    },
+                    "rendered": "SECRET//NOFORN/ORCON",
+                    "renders": {},
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "e070dec6e78862435e7c23c92a6e4a93a9667377aed0b78b533966687028c314": {
+            "body": {
+                "abiVersion": "v1",
+                "engineSha": "",
+                "engineVersion": "1.0.0-dev.30",
+                "gitTag": "",
+                "openapiVersion": "1.0.0-dev.30",
+                "status": "ok"
+            },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "e08a41ee4a4f5a97f0e8a26b77ce8dcb081bbf988873d913502b991e9f7e32ea": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "ti-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "sbx-096479e13e824b8ee17bae8985d368fd6dc8bf9411eb4cde5650f008287ea23e",
+                            "kind": "context",
+                            "version": "0.0.0"
+                        }
+                    ],
+                    "contextId": "sbx-096479e13e824b8ee17bae8985d368fd6dc8bf9411eb4cde5650f008287ea23e",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "0.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "U",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "caveat",
+                            "conceptId": "NF",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            { "categoryId": "level", "conceptId": "U" },
+                            { "categoryId": "caveat", "conceptId": "NF" }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "UNCLASSIFIED//NOFORN",
+                    "renders": {},
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "e28562486ae7f622e0cf3dbcf4266994dcaf3c23197416caac44e5780636920e": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "ti-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "sbx-096479e13e824b8ee17bae8985d368fd6dc8bf9411eb4cde5650f008287ea23e",
+                            "kind": "context",
+                            "version": "0.0.0"
+                        }
+                    ],
+                    "contextId": "sbx-096479e13e824b8ee17bae8985d368fd6dc8bf9411eb4cde5650f008287ea23e",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "0.0.0"
+                },
+                "result": {
+                    "suggestions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "U",
+                            "description": "Unclassified",
+                            "group": "Level",
+                            "label": "UNCLASSIFIED",
+                            "name": "Unclassified",
+                            "order": 1,
+                            "selected": false,
+                            "views": { "default": "UNCLASSIFIED" }
+                        },
+                        {
+                            "categoryId": "level",
+                            "conceptId": "S",
+                            "description": "Secret",
+                            "group": "Level",
+                            "label": "SECRET",
+                            "name": "Secret",
+                            "order": 2,
+                            "selected": false,
+                            "views": { "default": "SECRET" }
+                        },
+                        {
+                            "categoryId": "caveat",
+                            "conceptId": "NF",
+                            "description": "No Foreign",
+                            "group": "Caveat",
+                            "label": "NOFORN",
+                            "name": "No Foreign",
+                            "order": 1,
+                            "selected": false,
+                            "views": { "default": "NOFORN" }
+                        },
+                        {
+                            "categoryId": "caveat",
+                            "conceptId": "ORCON",
+                            "description": "Originator Controlled",
+                            "group": "Caveat",
+                            "label": "ORCON",
+                            "name": "Originator Controlled",
+                            "order": 2,
+                            "selected": false,
+                            "views": { "default": "ORCON" }
+                        },
+                        {
+                            "categoryId": "caveat",
+                            "conceptId": "REL",
+                            "description": "Releasable",
+                            "group": "Caveat",
+                            "label": "REL",
+                            "name": "Releasable",
+                            "order": 3,
+                            "selected": false,
+                            "views": { "default": "REL" }
+                        }
+                    ],
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "e2cc60b2612c81000a34464be09603c90389e3406ea7d000627e07b1f73561b1": {
+            "body": {
+                "contextId": "sbx-096479e13e824b8ee17bae8985d368fd6dc8bf9411eb4cde5650f008287ea23e"
+            },
+            "method": "PUT",
+            "statusCode": 200
+        },
+        "e9058c5e3f89b0f4a18b578aaa934fa77faf0d934a4555779b6d7296efd70379": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "ti-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "sbx-096479e13e824b8ee17bae8985d368fd6dc8bf9411eb4cde5650f008287ea23e",
+                            "kind": "context",
+                            "version": "0.0.0"
+                        }
+                    ],
+                    "contextId": "sbx-096479e13e824b8ee17bae8985d368fd6dc8bf9411eb4cde5650f008287ea23e",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "0.0.0"
+                },
+                "result": {
+                    "suggestions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "S",
+                            "description": "Secret",
+                            "group": "Level",
+                            "label": "SECRET",
+                            "name": "Secret",
+                            "order": 2,
+                            "selected": true,
+                            "views": { "default": "SECRET" }
+                        },
+                        {
+                            "categoryId": "caveat",
+                            "conceptId": "NF",
+                            "description": "No Foreign",
+                            "group": "Caveat",
+                            "label": "NOFORN",
+                            "name": "No Foreign",
+                            "order": 1,
+                            "selected": false,
+                            "views": { "default": "NOFORN" }
+                        },
+                        {
+                            "categoryId": "caveat",
+                            "conceptId": "ORCON",
+                            "description": "Originator Controlled",
+                            "group": "Caveat",
+                            "label": "ORCON",
+                            "name": "Originator Controlled",
+                            "order": 2,
+                            "selected": false,
+                            "views": { "default": "ORCON" }
+                        },
+                        {
+                            "categoryId": "caveat",
+                            "conceptId": "REL",
+                            "description": "Releasable",
+                            "group": "Caveat",
+                            "label": "REL",
+                            "name": "Releasable",
+                            "order": 3,
+                            "selected": false,
+                            "views": { "default": "REL" }
+                        }
+                    ],
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "e91d4a029ccbd31cf5a05abbb679d6a96e66e29bc705847a6637007e796ddb11": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "ti-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "sbx-096479e13e824b8ee17bae8985d368fd6dc8bf9411eb4cde5650f008287ea23e",
+                            "kind": "context",
+                            "version": "0.0.0"
+                        }
+                    ],
+                    "contextId": "sbx-096479e13e824b8ee17bae8985d368fd6dc8bf9411eb4cde5650f008287ea23e",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "0.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "S",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "caveat",
+                            "conceptId": "NF",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            { "categoryId": "level", "conceptId": "S" },
+                            { "categoryId": "caveat", "conceptId": "NF" }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [
+                        {
+                            "affectedConcepts": ["S", "NF"],
+                            "constraintId": "_recognition_incomplete",
+                            "message": "The input does not read as a marking."
+                        },
+                        {
+                            "constraintId": "_unmatched_token",
+                            "message": "\"zzz\" was not recognized: it matched no known concept and will be kept visible in the rendered marking."
+                        }
+                    ],
+                    "inputWasValid": false,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "recognition": {
+                        "corrections": [],
+                        "status": "unrecognized",
+                        "unmatched": [{ "end": 3, "start": 0, "text": "zzz" }]
+                    },
+                    "rendered": "SECRET//NOFORN//zzz",
+                    "renders": {},
+                    "valid": false,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "efe5cd05ed0fa6c56b9dc722c45e2b44684ef014efa084ebcb74fb59a5bb1562": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "ti-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "sbx-096479e13e824b8ee17bae8985d368fd6dc8bf9411eb4cde5650f008287ea23e",
+                            "kind": "context",
+                            "version": "0.0.0"
+                        }
+                    ],
+                    "contextId": "sbx-096479e13e824b8ee17bae8985d368fd6dc8bf9411eb4cde5650f008287ea23e",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "0.0.0"
+                },
+                "result": {
+                    "suggestions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "S",
+                            "description": "Secret",
+                            "group": "Level",
+                            "label": "SECRET",
+                            "name": "Secret",
+                            "order": 2,
+                            "selected": true,
+                            "views": { "default": "SECRET" }
+                        },
+                        {
+                            "categoryId": "caveat",
+                            "conceptId": "NF",
+                            "description": "No Foreign",
+                            "group": "Caveat",
+                            "label": "NOFORN",
+                            "name": "No Foreign",
+                            "order": 1,
+                            "selected": true,
+                            "views": { "default": "NOFORN" }
+                        },
+                        {
+                            "categoryId": "caveat",
+                            "conceptId": "ORCON",
+                            "description": "Originator Controlled",
+                            "group": "Caveat",
+                            "label": "ORCON",
+                            "name": "Originator Controlled",
+                            "order": 2,
+                            "selected": true,
+                            "views": { "default": "ORCON" }
+                        },
+                        {
+                            "categoryId": "caveat",
+                            "conceptId": "REL",
+                            "description": "Releasable",
+                            "group": "Caveat",
+                            "label": "REL",
+                            "name": "Releasable",
+                            "order": 3,
+                            "selected": false,
+                            "views": { "default": "REL" }
+                        }
+                    ],
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "f65e589ff7531923ab06fb8c94a8a45546c0517f883402953b96a297995703fc": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "ti-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "sbx-096479e13e824b8ee17bae8985d368fd6dc8bf9411eb4cde5650f008287ea23e",
+                            "kind": "context",
+                            "version": "0.0.0"
+                        }
+                    ],
+                    "contextId": "sbx-096479e13e824b8ee17bae8985d368fd6dc8bf9411eb4cde5650f008287ea23e",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "0.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "S",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "caveat",
+                            "conceptId": "NF",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            { "categoryId": "level", "conceptId": "S" },
+                            { "categoryId": "caveat", "conceptId": "NF" }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "recognition": {
+                        "inputFormat": "default",
+                        "status": "complete",
+                        "surface": "marking",
+                        "unmatched": []
+                    },
+                    "rendered": "SECRET//NOFORN",
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "f6c8783f17c63d8cfcbe9538e931b096f3fc786bf44bbedaaf90022da5b094d0": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "ti-fav-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "sbx-017948e06acc532721fd20916de8dff71831fb6392a7dc60da0be2240b29376a",
+                            "kind": "context",
+                            "version": "0.0.0"
+                        }
+                    ],
+                    "contextId": "sbx-017948e06acc532721fd20916de8dff71831fb6392a7dc60da0be2240b29376a",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "0.0.0"
+                },
+                "result": {
+                    "suggestions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "S",
+                            "description": "Secret",
+                            "group": "Level",
+                            "label": "SECRET",
+                            "name": "Secret",
+                            "order": 1,
+                            "selected": true,
+                            "views": { "default": "SECRET" }
+                        },
+                        {
+                            "categoryId": "caveat",
+                            "conceptId": "NF",
+                            "description": "No Foreign",
+                            "group": "Caveat",
+                            "label": "NOFORN",
+                            "name": "No Foreign",
+                            "order": 1,
+                            "selected": false,
+                            "views": { "default": "NOFORN" }
+                        }
+                    ],
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "fb104e7c002f98d8dad9566f82161f057c0f453b241fefeeb9f97d83c112ee13": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "ti-fav-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "sbx-017948e06acc532721fd20916de8dff71831fb6392a7dc60da0be2240b29376a",
+                            "kind": "context",
+                            "version": "0.0.0"
+                        }
+                    ],
+                    "contextId": "sbx-017948e06acc532721fd20916de8dff71831fb6392a7dc60da0be2240b29376a",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "0.0.0"
+                },
+                "result": {
+                    "suggestions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "S",
+                            "description": "Secret",
+                            "group": "Level",
+                            "label": "SECRET",
+                            "name": "Secret",
+                            "order": 1,
+                            "selected": true,
+                            "views": { "default": "SECRET" }
+                        },
+                        {
+                            "categoryId": "caveat",
+                            "conceptId": "NF",
+                            "description": "No Foreign",
+                            "group": "Caveat",
+                            "label": "NOFORN",
+                            "name": "No Foreign",
+                            "order": 1,
+                            "selected": true,
+                            "views": { "default": "NOFORN" }
+                        }
+                    ],
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "ff815fe7c970c5b6912fec8becd3b0fe16aec9bab41685038489ca7c153b3f5c": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "ti-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "sbx-096479e13e824b8ee17bae8985d368fd6dc8bf9411eb4cde5650f008287ea23e",
+                            "kind": "context",
+                            "version": "0.0.0"
+                        }
+                    ],
+                    "contextId": "sbx-096479e13e824b8ee17bae8985d368fd6dc8bf9411eb4cde5650f008287ea23e",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "0.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "S",
+                            "confidence": "certain",
+                            "source": "aggregate"
+                        },
+                        {
+                            "categoryId": "caveat",
+                            "conceptId": "REL",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "rel_countries",
+                            "conceptId": "USA",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "rel_countries",
+                            "conceptId": "GBR",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "errors": [],
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "SECRET//REL//USA/GBR",
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        }
+    }
+}

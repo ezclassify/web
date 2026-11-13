@@ -15,10 +15,13 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { loadCedarValleyContext } from '../../../test-support/community-content';
 import { EzClassifyUI } from './ezclassify-ui';
 import { VanillaEzClassifyStore } from './store/ezclassify-store';
 import { asContext } from '../test-fixtures/as-context';
+import {
+    connectDemoContext,
+    demoRuntimeSettled,
+} from '../../../test-support/demo-runtime';
 
 function waitForReady(root: HTMLElement): Promise<CustomEvent> {
     return new Promise((resolve) => {
@@ -57,10 +60,13 @@ describe('EzClassifyUI ezclassify:ready event', () => {
             fired.push(e as CustomEvent),
         );
 
-        forms = new EzClassifyUI(loadCedarValleyContext(), { root });
+        forms = new EzClassifyUI(
+            await connectDemoContext({ contextId: 'cedar-valley' }),
+            { root },
+        );
         // Drain the constructor's Promise.all chain and any chained microtasks
         // the seed/wire/rollup path may have queued.
-        for (let i = 0; i < 12; i++) await Promise.resolve();
+        await demoRuntimeSettled();
 
         expect(fired.length).toBe(1);
     });
@@ -75,7 +81,10 @@ describe('EzClassifyUI ezclassify:ready event', () => {
              data-ezclassify-category="level" />
     `;
 
-        forms = new EzClassifyUI(loadCedarValleyContext(), { root });
+        forms = new EzClassifyUI(
+            await connectDemoContext({ contextId: 'cedar-valley' }),
+            { root },
+        );
 
         let initializingAtFire: boolean | null = null;
         let componentsAtFire = -1;
@@ -111,7 +120,10 @@ describe('EzClassifyUI ezclassify:ready event', () => {
       <input id="ac" data-ezclassify-controller="tags"
              data-ezclassify-bound-to="doc-marking" />
     `;
-        forms = new EzClassifyUI(loadCedarValleyContext(), { root });
+        forms = new EzClassifyUI(
+            await connectDemoContext({ contextId: 'cedar-valley' }),
+            { root },
+        );
         // Synchronously after construction the runtime is still mid-sweep.
         expect(forms.isReady).toBe(false);
         await waitForReady(root);
@@ -127,7 +139,10 @@ describe('EzClassifyUI ezclassify:ready event', () => {
              data-ezclassify-facet-of="doc-marking"
              data-ezclassify-category="level" />
     `;
-        forms = new EzClassifyUI(loadCedarValleyContext(), { root });
+        forms = new EzClassifyUI(
+            await connectDemoContext({ contextId: 'cedar-valley' }),
+            { root },
+        );
 
         const event = await waitForReady(root);
         const detail = event.detail as {
@@ -152,7 +167,10 @@ describe('EzClassifyUI ezclassify:ready event', () => {
             fired.push(e as CustomEvent),
         );
 
-        forms = new EzClassifyUI(loadCedarValleyContext(), { root });
+        forms = new EzClassifyUI(
+            await connectDemoContext({ contextId: 'cedar-valley' }),
+            { root },
+        );
 
         await waitForReady(root);
         expect(fired.length).toBe(1);
@@ -177,9 +195,12 @@ describe('EzClassifyUI ezclassify:ready event', () => {
         const outerFired: Event[] = [];
         outer.addEventListener('ezclassify:ready', (e) => outerFired.push(e));
 
-        forms = new EzClassifyUI(loadCedarValleyContext(), {
-            root: inner,
-        });
+        forms = new EzClassifyUI(
+            await connectDemoContext({ contextId: 'cedar-valley' }),
+            {
+                root: inner,
+            },
+        );
 
         // Wait for the event on the inner root, then assert the outer caught it too.
         await waitForReady(inner);
@@ -187,7 +208,8 @@ describe('EzClassifyUI ezclassify:ready event', () => {
     });
 
     it('does not fire for a runtime destroyed while its seeds are on the wire', async () => {
-        const engine = loadCedarValleyContext().scheme;
+        const engine = (await connectDemoContext({ contextId: 'cedar-valley' }))
+            .scheme;
         // An engine whose process call never answers, so the seed is still
         // on the wire when the runtime is torn down.
         const stalled = new Proxy(engine, {

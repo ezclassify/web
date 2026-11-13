@@ -24,10 +24,11 @@ import {
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
-import type { LocalContextSchemeEngineAdapter } from '@ezclassify/types';
+import type { RemoteContextSchemeEngineAdapter } from '@ezclassify/types';
 import { EzClassifyUI } from '../ezclassify-ui';
 import { TagInput } from './tag-input';
-import { Context } from '@ezclassify/engine';
+import type { EzClassifyClient } from '@ezclassify/rest-client';
+import { connectDemoContext } from '../../../../test-support/demo-runtime';
 
 function wait(ms = 60): Promise<void> {
     return new Promise((r) => setTimeout(r, ms));
@@ -40,161 +41,169 @@ function wait(ms = 60): Promise<void> {
  * test scheme, since TagInput inherits the identical whole-marking value
  * contract.
  */
-function createTestEngine(): LocalContextSchemeEngineAdapter {
-    return Context.fromComponents({
-        scheme: {
-            scheme: {
-                id: 'ti-test',
-                version: '1.0.0',
-                name: 'TagInput Test',
-                data: {
-                    concepts: [
-                        {
-                            id: 'U',
-                            name: 'Unclassified',
-                            views: { default: 'UNCLASSIFIED' },
-                            categories: ['level'],
-                            parents: [],
-                            aliases: [],
-                            position: 1,
-                            rank: 1,
-                        },
-                        {
-                            id: 'S',
-                            name: 'Secret',
-                            views: { default: 'SECRET' },
-                            categories: ['level'],
-                            parents: [],
-                            aliases: [],
-                            position: 2,
-                            rank: 2,
-                        },
-                        {
-                            id: 'NF',
-                            name: 'No Foreign',
-                            views: { default: 'NOFORN' },
-                            categories: ['caveat'],
-                            parents: [],
-                            aliases: [],
-                            position: 1,
-                            rank: 1,
-                        },
-                        {
-                            id: 'ORCON',
-                            name: 'Originator Controlled',
-                            views: { default: 'ORCON' },
-                            categories: ['caveat'],
-                            parents: [],
-                            aliases: [],
-                            position: 2,
-                            rank: 1,
-                        },
-                        {
-                            id: 'REL',
-                            name: 'Releasable',
-                            views: { default: 'REL' },
-                            categories: ['caveat'],
-                            parents: [],
-                            aliases: [],
-                            position: 3,
-                            rank: 1,
-                        },
-                        {
-                            id: 'USA',
-                            name: 'United States',
-                            views: { default: 'USA' },
-                            categories: ['rel_countries'],
-                            parents: [],
-                            aliases: [],
-                            position: 1,
-                            rank: 1,
-                        },
-                        {
-                            id: 'GBR',
-                            name: 'United Kingdom',
-                            views: { default: 'GBR' },
-                            categories: ['rel_countries'],
-                            parents: [],
-                            aliases: [],
-                            position: 2,
-                            rank: 1,
-                        },
-                    ],
-                    categories: [
-                        {
-                            id: 'level',
-                            label: 'Level',
-                            required: false,
-                            single: true,
-                            rollup: 'max',
-                            position: 1,
-                        },
-                        {
-                            id: 'caveat',
-                            label: 'Caveat',
-                            required: false,
-                            single: false,
-                            rollup: 'union',
-                            position: 2,
-                        },
-                        {
-                            id: 'rel_countries',
-                            label: 'REL Countries',
-                            required: false,
-                            single: false,
-                            rollup: 'union',
-                            position: 3,
-                        },
-                    ],
-                },
-                rules: [
-                    {
-                        id: 'rel-countries-require-rel',
-                        when: {
-                            category: 'rel_countries',
-                            is: 'has_content',
-                        },
-                        action: 'require',
-                        target: 'REL',
-                        category: 'caveat',
-                    },
-                ],
-                render: {
-                    default: 'default',
-                    formats: [
-                        {
-                            id: 'default',
-                            surface: 'marking',
-                            mode: 'inline',
-                            separator: '//',
-                            // REL heads rel_countries. A header and the list it
-                            // heads are paired in the format tree: one
-                            // fixed-concept field beside one list field.
-                            fields: [
-                                { category: 'level', separator: '/' },
+async function createTestEngine(): Promise<RemoteContextSchemeEngineAdapter> {
+    return (
+        await connectDemoContext({
+            draft: {
+                scheme: {
+                    scheme: {
+                        id: 'ti-test',
+                        version: '1.0.0',
+                        name: 'TagInput Test',
+                        description: 'TagInput Test test fixture.',
+                        data: {
+                            concepts: [
                                 {
-                                    category: 'caveat',
-                                    separator: '/',
-                                    exclude_concepts: ['REL'],
+                                    id: 'U',
+                                    name: 'Unclassified',
+                                    views: { default: 'UNCLASSIFIED' },
+                                    categories: ['level'],
+                                    parents: [],
+                                    aliases: [],
+                                    position: 1,
+                                    rank: 1,
                                 },
                                 {
-                                    name: 'Releasability phrase',
+                                    id: 'S',
+                                    name: 'Secret',
+                                    views: { default: 'SECRET' },
+                                    categories: ['level'],
+                                    parents: [],
+                                    aliases: [],
+                                    position: 2,
+                                    rank: 2,
+                                },
+                                {
+                                    id: 'NF',
+                                    name: 'No Foreign',
+                                    views: { default: 'NOFORN' },
+                                    categories: ['caveat'],
+                                    parents: [],
+                                    aliases: [],
+                                    position: 1,
+                                    rank: 1,
+                                },
+                                {
+                                    id: 'ORCON',
+                                    name: 'Originator Controlled',
+                                    views: { default: 'ORCON' },
+                                    categories: ['caveat'],
+                                    parents: [],
+                                    aliases: [],
+                                    position: 2,
+                                    rank: 1,
+                                },
+                                {
+                                    id: 'REL',
+                                    name: 'Releasable',
+                                    views: { default: 'REL' },
+                                    categories: ['caveat'],
+                                    parents: [],
+                                    aliases: [],
+                                    position: 3,
+                                    rank: 1,
+                                },
+                                {
+                                    id: 'USA',
+                                    name: 'United States',
+                                    views: { default: 'USA' },
+                                    categories: ['rel_countries'],
+                                    parents: [],
+                                    aliases: [],
+                                    position: 1,
+                                    rank: 1,
+                                },
+                                {
+                                    id: 'GBR',
+                                    name: 'United Kingdom',
+                                    views: { default: 'GBR' },
+                                    categories: ['rel_countries'],
+                                    parents: [],
+                                    aliases: [],
+                                    position: 2,
+                                    rank: 1,
+                                },
+                            ],
+                            categories: [
+                                {
+                                    id: 'level',
+                                    label: 'Level',
+                                    required: false,
+                                    single: true,
+                                    rollup: 'max',
+                                    position: 1,
+                                },
+                                {
+                                    id: 'caveat',
+                                    label: 'Caveat',
+                                    required: false,
+                                    single: false,
+                                    rollup: 'union',
+                                    position: 2,
+                                },
+                                {
+                                    id: 'rel_countries',
+                                    label: 'REL Countries',
+                                    required: false,
+                                    single: false,
+                                    rollup: 'union',
+                                    position: 3,
+                                },
+                            ],
+                        },
+                        rules: [
+                            {
+                                id: 'rel-countries-require-rel',
+                                when: {
+                                    category: 'rel_countries',
+                                    is: 'has_content',
+                                },
+                                action: 'require',
+                                target: 'REL',
+                                category: 'caveat',
+                            },
+                        ],
+                        render: {
+                            default: 'default',
+                            formats: [
+                                {
+                                    id: 'default',
+                                    surface: 'marking',
+                                    mode: 'inline',
                                     separator: '//',
+                                    // REL heads rel_countries. A header and the list it
+                                    // heads are paired in the format tree: one
+                                    // fixed-concept field beside one list field.
                                     fields: [
-                                        { concept: 'REL', category: 'caveat' },
+                                        { category: 'level', separator: '/' },
                                         {
-                                            category: 'rel_countries',
+                                            category: 'caveat',
                                             separator: '/',
+                                            exclude_concepts: ['REL'],
+                                        },
+                                        {
+                                            name: 'Releasability phrase',
+                                            separator: '//',
+                                            fields: [
+                                                {
+                                                    concept: 'REL',
+                                                    category: 'caveat',
+                                                },
+                                                {
+                                                    category: 'rel_countries',
+                                                    separator: '/',
+                                                },
+                                            ],
                                         },
                                     ],
                                 },
                             ],
                         },
-                    ],
+                    },
                 },
             },
-        },
-    }).scheme as LocalContextSchemeEngineAdapter;
+        })
+    ).scheme as RemoteContextSchemeEngineAdapter;
 }
 
 /**
@@ -204,70 +213,73 @@ function createTestEngine(): LocalContextSchemeEngineAdapter {
  * `data-ezclassify-*` attribute equivalent, the same reasoning
  * `inline-marking-editor.spec.ts` already documents for its own direct mounts.
  */
-function createTestContext(): Context {
-    return Context.fromComponents({
-        scheme: {
+async function createTestContext(): Promise<EzClassifyClient> {
+    return await connectDemoContext({
+        draft: {
             scheme: {
-                id: 'ti-fav-test',
-                version: '1.0.0',
-                name: 'TagInput Favorites Test',
-                data: {
-                    concepts: [
-                        {
-                            id: 'S',
-                            name: 'Secret',
-                            views: { default: 'SECRET' },
-                            categories: ['level'],
-                            parents: [],
-                            aliases: [],
-                            position: 1,
-                            rank: 2,
-                        },
-                        {
-                            id: 'NF',
-                            name: 'No Foreign',
-                            views: { default: 'NOFORN' },
-                            categories: ['caveat'],
-                            parents: [],
-                            aliases: [],
-                            position: 1,
-                            rank: 1,
-                        },
-                    ],
-                    categories: [
-                        {
-                            id: 'level',
-                            label: 'Level',
-                            required: false,
-                            single: true,
-                            rollup: 'max',
-                            position: 1,
-                        },
-                        {
-                            id: 'caveat',
-                            label: 'Caveat',
-                            required: false,
-                            single: false,
-                            rollup: 'union',
-                            position: 2,
-                        },
-                    ],
-                },
-                rules: [],
-                render: {
-                    default: 'default',
-                    formats: [
-                        {
-                            id: 'default',
-                            surface: 'marking',
-                            mode: 'inline',
-                            separator: '//',
-                            fields: [
-                                { category: 'level', separator: '/' },
-                                { category: 'caveat', separator: '/' },
-                            ],
-                        },
-                    ],
+                scheme: {
+                    id: 'ti-fav-test',
+                    version: '1.0.0',
+                    name: 'TagInput Favorites Test',
+                    description: 'TagInput Favorites Test test fixture.',
+                    data: {
+                        concepts: [
+                            {
+                                id: 'S',
+                                name: 'Secret',
+                                views: { default: 'SECRET' },
+                                categories: ['level'],
+                                parents: [],
+                                aliases: [],
+                                position: 1,
+                                rank: 2,
+                            },
+                            {
+                                id: 'NF',
+                                name: 'No Foreign',
+                                views: { default: 'NOFORN' },
+                                categories: ['caveat'],
+                                parents: [],
+                                aliases: [],
+                                position: 1,
+                                rank: 1,
+                            },
+                        ],
+                        categories: [
+                            {
+                                id: 'level',
+                                label: 'Level',
+                                required: false,
+                                single: true,
+                                rollup: 'max',
+                                position: 1,
+                            },
+                            {
+                                id: 'caveat',
+                                label: 'Caveat',
+                                required: false,
+                                single: false,
+                                rollup: 'union',
+                                position: 2,
+                            },
+                        ],
+                    },
+                    rules: [],
+                    render: {
+                        default: 'default',
+                        formats: [
+                            {
+                                id: 'default',
+                                surface: 'marking',
+                                mode: 'inline',
+                                separator: '//',
+                                fields: [
+                                    { category: 'level', separator: '/' },
+                                    { category: 'caveat', separator: '/' },
+                                ],
+                            },
+                        ],
+                    },
                 },
             },
         },
@@ -320,7 +332,9 @@ async function mountTagInput(
     initialValue = '',
 ): Promise<{ input: HTMLInputElement; tags: TagInput }> {
     root.innerHTML = `<input id="ti" type="text" data-ezclassify-controller="tags" value="${initialValue}" />`;
-    forms = new EzClassifyUI(asContext(createTestEngine() as never), { root });
+    forms = new EzClassifyUI(asContext((await createTestEngine()) as never), {
+        root,
+    });
     await wait();
     const input = document.getElementById('ti') as HTMLInputElement;
     const tags = (
@@ -342,7 +356,9 @@ async function mountTagInputWith(
     initialValue = '',
 ): Promise<{ input: HTMLInputElement; tags: TagInput }> {
     root.innerHTML = `<input id="ti" type="text" ${controllerAttrs} value="${initialValue}" />`;
-    forms = new EzClassifyUI(asContext(createTestEngine() as never), { root });
+    forms = new EzClassifyUI(asContext((await createTestEngine()) as never), {
+        root,
+    });
     await wait();
     const input = document.getElementById('ti') as HTMLInputElement;
     const tags = (
@@ -389,9 +405,12 @@ describe('TagInput', () => {
             <input style="background-color: pink" />
             <input id="ti" type="text" data-ezclassify-controller="tags"
                 style="background-color: rgb(242, 244, 246); color: rgb(20, 30, 40); border: 2px solid rgb(60, 70, 80); border-radius: 9px; font: 18px Georgia; min-height: 48px" />`;
-        forms = new EzClassifyUI(asContext(createTestEngine() as never), {
-            root,
-        });
+        forms = new EzClassifyUI(
+            asContext((await createTestEngine()) as never),
+            {
+                root,
+            },
+        );
         await wait();
         const wrap = root.querySelector<HTMLElement>('.tag-input-wrap')!;
         expect(wrap.style.backgroundColor).toBe('rgb(242, 244, 246)');
@@ -455,7 +474,7 @@ describe('TagInput', () => {
         const component = new TagInput();
         const mount = root.querySelector<HTMLDivElement>('#mount')!;
         try {
-            await component.init(mount, createTestEngine() as never, {
+            await component.init(mount, (await createTestEngine()) as never, {
                 styleInputs: true,
             });
             expect(mount.classList.contains('ez-styled-inputs')).toBe(true);
@@ -474,7 +493,7 @@ describe('TagInput', () => {
         const component = new TagInput();
         const mount = root.querySelector<HTMLDivElement>('#mount')!;
         try {
-            await component.init(mount, createTestEngine() as never, {
+            await component.init(mount, (await createTestEngine()) as never, {
                 colorScheme: 'dark',
             });
             const wrap = mount.querySelector<HTMLElement>('.tag-input-wrap')!;
@@ -1406,7 +1425,7 @@ describe('TagInput favorites', () => {
         input.type = 'text';
         container.appendChild(input);
         const tags = new TagInput();
-        await tags.init(container, createTestContext(), options);
+        await tags.init(container, await createTestContext(), options);
         return { input, tags };
     }
 
@@ -1482,7 +1501,7 @@ describe('TagInput keyboard hints in the ★ drawer', () => {
         input.type = 'text';
         container.appendChild(input);
         const tags = new TagInput();
-        await tags.init(container, createTestContext(), options);
+        await tags.init(container, await createTestContext(), options);
         return { input, tags };
     }
 

@@ -10,10 +10,10 @@ import { readFileSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { Context } from '@ezclassify/engine';
 import { EzClassifyUI } from './ezclassify-ui';
 import { __resetMountRollupRegistry } from './mount-rollup-registry';
 import { levelState } from './store/page-rollup-harness';
+import { connectDemoContext } from '../../../test-support/demo-runtime';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const fixturesDir = resolve(__dirname, '../../../vendor/spec/fixtures/v1');
@@ -23,8 +23,8 @@ function loadScheme(): unknown {
         readFileSync(resolve(fixturesDir, 'ref-scheme-1.json'), 'utf8'),
     );
 }
-function newEngine() {
-    return Context.fromComponents({ scheme: loadScheme() });
+async function newEngine() {
+    return await connectDemoContext({ draft: { scheme: loadScheme() } });
 }
 
 async function settle(): Promise<void> {
@@ -36,16 +36,18 @@ async function settle(): Promise<void> {
  * Ref-scheme-1 with an embedded-marking pattern, so a marked text area finds
  * `(LOW)` and `(HIGH)` portions in its body text.
  */
-function newMarkedEngine() {
+async function newMarkedEngine() {
     const document = loadScheme() as { scheme: Record<string, unknown> };
-    return Context.fromComponents({
-        scheme: {
-            ...document,
+    return await connectDemoContext({
+        draft: {
             scheme: {
-                ...document.scheme,
-                embedded_marking: [
-                    { pattern: '\\(([^)]+)\\)', template: '({marking}) ' },
-                ],
+                ...document,
+                scheme: {
+                    ...document.scheme,
+                    embedded_marking: [
+                        { pattern: '\\(([^)]+)\\)', template: '({marking}) ' },
+                    ],
+                },
             },
         },
     });
@@ -128,14 +130,14 @@ describe('nested-mount fix invariants', () => {
 
         // OUTER first, it enhances the field while no inner boundary exists yet.
         const outerUI = track(
-            new EzClassifyUI(newEngine(), {
+            new EzClassifyUI(await newEngine(), {
                 root: withOutput(outer, 'race-outer'),
             }),
         );
         await settle();
         // INNER second, its reclaim sweep must take the field away from outer.
         const innerUI = track(
-            new EzClassifyUI(newEngine(), {
+            new EzClassifyUI(await newEngine(), {
                 root: withOutput(inner, 'race-inner'),
             }),
         );
@@ -176,7 +178,7 @@ describe('nested-mount fix invariants', () => {
             inner.appendChild(body);
 
             const outerUI = track(
-                new EzClassifyUI(newMarkedEngine(), {
+                new EzClassifyUI(await newMarkedEngine(), {
                     root: withOutput(outer, 'nest-outer'),
                 }),
             );
@@ -184,7 +186,7 @@ describe('nested-mount fix invariants', () => {
             expect(mountedHosts(outerUI).has(body)).toBe(true);
 
             const innerUI = track(
-                new EzClassifyUI(newMarkedEngine(), {
+                new EzClassifyUI(await newMarkedEngine(), {
                     root: withOutput(inner, 'nest-inner'),
                 }),
             );
@@ -222,12 +224,12 @@ describe('nested-mount fix invariants', () => {
         inner.appendChild(field);
 
         track(
-            new EzClassifyUI(newEngine(), {
+            new EzClassifyUI(await newEngine(), {
                 root: withOutput(outer, 'd2-outer'),
             }),
         );
         track(
-            new EzClassifyUI(newEngine(), {
+            new EzClassifyUI(await newEngine(), {
                 root: withOutput(inner, 'd2-inner'),
             }),
         );
@@ -259,12 +261,12 @@ describe('nested-mount fix invariants', () => {
         inner.appendChild(innerField);
 
         track(
-            new EzClassifyUI(newEngine(), {
+            new EzClassifyUI(await newEngine(), {
                 root: withOutput(outer, 'ss-outer'),
             }),
         );
         track(
-            new EzClassifyUI(newEngine(), {
+            new EzClassifyUI(await newEngine(), {
                 root: withOutput(inner, 'ss-inner'),
             }),
         );
@@ -289,7 +291,7 @@ describe('nested-mount fix invariants', () => {
         root.appendChild(wrapper);
 
         const ui = track(
-            new EzClassifyUI(newEngine(), {
+            new EzClassifyUI(await newEngine(), {
                 root: withOutput(root, 'sub-rollup'),
             }),
         );
@@ -319,7 +321,7 @@ describe('nested-mount fix invariants', () => {
         field.setAttribute('data-ezclassify-controller', 'tags');
         root.appendChild(field);
 
-        const first = new EzClassifyUI(newEngine(), {
+        const first = new EzClassifyUI(await newEngine(), {
             root: withOutput(root, 'sm-rollup'),
         });
         await settle();
@@ -327,7 +329,7 @@ describe('nested-mount fix invariants', () => {
         await settle();
 
         const second = track(
-            new EzClassifyUI(newEngine(), {
+            new EzClassifyUI(await newEngine(), {
                 root: withOutput(root, 'sm-rollup'),
             }),
         );

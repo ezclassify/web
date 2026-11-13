@@ -29,6 +29,7 @@ export const SURFACES_SCHEME = {
         id: 'surfaces',
         version: '1.0.0',
         name: 'Surfaces',
+        description: 'Surfaces test fixture.',
         default_scope: 'sensitivity',
         scopes: [
             { id: 'sensitivity', label: 'Sensitivity' },
