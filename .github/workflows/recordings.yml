@@ -7,11 +7,13 @@ name: Recordings
 #
 # It runs in the official repository only: on demand, every week, and on a
 # pull request that changes what the recordings are made from (a spec, a
-# fixture, the harness, a recording or a pin). It reads private checkouts (the
-# engine the demo runtime is built from, and the content the demo set is
-# assembled from), each at the commit its pin in test-support names, so a fork
-# has nothing to run here and needs no secret: the job is skipped. Public CI
-# replays the committed recordings and needs none of this.
+# fixture, the UI code a spec drives, the harness, the test configuration, the
+# root manifest that pins the REST client, a recording or a pin). It reads
+# private checkouts (the engine the demo runtime is built from, orchestration's
+# assembly script, and the content the demo set is assembled from), each at the
+# commit its pin in test-support names, so a fork has nothing to run here and
+# needs no secret: the job is skipped. Public CI replays the committed
+# recordings and needs none of this.
 #
 # A stale run uploads what it recorded, for a maintainer to review and commit.
 
@@ -24,11 +26,16 @@ on:
       - '**/*.spec.ts'
       - '**/*.spec.tsx'
       - '**/__recordings__/**'
+      - 'libs/ui/src/**'
       - 'libs/ui/test-fixtures/**'
       - 'libs/ui-tools/src/record-replay/**'
+      - 'integrations/*/src/**'
       - 'test-support/**'
       - 'vendor/spec/fixtures/**'
+      - 'package.json'
+      - 'vitest*.config.ts'
       - 'scripts/record-demo-runtime.mjs'
+      - 'scripts/run-test-projects*.mjs'
       - '.github/workflows/recordings.yml'
 
 permissions:
@@ -57,7 +64,7 @@ jobs:
       - name: Read the pins the recordings are made from
         id: pin
         run: |
-          for name in community-content engine orchestration; do
+          for name in community-content engine enterprise-content orchestration; do
             echo "${name//-/_}=$(tr -d '[:space:]' < "web/test-support/${name}.pin")" >> "$GITHUB_OUTPUT"
           done
 
@@ -87,6 +94,7 @@ jobs:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           repository: ezclassify/enterprise-content
+          ref: ${{ steps.pin.outputs.enterprise_content }}
           path: enterprise-content
           token: ${{ secrets.EZ_REPOS_READ_TOKEN }}
           persist-credentials: false
@@ -112,6 +120,13 @@ jobs:
         run: |
           npm run deps:relock
           npm ci
+
+      - name: Install the assembly script's packages
+        # Its package-lock.json is one of the pinned orchestration paths.
+        working-directory: orchestration
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.EZ_GHPKG_TOKEN || github.token }}
+        run: npm ci --omit=dev --ignore-scripts
 
       - name: Install the engine's Rust toolchain
         # rust-toolchain.toml in the engine checkout names it.

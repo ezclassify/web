@@ -5,30 +5,36 @@
  * Record mode (`EZCLASSIFY_RECORD=1`) is the maintainer lane. It needs the
  * workspace checkouts beside this repository:
  *
- * - `engine`, whose `ezclassify-demo-runtime` is built with its `provide`
- *   feature, the build the website Playground runs, draft door included.
+ * - `engine`, whose `ezclassify-demo-runtime` is built the way the hosted demo
+ *   runtime image builds it: the `release` profile, `--locked`, with the
+ *   `provide` feature that opens the draft door.
  * - `orchestration`, whose `assemble-demo-contexts.mjs` writes the website demo
  *   set from `manifests/demo-contexts.yaml`. That set is what the hosted demo
  *   runtime embeds, so the built-in Context ids a spec connects to (Cedar
  *   Valley among them) are the ones the Playground serves. Assembly reads the
  *   content checkouts the manifest names.
  *
- * The build runs `cargo build -p ezclassify-demo-runtime --features provide`
- * with `CARGO_BUILD_JOBS=4` into the engine checkout's `target`, on the engine
- * source of the commit in `engine.pin`, which it extracts from that checkout
- * with `git archive`; the checkout's own branch and edits do not matter. The
- * binary path comes from cargo's own build messages, and a build is reused
- * while the pin and the assembled demo set are unchanged. The runtime listens
- * on a loopback port the kernel picks; the setup reads the address from the
- * runtime's startup log, waits a bounded time for it to answer `/v1/ready`, and
- * checks that it lists every Context of the set.
+ * The build runs `cargo build --release --locked -p ezclassify-demo-runtime
+ * --features provide` with `CARGO_BUILD_JOBS=4` into the engine checkout's
+ * `target`, on the engine source of the commit in `engine.pin`, which it
+ * extracts from that checkout with `git archive`; the checkout's own branch and
+ * edits do not matter. The binary path comes from cargo's own build messages,
+ * and a build is reused while the pin, the build settings and the assembled
+ * demo set are unchanged. The runtime listens on a loopback port the kernel
+ * picks; the setup reads the address from the runtime's startup log, waits a
+ * bounded time for it to answer `/v1/ready`, and checks that it lists every
+ * Context of the set.
  *
- * Recordings have to be reproducible from this repository, so every input is
- * pinned in `test-support/<checkout>.pin`: the engine source as above, and the
- * community-content `scheme-folder` the Cedar Valley documents come from and
- * orchestration's assembly script and manifest, which the setup refuses when
- * they differ from their pins in any way, committed, edited or untracked.
- * Moving a pin and re-recording is one change.
+ * Recordings have to be reproducible from this repository, so the checkouts
+ * they are made from are pinned in `test-support/<checkout>.pin`: the engine
+ * source as above; the `scheme-folder` of community-content and of
+ * enterprise-content, which the demo set is assembled from; and in
+ * orchestration the assembly script with every module it imports, its manifest,
+ * and the `package.json` and `package-lock.json` that fix the packages it
+ * imports. The setup refuses a checkout whose pinned paths differ from the pin
+ * in any way, committed, edited or untracked. The REST client the specs record
+ * through is pinned to an exact version in the root `package.json`. Moving a
+ * pin and re-recording is one change.
  *
  * Specs reach it through `test-support/demo-runtime.ts`, which reads the origin
  * and health this setup provides.
@@ -51,11 +57,29 @@ import { RECORD_VARIABLE, recording } from './record-mode';
 /** The directory holding this repository and its sibling checkouts. */
 const WORKSPACE = path.resolve(import.meta.dirname, '..', '..');
 
+/** Orchestration's script that writes a demo set. */
+const ASSEMBLY_SCRIPT = 'scripts/assemble-demo-contexts.mjs';
+
 /** The demo set the hosted (Playground) demo runtime embeds. */
 const DEMO_SET = 'website';
 
 /** How long a cold build of the runtime may take before the setup gives up. */
-const BUILD_TIMEOUT_MS = 20 * 60_000;
+const BUILD_TIMEOUT_MS = 45 * 60_000;
+
+/**
+ * How the runtime is built: the hosted demo runtime image's own build
+ * (`deploy/Dockerfile` in the engine, its `build-hosted` stage). Part of the
+ * build key, so a binary built any other way is never reused.
+ */
+const CARGO_BUILD_ARGS = [
+    'build',
+    '--release',
+    '--locked',
+    '-p',
+    'ezclassify-demo-runtime',
+    '--features',
+    'provide',
+];
 
 /** How long the started runtime has to report its address and answer ready. */
 const STARTUP_TIMEOUT_MS = 30_000;
@@ -167,6 +191,40 @@ function pinnedEngineSource(engine: string): string {
     return dir;
 }
 
+/** A relative module specifier in an import or re-export of a module. */
+const RELATIVE_IMPORT =
+    /(?:\bfrom\s*|\bimport\s*\(?\s*)(['"])(\.{1,2}\/[^'"]+)\1/g;
+
+/**
+ * A module and every module it reaches through relative imports, as paths
+ * relative to `dir`, sorted. Package imports are left out: the package files
+ * that fix them are pinned beside this list.
+ *
+ * @param dir - The checkout the modules live in
+ * @param entry - The first module, relative to `dir`
+ */
+function moduleClosure(dir: string, entry: string): string[] {
+    const found = new Set<string>();
+    const visit = (module: string) => {
+        if (found.has(module)) return;
+        found.add(module);
+        const text = readFileSync(path.join(dir, module), 'utf8');
+        for (const [, , specifier] of text.matchAll(RELATIVE_IMPORT)) {
+            visit(
+                path.relative(
+                    dir,
+                    path.resolve(
+                        path.dirname(path.join(dir, module)),
+                        specifier!,
+                    ),
+                ),
+            );
+        }
+    };
+    visit(entry);
+    return [...found].sort();
+}
+
 /** One digest over every file under `dir`, by relative path and bytes. */
 function treeDigest(dir: string): string {
     const hash = createHash('sha256');
@@ -192,27 +250,23 @@ function treeDigest(dir: string): string {
  * Assemble the demo set and build the runtime from the pinned engine source.
  *
  * Every test project of a recording run calls this, and `npm run record` runs
- * each several times. A build whose demo set and engine pin are unchanged is
- * reused as it stands, so only the first call compiles.
+ * each several times. A build whose engine pin, build settings and demo set are
+ * unchanged is reused as it stands, so only the first call compiles.
  *
  * @returns The binary's path and the Context ids of the set it embeds
  */
 function buildRuntime(): { binary: string; contextIds: string[] } {
-    requirePinned(
-        'community-content',
-        sibling('community-content', 'scheme-folder'),
-        ['scheme-folder'],
-    );
-    const orchestration = sibling(
-        'orchestration',
-        'scripts/assemble-demo-contexts.mjs',
-    );
+    for (const content of ['community-content', 'enterprise-content']) {
+        requirePinned(content, sibling(content, 'scheme-folder'), [
+            'scheme-folder',
+        ]);
+    }
+    const orchestration = sibling('orchestration', ASSEMBLY_SCRIPT);
     requirePinned('orchestration', orchestration, [
-        // The assembly script and the two modules it imports, not all of lib.
-        'scripts/assemble-demo-contexts.mjs',
-        'scripts/lib/entrypoint.mjs',
-        'scripts/lib/workspace-layout.mjs',
+        ...moduleClosure(orchestration, ASSEMBLY_SCRIPT),
         'manifests/demo-contexts.yaml',
+        'package.json',
+        'package-lock.json',
     ]);
     const engine = sibling('engine', 'apps/demo-runtime/Cargo.toml');
     const source = pinnedEngineSource(engine);
@@ -221,13 +275,7 @@ function buildRuntime(): { binary: string; contextIds: string[] } {
     rmSync(assembled, { recursive: true, force: true });
     run(
         process.execPath,
-        [
-            'scripts/assemble-demo-contexts.mjs',
-            '--set',
-            DEMO_SET,
-            '--out',
-            assembled,
-        ],
+        [ASSEMBLY_SCRIPT, '--set', DEMO_SET, '--out', assembled],
         // The checkouts beside this repository are the ones to read, even when
         // orchestration is a link to a checkout that sits somewhere else.
         {
@@ -237,6 +285,8 @@ function buildRuntime(): { binary: string; contextIds: string[] } {
     );
     const key = createHash('sha256')
         .update(pin('engine'))
+        .update('\0')
+        .update(CARGO_BUILD_ARGS.join(' '))
         .update('\0')
         .update(treeDigest(assembled))
         .digest('hex')
@@ -252,14 +302,7 @@ function buildRuntime(): { binary: string; contextIds: string[] } {
         renameSync(assembled, contexts);
         const messages = run(
             'cargo',
-            [
-                'build',
-                '-p',
-                'ezclassify-demo-runtime',
-                '--features',
-                'provide',
-                '--message-format=json-render-diagnostics',
-            ],
+            [...CARGO_BUILD_ARGS, '--message-format=json-render-diagnostics'],
             {
                 cwd: source,
                 env: {

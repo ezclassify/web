@@ -179,28 +179,37 @@ EZCLASSIFY_RECORD=1 npx vitest run <spec>   # record one spec file's traffic
 With `EZCLASSIFY_RECORD=1`, each test project's global setup
 ([`test-support/demo-runtime-global-setup.ts`](test-support/demo-runtime-global-setup.ts)) assembles the website demo set
 with orchestration's `assemble-demo-contexts.mjs`, builds
-`ezclassify-demo-runtime` with its `provide` feature (`CARGO_BUILD_JOBS=4`,
+`ezclassify-demo-runtime` the way the hosted demo runtime image does (the
+`release` profile, `--locked`, with the `provide` feature; `CARGO_BUILD_JOBS=4`,
 into the engine checkout's `target`), starts it on a loopback port and waits a
-bounded time for it to answer. A build is reused while the engine pin and the
-assembled demo set are unchanged, so only the first project of a run compiles.
+bounded time for it to answer. A build is reused while the engine pin, those
+build settings and the assembled demo set are unchanged, so only the first
+project of a run compiles.
 Every request then goes to that runtime unless the spec file's recordings
 already hold it, and the recordings file is rewritten at the end of the file.
 UI code sends requests whose timing depends on how fast answers arrive, so `npm
 run record` runs the suite in record mode until a pass adds nothing, which is a
 pass at replay speed, and then replays it once keeping only the answers the
-replay used (`EZCLASSIFY_PRUNE_RECORDINGS=1`). Recording one file by hand,
-delete its recordings first, record it twice and prune it with one replay.
+replay used (`EZCLASSIFY_PRUNE_RECORDINGS=1`), and a second time to prove a
+replay uses the same answers each time. A failed run puts back the recordings
+files it started with. A live answer that says the runtime was busy or failed
+(`429` or `5xx`) is never recorded: it fails the spec file instead. To record
+one spec file by hand, delete its recordings file, record it twice and then
+prune it with one replay.
 
-Recordings have to be reproducible from this repository, so every input is
-pinned in `test-support`:
+Recordings have to be reproducible from this repository, so the checkouts they
+are made from are pinned in `test-support`, and the REST client the specs
+record through is pinned to an exact version in the root `package.json`:
 
 - [`engine.pin`](test-support/engine.pin): the engine commit the runtime is built from. The setup
   extracts that commit's source from the engine checkout with `git archive`,
   so the checkout's own branch and edits do not reach a recording.
-- [`community-content.pin`](test-support/community-content.pin): recording refuses a checkout whose
-  `scheme-folder` differs from it, committed, edited or untracked.
-- [`orchestration.pin`](test-support/orchestration.pin): the same, for the assembly script, its `lib`
-  and `manifests/demo-contexts.yaml`.
+- [`community-content.pin`](test-support/community-content.pin) and [`enterprise-content.pin`](test-support/enterprise-content.pin): recording
+  refuses a checkout whose `scheme-folder` differs from its pin, committed,
+  edited or untracked.
+- [`orchestration.pin`](test-support/orchestration.pin): the same, for the assembly script and every
+  module it imports, `manifests/demo-contexts.yaml`, and the `package.json` and
+  `package-lock.json` that fix the packages the script imports.
 
 Moving a pin and re-recording is one change. `check:recordings` is the
 freshness check: recording from nothing against the pinned engine and content
@@ -208,7 +217,8 @@ must reproduce the committed files byte for byte, so a changed answer, a new
 request or a request no spec sends any more all fail it.
 [`.github/workflows/recordings.yml`](.github/workflows/recordings.yml) runs it in the official repository on
 demand, every week, and on a pull request that changes a spec, a fixture, the
-harness, a recording or a pin; a fork has nothing to run there.
+UI code a spec drives, the harness, the test configuration, the root manifest,
+a recording or a pin; a fork has nothing to run there.
 
 The [`libs/ui-tools/`](libs/ui-tools/) helper is outside the public workspace closure. Its
 record and replay core needs nothing it installs, so the harness imports that
