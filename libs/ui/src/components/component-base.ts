@@ -37,6 +37,7 @@ import type { EzClassifyState } from '../store/ezclassify-store';
 import { createComposerPort } from './composer/composer-port';
 import { judgedAsHeld } from '../loaded-value';
 import { renderViewRefused } from '../render-refusal';
+import { coveredCategoriesOf } from '../format-resolver';
 import {
     replacesStated,
     statedAssertions,
@@ -823,14 +824,12 @@ export abstract class ComponentBase extends ReadOnlyComponentBase {
                             context: this.getProcessingContext(),
                         }),
                     ),
-                coveredCategories: () => {
-                    const coverage = this.engine.getFormatCoverage?.(
+                coveredCategories: () =>
+                    coveredCategoriesOf(
+                        this.engine,
                         this.formatId,
-                    );
-                    return coverage
-                        ? new Set(coverage.coveredCategories)
-                        : undefined;
-                },
+                        this.options.scope,
+                    ),
                 write: (assertions) =>
                     Promise.resolve(
                         this.callRender([...assertions], {

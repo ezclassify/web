@@ -291,6 +291,68 @@
             "method": "POST",
             "statusCode": 200
         },
+        "1ce09c48ef1bc460982bf018d30cd7762bda2b8f55de796fcc66d7e90c845bde": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "surfaces",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "sbx-fcc5e3711e9b70a7bc70acf3de7afadc4c7bfe9962e686d571c974b02dc58d3a",
+                            "kind": "context",
+                            "version": "0.0.0"
+                        }
+                    ],
+                    "contextId": "sbx-fcc5e3711e9b70a7bc70acf3de7afadc4c7bfe9962e686d571c974b02dc58d3a",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "0.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "CONFIDENTIAL",
+                            "confidence": "certain",
+                            "source": "user"
+                        },
+                        {
+                            "categoryId": "keep",
+                            "conceptId": "KEEP_7Y",
+                            "confidence": "certain",
+                            "source": "user"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            {
+                                "categoryId": "level",
+                                "conceptId": "CONFIDENTIAL"
+                            },
+                            { "categoryId": "keep", "conceptId": "KEEP_7Y" }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "CONFIDENTIAL\nKEEP 7 YEARS",
+                    "renders": {},
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
         "1df1516bd4b370e28ca0dfc24c38b5c9f1204fd78b3017e08305a289fc294fde": {
             "body": {
                 "resolution": {
@@ -483,6 +545,60 @@
                         }
                     },
                     "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "2a63fbd231ccc2f8f47ffdc9b6a4e5898b0ef5a09005d61aef1ea2f87703d6de": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "surfaces",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "sbx-fcc5e3711e9b70a7bc70acf3de7afadc4c7bfe9962e686d571c974b02dc58d3a",
+                            "kind": "context",
+                            "version": "0.0.0"
+                        }
+                    ],
+                    "contextId": "sbx-fcc5e3711e9b70a7bc70acf3de7afadc4c7bfe9962e686d571c974b02dc58d3a",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "0.0.0"
+                },
+                "result": {
+                    "suggestions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "CONFIDENTIAL",
+                            "description": "Confidential",
+                            "group": "Level",
+                            "label": "CONFIDENTIAL",
+                            "name": "Confidential",
+                            "order": 2,
+                            "selected": true,
+                            "views": {
+                                "abbreviated": "CONF",
+                                "default": "CONFIDENTIAL"
+                            }
+                        },
+                        {
+                            "categoryId": "sharing",
+                            "conceptId": "PARTNERS",
+                            "description": "Shared with partners",
+                            "group": "Sharing",
+                            "label": "PARTNERS",
+                            "name": "Shared with partners",
+                            "order": 3,
+                            "selected": true,
+                            "views": { "default": "PARTNERS" }
+                        }
+                    ],
                     "warnings": []
                 }
             },
@@ -999,6 +1115,114 @@
             "method": "POST",
             "statusCode": 200
         },
+        "71cfdcf9c12698bb0c27590ca599e2d35403e6304918914fff634580a0b8b7b5": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "surfaces",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "sbx-fcc5e3711e9b70a7bc70acf3de7afadc4c7bfe9962e686d571c974b02dc58d3a",
+                            "kind": "context",
+                            "version": "0.0.0"
+                        }
+                    ],
+                    "contextId": "sbx-fcc5e3711e9b70a7bc70acf3de7afadc4c7bfe9962e686d571c974b02dc58d3a",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "0.0.0"
+                },
+                "result": {
+                    "suggestions": [
+                        {
+                            "categoryId": "sharing",
+                            "conceptId": "PARTNERS",
+                            "description": "Shared with partners",
+                            "group": "Sharing",
+                            "label": "PARTNERS",
+                            "name": "Shared with partners",
+                            "order": 3,
+                            "selected": true,
+                            "views": { "default": "PARTNERS" }
+                        }
+                    ],
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "8481c5547b2ee7bee640fd9f75f03f45d6e9d968354e9e23298be2ea066fd115": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "surfaces",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "sbx-fcc5e3711e9b70a7bc70acf3de7afadc4c7bfe9962e686d571c974b02dc58d3a",
+                            "kind": "context",
+                            "version": "0.0.0"
+                        }
+                    ],
+                    "contextId": "sbx-fcc5e3711e9b70a7bc70acf3de7afadc4c7bfe9962e686d571c974b02dc58d3a",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "0.0.0"
+                },
+                "result": {
+                    "suggestions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "INTERNAL",
+                            "description": "Internal",
+                            "group": "Level",
+                            "label": "INTERNAL",
+                            "name": "Internal",
+                            "order": 1,
+                            "selected": false,
+                            "views": {
+                                "abbreviated": "INT",
+                                "default": "INTERNAL"
+                            }
+                        },
+                        {
+                            "categoryId": "level",
+                            "conceptId": "CONFIDENTIAL",
+                            "description": "Confidential",
+                            "group": "Level",
+                            "label": "CONFIDENTIAL",
+                            "name": "Confidential",
+                            "order": 2,
+                            "selected": false,
+                            "views": {
+                                "abbreviated": "CONF",
+                                "default": "CONFIDENTIAL"
+                            }
+                        },
+                        {
+                            "categoryId": "sharing",
+                            "conceptId": "PARTNERS",
+                            "description": "Shared with partners",
+                            "group": "Sharing",
+                            "label": "PARTNERS",
+                            "name": "Shared with partners",
+                            "order": 3,
+                            "selected": false,
+                            "views": { "default": "PARTNERS" }
+                        }
+                    ],
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
         "85df44a85d2aac1c3915c3e279296709ff801ba95f6b34f8291be73a0f50ecb9": {
             "body": {
                 "id": "sbx-b75503240aef95d569b628c3a6f7fd65f8632ecc3e1401462511710b19f4a231",
@@ -1479,6 +1703,47 @@
             "method": "GET",
             "statusCode": 200
         },
+        "d3772b8028f6d9b9be24a15b489f74ea07b8367d393915853bfc492b4e79556a": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "surfaces",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "sbx-fcc5e3711e9b70a7bc70acf3de7afadc4c7bfe9962e686d571c974b02dc58d3a",
+                            "kind": "context",
+                            "version": "0.0.0"
+                        }
+                    ],
+                    "contextId": "sbx-fcc5e3711e9b70a7bc70acf3de7afadc4c7bfe9962e686d571c974b02dc58d3a",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "0.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "CONFIDENTIAL",
+                            "confidence": "certain",
+                            "source": "aggregate"
+                        }
+                    ],
+                    "errors": [],
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "CONFIDENTIAL",
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
         "e070dec6e78862435e7c23c92a6e4a93a9667377aed0b78b533966687028c314": {
             "body": {
                 "abiVersion": "v1",
@@ -1489,6 +1754,74 @@
                 "status": "ok"
             },
             "method": "GET",
+            "statusCode": 200
+        },
+        "e452098589fe9886d3586b0bc9d47fe4f4281cdddc0345596a4ccaee941562ec": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "surfaces",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "sbx-fcc5e3711e9b70a7bc70acf3de7afadc4c7bfe9962e686d571c974b02dc58d3a",
+                            "kind": "context",
+                            "version": "0.0.0"
+                        }
+                    ],
+                    "contextId": "sbx-fcc5e3711e9b70a7bc70acf3de7afadc4c7bfe9962e686d571c974b02dc58d3a",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "0.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "CONFIDENTIAL",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "keep",
+                            "conceptId": "KEEP_7Y",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            {
+                                "categoryId": "level",
+                                "conceptId": "CONFIDENTIAL"
+                            },
+                            { "categoryId": "keep", "conceptId": "KEEP_7Y" }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "recognition": {
+                        "corrections": [],
+                        "role": "whole",
+                        "status": "complete",
+                        "unmatched": []
+                    },
+                    "rendered": "CONFIDENTIAL\nKEEP 7 YEARS",
+                    "renders": {},
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "POST",
             "statusCode": 200
         },
         "e67928cfd9c86ed50aed622140553faffde8efee9fdc955ec99efa2579e08318": {
@@ -1540,6 +1873,84 @@
             },
             "headers": { "x-ezclassify-resolved-version": "0.0.0" },
             "method": "GET",
+            "statusCode": 200
+        },
+        "f3954d21f21c099f125de4b702b6aeb2561824b6c9c9205c933ed0b39826aff1": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "surfaces",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "sbx-fcc5e3711e9b70a7bc70acf3de7afadc4c7bfe9962e686d571c974b02dc58d3a",
+                            "kind": "context",
+                            "version": "0.0.0"
+                        }
+                    ],
+                    "contextId": "sbx-fcc5e3711e9b70a7bc70acf3de7afadc4c7bfe9962e686d571c974b02dc58d3a",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "0.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "CONFIDENTIAL",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "sharing",
+                            "conceptId": "PARTNERS",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "keep",
+                            "conceptId": "KEEP_7Y",
+                            "confidence": "certain",
+                            "source": "user"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            {
+                                "categoryId": "level",
+                                "conceptId": "CONFIDENTIAL"
+                            },
+                            { "categoryId": "sharing", "conceptId": "PARTNERS" }
+                        ],
+                        "omitted": [
+                            { "categoryId": "keep", "conceptId": "KEEP_7Y" }
+                        ],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "recognition": {
+                        "corrections": [],
+                        "inputFormat": "sensitivity/full",
+                        "role": "whole",
+                        "status": "complete",
+                        "surface": "sensitivity",
+                        "unmatched": []
+                    },
+                    "rendered": "CONFIDENTIAL // PARTNERS",
+                    "renders": {},
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "POST",
             "statusCode": 200
         },
         "f552c391871a0c33aea490adb2f945f0bb20cec3bd83765c1ac163ebc30f0fc0": {

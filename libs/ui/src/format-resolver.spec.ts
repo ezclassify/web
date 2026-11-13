@@ -1,5 +1,6 @@
 import { afterEach, describe, it, expect, vi } from 'vitest';
 import {
+    coveredCategoriesOf,
     defaultSurfaceOf,
     getFormat,
     holdsPart,
@@ -252,6 +253,68 @@ describe('resolveOutput', () => {
         ];
         expect(resolveOutput(formats, 'short', 'marking')).toBe('short');
         expect(resolveOutput(formats, 'banner', 'marking')).toBeUndefined();
+    });
+});
+
+describe('coveredCategoriesOf', () => {
+    const outputs = [
+        { id: 'sensitivity/full', surface: 'sensitivity', outputView: 'full' },
+        { id: 'retention/block', surface: 'retention', outputView: 'block' },
+    ];
+    const written: Record<string, string[]> = {
+        'sensitivity/full': ['level', 'sharing'],
+        'retention/block': ['keep'],
+    };
+    /** A scheme view that, like the REST client, refuses an unlisted output. */
+    function view() {
+        return {
+            getSchemeMeta: () =>
+                ({
+                    formats: outputs,
+                    defaultRenderFormat: 'sensitivity/full',
+                }) as never,
+            getFormatCoverage: vi.fn((id?: string) => {
+                const categories = id === undefined ? undefined : written[id];
+                if (!categories) throw new Error(`no output ${id}`);
+                return {
+                    formatId: id!,
+                    coveredCategories: categories,
+                    valueLossyCategories: [],
+                    reconstruction: { status: 'unknown' as const, reasons: [] },
+                };
+            }),
+        };
+    }
+
+    it('asks for the output a bare view id names on the default surface', () => {
+        const engine = view();
+        expect(coveredCategoriesOf(engine, 'full', undefined)).toEqual(
+            new Set(['level', 'sharing']),
+        );
+        expect(engine.getFormatCoverage).toHaveBeenCalledWith(
+            'sensitivity/full',
+        );
+    });
+
+    it("asks for a bare view id's view on the field's own surface", () => {
+        expect(coveredCategoriesOf(view(), 'block', 'retention')).toEqual(
+            new Set(['keep']),
+        );
+    });
+
+    it('answers nothing, and asks nothing, for a spelling no output has', () => {
+        const engine = view();
+        expect(
+            coveredCategoriesOf(engine, 'full_line', 'sensitivity'),
+        ).toBeUndefined();
+        expect(engine.getFormatCoverage).not.toHaveBeenCalled();
+    });
+
+    it('answers nothing for a view that reports no coverage', () => {
+        const { getSchemeMeta } = view();
+        expect(
+            coveredCategoriesOf({ getSchemeMeta }, 'full', undefined),
+        ).toBeUndefined();
     });
 });
 

@@ -47,6 +47,7 @@ import { recordAppliedFixes } from './status-mark';
 import { createComposerPort } from './composer/composer-port';
 import { withoutTakenFromWhole } from '../assertion-identity';
 import { renderViewRefused } from '../render-refusal';
+import { coveredCategoriesOf } from '../format-resolver';
 import { t } from '../i18n';
 import {
     ComposerController,
@@ -376,14 +377,12 @@ export class InlineMarkingEditor {
             shape: 'whole',
             binding: {
                 process: (text, request) => this.process(text, request?.chosen),
-                coveredCategories: () => {
-                    const coverage = this.engine.getFormatCoverage?.(
+                coveredCategories: () =>
+                    coveredCategoriesOf(
+                        this.engine,
                         this.options.formatId,
-                    );
-                    return coverage
-                        ? new Set(coverage.coveredCategories)
-                        : undefined;
-                },
+                        this.options.scope,
+                    ),
                 write: (assertions) =>
                     Promise.resolve(
                         this.callRender([...assertions], this.options.formatId),

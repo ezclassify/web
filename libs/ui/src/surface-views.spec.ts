@@ -9,6 +9,7 @@ import { openContext } from '../test-fixtures/context-doubles';
 import { SURFACES_SCHEME } from '../test-fixtures/surfaces-scheme';
 import { EzClassifyUI } from './ezclassify-ui';
 import { VanillaEzClassifyStore } from './store/ezclassify-store';
+import type { MarkingField } from './components/marking-field';
 import {
     openSurface,
     press,
@@ -210,6 +211,61 @@ describe('a marked field that names a bare view on that scheme', () => {
                 outputFormat: 'sensitivity/full',
             });
         }
+    });
+});
+
+describe('a marking field that names a bare view on that scheme', () => {
+    let forms: EzClassifyUI | null = null;
+
+    afterEach(() => {
+        forms?.destroy();
+        forms = null;
+        document.body.innerHTML = '';
+        vi.restoreAllMocks();
+    });
+
+    it('reads a draft with the committed value its view does not write chosen beside it', async () => {
+        Element.prototype.scrollIntoView = vi.fn();
+        const engine = await createEngine();
+        const root = document.createElement('div');
+        root.innerHTML = `
+            <textarea id="overall" data-ezclassify-controller="marking"
+                      data-ezclassify-format="full"></textarea>`;
+        document.body.appendChild(root);
+        forms = new EzClassifyUI(asContext(engine as never), { root });
+        await wait();
+        const host = root.querySelector<HTMLTextAreaElement>('#overall')!;
+        const field = forms.components.get(host) as MarkingField;
+        // The full view writes the level and the sharing, never the keep.
+        field.setAssertions([
+            {
+                conceptId: 'CONFIDENTIAL',
+                categoryId: 'level',
+                confidence: 'certain',
+                source: 'user',
+            },
+            {
+                conceptId: 'KEEP_7Y',
+                categoryId: 'keep',
+                confidence: 'certain',
+                source: 'user',
+            },
+        ]);
+        await wait();
+        const process = vi.spyOn(engine, 'process');
+
+        host.focus();
+        typeText(host, 'CONFIDENTIAL // PARTNERS');
+        await wait(300);
+
+        // Coverage is reported for the output the bare view id names, so the
+        // draft is read and the keep it cannot write rides along with it.
+        const draft = process.mock.calls.find(
+            ([text]) => text === 'CONFIDENTIAL // PARTNERS',
+        );
+        expect(draft?.at(-1)).toMatchObject({
+            assertions: [expect.objectContaining({ conceptId: 'KEEP_7Y' })],
+        });
     });
 });
 

@@ -1,3 +1,4 @@
+import type { ContextSchemeEngineAdapter } from '@ezclassify/types';
 import { isStandalonePart, partWholeOf } from './binding-model';
 import type { FormsContext } from './forms/types';
 
@@ -65,6 +66,43 @@ export function defaultSurfaceOf(
     defaultOutput: string | undefined,
 ): string | undefined {
     return outputs.find((output) => output.id === defaultOutput)?.surface;
+}
+
+/**
+ * The categories a field's format writes, as the scheme view reports coverage
+ * for the output the field's format spelling names (see {@link resolveOutput}).
+ *
+ * Coverage is reported per output, so the spelling is resolved first: a bare
+ * view id names that view on the field's surface. A spelling the scheme lists
+ * no output for, such as a format id that is only one of a view's forms, has no
+ * coverage the view can report. The answer is then undefined, as it is for a
+ * view that reports no coverage at all, and undefined turns carry-forward off.
+ *
+ * @param engine - The field's scheme view
+ * @param spelling - The format the field names
+ * @param surface - The scope id of the surface the field writes; defaults to
+ *   the surface of the scheme's default output
+ * @returns The covered category ids, or undefined
+ */
+export function coveredCategoriesOf(
+    engine: Pick<
+        ContextSchemeEngineAdapter,
+        'getSchemeMeta' | 'getFormatCoverage'
+    >,
+    spelling: string,
+    surface: string | undefined,
+): Set<string> | undefined {
+    if (!engine.getFormatCoverage) return undefined;
+    const meta = engine.getSchemeMeta();
+    const outputs = meta.formats ?? [];
+    const output = resolveOutput(
+        outputs,
+        spelling,
+        surface ?? defaultSurfaceOf(outputs, meta.defaultRenderFormat),
+    );
+    return output === undefined
+        ? undefined
+        : new Set(engine.getFormatCoverage(output).coveredCategories);
 }
 
 /**
