@@ -191,7 +191,7 @@ describe('marked-text-area-logic', () => {
             const result = applyRepairs(segments, '(A) text', template);
             expect(result.patched).toBe(false);
             expect(result.value).toBe('(A) text');
-            expect(result.drift).toBe(0);
+            expect(result.caret).toBe(0);
         });
 
         it('patches a repaired segment', () => {
@@ -207,10 +207,9 @@ describe('marked-text-area-logic', () => {
             const result = applyRepairs(segments, '(A) text', template);
             expect(result.patched).toBe(true);
             expect(result.value).toBe('(B) text');
-            expect(result.drift).toBe(0);
         });
 
-        it('tracks drift when replacement changes length', () => {
+        it('moves a caret after a repair by the length the repair changed', () => {
             const segments: RepairSegment[] = [
                 {
                     start: 0,
@@ -220,10 +219,40 @@ describe('marked-text-area-logic', () => {
                     repaired: true,
                 },
             ];
-            const result = applyRepairs(segments, '(A) text', template);
+            const result = applyRepairs(
+                segments,
+                '(A) text',
+                template,
+                undefined,
+                5,
+            );
             expect(result.patched).toBe(true);
             expect(result.value).toBe('(LONG) text');
-            expect(result.drift).toBe(3);
+            expect(result.caret).toBe(8);
+        });
+
+        it('keeps a caret ahead of a repair where it is', () => {
+            // A caret on the first line must not move for a shorter mark
+            // written on a later line: counting that repair would put it
+            // before the start of the text, which a textarea reads as its end.
+            const segments: RepairSegment[] = [
+                {
+                    start: 8,
+                    end: 18,
+                    marking: '(INTERNAL)',
+                    rendered: 'I',
+                    repaired: true,
+                },
+            ];
+            const result = applyRepairs(
+                segments,
+                '(A) one\n(INTERNAL) two',
+                template,
+                undefined,
+                2,
+            );
+            expect(result.value).toBe('(A) one\n(I) two');
+            expect(result.caret).toBe(2);
         });
 
         it('skips repaired segments whose corrected form matches the original', () => {

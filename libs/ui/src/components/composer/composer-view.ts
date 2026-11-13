@@ -132,6 +132,14 @@ export interface ComposerViewOptions {
      */
     readonly onEscapeIdle?: () => boolean;
     /**
+     * Up or Down, with any modifier, while the list is closed, for a field
+     * whose own text has lines (the inline editor inside a text area). Return
+     * true when the field moved focus and caret into that text: the view then
+     * leaves the key to the browser, which moves the caret a line there, and
+     * opens nothing. Without it, Down opens the list as in any combobox.
+     */
+    readonly onLineMove?: (direction: 'up' | 'down') => boolean;
+    /**
      * Enter (or Done) committed, stored or unchanged, and the composer closed.
      * `fromSheet` says it closed the phone sheet, where the field should not
      * take focus back (that would bring the keyboard up again).
@@ -665,7 +673,15 @@ export class ComposerView {
         if (this.destroyed) return;
         if (e.isComposing || e.keyCode === 229) return;
         const open = this.controller.isOpen;
-        if (e.altKey && (e.key === 'ArrowDown' || e.key === 'ArrowUp')) {
+        const vertical = e.key === 'ArrowDown' || e.key === 'ArrowUp';
+        if (
+            vertical &&
+            !open &&
+            this.opts.onLineMove?.(e.key === 'ArrowDown' ? 'down' : 'up')
+        ) {
+            return;
+        }
+        if (e.altKey && vertical) {
             e.preventDefault();
             if (open) this.jumpCategory(e.key === 'ArrowDown' ? 1 : -1);
             else void this.open('keyboard');

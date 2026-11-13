@@ -163,6 +163,35 @@ export abstract class MarkedFieldBase<
     protected _explicitClose = false;
     protected _lastCloseTime = 0;
     /**
+     * True while a mouse press that began on the host is held. A caret move
+     * during a press opens nothing: the release decides, so a plain click opens
+     * the marking with its list, and a drag or a double-click stays a text
+     * selection.
+     */
+    protected pressing = false;
+    private readonly beginPress = (event: Event): void => {
+        if ((event as MouseEvent).button === 0) this.pressing = true;
+    };
+    // Cleared on any release in the document: a drag can end anywhere.
+    private readonly endPress = (): void => {
+        this.pressing = false;
+    };
+
+    /** Start tracking presses on the host (see {@link pressing}). */
+    protected watchPresses(): void {
+        this.host.addEventListener('mousedown', this.beginPress);
+        document.addEventListener('mouseup', this.endPress, true);
+        window.addEventListener('blur', this.endPress);
+    }
+
+    /** Stop tracking presses. */
+    protected unwatchPresses(): void {
+        this.host.removeEventListener('mousedown', this.beginPress);
+        document.removeEventListener('mouseup', this.endPress, true);
+        window.removeEventListener('blur', this.endPress);
+        this.pressing = false;
+    }
+    /**
      * Host value + caret captured when the picker opens (for the textarea,
      * BEFORE the template insertion that precedes the open). Escape restores
      * this snapshot so closing the picker with Escape CANCELS the edit instead

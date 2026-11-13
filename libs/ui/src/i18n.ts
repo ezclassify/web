@@ -28,6 +28,7 @@ export const defaultLocale = {
     'placeholder.searchInputTouch': 'Search\u2026',
 
     'aria.markingInput': 'Marking input',
+    'aria.showSuggestions': 'Show suggestions',
     'aria.searchMarkings': 'Search markings',
     'aria.selectedMarkingsAndSearch': 'Selected markings and search',
     'aria.removeTag': 'Remove {name}',

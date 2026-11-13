@@ -521,26 +521,13 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
             // Sync runs after the picker closes via onPickerChange → syncFromTextarea.
             if (!this.picker) void this.syncFromTextarea();
         });
-        // Click on textarea: check if the click overlaps a chip in the display
-        // div and open the inline editor for that marking
-        this.textarea.addEventListener('mouseup', () => {
-            if (!this.hasFocus || this.picker) return;
-            // After mouseup, selectionStart is set. Check if it's inside a segment.
-            requestAnimationFrame(() => {
-                if (this.picker) return;
-                const cursorPos = this.textarea.selectionStart;
-                const hasSelection =
-                    this.textarea.selectionStart !== this.textarea.selectionEnd;
-                if (hasSelection) return;
-                const segIdx = this.segments.findIndex(
-                    (s) => cursorPos > s.start && cursorPos < s.end,
-                );
-                if (segIdx >= 0 && segIdx !== this.activeSegmentIndex) {
-                    this.activeSegmentIndex = segIdx;
-                    const seg = this.segments[segIdx];
-                    void this.openPicker(seg.start, seg.end);
-                }
-            });
+        // A plain click on a marking opens it with its list, caret at the
+        // click. The release decides (see MarkedFieldBase.pressing): a drag or
+        // a double-click is a text selection and opens nothing.
+        this.watchPresses();
+        this.textarea.addEventListener('mouseup', (event) => {
+            if (event.button !== 0 || event.detail > 1) return;
+            requestAnimationFrame(() => this.openFromClick());
         });
         this.textarea.addEventListener('scroll', () => {
             this.display.scrollTop = this.textarea.scrollTop;
@@ -968,6 +955,7 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
         this.textarea.removeEventListener('keydown', this.boundKeydown);
         document.removeEventListener('keydown', this.boundDocKeydown, true);
         document.removeEventListener('mousedown', this.boundDocClick);
+        this.unwatchPresses();
         document.removeEventListener(
             'selectionchange',
             this.boundSelectionChange,
@@ -1600,14 +1588,14 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
             this.textarea.value,
             template,
             this.embeddedStyle?.pattern,
+            cursorPos,
         );
 
         if (result.patched) {
-            const caret = this.textarea.selectionStart + result.drift;
             // Auto-repair changes the field value: hosts observing ordinary
             // input events must see it (Host Form Contract).
             this.setHostValue(result.value);
-            this.textarea.setSelectionRange(caret, caret);
+            this.textarea.setSelectionRange(result.caret, result.caret);
             this.lastScannedText = '';
             await this.syncFromTextarea();
             return true;
@@ -1668,34 +1656,14 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
             // (click, arrow) after the scan settles still opens the picker.
             const segmentsFresh =
                 this.textarea.value === this.lastSegmentedText;
-            if (!hasSelection && segmentsFresh) {
+            // A held press leaves the move to its release (openFromClick).
+            if (!hasSelection && segmentsFresh && !this.pressing) {
                 const segIdx = this.segments.findIndex(
                     (s) => cursorPos > s.start && cursorPos < s.end,
                 );
                 if (segIdx !== this.activeSegmentIndex) {
                     if (this.activeSegmentIndex >= 0 && this.picker) {
-                        const nextSegmentIndex = segIdx;
-                        this._explicitClose = true;
-                        this.activeSegmentIndex = -1;
-                        void this.closePicker().then(async () => {
-                            await this.syncFromTextarea();
-                            if (
-                                nextSegmentIndex >= 0 &&
-                                this.hasFocus &&
-                                !this.picker
-                            ) {
-                                const next = this.segments[nextSegmentIndex];
-                                if (next) {
-                                    this.activeSegmentIndex = nextSegmentIndex;
-                                    await this.openPicker(
-                                        next.start,
-                                        next.end,
-                                        false,
-                                    );
-                                }
-                            }
-                            this.favoritesPanel?.syncStar();
-                        });
+                        this.moveEditorTo(segIdx, false);
                         return;
                     }
                     this.activeSegmentIndex = segIdx;
@@ -1919,12 +1887,11 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
                 editorChip.className =
                     'marked-textarea-chip marked-textarea-chip--editing';
                 const openDelim = this.template.slice(0, 1);
-                const closeDelim = ')';
                 editorChip.appendChild(document.createTextNode(openDelim));
                 if (this.pickerMount) {
                     editorChip.appendChild(this.pickerMount);
                 }
-                editorChip.appendChild(document.createTextNode(closeDelim));
+                editorChip.appendChild(this.picker.closeDelimiter(')'));
                 const paragraph = document.createElement('span');
                 paragraph.className = 'marked-textarea-active-paragraph';
                 this.display.appendChild(paragraph);
@@ -2160,13 +2127,16 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
     /**
      * Open the inline editor on the marking at `[start, end)`.
      *
-     * @param openList - False when the caret moving into the marking opened the
-     *   editor: that is not a request for suggestions.
+     * @param openList - False when the keyboard moving the caret into the
+     *   marking opened the editor: that is not a request for suggestions.
+     * @param caret - Where the caret lands in the editor's text (a click's
+     *   offset); the end of the text when omitted.
      */
     private async openPicker(
         start: number,
         end: number,
         openList = true,
+        caret?: number,
     ): Promise<void> {
         this.destroyPicker();
         const openSeq = this.pickerOpenSeq;
@@ -2224,6 +2194,7 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
                 assertions: existingAssertions,
                 draft,
                 openList,
+                caret,
                 resolveContext: this.options.resolveContext,
                 tooltips: this.options.tooltips,
                 tooltipConceptProperty: this.options.tooltipConceptProperty,
@@ -2249,6 +2220,21 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
                     if (outcome === 'invalid' || this.picker !== picker) return;
                     this._explicitClose = true;
                     void this.closePicker().then(() => this.afterClose());
+                },
+                // Up and Down with the list closed move lines in the text, as
+                // they do everywhere else in it: the caret goes back to the
+                // same place in the textarea and the browser moves it a line.
+                onLineMove: (_direction, caretInMark) => {
+                    const range = this.activeRange;
+                    if (!range) return;
+                    const pos = Math.min(
+                        range.start +
+                            this.template.slice(0, 1).length +
+                            caretInMark,
+                        Math.max(range.start, range.end - 1),
+                    );
+                    this.textarea.focus();
+                    this.textarea.setSelectionRange(pos, pos);
                 },
                 onCancel: () => this.escapeClosePicker(),
                 // The favorites button stamps onto the open segment, so
@@ -2290,6 +2276,69 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
         // Re-render display so the chip is replaced with the inline editor
         this.renderDisplay();
         picker.focus();
+    }
+
+    /**
+     * The release of a plain click in the text. A click inside a marking opens
+     * it with its list, the caret where the click landed; a click anywhere else
+     * leaves the marking that was open, as a keyboard move would.
+     */
+    private openFromClick(): void {
+        if (!this.hasFocus) return;
+        const pos = this.textarea.selectionStart;
+        if (pos !== this.textarea.selectionEnd) return;
+        // Offsets from a scan that lags the text would point at the wrong
+        // characters (see onSelectionChange).
+        if (this.textarea.value !== this.lastSegmentedText) return;
+        const segIdx = this.segments.findIndex(
+            (s) => pos > s.start && pos < s.end,
+        );
+        const seg = segIdx >= 0 ? this.segments[segIdx] : undefined;
+        const caret = seg
+            ? pos - seg.start - this.template.slice(0, 1).length
+            : undefined;
+        if (segIdx === this.activeSegmentIndex && seg && this.picker) {
+            this.picker.showList(caret);
+            return;
+        }
+        if (this.activeSegmentIndex >= 0 && this.picker) {
+            this.moveEditorTo(segIdx, true, caret);
+            return;
+        }
+        this.activeSegmentIndex = segIdx;
+        if (seg) void this.openPicker(seg.start, seg.end, true, caret);
+    }
+
+    /**
+     * Close the open editor and, when `segIdx` names a marking, open that one.
+     *
+     * @param segIdx - The marking to open next, or -1 for none
+     * @param openList - Whether the next editor opens with its list
+     * @param caret - Where the caret lands in the next editor's text
+     */
+    private moveEditorTo(
+        segIdx: number,
+        openList: boolean,
+        caret?: number,
+    ): void {
+        this._explicitClose = true;
+        this.activeSegmentIndex = -1;
+        void this.closePicker().then(async () => {
+            await this.syncFromTextarea();
+            if (segIdx >= 0 && this.hasFocus && !this.picker) {
+                const next = this.segments[segIdx];
+                if (next) {
+                    this.activeSegmentIndex = segIdx;
+                    await this.openPicker(
+                        next.start,
+                        next.end,
+                        openList,
+                        caret,
+                    );
+                }
+            }
+            this.favoritesPanel?.syncStar();
+        });
     }
 
     private onPickerChange(): void {

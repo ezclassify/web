@@ -317,16 +317,21 @@ export class MarkedInput extends MarkedFieldBase<HTMLTextAreaElement> {
             this.display.style.borderColor = capturedStyles.borderColor;
             if (!this.picker) this.renderDisplay();
         });
-        // Click near the marking chip opens the picker. A drag-selection whose
-        // endpoint lands in the chip is NOT a chip click: bail so text
-        // selection across the mark survives (progressive-enhancement rule:
-        // never trap the native interaction).
+        // A plain click on the marking opens it with its list, caret at the
+        // click. The release decides (see MarkedFieldBase.pressing): a drag or
+        // a double-click is a text selection and opens nothing, so selecting
+        // across the mark survives (progressive-enhancement rule: never trap
+        // the native interaction). A click on the open editor lands on the
+        // editor itself, which handles it.
+        this.watchPresses();
         this.input.addEventListener('mouseup', (event: MouseEvent) => {
+            if (event.button !== 0 || event.detail > 1) return;
             if (!this.hasFocus || this.picker) return;
             requestAnimationFrame(() => {
                 if (this.picker) return;
                 if (this.input.selectionStart !== this.input.selectionEnd)
                     return;
+                const caret = this.caretInMark();
                 // The native input is the transparent hit target above the
                 // display. Browser caret placement does not reliably map a
                 // click on the styled chip back to a character inside the
@@ -347,7 +352,7 @@ export class MarkedInput extends MarkedFieldBase<HTMLTextAreaElement> {
                         event.clientY >= rect.top &&
                         event.clientY < rect.bottom;
                     if (hitChip) {
-                        void this.openPicker();
+                        this.openFromClick(caret);
                         return;
                     }
                 }
@@ -362,7 +367,7 @@ export class MarkedInput extends MarkedFieldBase<HTMLTextAreaElement> {
                     cursorPos < this.markEnd &&
                     !closeCooldown
                 ) {
-                    void this.openPicker();
+                    this.openFromClick(caret);
                 }
             });
         });
@@ -777,6 +782,7 @@ export class MarkedInput extends MarkedFieldBase<HTMLTextAreaElement> {
         this.input.removeEventListener('paste', this.boundPaste);
         document.removeEventListener('keydown', this.boundDocKeydown, true);
         document.removeEventListener('mousedown', this.boundDocClick);
+        this.unwatchPresses();
         document.removeEventListener(
             'selectionchange',
             this.boundSelectionChange,
@@ -1207,6 +1213,12 @@ export class MarkedInput extends MarkedFieldBase<HTMLTextAreaElement> {
         };
 
         const mark = this.getMarkString();
+        // The open editor's marking takes presses above the native host (see
+        // marked-input.css), so the display rises while it is mounted.
+        this.wrap.classList.toggle(
+            'marked-input-wrap--editing',
+            !!(this.picker && this.pickerMount),
+        );
         // Picker may be active even when the input has no mark yet (opening on an empty field).
         // In that case render the picker mount as an empty editing chip so the picker is visible.
         const pickerOnly = !mark && this.picker && this.pickerMount;
@@ -1220,7 +1232,7 @@ export class MarkedInput extends MarkedFieldBase<HTMLTextAreaElement> {
                 const openDelim = this.template.slice(0, 1);
                 editorChip.appendChild(document.createTextNode(openDelim));
                 editorChip.appendChild(this.pickerMount);
-                editorChip.appendChild(document.createTextNode(')'));
+                editorChip.appendChild(this.picker.closeDelimiter(')'));
                 this.display.appendChild(editorChip);
             } else {
                 const chip = document.createElement('span');
@@ -1353,12 +1365,19 @@ export class MarkedInput extends MarkedFieldBase<HTMLTextAreaElement> {
      *   marking the user typed: it becomes the editor's draft and is read, not
      *   left behind as free text with an empty mark in front of it. The rest of
      *   the text stays free text.
-     * @param options.openList - False when the caret moving into the mark
-     *   opened the editor: that is not a request for suggestions.
+     * @param options.openList - False when the keyboard moving the caret into
+     *   the mark opened the editor: that is not a request for suggestions.
+     * @param options.caret - Where the caret lands in the editor's text (a
+     *   click's offset); the end of the text when omitted.
      */
     private async openPicker({
         fromTyped = false,
         openList = true,
+        caret,
+    }: {
+        fromTyped?: boolean;
+        openList?: boolean;
+        caret?: number;
     } = {}): Promise<void> {
         this.destroyPicker();
         const openSeq = this.pickerOpenSeq;
@@ -1394,6 +1413,7 @@ export class MarkedInput extends MarkedFieldBase<HTMLTextAreaElement> {
             inner,
             {
                 openList,
+                caret,
                 formatId: this.scanFormat,
                 scope: this.options.scope,
                 scopes: this.options.scopes,
@@ -1600,6 +1620,28 @@ export class MarkedInput extends MarkedFieldBase<HTMLTextAreaElement> {
         }
     }
 
+    /**
+     * Open the mark for a click with the caret at `caret` in its text. The
+     * native caret moves just past the mark, where a caret move by keyboard
+     * would put it, so the hidden text never holds a caret inside the mark.
+     */
+    private openFromClick(caret: number | undefined): void {
+        const afterMark = this.captureCaretTarget();
+        this.input.setSelectionRange(afterMark, afterMark);
+        void this.openPicker({ caret });
+    }
+
+    /**
+     * The caret's offset in the mark's text, between its delimiters, or
+     * undefined when the caret is not inside the mark.
+     */
+    private caretInMark(): number | undefined {
+        const pos = this.input.selectionStart ?? 0;
+        const open = this.template.slice(0, 1).length;
+        if (pos < open || pos >= this.markEnd) return undefined;
+        return pos - open;
+    }
+
     /** Caret target just past the marking (one space accounted for). */
     protected captureCaretTarget(): number {
         return this.markEnd + (this.input.value[this.markEnd] === ' ' ? 1 : 0);
@@ -1636,8 +1678,11 @@ export class MarkedInput extends MarkedFieldBase<HTMLTextAreaElement> {
             // If the cursor drifts into the marking region (0..markEnd), push it
             // to the end of the mark and open the picker, same logic as MTA's
             // auto-open when cursor enters a segment.
+            // A held press leaves the move to its release (the mouseup
+            // handler), which opens the mark with its list.
             if (
                 !hasSelection &&
+                !this.pressing &&
                 this.markEnd > 0 &&
                 cursorPos < this.markEnd &&
                 !this.picker &&

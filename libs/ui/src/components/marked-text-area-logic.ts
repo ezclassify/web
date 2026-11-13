@@ -133,23 +133,29 @@ export function fixesNeedingCorrection<T extends CorrectableChange>(
 
 /**
  * Patch textarea content when repair changed any marking's rendered form.
- * Returns the new value, cumulative drift, and whether any patch was applied.
+ * Returns the new value, where the caret goes in it, and whether any patch was
+ * applied.
  *
- * @param segments - The current marking segments with repair flags
+ * @param segments - The current marking segments with repair flags, in text
+ *   order
  * @param textareaValue - The current textarea value
  * @param embeddedTemplate - The embedded marking template (e.g. "({marking}) ")
  * @param embeddedPattern - The embedded marking pattern declared with the
  *   template, so a rendering that already carries its wrapper is not wrapped
  *   twice
+ * @param caret - The caret's offset in `textareaValue`. It moves with the
+ *   repairs made ahead of it and stays put for the ones after it.
  */
 export function applyRepairs(
     segments: RepairSegment[],
     textareaValue: string,
     embeddedTemplate: string,
     embeddedPattern?: string,
-): { value: string; drift: number; patched: boolean } {
+    caret = 0,
+): { value: string; caret: number; patched: boolean } {
     let v = textareaValue;
     let drift = 0;
+    let movedCaret = caret;
     let patched = false;
 
     for (const seg of segments) {
@@ -164,11 +170,13 @@ export function applyRepairs(
         const adjStart = seg.start + drift;
         const adjEnd = seg.end + drift;
         v = v.slice(0, adjStart) + corrected + v.slice(adjEnd);
-        drift += corrected.length - (seg.end - seg.start);
+        const change = corrected.length - (seg.end - seg.start);
+        drift += change;
+        if (seg.end <= caret) movedCaret += change;
         patched = true;
     }
 
-    return { value: v, drift, patched };
+    return { value: v, caret: movedCaret, patched };
 }
 
 /** What a mark with something to say tells the user about itself. */

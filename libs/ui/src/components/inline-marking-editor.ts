@@ -108,11 +108,28 @@ export interface InlineMarkingEditorOptions {
      */
     assertions?: Assertion[];
     /**
-     * Open the list as the editor opens (default). False for an editor opened
-     * because the caret moved into a marking: moving the caret is not a request
-     * for suggestions, so the list waits for typing or ArrowDown.
+     * Open the list as the editor opens (default: a click on the marking).
+     * False for an editor opened because the keyboard moved the caret into a
+     * marking: moving the caret is not a request for suggestions. The list then
+     * opens on typing, a click on the marking or its chevron, or
+     * Ctrl/Cmd+Enter, and on Down only when the host takes no Up and Down for
+     * its own lines (see `onLineMove`).
      */
     openList?: boolean;
+    /**
+     * Where the caret lands in the editor's text as it opens: the offset a
+     * click on the marking pointed at. Defaults to the end of the text.
+     */
+    caret?: number;
+    /**
+     * Up or Down while the list is closed, for a host whose text has lines.
+     * Called inside the key event, before the browser moves the caret: the host
+     * must put focus and caret into its own text at once, at the offset that
+     * matches `caret` in the editor's text, so the browser moves the caret a
+     * line there. The editor commits on the blur that follows, the same as any
+     * other move out of it. Without it, Down opens the list.
+     */
+    onLineMove?: (direction: 'up' | 'down', caret: number) => void;
     /**
      * Text the user already typed as this marking, not yet committed (typed
      * text moved into a new mark). It opens as a dirty draft over an empty
@@ -131,6 +148,8 @@ export class InlineMarkingEditor {
     private container!: HTMLDivElement;
     private input!: HTMLInputElement;
     private sizer!: HTMLSpanElement;
+    private chevron!: HTMLButtonElement;
+    private unsubscribeChevron: (() => void) | null = null;
     private options!: InlineMarkingEditorOptions;
     private assertions: Assertion[] = [];
     private rendered = '';
@@ -182,7 +201,16 @@ export class InlineMarkingEditor {
             event.stopPropagation();
         });
         this.input.addEventListener('keydown', (e) => this.onKeydown(e));
+        // A plain click on the marking asks for its list. The second press of
+        // a double-click, or a press that ends a drag, is selecting text.
+        this.input.addEventListener('click', (event) => {
+            if (event.detail !== 1) return;
+            if (this.input.selectionStart !== this.input.selectionEnd) return;
+            void this.view?.open('pointer');
+        });
         wrap.appendChild(this.input);
+        this.chevron = this.createChevron();
+        wrap.appendChild(this.chevron);
         this.autoSizeInput();
 
         // Seed without normalizing the visible text: a loaded marking stays
@@ -228,6 +256,19 @@ export class InlineMarkingEditor {
                 this.options.onCancel?.();
                 return true;
             },
+            onLineMove: options.onLineMove
+                ? (direction) => {
+                      options.onLineMove?.(
+                          direction,
+                          this.input.selectionStart ?? this.input.value.length,
+                      );
+                      return true;
+                  }
+                : undefined,
+        });
+        this.chevron.setAttribute('aria-controls', this.view.list.id);
+        this.unsubscribeChevron = this.controller.subscribe((s) => {
+            this.chevron.setAttribute('aria-expanded', String(s.open));
         });
         // Outside the display layer the host keeps hidden from assistive
         // technology, so both are heard and seen.
@@ -246,10 +287,8 @@ export class InlineMarkingEditor {
             // phone sheet, which owns focus; leave it there.
             if (this.view.activeInput === this.input) {
                 this.input.focus();
-                this.input.setSelectionRange(
-                    this.input.value.length,
-                    this.input.value.length,
-                );
+                const caret = this.clampCaret(options.caret);
+                this.input.setSelectionRange(caret, caret);
             }
             if (options.openList !== false) void this.view.open('api');
         });
@@ -257,9 +296,42 @@ export class InlineMarkingEditor {
 
     destroy(): void {
         this.destroyed = true;
+        this.unsubscribeChevron?.();
         this.view?.destroy();
         this.controller?.dispose();
         this.container.innerHTML = '';
+    }
+
+    /**
+     * Open the list for a click on the marking the editor already holds, with
+     * the caret where the click pointed (`caret`, an offset in the editor's
+     * text) or left where it is.
+     */
+    showList(caret?: number): void {
+        if (this.destroyed || !this.view) return;
+        if (caret !== undefined && this.view.activeInput === this.input) {
+            const at = this.clampCaret(caret);
+            this.input.setSelectionRange(at, at);
+            void this.controller.input(this.input.value, at);
+        }
+        void this.view.open('pointer');
+    }
+
+    /**
+     * The marking's closing delimiter, for the host to draw right after the
+     * editor's mount. The editor's chevron sits on it: while the chevron
+     * shows, the delimiter's glyph gives way to it but keeps its width, so the
+     * host's display stays in register with its text layer and the space after
+     * the marking stays where it was (see inline-marking-editor.css).
+     *
+     * @param text - The delimiter as the host writes it
+     * @returns The element to append after the mount
+     */
+    closeDelimiter(text: string): HTMLSpanElement {
+        const span = document.createElement('span');
+        span.className = 'inline-editor-close';
+        span.textContent = text;
+        return span;
     }
 
     /** Read the draft again: what it is judged against changed. */
@@ -350,6 +422,46 @@ export class InlineMarkingEditor {
         void this.controller.commit().then((outcome) => {
             if (outcome !== 'invalid') this.options.onExit?.(direction);
         });
+    }
+
+    /** An offset in the editor's text, the end when none is given. */
+    private clampCaret(caret: number | undefined): number {
+        const length = this.input.value.length;
+        if (caret === undefined || !Number.isFinite(caret)) return length;
+        return Math.min(Math.max(Math.trunc(caret), 0), length);
+    }
+
+    /**
+     * The chevron at the end of the marking: the pointer's way to the list when
+     * the caret came in by keyboard. It shows and hides the list without taking
+     * focus from the text, so typing still filters. It stays out of the Tab
+     * order: the keyboard has Ctrl/Cmd+Enter, and a touch screen opens the list
+     * with the tap on the marking itself (inline-marking-editor.css hides it on
+     * a coarse pointer).
+     */
+    private createChevron(): HTMLButtonElement {
+        const chevron = document.createElement('button');
+        chevron.type = 'button';
+        chevron.className = 'inline-editor-chevron';
+        chevron.tabIndex = -1;
+        chevron.setAttribute('aria-label', t('aria.showSuggestions'));
+        chevron.setAttribute('aria-haspopup', 'listbox');
+        chevron.setAttribute('aria-expanded', 'false');
+        chevron.innerHTML =
+            '<svg viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m2 3.75 3 3 3-3"/></svg>';
+        // Keep focus in the text, and keep the press from reading as a press
+        // outside the editor.
+        chevron.addEventListener('mousedown', (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+        });
+        chevron.addEventListener('click', () => {
+            if (this.destroyed || !this.view) return;
+            if (this.controller.isOpen) this.view.close();
+            else void this.view.open('pointer');
+            if (this.view.activeInput === this.input) this.input.focus();
+        });
+        return chevron;
     }
 
     private autoSizeInput(): void {

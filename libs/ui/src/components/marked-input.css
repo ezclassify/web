@@ -246,6 +246,19 @@
     background-color: transparent !important;
 }
 
+/* While the editor is open the display rises above the invisible native host
+   and lets presses through everywhere except the marking being edited, the way
+   the text area's display does: a press on that marking (its text, its
+   chevron) reaches the editor instead of the host, so placing the caret there
+   or opening the list never reads as leaving the editor. */
+.marked-input-wrap--editing > .marked-input-display {
+    z-index: 3;
+    pointer-events: none;
+}
+.marked-input-wrap--editing .marked-input-chip--editing {
+    pointer-events: auto;
+}
+
 .marked-input-picker-active .ez-tooltip {
     display: none !important;
 }
