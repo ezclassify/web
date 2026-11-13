@@ -272,7 +272,7 @@ describe.each(FIELDS)('$name rule errors', (field) => {
         expect(visual.contains(root.querySelector('label'))).toBe(false);
         if (field.inside) {
             const chrome = visual.querySelector(
-                ':scope > .ez-field-drawer, :scope > .marked-input-footer',
+                ':scope > .ez-field-chrome, :scope > .marked-input-footer',
             );
             expect(list.nextElementSibling).toBe(chrome);
         } else {

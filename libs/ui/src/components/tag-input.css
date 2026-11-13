@@ -15,9 +15,10 @@
     column-gap: 0;
     row-gap: 0.375rem;
     /* Visual properties come from the library's own design-token custom
-       properties, read directly. Reserve the resting status mark's lane in
-       both modes so focusing the field does not reflow its chips. */
-    padding: 0.375rem 2.5rem 0.375rem 0.5rem;
+       properties, read directly. The trailing padding is the inline chrome's
+       reserve (field-chrome.css), the same at rest and while focused, so
+       focusing the field never reflows its chips. */
+    padding: 0.375rem 0.5rem;
     background: var(--ez-color-background, inherit);
     border: 1px solid var(--ez-color-border, #d1d5db);
     border-radius: var(--ez-border-radius, 0.25rem);
@@ -44,24 +45,30 @@
     overflow-wrap: anywhere;
 }
 /* Inset (negative offset), matching MarkingField's own focus ring
-   (marking-field.css): an outward ring would paint 1px past the wrap's own
-   border, straight across the seam where the ★ drawer attaches
-   (field-chrome-drawer.css), cutting behind it instead of joining it:
-   visible on the drawer's --top orientation in particular, since that
-   orientation only ever appears while the field is focused (the dropdown
-   that triggers it can't open otherwise). Kept fully inside the border, the
-   ring can never cross into the drawer's footprint. */
-.tag-input-wrap:focus-within:not(:has(> .ez-clear-button:focus)) {
+   (marking-field.css), so every field in the family draws its ring the same
+   way inside its own border. Focus on clear shows clear's own ring instead:
+   clearing is a form action, not editing the field. */
+.tag-input-wrap:focus-within:not(
+        :has(> .ez-field-chrome .ez-clear-button:focus)
+    ) {
     outline: 2px solid var(--ez-color-primary, #fdb827);
     outline-offset: -2px;
 }
 
-/* The drawer itself picks up the same ring color on its own free edges so
-   the compound field+tab shape reads as one continuously highlighted unit,
-   not a highlighted box with a separately-colored tab hanging off it. */
-.tag-input-wrap:focus-within:not(:has(> .ez-clear-button:focus))
-    > .ez-field-drawer {
-    border-color: var(--ez-color-primary, #fdb827);
+/* The chip keys, in a quiet row under the field like the marked fields'
+   keyboard hint. Two classes, so the row shows whatever order the root's
+   stylesheets were adopted in: the composer adopts component-utils.css again
+   while it is open, and its `.proto-kbd-hints { display: none }` would
+   otherwise win on source order and hide the row until it closed. A touch
+   screen has no keys to hint at. */
+.proto-kbd-hints.tag-input-hints {
+    display: flex;
+    margin-top: 0.25rem;
+}
+@media (pointer: coarse) {
+    .proto-kbd-hints.tag-input-hints {
+        display: none;
+    }
 }
 .tag-input-filter {
     flex: 1;

@@ -92,9 +92,10 @@ Configuration stays narrow. Subjective and optional helper surfaces, such as too
 
 ### Enhancement Status Indicator
 
-Every enhanced input and textarea, including a data-only field, has one EzClassify status mark: the 3-bar-plus-sparkle brand glyph. MarkedInput and MarkedTextArea put it in their existing bottom hint row, right-aligned opposite the ⌘+Enter tip; MarkingField and TagInput put it in a small ★ drawer attached to the field's bottom-right edge (mirroring to the top-right when the field's own composer opens _below_ it: the drawer always sits on the edge OPPOSITE the composer, never the same one, see `field-chrome-drawer.ts`). On the top edge the drawer hangs into the label's line, so it carries only the mark and ★ there; TagInput's key hints show on the bottom edge only. The one remaining absolutely-positioned placement (an input's right edge) belongs to the plain, chrome-less `<input>` binding path in `ezclassify-ui.ts`: a bare field with no hint row or drawer of its own to fold the mark into.
+Every enhanced input and textarea, including a data-only field, has one EzClassify status mark: the 3-bar-plus-sparkle brand glyph. MarkingField, TagInput, MarkedInput and MarkedTextArea put it in their inline chrome (`field-chrome.ts`): one row inside the field's trailing edge holding the mark, the ★ favorites button where it applies, and clear. The row sits in the same place at rest and while the field is focused, centered on a single-line field and pinned to the first line of a text area. It measures how far it reaches into the field and publishes that as `--ez-field-chrome-inline-size` on the field's wrap; the field's text layers reserve that much trailing padding, so text, wrapped lines and chips never run under it, and the reserve follows the row when its contents change. The one remaining absolutely-positioned placement (an input's right edge) belongs to the plain, chrome-less `<input>` binding path in `ezclassify-ui.ts`: a bare field with no chrome row of its own to fold the mark into.
 
-- **Quiet** is the default: the whole glyph sits muted. It means the field is enhanced by EzClassify and nothing has been fixed. A proposed fix does not change the mark; only an applied fix does.
+- **Quiet** is the default: the whole glyph sits muted (`--ez-status-mark-color`). It means the field is enhanced by EzClassify and nothing has been fixed. A proposed fix does not change the mark; only an applied fix does.
+- Every other state means the field has a message for the user, and the glyph turns strong (`--ez-status-mark-strong-color`): the field's text color on a light palette, gold on a dark one. The accessible label then carries the message too.
 - **Unseen**: EzClassify applied a fix the user has not yet been shown. The sparkle turns accent-colored, a small corner dot appears, and the sparkle pulses on an interval (disabled under `prefers-reduced-motion`, where the dot alone carries the state).
 - **Seen**: the fix tooltip has actually presented, past its hover-intent delay, or the mark was focused. The dot clears and the pulse stops; the accent sparkle persists as "done and known."
 - **Error**: the field could not check all of its text, as when a
@@ -360,10 +361,10 @@ processing is a separate `Change` in `appliedFixes` (`ruleId`, `action`,
   (an invalid marking, or one with unread text) shows that state's errors and
   ways to fix, so every field bound to the marking offers the same fixes.
 - The list sits inside the field's own wrapper, after the editable surface and
-  before its chrome (the ★ drawer, or the marked fields' hint row), so Tab goes
-  field, fixes, chrome. MarkingField's drawer moves to the top edge while the
-  list is showing, so it never covers it. TagInput keeps its chrome inside the
-  chip box, so its list still follows the box.
+  before what follows it (the inline chrome, or the marked input's hint row),
+  so Tab goes field, fixes, chrome. The chrome sits inside the field's trailing
+  edge, so it never covers the list. TagInput keeps its chrome inside the chip
+  box, so its list still follows the box.
 - The status mark's "EzClassify fixed this marking" popover closes when the
   field's value is rendered again or when focus or a press goes outside the
   field, and it moves above the mark (or closes) rather than cover the list.

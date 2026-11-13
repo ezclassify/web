@@ -440,17 +440,6 @@ export abstract class ReadOnlyComponentBase implements ComponentInstance {
     /** See {@link setEditorOpen}. */
     private editorOpen = false;
 
-    /**
-     * Whether a validation error surface is currently visible below the
-     * component. Field chrome that hangs off the bottom edge (the star drawer)
-     * consults this to vacate the edge: a hint bar must never sit on top of an
-     * error the user needs to read.
-     */
-    protected hasVisibleValidationErrors(): boolean {
-        return (
-            this.ruleErrorList !== null && !this.ruleErrorList.element.hidden
-        );
-    }
     /** The original <input> element being progressively enhanced (if any) */
     protected enhancedInput: HTMLInputElement | null = null;
 

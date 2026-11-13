@@ -24,6 +24,7 @@ import { EzClassifyUI } from './ezclassify-ui';
 import { MarkedTextArea } from './components/marked-text-area';
 import { MarkedInput } from './components/marked-input';
 import { asContext } from '../test-fixtures/as-context';
+import { expectInlineChrome } from '../test-fixtures/field-chrome';
 import { levelState } from './store/page-rollup-harness';
 import { connectDemoContext } from '../../../test-support/demo-runtime';
 
@@ -774,9 +775,7 @@ describe('MarkedTextArea shows the part marks the engine reads', () => {
 });
 
 describe('Marked fields carry one enhancement status mark', () => {
-    it('MarkedInput mounts a single quiet mark in its footer chrome slot at init', async () => {
-        // The mark lives in the bottom hint row's chrome slot, right-aligned opposite
-        // the ⌘+Enter tip, not floating over the field's own content.
+    it('MarkedInput mounts a single quiet mark in its inline chrome at init', async () => {
         const engine = await createMarkedEngine();
         root.innerHTML = `<input type="text" id="mark-mi" data-ezclassify-controller="marked-input" value="(U) title">`;
         const forms = new EzClassifyUI(asContext(engine as never), { root });
@@ -784,21 +783,14 @@ describe('Marked fields carry one enhancement status mark', () => {
         await wait(200);
 
         const wrap = root.querySelector('.marked-input-wrap')!;
-        const chrome = wrap.querySelector('.marked-input-hint-chrome')!;
-        const marks = chrome.querySelectorAll(':scope > .ez-status-mark');
-        expect(marks).toHaveLength(1);
-        expect(marks[0].classList.contains('ez-status-mark--quiet')).toBe(true);
-        expect(marks[0].classList.contains('ez-status-mark--chrome')).toBe(
-            true,
-        );
-        // Not floating over the field: the OLD absolute-overlay shape.
-        expect(marks[0].classList.contains('ez-status-mark--input')).toBe(
-            false,
-        );
+        const chrome = expectInlineChrome(wrap, [
+            wrap.querySelector(':scope > .marked-input-display')!,
+        ]);
+        const mark = chrome.querySelector('.ez-status-mark')!;
+        expect(mark.classList.contains('ez-status-mark--quiet')).toBe(true);
     });
 
-    it('MarkedTextArea mounts a single quiet mark in its footer chrome slot at init', async () => {
-        // Same chrome slot as MarkedInput above.
+    it('MarkedTextArea mounts a single quiet mark in its inline chrome at init', async () => {
         const engine = await createMarkedEngine();
         root.innerHTML = `<textarea id="mark-ta" data-ezclassify-controller="marked-textarea">(U) first.\n(S) second.</textarea>`;
         const forms = new EzClassifyUI(asContext(engine as never), { root });
@@ -806,13 +798,11 @@ describe('Marked fields carry one enhancement status mark', () => {
         await wait(300);
 
         const wrap = root.querySelector('.marked-textarea-wrap')!;
-        const chrome = wrap.querySelector('.marked-textarea-hint-chrome')!;
-        const marks = chrome.querySelectorAll(':scope > .ez-status-mark');
-        expect(marks).toHaveLength(1);
-        expect(marks[0].classList.contains('ez-status-mark--quiet')).toBe(true);
-        expect(marks[0].classList.contains('ez-status-mark--chrome')).toBe(
-            true,
-        );
+        const chrome = expectInlineChrome(wrap, [
+            wrap.querySelector(':scope > .marked-textarea-display')!,
+        ]);
+        const mark = chrome.querySelector('.ez-status-mark')!;
+        expect(mark.classList.contains('ez-status-mark--quiet')).toBe(true);
         // Never a per-segment star, no matter how many markings exist.
         expect(root.querySelector('.marked-textarea-autofix-star')).toBeNull();
     });

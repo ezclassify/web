@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { asContext } from '../../test-fixtures/as-context';
+import { expectInlineChrome } from '../../test-fixtures/field-chrome';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
@@ -809,7 +810,7 @@ describe('MarkedTextArea', () => {
         expect(chips.length).toBe(0);
     });
 
-    it('keeps the status mark and ★ button in one slot, last in the wrap, while the editor opens and closes', async () => {
+    it('keeps its inline chrome in place while the editor opens and closes', async () => {
         Element.prototype.scrollIntoView = vi.fn();
 
         const engine = await createTestEngine();
@@ -820,12 +821,11 @@ describe('MarkedTextArea', () => {
 
         const ta = document.getElementById('body') as HTMLTextAreaElement;
         const wrap = ta.closest('.marked-textarea-wrap') as HTMLElement;
-        const chrome = wrap.querySelector(
-            ':scope > .marked-textarea-hint-chrome',
-        ) as HTMLElement;
+        const chrome = expectInlineChrome(wrap, [
+            ta,
+            wrap.querySelector(':scope > .marked-textarea-display')!,
+        ]);
         const mark = chrome.querySelector('.ez-status-mark');
-        expect(mark).toBeTruthy();
-        expect(wrap.lastElementChild).toBe(chrome);
 
         ta.focus();
         ta.dispatchEvent(
@@ -893,20 +893,23 @@ describe('MarkedTextArea', () => {
         );
     });
 
-    it('keeps the chrome slot at the bottom of the field, out of normal flow', () => {
-        const css = readFileSync(
-            join(
-                dirname(fileURLToPath(import.meta.url)),
-                'marked-text-area.css',
-            ),
-            'utf8',
-        );
+    it('pins its chrome to the first line, top right', async () => {
+        const engine = await createTestEngine();
+        root.innerHTML = `<textarea id="body" data-ezclassify-controller="marked-textarea"></textarea>`;
+        const forms = new EzClassifyUI(asContext(engine as never), { root });
+        activeForms.push(forms);
+        await wait(80);
+        const chrome = root.querySelector('.ez-field-chrome')!;
+        expect(chrome.classList.contains('ez-field-chrome--start')).toBe(true);
+
+        const here = dirname(fileURLToPath(import.meta.url));
+        const css = readFileSync(join(here, 'field-chrome.css'), 'utf8');
         expect(css).toMatch(
-            /\.marked-textarea-hint-chrome\s*\{[^}]*position:\s*absolute[^}]*bottom:\s*0\.25rem/,
+            /\.ez-field-chrome--start\s*\{\s*top:\s*0\.25rem;\s*transform:\s*none;/,
         );
-        expect(css).toMatch(
-            /\.marked-textarea-wrap\s*\{[^}]*position:\s*relative/,
-        );
+        expect(
+            readFileSync(join(here, 'marked-text-area.css'), 'utf8'),
+        ).toMatch(/\.marked-textarea-wrap\s*\{[^}]*position:\s*relative/);
     });
 
     it('shows a concept dwell tooltip on hover over a valid marking segment', async () => {

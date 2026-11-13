@@ -6,6 +6,7 @@ import { ComponentBase } from './components/component-base';
 import { acceptedValue, judgedAsHeld } from './loaded-value';
 import { mockProcessResult } from './engine-result-mock';
 import { asContext } from '../test-fixtures/as-context';
+import { markTone } from '../test-fixtures/field-chrome';
 import { connectDemoContext } from '../../../test-support/demo-runtime';
 
 /** A recognition that read every character. */
@@ -836,6 +837,30 @@ describe('a loaded marking takes what the engine fixed and says so', () => {
                 .querySelector('.ez-status-mark')!
                 .classList.contains('ez-status-mark--quiet'),
         ).toBe(true);
+    });
+
+    it('colors the MarkingField and TagInput marks strong while they explain a fix', async () => {
+        const { form } = await mountRuled(
+            `<input type="hidden" id="doc" data-ezclassify-marking>
+             <div class="mf"><input id="mf" data-ezclassify-controller="marking" data-ezclassify-bound-to="doc"></div>
+             <div class="ti"><input id="ti" data-ezclassify-controller="tags" data-ezclassify-bound-to="doc"></div>`,
+            ['doc', 'LEVEL A//TAG-G'],
+        );
+        for (const field of ['.mf', '.ti']) {
+            const mark = form.querySelector(`${field} .ez-status-mark`)!;
+            expect(markTone(mark), field).toBe('strong');
+            // The name says there is something to read, not just whose mark it is.
+            expect(mark.getAttribute('aria-label')).toContain(
+                '1 fix applied to this marking',
+            );
+        }
+    });
+
+    it('keeps the MarkingField mark muted when the field has nothing to say', async () => {
+        const { form } = await mountRuled(
+            '<input id="f" data-ezclassify-controller="marking" value="LEVEL B//TAG-X//STD">',
+        );
+        expect(markTone(form.querySelector('.ez-status-mark')!)).toBe('muted');
     });
 
     it('shows the same fixed marking, errors and explanation in every bound field', async () => {

@@ -1,28 +1,24 @@
 .marked-input-wrap {
     position: relative;
-    display: block;
+    /* The field takes the first row with its inline chrome (field-chrome.css
+       centers the chrome on that row alone); the footer takes the second. */
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
     width: 100%;
     /* Prevent grid/flex track blowout from the field's content. */
     min-width: 0;
 }
-.marked-input-wrap.ez-clear-text {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr);
-}
-.marked-input-wrap.ez-clear-text > .marked-input-display {
+.marked-input-wrap > .marked-input-display {
     grid-area: 1 / 1 / 2 / 2;
-}
-.marked-input-wrap.ez-clear-text > .ez-clear-button {
-    grid-area: 1 / 1 / 2 / 2;
-    top: 50%;
-    transform: translateY(-50%);
 }
 
 /* Visible focus ring on the display layer: defined here so it never goes missing.
    The native host's outline is suppressed; this is the only affordance. The
    ring follows the native input's own corner radius, which marked-input.ts
    mirrors onto the display, so focus never reshapes the field. */
-.marked-input-wrap:focus-within:not(:has(> .ez-clear-button:focus))
+.marked-input-wrap:focus-within:not(
+        :has(> .ez-field-chrome .ez-clear-button:focus)
+    )
     .marked-input-display {
     outline: 2px solid var(--ez-color-primary, #fdb827);
     outline-offset: -2px;
@@ -150,7 +146,7 @@
 }
 
 /* Footer row for the keyboard hint or coarse-pointer "Add marking" button.
-   Status and favorites controls occupy the separate hint-chrome slot. */
+   The status mark, favorites and clear sit in the field's inline chrome. */
 .marked-input-footer {
     display: flex;
     align-items: center;
@@ -209,23 +205,6 @@
     cursor: pointer;
 }
 
-/* Chrome slot: status mark + ★ favorites button at the field's
-   bottom-right edge. `.marked-input-wrap` (position: relative) is the containing
-   block, so it takes no normal-flow space and never pushes the field down.
-   It stays here at rest and while the inline editor is open, so the controls
-   never move when editing starts; the editor opens below or above the line
-   being edited and has no footer slot to push the chrome out of. The z-index
-   keeps it above the invisible native host, which covers the whole wrap. */
-.marked-input-hint-chrome {
-    position: absolute;
-    right: 0;
-    bottom: 0.25rem;
-    z-index: 3;
-    display: flex;
-    align-items: center;
-    gap: 0.25rem;
-}
-
 /* Touch devices have no physical keyboard, so the Cmd/Ctrl+Enter hint is
    meaningless, so hide it and show the tappable "Add marking" button instead. */
 @media (pointer: coarse) {
@@ -282,13 +261,10 @@
 
 /* Touch targets: a finger needs 44px. The "+ Add marking" / "+ Set marking"
    button grows to it; the status mark and star keep their 20px icons with a
-   44px overlay each (status-mark.css, favorites-panel.css), spaced so the two
-   overlays never meet. */
+   44px overlay each (status-mark.css, favorites-panel.css), and
+   field-chrome.css spaces them so the two overlays never meet. */
 @media (pointer: coarse) {
     .marked-input-touch-add {
         min-height: 2.75rem;
-    }
-    .marked-input-hint-chrome {
-        gap: 1.5rem;
     }
 }

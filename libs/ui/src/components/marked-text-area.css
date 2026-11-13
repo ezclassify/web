@@ -7,7 +7,9 @@
 
 /* Focus ring: the textarea is invisible so its native outline is hidden;
    show a real ring on the display layer when the textarea receives focus. */
-.marked-textarea-wrap:focus-within:not(:has(> .ez-clear-button:focus))
+.marked-textarea-wrap:focus-within:not(
+        :has(> .ez-field-chrome .ez-clear-button:focus)
+    )
     .marked-textarea-display {
     outline: 2px solid var(--ez-color-primary, #fdb827);
     outline-offset: -2px;
@@ -15,12 +17,10 @@
 }
 
 /* Footer row: keyboard hint (or, on coarse pointers, the touch "Add marking"
-   button) on the left, the status mark + ★ favorites chrome right-aligned on
-   the right: both live here so the chrome always lands opposite whichever of
-   the other two is currently visible. padding-right clears the resize handle,
-   which anchors to the wrap's own bottom-right corner (see
-   .marked-textarea-resize-handle below) and would otherwise sit on top of the
-   chrome slot's icons. */
+   button). The status mark, favorites and clear sit in the field's inline
+   chrome at its top right. padding-right clears the resize handle, which
+   anchors to the wrap's own bottom-right corner (see
+   .marked-textarea-resize-handle below). */
 .marked-textarea-footer {
     display: flex;
     align-items: center;
@@ -74,23 +74,6 @@
     border: 1px solid var(--ez-color-border, #d1d5db);
     border-radius: 0.375rem;
     cursor: pointer;
-}
-
-/* Chrome slot: status mark + ★ favorites button at the field's
-   bottom-right edge. `.marked-textarea-wrap` (position: relative) is the containing
-   block, so it takes no normal-flow space and never pushes the field down.
-   It stays here at rest and while the inline editor is open, so the controls
-   never move when editing starts; the editor opens below or above the line
-   being edited and has no footer slot to push the chrome out of. The z-index
-   keeps it above the invisible native textarea, which covers the whole wrap. */
-.marked-textarea-hint-chrome {
-    position: absolute;
-    right: 1.5rem;
-    bottom: 0.25rem;
-    z-index: 3;
-    display: flex;
-    align-items: center;
-    gap: 0.25rem;
 }
 
 /* Touch devices have no physical keyboard, so the Cmd/Ctrl+Enter hint is
@@ -364,14 +347,10 @@
 
 /* Touch targets: a finger needs 44px. The "+ Add marking" / "+ Set marking"
    button grows to it; the status mark and star keep their 20px icons with a
-   44px overlay each (status-mark.css, favorites-panel.css), spaced so the two
-   overlays never meet. */
+   44px overlay each (status-mark.css, favorites-panel.css), and
+   field-chrome.css spaces them so the two overlays never meet. */
 @media (pointer: coarse) {
     .marked-textarea-touch-add {
         min-height: 2.75rem;
-    }
-    .marked-textarea-hint-chrome {
-        gap: 1.5rem;
-        right: 2rem;
     }
 }

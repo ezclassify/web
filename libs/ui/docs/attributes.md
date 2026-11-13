@@ -178,13 +178,14 @@ in tests and CSS but must not set them by hand.
 ### Enhancement status mark (runtime element, not an attribute)
 
 Each enhanced input and textarea carries one `.ez-status-mark` element inside
-its wrapper. MarkedInput and MarkedTextArea place it in their bottom hint row
-alongside the ★ favorites button, right-aligned opposite the ⌘+Enter tip;
-MarkingField and TagInput place it in a small ★ drawer attached to the
-field's bottom-right edge (mirroring to the top-right while the field's own
-suggestion dropdown is open below it: the drawer always sits on the edge
-OPPOSITE the dropdown, never the same one). The mark is the 3-bar-plus-sparkle
-brand glyph and cycles through three
+its wrapper. MarkingField, TagInput, MarkedInput and MarkedTextArea place it in
+their `.ez-field-chrome` row inside the field's trailing edge, ahead of the ★
+favorites button where one applies and the clear button. The row stays put at
+rest and while the field is focused; a text area pins it to its first line.
+The field's text keeps clear of it: the row publishes how far it reaches into
+the field as `--ez-field-chrome-inline-size` on the field's wrapper, and the
+text layers reserve that much trailing padding. The mark is the
+3-bar-plus-sparkle brand glyph and cycles through three
 states as fixes arrive and get noticed: `.ez-status-mark--quiet` (the
 default: nothing applied yet, whole glyph muted), `.ez-status-mark--unseen`
 (EzClassify applied a fix the user hasn't been shown yet: the sparkle turns
@@ -197,7 +198,10 @@ check all of its text, as when a MarkedTextArea's scan stops before the end of
 the body: the sparkle takes the error color and the popover and label lead with
 the reason. Hovering or focusing an active (non-quiet) mark lists each change the
 engine applied, once, in the engine's own words for it. Style hooks:
-`--ez-status-mark-color` for the resting/muted color, the shared
+`--ez-status-mark-color` for the quiet, muted glyph,
+`--ez-status-mark-strong-color` for the glyph of a mark with a message (any
+state but quiet; the field's text color on a light palette, gold on a dark
+one), the shared
 `--ez-color-primary` for the accent sparkle and dot, the shared
 `--ez-color-error` for the error sparkle, and
 `--ez-status-mark-ring` for the color of the ring that stands the dot off the

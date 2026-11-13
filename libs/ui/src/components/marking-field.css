@@ -9,11 +9,11 @@
    plus-text shape has, so there is no reason to hide any of it. */
 
 /* A one-column grid: the field (host or display, only one of them in flow at a
-   time) and its ★ drawer share the first row, and the rule-error list, which
-   sits inside the wrap so Tab reaches its fixes before the drawer, takes the
-   second. An absolutely positioned child placed in a grid area uses that area
-   as its containing block, so the resting host's inset and the drawer's edges
-   and centering measure the field alone, never the errors beneath it. */
+   time) and its inline chrome share the first row, and the rule-error list,
+   which sits inside the wrap so Tab reaches its fixes before the chrome, takes
+   the second. An absolutely positioned child placed in a grid area uses that
+   area as its containing block, so the resting host's inset and the chrome's
+   centering measure the field alone, never the errors beneath it. */
 .marking-field-wrap {
     position: relative;
     display: grid;
@@ -23,8 +23,7 @@
 }
 
 .marking-field-wrap > .marking-field-host,
-.marking-field-wrap > .marking-field-display,
-.marking-field-wrap > .ez-field-drawer {
+.marking-field-wrap > .marking-field-display {
     /* Both end lines explicit: an absolutely positioned item's auto end line
        is the wrap's padding edge, which would take in the error row again. */
     grid-area: 1 / 1 / 2 / 2;
@@ -36,16 +35,6 @@
 
 .marking-field-wrap:focus-within {
     outline: none;
-}
-
-/* The ★ drawer picks up the same ring color the host's own inset focus
-   outline uses (below) on its own free edges, so the compound field+tab
-   shape reads as one continuously highlighted unit when focused: the same
-   treatment TagInput's wrap applies (tag-input.css), kept here in sync so
-   the two fields' attached-tab geometry matches in both orientations. */
-.marking-field-wrap:focus-within:not(:has(> .ez-clear-button:focus))
-    > .ez-field-drawer {
-    border-color: var(--ez-color-primary, #fdb827);
 }
 
 /* The editable surface is a <textarea>: a single-line input cannot wrap
@@ -176,11 +165,4 @@
     .marking-field-display {
         font-size: max(1em, 16px);
     }
-}
-
-/* Keep the status-mark lane in both modes so focus never changes wrapping.
-   The host may carry inline padding; the display mirrors those same metrics. */
-.marking-field-host,
-.marking-field-display {
-    padding-inline-end: 2.5rem !important;
 }

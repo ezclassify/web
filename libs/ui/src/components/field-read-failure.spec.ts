@@ -179,14 +179,6 @@ describe.each(PART_FIELDS)('a %s part', (_name, markup) => {
         expect((field as { getRendered(): string }).getRendered()).toBe(
             'RESTRICTED',
         );
-        // The drawer moves off the bottom edge the message now occupies.
-        expect(
-            host
-                .closest('.ez-test-field')!
-                .querySelector('.ez-field-drawer')!
-                .classList.contains('ez-field-drawer--top'),
-        ).toBe(true);
-
         failing = false;
         await publishWhole(VALID_WHOLE);
         expect(report(host)).toEqual({ errors: [], warnings: [] });

@@ -445,11 +445,9 @@ export function ensureStatusMark(
         guardPopover(mark);
     };
 
-    // A press must not move focus onto the mark. Focus inside the field
-    // turns its chrome into the attached drawer, which moves the mark out
-    // from under the finger or pointer before the press ends, so the click
-    // would land on the field instead. The keyboard still reaches the mark
-    // with Tab.
+    // A press must not move focus onto the mark: taking focus from the field
+    // would blur it, and a blur commits the field's draft mid-interaction.
+    // The keyboard still reaches the mark with Tab.
     mark.addEventListener('mousedown', (e) => e.preventDefault());
     // A press (tap, click, Enter, Space) opens the list, or closes the one
     // it opened. It must not submit a form or reach the field's own click

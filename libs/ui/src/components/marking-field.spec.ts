@@ -10,6 +10,7 @@
  * "marking" controller registration in component-factory/element-scanner.
  */
 import { asContext } from '../../test-fixtures/as-context';
+import { expectInlineChrome } from '../../test-fixtures/field-chrome';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import {
     activeRow,
@@ -896,7 +897,8 @@ describe('MarkingField native text input', () => {
         expect(openSurface()).toBeNull();
         expect(input.value).toBe('SECRET');
         expect(
-            (root.querySelector('.ez-field-drawer') as HTMLElement).inert,
+            (root.querySelector('.ez-field-chrome__status') as HTMLElement)
+                .inert,
         ).toBe(true);
     });
 
@@ -960,7 +962,7 @@ describe('MarkingField format', () => {
 });
 
 describe('MarkingField', () => {
-    it('keeps host block margins in the resting display and attached drawer', async () => {
+    it('keeps host block margins in the resting display', async () => {
         root.innerHTML =
             '<textarea id="mf" style="margin-top: 6px; margin-bottom: 8px" data-ezclassify-controller="marking">SECRET</textarea>';
         forms = new EzClassifyUI(
@@ -973,15 +975,8 @@ describe('MarkingField', () => {
         const display = root.querySelector<HTMLElement>(
             '.marking-field-display',
         )!;
-        const drawer = root.querySelector<HTMLElement>('.ez-field-drawer')!;
         expect(display.style.marginTop).toBe('6px');
         expect(display.style.marginBottom).toBe('8px');
-        expect(drawer.style.getPropertyValue('--ez-field-margin-top')).toBe(
-            '6px',
-        );
-        expect(drawer.style.getPropertyValue('--ez-field-margin-bottom')).toBe(
-            '8px',
-        );
     });
 
     it('mounts, enhancing the host input in place with a painted display', async () => {
@@ -1343,109 +1338,35 @@ describe('MarkingField', () => {
         );
     });
 
-    it('mounts the status mark + favorites button inside a bottom-hanging chrome drawer', async () => {
-        // The mark and ★ button live in a small drawer attached to the field's
-        // bottom-right edge, not floating over the field's own content.
+    it('keeps the status mark and clear inline at its trailing edge, reserving their room on both layers', async () => {
         const { input } = await mount('SECRET');
         const wrap = input.closest('.marking-field-wrap') as HTMLElement;
-        const drawer = wrap.querySelector(':scope > .ez-field-drawer');
-        expect(drawer).not.toBeNull();
-        expect(drawer!.classList.contains('ez-field-drawer--bottom')).toBe(
-            true,
-        );
-        const mark = drawer!.querySelector(':scope > .ez-status-mark');
-        expect(mark).not.toBeNull();
-        expect(mark!.classList.contains('ez-status-mark--chrome')).toBe(true);
+        const display = wrap.querySelector(':scope > .marking-field-display')!;
+        expectInlineChrome(wrap, [display, input]);
     });
 
-    it('mirrors the drawer to the top when the dropdown opens below the field (the default), and back on close', async () => {
-        // The drawer sits on the edge opposite the picker. With jsdom's zero-size
-        // layout the picker opens below, so the drawer moves to the free top edge.
-        const { input } = await mount('SECRET');
-        const wrap = input.closest('.marking-field-wrap') as HTMLElement;
-        const drawer = wrap.querySelector('.ez-field-drawer') as HTMLElement;
-        expect(drawer.classList.contains('ez-field-drawer--bottom')).toBe(true);
-
-        await openPicker(input);
-
-        expect(openSurface()!.dataset.side).toBe('below');
-        expect(drawer.classList.contains('ez-field-drawer--top')).toBe(true);
-        expect(drawer.classList.contains('ez-field-drawer--bottom')).toBe(
-            false,
-        );
-
-        await leave(input);
-
-        expect(drawer.classList.contains('ez-field-drawer--bottom')).toBe(true);
-        expect(drawer.classList.contains('ez-field-drawer--top')).toBe(false);
-    });
-
-    it('the drawer classes actually resolve to opposite physical edges (not just opposite names)', () => {
-        // Geometry, not just class names: jsdom has no layout engine and
-        // (per the "wraps instead of clipping" test above) doesn't apply the
-        // author stylesheet cascade to getComputedStyle for a plain <style>
-        // injection, so this reads the real CSS source: the same pattern
-        // used there. A class-name assertion alone could pass while the
-        // surface is unusable; this
-        // would catch someone swapping the --top/--bottom rule BODIES (both
-        // tests above only prove the JS picks the right CLASS NAME; this
-        // proves that class name still means what it says on screen).
-        const here = dirname(fileURLToPath(import.meta.url));
-        const css = readFileSync(join(here, 'field-chrome-drawer.css'), 'utf8');
-        expect(css).toMatch(
-            /\.ez-field-drawer--bottom\s*\{[^}]*top:\s*calc\(100% - var\(--ez-field-margin-bottom, 0px\)\)/,
-        );
-        expect(css).toMatch(
-            /\.ez-field-drawer--top\s*\{[^}]*bottom:\s*calc\(100% - var\(--ez-field-margin-top, 0px\)\)/,
-        );
-    });
-
-    it('continues the host focus ring onto the drawer, matching TagInput', () => {
-        // The inset host focus ring continues onto the drawer so the field and
-        // drawer read as one focused compound shape.
+    it('draws its focus ring inside the field border, like TagInput', () => {
         const here = dirname(fileURLToPath(import.meta.url));
         const css = readFileSync(join(here, 'marking-field.css'), 'utf8');
         expect(css).toMatch(
             /\.marking-field-host:focus\s*\{[^}]*outline-offset:\s*-2px/,
         );
-        expect(css).toMatch(
-            /\.marking-field-wrap:focus-within:not\(:has\(> \.ez-clear-button:focus\)\)\s*>\s*\.ez-field-drawer\s*\{[^}]*border-color:/,
-        );
     });
 
-    it('keeps the drawer at the bottom when the dropdown flips open above the field, so neither hides the other', async () => {
+    it('leaves its chrome in place while the picker is open', async () => {
         const { input } = await mount('SECRET');
         const wrap = input.closest('.marking-field-wrap') as HTMLElement;
-        const drawer = wrap.querySelector('.ez-field-drawer') as HTMLElement;
-
-        // Pin the field off the bottom of the (jsdom default 768px) viewport
-        // so spaceBelow goes negative and the picker opens above.
-        const offBottom = {
-            top: 900,
-            bottom: 950,
-            left: 10,
-            right: 300,
-            width: 290,
-            height: 50,
-            x: 10,
-            y: 900,
-            toJSON: () => ({}),
-        } as DOMRect;
-        input.getBoundingClientRect = () => offBottom;
-        wrap.getBoundingClientRect = () => offBottom;
+        const chrome = expectInlineChrome(wrap, [input]);
+        const atRest = [chrome.className, [...chrome.children]];
 
         await openPicker(input);
-
-        expect(openSurface()!.dataset.side).toBe('above');
-        // The picker occupies the field's TOP edge, so the drawer stays on
-        // the bottom.
-        expect(drawer.classList.contains('ez-field-drawer--bottom')).toBe(true);
-        expect(drawer.classList.contains('ez-field-drawer--top')).toBe(false);
+        expect(openSurface()).not.toBeNull();
+        expect(expectInlineChrome(wrap, [input])).toBe(chrome);
+        expect([chrome.className, [...chrome.children]]).toEqual(atRest);
 
         await leave(input);
-
-        expect(drawer.classList.contains('ez-field-drawer--bottom')).toBe(true);
-        expect(drawer.classList.contains('ez-field-drawer--top')).toBe(false);
+        expect(expectInlineChrome(wrap, [input])).toBe(chrome);
+        expect([chrome.className, [...chrome.children]]).toEqual(atRest);
     });
 
     it('paints per-token colors at rest and repaints on blur', async () => {
@@ -1724,8 +1645,7 @@ describe('MarkingField', () => {
     });
 
     it('underlines with text-decoration, not a border/padding box, so painting a token costs no line height', () => {
-        // jsdom has no layout engine (see the drawer-geometry test above for
-        // the same constraint/pattern): this reads the real CSS source. A
+        // jsdom has no layout engine, so this reads the real CSS source. A
         // border-bottom+padding-bottom box sits IN the inline box model and
         // can push wrapped lines apart; text-decoration is a paint-only
         // effect with no box contribution, so line spacing stays identical to

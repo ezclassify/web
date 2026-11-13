@@ -170,9 +170,8 @@ describe('ensureFavoritesButton', () => {
     });
 
     it('mounts with the chrome shape: no self-positioning, a caller-owned container places it', () => {
-        // The button always sits in normal flow as a flex child of a
-        // caller-owned chrome container (a hint-row slot or the ★ drawer); it
-        // never self-positions absolutely over the field.
+        // The button always sits in normal flow as a flex child of the
+        // field's inline chrome; it never self-positions over the field.
         const panel = ensureFavoritesButton(wrap, makeHost());
         expect(
             panel!.button.classList.contains('ez-favorites-button--chrome'),

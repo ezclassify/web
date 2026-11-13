@@ -70,6 +70,18 @@ The remove (×) control has no separate color variable: it always inherits
 so it stays legible against whatever background is in play, category-colored
 or not.
 
+## Status Mark
+
+The EzClassify mark in a field's chrome. It is muted while the field has
+nothing to say and strong once the field has a message for the user: a fix
+EzClassify applied, or an error.
+
+| Variable                        | Default (light)              | Description                                                                                         |
+| ------------------------------- | ---------------------------- | --------------------------------------------------------------------------------------------------- |
+| `--ez-status-mark-color`        | `#9ca3af`                    | The mark while the field has nothing to say                                                         |
+| `--ez-status-mark-strong-color` | `currentColor`               | The mark while the field has a message; `var(--ez-color-primary, #fdb827)`, gold, on a dark palette |
+| `--ez-status-mark-ring`         | `var(--ez-color-background)` | The ring that stands the unseen-fix dot off the background                                          |
+
 ## Keyboard Hints
 
 | Variable              | Default            | Description                      |

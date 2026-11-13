@@ -85,7 +85,6 @@ export class MarkedInput extends MarkedFieldBase<HTMLTextAreaElement> {
         footer: 'marked-input-footer',
         kbHint: 'marked-input-kb-hint',
         touchAdd: 'marked-input-touch-add',
-        hintChrome: 'marked-input-hint-chrome',
         pickerActive: 'marked-input-picker-active',
     };
 
@@ -262,8 +261,8 @@ export class MarkedInput extends MarkedFieldBase<HTMLTextAreaElement> {
         this.appendFooter();
 
         // The field's single status mark (starless "enhanced" until the
-        // engine applies a fix), in the footer's trailing chrome slot.
-        ensureStatusMark(this.hintChrome, {
+        // engine applies a fix), in the field's inline chrome.
+        ensureStatusMark(this.chrome.status, {
             shape: 'chrome',
             root: this.container,
             shouldShowTooltip: () => this.shouldShowTooltip(),
@@ -275,7 +274,7 @@ export class MarkedInput extends MarkedFieldBase<HTMLTextAreaElement> {
             this.options.favorites ||
             schemeOffersPresets(this.scheme, this.options.scope)
         ) {
-            this.favoritesPanel = ensureFavoritesButton(this.hintChrome, {
+            this.favoritesPanel = ensureFavoritesButton(this.chrome.status, {
                 root: this.container,
                 schemeId: this.schemeId,
                 scope: this.options.scope,
@@ -1106,7 +1105,9 @@ export class MarkedInput extends MarkedFieldBase<HTMLTextAreaElement> {
 
     /** Reflect the applied-fix record on the field's single status mark. */
     private updateStatusMark(): void {
-        setStatusMarkFixes(this.hintChrome, [...this._appliedFixes.values()]);
+        setStatusMarkFixes(this.chrome.status, [
+            ...this._appliedFixes.values(),
+        ]);
     }
 
     /**

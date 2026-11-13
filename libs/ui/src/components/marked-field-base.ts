@@ -50,6 +50,7 @@ import {
 import { defaultSurfaceOf, resolveOutput } from '../format-resolver';
 import type { InlineMarkingEditor } from './inline-marking-editor';
 import { createClearButton, type ClearButton } from './clear-button';
+import { mountFieldChrome, type FieldChrome } from './field-chrome';
 
 /**
  * CSS class-name set a concrete field uses. Keeps the shared scaffolding (wrap,
@@ -62,23 +63,14 @@ export interface MarkedFieldClassNames {
     /** Visible display layer that mirrors the host. */
     display: string;
     /**
-     * Footer row holding the keyboard hint / touch "Add marking" button and the
-     * trailing chrome slot, in one flex row so the chrome always lands
-     * right-aligned opposite whichever of the two is currently shown.
+     * Footer row under the field: the keyboard hint / touch "Add marking"
+     * button.
      */
     footer: string;
     /** Keyboard-hint footer. */
     kbHint: string;
     /** Touch "Add marking" button. */
     touchAdd: string;
-    /**
-     * Chrome slot: the field's status mark and (when wired) its ★ favorites
-     * button, hanging off the field's bottom-right edge. It stays there at rest
-     * and while the inline editor is open, so the controls never move between
-     * states, and the editor, which opens below or above the line being edited,
-     * never has to push them aside.
-     */
-    hintChrome: string;
     /** Marker class toggled on the container while the picker is open. */
     pickerActive: string;
 }
@@ -135,11 +127,16 @@ export abstract class MarkedFieldBase<
     protected host!: H;
     protected display!: HTMLDivElement;
     /**
-     * The chrome slot (see {@link MarkedFieldClassNames.hintChrome}), appended
-     * by {@link appendFooter}. The subclass mounts its status mark and (when
-     * wired) favorites button into it with `shape: 'chrome'`.
+     * The field's inline chrome, mounted by {@link appendFooter}. The subclass
+     * mounts its status mark and (when wired) favorites button into
+     * `chrome.status` with `shape: 'chrome'`; clear follows them.
      */
-    protected hintChrome!: HTMLDivElement;
+    protected chrome!: FieldChrome;
+    /**
+     * Where the chrome sits on the field's trailing edge: centered on a
+     * single-line field, pinned to the first line of a multi-line one.
+     */
+    protected readonly chromeAlign: 'center' | 'start' = 'center';
     private clearControl?: ClearButton;
 
     protected embeddedStyle: EmbeddedMarkingStyle | null = null;
@@ -384,23 +381,26 @@ export abstract class MarkedFieldBase<
         this._themeObserver = observer;
     }
 
-    /** Disconnect and drop the theme observer installed by installThemeObserver. */
+    /**
+     * Release what setup attached around the host: the clear control, the
+     * inline chrome and the theme observer installed by installThemeObserver.
+     */
     protected disconnectThemeObserver(): void {
         this.clearControl?.destroy();
         this.clearControl = undefined;
+        this.chrome?.destroy();
         this._themeObserver?.disconnect();
         this._themeObserver = null;
     }
 
     /**
      * Append the footer row (keyboard hint + touch "Add marking") and the
-     * chrome slot to the wrap. The touch-add click delegates to
+     * field's inline chrome to the wrap. The touch-add click delegates to
      * {@link triggerAddMarking}.
      *
-     * The status mark and ★ favorites button live in {@link hintChrome}, which
-     * hangs off the field's bottom-right edge in every state (see
-     * {@link MarkedFieldClassNames.hintChrome}), keeping their position stable
-     * while the inline editor opens.
+     * The chrome ({@link chrome}) sits inside the field's trailing edge in every
+     * state, so its controls never move while the inline editor opens, and the
+     * field's text layers reserve the room it takes.
      */
     protected appendFooter(): void {
         const footer = document.createElement('div');
@@ -464,10 +464,11 @@ export abstract class MarkedFieldBase<
         this.wrap.appendChild(footer);
 
         // Last in the wrap, so Tab reaches the field, its fixes and the hint
-        // before the chrome; CSS hangs it above the field's bottom-right edge.
-        this.hintChrome = document.createElement('div');
-        this.hintChrome.className = this.classNames.hintChrome;
-        this.wrap.appendChild(this.hintChrome);
+        // before the chrome.
+        this.chrome = mountFieldChrome(this.wrap, {
+            root: this.container,
+            align: this.chromeAlign,
+        });
         this.clearControl = createClearButton({
             label: t('aria.clearText'),
             host: this.host,
@@ -481,8 +482,7 @@ export abstract class MarkedFieldBase<
                 this.host.dispatchEvent(new Event('input', { bubbles: true }));
             },
         });
-        this.wrap.classList.add('ez-clear-text');
-        this.wrap.insertBefore(this.clearControl.button, this.hintChrome);
+        this.chrome.element.appendChild(this.clearControl.button);
     }
 
     /**

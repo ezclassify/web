@@ -30,11 +30,7 @@ import { resolveMarkingColor } from '../color-resolver';
 import { COMPONENT_CSS } from './component-utils';
 import { heightAtLeastFloor } from './dom-helpers';
 import { ensureStatusMark, setStatusMarkFixes } from './status-mark';
-import {
-    ensureFieldDrawer,
-    setFieldDrawerOrientation,
-    syncFieldDrawerTheme,
-} from './field-chrome-drawer';
+import { mountFieldChrome, type FieldChrome } from './field-chrome';
 import {
     ensureFavoritesButton,
     schemeOffersPresets,
@@ -65,10 +61,8 @@ export class MarkingField extends ComponentBase {
     private forwarding = false;
     private syncEditorState: (() => void) | null = null;
     private display!: HTMLDivElement;
-    /** The ★ drawer hosting the status mark + favorites button. */
-    private drawer!: HTMLElement;
-    /** Whether the composer is open below the field (the drawer's edge). */
-    private composerBelow = false;
+    /** The inline chrome: status mark, ★ favorites button, clear. */
+    private chrome: FieldChrome | null = null;
     private favoritesPanel: FavoritesPanel | null = null;
     private controller!: ComposerController;
     private view!: ComposerView;
@@ -107,9 +101,8 @@ export class MarkingField extends ComponentBase {
         );
     }
 
-    protected override clearButtonMount(): HTMLElement {
-        this.wrap.classList.add('ez-has-clear');
-        return this.wrap;
+    protected override clearButtonMount(): HTMLElement | null {
+        return this.chrome?.element ?? null;
     }
 
     protected override hasClearValue(): boolean {
@@ -169,7 +162,7 @@ export class MarkingField extends ComponentBase {
         // Mirror the host's own box styling onto the display (host-first
         // design: see styles.css's header comment) so the painted display
         // always matches the host's border, padding, and colors.
-        const capturedStyles = this.captureAndMirrorStyles();
+        this.captureAndMirrorStyles();
         this.installThemeObserver();
         this.syncHostHeight();
 
@@ -199,11 +192,7 @@ export class MarkingField extends ComponentBase {
                 ? (conceptId, categoryId) =>
                       this.resolveConceptDescription(conceptId, categoryId)
                 : undefined,
-            onPlacement: (open, side) => {
-                this.composerBelow = open && side === 'below';
-                this.setEditorOpen(open);
-                this.syncDrawerOrientation();
-            },
+            onPlacement: (open) => this.setEditorOpen(open),
             onDraft: (text) => {
                 if (this.editor) this.enhancedInput!.value = text;
                 if (this.hasFocus || this.controller.snapshot().invalid) {
@@ -216,29 +205,23 @@ export class MarkingField extends ComponentBase {
         this.container.appendChild(this.view.announcer);
         this.wrap.insertAdjacentElement('afterend', this.view.note);
 
-        // The status mark + ★ favorites button live in a small drawer attached
-        // to the field's bottom-right edge, mirroring to the top while the
-        // composer opens below (onPlacement above).
-        this.drawer = ensureFieldDrawer(this.wrap, { root: this.options.root });
-        syncFieldDrawerTheme(this.drawer, {
-            borderColor: capturedStyles.borderColor,
-            backgroundColor: capturedStyles.backgroundColor,
-            marginTop: capturedStyles.marginTop,
-            marginBottom: capturedStyles.marginBottom,
-        });
-        ensureStatusMark(this.drawer, {
+        // The status mark, ★ favorites button and clear sit inline at the
+        // field's trailing edge, at rest and while editing; the text layers
+        // reserve the room they take.
+        this.chrome = mountFieldChrome(this.wrap, { root: this.options.root });
+        ensureStatusMark(this.chrome.status, {
             shape: 'chrome',
             root: this.options.root,
             shouldShowTooltip: () => this.options.tooltips !== false,
         });
         // The value read at init may already carry fixes the engine applied.
-        setStatusMarkFixes(this.drawer, this.getAppliedFixes());
+        setStatusMarkFixes(this.chrome.status, this.getAppliedFixes());
         if (
             this.options.favorites ||
             schemeOffersPresets(this.scheme, this.options.scope)
         ) {
             this.favoritesPanel = ensureFavoritesButton(
-                this.drawer,
+                this.chrome.status,
                 this.favoritesHost(this.options.favorites),
             );
         }
@@ -332,7 +315,7 @@ export class MarkingField extends ComponentBase {
                     label.text,
             );
             const locked = editor.matches(':disabled') || editor.readOnly;
-            if (this.drawer) this.drawer.inert = locked;
+            if (this.chrome) this.chrome.status.inert = locked;
             if (locked) this.controller.close();
         };
         this.syncEditorState = sync;
@@ -479,7 +462,8 @@ export class MarkingField extends ComponentBase {
         } else {
             this.paintTokens();
         }
-        setStatusMarkFixes(this.drawer, this.getAppliedFixes());
+        if (this.chrome)
+            setStatusMarkFixes(this.chrome.status, this.getAppliedFixes());
         if (this.favoritesPanel) {
             this.favoritesPanel.updateHost(
                 this.favoritesHost(this.options.favorites),
@@ -530,25 +514,8 @@ export class MarkingField extends ComponentBase {
         };
     }
 
-    /**
-     * Put the ★ drawer on the edge nothing else is using: the top while the
-     * composer opens below the field or the error list shows under it (the
-     * drawer must never cover what the user is being asked to fix), the bottom
-     * otherwise.
-     */
-    private syncDrawerOrientation(): void {
-        if (!this.drawer) return;
-        setFieldDrawerOrientation(
-            this.drawer,
-            this.composerBelow || this.hasVisibleValidationErrors()
-                ? 'top'
-                : 'bottom',
-        );
-    }
-
     protected override onRuleErrorsChanged(): void {
         this.view?.refreshValidity();
-        this.syncDrawerOrientation();
     }
 
     /**
@@ -598,6 +565,8 @@ export class MarkingField extends ComponentBase {
         this._themeObserver = null;
         this.favoritesPanel?.destroy();
         this.favoritesPanel = null;
+        this.chrome?.destroy();
+        this.chrome = null;
 
         // Undo the enhancement: a host that unmounts this component gets back
         // a plain, visible, unmarked <textarea>.
@@ -812,12 +781,11 @@ export class MarkingField extends ComponentBase {
     // --- Host/display box: style mirroring + auto-grow height ---
 
     /**
-     * Snapshot the host's own layout-affecting computed styles and mirror them
-     * onto the display div. The theme observer re-reads getComputedStyle
-     * directly on its own trigger rather than consuming this method's return
-     * value; the snapshot is only needed once, at mount.
+     * Read the host's own layout-affecting computed styles and mirror them onto
+     * the display (and the owned editor). Runs at mount and again from the
+     * theme observer whenever the host re-themes.
      */
-    private captureAndMirrorStyles(): Record<string, string> {
+    private captureAndMirrorStyles(): void {
         const layoutProps = [
             'marginTop',
             'marginBottom',
@@ -851,7 +819,6 @@ export class MarkingField extends ComponentBase {
                     captured[p];
         }
         if (this.editor) this.holdSingleLineHeight(this.editor, csLive, floor);
-        return captured;
     }
 
     /**
@@ -891,13 +858,7 @@ export class MarkingField extends ComponentBase {
         const observer = new MutationObserver(() => {
             // Input-specific host theme selectors remain authoritative when
             // the visible editor is an owned textarea.
-            const captured = this.captureAndMirrorStyles();
-            syncFieldDrawerTheme(this.drawer, {
-                borderColor: captured.borderColor,
-                backgroundColor: captured.backgroundColor,
-                marginTop: captured.marginTop,
-                marginBottom: captured.marginBottom,
-            });
+            this.captureAndMirrorStyles();
             if (this.hasFocus) this.syncHostHeight();
         });
         observer.observe(document.documentElement, {

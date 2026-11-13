@@ -18,6 +18,7 @@ import {
     setStatusMarkFixes,
 } from './status-mark';
 import { cleanupTooltipForRoot, showTooltip } from './tooltip-manager';
+import { markTone } from '../../test-fixtures/field-chrome';
 
 /** The tooltip's lines, one per row it draws. */
 function lineTexts(tip: HTMLElement): string[] {
@@ -534,20 +535,20 @@ describe('the applied-changes popover does not outstay the value it described', 
         const field = document.createElement('div');
         field.className = 'marking-field-wrap';
         const input = document.createElement('textarea');
-        const drawer = document.createElement('div');
-        field.append(input, drawer);
+        const chrome = document.createElement('div');
+        field.append(input, chrome);
         document.body.appendChild(field);
-        const mark = ensureStatusMark(drawer, { shape: 'chrome' });
-        setStatusMarkFixes(drawer, [makeFix('r1', 'Added NOFORN')]);
-        return { field, input, drawer, mark };
+        const mark = ensureStatusMark(chrome, { shape: 'chrome' });
+        setStatusMarkFixes(chrome, [makeFix('r1', 'Added NOFORN')]);
+        return { field, input, chrome, mark };
     }
     const tip = () => document.querySelector<HTMLElement>('.ez-tooltip');
 
     it('closes when the field value is rendered again', async () => {
-        const { drawer, mark } = fieldWithMark();
+        const { chrome, mark } = fieldWithMark();
         await hoverPastIntent(mark);
         expect(tip()?.hidden).toBe(false);
-        setStatusMarkFixes(drawer, [makeFix('r1', 'Added NOFORN')]);
+        setStatusMarkFixes(chrome, [makeFix('r1', 'Added NOFORN')]);
         expect(tip()?.hidden).toBe(true);
         expect(mark.hasAttribute('aria-describedby')).toBe(false);
     });
@@ -613,12 +614,12 @@ describe('pressing the mark opens the applied-changes list', () => {
         const field = document.createElement('div');
         field.className = 'marking-field-wrap';
         const input = document.createElement('textarea');
-        const drawer = document.createElement('div');
-        field.append(input, drawer);
+        const chrome = document.createElement('div');
+        field.append(input, chrome);
         document.body.appendChild(field);
-        const mark = ensureStatusMark(drawer, { shape: 'chrome' });
-        setStatusMarkFixes(drawer, [makeFix('r1', 'Added NOFORN')]);
-        return { field, input, drawer, mark };
+        const mark = ensureStatusMark(chrome, { shape: 'chrome' });
+        setStatusMarkFixes(chrome, [makeFix('r1', 'Added NOFORN')]);
+        return { field, input, chrome, mark };
     }
     const tip = () => document.querySelector<HTMLElement>('.ez-tooltip');
 
@@ -650,8 +651,8 @@ describe('pressing the mark opens the applied-changes list', () => {
         mark.dispatchEvent(click);
         expect(click.defaultPrevented).toBe(true);
         expect(fieldClicks).toBe(0);
-        // Focus would turn the field's chrome into its drawer and move the
-        // mark out from under the press before it ends.
+        // A press must not take focus from the field: the blur would commit
+        // the field's draft mid-interaction.
         const down = new MouseEvent('mousedown', {
             bubbles: true,
             cancelable: true,
@@ -783,23 +784,80 @@ describe('pressing the mark opens the applied-changes list', () => {
     });
 
     it('a quiet mark opens nothing and discloses nothing', () => {
-        const { drawer, mark } = fieldWithMark();
-        setStatusMarkFixes(drawer, []);
+        const { chrome, mark } = fieldWithMark();
+        setStatusMarkFixes(chrome, []);
         expect(mark.hasAttribute('aria-expanded')).toBe(false);
         mark.click();
         expect(tip()?.hidden ?? true).toBe(true);
     });
 
     it('under the no-tooltips opt-out a press opens nothing', () => {
-        const drawer = document.createElement('div');
-        document.body.appendChild(drawer);
-        const mark = ensureStatusMark(drawer, {
+        const chrome = document.createElement('div');
+        document.body.appendChild(chrome);
+        const mark = ensureStatusMark(chrome, {
             shape: 'chrome',
             shouldShowTooltip: () => false,
         });
-        setStatusMarkFixes(drawer, [makeFix('r1')]);
+        setStatusMarkFixes(chrome, [makeFix('r1')]);
         mark.click();
         expect(tip()?.hidden ?? true).toBe(true);
         expect(mark.classList.contains('ez-status-mark--unseen')).toBe(true);
+    });
+});
+
+describe('status mark tone', () => {
+    const here = dirname(fileURLToPath(import.meta.url));
+    const css = readFileSync(join(here, 'status-mark.css'), 'utf8');
+    const palette = readFileSync(join(here, '..', 'styles.css'), 'utf8');
+
+    /**
+     * The declarations of the first palette block whose selector starts with
+     * `head`.
+     */
+    function paletteBlock(head: string): string {
+        const start = palette.indexOf(head);
+        expect(start, head).toBeGreaterThanOrEqual(0);
+        return palette.slice(start, palette.indexOf('\n}', start));
+    }
+
+    it('is muted while the field has nothing to say and strong once it has a message', () => {
+        const mark = ensureStatusMark(wrap, { shape: 'chrome' });
+        expect(markTone(mark)).toBe('muted');
+        setStatusMarkFixes(wrap, [makeFix('r1', 'Added NOFORN')]);
+        expect(markTone(mark)).toBe('strong');
+        expect(mark.getAttribute('aria-label')).toContain('1 fix applied');
+        setStatusMarkFixes(wrap, []);
+        expect(markTone(mark)).toBe('muted');
+        setStatusMarkError(wrap, 'Part of the text was not checked.');
+        expect(markTone(mark)).toBe('strong');
+        expect(mark.getAttribute('aria-label')).toContain(
+            'Part of the text was not checked.',
+        );
+        setStatusMarkError(wrap, null);
+        expect(markTone(mark)).toBe('muted');
+    });
+
+    it('paints the muted and strong tones from host-overridable tokens', () => {
+        expect(css).toMatch(
+            /\.ez-status-mark\s*\{[^}]*color:\s*var\(--ez-status-mark-color, #9ca3af\)/,
+        );
+        expect(css).toMatch(
+            /\.ez-status-mark--unseen,\s*\.ez-status-mark--seen,\s*\.ez-status-mark--error\s*\{[^}]*color:\s*var\(--ez-status-mark-strong-color, currentColor\)/,
+        );
+    });
+
+    it('is the text color on a light palette and gold on a dark one', () => {
+        for (const light of [':root {', "[data-color-scheme='light'],"]) {
+            const block = paletteBlock(light);
+            expect(block).toMatch(/--ez-status-mark-color:\s*#9ca3af;/);
+            expect(block).toMatch(
+                /--ez-status-mark-strong-color:\s*currentColor;/,
+            );
+        }
+        const dark = paletteBlock("[data-color-scheme='dark'],");
+        expect(dark).toMatch(/--ez-status-mark-color:\s*#9ca3af;/);
+        expect(dark).toMatch(
+            /--ez-status-mark-strong-color:\s*var\(--ez-color-primary, #fdb827\);/,
+        );
     });
 });

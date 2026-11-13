@@ -14,6 +14,7 @@ import { VanillaEzClassifyStore } from './store/ezclassify-store';
 import { t } from './i18n';
 import { loadMultiScopeRegression } from '../test-fixtures/load-multi-scope-regression';
 import { asContext } from '../test-fixtures/as-context';
+import { markTone } from '../test-fixtures/field-chrome';
 import { levelState } from './store/page-rollup-harness';
 
 const FORM = `<form id="root">
@@ -111,7 +112,7 @@ describe('MarkedTextArea scan that does not read the whole text', () => {
         await settle();
         const textarea = root.querySelector<HTMLTextAreaElement>('#body')!;
         const mark = root.querySelector<HTMLElement>(
-            '.marked-textarea-hint-chrome > .ez-status-mark',
+            '.marked-textarea-wrap .ez-field-chrome__status > .ez-status-mark',
         )!;
         const message = t('mark.scanIncomplete');
 
@@ -142,6 +143,32 @@ describe('MarkedTextArea scan that does not read the whole text', () => {
         expect(textarea.validity.valid).toBe(true);
         expect(ui.store.getWholeRollup('document').stale).toBeUndefined();
         expect(levelState(ui.store).stale).toBeUndefined();
+    });
+
+    it('colors its status mark strong while it reports the incomplete scan, muted otherwise', async () => {
+        document.body.innerHTML = FORM;
+        const root = document.querySelector<HTMLElement>('#root')!;
+        const { engine, control } = await stoppingEngine();
+        const isReady = ready(root);
+        ui = new EzClassifyUI(asContext(engine), { root });
+        await isReady;
+        await settle();
+        const textarea = root.querySelector<HTMLTextAreaElement>('#body')!;
+        const mark = root.querySelector<HTMLElement>(
+            '.marked-textarea-wrap .ez-field-chrome__status > .ez-status-mark',
+        )!;
+        expect(markTone(mark)).toBe('muted');
+
+        control.stopEarly = true;
+        await type(textarea, '(SS) First.\n(ST) Second.\n(SS) Third.');
+        expect(markTone(mark)).toBe('strong');
+        expect(mark.getAttribute('aria-label')).toContain(
+            t('mark.scanIncomplete'),
+        );
+
+        control.stopEarly = false;
+        await type(textarea, '(SS) First.\n(ST) Second.');
+        expect(markTone(mark)).toBe('muted');
     });
 
     it('clears only its own validity message when a complete scan lands', async () => {
@@ -406,7 +433,7 @@ describe('MarkedTextArea scan that does not read the whole text', () => {
         await settle();
         const textarea = root.querySelector<HTMLTextAreaElement>('#body')!;
         const mark = root.querySelector<HTMLElement>(
-            '.marked-textarea-hint-chrome > .ez-status-mark',
+            '.marked-textarea-wrap .ez-field-chrome__status > .ez-status-mark',
         )!;
         const failure = vi.spyOn(console, 'error').mockImplementation(() => {});
         control.stopEarly = true;

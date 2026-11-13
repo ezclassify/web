@@ -221,11 +221,12 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
         footer: 'marked-textarea-footer',
         kbHint: 'marked-textarea-kb-hint',
         touchAdd: 'marked-textarea-touch-add',
-        hintChrome: 'marked-textarea-hint-chrome',
         pickerActive: 'marked-textarea-picker-active',
     };
 
     protected override options: MarkedTextAreaOptions = {};
+    /** A text area's chrome pins to its first line, top right. */
+    protected override readonly chromeAlign = 'start';
 
     /** Alias kept for readability against the host element. */
     private get textarea(): HTMLTextAreaElement {
@@ -446,7 +447,7 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
         this.hiddenRoot.className = 'marked-textarea-hidden-fields';
         container.appendChild(this.hiddenRoot);
 
-        // Keyboard hint + touch "Add marking" + trailing chrome footer.
+        // Keyboard hint + touch "Add marking" footer, and the inline chrome.
         this.appendFooter();
 
         this.scanNotice = document.createElement('div');
@@ -466,8 +467,8 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
         container.prepend(this.scanNotice, this.scanAnnouncer);
 
         // The field's single status mark (starless "enhanced" until the
-        // engine applies a fix), in the footer's trailing chrome slot.
-        ensureStatusMark(this.hintChrome, {
+        // engine applies a fix), in the field's inline chrome.
+        ensureStatusMark(this.chrome.status, {
             shape: 'chrome',
             root: this.container,
             shouldShowTooltip: () => this.shouldShowTooltip(),
@@ -481,7 +482,7 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
             this.options.favorites ||
             schemeOffersPresets(this.scheme, this.options.scope)
         ) {
-            this.favoritesPanel = ensureFavoritesButton(this.hintChrome, {
+            this.favoritesPanel = ensureFavoritesButton(this.chrome.status, {
                 root: this.container,
                 schemeId: this.schemeId,
                 scope: this.options.scope,
@@ -1433,9 +1434,11 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
      * text, on the field's single status mark.
      */
     private updateStatusMark(): void {
-        setStatusMarkFixes(this.hintChrome, [...this._appliedFixes.values()]);
+        setStatusMarkFixes(this.chrome.status, [
+            ...this._appliedFixes.values(),
+        ]);
         setStatusMarkError(
-            this.hintChrome,
+            this.chrome.status,
             this.scanComplete ? null : t('mark.scanIncomplete'),
         );
     }

@@ -503,13 +503,13 @@ describe('placeUnderField', () => {
             <div class="marking-field-wrap">
                 <textarea id="host"></textarea>
                 <div class="marking-field-display"></div>
-                <div class="ez-field-drawer"><button>star</button></div>
+                <div class="ez-field-chrome"><button>clear</button></div>
             </div>`;
         const el = document.createElement('div');
         const wrap = document.querySelector('.marking-field-wrap')!;
         placeUnderField(el, document.getElementById('host')!, wrap);
         expect(el.parentElement).toBe(wrap);
-        expect(el.nextElementSibling?.classList).toContain('ez-field-drawer');
+        expect(el.nextElementSibling?.classList).toContain('ez-field-chrome');
         // Placing it again keeps it where it is.
         placeUnderField(el, document.getElementById('host')!, wrap);
         expect(wrap.querySelectorAll(':scope > div')).toHaveLength(3);

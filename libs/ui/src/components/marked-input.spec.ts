@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { asContext } from '../../test-fixtures/as-context';
+import { expectInlineChrome, markTone } from '../../test-fixtures/field-chrome';
 import { openSurface, press, rowFor } from './composer/composer-harness';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -557,17 +558,20 @@ describe('MarkedInput', () => {
         }
     });
 
-    it('keeps the chrome slot at the bottom of the field, out of normal flow', () => {
-        // jsdom has no layout engine, so this reads the source CSS; the real
-        // geometry needs a real browser.
+    it('centers its chrome on the field row, above the footer', () => {
+        // jsdom has no layout engine, so this reads the source CSS; the browser
+        // lane measures the real geometry.
         const here = dirname(fileURLToPath(import.meta.url));
         const css = readFileSync(join(here, 'marked-input.css'), 'utf8');
         expect(css).toMatch(
-            /\.marked-input-hint-chrome\s*\{[^}]*position:\s*absolute[^}]*bottom:\s*0\.25rem/,
+            /\.marked-input-wrap\s*\{[^}]*position:\s*relative[^}]*display:\s*grid/,
         );
-        // The wrap remains the positioning context for the bottom chrome.
-        expect(css).toMatch(
-            /\.marked-input-wrap\s*\{[^}]*position:\s*relative/,
+        const chrome = readFileSync(join(here, 'field-chrome.css'), 'utf8');
+        expect(chrome).toMatch(
+            /\.marked-input-wrap > \.ez-field-chrome\s*\{\s*grid-area:\s*1 \/ 1 \/ 2 \/ 2;/,
+        );
+        expect(chrome).toMatch(
+            /\.ez-field-chrome\s*\{[^}]*top:\s*50%[^}]*transform:\s*translateY\(-50%\)/,
         );
     });
 
@@ -1046,7 +1050,47 @@ describe('MarkedInput', () => {
         ).toBe(false);
     });
 
-    it('keeps the status mark and ★ button in one slot, last in the wrap, while the editor opens and closes', async () => {
+    it('keeps its status mark muted when the field has nothing to say', async () => {
+        const engine = await createTestEngine();
+        root.innerHTML = `<input type="text" id="field" data-ezclassify-controller="marked-input" value="(U) title">`;
+        const forms = new EzClassifyUI(asContext(engine as never), {});
+        activeForms.push(forms);
+        await wait(50);
+        const wrap = editingField('field')!.closest('.marked-input-wrap')!;
+        expect(markTone(wrap.querySelector('.ez-status-mark')!)).toBe('muted');
+    });
+
+    it('colors its status mark strong when a read applies a fix, and says so', async () => {
+        const engine = await createTestEngine();
+        const read = engine.process.bind(engine);
+        // The recorded read, with a fix the engine applied on top: what the
+        // field does with an applied fix is the point, not which rule made it.
+        vi.spyOn(engine, 'process').mockImplementation(
+            async (...args: Parameters<typeof engine.process>) => ({
+                ...(await read(...args)),
+                appliedFixes: [
+                    {
+                        ruleId: 'adds-level',
+                        action: 'add',
+                        add: [{ conceptId: 'U', categoryId: 'level' }],
+                        message: 'Added U',
+                    },
+                ],
+            }),
+        );
+        root.innerHTML = `<input type="text" id="field" data-ezclassify-controller="marked-input" value="(U) title">`;
+        const forms = new EzClassifyUI(asContext(engine as never), {});
+        activeForms.push(forms);
+        await wait(50);
+        const wrap = editingField('field')!.closest('.marked-input-wrap')!;
+        const mark = wrap.querySelector('.ez-field-chrome .ez-status-mark')!;
+        expect(markTone(mark)).toBe('strong');
+        expect(mark.getAttribute('aria-label')).toContain(
+            '1 fix applied to this marking',
+        );
+    });
+
+    it('keeps its inline chrome in place while the editor opens and closes', async () => {
         Element.prototype.scrollIntoView = vi.fn();
 
         const engine = await createTestEngine();
@@ -1059,14 +1103,12 @@ describe('MarkedInput', () => {
 
         const inputEl = editingField('field') as HTMLTextAreaElement;
         const wrap = inputEl.closest('.marked-input-wrap') as HTMLElement;
-        const chrome = wrap.querySelector(
-            ':scope > .marked-input-hint-chrome',
-        ) as HTMLElement;
+        // Last in the wrap, so Tab reaches the field's fixes and hint first.
+        const chrome = expectInlineChrome(wrap, [
+            inputEl,
+            wrap.querySelector(':scope > .marked-input-display')!,
+        ]);
         const mark = chrome.querySelector('.ez-status-mark');
-        expect(mark).toBeTruthy();
-        // After the footer, so Tab reaches the field's fixes and hint first.
-        expect(wrap.lastElementChild).toBe(chrome);
-        expect(wrap.querySelectorAll('.ez-status-mark')).toHaveLength(1);
 
         inputEl.dispatchEvent(
             new KeyboardEvent('keydown', {

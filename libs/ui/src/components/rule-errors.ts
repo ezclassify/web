@@ -135,10 +135,10 @@ export function fixAssertions(fix: Fix): Assertion[] {
 }
 
 /**
- * A field's trailing chrome inside its wrapper: the ★ drawer, or the hint row
- * that carries it. The error list goes before it.
+ * What follows the field inside its wrapper: the inline chrome, or the hint row
+ * under a marked input. The error list goes before it.
  */
-const FIELD_CHROME = ':scope > .ez-field-drawer, :scope > .marked-input-footer';
+const FIELD_CHROME = ':scope > .ez-field-chrome, :scope > .marked-input-footer';
 
 /**
  * Put the error list directly under the field the user sees. Inside the

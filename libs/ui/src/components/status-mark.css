@@ -1,9 +1,13 @@
 /* ── Enhancement status mark ─────────────────────────── */
-/* One brand-logo mark per enhanced field: 3 bars + a sparkle. Bars stay muted
-   in every state; the sparkle carries the state. Quiet: whole glyph muted, no
-   fixes applied. Unseen: sparkle turns accent, a corner dot appears, and the
-   sparkle pulses on an interval. Seen: dot clears, sparkle stays accent, no
-   pulse: the tooltip already explained what changed. */
+/* One brand-logo mark per enhanced field: 3 bars + a sparkle. Quiet: the
+   field has nothing to say, and the whole glyph sits muted. Any other state
+   means the field has a message for the user (a fix it applied, or an error),
+   and the bars turn strong: the theme's text color in a light theme, gold in a
+   dark one (--ez-status-mark-strong-color, styles.css). The sparkle carries
+   the kind of message. Unseen: sparkle turns accent, a corner dot appears, and
+   the sparkle pulses on an interval. Seen: dot clears, sparkle stays accent,
+   no pulse: the tooltip already explained what changed. Error: the sparkle
+   takes the error color. */
 .ez-status-mark {
     position: absolute;
     width: 1.25rem;
@@ -30,7 +34,9 @@
     transform-origin: center;
 }
 .ez-status-mark--unseen,
-.ez-status-mark--seen {
+.ez-status-mark--seen,
+.ez-status-mark--error {
+    color: var(--ez-status-mark-strong-color, currentColor);
     opacity: 1;
     cursor: help;
 }
@@ -40,10 +46,6 @@
 }
 /* Error: the field could not check all of its text. The sparkle takes the
    error color; the popover and the label say why. */
-.ez-status-mark--error {
-    opacity: 1;
-    cursor: help;
-}
 .ez-status-mark--error .ez-status-mark__sparkle {
     fill: var(--ez-color-error, #b91c1c);
 }
@@ -51,17 +53,17 @@
     outline: 2px solid var(--ez-color-primary, #fdb827);
     outline-offset: 2px;
 }
-/* An input places the mark at the right edge, centered on the field's first
-   line: the only self-positioning shape; every other field folds the mark
-   into its own chrome row or drawer. */
+/* A plain enhanced input places the mark at the right edge, centered on the
+   field's first line: the only self-positioning shape. The field components
+   mount theirs in their inline chrome (field-chrome.css). */
 .ez-status-mark--input {
     top: 1rem;
     right: 0.375rem;
     transform: translateY(-50%);
 }
 /* 'chrome': no self-positioning. The mark sits in normal flow as a flex child
-   of a caller-owned container (a hint-row chrome slot or the ★ drawer), which
-   provides layout; this only needs to sit above the field's own invisible
+   of the field's inline chrome, which provides layout; this only needs to
+   sit above the field's own invisible
    capture-layer input (same z-index the 'input' shape already uses) and stay
    a positioned element so that z-index takes effect. */
 .ez-status-mark--chrome {
@@ -136,9 +138,9 @@
 }
 
 /* A finger needs a 44px target. The drawn mark stays 20px; an invisible
-   overlay takes the taps around it. Its chrome row spaces the mark from its
-   neighbor enough that the two overlays never overlap (see
-   field-chrome-drawer.css and the marked fields' chrome rows). */
+   overlay takes the taps around it. The field's chrome row spaces the mark
+   from its neighbor enough that the two overlays never overlap (see
+   field-chrome.css). */
 @media (pointer: coarse) {
     .ez-status-mark::after {
         content: '';

@@ -130,6 +130,12 @@
        against whatever background is in play, category-colored or not. */
     --ez-tag-color: #475569;
     --ez-tag-bg: #e2e8f0;
+
+    /* Field status mark: muted while the field has nothing to say, strong
+       while it has a message (an applied fix or an error). Strong is the
+       field's own text color on a light palette. */
+    --ez-status-mark-color: #9ca3af;
+    --ez-status-mark-strong-color: currentColor;
 }
 
 .ez-root,
@@ -241,6 +247,10 @@
 
     --ez-tag-color: #e5e7eb;
     --ez-tag-bg: #374151;
+
+    /* Status mark: strong is gold on a dark palette. */
+    --ez-status-mark-color: #9ca3af;
+    --ez-status-mark-strong-color: var(--ez-color-primary, #fdb827);
 }
 
 /* ── Light palette ────────────────────────────────────────
@@ -298,6 +308,9 @@
 
     --ez-tag-color: #475569;
     --ez-tag-bg: #e2e8f0;
+
+    --ez-status-mark-color: #9ca3af;
+    --ez-status-mark-strong-color: currentColor;
 }
 
 /* ── Opt-in input styling (.ez-styled-inputs or styleInputs: true) ── */
