@@ -81,7 +81,8 @@ export class SingleSelect extends ComponentBase {
     private preview!: HTMLDivElement;
     private cardsContainer!: HTMLDivElement;
     private detailPanel!: HTMLDivElement;
-    private announcer!: HTMLDivElement;
+    /** Cards mode only; a native select announces its own value. */
+    private announcer?: HTMLDivElement;
     private focusIndex = -1;
     private previewConceptId: string | null = null;
     /** Dropdown is the ordinary default; cards are an explicit host choice. */
@@ -880,7 +881,7 @@ export class SingleSelect extends ComponentBase {
         }
 
         this.selectEntry(entry);
-        announce(this.announcer, `Selected ${entry.name}`);
+        if (this.announcer) announce(this.announcer, `Selected ${entry.name}`);
 
         // Focus the newly selected card
         const cardEl = this.cardsContainer.querySelector(
@@ -899,7 +900,7 @@ export class SingleSelect extends ComponentBase {
         );
         if (current) {
             this.removeAssertion(current.conceptId, current.categoryId);
-            announce(this.announcer, 'Selection cleared');
+            if (this.announcer) announce(this.announcer, 'Selection cleared');
         } else this.render();
     }
 
