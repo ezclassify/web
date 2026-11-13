@@ -2,6 +2,20 @@
   "engineVersion": "1.0.0-dev.30",
   "openapiVersion": "1.0.0-dev.30",
   "responses": {
+    "110747a69c026be2e8552c9cdc84e0881b64ad4965977344f8650fd09ff42c86": {
+      "argsSummary": "[[{\"categoryId\":\"level\",\"conceptId\":\"CONFIDENTIAL\",\"confidence\":\"certain\",\"so...",
+      "method": "render",
+      "response": {
+        "result": "CONFIDENTIAL\nKEEP 7 YEARS"
+      }
+    },
+    "24822fbdc5f83f0963d9bdc1c5697bddfb759aff417602b6e762428489d3b119": {
+      "argsSummary": "[[{\"categoryId\":\"level\",\"conceptId\":\"CONFIDENTIAL\",\"confidence\":\"certain\",\"so...",
+      "method": "render",
+      "response": {
+        "result": "CONFIDENTIAL"
+      }
+    },
     "2d19c2b984dc1384aa70c87cb68645f6775f16c83e6e3a7f745f506757479189": {
       "argsSummary": "[\"CONF\"]",
       "method": "validate",
@@ -449,6 +463,13 @@
         "warnings": []
       }
     },
+    "924e2844c5582eb6d519bdf9662c9f84ce1b6086df0be32a11786491cbc79a1e": {
+      "argsSummary": "[[{\"categoryId\":\"level\",\"conceptId\":\"CONFIDENTIAL\",\"confidence\":\"certain\",\"so...",
+      "method": "render",
+      "response": {
+        "result": "KEEP 7 YEARS"
+      }
+    },
     "928b1c6f740f5b614ae7f85b2151126edba03f445a005069e46863c38c43e727": {
       "argsSummary": "[\"CONF // PARTNERS\",{\"context\":{\"role\":\"whole\"},\"inputFormat\":\"short\"}]",
       "method": "validate",
@@ -799,6 +820,13 @@
         "rendered": "CONF",
         "valid": true,
         "warnings": []
+      }
+    },
+    "ed44fe2c2b5dbf6a61c5f4e088e43b40304437132d10a5fd588226549f0c8cc8": {
+      "argsSummary": "[[{\"categoryId\":\"level\",\"conceptId\":\"CONFIDENTIAL\",\"confidence\":\"certain\",\"so...",
+      "method": "render",
+      "response": {
+        "result": "CONFIDENTIAL // KEEP 7 YEARS"
       }
     },
     "f542e92a4f452c24d9fd8feb1b0deee6d3e9f1f5cd0b17cc8f839c1330717e24": {

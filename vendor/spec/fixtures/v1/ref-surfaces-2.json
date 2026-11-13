@@ -1,0 +1,115 @@
+{
+  "scheme": {
+    "data": {
+      "categories": [
+        {
+          "id": "level",
+          "label": "Level",
+          "required": true,
+          "rollup": "max",
+          "single": true
+        },
+        {
+          "id": "keep",
+          "label": "Keep for",
+          "rollup": "max",
+          "scopes": [
+            "sensitivity",
+            "retention"
+          ],
+          "single": true
+        }
+      ],
+      "concepts": [
+        {
+          "categories": [
+            "level"
+          ],
+          "id": "CONFIDENTIAL",
+          "name": "Confidential",
+          "rank": 1,
+          "views": {
+            "default": "CONFIDENTIAL"
+          }
+        },
+        {
+          "categories": [
+            "keep"
+          ],
+          "id": "KEEP_7Y",
+          "name": "Seven years",
+          "rank": 0,
+          "views": {
+            "default": "KEEP 7 YEARS"
+          }
+        }
+      ]
+    },
+    "default_scope": "sensitivity",
+    "description": "Surface outputs conformance scheme whose sensitivity line also writes the retention category. Two surfaces: sensitivity, whose one view `line` writes the level and how long to keep, and retention, whose one view `block` writes how long to keep. A marking that names no output is written on the sensitivity line alone, which already carries the retention facts.",
+    "id": "ref-surfaces-2",
+    "name": "Reference Surfaces Scheme 2",
+    "render": {
+      "formats": [
+        {
+          "fields": [
+            {
+              "category": "level"
+            },
+            {
+              "category": "keep"
+            }
+          ],
+          "id": "sensitivity_line",
+          "mode": "inline",
+          "separator": " // ",
+          "surface": "sensitivity"
+        },
+        {
+          "fields": [
+            {
+              "category": "keep"
+            }
+          ],
+          "id": "retention_block",
+          "mode": "block",
+          "surface": "retention"
+        }
+      ],
+      "surface_separator": "\n",
+      "surfaces": [
+        {
+          "default": "line",
+          "surface": "sensitivity",
+          "views": [
+            {
+              "format": "sensitivity_line",
+              "id": "line"
+            }
+          ]
+        },
+        {
+          "default": "block",
+          "surface": "retention",
+          "views": [
+            {
+              "format": "retention_block",
+              "id": "block"
+            }
+          ]
+        }
+      ]
+    },
+    "scopes": [
+      {
+        "id": "sensitivity",
+        "label": "Sensitivity"
+      },
+      {
+        "id": "retention",
+        "label": "Retention"
+      }
+    ],
+    "version": "1.0.0"
+  }
+}

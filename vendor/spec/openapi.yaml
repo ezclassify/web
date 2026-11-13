@@ -4490,8 +4490,8 @@ components:
           description: >-
             The output the trace's `rendered` is written in. For a scheme that declares `render.surfaces`, an output as
             the scheme document's `render.surfaces` defines it. Omitted or empty, the scheme's default format, or with
-            `render.surfaces`, each written surface's default for the marking's role, by the rule `render.surfaces`
-            states for a request that names no output.
+            `render.surfaces`, the written surfaces' defaults for the marking's role, one alone when it writes the
+            others' scopes, by the rule `render.surfaces` states for a request that names no output.
         assertions:
           type: array
           items:
@@ -4548,8 +4548,9 @@ components:
             scheme that declares `render.surfaces`, an output as the scheme document's `render.surfaces` defines it.
 
 
-            Omitted or empty, the scheme's default format, or with `render.surfaces`, each written surface's default for
-            the marking's role, by the rule `render.surfaces` states for a request that names no output.
+            Omitted or empty, the scheme's default format, or with `render.surfaces`, the written surfaces' defaults for
+            the marking's role, one alone when it writes the others' scopes, by the rule `render.surfaces` states for a
+            request that names no output.
         assertions:
           type: array
           items:
@@ -4751,8 +4752,9 @@ components:
             scheme that declares `render.surfaces`, an output as the scheme document's `render.surfaces` defines it.
 
 
-            Omitted or empty, the scheme's default format, or with `render.surfaces`, each written surface's default for
-            the marking's role, by the rule `render.surfaces` states for a request that names no output.
+            Omitted or empty, the scheme's default format, or with `render.surfaces`, the written surfaces' defaults for
+            the marking's role, one alone when it writes the others' scopes, by the rule `render.surfaces` states for a
+            request that names no output.
         context:
           $ref: "#/components/schemas/ProcessingContext"
           description: Optional ProcessingContext forwarded verbatim to the engine.
@@ -6476,8 +6478,8 @@ components:
           type: string
           description: >-
             The settled marking, written as validate writes it when the request names no output: in the scheme's default
-            format, or for a scheme that declares `render.surfaces`, each written surface in its default for the role
-            the marking has in this document, by the rule `RenderConfigDoc.surfaces` states.
+            format, or for a scheme that declares `render.surfaces`, in the defaults for the role the marking has in
+            this document that the rule `RenderConfigDoc.surfaces` states for an unnamed output selects.
       required:
         - assertions
         - recognition
@@ -6837,16 +6839,18 @@ components:
             The settled marking, in one string.
 
 
-            It is written in the output the request names. With none named, a scheme without `render.surfaces` writes
-            its default format, and a scheme with them writes each surface in its default for the marking's role, by the
-            rule `RenderConfigDoc.surfaces` states. Every operation that returns this shape follows that one rule.
+            It is written in the output the request names, and in that output alone. With none named, a scheme without
+            `render.surfaces` writes its default format, and a scheme with them writes each surface the result writes in
+            its default for the marking's role, by the rule `RenderConfigDoc.surfaces` states. Every operation that
+            returns this shape follows that one rule.
 
 
-            For a scheme that declares `render.surfaces`, the string is the output resolved on each surface the result
-            writes, as `RenderConfigDoc.surfaces` describes, in declared surface order and joined by
-            `render.surface_separator`. An output that writes nothing adds nothing, and outputs written as XML
-            attributes in one namespace merge into one attribute list. One refused output refuses the whole string, and
-            `assessment` says which one and why.
+            For a scheme that declares `render.surfaces`, the string holds the outputs `RenderConfigDoc.surfaces`
+            selects, in declared surface order and joined by `render.surface_separator`: the one output a request names,
+            or with none named the one default that writes every other surface's scope beside its own, else each
+            surface's default. An output that writes nothing adds nothing, and outputs written as XML attributes in one
+            namespace merge into one attribute list. One refused output refuses the whole string, and `assessment` says
+            which one and why.
         assessment:
           $ref: "#/components/schemas/RenderAssessment"
           description: >-
@@ -8482,16 +8486,18 @@ components:
             The settled marking, in one string.
 
 
-            It is written in the output the request names. With none named, a scheme without `render.surfaces` writes
-            its default format, and a scheme with them writes each surface in its default for the marking's role, by the
-            rule `RenderConfigDoc.surfaces` states. Every operation that returns this shape follows that one rule.
+            It is written in the output the request names, and in that output alone. With none named, a scheme without
+            `render.surfaces` writes its default format, and a scheme with them writes each surface the result writes in
+            its default for the marking's role, by the rule `RenderConfigDoc.surfaces` states. Every operation that
+            returns this shape follows that one rule.
 
 
-            For a scheme that declares `render.surfaces`, the string is the output resolved on each surface the result
-            writes, as `RenderConfigDoc.surfaces` describes, in declared surface order and joined by
-            `render.surface_separator`. An output that writes nothing adds nothing, and outputs written as XML
-            attributes in one namespace merge into one attribute list. One refused output refuses the whole string, and
-            `assessment` says which one and why.
+            For a scheme that declares `render.surfaces`, the string holds the outputs `RenderConfigDoc.surfaces`
+            selects, in declared surface order and joined by `render.surface_separator`: the one output a request names,
+            or with none named the one default that writes every other surface's scope beside its own, else each
+            surface's default. An output that writes nothing adds nothing, and outputs written as XML attributes in one
+            namespace merge into one attribute list. One refused output refuses the whole string, and `assessment` says
+            which one and why.
         assessment:
           $ref: "#/components/schemas/RenderAssessment"
           description: >-
