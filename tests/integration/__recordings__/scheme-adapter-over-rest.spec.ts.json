@@ -280,7 +280,7 @@
                     "single": true
                 }
             ],
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "GET",
             "statusCode": 200
         },
@@ -1152,6 +1152,12 @@
                 ],
                 "version": "1.0.0"
             },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "17c8db40d6fcde0d1cca9fd099cd5eae786d5341765ac7ff14f6438faf83b040": {
+            "body": [],
             "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "GET",
             "statusCode": 200
@@ -2287,7 +2293,7 @@
                     "views": { "default": "NOT FILED", "short": "NOT FILED" }
                 }
             ],
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "GET",
             "statusCode": 200
         },
@@ -2331,6 +2337,29 @@
             },
             "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
+            "statusCode": 200
+        },
+        "24eb9739157535cde11004cba657e9533b8bcbe95578ddc7fb74b56f0a644614": {
+            "body": [
+                {
+                    "id": "level",
+                    "label": "Level",
+                    "position": 0,
+                    "required": true,
+                    "rollup": "max",
+                    "single": true
+                },
+                {
+                    "id": "controls",
+                    "label": "Controls",
+                    "position": 1,
+                    "required": false,
+                    "rollup": "union",
+                    "single": false
+                }
+            ],
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
             "statusCode": 200
         },
         "2b35ed446dbfa20e2c6541afa5793d46afc9dc182cec5ffe824b5b822b963fc4": {
@@ -2416,6 +2445,36 @@
                     }
                 }
             },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "2dcb1e7b7ac5447fef8b47ba0e1b71b8f0b756de3d9941880e126f1972688578": {
+            "body": [
+                {
+                    "categoryOrder": ["level", "controls"],
+                    "categorySeparators": { "controls": "/", "level": "/" },
+                    "categoryViews": {
+                        "controls": "default",
+                        "level": "default"
+                    },
+                    "id": "default",
+                    "mode": "inline",
+                    "separator": "/",
+                    "separatorBefore": { "controls": "/" },
+                    "surface": "banner"
+                },
+                {
+                    "categoryOrder": ["level", "controls"],
+                    "categorySeparators": { "controls": "/", "level": "/" },
+                    "id": "portion",
+                    "mode": "inline",
+                    "separator": "/",
+                    "separatorBefore": { "controls": "/" },
+                    "surface": "banner",
+                    "view": "portion"
+                }
+            ],
             "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "GET",
             "statusCode": 200
@@ -2999,12 +3058,69 @@
             "method": "GET",
             "statusCode": 200
         },
+        "4961e6701440f3832d623ec024fd34856e853b08d47306e2de7082529474f5c3": {
+            "body": [
+                {
+                    "id": "level",
+                    "label": "Level",
+                    "required": true,
+                    "rollup": "max",
+                    "single": true
+                },
+                {
+                    "id": "sharing",
+                    "label": "Sharing",
+                    "required": false,
+                    "rollup": "first",
+                    "single": true
+                },
+                {
+                    "id": "keep",
+                    "label": "Keep for",
+                    "required": false,
+                    "rollup": "max",
+                    "scopes": ["retention"],
+                    "single": true
+                }
+            ],
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
         "498fe7c7e57fd583652b5e50ad5777686c58dfbd76b5c556087b766f222f58a7": {
             "body": [
                 { "id": "marking", "label": "Marking" },
                 { "id": "office_record", "label": "Office Record Block" }
             ],
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "4c375bdf772b51dc8e090285d9ceb972f731a0497ed6adc16a13a0aa53a1da7c": {
+            "body": [{ "id": "banner", "label": "Banner" }],
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "4ecbca36ae4b0c1d014bd1ddae6360028566556a785fc6bbd7197f84ac706e33": {
+            "body": {
+                "id": "ref-scheme-1",
+                "scheme": {
+                    "id": "ref-scheme-1",
+                    "resolvedVersion": "1.0.0",
+                    "version": "1.0.0"
+                },
+                "schemes": [
+                    {
+                        "id": "ref-scheme-1",
+                        "roles": ["primary"],
+                        "selector": "ref-scheme-1",
+                        "version": "1.0.0"
+                    }
+                ],
+                "version": "1.0.0"
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "GET",
             "statusCode": 200
         },
@@ -3531,6 +3647,13 @@
             },
             "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
+            "statusCode": 200
+        },
+        "5b435fdd2f0ae336327fb288dba7b1db02e2600f7c00db2d936caae61cd68238": {
+            "body": {
+                "contextId": "sbx-61c10d2385ef9e1fc98070768d1980d273f7b32e3be0c6c28db7df017c2a263d"
+            },
+            "method": "PUT",
             "statusCode": 200
         },
         "5cd461c20d24370a7df94ff620e4fc85d1a93f2911ff9ca82a42cd05dff3d29d": {
@@ -4368,6 +4491,12 @@
             "method": "GET",
             "statusCode": 200
         },
+        "778f835f2e25f8698e13c47cd7c1428e6c635f12c1577f623d2957392d25a262": {
+            "body": [],
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
         "796ebe93cc0998890b50ffaa43542db81baffcef12e437091ed8942890693e29": {
             "body": [
                 {
@@ -4512,7 +4641,7 @@
         },
         "7d8148e3454bc020acbf0807277e47e9f32b4dd558f12da625cf98ac36fc6688": {
             "body": {
-                "id": "sbx-6bdebd9210aad9302997f390225d7ed3b9dfee0022579d2f5f3927a2340c99b2",
+                "id": "multi-scope-regression",
                 "scheme": {
                     "id": "multi-scope-regression",
                     "resolvedVersion": "1.0.0",
@@ -4526,9 +4655,9 @@
                         "version": "1.0.0"
                     }
                 ],
-                "version": "0.0.0"
+                "version": "1.0.0"
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "GET",
             "statusCode": 200
         },
@@ -5069,6 +5198,55 @@
             "method": "GET",
             "statusCode": 200
         },
+        "900d1f87fa171268fcd5842256428e60726c72272f281ff322f36cae61e17bb7": {
+            "body": [
+                {
+                    "aliases": [],
+                    "categories": ["level"],
+                    "id": "INTERNAL",
+                    "name": "Internal",
+                    "parents": [],
+                    "position": 0,
+                    "rank": 0,
+                    "views": { "abbreviated": "INT", "default": "INTERNAL" }
+                },
+                {
+                    "aliases": [],
+                    "categories": ["level"],
+                    "id": "CONFIDENTIAL",
+                    "name": "Confidential",
+                    "parents": [],
+                    "position": 0,
+                    "rank": 1,
+                    "views": {
+                        "abbreviated": "CONF",
+                        "default": "CONFIDENTIAL"
+                    }
+                },
+                {
+                    "aliases": [],
+                    "categories": ["sharing"],
+                    "id": "PARTNERS",
+                    "name": "Shared with partners",
+                    "parents": [],
+                    "position": 0,
+                    "views": { "default": "PARTNERS" }
+                },
+                {
+                    "aliases": [],
+                    "categories": ["keep"],
+                    "id": "KEEP_7Y",
+                    "name": "Seven years",
+                    "parents": [],
+                    "position": 0,
+                    "rank": 0,
+                    "views": { "default": "KEEP 7 YEARS" }
+                }
+            ],
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
         "90ee1759b34bb7be96576d6a6fd7fd0bafb270fcbb4110706d5d842e2a7205ae": {
             "body": [],
             "headers": { "x-ezclassify-resolved-version": "1.0.0" },
@@ -5234,6 +5412,60 @@
             "method": "POST",
             "statusCode": 200
         },
+        "94c9cdc98c0480a4445dc95c5fef6d39a6b5b6cc43ce5875556cc395daf24e60": {
+            "body": [
+                {
+                    "categoryOrder": ["level"],
+                    "defaultFor": ["part"],
+                    "id": "sensitivity/short",
+                    "mode": "inline",
+                    "outputView": "short",
+                    "role": "part",
+                    "surface": "sensitivity",
+                    "view": "abbreviated"
+                },
+                {
+                    "categoryOrder": ["level", "sharing"],
+                    "categoryViews": {
+                        "level": "default",
+                        "sharing": "default"
+                    },
+                    "defaultFor": ["whole"],
+                    "id": "sensitivity/full",
+                    "mode": "inline",
+                    "outputView": "full",
+                    "role": "whole",
+                    "separator": " // ",
+                    "separatorBefore": { "sharing": " // " },
+                    "surface": "sensitivity"
+                },
+                {
+                    "categoryOrder": ["level", "sharing"],
+                    "categoryViews": {
+                        "level": "default",
+                        "sharing": "default"
+                    },
+                    "defaultFor": [],
+                    "id": "sensitivity/xml",
+                    "mode": "block",
+                    "outputView": "xml",
+                    "surface": "sensitivity",
+                    "syntax": { "type": "xml-attributes" }
+                },
+                {
+                    "categoryOrder": ["keep"],
+                    "categoryViews": { "keep": "default" },
+                    "defaultFor": ["whole", "part"],
+                    "id": "retention/block",
+                    "mode": "block",
+                    "outputView": "block",
+                    "surface": "retention"
+                }
+            ],
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
         "96838e9e187637c0129040d986c2b31030d78fcb7b1c9e07bc48a1973a6df5e7": {
             "body": {
                 "resolution": {
@@ -5298,6 +5530,28 @@
             },
             "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
+            "statusCode": 200
+        },
+        "97e32683bfba35c5822fcace84566994530d6ff24715ed66f7b5616313cefbd2": {
+            "body": {
+                "id": "ref-surfaces-1",
+                "scheme": {
+                    "id": "ref-surfaces-1",
+                    "resolvedVersion": "1.0.0",
+                    "version": "1.0.0"
+                },
+                "schemes": [
+                    {
+                        "id": "ref-surfaces-1",
+                        "roles": ["primary"],
+                        "selector": "ref-surfaces-1",
+                        "version": "1.0.0"
+                    }
+                ],
+                "version": "1.0.0"
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
             "statusCode": 200
         },
         "9cc448f3c06c9ce0daa356c2cbc6ca4aa8f0e5c6a9b13d8ebb05495b376bee43": {
@@ -5721,7 +5975,7 @@
                     "whole": { "plural": "tests", "singular": "test" }
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "GET",
             "statusCode": 200
         },
@@ -5850,7 +6104,7 @@
         },
         "b50f097f2361668576a2de84bec318cdc146a51dad580c0698ff7879cfc6319a": {
             "body": [],
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "GET",
             "statusCode": 200
         },
@@ -5983,6 +6237,52 @@
                         "long": "COLLECT AFTER USE",
                         "short": "COLLECT"
                     }
+                }
+            ],
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "be6fb0397ecbd78b2e663384d4c61fb4691e7eae5c8972d15ffbfe99b89a0288": {
+            "body": [
+                {
+                    "aliases": [],
+                    "categories": ["level"],
+                    "id": "LOW",
+                    "name": "Low",
+                    "parents": [],
+                    "position": 0,
+                    "rank": 0,
+                    "views": { "default": "LOW", "portion": "L" }
+                },
+                {
+                    "aliases": [],
+                    "categories": ["level"],
+                    "id": "MED",
+                    "name": "Med",
+                    "parents": [],
+                    "position": 1,
+                    "rank": 1,
+                    "views": { "default": "MED", "portion": "M" }
+                },
+                {
+                    "aliases": [],
+                    "categories": ["level"],
+                    "id": "HIGH",
+                    "name": "High",
+                    "parents": [],
+                    "position": 2,
+                    "rank": 2,
+                    "views": { "default": "HIGH", "portion": "H" }
+                },
+                {
+                    "aliases": [],
+                    "categories": ["controls"],
+                    "id": "CTRL-A",
+                    "name": "Control A",
+                    "parents": ["HIGH"],
+                    "position": 0,
+                    "views": { "default": "CTRL-A" }
                 }
             ],
             "headers": { "x-ezclassify-resolved-version": "1.0.0" },
@@ -6385,7 +6685,7 @@
                     "view": "default"
                 }
             ],
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "GET",
             "statusCode": 200
         },
@@ -6546,6 +6846,33 @@
                     "sort": "alphabetical"
                 }
             ],
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "ced88c77d18899a889e7918235ba8d96ef5dbd5a11cd26b477ddcad8ddf2e075": {
+            "body": {
+                "contextFormats": {
+                    "part": ["short_line", "short_shared_line"],
+                    "whole": ["full_line", "full_line_2019"]
+                },
+                "defaultPartRenderFormat": "sensitivity/short",
+                "defaultRenderFormat": "sensitivity/full",
+                "defaultScope": "sensitivity",
+                "defaultWholeRenderFormat": "sensitivity/full",
+                "description": "Surface outputs conformance scheme. Two surfaces: sensitivity, with a part view `short` that is written in `short_line` or, for a marking shared with partners, `short_shared_line`; a whole view `full` written in `full_line` and also read in the retired `full_line_2019`; and an `xml` view with no role. Retention has one view, `block`, with no role. Parts are written in parentheses.",
+                "embeddedMarking": [
+                    { "pattern": "\\((.+)\\)", "template": "({marking}) " }
+                ],
+                "id": "ref-surfaces-1",
+                "name": "Reference Surfaces Scheme 1",
+                "referenceSurfaceLabel": {
+                    "plural": "Handbooks",
+                    "singular": "Handbook"
+                },
+                "roleAware": false,
+                "version": "1.0.0"
+            },
             "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "GET",
             "statusCode": 200
@@ -7457,6 +7784,24 @@
             "method": "POST",
             "statusCode": 200
         },
+        "ea07b7152214ea67b1e8a958bcbd33a9e92177184718d475a6902b32d55e57ae": {
+            "body": {
+                "defaultRenderFormat": "default",
+                "defaultScope": "banner",
+                "description": "Canonical conformance test scheme. Two categories: level (max rollup, required) and controls (union rollup, optional). Four concepts: LOW/MED/HIGH in level, CTRL-A in controls requiring parent HIGH.",
+                "id": "ref-scheme-1",
+                "name": "Reference Scheme 1",
+                "referenceSurfaceLabel": {
+                    "plural": "Handbooks",
+                    "singular": "Handbook"
+                },
+                "roleAware": false,
+                "version": "1.0.0"
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
         "eaa745f214c58ce4e581d355b95ed779b7442ca2bc907c198098e14992ea5425": {
             "body": {
                 "resolution": {
@@ -7593,6 +7938,15 @@
             "method": "GET",
             "statusCode": 200
         },
+        "f6affcf5e3b4ceddbbf78be6b0615dd153948052817680d7128ef70beb668cbc": {
+            "body": [
+                { "id": "sensitivity", "label": "Sensitivity" },
+                { "id": "retention", "label": "Retention" }
+            ],
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
         "f965287592b0f85807f4f7c7ebf94718b212ba166413a22385f7a64af4f93960": {
             "body": {
                 "resolution": {
@@ -7601,16 +7955,11 @@
                             "id": "multi-scope-regression",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-6bdebd9210aad9302997f390225d7ed3b9dfee0022579d2f5f3927a2340c99b2",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-6bdebd9210aad9302997f390225d7ed3b9dfee0022579d2f5f3927a2340c99b2",
+                    "contextId": "multi-scope-regression",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [],
@@ -7678,8 +8027,15 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
+            "statusCode": 200
+        },
+        "fa6a1050c8e580e1598876c9ca2807ce731b1b6d9304953ec9e79370b7e4d437": {
+            "body": {
+                "contextId": "sbx-5a242e666375fd628bba78c706586ab83d1e8c7f14ca1f519bf0bdb7ddfa9576"
+            },
+            "method": "PUT",
             "statusCode": 200
         },
         "fa881a961b2157d160756c24f95ef166f18757db99a8f49d0d7574c66cbabcd5": {

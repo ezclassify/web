@@ -10,16 +10,24 @@
  * parses back, the empty marking is empty, the input and chosen facts settle as
  * one marking, every format renders, and the profile carries the optional
  * fields a scheme declares. Whether the wire answers what an in-process engine
- * would is the engine's own parity suite; this one is about the client.
+ * would is the engine's own parity suite; this one is about the client. The one
+ * answer the client derives without a request, format coverage, is checked
+ * against the engine's recorded answers in the format-coverage conformance
+ * plan.
  *
  * The answers come from the spec file's recordings in the public lane and from
  * a local demo runtime in record mode (`test-support/demo-runtime.ts`).
  */
+import { createHash } from 'node:crypto';
+import { readFileSync } from 'node:fs';
+import * as path from 'node:path';
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import yaml from 'js-yaml';
 import type {
     Assertion,
+    FormatCoverage,
     RemoteContextSchemeEngineAdapter,
+    SchemePublicView,
 } from '@ezclassify/types';
 import type { EzClassifyClient } from '@ezclassify/rest-client';
 import {
@@ -360,24 +368,20 @@ describe.each(CONTEXTS)(
         });
 
         describe('what a remote adapter does differently', () => {
-            it('getFormatCoverage() answers from the profile, for every format', () => {
+            it('getFormatCoverage() answers every format from the profile, with no request', () => {
                 // There is no format-coverage route. The client answers from the
                 // categories and formats it already holds, synchronously and with
                 // no request, so a composer can carry a committed value its
                 // format cannot write. The proof of reconstruction needs the
                 // format's field tree, which stays on the server, so a remote
-                // answer never claims it.
+                // answer never claims it. Which categories each answer covers is
+                // checked against the engine's recorded answers further down.
                 const profile = scheme.getScheme();
-                const categories = profile.categories.map((c) => c.id);
                 expect(profile.formats.length).toBeGreaterThan(0);
                 for (const format of profile.formats) {
                     const coverage = scheme.getFormatCoverage!(format.id);
+                    expect(coverage).not.toBeInstanceOf(Promise);
                     expect(coverage.formatId).toBe(format.id);
-                    expect(coverage.coveredCategories).toEqual(
-                        categories.filter((id) =>
-                            format.categoryOrder.includes(id),
-                        ),
-                    );
                     expect(coverage.reconstruction.status).toBe('unknown');
                 }
                 expect(scheme.getFormatCoverage!()).toEqual(
@@ -409,6 +413,151 @@ describe.each(CONTEXTS)(
         });
     },
 );
+
+/** One case of the vendored `format-coverage` conformance plan. */
+interface CoverageCase {
+    name: string;
+    method: string;
+    args: string[];
+    fixture: string;
+}
+
+/** One answer the engine recorded for that plan. */
+interface RecordedAnswer {
+    method: string;
+    response: unknown;
+}
+
+const SPEC = path.resolve(import.meta.dirname, '../../vendor/spec');
+
+function readSpec<T>(...segments: string[]): T {
+    return JSON.parse(
+        readFileSync(path.resolve(SPEC, ...segments), 'utf8'),
+    ) as T;
+}
+
+/** Key-sorted compact JSON, the form a recording key is computed over. */
+function canonical(value: unknown): string {
+    if (Array.isArray(value)) return `[${value.map(canonical).join(',')}]`;
+    if (value && typeof value === 'object') {
+        const entries = Object.entries(value as Record<string, unknown>)
+            .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
+            .map(
+                ([key, member]) =>
+                    `${JSON.stringify(key)}:${canonical(member)}`,
+            );
+        return `{${entries.join(',')}}`;
+    }
+    return JSON.stringify(value);
+}
+
+/**
+ * The recording key of a case, as the conformance package defines it: the
+ * SHA-256 of its method, arguments, fixture, mode, Context id and version, and
+ * guide and access fixtures, joined by `|`. This plan's cases name no mode,
+ * Context, guide or access fixture.
+ */
+function recordingKey(planCase: CoverageCase): string {
+    const parts = [
+        planCase.method,
+        canonical(planCase.args),
+        canonical(planCase.fixture),
+        'fromJSON',
+        '',
+        '',
+        '',
+        '',
+    ];
+    return createHash('sha256').update(parts.join('|')).digest('hex');
+}
+
+/** A format's id and the categories it lays out, in its order. */
+const layout = (formats: SchemePublicView['formats']) =>
+    formats.map((f) => ({ id: f.id, categoryOrder: f.categoryOrder }));
+
+describe('getFormatCoverage over REST answers what the engine recorded', () => {
+    // The adapter-slice plan holds, for each fixture, the profile the engine
+    // publishes and the coverage it reports for every output that profile
+    // lists. Here the fixture goes through the draft door, the client reads the
+    // profile the runtime serves, and each answer the client derives from it
+    // must be the engine's.
+    const plan = readSpec<{ cases: CoverageCase[] }>(
+        'plans',
+        'v1',
+        'format-coverage.json',
+    );
+    const { responses } = readSpec<{
+        responses: Record<string, RecordedAnswer>;
+    }>('recordings', 'v1', 'format-coverage.recordings.json');
+
+    function engineAnswer<T>(planCase: CoverageCase): T {
+        const recorded = responses[recordingKey(planCase)];
+        if (!recorded || recorded.method !== planCase.method) {
+            throw new Error(`no recorded engine answer for ${planCase.name}`);
+        }
+        return recorded.response as T;
+    }
+
+    const fixtures = [...new Set(plan.cases.map((c) => c.fixture))];
+
+    it('has a profile and coverage cases to check for every fixture', () => {
+        expect(fixtures.length).toBeGreaterThan(0);
+        for (const fixture of fixtures) {
+            const methods = plan.cases
+                .filter((c) => c.fixture === fixture)
+                .map((c) => c.method);
+            expect(methods).toContain('getScheme');
+            expect(methods).toContain('getFormatCoverage');
+        }
+    });
+
+    describe.each(fixtures)('%s', (fixture) => {
+        const cases = plan.cases.filter((c) => c.fixture === fixture);
+        let client: EzClassifyClient;
+
+        beforeAll(async () => {
+            client = await connectDemoContext({
+                draft: {
+                    scheme: readSpec<unknown>(
+                        'fixtures',
+                        'v1',
+                        `${fixture}.json`,
+                    ),
+                },
+            });
+        });
+
+        afterAll(() => client?.destroy());
+
+        it.each(cases.filter((c) => c.method === 'getScheme'))(
+            '$name: the profile lists the outputs the engine published',
+            (planCase) => {
+                const engine = engineAnswer<SchemePublicView>(planCase);
+                expect(layout(client.scheme.getScheme().formats)).toEqual(
+                    layout(engine.formats),
+                );
+            },
+        );
+
+        it.each(cases.filter((c) => c.method === 'getFormatCoverage'))(
+            '$name: covers the categories the engine reported',
+            (planCase) => {
+                const engine = engineAnswer<FormatCoverage>(planCase);
+                const coverage = client.scheme.getFormatCoverage!(
+                    planCase.args[0],
+                );
+                expect(coverage.formatId).toBe(engine.formatId);
+                expect(coverage.coveredCategories).toEqual(
+                    engine.coveredCategories,
+                );
+                expect(coverage.valueLossyCategories).toEqual(
+                    engine.valueLossyCategories,
+                );
+                expect(coverage.reconstruction.status).toBe('unknown');
+            },
+        );
+    });
+});
 
 describe('the profile carries the optional fields a scheme declares', () => {
     it('definition, guidance and role-aware processing reach the client', async () => {
