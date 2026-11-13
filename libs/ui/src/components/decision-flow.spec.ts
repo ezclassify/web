@@ -701,6 +701,31 @@ describe('DecisionFlow', () => {
         expect(backBtn?.disabled).toBe(true);
     });
 
+    it('names Back and Next by their words alone, with the arrows hidden from screen readers', async () => {
+        await component.init(container, toCtx(engine));
+        await enterFlow(container);
+        const [back, next] = container.querySelectorAll<HTMLButtonElement>(
+            '.ez-decision-flow__nav-btn',
+        );
+        // The accessible name is the text outside aria-hidden content.
+        const spokenName = (button: HTMLButtonElement) =>
+            [...button.childNodes]
+                .filter(
+                    (node) =>
+                        !(node instanceof Element) ||
+                        node.getAttribute('aria-hidden') !== 'true',
+                )
+                .map((node) => node.textContent)
+                .join('')
+                .trim();
+        expect(spokenName(back)).toBe('Back');
+        expect(spokenName(next)).toBe('Next');
+        const arrows = [back, next].map((button) =>
+            button.querySelector('[aria-hidden="true"]'),
+        );
+        expect(arrows.map((arrow) => arrow?.textContent)).toEqual(['←︎', '→︎']);
+    });
+
     it('populates summary chips for all completed steps', async () => {
         await component.init(container, toCtx(engine));
         await enterFlow(container);

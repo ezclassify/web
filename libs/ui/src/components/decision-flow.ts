@@ -1420,7 +1420,7 @@ export class DecisionFlow extends ComponentBase {
         const back = document.createElement('button');
         back.type = 'button';
         back.className = 'ez-decision-flow__nav-btn';
-        back.textContent = '← Back';
+        setNavLabel(back, 'Back', '←', 'start');
         back.disabled = this.currentStep === 0;
         back.addEventListener('click', () => {
             if (this.currentStep > 0) this.goToStep(this.currentStep - 1);
@@ -1430,8 +1430,11 @@ export class DecisionFlow extends ComponentBase {
         const next = document.createElement('button');
         next.type = 'button';
         next.className = 'ez-decision-flow__nav-btn';
-        next.textContent =
-            this.currentStep === this.steps.length - 1 ? 'Done' : 'Next →';
+        if (this.currentStep === this.steps.length - 1) {
+            setNavLabel(next, 'Done');
+        } else {
+            setNavLabel(next, 'Next', '→', 'end');
+        }
         // Optional categories (required: false) are skippable, Next stays enabled even without
         // a selection so the user can advance through them without being forced to pick.
         next.disabled = !this.isStepPassable(this.currentStep);
@@ -1629,6 +1632,30 @@ export class DecisionFlow extends ComponentBase {
  * The category ids a `data-ezclassify-decisionflow-categories` value lists: a
  * JSON array of ids, or ids separated by commas or spaces.
  */
+/**
+ * Writes a navigation button's label with an optional direction arrow. The
+ * arrow is decoration, hidden from assistive technology so the button's name is
+ * only its label, and drawn in text presentation (U+FE0E) so no platform swaps
+ * in an emoji glyph.
+ */
+function setNavLabel(
+    button: HTMLButtonElement,
+    label: string,
+    arrow?: string,
+    side: 'start' | 'end' = 'end',
+): void {
+    button.replaceChildren(document.createTextNode(label));
+    if (!arrow) return;
+    const glyph = document.createElement('span');
+    glyph.setAttribute('aria-hidden', 'true');
+    glyph.textContent = `${arrow}\uFE0E`;
+    if (side === 'start') {
+        button.prepend(glyph, ' ');
+    } else {
+        button.append(' ', glyph);
+    }
+}
+
 function parseCategoryList(value: string): string[] {
     const text = value.trim();
     if (text.startsWith('[')) {
