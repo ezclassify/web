@@ -360,13 +360,29 @@ describe.each(CONTEXTS)(
         });
 
         describe('what a remote adapter does differently', () => {
-            it('getFormatCoverage() is not offered', () => {
-                // Optional on the remote Context contract, and the client does not
-                // implement it: the REST contract has no format-coverage route. A UI
-                // that needs to know whether a format is lossless has no answer over
-                // REST, so it must treat `undefined` as "unknown" rather than
-                // "lossy".
-                expect(scheme.getFormatCoverage).toBeUndefined();
+            it('getFormatCoverage() answers from the profile, for every format', () => {
+                // There is no format-coverage route. The client answers from the
+                // categories and formats it already holds, synchronously and with
+                // no request, so a composer can carry a committed value its
+                // format cannot write. The proof of reconstruction needs the
+                // format's field tree, which stays on the server, so a remote
+                // answer never claims it.
+                const profile = scheme.getScheme();
+                const categories = profile.categories.map((c) => c.id);
+                expect(profile.formats.length).toBeGreaterThan(0);
+                for (const format of profile.formats) {
+                    const coverage = scheme.getFormatCoverage!(format.id);
+                    expect(coverage.formatId).toBe(format.id);
+                    expect(coverage.coveredCategories).toEqual(
+                        categories.filter((id) =>
+                            format.categoryOrder.includes(id),
+                        ),
+                    );
+                    expect(coverage.reconstruction.status).toBe('unknown');
+                }
+                expect(scheme.getFormatCoverage!()).toEqual(
+                    scheme.getFormatCoverage!(profile.defaultRenderFormat),
+                );
             });
 
             it('applyPreset() refuses an unknown preset with a rejected promise', async () => {
