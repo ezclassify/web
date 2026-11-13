@@ -124,13 +124,18 @@ export function renderTagChips(ctx: TagChipRenderContext): HTMLElement[] {
         (a) => {
             const concept = conceptMap.get(a.conceptId);
             const isInferred = derivedAssertion(a);
+            const isTextInput = !!(concept?.textInput && !isInferred);
             // Match the active format's concept view without adding marking
-            // separators or wrappers to individual assertion chips.
-            const label =
-                concept?.views?.[fmt.view ?? 'default'] ??
-                concept?.views?.['default'] ??
-                concept?.name ??
-                a.conceptId;
+            // separators or wrappers to individual assertion chips. A chip
+            // whose value is typed into it takes the concept's name instead,
+            // as DecisionFlow's options do: its view is a template such as
+            // "{value}", which says nothing beside the field holding the value.
+            const label = isTextInput
+                ? concept!.name
+                : (concept?.views?.[fmt.view ?? 'default'] ??
+                  concept?.views?.['default'] ??
+                  concept?.name ??
+                  a.conceptId);
             const authority = resolveMarkingColor(
                 { colorFrom: ctx.colorFrom },
                 [
@@ -149,7 +154,6 @@ export function renderTagChips(ctx: TagChipRenderContext): HTMLElement[] {
             // pill where the two colors must actually pair for contrast.
             const textColor =
                 authority?.text ?? ctx.getCategoryTextColor(a.categoryId);
-            const isTextInput = !!(concept?.textInput && !isInferred);
             const editableOpts = isTextInput
                 ? {
                       value: a.value ?? '',

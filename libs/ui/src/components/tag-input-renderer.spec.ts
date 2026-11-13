@@ -107,6 +107,74 @@ describe('renderTagChips', () => {
             assertions.map((a) => a.conceptId),
         );
     });
+
+    it('names a chip whose value is typed into it by its concept, not its view template', () => {
+        const typed: ConceptView = {
+            ...concept('BY_TEXT', '{value}', ['classified_by']),
+            name: 'Classified By',
+            textInput: { placeholder: 'Name and position' },
+        };
+        const inputWrap = document.createElement('div');
+        const filterInput = document.createElement('input');
+        inputWrap.appendChild(filterInput);
+        const [tag] = renderTagChips({
+            scheme: {
+                id: 'test',
+                version: '1.0.0',
+                name: 'Test',
+                referenceSurfaceLabel: {
+                    singular: 'Handbook',
+                    plural: 'Handbooks',
+                },
+                defaultRenderFormat: 'default',
+                labelPresets: [],
+                concepts: [typed],
+                categories: [category('classified_by')],
+                formats: [
+                    {
+                        id: 'default',
+                        surface: 'default',
+                        mode: 'inline',
+                        categoryOrder: [],
+                    },
+                ],
+            },
+            schemeMeta: {
+                defaultRenderFormat: 'default',
+                formats: [
+                    {
+                        id: 'default',
+                        surface: 'default',
+                        mode: 'inline',
+                        separator: '//',
+                        categoryOrder: ['classified_by'],
+                    },
+                ],
+            },
+            assertions: [
+                {
+                    ...assertion('BY_TEXT', 'classified_by'),
+                    value: 'Jane Analyst',
+                },
+            ],
+            formatId: 'default',
+            inputWrap,
+            filterInput,
+            getCategoryColor: () => '#000000',
+            getCategoryTextColor: () => '#ffffff',
+            onRemoveAssertion: vi.fn(),
+            onReprocess: vi.fn(),
+            onChipClick: vi.fn(),
+            onChipKeydown: vi.fn(),
+            onChipBlur: vi.fn(),
+        });
+
+        expect(tag.querySelector('span')?.textContent).toBe('Classified By');
+        expect(tag.textContent).not.toContain('{value}');
+        expect(
+            tag.querySelector<HTMLInputElement>('.proto-tag-edit')?.value,
+        ).toBe('Jane Analyst');
+    });
 });
 
 function concept(id: string, label: string, categories: string[]): ConceptView {
