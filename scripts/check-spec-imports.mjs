@@ -3,10 +3,9 @@
 //
 // This repository is open source and its CI runs on a clean clone. Engine
 // behavior enters it only as committed recordings of the demo runtime's wire
-// traffic, so no spec, fixture or test helper may import @ezclassify/engine,
-// @ezclassify/engine-wasm or @ezclassify/testing-utils: none of the three can
-// be installed from a public registry, and a source that needs one fails for
-// every outside contributor.
+// traffic, so no spec, fixture or test helper may import @ezclassify/engine or
+// @ezclassify/engine-wasm: neither can be installed from a public registry, and
+// a source that needs one fails for every outside contributor.
 //
 // Every source must also stay inside this repository: a relative import that
 // climbs out of it (`../../engine/...`) reads a sibling checkout an outside
@@ -45,7 +44,7 @@ const SKIP = new Set([
 ]);
 
 /** The packages no test source may import, with any subpath. */
-const FORBIDDEN = /^@ezclassify\/(?:engine|engine-wasm|testing-utils)(?:\/|$)/;
+const FORBIDDEN = /^@ezclassify\/(?:engine|engine-wasm)(?:\/|$)/;
 
 const SOURCE_FILE = /\.(?:[cm]?[jt]sx?|vue)$/;
 
@@ -187,6 +186,6 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
         process.exit(1);
     }
     console.log(
-        'Spec imports: no engine, engine-wasm or testing-utils import, and none from outside the repository.',
+        'Spec imports: no engine or engine-wasm import, and none from outside the repository.',
     );
 }

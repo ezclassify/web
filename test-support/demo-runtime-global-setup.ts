@@ -15,15 +15,17 @@
  *   content checkouts the manifest names.
  *
  * The build runs `cargo build --release --locked -p ezclassify-demo-runtime
- * --features provide` with `CARGO_BUILD_JOBS=4` into the engine checkout's
- * `target`, on the engine source of the commit in `engine.pin`, which it
- * extracts from that checkout with `git archive`; the checkout's own branch and
- * edits do not matter. The binary path comes from cargo's own build messages,
- * and a build is reused while the pin, the build settings and the assembled
- * demo set are unchanged. The runtime listens on a loopback port the kernel
- * picks; the setup reads the address from the runtime's startup log, waits a
- * bounded time for it to answer `/v1/ready`, and checks that it lists every
- * Context of the set.
+ * --features provide` with `CARGO_BUILD_JOBS=4`, on the engine source of the
+ * commit in `engine.pin`, which it extracts from that checkout with `git
+ * archive`; the checkout's own branch and edits do not matter. Each pin is
+ * extracted and built in a directory of its own, with its own Cargo target
+ * directory (see `demo-runtime-build.ts`), so a build never links crates of
+ * another pin. The binary path comes from cargo's own build messages, and a
+ * build is reused while the pin, the build settings and the assembled demo set
+ * are unchanged. The runtime listens on a loopback port the kernel picks; the
+ * setup reads the address from the runtime's startup log, waits a bounded time
+ * for it to answer `/v1/ready`, and checks that it lists every Context of the
+ * set.
  *
  * Recordings have to be reproducible from this repository, so the checkouts
  * they are made from are pinned in `test-support/<checkout>.pin`: the engine
@@ -52,6 +54,7 @@ import {
 } from 'node:fs';
 import * as path from 'node:path';
 import type { TestProject } from 'vitest/node';
+import { buildKey, pinnedBuildLayout } from './demo-runtime-build';
 import { RECORD_VARIABLE, recording } from './record-mode';
 
 /** The directory holding this repository and its sibling checkouts. */
@@ -164,19 +167,14 @@ function requirePinned(name: string, dir: string, paths: string[]): void {
 
 /**
  * The engine source at its pin, extracted from the sibling checkout with `git
- * archive`. The checkout itself is left alone: it may be at any commit, with
- * any edits, while the recordings are made from the pinned source only.
+ * archive` into the pin's own directory. The checkout itself is left alone: it
+ * may be at any commit, with any edits, while the recordings are made from the
+ * pinned source only.
  *
  * @returns The directory holding the pinned source tree
  */
-function pinnedEngineSource(engine: string): string {
+function pinnedEngineSource(engine: string, dir: string): string {
     const commit = pin('engine');
-    const dir = path.join(
-        engine,
-        'target',
-        'web-recordings',
-        `engine-${commit}`,
-    );
     if (existsSync(path.join(dir, 'Cargo.toml'))) return dir;
     const staging = `${dir}.partial`;
     rmSync(staging, { recursive: true, force: true });
@@ -269,8 +267,9 @@ function buildRuntime(): { binary: string; contextIds: string[] } {
         'package-lock.json',
     ]);
     const engine = sibling('engine', 'apps/demo-runtime/Cargo.toml');
-    const source = pinnedEngineSource(engine);
     const builds = path.join(engine, 'target', 'web-recordings');
+    const layout = pinnedBuildLayout(builds, pin('engine'));
+    const source = pinnedEngineSource(engine, layout.source);
     const assembled = path.join(builds, `demo-contexts-${process.pid}`);
     rmSync(assembled, { recursive: true, force: true });
     run(
@@ -283,14 +282,11 @@ function buildRuntime(): { binary: string; contextIds: string[] } {
             env: { ...process.env, EZ_REPOS_DIR: WORKSPACE },
         },
     );
-    const key = createHash('sha256')
-        .update(pin('engine'))
-        .update('\0')
-        .update(CARGO_BUILD_ARGS.join(' '))
-        .update('\0')
-        .update(treeDigest(assembled))
-        .digest('hex')
-        .slice(0, 32);
+    const key = buildKey(
+        pin('engine'),
+        CARGO_BUILD_ARGS,
+        treeDigest(assembled),
+    );
     const build = path.join(builds, `runtime-${key}`);
     const contexts = path.join(build, 'demo-contexts');
     const binary = path.join(build, 'ezclassify-demo-runtime');
@@ -308,9 +304,9 @@ function buildRuntime(): { binary: string; contextIds: string[] } {
                 env: {
                     ...process.env,
                     CARGO_BUILD_JOBS: '4',
-                    // The engine checkout's own target, so dependencies built
-                    // there are reused.
-                    CARGO_TARGET_DIR: path.join(engine, 'target'),
+                    // The pin's own target directory: nothing another pin
+                    // compiled is ever linked into this build.
+                    CARGO_TARGET_DIR: layout.cargoTarget,
                     EZCLASSIFY_DEMO_CONTEXTS_DIR: contexts,
                 },
             },

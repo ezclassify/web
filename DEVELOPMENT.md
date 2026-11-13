@@ -130,8 +130,7 @@ of the wire traffic of the demo runtime, the runtime the website Playground
 uses. No spec, fixture or test helper imports an engine, and
 `npm run check:spec-imports`
 ([`scripts/check-spec-imports.mjs`](scripts/check-spec-imports.mjs)) fails on any source under the spec roots that
-imports `@ezclassify/engine`, `@ezclassify/engine-wasm` or
-`@ezclassify/testing-utils`. It reads source text only, so CI runs it first,
+imports `@ezclassify/engine` or `@ezclassify/engine-wasm`. It reads source text only, so CI runs it first,
 before anything is installed.
 
 **What a clean clone runs, and what CI gates on**, is everything. `npm run
@@ -180,11 +179,16 @@ With `EZCLASSIFY_RECORD=1`, each test project's global setup
 ([`test-support/demo-runtime-global-setup.ts`](test-support/demo-runtime-global-setup.ts)) assembles the website demo set
 with orchestration's `assemble-demo-contexts.mjs`, builds
 `ezclassify-demo-runtime` the way the hosted demo runtime image does (the
-`release` profile, `--locked`, with the `provide` feature; `CARGO_BUILD_JOBS=4`,
-into the engine checkout's `target`), starts it on a loopback port and waits a
-bounded time for it to answer. A build is reused while the engine pin, those
-build settings and the assembled demo set are unchanged, so only the first
-project of a run compiles.
+`release` profile, `--locked`, with the `provide` feature; `CARGO_BUILD_JOBS=4`),
+starts it on a loopback port and waits a bounded time for it to answer. Each
+pin builds in a directory of its own under the engine checkout's
+`target/web-recordings/pin-<commit>/`, holding the extracted source and a Cargo
+target directory that no other pin uses, so a recording never links crates
+compiled from another pin and moving the pin compiles from nothing. A build is
+reused while the engine pin, those build settings and the assembled demo set
+are unchanged, so only the first project of a run compiles. Old
+`pin-*` directories and `runtime-*` builds are caches; delete any you no longer
+need.
 Every request then goes to that runtime unless the spec file's recordings
 already hold it, and the recordings file is rewritten at the end of the file.
 UI code sends requests whose timing depends on how fast answers arrive, so `npm

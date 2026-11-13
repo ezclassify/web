@@ -55,13 +55,13 @@ describe('privateDependenciesOf', () => {
         const manifest = {
             devDependencies: {
                 '@ezclassify/engine': '^1.0.0-0',
-                '@ezclassify/testing-utils': '^1.0.0-0',
+                '@ezclassify/engine-wasm': '^1.0.0-0',
                 '@ezclassify/types': '^1.0.0-0',
             },
         };
         expect(privateDependenciesOf(manifest).sort()).toEqual([
             'devDependencies:@ezclassify/engine',
-            'devDependencies:@ezclassify/testing-utils',
+            'devDependencies:@ezclassify/engine-wasm',
         ]);
     });
 
@@ -70,9 +70,9 @@ describe('privateDependenciesOf', () => {
         expect(privateDependenciesOf(undefined)).toEqual([]);
     });
 
-    it('does not list the engine as publicly installable', () => {
+    it('does not list the engine or its wasm build as publicly installable', () => {
         expect(PUBLIC_SCOPED_PACKAGES.has('@ezclassify/engine')).toBe(false);
-        expect(PUBLIC_SCOPED_PACKAGES.has('@ezclassify/testing-utils')).toBe(
+        expect(PUBLIC_SCOPED_PACKAGES.has('@ezclassify/engine-wasm')).toBe(
             false,
         );
     });

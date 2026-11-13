@@ -206,13 +206,13 @@ describe('scopedImports', () => {
         // effect. A pattern anchored on `from` cannot see either of these.
         const text = [
             "import '@ezclassify/engine';",
-            "const t = import ('@ezclassify/trust');",
-            "require ( '@ezclassify/loaders' );",
+            "const t = import ('@ezclassify/engine-wasm');",
+            "require ( '@ezclassify/rest-client' );",
         ].join('\n');
         expect(scopedImports(text, '@ezclassify/').sort()).toEqual([
             '@ezclassify/engine',
-            '@ezclassify/loaders',
-            '@ezclassify/trust',
+            '@ezclassify/engine-wasm',
+            '@ezclassify/rest-client',
         ]);
     });
 

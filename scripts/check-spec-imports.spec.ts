@@ -43,8 +43,8 @@ describe('forbiddenImports', () => {
             "import type { X } from '@ezclassify/engine/browser';",
             "import '@ezclassify/engine-wasm';",
             'import {',
-            '    runEzClassifyStoreConformance,',
-            "} from '@ezclassify/testing-utils';",
+            '    Context,',
+            "} from '@ezclassify/engine/scheme-ops';",
             "export * from '@ezclassify/engine-wasm';",
             "const wasm = await import('@ezclassify/engine-wasm');",
             "const engine = require('@ezclassify/engine');",
@@ -56,7 +56,7 @@ describe('forbiddenImports', () => {
             '@ezclassify/engine-wasm',
             '@ezclassify/engine-wasm',
             '@ezclassify/engine/browser',
-            '@ezclassify/testing-utils',
+            '@ezclassify/engine/scheme-ops',
         ]);
     });
 
@@ -92,12 +92,12 @@ describe('check-spec-imports command', () => {
     it('fails on a planted import in a fixture and a test-support helper', () => {
         const root = plant({
             'tests/fixtures/f.ts':
-                "export * from '@ezclassify/testing-utils';\n",
+                "export * from '@ezclassify/engine/browser';\n",
             'test-support/h.mjs': "await import('@ezclassify/engine-wasm');\n",
         });
         const result = run(root);
         expect(result.status).toBe(1);
-        expect(result.stderr).toContain('f.ts: @ezclassify/testing-utils');
+        expect(result.stderr).toContain('f.ts: @ezclassify/engine/browser');
         expect(result.stderr).toContain('h.mjs: @ezclassify/engine-wasm');
     });
 
