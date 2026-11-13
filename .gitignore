@@ -15,10 +15,6 @@ coverage/
 # always restores these, so a stray one means the run failed mid-strip.
 *.relock-backup
 
-# scripts/typecheck-specs.mjs writes one of these per workspace while it runs
-# and removes it afterward; a stray one means an interrupted run.
-tsconfig.spec.lane.json
-
 # Local agent settings.
 CLAUDE.local.md
 .claude/

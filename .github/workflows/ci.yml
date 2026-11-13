@@ -50,6 +50,13 @@ jobs:
           NPMRC
           echo "NPM_CONFIG_USERCONFIG=$RUNNER_TEMP/ci-npmrc" >> "$GITHUB_ENV"
 
+      - name: Test sources import no engine
+        # Cheapest gate, so it runs first. Reads source text only and needs no
+        # install: no spec, fixture or test helper may import the engine, its
+        # WebAssembly build or the runtime's testing utilities, because a clean
+        # clone cannot install them. Engine behavior arrives as recordings.
+        run: npm run check:spec-imports
+
       - name: Public dependency closure
         # First gate, before anything is installed, because this is the one
         # failure an outside contributor meets before every other check gets a
@@ -149,8 +156,10 @@ jobs:
       - name: Run tests
         # Every spec, the integration tier included. Engine answers replay from
         # the committed demo runtime recordings, so nothing is started and
-        # nothing is skipped: a missing or stale recording fails the spec file.
-        # Recording is the maintainer lane, recordings.yml.
+        # nothing is skipped. A request with no recording fails its spec file,
+        # and a changed request or fixture is a new request, because the key
+        # is the request. Whether a recorded answer is still what the engine
+        # says is the maintainer lane's check, recordings.yml.
         run: npm test
 
       - name: Typecheck

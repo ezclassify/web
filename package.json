@@ -46,6 +46,7 @@
         "check:public-dependencies": "node scripts/check-public-dependencies.mjs",
         "check:publish-content": "node scripts/check-publish-content.mjs",
         "check:recordings": "node scripts/record-demo-runtime.mjs --check",
+        "check:spec-imports": "node scripts/check-spec-imports.mjs",
         "deps:relock": "node scripts/relock.mjs --clean && node scripts/relock.mjs --strip && npm install --package-lock-only --include=optional --ignore-scripts --before=\"$(node -e 'console.log(new Date(Date.now()-7*864e5).toISOString())')\" && node scripts/relock.mjs --restore && npm install --package-lock-only --include=optional --ignore-scripts --tag=dev && node scripts/relock.mjs --normalize && npm run check:lockfile-portable && npm run check:dependency-age",
         "docs": "npm exec --yes --package=typedoc@0.28.20 --package=typescript@5.9.3 -- typedoc --treatWarningsAsErrors",
         "docs:source": "npm exec --yes --package=typedoc@0.28.20 --package=typescript@5.9.3 -- typedoc --options typedoc.source.json --treatWarningsAsErrors",

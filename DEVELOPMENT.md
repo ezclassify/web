@@ -127,7 +127,12 @@ what is public. Most of the behavioral coverage here drives the UI against real
 engine answers over real scheme content, and the engine is not installable. So
 engine behavior reaches this repository one way only: as committed recordings
 of the wire traffic of the demo runtime, the runtime the website Playground
-uses. No spec, fixture or test helper imports an engine.
+uses. No spec, fixture or test helper imports an engine, and
+`npm run check:spec-imports`
+([`scripts/check-spec-imports.mjs`](scripts/check-spec-imports.mjs)) fails on any source under the spec roots that
+imports `@ezclassify/engine`, `@ezclassify/engine-wasm` or
+`@ezclassify/testing-utils`. It reads source text only, so CI runs it first,
+before anything is installed.
 
 **What a clean clone runs, and what CI gates on**, is everything. `npm run
 deps:relock` and `npm ci` against a public registry, `npm run build`, `npm
