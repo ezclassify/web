@@ -45,9 +45,10 @@
     overflow-wrap: anywhere;
 }
 /* Beside a typed value the chip's name is a concept name such as "Classified
-   By". It breaks only between words; the value field beside it shrinks
-   instead. */
+   By". It breaks only between words and never narrows past its longest
+   word; the value field beside it shrinks instead. */
 .tag-input-wrap > .proto-tag--editable > .proto-tag-label {
+    min-width: auto;
     overflow-wrap: normal;
 }
 /* Inset (negative offset), matching MarkingField's own focus ring
