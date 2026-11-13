@@ -42,7 +42,11 @@ export function installReplayer(
                 request.url(),
                 request.postData(),
             );
-            const result = lookup(recordings, { path, body });
+            const result = lookup(recordings, {
+                method: request.method(),
+                path,
+                body,
+            });
             if (result.kind === 'hit') {
                 tracker.hits.add(path);
                 await route.fulfill({

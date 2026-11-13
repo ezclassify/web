@@ -91,6 +91,7 @@ import {
 } from '@ezclassify/rest-client';
 import {
     Recorder,
+    RecordingRefusedError,
     createRecordingFetch,
     createReplayFetch,
     readRecordingsFile,
@@ -178,6 +179,8 @@ interface FileStore {
     fetch: typeof fetch;
     recorder?: Recorder;
     misses: Array<MissEnvelope & { method: string }>;
+    /** In record mode, the live answers the transport refused to record. */
+    refused: string[];
     /** In the public lane, what was recorded and which of it a request used. */
     replayed?: { file: RecordingsFile; hits: Set<string> };
     /** Requests still in flight, which the file waits for before it closes. */
@@ -198,7 +201,14 @@ function tracked(
         const pending = send(input, init);
         store.inFlight.add(pending);
         const settle = () => store.inFlight.delete(pending);
-        pending.then(settle, settle);
+        pending.then(settle, (error: unknown) => {
+            // The code under test may catch the rejection and carry on, so
+            // the file fails at its close instead.
+            if (error instanceof RecordingRefusedError) {
+                store.refused.push(error.message);
+            }
+            settle();
+        });
         return pending;
     };
 }
@@ -261,6 +271,7 @@ function storeForCurrentFile(): FileStore {
             file,
             recorder,
             misses: [],
+            refused: [],
             inFlight: new Set<Promise<unknown>>(),
         };
         store = {
@@ -282,6 +293,7 @@ function storeForCurrentFile(): FileStore {
         const state = {
             file,
             misses,
+            refused: [],
             replayed: { file: recorded, hits },
             inFlight: new Set<Promise<unknown>>(),
         };
@@ -407,12 +419,16 @@ export async function demoRuntimeSettled(): Promise<void> {
 
 /**
  * Close the running spec file's recordings: write them in record mode, and fail
- * in the public lane when a request had no recording. A pruning replay (the
- * last step of `npm run record`) rewrites the file to the recordings it used.
- * Called from `demo-runtime-setup-file.ts` after every spec file.
+ * in the public lane when a request had no recording. In record mode it fails
+ * instead, writing nothing, when the live runtime gave an answer the transport
+ * refuses to record (one that is not JSON, or a busy or failed one). A pruning
+ * replay (the last step of `npm run record`) rewrites the file to the
+ * recordings it used. Called from `demo-runtime-setup-file.ts` after every spec
+ * file.
  *
  * @param format - Formats the recordings file's JSON text before it is written
- * @throws Listing every request that had no recording
+ * @throws Listing every request that had no recording, or every live answer
+ *   that could not be recorded
  */
 export async function closeSpecRecordings(
     format: (json: string, file: string) => Promise<string>,
@@ -424,6 +440,14 @@ export async function closeSpecRecordings(
     // Each request is bounded by the transport's own deadline, so this ends.
     while (store.inFlight.size > 0) {
         await Promise.allSettled([...store.inFlight]);
+    }
+    if (store.refused.length > 0) {
+        throw new Error(
+            `${store.refused.length} live answer(s) could not be recorded in ` +
+                `${path.relative(process.cwd(), store.file)}, so nothing is ` +
+                'written for it:\n' +
+                store.refused.map((why) => `  ${truncate(why)}`).join('\n'),
+        );
     }
     if (store.recorder) {
         if (store.recorder.empty) {

@@ -33,7 +33,8 @@ export interface RecordingsEntry {
      */
     headers?: Record<string, string>;
     argsSummary?: string;
-    method?: string;
+    /** The method the request was sent with; a replay of another misses. */
+    method: string;
 }
 
 /**
@@ -75,7 +76,9 @@ function validateEntry(value: unknown, where: string): RecordingsEntry {
         throw new RecordingsFileError(`${where}.body is missing`);
     }
     optionalString(value, 'argsSummary', where);
-    optionalString(value, 'method', where);
+    if (typeof value['method'] !== 'string') {
+        throw new RecordingsFileError(`${where}.method must be a string`);
+    }
     const headers = value['headers'];
     if (headers !== undefined) {
         if (

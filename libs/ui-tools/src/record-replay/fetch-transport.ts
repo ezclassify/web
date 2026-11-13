@@ -27,6 +27,22 @@ const STATE_CHANGING = new Set(['PUT', 'PATCH', 'DELETE']);
 /** How long a recorded request may take at the live server. */
 const LIVE_TIMEOUT_MS = 30_000;
 
+/**
+ * Whether an answer says the server could not take the request just then: it
+ * was busy (`429`) or failed (any `5xx`). Such an answer belongs to the moment
+ * it was sent, not to the request, so it is never recorded.
+ */
+const transient = (status: number): boolean => status === 429 || status >= 500;
+
+/**
+ * A live answer the recording transport will not record: one that is not JSON,
+ * or a busy or failed answer. The request rejects with it, so a recording run
+ * that meets one fails instead of committing it.
+ */
+export class RecordingRefusedError extends Error {
+    override readonly name = 'RecordingRefusedError';
+}
+
 /** What a request is keyed by: its path and query, and its parsed JSON body. */
 interface KeyedRequest {
     method: string;
@@ -82,7 +98,9 @@ function keptHeaders(headers: Headers): Record<string, string> {
  *
  * Every answer must be JSON, error answers included: a body the replayer could
  * not reproduce byte for byte is refused here instead of being recorded as
- * something else.
+ * something else. A busy (`429`) or failed (`5xx`) answer is refused too: it
+ * says the server could not answer then, and a replay would repeat it for good.
+ * Either refusal rejects the request with a {@link RecordingRefusedError}.
  *
  * @param origin - The live server, such as `http://127.0.0.1:50837`
  * @param recorder - Where answers are recorded
@@ -102,7 +120,7 @@ export function createRecordingFetch(
         init?.signal?.throwIfAborted();
         const held = STATE_CHANGING.has(request.method)
             ? undefined
-            : recorder.find(request.path, request.body);
+            : recorder.find(request.method, request.path, request.body);
         if (held !== undefined) {
             return new Response(JSON.stringify(held.body), {
                 status: held.statusCode,
@@ -121,11 +139,17 @@ export function createRecordingFetch(
             signal: AbortSignal.timeout(LIVE_TIMEOUT_MS),
         });
         const text = await response.text();
+        if (transient(response.status)) {
+            throw new RecordingRefusedError(
+                `${request.method} ${request.path} answered ${response.status}, ` +
+                    'a busy or failed answer, which is not recorded',
+            );
+        }
         let body: unknown;
         try {
             body = JSON.parse(text) as unknown;
         } catch {
-            throw new Error(
+            throw new RecordingRefusedError(
                 `${request.method} ${request.path} answered ${response.status} ` +
                     'with a body that is not JSON, which cannot be recorded',
             );

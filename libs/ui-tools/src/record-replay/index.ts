@@ -23,4 +23,8 @@ export { Recorder } from './recorder';
 export type { RecordParams } from './recorder';
 export { lookup } from './replayer';
 export type { ReplayerRecording, LookupResult } from './replayer';
-export { createRecordingFetch, createReplayFetch } from './fetch-transport';
+export {
+    RecordingRefusedError,
+    createRecordingFetch,
+    createReplayFetch,
+} from './fetch-transport';

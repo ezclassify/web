@@ -84,8 +84,9 @@ these against test data because they fill fields and activate controls.
 A recording is keyed by the request's path with its query string and its JSON
 body, with object keys sorted (`computeRecordingKey`), so the same logical
 request always finds the same recording whatever the origin, the trailing slash
-or the key order. The method is not part of the key; the recorder refuses two
-methods that would share one.
+or the key order. Each recording holds the method it answered, and a request
+with another method misses it. The method is not part of the key, so the
+recorder refuses two methods that would share one.
 
 For a client that takes its own `fetch`, `createRecordingFetch(origin,
 recorder)` forwards each request to a live server and records the answer, and
@@ -110,8 +111,9 @@ const replay = createReplayFetch(file.responses, (miss) => {
 const answer = await replay('http://any.invalid/v1/health');
 ```
 
-Every recorded answer must be JSON; the recorder refuses one that is not. It
-keeps the response headers a client reads (`x-ezclassify-*` and
+Every recorded answer must be JSON; the recorder refuses one that is not, and
+a busy (`429`) or failed (`5xx`) answer, by rejecting the request with a
+`RecordingRefusedError`. It keeps the response headers a client reads (`x-ezclassify-*` and
 `retry-after`). A request the recorder already holds is answered from it
 without being sent, except a `PUT`, `PATCH` or `DELETE`, which always reaches
 the server. A request cancelled while in flight is still recorded, because a
@@ -131,6 +133,7 @@ import { computeRecordingKey, installReplayer } from '@ezclassify/ui-tools';
 test('replays the application response', async ({ page }) => {
     const recordings = {
         [computeRecordingKey('/api/example', null)]: {
+            method: 'GET',
             statusCode: 200,
             body: { ready: true },
         },

@@ -4,10 +4,17 @@
  */
 import * as http from 'node:http';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { createRecordingFetch, createReplayFetch } from './fetch-transport';
+import {
+    RecordingRefusedError,
+    createRecordingFetch,
+    createReplayFetch,
+} from './fetch-transport';
 import { Recorder } from './recorder';
 import { RecordingsFileError, validateRecordingsFile } from './contract';
 import type { MissEnvelope } from './contract';
+
+/** Routes that answer that the server could not take the request then. */
+const BUSY: Record<string, number> = { '/limited': 429, '/busy': 503 };
 
 /** A server that echoes what it was sent, and counts what reached it. */
 let server: http.Server;
@@ -26,6 +33,15 @@ beforeAll(async () => {
                 if (request.url === '/text') {
                     response.writeHead(200, { 'content-type': 'text/plain' });
                     response.end('not json');
+                    return;
+                }
+                const busy = BUSY[request.url ?? ''];
+                if (busy !== undefined) {
+                    response.writeHead(busy, {
+                        'content-type': 'application/json',
+                        'retry-after': '1',
+                    });
+                    response.end(JSON.stringify({ error: 'busy' }));
                     return;
                 }
                 response.writeHead(request.url === '/missing' ? 404 : 200, {
@@ -131,10 +147,35 @@ describe('record, then replay', () => {
 
     it('refuses an answer that is not JSON instead of recording it', async () => {
         const recorder = new Recorder();
-        await expect(
-            createRecordingFetch(origin, recorder)(`${ELSEWHERE}/text`),
-        ).rejects.toThrow(/not JSON/);
+        const sent = createRecordingFetch(
+            origin,
+            recorder,
+        )(`${ELSEWHERE}/text`);
+        await expect(sent).rejects.toThrow(RecordingRefusedError);
+        await expect(sent).rejects.toThrow(/not JSON/);
         expect(recorder.empty).toBe(true);
+    });
+
+    it.each(Object.entries(BUSY))(
+        'refuses a busy or failed answer (%s, %i) instead of recording it',
+        async (route, status) => {
+            const recorder = new Recorder();
+            const sent = createRecordingFetch(
+                origin,
+                recorder,
+            )(`${ELSEWHERE}${route}`);
+            await expect(sent).rejects.toThrow(RecordingRefusedError);
+            await expect(sent).rejects.toThrow(String(status));
+            expect(recorder.empty).toBe(true);
+        },
+    );
+
+    it('answers a held request only for the method it was recorded with', async () => {
+        const recorder = new Recorder();
+        const live = createRecordingFetch(origin, recorder);
+        await live(`${ELSEWHERE}/same`, post({ a: 1 }));
+        expect(recorder.find('POST', '/same', { a: 1 })).toBeDefined();
+        expect(recorder.find('GET', '/same', { a: 1 })).toBeUndefined();
     });
 
     it('records a request its caller cancels in flight, then reports the cancel', async () => {
@@ -151,7 +192,7 @@ describe('record, then replay', () => {
         release();
         release = undefined;
         await expect(pending).rejects.toThrow();
-        expect(recorder.find('/slow', null)).toBeDefined();
+        expect(recorder.find('GET', '/slow', null)).toBeDefined();
     });
 });
 
@@ -161,7 +202,7 @@ describe('replay', () => {
         const replay = createReplayFetch({}, (miss) => misses.push(miss));
         await expect(
             replay(`${ELSEWHERE}/v1/none`, post({ x: 1 })),
-        ).rejects.toThrow(/no recording found for path=\/v1\/none/);
+        ).rejects.toThrow(/no recording found for POST path=\/v1\/none/);
         expect(misses).toEqual([
             expect.objectContaining({
                 method: 'POST',
@@ -169,6 +210,23 @@ describe('replay', () => {
                 error: 'no_recording',
             }),
         ]);
+    });
+
+    it('misses a request sent with another method than the recording', async () => {
+        const recorder = new Recorder();
+        await createRecordingFetch(origin, recorder)(`${ELSEWHERE}/v1/thing`);
+        const misses: Array<MissEnvelope & { method: string }> = [];
+        const replay = createReplayFetch(
+            recorder.toFile('test').responses,
+            (miss) => misses.push(miss),
+        );
+        await expect(
+            replay(`${ELSEWHERE}/v1/thing`, { method: 'DELETE' }),
+        ).rejects.toThrow(/DELETE path=\/v1\/thing.*answers GET/);
+        expect(misses).toEqual([
+            expect.objectContaining({ method: 'DELETE', path: '/v1/thing' }),
+        ]);
+        expect((await replay(`${ELSEWHERE}/v1/thing`)).status).toBe(200);
     });
 
     it('rejects a request cancelled before it is sent, without a miss', async () => {
@@ -219,9 +277,20 @@ describe('the recordings contract', () => {
             validateRecordingsFile({
                 engineVersion: '1',
                 responses: {
-                    k: { statusCode: 200, body: {}, headers: { a: 1 } },
+                    k: {
+                        statusCode: 200,
+                        body: {},
+                        method: 'GET',
+                        headers: { a: 1 },
+                    },
                 },
             }),
         ).toThrow(/headers/);
+        expect(() =>
+            validateRecordingsFile({
+                engineVersion: '1',
+                responses: { k: { statusCode: 200, body: {} } },
+            }),
+        ).toThrow(/method/);
     });
 });

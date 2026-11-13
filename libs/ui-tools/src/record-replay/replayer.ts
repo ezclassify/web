@@ -14,6 +14,8 @@ export interface ReplayerRecording {
     statusCode: number;
     body: unknown;
     headers?: Record<string, string>;
+    /** The method the recorded request was sent with. */
+    method: string;
 }
 
 /** Outcome of a lookup: a recorded hit, or a miss carrying its envelope. */
@@ -29,18 +31,22 @@ export type LookupResult =
     | { kind: 'miss'; envelope: MissEnvelope };
 
 /**
- * Find the recording for a request by its normalized path and body. On a miss,
- * the returned envelope includes the body hash so a caller can diff it against
- * the keys present in the recordings.
+ * Find the recording for a request by its normalized path and body, sent with
+ * the method it was recorded with. The key leaves the method out, so a request
+ * with the same path and body but another method finds the recording and is
+ * still a miss: it would otherwise replay an answer to a different request. On
+ * a miss, the returned envelope includes the body hash so a caller can diff it
+ * against the keys present in the recordings.
  */
 export function lookup(
     recordings: Record<string, ReplayerRecording>,
-    request: { path: string; body: unknown },
+    request: { method: string; path: string; body: unknown },
 ): LookupResult {
     const normalized = normalizePath(request.path);
     const key = computeRecordingKey(normalized, request.body);
     const hit = recordings[key];
-    if (hit !== undefined) {
+    const method = request.method.toUpperCase();
+    if (hit !== undefined && hit.method === method) {
         return {
             kind: 'hit',
             key,
@@ -52,9 +58,11 @@ export function lookup(
     const bodyHash = createHash('sha256')
         .update(stableJson(request.body))
         .digest('hex');
+    const recordedFor =
+        hit === undefined ? '' : ` (the recording answers ${hit.method})`;
     const envelope: MissEnvelope = {
         error: 'no_recording',
-        message: `no recording found for path=${normalized} body=${JSON.stringify(request.body)}`,
+        message: `no recording found for ${method} path=${normalized} body=${JSON.stringify(request.body)}${recordedFor}`,
         path: normalized,
         bodyHash,
     };

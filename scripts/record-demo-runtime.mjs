@@ -22,10 +22,18 @@
  * would not be repeatable.
  *
  * A live pass also sends requests a replay never does, because it answers at
- * live speed. So the run ends with one replay of the public lane that keeps
- * only the answers it used (`EZCLASSIFY_PRUNE_RECORDINGS=1`): what is committed
- * is exactly what the public lane replays, and it comes out the same however
- * the live passes were timed.
+ * live speed. So the run then replays the public lane keeping only the answers
+ * it used (`EZCLASSIFY_PRUNE_RECORDINGS=1`): what is committed is exactly what
+ * the public lane replays, and it comes out the same however the live passes
+ * were timed. It prunes twice. The second replay must use every answer the
+ * first kept, and so leave every file as it is; a replay whose requests depend
+ * on its own timing would drop an answer there, and fail the public lane on
+ * another machine.
+ *
+ * A run that fails puts back the recordings files it started with, untracked
+ * ones included, so a red pass never leaves the tree without its recordings. A
+ * check that only finds the recordings stale leaves what it recorded, for
+ * review.
  *
  * The check is the freshness check. Recording from nothing against the current
  * engine and content must reproduce the committed files byte for byte, so a
@@ -33,7 +41,13 @@
  */
 import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { readFileSync, readdirSync, unlinkSync } from 'node:fs';
+import {
+    mkdirSync,
+    readFileSync,
+    readdirSync,
+    unlinkSync,
+    writeFileSync,
+} from 'node:fs';
 import * as path from 'node:path';
 
 const ROOT = path.resolve(import.meta.dirname, '..');
@@ -86,7 +100,36 @@ function digest() {
     return hash.digest('hex');
 }
 
-/** Run every test project once with `env` added; exit when any fails. */
+/** Every recordings file's bytes, by repository-relative path. */
+function snapshot() {
+    return new Map(
+        recordingFiles().map((file) => [
+            file,
+            readFileSync(path.join(ROOT, file)),
+        ]),
+    );
+}
+
+/** Delete every recordings file. */
+function clear() {
+    for (const file of recordingFiles()) unlinkSync(path.join(ROOT, file));
+}
+
+/** The recordings files the run started with, put back if it fails. */
+const started = snapshot();
+
+/** Put back the recordings files the run started with, and exit with `why`. */
+function fail(why) {
+    clear();
+    for (const [file, bytes] of started) {
+        mkdirSync(path.dirname(path.join(ROOT, file)), { recursive: true });
+        writeFileSync(path.join(ROOT, file), bytes);
+    }
+    console.error(`${why}\nthe recordings files are as they were`);
+    process.exit(1);
+}
+
+/** Run every test project once with `env` added; fail when any fails. */
 function runSuite(label, env) {
     console.log(`\n=== ${label} ===`);
     const run = spawnSync(process.execPath, ['scripts/run-test-projects.mjs'], {
@@ -95,10 +138,7 @@ function runSuite(label, env) {
         env: { ...process.env, ...env },
     });
     if (run.status !== 0) {
-        console.error(
-            `${label} failed; nothing is recorded until every spec passes`,
-        );
-        process.exit(1);
+        fail(`${label} failed; nothing is recorded until every spec passes`);
     }
 }
 
@@ -108,7 +148,7 @@ function recordPass(pass) {
 
 const check = process.argv.includes('--check');
 
-for (const file of recordingFiles()) unlinkSync(path.join(ROOT, file));
+clear();
 
 let previous = digest();
 let settled = false;
@@ -122,15 +162,19 @@ for (let pass = 1; pass <= MAX_PASSES; pass += 1) {
     previous = current;
 }
 if (!settled) {
-    console.error(
+    fail(
         `the recordings still changed after ${MAX_PASSES} passes, so a replay of them would not be repeatable`,
     );
-    process.exit(1);
 }
-runSuite('pruning replay', {
-    EZCLASSIFY_RECORD: '0',
-    EZCLASSIFY_PRUNE_RECORDINGS: '1',
-});
+const prune = { EZCLASSIFY_RECORD: '0', EZCLASSIFY_PRUNE_RECORDINGS: '1' };
+runSuite('pruning replay', prune);
+const pruned = digest();
+runSuite('second pruning replay', prune);
+if (digest() !== pruned) {
+    fail(
+        'a second replay did not use every answer the first one kept, so the public lane would not replay the same way twice',
+    );
+}
 console.log(`\nrecorded ${recordingFiles().length} recordings file(s)`);
 
 if (check) {

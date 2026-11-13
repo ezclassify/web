@@ -24,10 +24,10 @@ export interface RecordParams {
  * and body, so recording the same request again replaces its entry instead of
  * duplicating it.
  *
- * The key does not include the method, which every recordings file already in
- * use relies on. Two methods sending the same path and body would therefore
- * share one entry and replay the wrong answer, so the recorder refuses that
- * case outright rather than let the second overwrite the first.
+ * Each entry holds the method it answered, and a replay of any other method
+ * misses. The key leaves the method out, so two methods sending the same path
+ * and body would need one key; the recorder refuses that case outright rather
+ * than let the second overwrite the first.
  */
 export class Recorder {
     private readonly responses: Record<string, RecordingsEntry>;
@@ -41,8 +41,14 @@ export class Recorder {
     }
 
     /** The recording already held for a request, if there is one. */
-    find(path: string, body: unknown): RecordingsEntry | undefined {
-        return this.responses[computeRecordingKey(normalizePath(path), body)];
+    find(
+        method: string,
+        path: string,
+        body: unknown,
+    ): RecordingsEntry | undefined {
+        const held =
+            this.responses[computeRecordingKey(normalizePath(path), body)];
+        return held?.method === method ? held : undefined;
     }
 
     /** Whether nothing has been recorded yet. */
@@ -67,7 +73,7 @@ export class Recorder {
         const normalized = normalizePath(path);
         const key = computeRecordingKey(normalized, body);
         const held = this.responses[key];
-        if (held?.method !== undefined && held.method !== method) {
+        if (held !== undefined && held.method !== method) {
             throw new Error(
                 `${method} ${normalized} and ${held.method} ${normalized} send the ` +
                     'same body, so one recording key would answer both',
