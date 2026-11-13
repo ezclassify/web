@@ -612,6 +612,147 @@ describe('MarkedTextArea repair rendering', () => {
         expect(chip?.getAttribute('aria-label')).toContain(message);
     });
 
+    describe('a canonical rewrite reaches only the mark the user edited', () => {
+        // A part role that writes its markings short, the way Cedar Valley's
+        // does: the engine answers "(INTERNAL)" with "I" and applies a fix
+        // that adds a concept the short form leaves out. Loading flags
+        // nothing (the fix changes no written value), so the long spelling
+        // stands until the author edits that mark.
+        const hidden = {
+            ruleId: 'nonpublic-is-internal-by-default',
+            action: 'add',
+            add: [{ categoryId: 'recipient', conceptId: 'DISTRICT' }],
+            message: 'Added DISTRICT',
+        };
+        const SHORT: Record<string, string> = {
+            INTERNAL: 'I',
+            PUBLIC: 'P',
+            CONFIDENTIAL: 'C',
+            I: 'I',
+            P: 'P',
+            C: 'C',
+        };
+        const read = (inner: string) => {
+            const id = inner.replace(/[^A-Z]/g, '');
+            const short = SHORT[id] ?? id;
+            const nonpublic = short !== 'P';
+            return {
+                assertions: [
+                    {
+                        conceptId: id,
+                        categoryId: 'level',
+                        confidence: 'certain',
+                        source: 'parse',
+                    },
+                ],
+                rendered: short,
+                valid: true,
+                inputWasValid: true,
+                errors: [],
+                warnings: [],
+                appliedFixes: nonpublic ? [hidden] : [],
+                proposedFixes: [],
+                notices: [],
+                assessment: {
+                    ...NO_LOSS,
+                    omitted: nonpublic
+                        ? [{ categoryId: 'recipient', conceptId: 'DISTRICT' }]
+                        : [],
+                },
+            };
+        };
+        const shortEngine = () =>
+            createMockEngine({
+                process: (input: string) => read(input),
+                scan: (text: string) => {
+                    const results: any[] = [];
+                    const re = /\(([^)]+)\)/g;
+                    let m;
+                    while ((m = re.exec(text)) !== null) {
+                        results.push({
+                            start: m.index,
+                            end: m.index + m[0].length,
+                            marking: m[0],
+                            wrapped: true,
+                            inner: m[1],
+                            result: read(m[1]),
+                        });
+                    }
+                    return scanned(results);
+                },
+            });
+
+        async function mount(value: string): Promise<HTMLTextAreaElement> {
+            const textarea = document.createElement('textarea');
+            textarea.value = value;
+            container.appendChild(textarea);
+            const mta = new MarkedTextArea();
+            await mta.init(container, toCtx(shortEngine()));
+            await wait();
+            return textarea;
+        }
+
+        function edit(textarea: HTMLTextAreaElement, value: string): void {
+            textarea.value = value;
+            textarea.dispatchEvent(new Event('input', { bubbles: true }));
+        }
+
+        it('keeps a loaded long-form mark as written', async () => {
+            const textarea = await mount(
+                '(INTERNAL) Planning notes.\n(PUBLIC) Published background.',
+            );
+            expect(textarea.value).toBe(
+                '(INTERNAL) Planning notes.\n(PUBLIC) Published background.',
+            );
+        });
+
+        it('leaves the other paragraphs alone when the user edits one', async () => {
+            const textarea = await mount(
+                '(INTERNAL) Planning notes.\n(PUBLIC) Published background.',
+            );
+            edit(
+                textarea,
+                '(INTERNAL) Planning notes.\n(PUBLIC) Published background, revised.',
+            );
+            await wait();
+            expect(textarea.value).toBe(
+                '(INTERNAL) Planning notes.\n(PUBLIC) Published background, revised.',
+            );
+
+            edit(
+                textarea,
+                '(INTERNAL) Planning notes.\n(CONFIDENTIAL) Published background, revised.',
+            );
+            await wait();
+            expect(textarea.value).toBe(
+                '(INTERNAL) Planning notes.\n(C) Published background, revised.',
+            );
+        });
+
+        it('leaves the paragraphs below a new one alone', async () => {
+            const textarea = await mount('(INTERNAL) Planning notes.');
+            edit(textarea, '(PUBLIC) Summary.\n(INTERNAL) Planning notes.');
+            await wait();
+            expect(textarea.value).toBe(
+                '(PUBLIC) Summary.\n(INTERNAL) Planning notes.',
+            );
+        });
+
+        it('writes the edited mark in the part format', async () => {
+            const textarea = await mount(
+                '(INTERNAL) Planning notes.\n(PUBLIC) Published background.',
+            );
+            edit(
+                textarea,
+                '(INTERNAL ) Planning notes.\n(PUBLIC) Published background.',
+            );
+            await wait();
+            expect(textarea.value).toBe(
+                '(I) Planning notes.\n(PUBLIC) Published background.',
+            );
+        });
+    });
+
     it('does not render with stale segments after applyRepairs patches textarea', async () => {
         const engine = createMockEngine();
         const textarea = document.createElement('textarea');

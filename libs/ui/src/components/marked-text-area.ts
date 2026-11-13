@@ -71,6 +71,7 @@ import {
 import {
     extractInner as extractInnerLogic,
     applyRepairs as applyRepairsLogic,
+    editedMarkingIndices,
     fixesNeedingCorrection,
     markAttention,
     type MarkAttention,
@@ -1110,6 +1111,19 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
             }
         }
         this.lastMarkingStrings = embedded.map((r) => r.marking);
+        // The marks this user edit wrote. Only they may take the engine's safe
+        // repairs: a fix rewrites the portion that was edited and no other, so
+        // typing in one paragraph never rewrites the mark of another. A scan
+        // that follows no user edit (load, a value set from outside) edits
+        // nothing and rewrites nothing.
+        const edited = new Set(
+            userInitiated
+                ? editedMarkingIndices(
+                      prevMarkings,
+                      embedded.map((r) => r.marking),
+                  )
+                : [],
+        );
 
         // Process changed markings in parallel.
         // If the inline editor just closed, use its saved assertions instead of
@@ -1202,15 +1216,17 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
             const processed = processedResults.get(i);
             const res = processed ?? r.result;
             // Only corrections that would change the field flag it; once one
-            // does, every applied fix travels with the repair it records.
-            const corrections = userInitiated
+            // does, every applied fix travels with the repair it records. A
+            // mark this edit did not write keeps the flag it loaded with.
+            const isEdited = edited.has(i);
+            const corrections = isEdited
                 ? []
                 : fixesNeedingCorrection(
                       res.appliedFixes,
                       this.omittedFromFieldFormat(res),
                   );
             const unappliedFixes = corrections.length > 0;
-            if (userInitiated)
+            if (isEdited)
                 recordAppliedFixes(this._appliedFixes, res.appliedFixes);
             const errors = res.errors.map((e) => e.message);
             if (unappliedFixes) {
@@ -1246,7 +1262,7 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
                 errors,
                 warnings,
                 validationErrors: res.errors,
-                repaired: userInitiated && res.appliedFixes.length > 0,
+                repaired: isEdited && res.appliedFixes.length > 0,
                 pendingFixes: unappliedFixes ? res.appliedFixes : [],
                 readFailure: failure,
                 sourceUnresolved,

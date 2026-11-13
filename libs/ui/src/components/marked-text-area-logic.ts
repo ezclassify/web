@@ -154,6 +154,37 @@ export function fixesNeedingCorrection<T extends CorrectableChange>(
 }
 
 /**
+ * The markings an edit touched, as indices into the new list.
+ *
+ * The marks the edit left alone are the run both lists share at the start and
+ * the run they share at the end; whatever lies between is what the user typed,
+ * replaced or inserted. Matching by position alone would count every mark after
+ * an inserted paragraph as edited, because each one moved.
+ *
+ * @param previous - The markings as written before the edit, in text order
+ * @param next - The markings as written after it, in text order
+ * @returns The indices into `next` of the markings the edit wrote, ascending
+ */
+export function editedMarkingIndices(
+    previous: readonly string[],
+    next: readonly string[],
+): number[] {
+    const shared = Math.min(previous.length, next.length);
+    let head = 0;
+    while (head < shared && previous[head] === next[head]) head++;
+    let tail = 0;
+    while (
+        tail < shared - head &&
+        previous[previous.length - 1 - tail] === next[next.length - 1 - tail]
+    ) {
+        tail++;
+    }
+    const edited: number[] = [];
+    for (let i = head; i < next.length - tail; i++) edited.push(i);
+    return edited;
+}
+
+/**
  * Patch textarea content when repair changed any marking's rendered form.
  * Returns the new value, where the caret goes in it, and whether any patch was
  * applied.

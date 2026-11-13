@@ -4,6 +4,7 @@ import {
     markAttention,
     extractInner,
     applyRepairs,
+    editedMarkingIndices,
     matchLeadingMark,
     templateDelimiters,
     wrapPartMark,
@@ -63,6 +64,42 @@ describe('marked-text-area-logic', () => {
                 open: '',
                 close: '',
             });
+        });
+    });
+
+    describe('editedMarkingIndices', () => {
+        it('names only the mark the edit changed', () => {
+            expect(
+                editedMarkingIndices(
+                    ['(INTERNAL)', '(PUBLIC)', '(INTERNAL)'],
+                    ['(INTERNAL)', '(CONFIDENTIAL)', '(INTERNAL)'],
+                ),
+            ).toEqual([1]);
+        });
+
+        it('names an inserted mark and not the marks it pushed down', () => {
+            expect(
+                editedMarkingIndices(
+                    ['(INTERNAL)', '(PUBLIC)'],
+                    ['(PUBLIC)', '(INTERNAL)', '(PUBLIC)'],
+                ),
+            ).toEqual([0]);
+        });
+
+        it('names nothing when the edit only removed a mark or left them all alone', () => {
+            expect(
+                editedMarkingIndices(
+                    ['(INTERNAL)', '(PUBLIC)', '(INTERNAL)'],
+                    ['(INTERNAL)', '(INTERNAL)'],
+                ),
+            ).toEqual([]);
+            expect(
+                editedMarkingIndices(['(INTERNAL)'], ['(INTERNAL)']),
+            ).toEqual([]);
+        });
+
+        it('names every mark of a field that had none', () => {
+            expect(editedMarkingIndices([], ['(I)', '(P)'])).toEqual([0, 1]);
         });
     });
 
