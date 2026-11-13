@@ -2534,6 +2534,45 @@
             "method": "POST",
             "statusCode": 200
         },
+        "3909fa119da53fdb2296548c5f319ac0d8a5017934f1a8af11d8694d903ac4b4": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "cedar-valley-handling",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "cedar-valley-handling-guide",
+                            "kind": "guide",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "cedar-valley-handling-access",
+                            "kind": "access",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "cedar-valley-handling",
+                            "kind": "context",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "cedar-valley-handling",
+                    "requestedVersion": "1.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "limits": { "regionsFound": 2, "status": "complete" },
+                    "results": [],
+                    "unread": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
         "39da4f21635cc0fee37d5e6db4e14ebe6d5f76df866ff48b1ae94da79dbf074d": {
             "body": {
                 "resolution": {
@@ -4559,6 +4598,165 @@
                     "renders": {},
                     "valid": true,
                     "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "8186ad14a9b571c56bf0fd7ef9f30765364b7b756cdca0d66b137ef25313dcc4": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "cedar-valley",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "cedar-valley-guide",
+                            "kind": "guide",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "cedar-valley-access",
+                            "kind": "access",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "cedar-valley",
+                            "kind": "context",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "cedar-valley",
+                    "requestedVersion": "1.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "limits": { "regionsFound": 2, "status": "complete" },
+                    "results": [
+                        {
+                            "end": 8,
+                            "inner": "PUBLIC",
+                            "marking": "(PUBLIC)",
+                            "result": {
+                                "appliedFixes": [],
+                                "assertions": [
+                                    {
+                                        "categoryId": "level",
+                                        "conceptId": "PUBLIC",
+                                        "confidence": "certain",
+                                        "source": "parse"
+                                    }
+                                ],
+                                "assessment": {
+                                    "collapsed": [],
+                                    "conflicts": [],
+                                    "emitted": [
+                                        {
+                                            "categoryId": "level",
+                                            "conceptId": "PUBLIC"
+                                        }
+                                    ],
+                                    "omitted": [],
+                                    "unrepresentable": []
+                                },
+                                "displayColor": {
+                                    "background": "#2e7d32",
+                                    "text": "#ffffff"
+                                },
+                                "errors": [],
+                                "inputWasValid": true,
+                                "notices": [],
+                                "recognition": {
+                                    "status": "complete",
+                                    "surface": "marking",
+                                    "unmatched": []
+                                },
+                                "rendered": "PUBLIC",
+                                "valid": true,
+                                "warnings": []
+                            },
+                            "role": "part",
+                            "start": 0,
+                            "type": "long",
+                            "wrapped": true
+                        },
+                        {
+                            "end": 33,
+                            "inner": "RESTRICTED",
+                            "marking": "(RESTRICTED)",
+                            "result": {
+                                "appliedFixes": [
+                                    {
+                                        "action": "add",
+                                        "add": [
+                                            {
+                                                "categoryId": "allow_sharing_with",
+                                                "conceptId": "CEDAR_VALLEY_DISTRICT"
+                                            }
+                                        ],
+                                        "message": "Rule \"nonpublic-is-internal-by-default\": added \"CEDAR_VALLEY_DISTRICT\" to category \"allow_sharing_with\"",
+                                        "ruleId": "nonpublic-is-internal-by-default",
+                                        "triggerConceptIds": ["RESTRICTED"]
+                                    }
+                                ],
+                                "assertions": [
+                                    {
+                                        "categoryId": "level",
+                                        "conceptId": "RESTRICTED",
+                                        "confidence": "certain",
+                                        "source": "parse"
+                                    },
+                                    {
+                                        "categoryId": "allow_sharing_with",
+                                        "conceptId": "CEDAR_VALLEY_DISTRICT",
+                                        "confidence": "inferred",
+                                        "source": "infer",
+                                        "sourceRule": "nonpublic-is-internal-by-default"
+                                    }
+                                ],
+                                "assessment": {
+                                    "collapsed": [],
+                                    "conflicts": [],
+                                    "emitted": [
+                                        {
+                                            "categoryId": "level",
+                                            "conceptId": "RESTRICTED"
+                                        }
+                                    ],
+                                    "omitted": [
+                                        {
+                                            "categoryId": "allow_sharing_with",
+                                            "conceptId": "CEDAR_VALLEY_DISTRICT"
+                                        }
+                                    ],
+                                    "unrepresentable": []
+                                },
+                                "displayColor": {
+                                    "background": "#c62828",
+                                    "text": "#ffffff"
+                                },
+                                "errors": [],
+                                "inputWasValid": true,
+                                "notices": [],
+                                "recognition": {
+                                    "status": "complete",
+                                    "surface": "marking",
+                                    "unmatched": []
+                                },
+                                "rendered": "RESTRICTED",
+                                "valid": true,
+                                "warnings": []
+                            },
+                            "role": "part",
+                            "start": 21,
+                            "type": "long",
+                            "wrapped": true
+                        }
+                    ],
+                    "unread": []
                 }
             },
             "headers": { "x-ezclassify-resolved-version": "1.0.0" },
@@ -7220,6 +7418,45 @@
             "method": "POST",
             "statusCode": 200
         },
+        "e9eabb7e492e16e1d7d5e516ccc1e8a7f4d3d87136f2c43c11db1665f37dfec3": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "cedar-valley-protection",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "cedar-valley-protection-guide",
+                            "kind": "guide",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "cedar-valley-protection-access",
+                            "kind": "access",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "cedar-valley-protection",
+                            "kind": "context",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "cedar-valley-protection",
+                    "requestedVersion": "1.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "limits": { "regionsFound": 2, "status": "complete" },
+                    "results": [],
+                    "unread": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
         "eaa745f214c58ce4e581d355b95ed779b7442ca2bc907c198098e14992ea5425": {
             "body": {
                 "resolution": {
@@ -7354,6 +7591,95 @@
             },
             "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "GET",
+            "statusCode": 200
+        },
+        "f965287592b0f85807f4f7c7ebf94718b212ba166413a22385f7a64af4f93960": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "multi-scope-regression",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "sbx-6bdebd9210aad9302997f390225d7ed3b9dfee0022579d2f5f3927a2340c99b2",
+                            "kind": "context",
+                            "version": "0.0.0"
+                        }
+                    ],
+                    "contextId": "sbx-6bdebd9210aad9302997f390225d7ed3b9dfee0022579d2f5f3927a2340c99b2",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "0.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "STUDENTS",
+                            "confidence": "certain",
+                            "source": "user"
+                        },
+                        {
+                            "categoryId": "from_school",
+                            "conceptId": "OUR_SCHOOL",
+                            "confidence": "certain",
+                            "source": "default"
+                        },
+                        {
+                            "categoryId": "marked_by",
+                            "conceptId": "MARKED_BY_TEXT",
+                            "confidence": "certain",
+                            "source": "user",
+                            "value": "Ruiz, M."
+                        },
+                        {
+                            "categoryId": "filing_status",
+                            "conceptId": "FILED",
+                            "confidence": "certain",
+                            "source": "default"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            { "categoryId": "level", "conceptId": "STUDENTS" }
+                        ],
+                        "omitted": [
+                            {
+                                "categoryId": "from_school",
+                                "conceptId": "OUR_SCHOOL"
+                            },
+                            {
+                                "categoryId": "marked_by",
+                                "conceptId": "MARKED_BY_TEXT",
+                                "value": "Ruiz, M."
+                            },
+                            {
+                                "categoryId": "filing_status",
+                                "conceptId": "FILED"
+                            }
+                        ],
+                        "unrepresentable": []
+                    },
+                    "displayColor": {
+                        "background": "#2e7d32",
+                        "text": "#ffffff"
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "STUDENTS",
+                    "renders": {},
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "POST",
             "statusCode": 200
         },
         "fa881a961b2157d160756c24f95ef166f18757db99a8f49d0d7574c66cbabcd5": {

@@ -9,7 +9,6 @@
 import { asContext } from '../../test-fixtures/as-context';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import type { LocalContextSchemeEngineAdapter } from '@ezclassify/types';
-import { Context } from '@ezclassify/engine';
 import {
     openContext,
     schemeOnlyContext,
@@ -17,6 +16,7 @@ import {
 import { EzClassifyUI } from '../ezclassify-ui';
 import { TagInput } from './tag-input';
 import { VanillaEzClassifyStore } from '../store/ezclassify-store';
+import { connectDemoContext } from '../../../../test-support/demo-runtime';
 
 function wait(ms = 60): Promise<void> {
     return new Promise((r) => setTimeout(r, ms));
@@ -24,7 +24,7 @@ function wait(ms = 60): Promise<void> {
 
 const RULE = 'a-over-b';
 
-function createEngine(): LocalContextSchemeEngineAdapter {
+async function createEngine(): Promise<LocalContextSchemeEngineAdapter> {
     const concept = (id: string, category: string, position: number) => ({
         id,
         name: id,
@@ -36,73 +36,79 @@ function createEngine(): LocalContextSchemeEngineAdapter {
         rank: position,
     });
     return openContext(
-        Context.fromComponents({
-            scheme: {
+        await connectDemoContext({
+            draft: {
                 scheme: {
-                    id: 'stated-fix-test',
-                    version: '1.0.0',
-                    name: 'Stated Fix Test',
-                    data: {
-                        concepts: [
-                            concept('LOW', 'level', 1),
-                            concept('HIGH', 'level', 2),
-                            concept('A', 'caveat', 1),
-                            concept('B', 'caveat', 2),
-                            concept('C', 'caveat', 3),
-                        ],
-                        categories: [
-                            {
-                                id: 'level',
-                                label: 'Level',
-                                required: false,
-                                single: true,
-                                rollup: 'max',
-                                position: 1,
-                            },
-                            {
-                                id: 'caveat',
-                                label: 'Caveat',
-                                required: false,
-                                single: false,
-                                rollup: 'union',
-                                position: 2,
-                            },
-                        ],
-                    },
-                    rules: [
-                        {
-                            id: RULE,
-                            action: 'exclusive',
-                            target: ['A', 'B'],
-                            rank: ['A', 'B'],
-                            message: 'A and B cannot appear together.',
+                    scheme: {
+                        id: 'stated-fix-test',
+                        version: '1.0.0',
+                        name: 'Stated Fix Test',
+                        description: 'Stated Fix Test test fixture.',
+                        data: {
+                            concepts: [
+                                concept('LOW', 'level', 1),
+                                concept('HIGH', 'level', 2),
+                                concept('A', 'caveat', 1),
+                                concept('B', 'caveat', 2),
+                                concept('C', 'caveat', 3),
+                            ],
+                            categories: [
+                                {
+                                    id: 'level',
+                                    label: 'Level',
+                                    required: false,
+                                    single: true,
+                                    rollup: 'max',
+                                    position: 1,
+                                },
+                                {
+                                    id: 'caveat',
+                                    label: 'Caveat',
+                                    required: false,
+                                    single: false,
+                                    rollup: 'union',
+                                    position: 2,
+                                },
+                            ],
                         },
-                        {
-                            id: 'c-requires-high',
-                            action: 'require_any',
-                            when: 'C',
-                            target: ['HIGH'],
-                            phases: ['validate'],
-                            message: 'C requires HIGH.',
-                        },
-                    ],
-                    embedded_marking: [
-                        { pattern: '\\(([^)]+)\\)', template: '({marking}) ' },
-                    ],
-                    render: {
-                        default: 'default',
-                        formats: [
+                        rules: [
                             {
-                                id: 'default',
-                                surface: 'marking',
-                                mode: 'inline',
-                                separator: '//',
-                                fields: [
-                                    { category: 'level', separator: '/' },
-                                    { category: 'caveat', separator: '/' },
-                                ],
+                                id: RULE,
+                                action: 'exclusive',
+                                target: ['A', 'B'],
+                                rank: ['A', 'B'],
+                                message: 'A and B cannot appear together.',
+                            },
+                            {
+                                id: 'c-requires-high',
+                                action: 'require_any',
+                                when: 'C',
+                                target: ['HIGH'],
+                                phases: ['validate'],
+                                message: 'C requires HIGH.',
                             },
                         ],
+                        embedded_marking: [
+                            {
+                                pattern: '\\(([^)]+)\\)',
+                                template: '({marking}) ',
+                            },
+                        ],
+                        render: {
+                            default: 'default',
+                            formats: [
+                                {
+                                    id: 'default',
+                                    surface: 'marking',
+                                    mode: 'inline',
+                                    separator: '//',
+                                    fields: [
+                                        { category: 'level', separator: '/' },
+                                        { category: 'caveat', separator: '/' },
+                                    ],
+                                },
+                            ],
+                        },
                     },
                 },
             },
@@ -128,7 +134,9 @@ afterEach(() => {
 
 async function mount(markup: string): Promise<void> {
     root.innerHTML = markup;
-    forms = new EzClassifyUI(asContext(createEngine() as never), { root });
+    forms = new EzClassifyUI(asContext((await createEngine()) as never), {
+        root,
+    });
     await wait(120);
 }
 
@@ -211,7 +219,7 @@ describe.each(FIELDS)('$name holds author-stated conflicts', (field) => {
 
     it('an external edit wins while the initial seed is pending', async () => {
         root.innerHTML = field.markup('LOW//C');
-        const engine = createEngine();
+        const engine = await createEngine();
         const store = new VanillaEzClassifyStore(engine);
         const originalSeed = store.seedRendered.bind(store);
         let release!: () => void;
@@ -256,7 +264,9 @@ it('offers the same ways to fix in every field bound to an invalid marking', asy
     const ready = new Promise((resolve) =>
         root.addEventListener('ezclassify:ready', resolve, { once: true }),
     );
-    forms = new EzClassifyUI(asContext(createEngine() as never), { root });
+    forms = new EzClassifyUI(asContext((await createEngine()) as never), {
+        root,
+    });
     await ready;
     // A publish from outside the fields: each one takes the store's reading,
     // which is of the marking the engine settled on.
@@ -325,7 +335,7 @@ describe('a conflict the author builds in the field', () => {
         container.appendChild(document.createElement('input'));
         root.appendChild(container);
         const field = new TagInput();
-        await field.init(container, schemeOnlyContext(createEngine()));
+        await field.init(container, schemeOnlyContext(await createEngine()));
 
         const stated = (conceptId: string, categoryId: string) => ({
             conceptId,
@@ -404,8 +414,8 @@ describe('a conflict the author builds in the field', () => {
  * A context-bound engine manages no composition of its own: the shape of a
  * remote client, which addresses no scheme and offers only what the wire does.
  */
-function boundEngine(): object {
-    const inner = createEngine();
+async function boundEngine(): Promise<object> {
+    const inner = await createEngine();
     return new Proxy(inner as object, {
         has: (target, prop) =>
             prop === 'loadScheme' ? false : Reflect.has(target, prop),
@@ -420,7 +430,9 @@ function boundEngine(): object {
 describe.each(FIELDS)('$name over a context-bound engine', (field) => {
     it('applies a fix to the marking it holds', async () => {
         root.innerHTML = field.markup('LOW//A/B/C');
-        forms = new EzClassifyUI(asContext(boundEngine() as never), { root });
+        forms = new EzClassifyUI(asContext((await boundEngine()) as never), {
+            root,
+        });
         await wait(120);
 
         expect(host().value).toBe('LOW//A/B/C');
@@ -434,7 +446,9 @@ describe.each(FIELDS)('$name over a context-bound engine', (field) => {
 
 it('MarkedInput over a context-bound engine applies the fix to the text it holds', async () => {
     root.innerHTML = MARKED_INPUT('LOW//A/B');
-    forms = new EzClassifyUI(asContext(boundEngine() as never), { root });
+    forms = new EzClassifyUI(asContext((await boundEngine()) as never), {
+        root,
+    });
     await wait(120);
 
     fixButton('Remove A').click();

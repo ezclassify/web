@@ -1,102 +1,114 @@
 import { describe, it, expect, vi } from 'vitest';
-import { Context } from '@ezclassify/engine';
+import type { EzClassifyClient } from '@ezclassify/rest-client';
 import type { Assertion } from '@ezclassify/types';
 import { SingleSelect } from './single-select';
+import {
+    connectDemoContext,
+    demoRuntimeSettled,
+} from '../../../../test-support/demo-runtime';
 
-function makeEngine(withTextInput = false, calendarValue = false): Context {
-    return Context.fromComponents({
-        scheme: {
+async function makeEngine(
+    withTextInput = false,
+    calendarValue = false,
+): Promise<EzClassifyClient> {
+    return await connectDemoContext({
+        draft: {
             scheme: {
-                id: 'test-select',
-                version: '1.0.0',
-                name: 'Test Select',
-                description: '',
-                data: {
-                    categories: [
-                        {
-                            id: 'level',
-                            label: 'Level',
-                            required: false,
-                            single: true,
-                            rollup: 'max',
-                            position: 0,
-                            hierarchy_root: true,
-                        },
-                    ],
-                    concepts: [
-                        {
-                            id: 'level-1',
-                            name: 'Level 1',
-                            views: { default: 'L1' },
-                            definition: 'Choose this level for the first tier.',
-                            aliases: [],
-                            categories: ['level'],
-                            parents: [],
-                            position: 1,
-                            rank: 0,
-                        },
-                        {
-                            id: 'level-2',
-                            name: 'Level 2',
-                            views: { default: 'L2' },
-                            aliases: [],
-                            categories: ['level'],
-                            parents: [],
-                            position: 2,
-                            rank: 1,
-                        },
-                        {
-                            id: 'level-3',
-                            name: 'Level 3',
-                            views: {
-                                default: calendarValue ? '{value}' : 'L3',
+                scheme: {
+                    id: 'test-select',
+                    version: '1.0.0',
+                    name: 'Test Select',
+                    description: '',
+                    data: {
+                        categories: [
+                            {
+                                id: 'level',
+                                label: 'Level',
+                                required: false,
+                                single: true,
+                                rollup: 'max',
+                                position: 0,
+                                hierarchy_root: true,
                             },
-                            ...(withTextInput
-                                ? {
-                                      text_input: {
-                                          encoding: calendarValue
-                                              ? {
-                                                    type: 'calendar-date',
-                                                    canonical: 'YYYY-MM-DD',
-                                                    accepts: [
-                                                        'YYYYMMDD',
-                                                        'YYYY-MM-DD',
-                                                    ],
-                                                    views: {
-                                                        default: 'YYYYMMDD',
+                        ],
+                        concepts: [
+                            {
+                                id: 'level-1',
+                                name: 'Level 1',
+                                views: { default: 'L1' },
+                                definition:
+                                    'Choose this level for the first tier.',
+                                aliases: [],
+                                categories: ['level'],
+                                parents: [],
+                                position: 1,
+                                rank: 0,
+                            },
+                            {
+                                id: 'level-2',
+                                name: 'Level 2',
+                                views: { default: 'L2' },
+                                aliases: [],
+                                categories: ['level'],
+                                parents: [],
+                                position: 2,
+                                rank: 1,
+                            },
+                            {
+                                id: 'level-3',
+                                name: 'Level 3',
+                                views: {
+                                    default: calendarValue ? '{value}' : 'L3',
+                                },
+                                ...(withTextInput
+                                    ? {
+                                          text_input: {
+                                              encoding: calendarValue
+                                                  ? {
+                                                        type: 'calendar-date',
+                                                        canonical: 'YYYY-MM-DD',
+                                                        accepts: [
+                                                            'YYYYMMDD',
+                                                            'YYYY-MM-DD',
+                                                        ],
+                                                        views: {
+                                                            default: 'YYYYMMDD',
+                                                        },
+                                                    }
+                                                  : {
+                                                        type: 'text',
+                                                        pattern: '\\d{8}',
                                                     },
-                                                }
-                                              : {
-                                                    type: 'text',
-                                                    pattern: '\\d{8}',
-                                                },
-                                          placeholder: 'YYYYMMDD',
-                                          label: 'Review date',
-                                          required: true,
-                                      },
-                                  }
-                                : {}),
-                            aliases: [],
-                            categories: ['level'],
-                            parents: [],
-                            position: 3,
-                            rank: 2,
-                        },
-                    ],
-                },
-                rules: [],
-                rollup_pipelines: [],
-                render: {
-                    default: 'default',
-                    formats: [
-                        {
-                            id: 'default',
-                            surface: 'marking',
-                            mode: 'inline',
-                            separator: '//',
-                            fields: [{ category: 'level', separator: '//' }],
-                        },
-                    ],
+                                              placeholder: 'YYYYMMDD',
+                                              label: 'Review date',
+                                              required: true,
+                                          },
+                                      }
+                                    : {}),
+                                aliases: [],
+                                categories: ['level'],
+                                parents: [],
+                                position: 3,
+                                rank: 2,
+                            },
+                        ],
+                    },
+                    rules: [],
+                    rollup_pipelines: [],
+                    render: {
+                        default: 'default',
+                        formats: [
+                            {
+                                id: 'default',
+                                surface: 'marking',
+                                mode: 'inline',
+                                separator: '//',
+                                fields: [
+                                    { category: 'level', separator: '//' },
+                                ],
+                            },
+                        ],
+                    },
                 },
             },
         },
@@ -105,7 +117,7 @@ function makeEngine(withTextInput = false, calendarValue = false): Context {
 
 describe('authoritative primary field errors', () => {
     it('shows a real invalid calendar value and clears the error after correction', async () => {
-        const context = makeEngine(true, true);
+        const context = await makeEngine(true, true);
         const raw: Assertion = {
             conceptId: 'level-3',
             categoryId: 'level',
@@ -129,6 +141,7 @@ describe('authoritative primary field errors', () => {
         const component = new SingleSelect();
         await component.init(target, context);
         component.setAssertions([raw]);
+        await demoRuntimeSettled();
         const input = target.querySelector<HTMLInputElement>(
             '.select-card-text-field',
         )!;
@@ -169,7 +182,7 @@ describe('authoritative primary field errors', () => {
     });
 
     it('shows the real canonical partial-recognition error without inventing a rule message', async () => {
-        const context = makeEngine();
+        const context = await makeEngine();
         const reading = await context.scheme!.process('L1 extra');
         expect(reading.inputWasValid).toBe(false);
         expect(reading.recognition?.status).toBe('partial');

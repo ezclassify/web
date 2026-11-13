@@ -27,7 +27,8 @@ import {
     type EzClassifyStoreEngine,
     type FacetState,
 } from '../store/ezclassify-store';
-import type { LocalContextSchemeEngineAdapter } from '@ezclassify/types';
+import type { RemoteContextSchemeEngineAdapter } from '@ezclassify/types';
+import { demoRuntimeSettled } from '../../../../test-support/demo-runtime';
 
 /**
  * Flush enough microtasks for the store's refreshFacets chain to settle.
@@ -35,16 +36,16 @@ import type { LocalContextSchemeEngineAdapter } from '@ezclassify/types';
  * refreshFacets (await suggest, ~1 tick). Four rounds covers all paths.
  */
 async function flushFacets(): Promise<void> {
-    for (let i = 0; i < 6; i++) await Promise.resolve();
+    await demoRuntimeSettled();
 }
 
 describe('store-driven suggest filtering (facet subscription)', () => {
-    let engine: LocalContextSchemeEngineAdapter;
+    let engine: RemoteContextSchemeEngineAdapter;
     let store: VanillaEzClassifyStore;
     let container: HTMLDivElement;
 
-    beforeEach(() => {
-        engine = loadMultiScopeRegression();
+    beforeEach(async () => {
+        engine = await loadMultiScopeRegression();
         store = new VanillaEzClassifyStore(
             engine as unknown as EzClassifyStoreEngine,
         );

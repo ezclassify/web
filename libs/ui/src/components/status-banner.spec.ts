@@ -8,8 +8,8 @@ import type {
     CategoryView,
 } from '@ezclassify/types';
 import { schemeOnlyContext } from '../../test-fixtures/context-doubles';
-import { loadCedarValleyContext } from '../../../../test-support/community-content';
 import { mockRenderFormats } from '../render-format-layout-mock';
+import { connectDemoContext } from '../../../../test-support/demo-runtime';
 
 function createMockProfile(): SchemePublicView {
     const concepts: ConceptView[] = [
@@ -1154,7 +1154,8 @@ describe('StatusBanner: boundary judged by the engine', () => {
     const DATA = 'INTERNAL//OAKWOOD, PINECREST';
 
     async function bannerOver(boundary: string, data: string) {
-        const engine = loadCedarValleyContext().scheme;
+        const engine = (await connectDemoContext({ contextId: 'cedar-valley' }))
+            .scheme;
         const container = document.createElement('div');
         document.body.appendChild(container);
         const component = new StatusBanner();

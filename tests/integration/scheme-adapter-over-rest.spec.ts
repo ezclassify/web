@@ -55,11 +55,17 @@ function annotatedDraft(): DemoContextTarget {
     };
 }
 
+/** What a Context's scheme is known to declare, beyond what every one has. */
+interface ContextTraits {
+    /** Whether the scheme declares an embedded marking that scans read. */
+    readsPartMarks: boolean;
+}
+
 /**
  * The built-in Contexts the operations run against, by name. Built in, so the
  * Playground serves the same documents and anyone can re-record them.
  */
-const CONTEXTS: Array<[string, () => DemoContextTarget]> = [
+const CONTEXTS: Array<[string, () => DemoContextTarget, ContextTraits]> = [
     // Single category, ranked concepts, three render formats.
     [
         'cedar-valley-protection',
@@ -67,17 +73,21 @@ const CONTEXTS: Array<[string, () => DemoContextTarget]> = [
             contextId: 'cedar-valley-protection',
             contextVersion: '1.0.0',
         }),
+        { readsPartMarks: false },
     ],
     // Two categories, so category ordering and multi-category rollup are live.
     [
         'cedar-valley-handling',
         () => ({ contextId: 'cedar-valley-handling', contextVersion: '1.0.0' }),
+        { readsPartMarks: false },
     ],
     // Scoped and context-aware, with thirteen categories and rules: the shape
     // that exercises scope resolution and whole and part render formats.
     [
         'cedar-valley',
         () => ({ contextId: 'cedar-valley', contextVersion: '1.0.0' }),
+        // It declares an embedded marking, so document text carries part marks.
+        { readsPartMarks: true },
     ],
 ];
 
@@ -142,207 +152,247 @@ function buildFixture(scheme: RemoteContextSchemeEngineAdapter): SchemeFixture {
 const conceptIds = (result: { assertions: Assertion[] }): string[] =>
     result.assertions.map((a) => a.conceptId);
 
-describe.each(CONTEXTS)('the scheme adapter over REST: %s', (_name, target) => {
-    let client: EzClassifyClient;
-    let scheme: RemoteContextSchemeEngineAdapter;
-    let f: SchemeFixture;
-    let high: Assertion[];
+describe.each(CONTEXTS)(
+    'the scheme adapter over REST: %s',
+    (_name, target, traits) => {
+        let client: EzClassifyClient;
+        let scheme: RemoteContextSchemeEngineAdapter;
+        let f: SchemeFixture;
+        let high: Assertion[];
 
-    beforeAll(async () => {
-        client = await connectDemoContext(target());
-        scheme = client.scheme;
-        f = buildFixture(scheme);
-        high = [user(f.highConceptId, f.primaryCategoryId)];
-    });
-
-    afterAll(() => client?.destroy());
-
-    describe('profile reads', () => {
-        it('is connected and answers its reads synchronously', () => {
-            expect(scheme.connected).toBe(true);
-            expect(scheme.getScheme().id).toBeTruthy();
-            expect(scheme.getSchemeMeta().id).toBe(scheme.getScheme().id);
+        beforeAll(async () => {
+            client = await connectDemoContext(target());
+            scheme = client.scheme;
+            f = buildFixture(scheme);
+            high = [user(f.highConceptId, f.primaryCategoryId)];
         });
 
-        it('lists every category with its concepts, in a stable order', () => {
-            for (const category of scheme.listCategories()) {
-                const concepts = scheme.getConceptsInCategory(category.id);
-                expect(concepts.length).toBeGreaterThan(0);
-                expect(scheme.getConceptsInCategory(category.id)).toEqual(
-                    concepts,
+        afterAll(() => client?.destroy());
+
+        describe('profile reads', () => {
+            it('is connected and answers its reads synchronously', () => {
+                expect(scheme.connected).toBe(true);
+                expect(scheme.getScheme().id).toBeTruthy();
+                expect(scheme.getSchemeMeta().id).toBe(scheme.getScheme().id);
+            });
+
+            it('lists every category with its concepts, in a stable order', () => {
+                for (const category of scheme.listCategories()) {
+                    const concepts = scheme.getConceptsInCategory(category.id);
+                    expect(concepts.length).toBeGreaterThan(0);
+                    expect(scheme.getConceptsInCategory(category.id)).toEqual(
+                        concepts,
+                    );
+                }
+            });
+        });
+
+        describe('process: the store write path', () => {
+            it('renders a selection, and the rendering parses back to it', async () => {
+                const chosen = await scheme.process(high);
+                expect(conceptIds(chosen)).toContain(f.highConceptId);
+                expect(chosen.rendered).not.toBe('');
+                const parsed = await scheme.process(chosen.rendered);
+                expect(conceptIds(parsed)).toContain(f.highConceptId);
+            });
+
+            it('process([]) is the empty marking, which clearing a facet publishes', async () => {
+                const empty = await scheme.process([]);
+                expect(empty.assertions).toEqual([]);
+                expect(empty.rendered).toBe('');
+            });
+
+            it('process("", { assertions }) answers what the assertions answer', async () => {
+                expect(await scheme.process('', { assertions: high })).toEqual(
+                    await scheme.process(high),
                 );
-            }
-        });
-    });
+            });
 
-    describe('process: the store write path', () => {
-        it('renders a selection, and the rendering parses back to it', async () => {
-            const chosen = await scheme.process(high);
-            expect(conceptIds(chosen)).toContain(f.highConceptId);
-            expect(chosen.rendered).not.toBe('');
-            const parsed = await scheme.process(chosen.rendered);
-            expect(conceptIds(parsed)).toContain(f.highConceptId);
-        });
+            it('settles input and chosen facts as one marking', async () => {
+                // Facts handed in as the input and facts already chosen in
+                // options.assertions describe one marking: the input's facts first,
+                // then each chosen fact the input does not already state.
+                const chosen = [user(f.lowConceptId, f.primaryCategoryId)];
+                const both = await scheme.process(high, { assertions: chosen });
+                expect(both).toEqual(
+                    await scheme.process([...high, ...chosen]),
+                );
+                // The chosen fact changes the answer, so a client that dropped
+                // options.assertions could not pass the comparison above.
+                expect(both).not.toEqual(await scheme.process(high));
+            });
 
-        it('process([]) is the empty marking, which clearing a facet publishes', async () => {
-            const empty = await scheme.process([]);
-            expect(empty.assertions).toEqual([]);
-            expect(empty.rendered).toBe('');
-        });
+            it('process(outputFormat) and render() agree for every format', async () => {
+                expect(f.formatIds.length).toBeGreaterThan(0);
+                for (const format of f.formatIds) {
+                    const processed = await scheme.process(high, {
+                        outputFormat: format,
+                    });
+                    const rendered = await scheme.render(high, format);
+                    expect(processed.rendered).toBe(rendered.rendered);
+                }
+            });
 
-        it('process("", { assertions }) answers what the assertions answer', async () => {
-            expect(await scheme.process('', { assertions: high })).toEqual(
-                await scheme.process(high),
-            );
-        });
-
-        it('settles input and chosen facts as one marking', async () => {
-            // Facts handed in as the input and facts already chosen in
-            // options.assertions describe one marking: the input's facts first,
-            // then each chosen fact the input does not already state.
-            const chosen = [user(f.lowConceptId, f.primaryCategoryId)];
-            const both = await scheme.process(high, { assertions: chosen });
-            expect(both).toEqual(await scheme.process([...high, ...chosen]));
-            // The chosen fact changes the answer, so a client that dropped
-            // options.assertions could not pass the comparison above.
-            expect(both).not.toEqual(await scheme.process(high));
+            it('refuses input no scheme can parse', async () => {
+                const result = await scheme.process(
+                    'NOT_A_MARKING_IN_ANY_SCHEME',
+                );
+                expect(result.valid).toBe(false);
+            });
         });
 
-        it('carries a captured value through', async () => {
-            if (!f.captureConcept) return;
-            const result = await scheme.process([
-                user(f.lowConceptId, f.primaryCategoryId),
-                user(
-                    f.captureConcept.conceptId,
-                    f.captureConcept.categoryId,
-                    'Ruiz, M.',
-                ),
-            ]);
-            expect(
-                result.assertions.find(
-                    (a) => a.conceptId === f.captureConcept!.conceptId,
-                ),
-            ).toMatchObject({ value: 'Ruiz, M.' });
-        });
+        describe('suggest: the facet subscription path', () => {
+            it('offers every concept of the first category, none chosen, with nothing chosen', async () => {
+                const offered = await scheme.suggest('');
+                const first = offered.suggestions.filter(
+                    (s) => s.categoryId === f.primaryCategoryId,
+                );
+                expect(first.map((s) => s.conceptId).sort()).toEqual(
+                    scheme
+                        .getConceptsInCategory(f.primaryCategoryId)
+                        .map((c) => c.id)
+                        .sort(),
+                );
+                expect(offered.suggestions.some((s) => s.selected)).toBe(false);
+            });
 
-        it('process(outputFormat) and render() agree for every format', async () => {
-            expect(f.formatIds.length).toBeGreaterThan(0);
-            for (const format of f.formatIds) {
-                const processed = await scheme.process(high, {
-                    outputFormat: format,
-                });
-                const rendered = await scheme.render(high, format);
-                expect(processed.rendered).toBe(rendered.rendered);
-            }
-        });
-
-        it('refuses input no scheme can parse', async () => {
-            const result = await scheme.process('NOT_A_MARKING_IN_ANY_SCHEME');
-            expect(result.valid).toBe(false);
-        });
-    });
-
-    describe('suggest: the facet subscription path', () => {
-        it('offers the first category with nothing chosen', async () => {
-            const offered = await scheme.suggest('');
-            expect(JSON.stringify(offered)).toContain(f.primaryCategoryId);
-        });
-
-        it('answers for a committed assertion array, with and without a surface', async () => {
-            await expect(scheme.suggest(high)).resolves.toBeDefined();
-            const scopes = scheme.getSchemeMeta().scopes ?? [];
-            if (scopes.length === 0) return;
-            await expect(
-                scheme.suggest(high, {
-                    surface: scopes[scopes.length - 1]!.id,
-                }),
-            ).resolves.toBeDefined();
-        });
-    });
-
-    describe('rollup', () => {
-        it('aggregate() of renderings and of assertion sets roll up the same marking', async () => {
-            const low = await scheme.process([
-                user(f.lowConceptId, f.primaryCategoryId),
-            ]);
-            const top = await scheme.process(high);
-            const byText = await scheme.aggregate([low.rendered, top.rendered]);
-            const bySets = await scheme.aggregateAssertions([
-                [user(f.lowConceptId, f.primaryCategoryId)],
-                high,
-                [],
-            ]);
-            expect(byText.rendered).toBe(bySets.rendered);
-        });
-
-        it('checkCoverage() tells a covered child from an uncovered one', async () => {
-            const covered = await scheme.checkCoverage(
-                [f.lowConceptId],
-                f.highConceptId,
-            );
-            const uncovered = await scheme.checkCoverage(
-                [f.highConceptId],
-                f.lowConceptId,
-            );
-            expect(covered).not.toEqual(uncovered);
-        });
-    });
-
-    describe('the rest of the surface the UI reads', () => {
-        it('collectNotices() answers a list', async () => {
-            expect(Array.isArray(await scheme.collectNotices(high))).toBe(true);
-        });
-
-        it('scan() answers for document text', async () => {
-            await expect(
-                scheme.scan(
-                    `Question 1 is ${f.lowConceptId} and question 2 is ${f.highConceptId}.`,
-                ),
-            ).resolves.toBeDefined();
-        });
-
-        it('describeConcept() describes the concept it names', async () => {
-            expect(
-                JSON.stringify(
-                    await scheme.describeConcept(
-                        f.highConceptId,
-                        f.primaryCategoryId,
+            it('marks a committed assertion chosen, with and without a surface', async () => {
+                const chosen = (
+                    offered: Awaited<ReturnType<typeof scheme.suggest>>,
+                ) =>
+                    offered.suggestions
+                        .filter((s) => s.selected)
+                        .map((s) => s.conceptId);
+                expect(chosen(await scheme.suggest(high))).toEqual([
+                    f.highConceptId,
+                ]);
+                const scopes = scheme.getSchemeMeta().scopes ?? [];
+                expect(scopes.length).toBeGreaterThan(0);
+                expect(
+                    chosen(
+                        await scheme.suggest(high, {
+                            surface: scopes[scopes.length - 1]!.id,
+                        }),
                     ),
-                ),
-            ).toContain(f.highConceptId);
-        });
-    });
-
-    describe('what a remote adapter does differently', () => {
-        it('getFormatCoverage() is not offered', () => {
-            // Optional on the remote Context contract, and the client does not
-            // implement it: the REST contract has no format-coverage route. A UI
-            // that needs to know whether a format is lossless has no answer over
-            // REST, so it must treat `undefined` as "unknown" rather than
-            // "lossy".
-            expect(scheme.getFormatCoverage).toBeUndefined();
+                ).toEqual([f.highConceptId]);
+            });
         });
 
-        it('applyPreset() refuses an unknown preset with a rejected promise', async () => {
-            // The return type is `MaybePromise`: a remote adapter rejects where
-            // an in-process one would throw, so a caller wraps the call itself
-            // rather than only awaiting it.
-            const pending = scheme.applyPreset('no-such-preset');
-            expect(pending).toBeInstanceOf(Promise);
-            await expect(pending).rejects.toThrow(/no-such-preset/);
+        describe('rollup', () => {
+            it('aggregate() of renderings and of assertion sets roll up the same marking', async () => {
+                const low = await scheme.process([
+                    user(f.lowConceptId, f.primaryCategoryId),
+                ]);
+                const top = await scheme.process(high);
+                const byText = await scheme.aggregate([
+                    low.rendered,
+                    top.rendered,
+                ]);
+                const bySets = await scheme.aggregateAssertions([
+                    [user(f.lowConceptId, f.primaryCategoryId)],
+                    high,
+                    [],
+                ]);
+                expect(byText.rendered).toBe(bySets.rendered);
+            });
+
+            it('checkCoverage() tells a covered child from an uncovered one', async () => {
+                const covered = await scheme.checkCoverage(
+                    [f.lowConceptId],
+                    f.highConceptId,
+                );
+                expect(covered).toMatchObject({ covered: true, missing: [] });
+                const uncovered = await scheme.checkCoverage(
+                    [f.highConceptId],
+                    f.lowConceptId,
+                );
+                expect(uncovered.covered).toBe(false);
+                // The parent misses the child's own level.
+                expect(uncovered.missing).toContainEqual(
+                    expect.objectContaining({
+                        categoryId: f.primaryCategoryId,
+                        conceptId: f.highConceptId,
+                    }),
+                );
+            });
         });
 
-        it('a client cannot bind to a Context the runtime does not serve', async () => {
-            await expect(
-                connectDemoContext({
-                    contextId: 'no-such-context',
-                    contextVersion: '1.0.0',
-                }),
-            ).rejects.toThrow(/API error 404 /);
-            expect(scheme.getScheme().id).toBeTruthy();
+        describe('the rest of the surface the UI reads', () => {
+            it('collectNotices() answers the notices a marking carries: none here', async () => {
+                expect(await scheme.collectNotices(high)).toEqual([]);
+            });
+
+            it('scan() reads each part mark in document text, and nothing in prose', async () => {
+                const prose = await scheme.scan(
+                    `Question 1 is ${f.lowConceptId} and question 2 is ${f.highConceptId}.`,
+                );
+                expect(prose.results).toEqual([]);
+                const marked = await scheme.scan(
+                    `(${f.lowConceptId}) Lunch menu.\n(${f.highConceptId}) Exam packet.`,
+                );
+                if (!traits.readsPartMarks) {
+                    // No embedded marking declared: a parenthesized word is prose.
+                    expect(marked.results).toEqual([]);
+                    return;
+                }
+                expect(marked.results.map((r) => r.marking)).toEqual([
+                    `(${f.lowConceptId})`,
+                    `(${f.highConceptId})`,
+                ]);
+                expect(conceptIds(marked.results[0]!.result)).toContain(
+                    f.lowConceptId,
+                );
+                expect(conceptIds(marked.results[1]!.result)).toContain(
+                    f.highConceptId,
+                );
+            });
+
+            it('describeConcept() describes the concept it names', async () => {
+                expect(
+                    JSON.stringify(
+                        await scheme.describeConcept(
+                            f.highConceptId,
+                            f.primaryCategoryId,
+                        ),
+                    ),
+                ).toContain(f.highConceptId);
+            });
         });
-    });
-});
+
+        describe('what a remote adapter does differently', () => {
+            it('getFormatCoverage() is not offered', () => {
+                // Optional on the remote Context contract, and the client does not
+                // implement it: the REST contract has no format-coverage route. A UI
+                // that needs to know whether a format is lossless has no answer over
+                // REST, so it must treat `undefined` as "unknown" rather than
+                // "lossy".
+                expect(scheme.getFormatCoverage).toBeUndefined();
+            });
+
+            it('applyPreset() refuses an unknown preset with a rejected promise', async () => {
+                // The return type is `MaybePromise`: a remote adapter rejects where
+                // an in-process one would throw, so a caller wraps the call itself
+                // rather than only awaiting it.
+                const pending = scheme.applyPreset('no-such-preset');
+                expect(pending).toBeInstanceOf(Promise);
+                await expect(pending).rejects.toThrow(/no-such-preset/);
+            });
+
+            // Which Contexts a caller's token may reach is the REST API's to
+            // enforce, and its own suites prove the refusal; the demo runtime
+            // serves every Context to every caller.
+            it('a client cannot bind to a Context the runtime does not serve', async () => {
+                await expect(
+                    connectDemoContext({
+                        contextId: 'no-such-context',
+                        contextVersion: '1.0.0',
+                    }),
+                ).rejects.toThrow(/API error 404 /);
+                expect(scheme.getScheme().id).toBeTruthy();
+            });
+        });
+    },
+);
 
 describe('the profile carries the optional fields a scheme declares', () => {
     it('definition, guidance and role-aware processing reach the client', async () => {
@@ -351,10 +401,36 @@ describe('the profile carries the optional fields a scheme declares', () => {
             expect(client.scheme.getSchemeMeta()).toMatchObject({
                 definition: ANNOTATIONS.definition,
                 guidance: ANNOTATIONS.guidance,
+                roleAware: true,
             });
             expect(JSON.stringify(client.scheme.getScheme())).toContain(
                 ANNOTATIONS.guidance,
             );
+        } finally {
+            client.destroy();
+        }
+    });
+});
+
+describe('a captured value', () => {
+    it('is carried through process, on the fixture whose concept captures one', async () => {
+        const client = await connectDemoContext(annotatedDraft());
+        try {
+            const f = buildFixture(client.scheme);
+            expect(f.captureConcept).toBeDefined();
+            const result = await client.scheme.process([
+                user(f.lowConceptId, f.primaryCategoryId),
+                user(
+                    f.captureConcept!.conceptId,
+                    f.captureConcept!.categoryId,
+                    'Ruiz, M.',
+                ),
+            ]);
+            expect(
+                result.assertions.find(
+                    (a) => a.conceptId === f.captureConcept!.conceptId,
+                ),
+            ).toMatchObject({ value: 'Ruiz, M.' });
         } finally {
             client.destroy();
         }
