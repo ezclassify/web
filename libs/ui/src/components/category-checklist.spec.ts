@@ -1,4 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import { dirname, join } from 'node:path';
 import {
     CategoryChecklist,
     type CategoryChecklistOptions,
@@ -508,5 +511,32 @@ describe('CategoryChecklist', () => {
 
         // Focus should still be on the same element after the render cycle
         expect(document.activeElement).toBe(checkbox);
+    });
+});
+
+describe('CategoryChecklist header layout', () => {
+    it('wraps the toggle buttons to a line of their own before it breaks the title mid-word', () => {
+        const css = readFileSync(
+            join(
+                dirname(fileURLToPath(import.meta.url)),
+                'category-checklist.css',
+            ),
+            'utf8',
+        ).replace(/\/\*[\s\S]*?\*\//g, '');
+        const rule = (selector: string) =>
+            css.match(
+                new RegExp(
+                    `(?:^|\\})\\s*${selector.replace(/[.]/g, '\\$&')}\\s*\\{([^}]*)\\}`,
+                ),
+            )?.[1] ?? '';
+        expect(rule('.category-checklist-header')).toMatch(/flex-wrap:\s*wrap/);
+        // A word of the title stays whole, whatever the host's own wrapping.
+        const heading = rule('.category-checklist-header h3');
+        expect(heading).toMatch(/overflow-wrap:\s*normal/);
+        expect(heading).toMatch(/word-break:\s*normal/);
+        // The buttons stay one unit, each on one line.
+        expect(rule('.category-checklist-toggle button')).toMatch(
+            /white-space:\s*nowrap/,
+        );
     });
 });
