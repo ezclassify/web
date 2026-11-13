@@ -1,5 +1,6 @@
-import { Context } from '@ezclassify/engine';
-import { openContext } from './context-doubles';
+import type { EzClassifyClient } from '@ezclassify/rest-client';
+import { connectDemoContext } from '../../../test-support/demo-runtime';
+import { openContext, type OpenContext } from './context-doubles';
 
 /**
  * `JOINT ` ahead of a marking with joint owners, and ahead of a part that
@@ -76,6 +77,7 @@ export const WHOLE_STAND_IN_SCHEME = {
         id: 'whole-stand-in',
         version: '1.0.0',
         name: 'Whole stand-in',
+        description: 'A whole whose partners a part may stand in for.',
         role_aware: true,
         role_detection: {
             whole: { views: ['banner'] },
@@ -303,9 +305,17 @@ export const CLOSED_WHOLE = 'HIGH//CLOSED';
 /** A jointly owned whole that names two partners. */
 export const JOINT_WHOLE = 'JOINT HIGH NORTH SOUTH//SHARE WITH ALPHA, BRAVO';
 
-/** A Context over {@link WHOLE_STAND_IN_SCHEME}. */
-export function wholeStandInContext() {
-    return openContext(
-        Context.fromComponents({ scheme: WHOLE_STAND_IN_SCHEME as never }),
-    );
+/** One draft connection per spec file; every call opens a fresh view of it. */
+let connection: Promise<EzClassifyClient> | undefined;
+
+/**
+ * A Context over {@link WHOLE_STAND_IN_SCHEME}, sent to the demo runtime through
+ * its draft door. Each call returns a new open Context over the one connection,
+ * so a spy on one does not reach another.
+ */
+export async function wholeStandInContext(): Promise<OpenContext> {
+    connection ??= connectDemoContext({
+        draft: { scheme: WHOLE_STAND_IN_SCHEME },
+    });
+    return openContext(await connection);
 }

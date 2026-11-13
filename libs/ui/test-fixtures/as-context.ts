@@ -2,8 +2,8 @@
  * Hand EzClassifyUI the Context it takes, whatever a spec built.
  *
  * Specs about one component often build only a scheme view (a mock, or a real
- * engine's `scheme`). EzClassifyUI takes a Context, so a bare view goes in
- * {@link schemeOnlyContext}; a Context passes through unchanged.
+ * connected client's `scheme`). EzClassifyUI takes a Context, so a bare view
+ * goes in {@link schemeOnlyContext}; a Context passes through unchanged.
  */
 
 import type { ContextAdapter } from '@ezclassify/types';

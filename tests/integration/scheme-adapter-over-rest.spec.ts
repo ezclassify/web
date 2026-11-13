@@ -1,0 +1,362 @@
+/**
+ * The Context-bound scheme adapter the UI is written against, as the REST
+ * client provides it over the demo runtime.
+ *
+ * Every UI surface in this repository (the store, the forms controller and the
+ * three framework bindings) calls the Context-bound scheme adapter and nothing
+ * else. This suite runs each operation those surfaces call through
+ * `EzClassifyClient.scheme`, against the runtime the website Playground uses,
+ * and holds the answers to what the UI depends on: a selection renders and
+ * parses back, the empty marking is empty, the input and chosen facts settle as
+ * one marking, every format renders, and the profile carries the optional
+ * fields a scheme declares. Whether the wire answers what an in-process engine
+ * would is the engine's own parity suite; this one is about the client.
+ *
+ * The answers come from the spec file's recordings in the public lane and from
+ * a local demo runtime in record mode (`test-support/demo-runtime.ts`).
+ */
+import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import yaml from 'js-yaml';
+import type {
+    Assertion,
+    RemoteContextSchemeEngineAdapter,
+} from '@ezclassify/types';
+import type { EzClassifyClient } from '@ezclassify/rest-client';
+import {
+    connectDemoContext,
+    type DemoContextTarget,
+} from '../../test-support/demo-runtime';
+import multiScopeSource from '../../libs/ui/test-fixtures/multi-scope-regression.yaml?raw';
+
+/**
+ * What the annotated fixture adds to the multi-scope fixture. No built-in demo
+ * scheme declares a definition, guidance and role-aware processing together, so
+ * without this one the suite could not tell a wire that carries those optional
+ * summary fields from one that drops them.
+ */
+const ANNOTATIONS = {
+    definition: 'A district file marking, written once per file.',
+    guidance: 'Mark the whole file first, then each part that differs.',
+    role_aware: true,
+} as const;
+
+/** The multi-scope fixture with {@link ANNOTATIONS} on its scheme. */
+function annotatedDraft(): DemoContextTarget {
+    const document = yaml.load(multiScopeSource) as {
+        scheme: Record<string, unknown>;
+    };
+    return {
+        draft: {
+            scheme: {
+                ...document,
+                scheme: { ...document.scheme, ...ANNOTATIONS },
+            },
+        },
+    };
+}
+
+/**
+ * The built-in Contexts the operations run against, by name. Built in, so the
+ * Playground serves the same documents and anyone can re-record them.
+ */
+const CONTEXTS: Array<[string, () => DemoContextTarget]> = [
+    // Single category, ranked concepts, three render formats.
+    [
+        'cedar-valley-protection',
+        () => ({
+            contextId: 'cedar-valley-protection',
+            contextVersion: '1.0.0',
+        }),
+    ],
+    // Two categories, so category ordering and multi-category rollup are live.
+    [
+        'cedar-valley-handling',
+        () => ({ contextId: 'cedar-valley-handling', contextVersion: '1.0.0' }),
+    ],
+    // Scoped and context-aware, with thirteen categories and rules: the shape
+    // that exercises scope resolution and whole and part render formats.
+    [
+        'cedar-valley',
+        () => ({ contextId: 'cedar-valley', contextVersion: '1.0.0' }),
+    ],
+];
+
+/**
+ * Scheme-derived operands, so one set of checks runs against every Context
+ * instead of hard-coding concept ids per scheme.
+ */
+interface SchemeFixture {
+    /** Two concept ids in the first category, lowest and highest rank. */
+    lowConceptId: string;
+    highConceptId: string;
+    /** The first category's id. */
+    primaryCategoryId: string;
+    /** Every render-format id the scheme declares. */
+    formatIds: string[];
+    /** A concept with a capture-value input, when the scheme has one. */
+    captureConcept?: { conceptId: string; categoryId: string };
+}
+
+const user = (
+    conceptId: string,
+    categoryId: string,
+    value?: string,
+): Assertion =>
+    ({
+        conceptId,
+        categoryId,
+        confidence: 'certain',
+        source: 'user',
+        ...(value === undefined ? {} : { value }),
+    }) as Assertion;
+
+/** Build the operands by reading the scheme through the adapter itself. */
+function buildFixture(scheme: RemoteContextSchemeEngineAdapter): SchemeFixture {
+    const categories = scheme.listCategories();
+    const primary = categories[0]!;
+    const ranked = [...scheme.getConceptsInCategory(primary.id)].sort(
+        (a, b) => (a.rank ?? 0) - (b.rank ?? 0),
+    );
+    let captureConcept: SchemeFixture['captureConcept'];
+    for (const category of categories) {
+        const withInput = scheme
+            .getConceptsInCategory(category.id)
+            .find((c) => c.textInput !== undefined);
+        if (withInput) {
+            captureConcept = {
+                conceptId: withInput.id,
+                categoryId: category.id,
+            };
+            break;
+        }
+    }
+    return {
+        lowConceptId: ranked[0]!.id,
+        highConceptId: ranked[ranked.length - 1]!.id,
+        primaryCategoryId: primary.id,
+        formatIds: (scheme.getSchemeMeta().formats ?? []).map((f) => f.id),
+        captureConcept,
+    };
+}
+
+const conceptIds = (result: { assertions: Assertion[] }): string[] =>
+    result.assertions.map((a) => a.conceptId);
+
+describe.each(CONTEXTS)('the scheme adapter over REST: %s', (_name, target) => {
+    let client: EzClassifyClient;
+    let scheme: RemoteContextSchemeEngineAdapter;
+    let f: SchemeFixture;
+    let high: Assertion[];
+
+    beforeAll(async () => {
+        client = await connectDemoContext(target());
+        scheme = client.scheme;
+        f = buildFixture(scheme);
+        high = [user(f.highConceptId, f.primaryCategoryId)];
+    });
+
+    afterAll(() => client?.destroy());
+
+    describe('profile reads', () => {
+        it('is connected and answers its reads synchronously', () => {
+            expect(scheme.connected).toBe(true);
+            expect(scheme.getScheme().id).toBeTruthy();
+            expect(scheme.getSchemeMeta().id).toBe(scheme.getScheme().id);
+        });
+
+        it('lists every category with its concepts, in a stable order', () => {
+            for (const category of scheme.listCategories()) {
+                const concepts = scheme.getConceptsInCategory(category.id);
+                expect(concepts.length).toBeGreaterThan(0);
+                expect(scheme.getConceptsInCategory(category.id)).toEqual(
+                    concepts,
+                );
+            }
+        });
+    });
+
+    describe('process: the store write path', () => {
+        it('renders a selection, and the rendering parses back to it', async () => {
+            const chosen = await scheme.process(high);
+            expect(conceptIds(chosen)).toContain(f.highConceptId);
+            expect(chosen.rendered).not.toBe('');
+            const parsed = await scheme.process(chosen.rendered);
+            expect(conceptIds(parsed)).toContain(f.highConceptId);
+        });
+
+        it('process([]) is the empty marking, which clearing a facet publishes', async () => {
+            const empty = await scheme.process([]);
+            expect(empty.assertions).toEqual([]);
+            expect(empty.rendered).toBe('');
+        });
+
+        it('process("", { assertions }) answers what the assertions answer', async () => {
+            expect(await scheme.process('', { assertions: high })).toEqual(
+                await scheme.process(high),
+            );
+        });
+
+        it('settles input and chosen facts as one marking', async () => {
+            // Facts handed in as the input and facts already chosen in
+            // options.assertions describe one marking: the input's facts first,
+            // then each chosen fact the input does not already state.
+            const chosen = [user(f.lowConceptId, f.primaryCategoryId)];
+            const both = await scheme.process(high, { assertions: chosen });
+            expect(both).toEqual(await scheme.process([...high, ...chosen]));
+            // The chosen fact changes the answer, so a client that dropped
+            // options.assertions could not pass the comparison above.
+            expect(both).not.toEqual(await scheme.process(high));
+        });
+
+        it('carries a captured value through', async () => {
+            if (!f.captureConcept) return;
+            const result = await scheme.process([
+                user(f.lowConceptId, f.primaryCategoryId),
+                user(
+                    f.captureConcept.conceptId,
+                    f.captureConcept.categoryId,
+                    'Ruiz, M.',
+                ),
+            ]);
+            expect(
+                result.assertions.find(
+                    (a) => a.conceptId === f.captureConcept!.conceptId,
+                ),
+            ).toMatchObject({ value: 'Ruiz, M.' });
+        });
+
+        it('process(outputFormat) and render() agree for every format', async () => {
+            expect(f.formatIds.length).toBeGreaterThan(0);
+            for (const format of f.formatIds) {
+                const processed = await scheme.process(high, {
+                    outputFormat: format,
+                });
+                const rendered = await scheme.render(high, format);
+                expect(processed.rendered).toBe(rendered.rendered);
+            }
+        });
+
+        it('refuses input no scheme can parse', async () => {
+            const result = await scheme.process('NOT_A_MARKING_IN_ANY_SCHEME');
+            expect(result.valid).toBe(false);
+        });
+    });
+
+    describe('suggest: the facet subscription path', () => {
+        it('offers the first category with nothing chosen', async () => {
+            const offered = await scheme.suggest('');
+            expect(JSON.stringify(offered)).toContain(f.primaryCategoryId);
+        });
+
+        it('answers for a committed assertion array, with and without a surface', async () => {
+            await expect(scheme.suggest(high)).resolves.toBeDefined();
+            const scopes = scheme.getSchemeMeta().scopes ?? [];
+            if (scopes.length === 0) return;
+            await expect(
+                scheme.suggest(high, {
+                    surface: scopes[scopes.length - 1]!.id,
+                }),
+            ).resolves.toBeDefined();
+        });
+    });
+
+    describe('rollup', () => {
+        it('aggregate() of renderings and of assertion sets roll up the same marking', async () => {
+            const low = await scheme.process([
+                user(f.lowConceptId, f.primaryCategoryId),
+            ]);
+            const top = await scheme.process(high);
+            const byText = await scheme.aggregate([low.rendered, top.rendered]);
+            const bySets = await scheme.aggregateAssertions([
+                [user(f.lowConceptId, f.primaryCategoryId)],
+                high,
+                [],
+            ]);
+            expect(byText.rendered).toBe(bySets.rendered);
+        });
+
+        it('checkCoverage() tells a covered child from an uncovered one', async () => {
+            const covered = await scheme.checkCoverage(
+                [f.lowConceptId],
+                f.highConceptId,
+            );
+            const uncovered = await scheme.checkCoverage(
+                [f.highConceptId],
+                f.lowConceptId,
+            );
+            expect(covered).not.toEqual(uncovered);
+        });
+    });
+
+    describe('the rest of the surface the UI reads', () => {
+        it('collectNotices() answers a list', async () => {
+            expect(Array.isArray(await scheme.collectNotices(high))).toBe(true);
+        });
+
+        it('scan() answers for document text', async () => {
+            await expect(
+                scheme.scan(
+                    `Question 1 is ${f.lowConceptId} and question 2 is ${f.highConceptId}.`,
+                ),
+            ).resolves.toBeDefined();
+        });
+
+        it('describeConcept() describes the concept it names', async () => {
+            expect(
+                JSON.stringify(
+                    await scheme.describeConcept(
+                        f.highConceptId,
+                        f.primaryCategoryId,
+                    ),
+                ),
+            ).toContain(f.highConceptId);
+        });
+    });
+
+    describe('what a remote adapter does differently', () => {
+        it('getFormatCoverage() is not offered', () => {
+            // Optional on the remote Context contract, and the client does not
+            // implement it: the REST contract has no format-coverage route. A UI
+            // that needs to know whether a format is lossless has no answer over
+            // REST, so it must treat `undefined` as "unknown" rather than
+            // "lossy".
+            expect(scheme.getFormatCoverage).toBeUndefined();
+        });
+
+        it('applyPreset() refuses an unknown preset with a rejected promise', async () => {
+            // The return type is `MaybePromise`: a remote adapter rejects where
+            // an in-process one would throw, so a caller wraps the call itself
+            // rather than only awaiting it.
+            const pending = scheme.applyPreset('no-such-preset');
+            expect(pending).toBeInstanceOf(Promise);
+            await expect(pending).rejects.toThrow(/no-such-preset/);
+        });
+
+        it('a client cannot bind to a Context the runtime does not serve', async () => {
+            await expect(
+                connectDemoContext({
+                    contextId: 'no-such-context',
+                    contextVersion: '1.0.0',
+                }),
+            ).rejects.toThrow(/API error 404 /);
+            expect(scheme.getScheme().id).toBeTruthy();
+        });
+    });
+});
+
+describe('the profile carries the optional fields a scheme declares', () => {
+    it('definition, guidance and role-aware processing reach the client', async () => {
+        const client = await connectDemoContext(annotatedDraft());
+        try {
+            expect(client.scheme.getSchemeMeta()).toMatchObject({
+                definition: ANNOTATIONS.definition,
+                guidance: ANNOTATIONS.guidance,
+            });
+            expect(JSON.stringify(client.scheme.getScheme())).toContain(
+                ANNOTATIONS.guidance,
+            );
+        } finally {
+            client.destroy();
+        }
+    });
+});

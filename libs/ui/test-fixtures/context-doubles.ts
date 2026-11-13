@@ -3,12 +3,13 @@
  *
  * The UI takes a composed Context and reads only its `scheme`, `guide` and
  * `access` views; it never calls the operations that need more than one of
- * them. Specs need two things the engine's own Context does not give them:
+ * them. Specs need two things a connected Context does not give them:
  *
  * - A Context around a mock scheme adapter, so a spec that is about the UI and
- *   not the engine can still hand the UI the shape a deployment hands it; and
- * - A Context whose operations a spec can replace or spy on. The engine's Context
- *   and its views are frozen, so `vi.spyOn` cannot wrap them.
+ *   not the runtime can still hand the UI the shape a deployment hands it; and
+ * - A Context whose operations a spec can replace or spy on. A connected client's
+ *   view keeps its methods on its class, so a spy on the view itself would
+ *   reach every test that shares the connection.
  *
  * Neither double decides anything: every answer comes from the adapter or the
  * Context it wraps.
@@ -58,7 +59,7 @@ export function schemeOnlyContext(scheme: unknown): ContextAdapter {
  * Copy a view's operations onto a plain object, each still answered by the
  * view, so a spec can replace or spy on one of them.
  *
- * @param view - An engine view (its methods live on its class)
+ * @param view - A Context view (its methods live on its class)
  * @returns A plain object with the view's methods bound to the view and its
  *   properties read through to it
  */
@@ -99,7 +100,7 @@ export type OpenContext = ContextAdapter & {
  * Wrap a Context so its scheme, guide and access operations can be replaced or
  * spied on. Every operation is still answered by the wrapped Context.
  *
- * @param context - The Context to open, usually the engine's own
+ * @param context - The Context to open, usually a connected client
  * @returns A plain Context over the same composition
  */
 export function openContext(context: ContextAdapter): OpenContext {

@@ -20,11 +20,17 @@
  * address from the runtime's startup log, waits a bounded time for it to answer
  * `/v1/ready`, and checks that it lists every Context of the set.
  *
+ * Recordings have to be reproducible, so the Cedar Valley documents the set is
+ * assembled from come from the community-content commit in
+ * `community-content.pin`: the setup refuses a sibling checkout whose
+ * `scheme-folder` differs from that commit, committed or not. Moving the pin
+ * and re-recording is one change.
+ *
  * Specs reach it through `test-support/demo-runtime.ts`, which reads the origin
  * and health this setup provides.
  */
 import { spawn, spawnSync, type ChildProcess } from 'node:child_process';
-import { existsSync, readdirSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import * as path from 'node:path';
 import type { TestProject } from 'vitest/node';
 import { RECORD_VARIABLE, recording } from './record-mode';
@@ -82,8 +88,34 @@ function run(
     return result.stdout;
 }
 
+/** The community-content commit the recordings are made from. */
+const CONTENT_PIN = path.join(import.meta.dirname, 'community-content.pin');
+
+/** Refuse a community-content checkout whose scheme folder is not the pin's. */
+function requirePinnedContent(): void {
+    const content = sibling('community-content', 'scheme-folder');
+    const pin = readFileSync(CONTENT_PIN, 'utf8').trim();
+    const diff = spawnSync(
+        'git',
+        ['diff', '--quiet', pin, '--', 'scheme-folder'],
+        {
+            cwd: content,
+            encoding: 'utf8',
+        },
+    );
+    if (diff.status !== 0) {
+        throw new Error(
+            `${content}/scheme-folder is not community-content ${pin} ` +
+                '(test-support/community-content.pin)' +
+                (diff.status === 1 ? '' : `: ${diff.stderr.trim()}`) +
+                '. Check out the pinned commit, or move the pin and re-record.',
+        );
+    }
+}
+
 /** Assemble the demo set and build the runtime; returns the binary's path. */
 function buildRuntime(): { binary: string; contextIds: string[] } {
+    requirePinnedContent();
     const engine = sibling('engine', 'apps/demo-runtime/Cargo.toml');
     const orchestration = sibling(
         'orchestration',
