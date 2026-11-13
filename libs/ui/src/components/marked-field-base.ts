@@ -47,7 +47,12 @@ import {
     assertDescribesConcepts,
     createConceptDescriber,
 } from './concept-description';
-import { defaultSurfaceOf, resolveOutput } from '../format-resolver';
+import {
+    assertWritesScopes,
+    defaultSurfaceOf,
+    resolveOutput,
+    viewOutputOf,
+} from '../format-resolver';
 import { inDeclarationOrder } from '../scopes';
 import type { InlineMarkingEditor } from './inline-marking-editor';
 import { createClearButton, type ClearButton } from './clear-button';
@@ -291,28 +296,35 @@ export abstract class MarkedFieldBase<
                               this.scheme.defaultRenderFormat,
                           ),
                   );
-        // An embedded mark is one part marking on one line of the text. A
-        // marking across several scopes is written a surface per scope, which
-        // no one-line mark can hold: a single-line field would drop the break
-        // between them and run two surfaces together into one wrong marking.
+        // A field that lists scopes writes them as one mark: in the format it
+        // names, else the part default of the first of them. Several are
+        // written only when that one output writes every one of them. The
+        // scheme decides; a field whose scopes no one output covers is
+        // refused here.
         if (listed.length > 1) {
-            const quoted = inDeclarationOrder(listed, meta)
-                .map((scope) => `"${scope}"`)
-                .join(', ');
-            throw new Error(
-                `[ezclassify] ${this.componentLabel}: data-ezclassify-scope lists ${quoted}, ` +
-                    'but an embedded mark holds one part marking on one line, and a ' +
-                    'marking across several scopes is written one surface per scope. ' +
-                    'Give each scope a field of its own.',
+            this.scanFormat =
+                requested ||
+                requestedFormat ||
+                viewOutputOf(meta, listed, true);
+            assertWritesScopes(
+                resolvedEngine,
+                resolvedScheme.categories,
+                this.scanFormat,
+                listed,
+                this.componentLabel,
             );
+            return;
         }
         // Every fallback comes out of the scheme. A literal format id here
         // would be a data value in code: a scheme that declares no format under
         // that name gets an id it never heard of. Both fields write parts, so a
-        // spelling the scheme does not have falls back to the part default.
+        // spelling the scheme does not have falls back to the part default:
+        // of the one scope the field lists, else of the default scope.
         this.scanFormat =
             requested ||
-            this.pickPartFormat() ||
+            (this.options.scope
+                ? viewOutputOf(meta, [this.options.scope], true)
+                : this.pickPartFormat()) ||
             this.schemeDefaultFormat(formats.map((format) => format.id));
     }
 

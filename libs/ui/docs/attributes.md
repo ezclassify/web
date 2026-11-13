@@ -81,11 +81,16 @@ keyword for all of them. The scheme decides the order: listed scopes are taken
 in the order the scheme declares them, and each scope's categories in category
 order, whatever order the attribute lists them in.
 
+A component writes and shows the facts of its scopes only. With no scope listed
+that is the scheme's default scope, with one it is that scope, and with several
+it is all of them together. A field never writes another scope's facts into its
+text.
+
 | Component                                                                             | With one scope                 | With several                                                                                                                                                                                                                                                                                                                                                                                 |
 | ------------------------------------------------------------------------------------- | ------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Pickers (`selector`, `select`, `checklist`, `tags`)                                   | offers that scope's categories | offers the categories of every listed scope, scope by scope. When they fall in more than one scope, `selector` groups them under each scope's label and the `tags` list names the scope beside each category. `select` takes the first single-choice category, and a `checklist` keeps the one category it names                                                                             |
 | Text fields (`marking`)                                                               | writes that scope              | writes every listed scope as one string, in the format the host names or else the first scope's default output, when that format writes the categories of every listed scope. When it does not, the field is refused at init with an error naming the scopes and the format, and is left unenhanced                                                                                          |
-| Embedded marks (`marked-input`, `marked-textarea`, and the inline editor behind them) | writes that scope              | refused at init and left unenhanced: an embedded mark is one part marking on one line, and a marking across several scopes is written one surface per scope. Give each scope a field of its own                                                                                                                                                                                              |
+| Embedded marks (`marked-input`, `marked-textarea`, and the inline editor behind them) | writes that scope              | writes every listed scope as one mark, under the same rule as a text field: the format the host names, or the first scope's default part output, has to write every listed scope, or the field is refused at init and left unenhanced                                                                                                                                                        |
 | `decisionflow`                                                                        | walks that scope               | walks every listed scope, labels each step with its scope, groups the summary by scope and ends with each scope in its own output                                                                                                                                                                                                                                                            |
 | `banner`, `text`                                                                      | shows what that scope writes   | shows what the listed scopes write as one string, under the same rule as a text field: the format the host names, or the first scope's default output, has to write every listed scope, or the view is refused at init. A banner showing several buckets writes each bucket that way, and says its value may be incomplete when a bucket holds facts its scheme cannot write in those scopes |
 
@@ -99,6 +104,11 @@ coverage it reports for that format. A format writes the categories of its own
 surface, so a scheme that writes two scopes on one line declares the categories
 that line carries in both scopes. A scheme that writes two scopes in separate
 places, such as a label line and a block beneath it, keeps them in two fields.
+
+A `marked-input` holds one line. When the format it writes in puts a marking on
+more than one line, such as a block of labeled fields, the input keeps the text
+it has and reports that it cannot hold the marking, rather than running the
+lines together into text that would read back as a different marking.
 
 ### Seeing them on a page
 

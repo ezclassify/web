@@ -589,7 +589,19 @@ export class MarkedInput extends MarkedFieldBase<HTMLTextAreaElement> {
         };
     }
 
+    /**
+     * Write the field's value, unless it breaks a line. A native input drops
+     * the breaks from its value, which would run the lines of a write together
+     * into text that reads back as a different marking. Free text cannot hold a
+     * break here (Enter is blocked and a paste is sanitized), so a value that
+     * has one carries an engine write in a format of several lines: the field
+     * keeps its value and says why instead.
+     */
     protected override setHostValue(value: string, notify = true): void {
+        if (breaksLine(value)) {
+            this.refuseLineBreak();
+            return;
+        }
         this.nativeInput.value = value;
         super.setHostValue(this.nativeInput.value, notify);
     }
@@ -835,6 +847,20 @@ export class MarkedInput extends MarkedFieldBase<HTMLTextAreaElement> {
     }
 
     /**
+     * Mark the field invalid and say that the marking it was given is written
+     * on more than one line, which this one-line field cannot hold.
+     */
+    private refuseLineBreak(): void {
+        const message =
+            `Cannot write the marking in this field: format "${this.scanFormat}" ` +
+            'writes it on more than one line, and this field holds one line.';
+        this.valid = false;
+        this.errors = [message];
+        this.showReport({ ...NO_RULE_ERRORS, messages: [message] });
+        this.renderDisplay();
+    }
+
+    /**
      * Show a report under the field: the rule errors, warnings and fixes of a
      * read, or why the read failed.
      */
@@ -877,6 +903,12 @@ export class MarkedInput extends MarkedFieldBase<HTMLTextAreaElement> {
             this.input.readOnly
         )
             return;
+        // The read that follows would re-read the text the field kept and
+        // clear the reason this fix was not written.
+        if (breaksLine(fix.rendered)) {
+            this.refuseLineBreak();
+            return;
+        }
         const marking = this.wrapRendered(fix.rendered);
         this._editorAssertions = null;
         this._userEdited = true;
@@ -1719,4 +1751,9 @@ function takenSignature(assertions: readonly Assertion[]): string {
         .map((one) => `${one.categoryId}\u0000${one.conceptId}`)
         .sort()
         .join('\u0001');
+}
+
+/** Whether `text` holds a line break. */
+function breaksLine(text: string): boolean {
+    return /[\r\n]/.test(text);
 }

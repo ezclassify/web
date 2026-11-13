@@ -17,16 +17,11 @@
                             "id": "bound-part-role",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-a37c46dd28ecfa17a2c700d4d5fd7c805c70904b46e4f6edc2ef1371942b4c85",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-a37c46dd28ecfa17a2c700d4d5fd7c805c70904b46e4f6edc2ef1371942b4c85",
+                    "contextId": "bound-part-role",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [],
@@ -53,7 +48,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -90,7 +85,7 @@
                     "views": { "default": "ALPHA" }
                 }
             ],
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "GET",
             "statusCode": 200
         },
@@ -115,13 +110,13 @@
                     "surface": "marking"
                 }
             ],
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "GET",
             "statusCode": 200
         },
         "5bc2654f6897b7d8586229d7b46d549fd88c82bc60fd5da23840b06812547cdd": {
             "body": [],
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "GET",
             "statusCode": 200
         },
@@ -133,16 +128,11 @@
                             "id": "bound-part-role",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-a37c46dd28ecfa17a2c700d4d5fd7c805c70904b46e4f6edc2ef1371942b4c85",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-a37c46dd28ecfa17a2c700d4d5fd7c805c70904b46e4f6edc2ef1371942b4c85",
+                    "contextId": "bound-part-role",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [],
@@ -184,7 +174,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -196,16 +186,11 @@
                             "id": "bound-part-role",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-a37c46dd28ecfa17a2c700d4d5fd7c805c70904b46e4f6edc2ef1371942b4c85",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-a37c46dd28ecfa17a2c700d4d5fd7c805c70904b46e4f6edc2ef1371942b4c85",
+                    "contextId": "bound-part-role",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [],
@@ -237,7 +222,7 @@
                     ]
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -254,13 +239,13 @@
                 "roleAware": true,
                 "version": "1.0.0"
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "GET",
             "statusCode": 200
         },
         "9ed71c038850c6cd88575a9052f5ac5e7e26bb4185cf17552b1faf5e5bbdea8b": {
             "body": {
-                "id": "sbx-a37c46dd28ecfa17a2c700d4d5fd7c805c70904b46e4f6edc2ef1371942b4c85",
+                "id": "bound-part-role",
                 "scheme": {
                     "id": "bound-part-role",
                     "resolvedVersion": "1.0.0",
@@ -274,9 +259,9 @@
                         "version": "1.0.0"
                     }
                 ],
-                "version": "0.0.0"
+                "version": "1.0.0"
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "GET",
             "statusCode": 200
         },
@@ -288,16 +273,11 @@
                             "id": "bound-part-role",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-a37c46dd28ecfa17a2c700d4d5fd7c805c70904b46e4f6edc2ef1371942b4c85",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-a37c46dd28ecfa17a2c700d4d5fd7c805c70904b46e4f6edc2ef1371942b4c85",
+                    "contextId": "bound-part-role",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [],
@@ -348,7 +328,7 @@
                     ]
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -379,7 +359,7 @@
                     "single": false
                 }
             ],
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "GET",
             "statusCode": 200
         },
@@ -397,7 +377,7 @@
         },
         "e22921e88eca4329a64a6cc8acfe6448dc73abb9f3831e596828dbddd54a84ea": {
             "body": [],
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "GET",
             "statusCode": 200
         }

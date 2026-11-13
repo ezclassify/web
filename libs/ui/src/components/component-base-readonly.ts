@@ -486,11 +486,16 @@ export abstract class ReadOnlyComponentBase implements ComponentInstance {
                 ? schemeMeta.defaultPartRenderFormat
                 : undefined) ??
             this.resolveDefaultFormatId(schemeMeta);
-        // A text field that lists several scopes writes them in one string,
-        // the default output of the first of them unless it names a format,
-        // and only when that format writes every one of them.
-        const listed = options?.scopes ?? [];
-        if (this.writesScopesAsText() && listed.length > 1) {
+        // A text field writes the scopes it lists: in the format it names,
+        // else the default output of the first of them, and several of them
+        // only when that format writes every one of them in one string.
+        // A lone `scope` is a list of one.
+        const listed = options?.scopes?.length
+            ? options.scopes
+            : options?.scope
+              ? [options.scope]
+              : [];
+        if (this.writesScopesAsText() && listed.length > 0) {
             if (!options?.formatId)
                 this.formatId = viewOutputOf(
                     schemeMeta,

@@ -8,7 +8,7 @@
  * text field is refused, because one string cannot carry both; and a level view
  * shows every bucket as the scopes it names write it. A variant of the surfaces
  * scheme has a format that writes both of its scopes in one line, so a text
- * field there shows them as one string.
+ * field there shows them as one string and reads them back whole.
  */
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { ContextAdapter } from '@ezclassify/types';
@@ -181,7 +181,7 @@ describe('a text field that lists several scopes', () => {
         );
     });
 
-    it('is refused as an embedded mark, whatever format it names', async () => {
+    it('is refused as an embedded mark when the format it names leaves a scope out', async () => {
         const field = new MarkedInput();
         destroyers.push(() => field.destroy());
         const el = document.createElement('input');
@@ -193,7 +193,42 @@ describe('a text field that lists several scopes', () => {
                 formatId: 'origin/block',
             }),
         ).rejects.toThrow(
-            'MarkedInput: data-ezclassify-scope lists "label", "origin", but an embedded mark holds one part marking on one line',
+            'MarkedInput: data-ezclassify-scope lists "label", "origin", but its format "origin/block" does not write the categories of "label"',
+        );
+    });
+
+    it('keeps a one-line field as it was when its format writes the marking on several lines, and says why', async () => {
+        const root = host();
+        root.innerHTML = `
+            <input id="field" data-ezclassify-controller="marked-input"
+                   data-ezclassify-scope="origin" value="quarterly report">`;
+        forms = new EzClassifyUI(await context(), { root });
+        await demoRuntimeSettled();
+        const el = root.querySelector<HTMLInputElement>('#field')!;
+        const field = forms.components.get(el) as MarkedInput;
+        expect(field).toBeDefined();
+
+        field.setAssertions(
+            [
+                ['origin_type', 'COPIED'],
+                ['source_type', 'MANY_SOURCES'],
+                ['release_type', 'NEVER'],
+            ].map(([categoryId, conceptId]) => ({
+                categoryId: categoryId!,
+                conceptId: conceptId!,
+                confidence: 'certain' as const,
+                source: 'user',
+            })),
+        );
+        await demoRuntimeSettled();
+
+        // The origin block is written a line per field. An input would drop
+        // the break and run the lines together into a different marking.
+        expect(el.value).toBe('quarterly report');
+        expect(
+            root.querySelector('.ez-validation-errors__message')?.textContent,
+        ).toBe(
+            'Cannot write the marking in this field: format "origin/block" writes it on more than one line, and this field holds one line.',
         );
     });
 
@@ -344,11 +379,12 @@ describe('a level view across buckets that names a scope', () => {
             .poll(() => lines('block').join(' | '))
             .toMatch(/Release: Never.*\|.*Release: Exempt/);
         expect(lines('block').join(' ')).not.toContain('HIGH');
-        // A view that names no scope shows each bucket's whole marking.
+        // A view that names no scope shows each bucket's default scope.
         expect(lines('line')).toEqual([
-            expect.stringMatching(/HIGH\nRelease: Never$/),
-            expect.stringMatching(/HIGH\nRelease: Exempt$/),
+            expect.stringMatching(/HIGH$/),
+            expect.stringMatching(/HIGH$/),
         ]);
+        expect(lines('line').join(' ')).not.toContain('Release');
     });
 });
 
@@ -397,64 +433,129 @@ describe('a text field whose format writes every scope it lists', () => {
         source: 'user',
     }));
 
-    it('writes both scopes as one string and keeps both facts in the store', async () => {
+    const held = (assertions: readonly { conceptId: string }[]) =>
+        assertions.map((a) => a.conceptId).sort();
+
+    /** Mount one field on the kept scheme and return its host and instance. */
+    async function mountField<T>(markup: string): Promise<{
+        el: HTMLInputElement & HTMLTextAreaElement;
+        field: T;
+    }> {
         Element.prototype.scrollIntoView = vi.fn();
         const root = host();
-        root.innerHTML = `
-            <textarea id="field" data-ezclassify-controller="marking"
-                      data-ezclassify-scope="retention sensitivity"
-                      data-ezclassify-format="kept"></textarea>`;
+        root.innerHTML = markup;
         forms = new EzClassifyUI(await keptContext(), { root });
         await demoRuntimeSettled();
-        const el = root.querySelector<HTMLTextAreaElement>('#field')!;
-        const field = forms.components.get(el) as MarkingField;
+        const el = root.querySelector<HTMLInputElement & HTMLTextAreaElement>(
+            '#field',
+        )!;
+        const field = forms.components.get(el) as T;
         expect(field).toBeDefined();
-
-        field.setAssertions(facts);
-        await demoRuntimeSettled();
-
-        // The kept view writes both scopes on one line. The engine writes a
-        // whole marking on every surface it has facts for, and the scheme
-        // puts the keep in both scopes, so the retention block follows.
-        expect(el.value).toBe('CONFIDENTIAL // KEEP 7 YEARS\nKEEP 7 YEARS');
-        expect(
-            forms.store.get('field').assertions.map((a) => a.conceptId),
-        ).toEqual(expect.arrayContaining(['CONFIDENTIAL', 'KEEP_7Y']));
-    });
+        return { el, field };
+    }
 
     it.each([
-        ['marked-input', 'MarkedInput', '<input id="field"', '>'],
+        // The kept view writes both scopes on one line, and the engine writes
+        // a named view alone, so the retention block does not follow it.
         [
-            'marked-textarea',
-            'MarkedTextArea',
-            '<textarea id="field"',
-            '></textarea>',
+            'the scopes it lists',
+            'retention sensitivity',
+            'kept',
+            'CONFIDENTIAL // KEEP 7 YEARS',
         ],
+        // One scope is its own surface, written in its own default output.
+        ['the one scope it lists', 'retention', null, 'KEEP 7 YEARS'],
     ])(
-        'a %s fails to mount, as its one-line mark cannot hold a surface per scope',
-        async (controller, label, open, close) => {
-            const error = vi
-                .spyOn(console, 'error')
-                .mockImplementation(() => {});
-            const root = host();
-            root.innerHTML = `${open} data-ezclassify-controller="${controller}"
-                data-ezclassify-scope="retention sensitivity"
-                data-ezclassify-format="kept"${close}`;
-            forms = new EzClassifyUI(await keptContext(), { root });
-            await demoRuntimeSettled();
+        'a text field writes %s as one string, reads it back, and keeps every fact in the store',
+        async (_, scopes, format, written) => {
+            const { el, field } = await mountField<MarkingField>(`
+                <textarea id="field" data-ezclassify-controller="marking"
+                          data-ezclassify-scope="${scopes}"
+                          ${format ? `data-ezclassify-format="${format}"` : ''}></textarea>`);
 
-            const logged = error.mock.calls.flat().join(' ');
-            expect(logged).toContain(`"${controller}" failed to mount`);
-            expect(logged).toContain(
-                `${label}: data-ezclassify-scope lists "sensitivity", "retention", but an embedded mark holds one part marking on one line`,
+            field.setAssertions(facts);
+            await demoRuntimeSettled();
+            expect(el.value).toBe(written);
+            expect(held(forms!.store.get('field').assertions)).toEqual([
+                'CONFIDENTIAL',
+                'KEEP_7Y',
+            ]);
+
+            // The string it wrote reads back to the facts it was written
+            // from: none of the scopes it lists loses one.
+            await field.setValue(written);
+            await demoRuntimeSettled();
+            expect(el.value).toBe(written);
+            expect(held(forms!.store.get('field').assertions)).toEqual(
+                held(
+                    format
+                        ? facts
+                        : facts.filter((fact) => fact.categoryId === 'keep'),
+                ),
             );
-            expect(
-                root
-                    .querySelector('#field')
-                    ?.closest('.marked-input-wrap, .marked-textarea-wrap'),
-            ).toBeNull();
         },
     );
+
+    it.each([
+        [
+            'the scopes it lists',
+            'retention sensitivity',
+            'kept',
+            '(CONFIDENTIAL // KEEP 7 YEARS) quarterly report',
+            ['CONFIDENTIAL', 'KEEP_7Y'],
+        ],
+        [
+            'the one scope it lists',
+            'retention',
+            null,
+            '(KEEP 7 YEARS) quarterly report',
+            ['KEEP_7Y'],
+        ],
+    ])(
+        'a marked input writes %s as one mark and reads it back with no fact lost',
+        async (_, scopes, format, written, read) => {
+            const { el, field } = await mountField<MarkedInput>(`
+                <input id="field" data-ezclassify-controller="marked-input"
+                       data-ezclassify-scope="${scopes}"
+                       ${format ? `data-ezclassify-format="${format}"` : ''}
+                       value="quarterly report">`);
+
+            field.setAssertions(facts);
+            await demoRuntimeSettled();
+            expect(el.value).toBe(written);
+            expect(
+                el
+                    .closest('.marked-input-wrap')
+                    ?.querySelector('.ez-validation-errors__message'),
+            ).toBeNull();
+
+            field.setValue(written);
+            await demoRuntimeSettled();
+            expect(el.value).toBe(written);
+            expect(held(field.getAssertions())).toEqual(read);
+        },
+    );
+
+    it('a marked text area reads a mark of the scopes it lists with no fact lost', async () => {
+        const root = host();
+        root.innerHTML = `
+            <input type="hidden" id="document" data-ezclassify-marking>
+            <textarea id="field" data-ezclassify-controller="marked-textarea"
+                      data-ezclassify-bound-to="document"
+                      data-ezclassify-scope="retention sensitivity"
+                      data-ezclassify-format="kept"></textarea>`;
+        root.querySelector('textarea')!.value =
+            '(CONFIDENTIAL // KEEP 7 YEARS) First body.';
+        forms = new EzClassifyUI(await keptContext(), { root });
+        await demoRuntimeSettled();
+
+        const [entry] = forms.store.getEntryIds!('document') ?? [];
+        expect(entry).toBeDefined();
+        expect(held(forms.store.get(entry!).assertions)).toEqual([
+            'CONFIDENTIAL',
+            'KEEP_7Y',
+        ]);
+    });
 
     it('a banner and a text view of one marking write both scopes in the format they name', async () => {
         const root = host();
@@ -479,9 +580,9 @@ describe('a text field whose format writes every scope it lists', () => {
                     root.querySelector('#banner .status-banner-label')
                         ?.textContent,
             )
-            .toBe('CONFIDENTIAL // KEEP 7 YEARS\nKEEP 7 YEARS');
+            .toBe('CONFIDENTIAL // KEEP 7 YEARS');
         expect(root.querySelector('#text')?.textContent).toBe(
-            'CONFIDENTIAL // KEEP 7 YEARS\nKEEP 7 YEARS',
+            'CONFIDENTIAL // KEEP 7 YEARS',
         );
         expect(
             root.querySelector('#banner .status-banner-incomplete'),
@@ -526,12 +627,7 @@ describe('a text field whose format writes every scope it lists', () => {
         // passing for the whole page.
         await expect
             .poll(() => lines())
-            .toEqual([
-                [
-                    'kept: Surfaces',
-                    'CONFIDENTIAL // KEEP 7 YEARS\nKEEP 7 YEARS',
-                ],
-            ]);
+            .toEqual([['kept: Surfaces', 'CONFIDENTIAL // KEEP 7 YEARS']]);
         expect(
             root.querySelector('#level .status-banner-incomplete'),
         ).not.toBeNull();

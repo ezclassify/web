@@ -17,16 +17,11 @@
                             "id": "composer-pick",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-2b8fe91d66d597fc1b9a05ff9d8831760df0b3b76403265bc74c33277bb6bec3",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-2b8fe91d66d597fc1b9a05ff9d8831760df0b3b76403265bc74c33277bb6bec3",
+                    "contextId": "composer-pick",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [],
@@ -127,7 +122,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -181,7 +176,7 @@
                     "surface": "marking"
                 }
             ],
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "GET",
             "statusCode": 200
         },
@@ -193,16 +188,11 @@
                             "id": "composer-pick",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-2b8fe91d66d597fc1b9a05ff9d8831760df0b3b76403265bc74c33277bb6bec3",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-2b8fe91d66d597fc1b9a05ff9d8831760df0b3b76403265bc74c33277bb6bec3",
+                    "contextId": "composer-pick",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "suggestions": [
@@ -287,7 +277,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -299,16 +289,11 @@
                             "id": "composer-pick",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-2b8fe91d66d597fc1b9a05ff9d8831760df0b3b76403265bc74c33277bb6bec3",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-2b8fe91d66d597fc1b9a05ff9d8831760df0b3b76403265bc74c33277bb6bec3",
+                    "contextId": "composer-pick",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "suggestions": [
@@ -415,13 +400,13 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
         "2ab226cbe85f580de8f7d4d7192dfca44953b0e6c005b26e36589e7722932ab0": {
             "body": {
-                "id": "sbx-2b8fe91d66d597fc1b9a05ff9d8831760df0b3b76403265bc74c33277bb6bec3",
+                "id": "composer-pick",
                 "scheme": {
                     "id": "composer-pick",
                     "resolvedVersion": "1.0.0",
@@ -435,9 +420,9 @@
                         "version": "1.0.0"
                     }
                 ],
-                "version": "0.0.0"
+                "version": "1.0.0"
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "GET",
             "statusCode": 200
         },
@@ -449,16 +434,11 @@
                             "id": "composer-pick",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-2b8fe91d66d597fc1b9a05ff9d8831760df0b3b76403265bc74c33277bb6bec3",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-2b8fe91d66d597fc1b9a05ff9d8831760df0b3b76403265bc74c33277bb6bec3",
+                    "contextId": "composer-pick",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "assessment": {
@@ -476,7 +456,7 @@
                     "result": "SECRET//SI/TK//NOFORN"
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -488,16 +468,11 @@
                             "id": "composer-pick",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-2b8fe91d66d597fc1b9a05ff9d8831760df0b3b76403265bc74c33277bb6bec3",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-2b8fe91d66d597fc1b9a05ff9d8831760df0b3b76403265bc74c33277bb6bec3",
+                    "contextId": "composer-pick",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "assessment": {
@@ -516,7 +491,7 @@
                     "result": "SECRET//SI/TK//REL TO AUS"
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -528,16 +503,11 @@
                             "id": "composer-pick",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-2b8fe91d66d597fc1b9a05ff9d8831760df0b3b76403265bc74c33277bb6bec3",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-2b8fe91d66d597fc1b9a05ff9d8831760df0b3b76403265bc74c33277bb6bec3",
+                    "contextId": "composer-pick",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [
@@ -621,7 +591,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -633,16 +603,11 @@
                             "id": "composer-pick",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-2b8fe91d66d597fc1b9a05ff9d8831760df0b3b76403265bc74c33277bb6bec3",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-2b8fe91d66d597fc1b9a05ff9d8831760df0b3b76403265bc74c33277bb6bec3",
+                    "contextId": "composer-pick",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [
@@ -719,7 +684,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -766,7 +731,7 @@
                     "single": false
                 }
             ],
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "GET",
             "statusCode": 200
         },
@@ -783,7 +748,7 @@
                 "roleAware": false,
                 "version": "1.0.0"
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "GET",
             "statusCode": 200
         },
@@ -795,16 +760,11 @@
                             "id": "composer-pick",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-2b8fe91d66d597fc1b9a05ff9d8831760df0b3b76403265bc74c33277bb6bec3",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-2b8fe91d66d597fc1b9a05ff9d8831760df0b3b76403265bc74c33277bb6bec3",
+                    "contextId": "composer-pick",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "suggestions": [
@@ -900,7 +860,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -912,16 +872,11 @@
                             "id": "composer-pick",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-2b8fe91d66d597fc1b9a05ff9d8831760df0b3b76403265bc74c33277bb6bec3",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-2b8fe91d66d597fc1b9a05ff9d8831760df0b3b76403265bc74c33277bb6bec3",
+                    "contextId": "composer-pick",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "suggestions": [
@@ -984,7 +939,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -996,16 +951,11 @@
                             "id": "composer-pick",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-2b8fe91d66d597fc1b9a05ff9d8831760df0b3b76403265bc74c33277bb6bec3",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-2b8fe91d66d597fc1b9a05ff9d8831760df0b3b76403265bc74c33277bb6bec3",
+                    "contextId": "composer-pick",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "assessment": {
@@ -1024,7 +974,7 @@
                     "result": "SECRET//SI/TK//NOFORN/DISPLAY ONLY"
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -1036,16 +986,11 @@
                             "id": "composer-pick",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-2b8fe91d66d597fc1b9a05ff9d8831760df0b3b76403265bc74c33277bb6bec3",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-2b8fe91d66d597fc1b9a05ff9d8831760df0b3b76403265bc74c33277bb6bec3",
+                    "contextId": "composer-pick",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [
@@ -1122,7 +1067,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -1134,16 +1079,11 @@
                             "id": "composer-pick",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-2b8fe91d66d597fc1b9a05ff9d8831760df0b3b76403265bc74c33277bb6bec3",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-2b8fe91d66d597fc1b9a05ff9d8831760df0b3b76403265bc74c33277bb6bec3",
+                    "contextId": "composer-pick",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [],
@@ -1202,7 +1142,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -1214,16 +1154,11 @@
                             "id": "composer-pick",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-2b8fe91d66d597fc1b9a05ff9d8831760df0b3b76403265bc74c33277bb6bec3",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-2b8fe91d66d597fc1b9a05ff9d8831760df0b3b76403265bc74c33277bb6bec3",
+                    "contextId": "composer-pick",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [],
@@ -1275,7 +1210,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -1287,16 +1222,11 @@
                             "id": "composer-pick",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-2b8fe91d66d597fc1b9a05ff9d8831760df0b3b76403265bc74c33277bb6bec3",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-2b8fe91d66d597fc1b9a05ff9d8831760df0b3b76403265bc74c33277bb6bec3",
+                    "contextId": "composer-pick",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "suggestions": [
@@ -1392,7 +1322,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -1404,16 +1334,11 @@
                             "id": "composer-pick",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-2b8fe91d66d597fc1b9a05ff9d8831760df0b3b76403265bc74c33277bb6bec3",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-2b8fe91d66d597fc1b9a05ff9d8831760df0b3b76403265bc74c33277bb6bec3",
+                    "contextId": "composer-pick",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [
@@ -1486,7 +1411,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -1498,16 +1423,11 @@
                             "id": "composer-pick",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-2b8fe91d66d597fc1b9a05ff9d8831760df0b3b76403265bc74c33277bb6bec3",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-2b8fe91d66d597fc1b9a05ff9d8831760df0b3b76403265bc74c33277bb6bec3",
+                    "contextId": "composer-pick",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [],
@@ -1559,13 +1479,13 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
         "7bc7e6994593090753e7f7ef32cf60f349234a31ed77ad9b662753f31e18571d": {
             "body": [],
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "GET",
             "statusCode": 200
         },
@@ -1577,16 +1497,11 @@
                             "id": "composer-pick",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-2b8fe91d66d597fc1b9a05ff9d8831760df0b3b76403265bc74c33277bb6bec3",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-2b8fe91d66d597fc1b9a05ff9d8831760df0b3b76403265bc74c33277bb6bec3",
+                    "contextId": "composer-pick",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "assessment": {
@@ -1605,7 +1520,7 @@
                     "result": "SECRET//SI/TK//NOFORN/REL TO"
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -1617,16 +1532,11 @@
                             "id": "composer-pick",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-2b8fe91d66d597fc1b9a05ff9d8831760df0b3b76403265bc74c33277bb6bec3",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-2b8fe91d66d597fc1b9a05ff9d8831760df0b3b76403265bc74c33277bb6bec3",
+                    "contextId": "composer-pick",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [],
@@ -1671,7 +1581,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -1683,16 +1593,11 @@
                             "id": "composer-pick",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-2b8fe91d66d597fc1b9a05ff9d8831760df0b3b76403265bc74c33277bb6bec3",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-2b8fe91d66d597fc1b9a05ff9d8831760df0b3b76403265bc74c33277bb6bec3",
+                    "contextId": "composer-pick",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [
@@ -1762,7 +1667,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -1774,16 +1679,11 @@
                             "id": "composer-pick",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-2b8fe91d66d597fc1b9a05ff9d8831760df0b3b76403265bc74c33277bb6bec3",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-2b8fe91d66d597fc1b9a05ff9d8831760df0b3b76403265bc74c33277bb6bec3",
+                    "contextId": "composer-pick",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "suggestions": [
@@ -1846,7 +1746,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -1858,16 +1758,11 @@
                             "id": "composer-pick",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-2b8fe91d66d597fc1b9a05ff9d8831760df0b3b76403265bc74c33277bb6bec3",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-2b8fe91d66d597fc1b9a05ff9d8831760df0b3b76403265bc74c33277bb6bec3",
+                    "contextId": "composer-pick",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "suggestions": [
@@ -1963,7 +1858,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -1975,16 +1870,11 @@
                             "id": "composer-pick",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-2b8fe91d66d597fc1b9a05ff9d8831760df0b3b76403265bc74c33277bb6bec3",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-2b8fe91d66d597fc1b9a05ff9d8831760df0b3b76403265bc74c33277bb6bec3",
+                    "contextId": "composer-pick",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "assessment": {
@@ -2002,7 +1892,7 @@
                     "result": "SECRET//SI/TK//REL TO"
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -2014,16 +1904,11 @@
                             "id": "composer-pick",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-2b8fe91d66d597fc1b9a05ff9d8831760df0b3b76403265bc74c33277bb6bec3",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-2b8fe91d66d597fc1b9a05ff9d8831760df0b3b76403265bc74c33277bb6bec3",
+                    "contextId": "composer-pick",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [
@@ -2113,7 +1998,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -2125,16 +2010,11 @@
                             "id": "composer-pick",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-2b8fe91d66d597fc1b9a05ff9d8831760df0b3b76403265bc74c33277bb6bec3",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-2b8fe91d66d597fc1b9a05ff9d8831760df0b3b76403265bc74c33277bb6bec3",
+                    "contextId": "composer-pick",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [],
@@ -2193,7 +2073,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -2300,7 +2180,7 @@
                     "views": { "default": "CAN" }
                 }
             ],
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "GET",
             "statusCode": 200
         },
@@ -2312,16 +2192,11 @@
                             "id": "composer-pick",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-2b8fe91d66d597fc1b9a05ff9d8831760df0b3b76403265bc74c33277bb6bec3",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-2b8fe91d66d597fc1b9a05ff9d8831760df0b3b76403265bc74c33277bb6bec3",
+                    "contextId": "composer-pick",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [],
@@ -2356,7 +2231,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -2368,16 +2243,11 @@
                             "id": "composer-pick",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-2b8fe91d66d597fc1b9a05ff9d8831760df0b3b76403265bc74c33277bb6bec3",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-2b8fe91d66d597fc1b9a05ff9d8831760df0b3b76403265bc74c33277bb6bec3",
+                    "contextId": "composer-pick",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "suggestions": [
@@ -2484,13 +2354,13 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
         "bd250057a278aeafe4a02404d7a4f6f81d6dd0d3f6befdc3c19600ca78ae4ceb": {
             "body": [],
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "GET",
             "statusCode": 200
         },
@@ -2502,16 +2372,11 @@
                             "id": "composer-pick",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-2b8fe91d66d597fc1b9a05ff9d8831760df0b3b76403265bc74c33277bb6bec3",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-2b8fe91d66d597fc1b9a05ff9d8831760df0b3b76403265bc74c33277bb6bec3",
+                    "contextId": "composer-pick",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "suggestions": [
@@ -2585,7 +2450,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -2597,16 +2462,11 @@
                             "id": "composer-pick",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-2b8fe91d66d597fc1b9a05ff9d8831760df0b3b76403265bc74c33277bb6bec3",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-2b8fe91d66d597fc1b9a05ff9d8831760df0b3b76403265bc74c33277bb6bec3",
+                    "contextId": "composer-pick",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [
@@ -2690,7 +2550,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -2702,16 +2562,11 @@
                             "id": "composer-pick",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-2b8fe91d66d597fc1b9a05ff9d8831760df0b3b76403265bc74c33277bb6bec3",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-2b8fe91d66d597fc1b9a05ff9d8831760df0b3b76403265bc74c33277bb6bec3",
+                    "contextId": "composer-pick",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "suggestions": [
@@ -2818,7 +2673,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -2830,16 +2685,11 @@
                             "id": "composer-pick",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-2b8fe91d66d597fc1b9a05ff9d8831760df0b3b76403265bc74c33277bb6bec3",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-2b8fe91d66d597fc1b9a05ff9d8831760df0b3b76403265bc74c33277bb6bec3",
+                    "contextId": "composer-pick",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [],
@@ -2877,7 +2727,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -2889,16 +2739,11 @@
                             "id": "composer-pick",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-2b8fe91d66d597fc1b9a05ff9d8831760df0b3b76403265bc74c33277bb6bec3",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-2b8fe91d66d597fc1b9a05ff9d8831760df0b3b76403265bc74c33277bb6bec3",
+                    "contextId": "composer-pick",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "assessment": {
@@ -2915,7 +2760,7 @@
                     "result": "SECRET//SI/TK"
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -2927,16 +2772,11 @@
                             "id": "composer-pick",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-2b8fe91d66d597fc1b9a05ff9d8831760df0b3b76403265bc74c33277bb6bec3",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-2b8fe91d66d597fc1b9a05ff9d8831760df0b3b76403265bc74c33277bb6bec3",
+                    "contextId": "composer-pick",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [],
@@ -3030,7 +2870,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -3042,16 +2882,11 @@
                             "id": "composer-pick",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-2b8fe91d66d597fc1b9a05ff9d8831760df0b3b76403265bc74c33277bb6bec3",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-2b8fe91d66d597fc1b9a05ff9d8831760df0b3b76403265bc74c33277bb6bec3",
+                    "contextId": "composer-pick",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "suggestions": [
@@ -3147,7 +2982,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -3171,16 +3006,11 @@
                             "id": "composer-pick",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-2b8fe91d66d597fc1b9a05ff9d8831760df0b3b76403265bc74c33277bb6bec3",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-2b8fe91d66d597fc1b9a05ff9d8831760df0b3b76403265bc74c33277bb6bec3",
+                    "contextId": "composer-pick",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [
@@ -3257,7 +3087,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -3269,16 +3099,11 @@
                             "id": "composer-pick",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-2b8fe91d66d597fc1b9a05ff9d8831760df0b3b76403265bc74c33277bb6bec3",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-2b8fe91d66d597fc1b9a05ff9d8831760df0b3b76403265bc74c33277bb6bec3",
+                    "contextId": "composer-pick",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "suggestions": [
@@ -3385,7 +3210,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         }

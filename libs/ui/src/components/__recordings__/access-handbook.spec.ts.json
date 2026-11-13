@@ -109,7 +109,7 @@
         },
         "2e1f43873701d983b601b6741ad3f5b07a42ab06cf7934b86433d50aa1c06729": {
             "body": {
-                "id": "sbx-9922f0b6597001b244b024c86997af0b0400c03b8731da73a50170ac21e4405a",
+                "id": "test-access",
                 "scheme": {
                     "id": "test-access",
                     "resolvedVersion": "1.0.0",
@@ -123,9 +123,9 @@
                         "version": "1.0.0"
                     }
                 ],
-                "version": "0.0.0"
+                "version": "1.0.0"
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "GET",
             "statusCode": 200
         },
@@ -149,7 +149,7 @@
                     "views": { "default": "L1" }
                 }
             ],
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "GET",
             "statusCode": 200
         },
@@ -190,7 +190,7 @@
                     "single": true
                 }
             ],
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "GET",
             "statusCode": 200
         },
@@ -292,7 +292,7 @@
         },
         "8fb08adeec8945e5c2a6960166b033672594bfd6d596ff8f4f7c96993b951a28": {
             "body": [],
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "GET",
             "statusCode": 200
         },
@@ -315,7 +315,7 @@
                 "roleAware": false,
                 "version": "1.0.0"
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "GET",
             "statusCode": 200
         },
@@ -441,7 +441,7 @@
         },
         "b617f63c67289f6d8fc7b00a19043defd5bcd60010e5e4ec218938f35b3c6b7f": {
             "body": [],
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "GET",
             "statusCode": 200
         },
@@ -457,7 +457,7 @@
                     "surface": "marking"
                 }
             ],
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "GET",
             "statusCode": 200
         },

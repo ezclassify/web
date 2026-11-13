@@ -10,16 +10,11 @@
                             "id": "composer-contract",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
+                    "contextId": "composer-contract",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [],
@@ -39,7 +34,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -51,16 +46,11 @@
                             "id": "composer-contract",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
+                    "contextId": "composer-contract",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [],
@@ -96,7 +86,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -108,16 +98,11 @@
                             "id": "composer-contract",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
+                    "contextId": "composer-contract",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [],
@@ -153,7 +138,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -173,7 +158,7 @@
                 "roleAware": false,
                 "version": "1.0.0"
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "GET",
             "statusCode": 200
         },
@@ -200,7 +185,7 @@
                     "surface": "marking"
                 }
             ],
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "GET",
             "statusCode": 200
         },
@@ -212,16 +197,11 @@
                             "id": "composer-contract",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
+                    "contextId": "composer-contract",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [],
@@ -266,7 +246,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -278,16 +258,11 @@
                             "id": "composer-contract",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
+                    "contextId": "composer-contract",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [
@@ -377,7 +352,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -389,16 +364,11 @@
                             "id": "composer-contract",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
+                    "contextId": "composer-contract",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "categoryId": "level",
@@ -407,7 +377,7 @@
                     "name": "Secret"
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "GET",
             "statusCode": 200
         },
@@ -419,16 +389,11 @@
                             "id": "composer-contract",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
+                    "contextId": "composer-contract",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [],
@@ -473,7 +438,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -485,16 +450,11 @@
                             "id": "composer-contract",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
+                    "contextId": "composer-contract",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [
@@ -561,7 +521,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -573,16 +533,11 @@
                             "id": "composer-contract",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
+                    "contextId": "composer-contract",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [],
@@ -620,7 +575,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -632,16 +587,11 @@
                             "id": "composer-contract",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
+                    "contextId": "composer-contract",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [
@@ -724,7 +674,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -736,16 +686,11 @@
                             "id": "composer-contract",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
+                    "contextId": "composer-contract",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [
@@ -803,7 +748,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -815,16 +760,11 @@
                             "id": "composer-contract",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
+                    "contextId": "composer-contract",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [
@@ -875,7 +815,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -887,16 +827,11 @@
                             "id": "composer-contract",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
+                    "contextId": "composer-contract",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "assessment": {
@@ -911,7 +846,7 @@
                     "result": "SECRET"
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -923,16 +858,11 @@
                             "id": "composer-contract",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
+                    "contextId": "composer-contract",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [],
@@ -970,7 +900,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -982,16 +912,11 @@
                             "id": "composer-contract",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
+                    "contextId": "composer-contract",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [],
@@ -1029,7 +954,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -1041,16 +966,11 @@
                             "id": "composer-contract",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
+                    "contextId": "composer-contract",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [],
@@ -1076,7 +996,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -1088,16 +1008,11 @@
                             "id": "composer-contract",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
+                    "contextId": "composer-contract",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [],
@@ -1128,7 +1043,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -1140,16 +1055,11 @@
                             "id": "composer-contract",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
+                    "contextId": "composer-contract",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "suggestions": [
@@ -1168,7 +1078,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -1180,16 +1090,11 @@
                             "id": "composer-contract",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
+                    "contextId": "composer-contract",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [
@@ -1251,7 +1156,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -1263,16 +1168,11 @@
                             "id": "composer-contract",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
+                    "contextId": "composer-contract",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "suggestions": [
@@ -1324,7 +1224,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -1336,16 +1236,11 @@
                             "id": "composer-contract",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
+                    "contextId": "composer-contract",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [
@@ -1404,7 +1299,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -1416,16 +1311,11 @@
                             "id": "composer-contract",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
+                    "contextId": "composer-contract",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [],
@@ -1451,7 +1341,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -1463,16 +1353,11 @@
                             "id": "composer-contract",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
+                    "contextId": "composer-contract",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [],
@@ -1503,7 +1388,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -1515,16 +1400,11 @@
                             "id": "composer-contract",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
+                    "contextId": "composer-contract",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "assessment": {
@@ -1539,7 +1419,7 @@
                     "result": "ORCON"
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -1551,16 +1431,11 @@
                             "id": "composer-contract",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
+                    "contextId": "composer-contract",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [],
@@ -1593,7 +1468,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -1605,16 +1480,11 @@
                             "id": "composer-contract",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
+                    "contextId": "composer-contract",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [
@@ -1676,7 +1546,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -1688,16 +1558,11 @@
                             "id": "composer-contract",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
+                    "contextId": "composer-contract",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [],
@@ -1735,7 +1600,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -1747,16 +1612,11 @@
                             "id": "composer-contract",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
+                    "contextId": "composer-contract",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [],
@@ -1798,7 +1658,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -1810,16 +1670,11 @@
                             "id": "composer-contract",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
+                    "contextId": "composer-contract",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "suggestions": [
@@ -1871,7 +1726,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -1883,16 +1738,11 @@
                             "id": "composer-contract",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
+                    "contextId": "composer-contract",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [],
@@ -1924,7 +1774,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -1936,16 +1786,11 @@
                             "id": "composer-contract",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
+                    "contextId": "composer-contract",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "suggestions": [
@@ -1964,7 +1809,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -1976,16 +1821,11 @@
                             "id": "composer-contract",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
+                    "contextId": "composer-contract",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "suggestions": [
@@ -2004,7 +1844,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -2016,16 +1856,11 @@
                             "id": "composer-contract",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
+                    "contextId": "composer-contract",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [],
@@ -2045,7 +1880,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -2057,16 +1892,11 @@
                             "id": "composer-contract",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
+                    "contextId": "composer-contract",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [],
@@ -2092,7 +1922,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -2104,16 +1934,11 @@
                             "id": "composer-contract",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
+                    "contextId": "composer-contract",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [],
@@ -2145,7 +1970,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -2168,7 +1993,7 @@
                     "single": false
                 }
             ],
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "GET",
             "statusCode": 200
         },
@@ -2180,16 +2005,11 @@
                             "id": "composer-contract",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
+                    "contextId": "composer-contract",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "limits": { "regionsFound": 2, "status": "complete" },
@@ -2296,7 +2116,7 @@
                     "unread": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -2308,16 +2128,11 @@
                             "id": "composer-contract",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
+                    "contextId": "composer-contract",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [],
@@ -2362,7 +2177,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -2374,16 +2189,11 @@
                             "id": "composer-contract",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
+                    "contextId": "composer-contract",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [],
@@ -2421,7 +2231,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -2433,16 +2243,11 @@
                             "id": "composer-contract",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
+                    "contextId": "composer-contract",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "suggestions": [
@@ -2483,7 +2288,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -2495,16 +2300,11 @@
                             "id": "composer-contract",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
+                    "contextId": "composer-contract",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [],
@@ -2556,7 +2356,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -2568,16 +2368,11 @@
                             "id": "composer-contract",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
+                    "contextId": "composer-contract",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "suggestions": [
@@ -2596,7 +2391,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -2608,16 +2403,11 @@
                             "id": "composer-contract",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
+                    "contextId": "composer-contract",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "suggestions": [
@@ -2636,7 +2426,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -2648,16 +2438,11 @@
                             "id": "composer-contract",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
+                    "contextId": "composer-contract",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "assessment": {
@@ -2673,7 +2458,7 @@
                     "result": "SECRET//NOFORN"
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -2685,16 +2470,11 @@
                             "id": "composer-contract",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
+                    "contextId": "composer-contract",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [],
@@ -2725,7 +2505,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -2737,16 +2517,11 @@
                             "id": "composer-contract",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
+                    "contextId": "composer-contract",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [],
@@ -2766,7 +2541,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -2778,16 +2553,11 @@
                             "id": "composer-contract",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
+                    "contextId": "composer-contract",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [],
@@ -2814,13 +2584,13 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
         "5047bd991c2d0458829cb34d1ec6ce2227c7c525d5e33001ba8342dcc2c0b167": {
             "body": [],
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "GET",
             "statusCode": 200
         },
@@ -2832,16 +2602,11 @@
                             "id": "composer-contract",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
+                    "contextId": "composer-contract",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [],
@@ -2872,7 +2637,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -2884,16 +2649,11 @@
                             "id": "composer-contract",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
+                    "contextId": "composer-contract",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "assessment": {
@@ -2909,7 +2669,7 @@
                     "result": "SECRET//ORCON"
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -2921,16 +2681,11 @@
                             "id": "composer-contract",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
+                    "contextId": "composer-contract",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [],
@@ -2956,7 +2711,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -2968,16 +2723,11 @@
                             "id": "composer-contract",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
+                    "contextId": "composer-contract",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [
@@ -3029,7 +2779,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -3041,16 +2791,11 @@
                             "id": "composer-contract",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
+                    "contextId": "composer-contract",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [],
@@ -3083,7 +2828,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -3095,16 +2840,11 @@
                             "id": "composer-contract",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
+                    "contextId": "composer-contract",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "limits": { "regionsFound": 1, "status": "complete" },
@@ -3157,7 +2897,7 @@
                     "unread": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -3169,20 +2909,15 @@
                             "id": "composer-contract",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
+                    "contextId": "composer-contract",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": { "suggestions": [], "warnings": [] }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -3194,16 +2929,11 @@
                             "id": "composer-contract",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
+                    "contextId": "composer-contract",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "suggestions": [
@@ -3222,7 +2952,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -3234,16 +2964,11 @@
                             "id": "composer-contract",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
+                    "contextId": "composer-contract",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [
@@ -3295,7 +3020,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -3307,16 +3032,11 @@
                             "id": "composer-contract",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
+                    "contextId": "composer-contract",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [
@@ -3378,7 +3098,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -3390,16 +3110,11 @@
                             "id": "composer-contract",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
+                    "contextId": "composer-contract",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "suggestions": [
@@ -3418,7 +3133,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -3430,16 +3145,11 @@
                             "id": "composer-contract",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
+                    "contextId": "composer-contract",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "limits": { "regionsFound": 1, "status": "complete" },
@@ -3492,7 +3202,7 @@
                     "unread": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -3504,16 +3214,11 @@
                             "id": "composer-contract",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
+                    "contextId": "composer-contract",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [
@@ -3571,7 +3276,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -3583,16 +3288,11 @@
                             "id": "composer-contract",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
+                    "contextId": "composer-contract",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [],
@@ -3623,7 +3323,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -3635,16 +3335,11 @@
                             "id": "composer-contract",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
+                    "contextId": "composer-contract",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [],
@@ -3676,7 +3371,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -3688,16 +3383,11 @@
                             "id": "composer-contract",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
+                    "contextId": "composer-contract",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "assessment": {
@@ -3712,7 +3402,7 @@
                     "result": "ORCON"
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -3724,16 +3414,11 @@
                             "id": "composer-contract",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
+                    "contextId": "composer-contract",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "suggestions": [
@@ -3774,7 +3459,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -3786,16 +3471,11 @@
                             "id": "composer-contract",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
+                    "contextId": "composer-contract",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "suggestions": [
@@ -3814,7 +3494,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -3826,16 +3506,11 @@
                             "id": "composer-contract",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
+                    "contextId": "composer-contract",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [],
@@ -3873,7 +3548,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -3885,16 +3560,11 @@
                             "id": "composer-contract",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
+                    "contextId": "composer-contract",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [
@@ -3942,7 +3612,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -3954,16 +3624,11 @@
                             "id": "composer-contract",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
+                    "contextId": "composer-contract",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "suggestions": [
@@ -3982,7 +3647,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -3994,16 +3659,11 @@
                             "id": "composer-contract",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
+                    "contextId": "composer-contract",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "limits": { "regionsFound": 1, "status": "complete" },
@@ -4076,7 +3736,7 @@
                     "unread": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -4088,16 +3748,11 @@
                             "id": "composer-contract",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
+                    "contextId": "composer-contract",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [],
@@ -4135,13 +3790,13 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
         "824ea8a4145dda0e6db74b78a3114da207d526bcdda1d69c35c7a2d505669956": {
             "body": [],
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "GET",
             "statusCode": 200
         },
@@ -4153,16 +3808,11 @@
                             "id": "composer-contract",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
+                    "contextId": "composer-contract",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [],
@@ -4207,7 +3857,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -4219,16 +3869,11 @@
                             "id": "composer-contract",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
+                    "contextId": "composer-contract",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "limits": { "regionsFound": 1, "status": "complete" },
@@ -4291,7 +3936,7 @@
                     "unread": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -4303,16 +3948,11 @@
                             "id": "composer-contract",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
+                    "contextId": "composer-contract",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "suggestions": [
@@ -4353,7 +3993,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -4365,16 +4005,11 @@
                             "id": "composer-contract",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
+                    "contextId": "composer-contract",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "categoryId": "caveat",
@@ -4383,7 +4018,7 @@
                     "name": "Noforn"
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "GET",
             "statusCode": 200
         },
@@ -4395,16 +4030,11 @@
                             "id": "composer-contract",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
+                    "contextId": "composer-contract",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [],
@@ -4435,7 +4065,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -4447,16 +4077,11 @@
                             "id": "composer-contract",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
+                    "contextId": "composer-contract",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "assessment": {
@@ -4473,7 +4098,7 @@
                     "result": "SECRET//NOFORN/ORCON"
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -4485,16 +4110,11 @@
                             "id": "composer-contract",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
+                    "contextId": "composer-contract",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [],
@@ -4520,7 +4140,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -4532,16 +4152,11 @@
                             "id": "composer-contract",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
+                    "contextId": "composer-contract",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "suggestions": [
@@ -4582,7 +4197,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -4594,16 +4209,11 @@
                             "id": "composer-contract",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
+                    "contextId": "composer-contract",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [
@@ -4644,7 +4254,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -4656,16 +4266,11 @@
                             "id": "composer-contract",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
+                    "contextId": "composer-contract",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "limits": { "regionsFound": 1, "status": "complete" },
@@ -4728,7 +4333,7 @@
                     "unread": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -4740,16 +4345,11 @@
                             "id": "composer-contract",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
+                    "contextId": "composer-contract",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "assessment": {
@@ -4765,7 +4365,7 @@
                     "result": "SECRET//NOFORN"
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -4777,16 +4377,11 @@
                             "id": "composer-contract",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
+                    "contextId": "composer-contract",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "limits": { "regionsFound": 1, "status": "complete" },
@@ -4839,7 +4434,7 @@
                     "unread": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -4851,16 +4446,11 @@
                             "id": "composer-contract",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
+                    "contextId": "composer-contract",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "suggestions": [
@@ -4879,7 +4469,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -4891,16 +4481,11 @@
                             "id": "composer-contract",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
+                    "contextId": "composer-contract",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [],
@@ -4945,7 +4530,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -4957,16 +4542,11 @@
                             "id": "composer-contract",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
+                    "contextId": "composer-contract",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "limits": { "regionsFound": 1, "status": "complete" },
@@ -5029,7 +4609,7 @@
                     "unread": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -5041,16 +4621,11 @@
                             "id": "composer-contract",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
+                    "contextId": "composer-contract",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "suggestions": [
@@ -5091,7 +4666,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -5103,16 +4678,11 @@
                             "id": "composer-contract",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
+                    "contextId": "composer-contract",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [
@@ -5195,7 +4765,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -5207,16 +4777,11 @@
                             "id": "composer-contract",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
+                    "contextId": "composer-contract",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "suggestions": [
@@ -5235,7 +4800,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -5247,16 +4812,11 @@
                             "id": "composer-contract",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
+                    "contextId": "composer-contract",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [],
@@ -5276,7 +4836,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -5288,16 +4848,11 @@
                             "id": "composer-contract",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
+                    "contextId": "composer-contract",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [
@@ -5356,7 +4911,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -5368,16 +4923,11 @@
                             "id": "composer-contract",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
+                    "contextId": "composer-contract",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [
@@ -5428,7 +4978,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -5440,16 +4990,11 @@
                             "id": "composer-contract",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
+                    "contextId": "composer-contract",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [],
@@ -5481,7 +5026,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -5493,16 +5038,11 @@
                             "id": "composer-contract",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
+                    "contextId": "composer-contract",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [],
@@ -5522,7 +5062,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -5569,7 +5109,7 @@
                     "views": { "default": "ORCON" }
                 }
             ],
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "GET",
             "statusCode": 200
         },
@@ -5581,16 +5121,11 @@
                             "id": "composer-contract",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
+                    "contextId": "composer-contract",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [],
@@ -5616,7 +5151,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -5628,16 +5163,11 @@
                             "id": "composer-contract",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
+                    "contextId": "composer-contract",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "categoryId": "level",
@@ -5646,7 +5176,7 @@
                     "name": "Unclassified"
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "GET",
             "statusCode": 200
         },
@@ -5658,16 +5188,11 @@
                             "id": "composer-contract",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
+                    "contextId": "composer-contract",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "suggestions": [
@@ -5719,7 +5244,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -5731,16 +5256,11 @@
                             "id": "composer-contract",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
+                    "contextId": "composer-contract",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "suggestions": [
@@ -5759,7 +5279,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -5771,16 +5291,11 @@
                             "id": "composer-contract",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
+                    "contextId": "composer-contract",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "suggestions": [
@@ -5821,7 +5336,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -5833,16 +5348,11 @@
                             "id": "composer-contract",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
+                    "contextId": "composer-contract",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "limits": { "regionsFound": 1, "status": "complete" },
@@ -5901,7 +5411,7 @@
                     "unread": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -5913,16 +5423,11 @@
                             "id": "composer-contract",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
+                    "contextId": "composer-contract",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [],
@@ -5967,7 +5472,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -5979,16 +5484,11 @@
                             "id": "composer-contract",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
+                    "contextId": "composer-contract",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [],
@@ -6010,7 +5510,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -6022,16 +5522,11 @@
                             "id": "composer-contract",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
+                    "contextId": "composer-contract",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [],
@@ -6069,7 +5564,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -6081,16 +5576,11 @@
                             "id": "composer-contract",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
+                    "contextId": "composer-contract",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "suggestions": [
@@ -6142,7 +5632,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -6154,20 +5644,15 @@
                             "id": "composer-contract",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
+                    "contextId": "composer-contract",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": { "suggestions": [], "warnings": [] }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -6179,16 +5664,11 @@
                             "id": "composer-contract",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
+                    "contextId": "composer-contract",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [
@@ -6273,7 +5753,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -6285,16 +5765,11 @@
                             "id": "composer-contract",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
+                    "contextId": "composer-contract",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [],
@@ -6332,7 +5807,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -6344,16 +5819,11 @@
                             "id": "composer-contract",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
+                    "contextId": "composer-contract",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [],
@@ -6391,7 +5861,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -6403,16 +5873,11 @@
                             "id": "composer-contract",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
+                    "contextId": "composer-contract",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [],
@@ -6457,7 +5922,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -6469,16 +5934,11 @@
                             "id": "composer-contract",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
+                    "contextId": "composer-contract",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "suggestions": [
@@ -6519,7 +5979,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -6531,16 +5991,11 @@
                             "id": "composer-contract",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
+                    "contextId": "composer-contract",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [],
@@ -6560,7 +6015,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -6572,16 +6027,11 @@
                             "id": "composer-contract",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
+                    "contextId": "composer-contract",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [],
@@ -6607,7 +6057,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -6619,16 +6069,11 @@
                             "id": "composer-contract",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
+                    "contextId": "composer-contract",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "assessment": {
@@ -6643,7 +6088,7 @@
                     "result": "UNCLASSIFIED"
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -6655,16 +6100,11 @@
                             "id": "composer-contract",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
+                    "contextId": "composer-contract",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [
@@ -6722,7 +6162,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -6734,16 +6174,11 @@
                             "id": "composer-contract",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
+                    "contextId": "composer-contract",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [],
@@ -6774,7 +6209,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -6798,16 +6233,11 @@
                             "id": "composer-contract",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
+                    "contextId": "composer-contract",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [],
@@ -6845,7 +6275,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -6857,16 +6287,11 @@
                             "id": "composer-contract",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
+                    "contextId": "composer-contract",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "suggestions": [
@@ -6885,7 +6310,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -6897,16 +6322,11 @@
                             "id": "composer-contract",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
+                    "contextId": "composer-contract",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [
@@ -6957,7 +6377,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -6969,16 +6389,11 @@
                             "id": "composer-contract",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
+                    "contextId": "composer-contract",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "suggestions": [
@@ -7019,7 +6434,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -7031,16 +6446,11 @@
                             "id": "composer-contract",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
+                    "contextId": "composer-contract",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [
@@ -7102,7 +6512,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -7114,16 +6524,11 @@
                             "id": "composer-contract",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
+                    "contextId": "composer-contract",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [],
@@ -7175,7 +6580,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -7187,16 +6592,11 @@
                             "id": "composer-contract",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
+                    "contextId": "composer-contract",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "assessment": {
@@ -7211,7 +6611,7 @@
                     "result": "SECRET"
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -7223,16 +6623,11 @@
                             "id": "composer-contract",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
+                    "contextId": "composer-contract",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [],
@@ -7270,7 +6665,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -7282,16 +6677,11 @@
                             "id": "composer-contract",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
+                    "contextId": "composer-contract",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [],
@@ -7313,7 +6703,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -7325,16 +6715,11 @@
                             "id": "composer-contract",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
+                    "contextId": "composer-contract",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [
@@ -7385,13 +6770,13 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
         "f10c69d5414c7b55d322cd31ebe46a89f99085ad2b92ca6bc2ebe6e0b3438a41": {
             "body": {
-                "id": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
+                "id": "composer-contract",
                 "scheme": {
                     "id": "composer-contract",
                     "resolvedVersion": "1.0.0",
@@ -7405,9 +6790,9 @@
                         "version": "1.0.0"
                     }
                 ],
-                "version": "0.0.0"
+                "version": "1.0.0"
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "GET",
             "statusCode": 200
         },
@@ -7419,16 +6804,11 @@
                             "id": "composer-contract",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
+                    "contextId": "composer-contract",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [
@@ -7480,7 +6860,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -7492,16 +6872,11 @@
                             "id": "composer-contract",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
+                    "contextId": "composer-contract",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "suggestions": [
@@ -7542,7 +6917,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -7554,16 +6929,11 @@
                             "id": "composer-contract",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
+                    "contextId": "composer-contract",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "assessment": {
@@ -7579,7 +6949,7 @@
                     "result": "SECRET//ORCON"
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -7591,16 +6961,11 @@
                             "id": "composer-contract",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-6806d6a8967012c318adbcc8d2c01c0dd5f0c69d32fb44c6ec33c3d8899d2823",
+                    "contextId": "composer-contract",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "categoryId": "caveat",
@@ -7609,7 +6974,7 @@
                     "name": "Orcon"
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "GET",
             "statusCode": 200
         }

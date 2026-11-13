@@ -71,6 +71,63 @@
             "method": "GET",
             "statusCode": 200
         },
+        "12378fe9b9a2410a8e9730f76dd517a9d544216136d19980491d66a15d5da6c9": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "surfaces",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "surfaces",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "keep",
+                            "conceptId": "KEEP_7Y",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            { "categoryId": "keep", "conceptId": "KEEP_7Y" }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [
+                        {
+                            "constraintId": "required-category:level",
+                            "message": "Level is required: the marking asserts no concept in this category"
+                        }
+                    ],
+                    "inputWasValid": false,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "recognition": {
+                        "corrections": [],
+                        "status": "complete",
+                        "unmatched": []
+                    },
+                    "rendered": "KEEP 7 YEARS",
+                    "renders": {},
+                    "valid": false,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
         "1beec7525b9377696d88dd004e92225369574ac5705d744ec7637345f988fe78": {
             "body": {
                 "resolution": {
@@ -146,7 +203,111 @@
                         "omitted": [],
                         "unrepresentable": []
                     },
-                    "result": "CONFIDENTIAL // KEEP 7 YEARS\nKEEP 7 YEARS"
+                    "result": "CONFIDENTIAL // KEEP 7 YEARS"
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "233244459ab56c07063c9594b76207dd9a41c3923bcab62c628af2a500c4f515": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "surfaces",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "surfaces",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "CONFIDENTIAL",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "keep",
+                            "conceptId": "KEEP_7Y",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            {
+                                "categoryId": "level",
+                                "conceptId": "CONFIDENTIAL"
+                            },
+                            { "categoryId": "keep", "conceptId": "KEEP_7Y" }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "recognition": {
+                        "corrections": [],
+                        "status": "complete",
+                        "unmatched": []
+                    },
+                    "rendered": "CONFIDENTIAL // KEEP 7 YEARS",
+                    "renders": {},
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "2f34b897eca910a5a5acc0f1c207ed8fd9af45299360d381381fc60f1da2238c": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "surfaces",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "surfaces",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "CONFIDENTIAL",
+                            "confidence": "certain",
+                            "source": "aggregate"
+                        },
+                        {
+                            "categoryId": "keep",
+                            "conceptId": "KEEP_7Y",
+                            "confidence": "certain",
+                            "source": "aggregate"
+                        }
+                    ],
+                    "errors": [],
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "CONFIDENTIAL\nKEEP 7 YEARS",
+                    "valid": true,
+                    "warnings": []
                 }
             },
             "headers": { "x-ezclassify-resolved-version": "1.0.0" },
@@ -234,6 +395,64 @@
             ],
             "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "GET",
+            "statusCode": 200
+        },
+        "3b865093ca523eaa78e84a37e606d5d35a3164c8fb6ea37254404334ab586b2b": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "surfaces",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "surfaces",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "keep",
+                            "conceptId": "KEEP_7Y",
+                            "confidence": "certain",
+                            "source": "user"
+                        },
+                        {
+                            "categoryId": "level",
+                            "conceptId": "CONFIDENTIAL",
+                            "confidence": "certain",
+                            "source": "user"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            { "categoryId": "keep", "conceptId": "KEEP_7Y" }
+                        ],
+                        "omitted": [
+                            {
+                                "categoryId": "level",
+                                "conceptId": "CONFIDENTIAL"
+                            }
+                        ],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "KEEP 7 YEARS",
+                    "renders": {},
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
             "statusCode": 200
         },
         "3d05036b885e6ebf6d3255fb72e412594c9267bca7f18432998759651c23fd1f": {
@@ -349,10 +568,104 @@
             "method": "POST",
             "statusCode": 200
         },
+        "40ad769c5c2ffb882a5561f2b37153b6a769b83c3c411227545533e12c8eb8b4": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "surfaces",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "surfaces",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "CONFIDENTIAL",
+                            "confidence": "certain",
+                            "source": "aggregate"
+                        },
+                        {
+                            "categoryId": "keep",
+                            "conceptId": "KEEP_7Y",
+                            "confidence": "certain",
+                            "source": "aggregate"
+                        }
+                    ],
+                    "errors": [],
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "CONFIDENTIAL\nKEEP 7 YEARS",
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
         "478cfa84cfef322450980693daf5d8d4d4a57d51d7bb32783086f4ec28e84094": {
             "body": [],
             "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "GET",
+            "statusCode": 200
+        },
+        "4d6107f9bf80aa441916338ac26e1afaeb53578a053c73264c46a864f9e88b89": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "surfaces",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "surfaces",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "keep",
+                            "conceptId": "KEEP_7Y",
+                            "confidence": "certain",
+                            "source": "user"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [],
+                        "omitted": [
+                            { "categoryId": "keep", "conceptId": "KEEP_7Y" }
+                        ],
+                        "unrepresentable": []
+                    },
+                    "errors": [
+                        {
+                            "constraintId": "required-category:level",
+                            "message": "Level is required: the marking asserts no concept in this category"
+                        }
+                    ],
+                    "inputWasValid": false,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "",
+                    "renders": {},
+                    "valid": false,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
             "statusCode": 200
         },
         "50a29d44c7a184ddf0fffa3d9e982c24793ec6ddc09f0843068f790f12a167f1": {
@@ -450,6 +763,121 @@
             ],
             "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "GET",
+            "statusCode": 200
+        },
+        "5b4abec753f84ecf5b72ad0b58aa82b755c11d28b0ca87adabba5cd88fd9975a": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "surfaces",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "surfaces",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "CONFIDENTIAL",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "keep",
+                            "conceptId": "KEEP_7Y",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            {
+                                "categoryId": "level",
+                                "conceptId": "CONFIDENTIAL"
+                            }
+                        ],
+                        "omitted": [
+                            { "categoryId": "keep", "conceptId": "KEEP_7Y" }
+                        ],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "CONF",
+                    "renders": {},
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "5b93f8a72bca64c6f3cd223de1113b3a5891fb2ac527076501c3e3dfa53b6b3f": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "surfaces",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "surfaces",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "CONFIDENTIAL",
+                            "confidence": "certain",
+                            "source": "user"
+                        },
+                        {
+                            "categoryId": "keep",
+                            "conceptId": "KEEP_7Y",
+                            "confidence": "certain",
+                            "source": "user"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            {
+                                "categoryId": "level",
+                                "conceptId": "CONFIDENTIAL"
+                            },
+                            { "categoryId": "keep", "conceptId": "KEEP_7Y" }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "CONFIDENTIAL // KEEP 7 YEARS",
+                    "renders": {},
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
             "statusCode": 200
         },
         "63693809649778bb19a2ab8a855acc941d8a76ba00aa09a72f0f8c86da924725": {
@@ -755,6 +1183,58 @@
             "method": "GET",
             "statusCode": 200
         },
+        "7cb7c83311bc28c4b5b50d959755fed80a3f0ed325a0e21ecda5adf72f09cb6a": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "surfaces",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "surfaces",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "keep",
+                            "conceptId": "KEEP_7Y",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            { "categoryId": "keep", "conceptId": "KEEP_7Y" }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "recognition": {
+                        "corrections": [],
+                        "status": "complete",
+                        "unmatched": []
+                    },
+                    "rendered": "KEEP 7 YEARS",
+                    "renders": {},
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
         "8091298bee55a1ce1e599924420fe30f758cac904d86f66f8c331f97d15d7b6a": {
             "body": [
                 {
@@ -824,6 +1304,83 @@
             },
             "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "GET",
+            "statusCode": 200
+        },
+        "8bdfa1b29af682fe68b5aad20db34d457c5479c971d246a33a7f2f099d0f59f3": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "surfaces",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "surfaces",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "limits": { "regionsFound": 1, "status": "complete" },
+                    "results": [
+                        {
+                            "end": 30,
+                            "inner": "CONFIDENTIAL // KEEP 7 YEARS",
+                            "marking": "(CONFIDENTIAL // KEEP 7 YEARS)",
+                            "result": {
+                                "appliedFixes": [],
+                                "assertions": [
+                                    {
+                                        "categoryId": "level",
+                                        "conceptId": "CONFIDENTIAL",
+                                        "confidence": "certain",
+                                        "source": "parse"
+                                    },
+                                    {
+                                        "categoryId": "keep",
+                                        "conceptId": "KEEP_7Y",
+                                        "confidence": "certain",
+                                        "source": "parse"
+                                    }
+                                ],
+                                "assessment": {
+                                    "collapsed": [],
+                                    "conflicts": [],
+                                    "emitted": [
+                                        {
+                                            "categoryId": "level",
+                                            "conceptId": "CONFIDENTIAL"
+                                        },
+                                        {
+                                            "categoryId": "keep",
+                                            "conceptId": "KEEP_7Y"
+                                        }
+                                    ],
+                                    "omitted": [],
+                                    "unrepresentable": []
+                                },
+                                "errors": [],
+                                "inputWasValid": true,
+                                "notices": [],
+                                "recognition": {
+                                    "status": "complete",
+                                    "unmatched": []
+                                },
+                                "rendered": "CONFIDENTIAL // KEEP 7 YEARS",
+                                "valid": true,
+                                "warnings": []
+                            },
+                            "role": "part",
+                            "start": 0,
+                            "type": "sensitivity/short",
+                            "wrapped": true
+                        }
+                    ],
+                    "unread": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
             "statusCode": 200
         },
         "8fcc14088f99886ff8c4c36c885cf738a2d659fd2d733025110a4521ca7c8a41": {
@@ -944,11 +1501,162 @@
             "method": "POST",
             "statusCode": 200
         },
+        "9dfced2ea9a905b90e8ff799c64fce5d5dfbdc2dffab604bce3c30ffba0c5afd": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "surfaces",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "surfaces",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "CONFIDENTIAL",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "keep",
+                            "conceptId": "KEEP_7Y",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            {
+                                "categoryId": "level",
+                                "conceptId": "CONFIDENTIAL"
+                            },
+                            { "categoryId": "keep", "conceptId": "KEEP_7Y" }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "recognition": {
+                        "corrections": [],
+                        "status": "complete",
+                        "unmatched": []
+                    },
+                    "rendered": "CONFIDENTIAL // KEEP 7 YEARS",
+                    "renders": {},
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "a180a64d1e5ff9e11012427aa90c598cb1d4200b965875beeb21df7f494f36ba": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "surfaces",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "surfaces",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "keep",
+                            "conceptId": "KEEP_7Y",
+                            "confidence": "certain",
+                            "source": "user"
+                        },
+                        {
+                            "categoryId": "level",
+                            "conceptId": "CONFIDENTIAL",
+                            "confidence": "certain",
+                            "source": "user"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            { "categoryId": "keep", "conceptId": "KEEP_7Y" }
+                        ],
+                        "omitted": [
+                            {
+                                "categoryId": "level",
+                                "conceptId": "CONFIDENTIAL"
+                            }
+                        ],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "KEEP 7 YEARS",
+                    "renders": {},
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
         "a214b82f4fc1c25315c3300c233045722521304bbe5fa1a53779ce35a4afaeaa": {
             "body": {
                 "contextId": "sbx-87ad37151c50113dc2b0b48b2b146f2d66412db3ca670de0a1c886b1dde55801"
             },
             "method": "PUT",
+            "statusCode": 200
+        },
+        "a7de8f6b55c3e6560a2eb771c228f645261250568292699112c089ade8dfe221": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "two-scope-flow",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "two-scope-flow",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            { "categoryId": "level", "conceptId": "HIGH" }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "result": "HIGH"
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
             "statusCode": 200
         },
         "a95d6e15a1a3ce3d7d72bb15c58b9e194680f9a2e40aa53cb470c5c9cf7eb1ac": {
@@ -1198,6 +1906,82 @@
             "method": "POST",
             "statusCode": 200
         },
+        "c56451e331a93242ee33e0a1ce831b25bfe161e719169430411bac6564a9eca3": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "two-scope-flow",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "two-scope-flow",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "source_type",
+                            "conceptId": "MANY_SOURCES",
+                            "confidence": "certain",
+                            "source": "user"
+                        },
+                        {
+                            "categoryId": "release_type",
+                            "conceptId": "NEVER",
+                            "confidence": "certain",
+                            "source": "user"
+                        },
+                        {
+                            "categoryId": "origin_type",
+                            "conceptId": "COPIED",
+                            "confidence": "certain",
+                            "source": "user"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            {
+                                "categoryId": "source_type",
+                                "conceptId": "MANY_SOURCES"
+                            },
+                            {
+                                "categoryId": "release_type",
+                                "conceptId": "NEVER"
+                            }
+                        ],
+                        "omitted": [
+                            {
+                                "categoryId": "origin_type",
+                                "conceptId": "COPIED"
+                            }
+                        ],
+                        "unrepresentable": []
+                    },
+                    "errors": [
+                        {
+                            "constraintId": "required-category:level",
+                            "message": "Level is required: the marking asserts no concept in this category"
+                        }
+                    ],
+                    "inputWasValid": false,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "Source: Many Sources\nRelease: Never",
+                    "renders": {},
+                    "valid": false,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
         "cb1b9340f725c11a14c5d2b7c409f5a902c9a51eabb62b9c887516aa15506be7": {
             "body": {
                 "resolution": {
@@ -1245,7 +2029,7 @@
                     "inputWasValid": true,
                     "notices": [],
                     "proposedFixes": [],
-                    "rendered": "CONFIDENTIAL // KEEP 7 YEARS\nKEEP 7 YEARS",
+                    "rendered": "CONFIDENTIAL // KEEP 7 YEARS",
                     "renders": {},
                     "valid": true,
                     "warnings": []
@@ -1293,19 +2077,7 @@
             "method": "POST",
             "statusCode": 200
         },
-        "e070dec6e78862435e7c23c92a6e4a93a9667377aed0b78b533966687028c314": {
-            "body": {
-                "abiVersion": "v1",
-                "engineSha": "",
-                "engineVersion": "1.0.0-dev.30",
-                "gitTag": "",
-                "openapiVersion": "1.0.0-dev.30",
-                "status": "ok"
-            },
-            "method": "GET",
-            "statusCode": 200
-        },
-        "e0ff25795b68b20f32a7ebc2dcf38f057b2a92a8b58d4fd997f777787df25d1c": {
+        "d30cdf14907052dc79dae93e532a037f5ef4e88699a8cbd4935072a5191b5d80": {
             "body": {
                 "resolution": {
                     "artifacts": [
@@ -1320,30 +2092,19 @@
                     "resolvedVersion": "1.0.0"
                 },
                 "result": {
-                    "appliedFixes": [
-                        {
-                            "action": "reorder",
-                            "message": "Moved `\n` out of this position (separator).",
-                            "ruleId": "_recognition_separator"
-                        },
-                        {
-                            "action": "reorder",
-                            "message": "Moved `KEEP 7 YEARS` out of this position (order).",
-                            "ruleId": "_recognition_order"
-                        }
-                    ],
+                    "appliedFixes": [],
                     "assertions": [
                         {
                             "categoryId": "level",
                             "conceptId": "CONFIDENTIAL",
                             "confidence": "certain",
-                            "source": "parse"
+                            "source": "user"
                         },
                         {
                             "categoryId": "keep",
                             "conceptId": "KEEP_7Y",
                             "confidence": "certain",
-                            "source": "parse"
+                            "source": "user"
                         }
                     ],
                     "assessment": {
@@ -1353,23 +2114,37 @@
                             {
                                 "categoryId": "level",
                                 "conceptId": "CONFIDENTIAL"
-                            },
+                            }
+                        ],
+                        "omitted": [
                             { "categoryId": "keep", "conceptId": "KEEP_7Y" }
                         ],
-                        "omitted": [],
                         "unrepresentable": []
                     },
                     "errors": [],
-                    "inputWasValid": false,
+                    "inputWasValid": true,
                     "notices": [],
-                    "recognition": { "status": "complete", "unmatched": [] },
-                    "rendered": "CONFIDENTIAL // KEEP 7 YEARS\nKEEP 7 YEARS",
+                    "proposedFixes": [],
+                    "rendered": "CONFIDENTIAL",
+                    "renders": {},
                     "valid": true,
                     "warnings": []
                 }
             },
             "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
+            "statusCode": 200
+        },
+        "e070dec6e78862435e7c23c92a6e4a93a9667377aed0b78b533966687028c314": {
+            "body": {
+                "abiVersion": "v1",
+                "engineSha": "",
+                "engineVersion": "1.0.0-dev.30",
+                "gitTag": "",
+                "openapiVersion": "1.0.0-dev.30",
+                "status": "ok"
+            },
+            "method": "GET",
             "statusCode": 200
         },
         "e15150ee5915f731379455f5d8a71127e8225220a5a91d5ddbafab4a7686b07c": {
@@ -1470,6 +2245,47 @@
             "method": "POST",
             "statusCode": 200
         },
+        "e3d65dc754d8dec162af27d4cf431cfdbb3c05d88a6aa80af518a7bb91b01f1d": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "surfaces",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "surfaces",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "keep",
+                            "conceptId": "KEEP_7Y",
+                            "confidence": "certain",
+                            "source": "aggregate"
+                        }
+                    ],
+                    "errors": [
+                        {
+                            "constraintId": "required-category:level",
+                            "message": "Level is required: the marking asserts no concept in this category"
+                        }
+                    ],
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "KEEP 7 YEARS",
+                    "valid": false,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
         "e3fd10d6cc8311a25f18b5cf44ee8b743e36bd1a4cd8a31590564fad9fbe641b": {
             "body": {
                 "resolution": {
@@ -1498,7 +2314,7 @@
                         "omitted": [],
                         "unrepresentable": []
                     },
-                    "result": "CONFIDENTIAL // KEEP 7 YEARS\nKEEP 7 YEARS"
+                    "result": "CONFIDENTIAL // KEEP 7 YEARS"
                 }
             },
             "headers": { "x-ezclassify-resolved-version": "1.0.0" },
@@ -1542,20 +2358,56 @@
                             {
                                 "categoryId": "level",
                                 "conceptId": "CONFIDENTIAL"
-                            },
+                            }
+                        ],
+                        "omitted": [
                             { "categoryId": "keep", "conceptId": "KEEP_7Y" }
                         ],
-                        "omitted": [],
                         "unrepresentable": []
                     },
                     "errors": [],
                     "inputWasValid": true,
                     "notices": [],
                     "proposedFixes": [],
-                    "rendered": "CONFIDENTIAL\nKEEP 7 YEARS",
+                    "rendered": "CONFIDENTIAL",
                     "renders": {},
                     "valid": true,
                     "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "ec8389f23411bff5f2d84688e0849733e579fa7177611f66625fd3e37d5a1030": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "surfaces",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "surfaces",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            {
+                                "categoryId": "level",
+                                "conceptId": "CONFIDENTIAL"
+                            },
+                            { "categoryId": "keep", "conceptId": "KEEP_7Y" }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "result": "CONFIDENTIAL // KEEP 7 YEARS"
                 }
             },
             "headers": { "x-ezclassify-resolved-version": "1.0.0" },
@@ -1588,6 +2440,62 @@
             "body": [],
             "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "GET",
+            "statusCode": 200
+        },
+        "fd77422d7e0d9c7bceda5f7708b7ea011c1e0d3a5c3db1488e8961fee7081c1f": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "surfaces",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "surfaces",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "CONFIDENTIAL",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "keep",
+                            "conceptId": "KEEP_7Y",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            {
+                                "categoryId": "level",
+                                "conceptId": "CONFIDENTIAL"
+                            },
+                            { "categoryId": "keep", "conceptId": "KEEP_7Y" }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "recognition": { "status": "complete", "unmatched": [] },
+                    "rendered": "CONFIDENTIAL // KEEP 7 YEARS",
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
             "statusCode": 200
         },
         "ffec30f84135115c3d84af426a5db4ea06d38577acc99746a26aadd74360c4d2": {

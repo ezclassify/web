@@ -118,7 +118,13 @@ import {
     viewOutputOf,
     wholeOfShownMarking,
 } from './format-resolver';
-import { factsInScopes, inDeclarationOrder, parseScopeList } from './scopes';
+import {
+    factsInScopes,
+    inDeclarationOrder,
+    parseScopeList,
+    reachesPastScopes,
+    scopeSetOf,
+} from './scopes';
 import { renderViewRefusalMessages, renderViewRefused } from './render-refusal';
 import {
     setMountOwner,
@@ -206,6 +212,32 @@ async function writeFactsInScopes(
     } catch {
         return null;
     }
+}
+
+/**
+ * The scopes a view writes a marking's facts in, or none when the marking's own
+ * text already is what the view shows. A view that lists scopes writes those.
+ * One that lists none shows the scheme's default scope, which the marking's
+ * text holds alone only while no fact reaches another scope: a rolled-up
+ * marking names no output, so it is written on every surface its facts reach.
+ *
+ * @param engine - The scheme view the marking is in
+ * @param listed - The scope ids the view lists
+ * @param assertions - The marking's facts
+ * @returns The scope ids to write, or empty to show the marking's text
+ */
+function scopesToWrite(
+    engine: ContextSchemeEngineAdapter,
+    listed: readonly string[],
+    assertions: readonly EngineAssertion[],
+): string[] {
+    if (listed.length > 0) return [...listed];
+    const meta = engine.getSchemeMeta();
+    const scopes = scopeSetOf(listed, meta);
+    return scopes.length > 0 &&
+        reachesPastScopes(assertions, engine.listCategories(), scopes, meta)
+        ? scopes
+        : [];
 }
 
 /**
@@ -2787,13 +2819,11 @@ export class EzClassifyUI {
         const engine = schemeEngineOf(this.resolveContext(el), el);
         const meta = engine.getSchemeMeta();
         if (!meta.defaultScope) return false;
-        const others = (meta.scopes ?? [])
-            .map((s) => s.id)
-            .filter((id) => id !== meta.defaultScope);
-        return (
-            others.length > 0 &&
-            factsInScopes(assertions, engine.listCategories(), others, meta)
-                .length > 0
+        return reachesPastScopes(
+            assertions,
+            engine.listCategories(),
+            [meta.defaultScope],
+            meta,
         );
     }
 
@@ -3579,12 +3609,11 @@ export class EzClassifyUI {
                 ).setIncomplete?.bind(component);
                 // A view that names scopes shows those scopes' own output (see
                 // writeInScopes). Only the newest state's write is shown.
-                const viewScopes =
-                    controller === 'text' || controller === 'banner'
-                        ? parseScopeList(
-                              el.getAttribute('data-ezclassify-scope'),
-                          )
-                        : [];
+                const writesText =
+                    controller === 'text' || controller === 'banner';
+                const viewScopes = writesText
+                    ? parseScopeList(el.getAttribute('data-ezclassify-scope'))
+                    : [];
                 let scopedWrite = 0;
                 const applyState = (s: EzClassifyState) => {
                     // Body editors (marked-input, marked-textarea) own their content,
@@ -3608,17 +3637,27 @@ export class EzClassifyUI {
                     // setValue(rendered), which reads the marking with validate,
                     // so that state tracks.
                     const write = ++scopedWrite;
+                    // A view writes its own scopes, the default one when it
+                    // lists none (see scopesToWrite).
+                    const scopes =
+                        writesText && !refused
+                            ? scopesToWrite(
+                                  schemeEngineOf(this.resolveContext(el), el),
+                                  viewScopes,
+                                  s.assertions ?? [],
+                              )
+                            : viewScopes;
                     if (refused && controller === 'text') {
                         component!.setAssertions(s.assertions ?? []);
                     } else if (
-                        viewScopes.length > 0 &&
+                        scopes.length > 0 &&
                         typeof component.setValue === 'function'
                     ) {
                         const setValue = component.setValue.bind(component);
                         void this.writeInScopes(
                             el,
                             refused ? [] : s.assertions,
-                            viewScopes,
+                            scopes,
                         )
                             .catch(() => null)
                             .then((text) => {
@@ -3688,23 +3727,38 @@ export class EzClassifyUI {
                             showIncomplete?.(
                                 shown.some(([, state]) => state.stale === true),
                             );
-                            if (viewScopes.length === 0) {
+                            // Each bucket is shown as the view's scopes write
+                            // it in its own scheme: the listed ones, else that
+                            // scheme's default (see scopesToWrite).
+                            const bucketScopes = shown.map(([key, state]) => {
+                                if (viewScopes.length > 0) return viewScopes;
+                                const engine = this.bucketEngine(key);
+                                return engine && !renderViewRefused(state)
+                                    ? scopesToWrite(
+                                          engine,
+                                          viewScopes,
+                                          state.assertions,
+                                      )
+                                    : [];
+                            });
+                            if (bucketScopes.every((s) => s.length === 0)) {
                                 showsBuckets(lines);
                                 return;
                             }
-                            // A view that names scopes shows each bucket as
-                            // those scopes write it, once every write lands.
+                            // Shown once every write lands.
                             const write = ++scopedWrite;
                             void Promise.all(
-                                shown.map(([key, state]) =>
-                                    this.writeBucketInScopes(
-                                        el,
-                                        key,
-                                        renderViewRefused(state)
-                                            ? []
-                                            : state.assertions,
-                                        viewScopes,
-                                    ).catch(() => null),
+                                shown.map(([key, state], at) =>
+                                    bucketScopes[at]!.length === 0
+                                        ? Promise.resolve(lines[at]!.rendered)
+                                        : this.writeBucketInScopes(
+                                              el,
+                                              key,
+                                              renderViewRefused(state)
+                                                  ? []
+                                                  : state.assertions,
+                                              bucketScopes[at]!,
+                                          ).catch(() => null),
                                 ),
                             ).then((texts) => {
                                 if (write !== scopedWrite || this._destroyed)

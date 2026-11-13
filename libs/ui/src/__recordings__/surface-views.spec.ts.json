@@ -165,79 +165,6 @@
             "method": "POST",
             "statusCode": 200
         },
-        "10ab0bf035d5fe58ae377e25b0613df6369187dbd0b8e43dc052462a469bf4b2": {
-            "body": {
-                "resolution": {
-                    "artifacts": [
-                        {
-                            "id": "surfaces",
-                            "kind": "scheme",
-                            "version": "1.0.0"
-                        }
-                    ],
-                    "contextId": "surfaces",
-                    "requestedVersion": "0.0.0",
-                    "resolvedVersion": "1.0.0"
-                },
-                "result": {
-                    "appliedFixes": [],
-                    "assertions": [
-                        {
-                            "categoryId": "level",
-                            "conceptId": "CONFIDENTIAL",
-                            "confidence": "certain",
-                            "source": "parse"
-                        },
-                        {
-                            "categoryId": "sharing",
-                            "conceptId": "PARTNERS",
-                            "confidence": "certain",
-                            "source": "parse"
-                        },
-                        {
-                            "categoryId": "keep",
-                            "conceptId": "KEEP_7Y",
-                            "confidence": "certain",
-                            "source": "parse"
-                        }
-                    ],
-                    "assessment": {
-                        "collapsed": [],
-                        "conflicts": [],
-                        "emitted": [
-                            {
-                                "categoryId": "level",
-                                "conceptId": "CONFIDENTIAL"
-                            },
-                            {
-                                "categoryId": "sharing",
-                                "conceptId": "PARTNERS"
-                            },
-                            { "categoryId": "keep", "conceptId": "KEEP_7Y" }
-                        ],
-                        "omitted": [],
-                        "unrepresentable": []
-                    },
-                    "errors": [],
-                    "inputWasValid": true,
-                    "notices": [],
-                    "proposedFixes": [],
-                    "recognition": {
-                        "corrections": [],
-                        "role": "whole",
-                        "status": "complete",
-                        "unmatched": []
-                    },
-                    "rendered": "CONFIDENTIAL // PARTNERS\nKEEP 7 YEARS",
-                    "renders": {},
-                    "valid": true,
-                    "warnings": []
-                }
-            },
-            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
-            "method": "POST",
-            "statusCode": 200
-        },
         "169b1edb99b976c059bb30d4479dd12bba9d85b49731085ddf4385dd8188ca60": {
             "body": {
                 "resolution": {
@@ -389,20 +316,18 @@
                                 "categoryId": "level",
                                 "conceptId": "CONFIDENTIAL"
                             },
-                            {
-                                "categoryId": "sharing",
-                                "conceptId": "PARTNERS"
-                            },
+                            { "categoryId": "sharing", "conceptId": "PARTNERS" }
+                        ],
+                        "omitted": [
                             { "categoryId": "keep", "conceptId": "KEEP_7Y" }
                         ],
-                        "omitted": [],
                         "unrepresentable": []
                     },
                     "errors": [],
                     "inputWasValid": true,
                     "notices": [],
                     "proposedFixes": [],
-                    "rendered": "CONFIDENTIAL // PARTNERS\nKEEP 7 YEARS",
+                    "rendered": "CONFIDENTIAL // PARTNERS",
                     "renders": {},
                     "valid": true,
                     "warnings": []
@@ -491,17 +416,18 @@
                             {
                                 "categoryId": "level",
                                 "conceptId": "CONFIDENTIAL"
-                            },
+                            }
+                        ],
+                        "omitted": [
                             { "categoryId": "keep", "conceptId": "KEEP_7Y" }
                         ],
-                        "omitted": [],
                         "unrepresentable": []
                     },
                     "errors": [],
                     "inputWasValid": true,
                     "notices": [],
                     "proposedFixes": [],
-                    "rendered": "CONFIDENTIAL\nKEEP 7 YEARS",
+                    "rendered": "CONFIDENTIAL",
                     "renders": {},
                     "valid": true,
                     "warnings": []

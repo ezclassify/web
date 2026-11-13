@@ -10,16 +10,11 @@
                             "id": "clear-fields",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-83128251879a1231829944ff53cee445f84530c92c7063e2a08fcf95bc46e3cd",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-83128251879a1231829944ff53cee445f84530c92c7063e2a08fcf95bc46e3cd",
+                    "contextId": "clear-fields",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "limits": { "regionsFound": 1, "status": "complete" },
@@ -72,7 +67,7 @@
                     "unread": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -84,26 +79,21 @@
                             "id": "clear-fields",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-83128251879a1231829944ff53cee445f84530c92c7063e2a08fcf95bc46e3cd",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-83128251879a1231829944ff53cee445f84530c92c7063e2a08fcf95bc46e3cd",
+                    "contextId": "clear-fields",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": { "suggestions": [], "warnings": [] }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
         "0f15f01ace5bd144e2d62e0126a42edbb205873143980faa2d78c1decd51d155": {
             "body": [],
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "GET",
             "statusCode": 200
         },
@@ -115,16 +105,11 @@
                             "id": "clear-fields",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-83128251879a1231829944ff53cee445f84530c92c7063e2a08fcf95bc46e3cd",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-83128251879a1231829944ff53cee445f84530c92c7063e2a08fcf95bc46e3cd",
+                    "contextId": "clear-fields",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [],
@@ -162,7 +147,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -181,16 +166,11 @@
                             "id": "clear-fields",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-83128251879a1231829944ff53cee445f84530c92c7063e2a08fcf95bc46e3cd",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-83128251879a1231829944ff53cee445f84530c92c7063e2a08fcf95bc46e3cd",
+                    "contextId": "clear-fields",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [],
@@ -221,7 +201,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -241,7 +221,7 @@
                 "roleAware": false,
                 "version": "1.0.0"
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "GET",
             "statusCode": 200
         },
@@ -253,16 +233,11 @@
                             "id": "clear-fields",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-83128251879a1231829944ff53cee445f84530c92c7063e2a08fcf95bc46e3cd",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-83128251879a1231829944ff53cee445f84530c92c7063e2a08fcf95bc46e3cd",
+                    "contextId": "clear-fields",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [],
@@ -297,7 +272,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -309,16 +284,11 @@
                             "id": "clear-fields",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-83128251879a1231829944ff53cee445f84530c92c7063e2a08fcf95bc46e3cd",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-83128251879a1231829944ff53cee445f84530c92c7063e2a08fcf95bc46e3cd",
+                    "contextId": "clear-fields",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [],
@@ -345,7 +315,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -357,16 +327,11 @@
                             "id": "clear-fields",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-83128251879a1231829944ff53cee445f84530c92c7063e2a08fcf95bc46e3cd",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-83128251879a1231829944ff53cee445f84530c92c7063e2a08fcf95bc46e3cd",
+                    "contextId": "clear-fields",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [],
@@ -404,7 +369,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -416,16 +381,11 @@
                             "id": "clear-fields",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-83128251879a1231829944ff53cee445f84530c92c7063e2a08fcf95bc46e3cd",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-83128251879a1231829944ff53cee445f84530c92c7063e2a08fcf95bc46e3cd",
+                    "contextId": "clear-fields",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "suggestions": [
@@ -455,7 +415,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -467,16 +427,11 @@
                             "id": "clear-fields",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-83128251879a1231829944ff53cee445f84530c92c7063e2a08fcf95bc46e3cd",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-83128251879a1231829944ff53cee445f84530c92c7063e2a08fcf95bc46e3cd",
+                    "contextId": "clear-fields",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [],
@@ -496,13 +451,13 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
         "8b55a4f1671a37f2bbb0d3bb0e849bac241751e371762b188517b9764068d70a": {
             "body": {
-                "id": "sbx-83128251879a1231829944ff53cee445f84530c92c7063e2a08fcf95bc46e3cd",
+                "id": "clear-fields",
                 "scheme": {
                     "id": "clear-fields",
                     "resolvedVersion": "1.0.0",
@@ -516,15 +471,15 @@
                         "version": "1.0.0"
                     }
                 ],
-                "version": "0.0.0"
+                "version": "1.0.0"
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "GET",
             "statusCode": 200
         },
         "97997abb21ca358de249df708ce85630df36e3a2494a68a29a2d8baf560e14cc": {
             "body": [],
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "GET",
             "statusCode": 200
         },
@@ -536,16 +491,11 @@
                             "id": "clear-fields",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-83128251879a1231829944ff53cee445f84530c92c7063e2a08fcf95bc46e3cd",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-83128251879a1231829944ff53cee445f84530c92c7063e2a08fcf95bc46e3cd",
+                    "contextId": "clear-fields",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "limits": { "regionsFound": 1, "status": "complete" },
@@ -598,7 +548,7 @@
                     "unread": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -610,16 +560,11 @@
                             "id": "clear-fields",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-83128251879a1231829944ff53cee445f84530c92c7063e2a08fcf95bc46e3cd",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-83128251879a1231829944ff53cee445f84530c92c7063e2a08fcf95bc46e3cd",
+                    "contextId": "clear-fields",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [],
@@ -657,7 +602,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -672,7 +617,7 @@
                     "single": true
                 }
             ],
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "GET",
             "statusCode": 200
         },
@@ -699,7 +644,7 @@
                     "views": { "default": "HIGH" }
                 }
             ],
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "GET",
             "statusCode": 200
         },
@@ -727,7 +672,7 @@
                     "surface": "marking"
                 }
             ],
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "GET",
             "statusCode": 200
         },
@@ -739,16 +684,11 @@
                             "id": "clear-fields",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-83128251879a1231829944ff53cee445f84530c92c7063e2a08fcf95bc46e3cd",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-83128251879a1231829944ff53cee445f84530c92c7063e2a08fcf95bc46e3cd",
+                    "contextId": "clear-fields",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [],
@@ -770,7 +710,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         }

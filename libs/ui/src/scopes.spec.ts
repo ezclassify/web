@@ -4,7 +4,9 @@ import {
     factsInScopes,
     inDeclarationOrder,
     parseScopeList,
+    reachesPastScopes,
     scopeLabel,
+    scopeSetOf,
     scopesOfCategory,
 } from './scopes';
 
@@ -59,6 +61,37 @@ describe('scope membership', () => {
         expect(
             factsInScopes(facts, categories, ['marking', 'record'], meta),
         ).toEqual([facts[0], facts[1]]);
+    });
+    it('writes the default scope when a host lists none, and the listed ones otherwise', () => {
+        expect(scopeSetOf([], meta)).toEqual(['marking']);
+        expect(scopeSetOf(['record'], meta)).toEqual(['record']);
+        expect(scopeSetOf(['record', 'marking'], meta)).toEqual([
+            'record',
+            'marking',
+        ]);
+        expect(scopeSetOf([], {})).toEqual([]);
+    });
+
+    it('says when a fact reaches a scope the component does not write', () => {
+        const shared = [
+            ...categories,
+            { id: 'kept', scopes: ['marking', 'record'] },
+        ];
+        const level = { categoryId: 'level' };
+        const signer = { categoryId: 'signer' };
+        const kept = { categoryId: 'kept' };
+        expect(reachesPastScopes([level], shared, ['marking'], meta)).toBe(
+            false,
+        );
+        expect(
+            reachesPastScopes([level, signer], shared, ['marking'], meta),
+        ).toBe(true);
+        // A fact of two scopes reaches both, so writing one leaves it out of
+        // the other's surface.
+        expect(reachesPastScopes([kept], shared, ['marking'], meta)).toBe(true);
+        expect(
+            reachesPastScopes([kept], shared, ['marking', 'record'], meta),
+        ).toBe(false);
     });
 });
 

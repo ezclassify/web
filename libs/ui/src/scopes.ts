@@ -34,6 +34,48 @@ export function parseScopeList(value: string | null | undefined): string[] {
 }
 
 /**
+ * The scopes a component writes: the ones its host lists, or the scheme's
+ * default scope when it lists none. Empty for a scheme that declares no default
+ * scope, whose marking is written whole.
+ *
+ * @param listed - The scope ids the host lists (see {@link parseScopeList})
+ * @param meta - The scheme's scope metadata
+ */
+export function scopeSetOf(
+    listed: readonly string[],
+    meta: ScopeSource,
+): string[] {
+    if (listed.length > 0) return [...listed];
+    return meta.defaultScope ? [meta.defaultScope] : [];
+}
+
+/**
+ * Whether any of a marking's facts belongs to a scope the scheme declares
+ * outside `scopes`, by the scope membership of its category. A fact in a
+ * category of several scopes reaches each of them.
+ *
+ * @param assertions - The marking's facts
+ * @param categories - The scheme's categories, with the scopes they declare
+ * @param scopes - The scope ids a component writes
+ * @param meta - The scheme's scope metadata
+ */
+export function reachesPastScopes(
+    assertions: ReadonlyArray<{ categoryId: string }>,
+    categories: ReadonlyArray<{ id: string; scopes?: readonly string[] }>,
+    scopes: readonly string[],
+    meta: ScopeSource,
+): boolean {
+    const listed = new Set(scopes);
+    const others = (meta.scopes ?? [])
+        .map((scope) => scope.id)
+        .filter((id) => !listed.has(id));
+    return (
+        others.length > 0 &&
+        factsInScopes(assertions, categories, others, meta).length > 0
+    );
+}
+
+/**
  * The scopes a category belongs to: the ones it declares, or the default scope
  * when it declares none. Empty for a scheme that declares no scopes.
  *

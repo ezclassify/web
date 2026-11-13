@@ -15,7 +15,7 @@
                 "roleAware": false,
                 "version": "1.0.0"
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "GET",
             "statusCode": 200
         },
@@ -27,16 +27,11 @@
                             "id": "warehouse-entry",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-d92a7e698f03f06b5ab0ba01ce34906c2364e428707aa4dda74bbeb813a4353b",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-d92a7e698f03f06b5ab0ba01ce34906c2364e428707aa4dda74bbeb813a4353b",
+                    "contextId": "warehouse-entry",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [],
@@ -67,7 +62,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -79,16 +74,11 @@
                             "id": "warehouse-entry",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-d92a7e698f03f06b5ab0ba01ce34906c2364e428707aa4dda74bbeb813a4353b",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-d92a7e698f03f06b5ab0ba01ce34906c2364e428707aa4dda74bbeb813a4353b",
+                    "contextId": "warehouse-entry",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "item": {
@@ -126,7 +116,7 @@
                     }
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -138,16 +128,11 @@
                             "id": "warehouse-entry",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-d92a7e698f03f06b5ab0ba01ce34906c2364e428707aa4dda74bbeb813a4353b",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-d92a7e698f03f06b5ab0ba01ce34906c2364e428707aa4dda74bbeb813a4353b",
+                    "contextId": "warehouse-entry",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [],
@@ -183,7 +168,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -195,16 +180,11 @@
                             "id": "warehouse-entry",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-d92a7e698f03f06b5ab0ba01ce34906c2364e428707aa4dda74bbeb813a4353b",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-d92a7e698f03f06b5ab0ba01ce34906c2364e428707aa4dda74bbeb813a4353b",
+                    "contextId": "warehouse-entry",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [],
@@ -233,7 +213,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -245,16 +225,11 @@
                             "id": "warehouse-entry",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-d92a7e698f03f06b5ab0ba01ce34906c2364e428707aa4dda74bbeb813a4353b",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-d92a7e698f03f06b5ab0ba01ce34906c2364e428707aa4dda74bbeb813a4353b",
+                    "contextId": "warehouse-entry",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [],
@@ -290,7 +265,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -302,16 +277,11 @@
                             "id": "warehouse-entry",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-d92a7e698f03f06b5ab0ba01ce34906c2364e428707aa4dda74bbeb813a4353b",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-d92a7e698f03f06b5ab0ba01ce34906c2364e428707aa4dda74bbeb813a4353b",
+                    "contextId": "warehouse-entry",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [],
@@ -347,7 +317,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -359,16 +329,11 @@
                             "id": "warehouse-entry",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-d92a7e698f03f06b5ab0ba01ce34906c2364e428707aa4dda74bbeb813a4353b",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-d92a7e698f03f06b5ab0ba01ce34906c2364e428707aa4dda74bbeb813a4353b",
+                    "contextId": "warehouse-entry",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [],
@@ -404,7 +369,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -437,7 +402,7 @@
                     "views": { "compact": "NONE", "default": "NONE" }
                 }
             ],
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "GET",
             "statusCode": 200
         },
@@ -449,16 +414,11 @@
                             "id": "warehouse-entry",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-d92a7e698f03f06b5ab0ba01ce34906c2364e428707aa4dda74bbeb813a4353b",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-d92a7e698f03f06b5ab0ba01ce34906c2364e428707aa4dda74bbeb813a4353b",
+                    "contextId": "warehouse-entry",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "item": {
@@ -496,7 +456,7 @@
                     }
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -510,13 +470,13 @@
                     "single": true
                 }
             ],
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "GET",
             "statusCode": 200
         },
         "8a65144a2a84e70c903cdb4a359e87152795fa0a206d19911241e370b1fa3ad9": {
             "body": [],
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "GET",
             "statusCode": 200
         },
@@ -528,16 +488,11 @@
                             "id": "warehouse-entry",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-d92a7e698f03f06b5ab0ba01ce34906c2364e428707aa4dda74bbeb813a4353b",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-d92a7e698f03f06b5ab0ba01ce34906c2364e428707aa4dda74bbeb813a4353b",
+                    "contextId": "warehouse-entry",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [],
@@ -558,7 +513,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -570,16 +525,11 @@
                             "id": "warehouse-entry",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-d92a7e698f03f06b5ab0ba01ce34906c2364e428707aa4dda74bbeb813a4353b",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-d92a7e698f03f06b5ab0ba01ce34906c2364e428707aa4dda74bbeb813a4353b",
+                    "contextId": "warehouse-entry",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [],
@@ -600,13 +550,13 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
         "a9639e5e281a71d90667720f79129b6a545b64a34fb8402e729ff243a9458ba0": {
             "body": [],
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "GET",
             "statusCode": 200
         },
@@ -618,16 +568,11 @@
                             "id": "warehouse-entry",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-d92a7e698f03f06b5ab0ba01ce34906c2364e428707aa4dda74bbeb813a4353b",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-d92a7e698f03f06b5ab0ba01ce34906c2364e428707aa4dda74bbeb813a4353b",
+                    "contextId": "warehouse-entry",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [],
@@ -664,7 +609,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -676,16 +621,11 @@
                             "id": "warehouse-entry",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-d92a7e698f03f06b5ab0ba01ce34906c2364e428707aa4dda74bbeb813a4353b",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-d92a7e698f03f06b5ab0ba01ce34906c2364e428707aa4dda74bbeb813a4353b",
+                    "contextId": "warehouse-entry",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [],
@@ -721,7 +661,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -735,7 +675,7 @@
                     "surface": "marking"
                 }
             ],
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "GET",
             "statusCode": 200
         },
@@ -766,16 +706,11 @@
                             "id": "warehouse-entry",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-d92a7e698f03f06b5ab0ba01ce34906c2364e428707aa4dda74bbeb813a4353b",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-d92a7e698f03f06b5ab0ba01ce34906c2364e428707aa4dda74bbeb813a4353b",
+                    "contextId": "warehouse-entry",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [],
@@ -804,7 +739,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -816,16 +751,11 @@
                             "id": "warehouse-entry",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-d92a7e698f03f06b5ab0ba01ce34906c2364e428707aa4dda74bbeb813a4353b",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-d92a7e698f03f06b5ab0ba01ce34906c2364e428707aa4dda74bbeb813a4353b",
+                    "contextId": "warehouse-entry",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "item": {
@@ -863,7 +793,7 @@
                     }
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -875,16 +805,11 @@
                             "id": "warehouse-entry",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-d92a7e698f03f06b5ab0ba01ce34906c2364e428707aa4dda74bbeb813a4353b",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-d92a7e698f03f06b5ab0ba01ce34906c2364e428707aa4dda74bbeb813a4353b",
+                    "contextId": "warehouse-entry",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [],
@@ -906,13 +831,13 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
         "ffef099600939c923e049db2bf20cdb23cc12ac9e392280f10c93fea96d03545": {
             "body": {
-                "id": "sbx-d92a7e698f03f06b5ab0ba01ce34906c2364e428707aa4dda74bbeb813a4353b",
+                "id": "warehouse-entry",
                 "scheme": {
                     "id": "warehouse-entry",
                     "resolvedVersion": "1.0.0",
@@ -926,9 +851,9 @@
                         "version": "1.0.0"
                     }
                 ],
-                "version": "0.0.0"
+                "version": "1.0.0"
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "GET",
             "statusCode": 200
         }

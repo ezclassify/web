@@ -16,7 +16,7 @@
                 "roleAware": false,
                 "version": "1.0.0"
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "GET",
             "statusCode": 200
         },
@@ -32,13 +32,13 @@
                     "surface": "marking"
                 }
             ],
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "GET",
             "statusCode": 200
         },
         "0c271dfde9ae0961225214b4b4d8bb9f3f85d10b21784331b259b4bfad3f9a6b": {
             "body": [],
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "GET",
             "statusCode": 200
         },
@@ -55,7 +55,7 @@
                     "views": { "default": "HIGH" }
                 }
             ],
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "GET",
             "statusCode": 200
         },
@@ -71,7 +71,7 @@
                     "single": true
                 }
             ],
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "GET",
             "statusCode": 200
         },
@@ -79,16 +79,11 @@
             "body": {
                 "resolution": {
                     "artifacts": [
-                        { "id": "test", "kind": "scheme", "version": "1.0.0" },
-                        {
-                            "id": "sbx-1018dd39097d1b40814319cf01fac8d68eda99151bbf51af2723233ee7671e44",
-                            "kind": "context",
-                            "version": "0.0.0"
-                        }
+                        { "id": "test", "kind": "scheme", "version": "1.0.0" }
                     ],
-                    "contextId": "sbx-1018dd39097d1b40814319cf01fac8d68eda99151bbf51af2723233ee7671e44",
+                    "contextId": "test",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [],
@@ -126,7 +121,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -134,16 +129,11 @@
             "body": {
                 "resolution": {
                     "artifacts": [
-                        { "id": "test", "kind": "scheme", "version": "1.0.0" },
-                        {
-                            "id": "sbx-1018dd39097d1b40814319cf01fac8d68eda99151bbf51af2723233ee7671e44",
-                            "kind": "context",
-                            "version": "0.0.0"
-                        }
+                        { "id": "test", "kind": "scheme", "version": "1.0.0" }
                     ],
-                    "contextId": "sbx-1018dd39097d1b40814319cf01fac8d68eda99151bbf51af2723233ee7671e44",
+                    "contextId": "test",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [],
@@ -174,13 +164,13 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
         "ce677b56dd6d765d697d7c849cff5239444aa0fbad012c3a6a3fd7601ad9aa4c": {
             "body": {
-                "id": "sbx-1018dd39097d1b40814319cf01fac8d68eda99151bbf51af2723233ee7671e44",
+                "id": "test",
                 "scheme": {
                     "id": "test",
                     "resolvedVersion": "1.0.0",
@@ -194,9 +184,9 @@
                         "version": "1.0.0"
                     }
                 ],
-                "version": "0.0.0"
+                "version": "1.0.0"
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "GET",
             "statusCode": 200
         },
@@ -204,16 +194,11 @@
             "body": {
                 "resolution": {
                     "artifacts": [
-                        { "id": "test", "kind": "scheme", "version": "1.0.0" },
-                        {
-                            "id": "sbx-1018dd39097d1b40814319cf01fac8d68eda99151bbf51af2723233ee7671e44",
-                            "kind": "context",
-                            "version": "0.0.0"
-                        }
+                        { "id": "test", "kind": "scheme", "version": "1.0.0" }
                     ],
-                    "contextId": "sbx-1018dd39097d1b40814319cf01fac8d68eda99151bbf51af2723233ee7671e44",
+                    "contextId": "test",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [],
@@ -233,13 +218,13 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
         "db4d9aae89913f54e72c02298ee870206e1bbf13a64c6d6d13b4eb33b7d1804f": {
             "body": [{ "id": "marking", "label": "Marking" }],
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "GET",
             "statusCode": 200
         },

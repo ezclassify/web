@@ -445,7 +445,7 @@
                     "view": "short"
                 }
             ],
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "GET",
             "statusCode": 200
         },
@@ -691,16 +691,11 @@
                             "id": "self-wrapped-levels",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-700af1b7ee377df491e4fe39b1bb7179a4e7a5762be2070a6b7234e0fd72dbec",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-700af1b7ee377df491e4fe39b1bb7179a4e7a5762be2070a6b7234e0fd72dbec",
+                    "contextId": "self-wrapped-levels",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [],
@@ -720,7 +715,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -836,16 +831,11 @@
                             "id": "self-wrapped-levels",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-700af1b7ee377df491e4fe39b1bb7179a4e7a5762be2070a6b7234e0fd72dbec",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-700af1b7ee377df491e4fe39b1bb7179a4e7a5762be2070a6b7234e0fd72dbec",
+                    "contextId": "self-wrapped-levels",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [],
@@ -883,7 +873,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -1083,7 +1073,7 @@
         },
         "2c5cdca25c50d82da1cd6e73d9dcec100070e750aadb323ac003c81c0e0c8ad1": {
             "body": [],
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "GET",
             "statusCode": 200
         },
@@ -1817,16 +1807,11 @@
                             "id": "self-wrapped-levels",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-700af1b7ee377df491e4fe39b1bb7179a4e7a5762be2070a6b7234e0fd72dbec",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-700af1b7ee377df491e4fe39b1bb7179a4e7a5762be2070a6b7234e0fd72dbec",
+                    "contextId": "self-wrapped-levels",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [],
@@ -1846,13 +1831,13 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
         "62a8c89c6fb0bcdd6343d45696e9679cf84bf7c8cd60a8603bfc70eb30bd42fb": {
             "body": {
-                "id": "sbx-700af1b7ee377df491e4fe39b1bb7179a4e7a5762be2070a6b7234e0fd72dbec",
+                "id": "self-wrapped-levels",
                 "scheme": {
                     "id": "self-wrapped-levels",
                     "resolvedVersion": "1.0.0",
@@ -1866,9 +1851,9 @@
                         "version": "1.0.0"
                     }
                 ],
-                "version": "0.0.0"
+                "version": "1.0.0"
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "GET",
             "statusCode": 200
         },
@@ -1959,16 +1944,11 @@
                             "id": "self-wrapped-levels",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-700af1b7ee377df491e4fe39b1bb7179a4e7a5762be2070a6b7234e0fd72dbec",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-700af1b7ee377df491e4fe39b1bb7179a4e7a5762be2070a6b7234e0fd72dbec",
+                    "contextId": "self-wrapped-levels",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "assessment": {
@@ -1983,7 +1963,7 @@
                     "result": "(INTERNAL)"
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -1995,16 +1975,11 @@
                             "id": "self-wrapped-levels",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-700af1b7ee377df491e4fe39b1bb7179a4e7a5762be2070a6b7234e0fd72dbec",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-700af1b7ee377df491e4fe39b1bb7179a4e7a5762be2070a6b7234e0fd72dbec",
+                    "contextId": "self-wrapped-levels",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [],
@@ -2024,7 +1999,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -2110,7 +2085,7 @@
         },
         "75347babc4051dde7313afa1f98591591a6d69df2847fb952fff34c8fe387db2": {
             "body": [],
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "GET",
             "statusCode": 200
         },
@@ -3319,16 +3294,11 @@
                             "id": "self-wrapped-levels",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-700af1b7ee377df491e4fe39b1bb7179a4e7a5762be2070a6b7234e0fd72dbec",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-700af1b7ee377df491e4fe39b1bb7179a4e7a5762be2070a6b7234e0fd72dbec",
+                    "contextId": "self-wrapped-levels",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [
@@ -3382,7 +3352,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -3394,16 +3364,11 @@
                             "id": "self-wrapped-levels",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-700af1b7ee377df491e4fe39b1bb7179a4e7a5762be2070a6b7234e0fd72dbec",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-700af1b7ee377df491e4fe39b1bb7179a4e7a5762be2070a6b7234e0fd72dbec",
+                    "contextId": "self-wrapped-levels",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [],
@@ -3423,7 +3388,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -3435,16 +3400,11 @@
                             "id": "self-wrapped-levels",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-700af1b7ee377df491e4fe39b1bb7179a4e7a5762be2070a6b7234e0fd72dbec",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-700af1b7ee377df491e4fe39b1bb7179a4e7a5762be2070a6b7234e0fd72dbec",
+                    "contextId": "self-wrapped-levels",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [],
@@ -3478,7 +3438,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -3540,16 +3500,11 @@
                             "id": "self-wrapped-levels",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-700af1b7ee377df491e4fe39b1bb7179a4e7a5762be2070a6b7234e0fd72dbec",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-700af1b7ee377df491e4fe39b1bb7179a4e7a5762be2070a6b7234e0fd72dbec",
+                    "contextId": "self-wrapped-levels",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [],
@@ -3590,7 +3545,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -3602,16 +3557,11 @@
                             "id": "self-wrapped-levels",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-700af1b7ee377df491e4fe39b1bb7179a4e7a5762be2070a6b7234e0fd72dbec",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-700af1b7ee377df491e4fe39b1bb7179a4e7a5762be2070a6b7234e0fd72dbec",
+                    "contextId": "self-wrapped-levels",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [
@@ -3662,7 +3612,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -3991,7 +3941,7 @@
                     }
                 }
             ],
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "GET",
             "statusCode": 200
         },
@@ -4108,16 +4058,11 @@
                             "id": "self-wrapped-levels",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-700af1b7ee377df491e4fe39b1bb7179a4e7a5762be2070a6b7234e0fd72dbec",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-700af1b7ee377df491e4fe39b1bb7179a4e7a5762be2070a6b7234e0fd72dbec",
+                    "contextId": "self-wrapped-levels",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [],
@@ -4137,7 +4082,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -4149,16 +4094,11 @@
                             "id": "self-wrapped-levels",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-700af1b7ee377df491e4fe39b1bb7179a4e7a5762be2070a6b7234e0fd72dbec",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-700af1b7ee377df491e4fe39b1bb7179a4e7a5762be2070a6b7234e0fd72dbec",
+                    "contextId": "self-wrapped-levels",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "limits": { "regionsFound": 1, "status": "complete" },
@@ -4211,7 +4151,7 @@
                     "unread": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -4223,16 +4163,11 @@
                             "id": "self-wrapped-levels",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-700af1b7ee377df491e4fe39b1bb7179a4e7a5762be2070a6b7234e0fd72dbec",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-700af1b7ee377df491e4fe39b1bb7179a4e7a5762be2070a6b7234e0fd72dbec",
+                    "contextId": "self-wrapped-levels",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "assessment": {
@@ -4250,7 +4185,7 @@
                     "result": "(CONFIDENTIAL)"
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -4432,16 +4367,11 @@
                             "id": "self-wrapped-levels",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-700af1b7ee377df491e4fe39b1bb7179a4e7a5762be2070a6b7234e0fd72dbec",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-700af1b7ee377df491e4fe39b1bb7179a4e7a5762be2070a6b7234e0fd72dbec",
+                    "contextId": "self-wrapped-levels",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [],
@@ -4472,7 +4402,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -4603,7 +4533,7 @@
                 "roleAware": false,
                 "version": "1.0.0"
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "GET",
             "statusCode": 200
         },
@@ -4733,16 +4663,11 @@
                             "id": "self-wrapped-levels",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-700af1b7ee377df491e4fe39b1bb7179a4e7a5762be2070a6b7234e0fd72dbec",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-700af1b7ee377df491e4fe39b1bb7179a4e7a5762be2070a6b7234e0fd72dbec",
+                    "contextId": "self-wrapped-levels",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "limits": { "regionsFound": 4, "status": "complete" },
@@ -4839,7 +4764,7 @@
                     "unread": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -5169,7 +5094,7 @@
                     "single": true
                 }
             ],
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "GET",
             "statusCode": 200
         },

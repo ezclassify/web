@@ -4,7 +4,7 @@
     "responses": {
         "09e8e5b6e089a7fae447427033d4e2e1e35faca081e31820b24dcda7cf98929d": {
             "body": [],
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "GET",
             "statusCode": 200
         },
@@ -61,7 +61,7 @@
                     "views": { "default": "C" }
                 }
             ],
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "GET",
             "statusCode": 200
         },
@@ -81,7 +81,7 @@
                 "roleAware": false,
                 "version": "1.0.0"
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "GET",
             "statusCode": 200
         },
@@ -93,16 +93,11 @@
                             "id": "stated-fix-test",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-f38f1703f1c400ba7ff559c4ddbfe62b31ef20e464f41fad031a1788c3d8145e",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-f38f1703f1c400ba7ff559c4ddbfe62b31ef20e464f41fad031a1788c3d8145e",
+                    "contextId": "stated-fix-test",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [],
@@ -147,7 +142,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -159,16 +154,11 @@
                             "id": "stated-fix-test",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-f38f1703f1c400ba7ff559c4ddbfe62b31ef20e464f41fad031a1788c3d8145e",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-f38f1703f1c400ba7ff559c4ddbfe62b31ef20e464f41fad031a1788c3d8145e",
+                    "contextId": "stated-fix-test",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [],
@@ -253,7 +243,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -265,16 +255,11 @@
                             "id": "stated-fix-test",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-f38f1703f1c400ba7ff559c4ddbfe62b31ef20e464f41fad031a1788c3d8145e",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-f38f1703f1c400ba7ff559c4ddbfe62b31ef20e464f41fad031a1788c3d8145e",
+                    "contextId": "stated-fix-test",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [],
@@ -353,13 +338,13 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
         "2de5a27342d76ab041d4a3caca077b0cab4f0cc8acfdeabc08fa65b59ce2af38": {
             "body": {
-                "id": "sbx-f38f1703f1c400ba7ff559c4ddbfe62b31ef20e464f41fad031a1788c3d8145e",
+                "id": "stated-fix-test",
                 "scheme": {
                     "id": "stated-fix-test",
                     "resolvedVersion": "1.0.0",
@@ -373,9 +358,9 @@
                         "version": "1.0.0"
                     }
                 ],
-                "version": "0.0.0"
+                "version": "1.0.0"
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "GET",
             "statusCode": 200
         },
@@ -387,16 +372,11 @@
                             "id": "stated-fix-test",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-f38f1703f1c400ba7ff559c4ddbfe62b31ef20e464f41fad031a1788c3d8145e",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-f38f1703f1c400ba7ff559c4ddbfe62b31ef20e464f41fad031a1788c3d8145e",
+                    "contextId": "stated-fix-test",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "suggestions": [
@@ -448,7 +428,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -460,16 +440,11 @@
                             "id": "stated-fix-test",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-f38f1703f1c400ba7ff559c4ddbfe62b31ef20e464f41fad031a1788c3d8145e",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-f38f1703f1c400ba7ff559c4ddbfe62b31ef20e464f41fad031a1788c3d8145e",
+                    "contextId": "stated-fix-test",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [],
@@ -507,7 +482,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -519,16 +494,11 @@
                             "id": "stated-fix-test",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-f38f1703f1c400ba7ff559c4ddbfe62b31ef20e464f41fad031a1788c3d8145e",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-f38f1703f1c400ba7ff559c4ddbfe62b31ef20e464f41fad031a1788c3d8145e",
+                    "contextId": "stated-fix-test",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [],
@@ -604,7 +574,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -616,16 +586,11 @@
                             "id": "stated-fix-test",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-f38f1703f1c400ba7ff559c4ddbfe62b31ef20e464f41fad031a1788c3d8145e",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-f38f1703f1c400ba7ff559c4ddbfe62b31ef20e464f41fad031a1788c3d8145e",
+                    "contextId": "stated-fix-test",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [],
@@ -663,7 +628,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -675,16 +640,11 @@
                             "id": "stated-fix-test",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-f38f1703f1c400ba7ff559c4ddbfe62b31ef20e464f41fad031a1788c3d8145e",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-f38f1703f1c400ba7ff559c4ddbfe62b31ef20e464f41fad031a1788c3d8145e",
+                    "contextId": "stated-fix-test",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "suggestions": [
@@ -725,7 +685,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -737,16 +697,11 @@
                             "id": "stated-fix-test",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-f38f1703f1c400ba7ff559c4ddbfe62b31ef20e464f41fad031a1788c3d8145e",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-f38f1703f1c400ba7ff559c4ddbfe62b31ef20e464f41fad031a1788c3d8145e",
+                    "contextId": "stated-fix-test",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [],
@@ -783,7 +738,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -795,16 +750,11 @@
                             "id": "stated-fix-test",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-f38f1703f1c400ba7ff559c4ddbfe62b31ef20e464f41fad031a1788c3d8145e",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-f38f1703f1c400ba7ff559c4ddbfe62b31ef20e464f41fad031a1788c3d8145e",
+                    "contextId": "stated-fix-test",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [],
@@ -836,7 +786,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -848,16 +798,11 @@
                             "id": "stated-fix-test",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-f38f1703f1c400ba7ff559c4ddbfe62b31ef20e464f41fad031a1788c3d8145e",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-f38f1703f1c400ba7ff559c4ddbfe62b31ef20e464f41fad031a1788c3d8145e",
+                    "contextId": "stated-fix-test",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [],
@@ -933,7 +878,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -945,16 +890,11 @@
                             "id": "stated-fix-test",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-f38f1703f1c400ba7ff559c4ddbfe62b31ef20e464f41fad031a1788c3d8145e",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-f38f1703f1c400ba7ff559c4ddbfe62b31ef20e464f41fad031a1788c3d8145e",
+                    "contextId": "stated-fix-test",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "suggestions": [
@@ -973,7 +913,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -985,16 +925,11 @@
                             "id": "stated-fix-test",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-f38f1703f1c400ba7ff559c4ddbfe62b31ef20e464f41fad031a1788c3d8145e",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-f38f1703f1c400ba7ff559c4ddbfe62b31ef20e464f41fad031a1788c3d8145e",
+                    "contextId": "stated-fix-test",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [],
@@ -1032,7 +967,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -1044,16 +979,11 @@
                             "id": "stated-fix-test",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-f38f1703f1c400ba7ff559c4ddbfe62b31ef20e464f41fad031a1788c3d8145e",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-f38f1703f1c400ba7ff559c4ddbfe62b31ef20e464f41fad031a1788c3d8145e",
+                    "contextId": "stated-fix-test",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [],
@@ -1132,7 +1062,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -1144,16 +1074,11 @@
                             "id": "stated-fix-test",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-f38f1703f1c400ba7ff559c4ddbfe62b31ef20e464f41fad031a1788c3d8145e",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-f38f1703f1c400ba7ff559c4ddbfe62b31ef20e464f41fad031a1788c3d8145e",
+                    "contextId": "stated-fix-test",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [],
@@ -1231,13 +1156,13 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
         "6b8e10cb688eec1f8fcee92940fd4373681ac930d2f44ef25ef337d091c8b33b": {
             "body": [],
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "GET",
             "statusCode": 200
         },
@@ -1249,16 +1174,11 @@
                             "id": "stated-fix-test",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-f38f1703f1c400ba7ff559c4ddbfe62b31ef20e464f41fad031a1788c3d8145e",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-f38f1703f1c400ba7ff559c4ddbfe62b31ef20e464f41fad031a1788c3d8145e",
+                    "contextId": "stated-fix-test",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [],
@@ -1296,7 +1216,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -1308,16 +1228,11 @@
                             "id": "stated-fix-test",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-f38f1703f1c400ba7ff559c4ddbfe62b31ef20e464f41fad031a1788c3d8145e",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-f38f1703f1c400ba7ff559c4ddbfe62b31ef20e464f41fad031a1788c3d8145e",
+                    "contextId": "stated-fix-test",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "suggestions": [
@@ -1336,7 +1251,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -1359,7 +1274,7 @@
                     "single": false
                 }
             ],
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "GET",
             "statusCode": 200
         },
@@ -1378,16 +1293,11 @@
                             "id": "stated-fix-test",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-f38f1703f1c400ba7ff559c4ddbfe62b31ef20e464f41fad031a1788c3d8145e",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-f38f1703f1c400ba7ff559c4ddbfe62b31ef20e464f41fad031a1788c3d8145e",
+                    "contextId": "stated-fix-test",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [],
@@ -1413,7 +1323,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -1433,7 +1343,7 @@
                     "surface": "marking"
                 }
             ],
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "GET",
             "statusCode": 200
         },
@@ -1445,16 +1355,11 @@
                             "id": "stated-fix-test",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-f38f1703f1c400ba7ff559c4ddbfe62b31ef20e464f41fad031a1788c3d8145e",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-f38f1703f1c400ba7ff559c4ddbfe62b31ef20e464f41fad031a1788c3d8145e",
+                    "contextId": "stated-fix-test",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "suggestions": [
@@ -1495,7 +1400,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -1507,16 +1412,11 @@
                             "id": "stated-fix-test",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-f38f1703f1c400ba7ff559c4ddbfe62b31ef20e464f41fad031a1788c3d8145e",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-f38f1703f1c400ba7ff559c4ddbfe62b31ef20e464f41fad031a1788c3d8145e",
+                    "contextId": "stated-fix-test",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [],
@@ -1599,7 +1499,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -1611,16 +1511,11 @@
                             "id": "stated-fix-test",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-f38f1703f1c400ba7ff559c4ddbfe62b31ef20e464f41fad031a1788c3d8145e",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-f38f1703f1c400ba7ff559c4ddbfe62b31ef20e464f41fad031a1788c3d8145e",
+                    "contextId": "stated-fix-test",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [],
@@ -1706,7 +1601,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -1718,16 +1613,11 @@
                             "id": "stated-fix-test",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-f38f1703f1c400ba7ff559c4ddbfe62b31ef20e464f41fad031a1788c3d8145e",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-f38f1703f1c400ba7ff559c4ddbfe62b31ef20e464f41fad031a1788c3d8145e",
+                    "contextId": "stated-fix-test",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [
@@ -1784,7 +1674,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -1796,16 +1686,11 @@
                             "id": "stated-fix-test",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-f38f1703f1c400ba7ff559c4ddbfe62b31ef20e464f41fad031a1788c3d8145e",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-f38f1703f1c400ba7ff559c4ddbfe62b31ef20e464f41fad031a1788c3d8145e",
+                    "contextId": "stated-fix-test",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [],
@@ -1850,7 +1735,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -1862,16 +1747,11 @@
                             "id": "stated-fix-test",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-f38f1703f1c400ba7ff559c4ddbfe62b31ef20e464f41fad031a1788c3d8145e",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-f38f1703f1c400ba7ff559c4ddbfe62b31ef20e464f41fad031a1788c3d8145e",
+                    "contextId": "stated-fix-test",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [],
@@ -1897,7 +1777,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -1909,16 +1789,11 @@
                             "id": "stated-fix-test",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-f38f1703f1c400ba7ff559c4ddbfe62b31ef20e464f41fad031a1788c3d8145e",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-f38f1703f1c400ba7ff559c4ddbfe62b31ef20e464f41fad031a1788c3d8145e",
+                    "contextId": "stated-fix-test",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [],
@@ -1963,7 +1838,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -1975,16 +1850,11 @@
                             "id": "stated-fix-test",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-f38f1703f1c400ba7ff559c4ddbfe62b31ef20e464f41fad031a1788c3d8145e",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-f38f1703f1c400ba7ff559c4ddbfe62b31ef20e464f41fad031a1788c3d8145e",
+                    "contextId": "stated-fix-test",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [],
@@ -2027,7 +1897,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -2039,16 +1909,11 @@
                             "id": "stated-fix-test",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-f38f1703f1c400ba7ff559c4ddbfe62b31ef20e464f41fad031a1788c3d8145e",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-f38f1703f1c400ba7ff559c4ddbfe62b31ef20e464f41fad031a1788c3d8145e",
+                    "contextId": "stated-fix-test",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [],
@@ -2068,7 +1933,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -2092,16 +1957,11 @@
                             "id": "stated-fix-test",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-f38f1703f1c400ba7ff559c4ddbfe62b31ef20e464f41fad031a1788c3d8145e",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-f38f1703f1c400ba7ff559c4ddbfe62b31ef20e464f41fad031a1788c3d8145e",
+                    "contextId": "stated-fix-test",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [
@@ -2147,7 +2007,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -2159,16 +2019,11 @@
                             "id": "stated-fix-test",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-f38f1703f1c400ba7ff559c4ddbfe62b31ef20e464f41fad031a1788c3d8145e",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-f38f1703f1c400ba7ff559c4ddbfe62b31ef20e464f41fad031a1788c3d8145e",
+                    "contextId": "stated-fix-test",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "suggestions": [
@@ -2231,7 +2086,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         },
@@ -2243,16 +2098,11 @@
                             "id": "stated-fix-test",
                             "kind": "scheme",
                             "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-f38f1703f1c400ba7ff559c4ddbfe62b31ef20e464f41fad031a1788c3d8145e",
-                            "kind": "context",
-                            "version": "0.0.0"
                         }
                     ],
-                    "contextId": "sbx-f38f1703f1c400ba7ff559c4ddbfe62b31ef20e464f41fad031a1788c3d8145e",
+                    "contextId": "stated-fix-test",
                     "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
+                    "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [],
@@ -2304,7 +2154,7 @@
                     "warnings": []
                 }
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
             "statusCode": 200
         }
