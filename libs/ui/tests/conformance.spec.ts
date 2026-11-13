@@ -42,8 +42,8 @@ const plansDir = resolve(specRoot, 'plans/v1');
 const fixturesDir = resolve(specRoot, 'fixtures/v1');
 
 /**
- * Plan files that genuinely do not apply to the forms UI library. Server-slice
- * plans (`slice: "server"`) are skipped separately.
+ * Plan files that genuinely do not apply to the forms UI library. Only
+ * engine-slice plans run here; the slice filter below skips the rest.
  */
 const SKIPPED_PLANS = new Set(['check-access.json', 'registry.json']);
 
@@ -307,9 +307,11 @@ for (const planFile of planFiles) {
     const planDoc: { slice?: string; cases: PlanCase[] } = JSON.parse(
         readFileSync(resolve(plansDir, planFile), 'utf8'),
     );
-    // Server-slice plans (ctx* methods) run against a live REST deployment,
-    // never through the forms library here.
-    if (planDoc.slice === 'server') continue;
+    // Only engine-slice plans go through the forms library. Server-slice plans
+    // (ctx* methods) need a live REST deployment, and adapter-slice plans hold
+    // answers an adapter gives in process with no wire operation behind them;
+    // tests/integration/scheme-adapter-over-rest.spec.ts checks those.
+    if (planDoc.slice !== 'engine') continue;
     const capability = basename(planFile, '.json');
 
     describe(`forms-conformance / ${capability}`, () => {
