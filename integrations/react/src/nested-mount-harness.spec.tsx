@@ -17,9 +17,9 @@ import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, it, expect, afterEach } from 'vitest';
 import { render, act, cleanup } from '@testing-library/react';
-import { Context } from '@ezclassify/engine';
 import type { ContextAdapter } from '@ezclassify/ui';
 import { EzClassify, EzClassifyProvider } from './index';
+import { connectDemoContext } from '../../../test-support/demo-runtime';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const fixturesDir = resolve(__dirname, '../../../vendor/spec/fixtures/v1');
@@ -31,10 +31,12 @@ function loadScheme(): unknown {
 }
 
 /** A fresh Context over the reference fixture. */
-function makeContext(): ContextAdapter {
-    return Context.fromComponents({
-        scheme: loadScheme(),
-    }) as unknown as ContextAdapter;
+async function makeContext(): Promise<ContextAdapter> {
+    return (await connectDemoContext({
+        draft: {
+            scheme: loadScheme(),
+        },
+    })) as unknown as ContextAdapter;
 }
 
 /** Flush React effects plus EzClassifyUI's async component-init + rollup. */
@@ -60,7 +62,7 @@ function NestedRootField() {
 describe('nested-mount harness (React level)', () => {
     it('C5: a controller under nested roots is enhanced only by the root that owns it', async () => {
         const { container } = render(
-            <EzClassifyProvider context={makeContext()}>
+            <EzClassifyProvider context={await makeContext()}>
                 <EzClassify>
                     <NestedRootField />
                 </EzClassify>

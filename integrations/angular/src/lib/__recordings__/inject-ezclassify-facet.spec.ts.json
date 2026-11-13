@@ -1,0 +1,2672 @@
+{
+    "engineVersion": "1.0.0-dev.30",
+    "openapiVersion": "1.0.0-dev.30",
+    "responses": {
+        "08d73511abad0bbd586812e46d170cb39e491d572556ae2e66dd00e5588b9cc5": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "cedar-valley",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "cedar-valley-guide",
+                            "kind": "guide",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "cedar-valley-access",
+                            "kind": "access",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "cedar-valley",
+                            "kind": "context",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "cedar-valley",
+                    "requestedVersion": "latest",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "level": {
+                        "suggestions": [
+                            {
+                                "categoryId": "level",
+                                "conceptId": "PUBLIC",
+                                "description": "Public",
+                                "group": "Protection",
+                                "label": "PUBLIC",
+                                "name": "Public",
+                                "order": 0,
+                                "selected": false,
+                                "views": {
+                                    "default": "PUBLIC",
+                                    "long": "PUBLIC",
+                                    "short": "P"
+                                }
+                            },
+                            {
+                                "categoryId": "level",
+                                "conceptId": "INTERNAL",
+                                "description": "Internal",
+                                "group": "Protection",
+                                "label": "INTERNAL",
+                                "name": "Internal",
+                                "order": 0,
+                                "selected": false,
+                                "views": {
+                                    "default": "INTERNAL",
+                                    "long": "INTERNAL",
+                                    "short": "I"
+                                }
+                            },
+                            {
+                                "categoryId": "level",
+                                "conceptId": "CONFIDENTIAL",
+                                "description": "Confidential",
+                                "group": "Protection",
+                                "label": "CONFIDENTIAL",
+                                "name": "Confidential",
+                                "order": 0,
+                                "selected": false,
+                                "views": {
+                                    "default": "CONFIDENTIAL",
+                                    "long": "CONFIDENTIAL",
+                                    "short": "C"
+                                }
+                            },
+                            {
+                                "categoryId": "level",
+                                "conceptId": "RESTRICTED",
+                                "description": "Restricted",
+                                "group": "Protection",
+                                "label": "RESTRICTED",
+                                "name": "Restricted",
+                                "order": 0,
+                                "selected": false,
+                                "views": {
+                                    "default": "RESTRICTED",
+                                    "long": "RESTRICTED",
+                                    "short": "R"
+                                }
+                            }
+                        ],
+                        "warnings": []
+                    }
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "0f602a6e6c9c5f841024700792ab9e2da64c8974d15356742c90ff071b665570": {
+            "body": [],
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "1154efdafa7f74255dd8f58427941bccd663ad80efa4887702f51cb1e5028658": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "cedar-valley",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "cedar-valley-guide",
+                            "kind": "guide",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "cedar-valley-access",
+                            "kind": "access",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "cedar-valley",
+                            "kind": "context",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "cedar-valley",
+                    "requestedVersion": "latest",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "CONFIDENTIAL",
+                            "confidence": "certain",
+                            "source": "aggregate"
+                        },
+                        {
+                            "categoryId": "allow_sharing_with",
+                            "conceptId": "CEDAR_VALLEY_DISTRICT",
+                            "confidence": "inferred",
+                            "source": "aggregate"
+                        }
+                    ],
+                    "displayColor": {
+                        "background": "#6a1b9a",
+                        "text": "#ffffff"
+                    },
+                    "errors": [],
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "CONFIDENTIAL",
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "2082754112903ebc059e56109bbf663dbaffe0eb66b2a16615d73896a3657efd": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "cedar-valley",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "cedar-valley-guide",
+                            "kind": "guide",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "cedar-valley-access",
+                            "kind": "access",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "cedar-valley",
+                            "kind": "context",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "cedar-valley",
+                    "requestedVersion": "latest",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [
+                        {
+                            "action": "add",
+                            "add": [
+                                {
+                                    "categoryId": "allow_sharing_with",
+                                    "conceptId": "CEDAR_VALLEY_DISTRICT"
+                                }
+                            ],
+                            "message": "Rule \"nonpublic-is-internal-by-default\": added \"CEDAR_VALLEY_DISTRICT\" to category \"allow_sharing_with\"",
+                            "ruleId": "nonpublic-is-internal-by-default",
+                            "triggerConceptIds": ["CONFIDENTIAL"]
+                        }
+                    ],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "CONFIDENTIAL",
+                            "confidence": "certain",
+                            "source": "user"
+                        },
+                        {
+                            "categoryId": "allow_sharing_with",
+                            "conceptId": "CEDAR_VALLEY_DISTRICT",
+                            "confidence": "inferred",
+                            "source": "infer",
+                            "sourceRule": "nonpublic-is-internal-by-default"
+                        },
+                        {
+                            "categoryId": "handling",
+                            "conceptId": "DO_NOT_FORWARD",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            {
+                                "categoryId": "level",
+                                "conceptId": "CONFIDENTIAL"
+                            },
+                            {
+                                "categoryId": "handling",
+                                "conceptId": "DO_NOT_FORWARD"
+                            }
+                        ],
+                        "omitted": [
+                            {
+                                "categoryId": "allow_sharing_with",
+                                "conceptId": "CEDAR_VALLEY_DISTRICT"
+                            }
+                        ],
+                        "unrepresentable": []
+                    },
+                    "displayColor": {
+                        "background": "#6a1b9a",
+                        "text": "#ffffff"
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "CONFIDENTIAL//DO NOT FORWARD",
+                    "renders": {},
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "21b5abcb0d1cc34e40117c73d485aedc8ca8be40455b858069108d92953383d0": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "cedar-valley",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "cedar-valley-guide",
+                            "kind": "guide",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "cedar-valley-access",
+                            "kind": "access",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "cedar-valley",
+                            "kind": "context",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "cedar-valley",
+                    "requestedVersion": "latest",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "CONFIDENTIAL",
+                            "confidence": "certain",
+                            "source": "aggregate"
+                        },
+                        {
+                            "categoryId": "allow_sharing_with",
+                            "conceptId": "CEDAR_VALLEY_DISTRICT",
+                            "confidence": "inferred",
+                            "source": "aggregate"
+                        },
+                        {
+                            "categoryId": "handling",
+                            "conceptId": "DO_NOT_FORWARD",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "displayColor": {
+                        "background": "#6a1b9a",
+                        "text": "#ffffff"
+                    },
+                    "errors": [],
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "CONFIDENTIAL//DO NOT FORWARD",
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "2daab1687bc34379efcf6f26b517b4237a06bc903a500d157de32e31a12afd9f": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "cedar-valley",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "cedar-valley-guide",
+                            "kind": "guide",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "cedar-valley-access",
+                            "kind": "access",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "cedar-valley",
+                            "kind": "context",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "cedar-valley",
+                    "requestedVersion": "latest",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "level": {
+                        "suggestions": [
+                            {
+                                "categoryId": "level",
+                                "conceptId": "PUBLIC",
+                                "description": "Public",
+                                "group": "Protection",
+                                "label": "PUBLIC",
+                                "name": "Public",
+                                "order": 0,
+                                "selected": false,
+                                "views": {
+                                    "default": "PUBLIC",
+                                    "long": "PUBLIC",
+                                    "short": "P"
+                                }
+                            },
+                            {
+                                "categoryId": "level",
+                                "conceptId": "INTERNAL",
+                                "description": "Internal",
+                                "group": "Protection",
+                                "label": "INTERNAL",
+                                "name": "Internal",
+                                "order": 0,
+                                "selected": false,
+                                "views": {
+                                    "default": "INTERNAL",
+                                    "long": "INTERNAL",
+                                    "short": "I"
+                                }
+                            },
+                            {
+                                "categoryId": "level",
+                                "conceptId": "CONFIDENTIAL",
+                                "description": "Confidential",
+                                "group": "Protection",
+                                "label": "CONFIDENTIAL",
+                                "name": "Confidential",
+                                "order": 0,
+                                "selected": false,
+                                "views": {
+                                    "default": "CONFIDENTIAL",
+                                    "long": "CONFIDENTIAL",
+                                    "short": "C"
+                                }
+                            },
+                            {
+                                "categoryId": "level",
+                                "conceptId": "RESTRICTED",
+                                "description": "Restricted",
+                                "group": "Protection",
+                                "label": "RESTRICTED",
+                                "name": "Restricted",
+                                "order": 0,
+                                "selected": false,
+                                "views": {
+                                    "default": "RESTRICTED",
+                                    "long": "RESTRICTED",
+                                    "short": "R"
+                                }
+                            }
+                        ],
+                        "warnings": []
+                    }
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "2dc96128826dc40d1d945ce768add0d8b0314f9726b739923cd70e868048110d": {
+            "body": {
+                "colorFrom": "level",
+                "contextFormats": { "part": ["short"], "whole": ["long"] },
+                "defaultRenderFormat": "long",
+                "defaultScope": "marking",
+                "description": "A district-wide fictional example for files across Oakwood, Pinecrest, Riverside, and the district office. Protection rolls up by maximum sensitivity; sensitive content and handling combine; school and external-recipient permissions intersect. Markings describe policy inputs while the host application supplies identity, record relationships, assignments, and delivery facts.",
+                "embeddedMarking": [
+                    {
+                        "autoInsert": "every-paragraph",
+                        "pattern": "\\(([^)]+)\\)",
+                        "template": "({marking}) "
+                    }
+                ],
+                "id": "cedar-valley",
+                "name": "Cedar Valley District Files",
+                "referenceSurfaceLabel": {
+                    "plural": "Handbooks",
+                    "singular": "Handbook"
+                },
+                "roleAware": false,
+                "version": "1.0.0",
+                "vocabulary": {
+                    "marking": {
+                        "plural": "File Markings",
+                        "singular": "File Marking"
+                    }
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "32c44b889a9d95ad9a8a622c442c6511f7d7ff4938aede49260b1cd59b869837": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "cedar-valley",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "cedar-valley-guide",
+                            "kind": "guide",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "cedar-valley-access",
+                            "kind": "access",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "cedar-valley",
+                            "kind": "context",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "cedar-valley",
+                    "requestedVersion": "latest",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "level": {
+                        "suggestions": [
+                            {
+                                "categoryId": "level",
+                                "conceptId": "PUBLIC",
+                                "description": "Public",
+                                "group": "Protection",
+                                "label": "PUBLIC",
+                                "name": "Public",
+                                "order": 0,
+                                "selected": false,
+                                "views": {
+                                    "default": "PUBLIC",
+                                    "long": "PUBLIC",
+                                    "short": "P"
+                                }
+                            },
+                            {
+                                "categoryId": "level",
+                                "conceptId": "INTERNAL",
+                                "description": "Internal",
+                                "group": "Protection",
+                                "label": "INTERNAL",
+                                "name": "Internal",
+                                "order": 0,
+                                "selected": false,
+                                "views": {
+                                    "default": "INTERNAL",
+                                    "long": "INTERNAL",
+                                    "short": "I"
+                                }
+                            },
+                            {
+                                "categoryId": "level",
+                                "conceptId": "CONFIDENTIAL",
+                                "description": "Confidential",
+                                "group": "Protection",
+                                "label": "CONFIDENTIAL",
+                                "name": "Confidential",
+                                "order": 0,
+                                "selected": false,
+                                "views": {
+                                    "default": "CONFIDENTIAL",
+                                    "long": "CONFIDENTIAL",
+                                    "short": "C"
+                                }
+                            },
+                            {
+                                "categoryId": "level",
+                                "conceptId": "RESTRICTED",
+                                "description": "Restricted",
+                                "group": "Protection",
+                                "label": "RESTRICTED",
+                                "name": "Restricted",
+                                "order": 0,
+                                "selected": false,
+                                "views": {
+                                    "default": "RESTRICTED",
+                                    "long": "RESTRICTED",
+                                    "short": "R"
+                                }
+                            }
+                        ],
+                        "warnings": []
+                    }
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "3b9ae2fdbad6b29d5ea7301e5b9d65d7a665ef85e8e670dc1e2a5fc570adfa89": {
+            "body": {
+                "access": {
+                    "id": "cedar-valley-access",
+                    "resolvedVersion": "1.0.0",
+                    "version": "1.0.0"
+                },
+                "description": "Explore Cedar Valley district files across protection, sensitive content, school eligibility, external sharing, and handling. The host supplies trusted identity and authorization facts.",
+                "guides": [
+                    {
+                        "id": "cedar-valley-guide",
+                        "resolvedVersion": "1.0.0",
+                        "version": "1.0.0"
+                    }
+                ],
+                "id": "cedar-valley",
+                "scheme": {
+                    "id": "cedar-valley",
+                    "resolvedVersion": "1.0.0",
+                    "version": "1.0.0"
+                },
+                "schemes": [
+                    {
+                        "id": "cedar-valley",
+                        "roles": ["primary"],
+                        "selector": "cedar-valley",
+                        "version": "1.0.0"
+                    }
+                ],
+                "version": "1.0.0"
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "4e45e008d2aae540929ef88dd2998494702078f9cbf0ca55e973bb9f314f5ad0": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "cedar-valley",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "cedar-valley-guide",
+                            "kind": "guide",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "cedar-valley-access",
+                            "kind": "access",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "cedar-valley",
+                            "kind": "context",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "cedar-valley",
+                    "requestedVersion": "latest",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [
+                        {
+                            "action": "add",
+                            "add": [
+                                {
+                                    "categoryId": "allow_sharing_with",
+                                    "conceptId": "CEDAR_VALLEY_DISTRICT"
+                                }
+                            ],
+                            "message": "Rule \"nonpublic-is-internal-by-default\": added \"CEDAR_VALLEY_DISTRICT\" to category \"allow_sharing_with\"",
+                            "ruleId": "nonpublic-is-internal-by-default",
+                            "triggerConceptIds": ["INTERNAL"]
+                        }
+                    ],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "INTERNAL",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "allow_sharing_with",
+                            "conceptId": "CEDAR_VALLEY_DISTRICT",
+                            "confidence": "inferred",
+                            "source": "infer",
+                            "sourceRule": "nonpublic-is-internal-by-default"
+                        },
+                        {
+                            "categoryId": "handling",
+                            "conceptId": "DO_NOT_FORWARD",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            { "categoryId": "level", "conceptId": "INTERNAL" },
+                            {
+                                "categoryId": "handling",
+                                "conceptId": "DO_NOT_FORWARD"
+                            }
+                        ],
+                        "omitted": [
+                            {
+                                "categoryId": "allow_sharing_with",
+                                "conceptId": "CEDAR_VALLEY_DISTRICT"
+                            }
+                        ],
+                        "unrepresentable": []
+                    },
+                    "displayColor": {
+                        "background": "#1565c0",
+                        "text": "#ffffff"
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "recognition": {
+                        "corrections": [],
+                        "inputFormat": "long",
+                        "status": "complete",
+                        "surface": "marking",
+                        "unmatched": []
+                    },
+                    "rendered": "INTERNAL//DO NOT FORWARD",
+                    "renders": {},
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "4f8a0880ec9bcd92c8e41a094d459fe407b37b78019ee213ad3c0ee2d7f1fcf4": {
+            "body": [
+                {
+                    "id": "level",
+                    "label": "Protection",
+                    "position": 0,
+                    "required": true,
+                    "rollup": "max",
+                    "single": true
+                },
+                {
+                    "id": "sensitive_content",
+                    "label": "Sensitive content",
+                    "position": 1,
+                    "required": false,
+                    "rollup": "union",
+                    "single": false,
+                    "sort": "alphabetical"
+                },
+                {
+                    "id": "permitted_schools",
+                    "label": "Permitted schools",
+                    "position": 2,
+                    "required": false,
+                    "rollup": "pipeline",
+                    "single": false,
+                    "sort": "alphabetical"
+                },
+                {
+                    "id": "allow_sharing_with",
+                    "label": "Allow sharing with",
+                    "position": 3,
+                    "required": false,
+                    "rollup": "pipeline",
+                    "single": false,
+                    "sort": "alphabetical"
+                },
+                {
+                    "id": "handling",
+                    "label": "Handling",
+                    "position": 4,
+                    "required": false,
+                    "rollup": "union",
+                    "single": false,
+                    "sort": "alphabetical"
+                }
+            ],
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "549d6160bd14ad404dce63f006bcfe69e9f5e39b87e28174fd493afe10873df3": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "cedar-valley",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "cedar-valley-guide",
+                            "kind": "guide",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "cedar-valley-access",
+                            "kind": "access",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "cedar-valley",
+                            "kind": "context",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "cedar-valley",
+                    "requestedVersion": "latest",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "level": {
+                        "suggestions": [
+                            {
+                                "categoryId": "level",
+                                "conceptId": "PUBLIC",
+                                "description": "Public",
+                                "group": "Protection",
+                                "label": "PUBLIC",
+                                "name": "Public",
+                                "order": 0,
+                                "selected": false,
+                                "views": {
+                                    "default": "PUBLIC",
+                                    "long": "PUBLIC",
+                                    "short": "P"
+                                }
+                            },
+                            {
+                                "categoryId": "level",
+                                "conceptId": "INTERNAL",
+                                "description": "Internal",
+                                "group": "Protection",
+                                "label": "INTERNAL",
+                                "name": "Internal",
+                                "order": 0,
+                                "selected": false,
+                                "views": {
+                                    "default": "INTERNAL",
+                                    "long": "INTERNAL",
+                                    "short": "I"
+                                }
+                            },
+                            {
+                                "categoryId": "level",
+                                "conceptId": "CONFIDENTIAL",
+                                "description": "Confidential",
+                                "group": "Protection",
+                                "label": "CONFIDENTIAL",
+                                "name": "Confidential",
+                                "order": 0,
+                                "selected": false,
+                                "views": {
+                                    "default": "CONFIDENTIAL",
+                                    "long": "CONFIDENTIAL",
+                                    "short": "C"
+                                }
+                            },
+                            {
+                                "categoryId": "level",
+                                "conceptId": "RESTRICTED",
+                                "description": "Restricted",
+                                "group": "Protection",
+                                "label": "RESTRICTED",
+                                "name": "Restricted",
+                                "order": 0,
+                                "selected": false,
+                                "views": {
+                                    "default": "RESTRICTED",
+                                    "long": "RESTRICTED",
+                                    "short": "R"
+                                }
+                            }
+                        ],
+                        "warnings": []
+                    }
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "679730fe7933c1188cc8bbb71b997b706642d3f1586b32ffa7e3691b64e19663": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "cedar-valley",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "cedar-valley-guide",
+                            "kind": "guide",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "cedar-valley-access",
+                            "kind": "access",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "cedar-valley",
+                            "kind": "context",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "cedar-valley",
+                    "requestedVersion": "latest",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "sensitive_content",
+                            "conceptId": "SECURE_ASSESSMENTS",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "errors": [
+                        {
+                            "affectedConcepts": ["SECURE_ASSESSMENTS"],
+                            "constraintId": "_invalid_contributor",
+                            "message": "Contributor 1 did not produce a complete valid input outcome."
+                        },
+                        {
+                            "categoryId": "level",
+                            "constraintId": "protection-level-required",
+                            "message": "Contributor 1: Choose a protection level."
+                        },
+                        {
+                            "categoryId": "level",
+                            "constraintId": "protection-level-required",
+                            "message": "Choose a protection level."
+                        },
+                        {
+                            "constraintId": "required-category:level",
+                            "message": "Protection is required: the marking asserts no concept in this category"
+                        }
+                    ],
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "SECURE ASSESSMENTS",
+                    "valid": false,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "6afba5319b5d3a2c5eab7335f85aa7e3b27334d74308420302efe1e96a4e637d": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "cedar-valley",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "cedar-valley-guide",
+                            "kind": "guide",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "cedar-valley-access",
+                            "kind": "access",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "cedar-valley",
+                            "kind": "context",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "cedar-valley",
+                    "requestedVersion": "latest",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [
+                        {
+                            "action": "add",
+                            "add": [
+                                {
+                                    "categoryId": "allow_sharing_with",
+                                    "conceptId": "CEDAR_VALLEY_DISTRICT"
+                                }
+                            ],
+                            "message": "Rule \"nonpublic-is-internal-by-default\": added \"CEDAR_VALLEY_DISTRICT\" to category \"allow_sharing_with\"",
+                            "ruleId": "nonpublic-is-internal-by-default",
+                            "triggerConceptIds": ["CONFIDENTIAL"]
+                        }
+                    ],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "CONFIDENTIAL",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "allow_sharing_with",
+                            "conceptId": "CEDAR_VALLEY_DISTRICT",
+                            "confidence": "inferred",
+                            "source": "infer",
+                            "sourceRule": "nonpublic-is-internal-by-default"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            {
+                                "categoryId": "level",
+                                "conceptId": "CONFIDENTIAL"
+                            }
+                        ],
+                        "omitted": [
+                            {
+                                "categoryId": "allow_sharing_with",
+                                "conceptId": "CEDAR_VALLEY_DISTRICT"
+                            }
+                        ],
+                        "unrepresentable": []
+                    },
+                    "displayColor": {
+                        "background": "#6a1b9a",
+                        "text": "#ffffff"
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "recognition": {
+                        "corrections": [],
+                        "status": "complete",
+                        "surface": "marking",
+                        "unmatched": []
+                    },
+                    "rendered": "CONFIDENTIAL",
+                    "renders": {},
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "76368fd0e69141bb92df5f80d603570a9b3461efdb603d2054087252c1e6ddc6": {
+            "body": [
+                {
+                    "aliases": ["public"],
+                    "categories": ["level"],
+                    "color": { "background": "#2e7d32", "text": "#ffffff" },
+                    "definition": "This exact version is approved for anyone to read or share. An unmarked file is not automatically public.",
+                    "guidance": "Use for a published lunch menu, school calendar, or released practice questions.",
+                    "id": "PUBLIC",
+                    "name": "Public",
+                    "parents": [],
+                    "position": 0,
+                    "rank": -100,
+                    "views": {
+                        "default": "PUBLIC",
+                        "long": "PUBLIC",
+                        "short": "P"
+                    }
+                },
+                {
+                    "aliases": ["internal"],
+                    "categories": ["level"],
+                    "color": { "background": "#1565c0", "text": "#ffffff" },
+                    "definition": "Routine Cedar Valley business that has not been approved for public distribution.",
+                    "guidance": "Use for a staff plan, district memo, or bus operations schedule without student names or home addresses.",
+                    "id": "INTERNAL",
+                    "name": "Internal",
+                    "parents": [],
+                    "position": 0,
+                    "rank": 100,
+                    "views": {
+                        "default": "INTERNAL",
+                        "long": "INTERNAL",
+                        "short": "I"
+                    }
+                },
+                {
+                    "aliases": ["confidential"],
+                    "categories": ["level"],
+                    "color": { "background": "#6a1b9a", "text": "#ffffff" },
+                    "definition": "Private information that must be protected from unauthorized disclosure.",
+                    "guidance": "Use for student records, employee evaluations, or nonpublic purchasing information. The host application still verifies the reader’s record relationship or approved business purpose.",
+                    "id": "CONFIDENTIAL",
+                    "name": "Confidential",
+                    "parents": [],
+                    "position": 0,
+                    "rank": 200,
+                    "views": {
+                        "default": "CONFIDENTIAL",
+                        "long": "CONFIDENTIAL",
+                        "short": "C"
+                    }
+                },
+                {
+                    "aliases": ["restricted"],
+                    "categories": ["level"],
+                    "color": { "background": "#c62828", "text": "#ffffff" },
+                    "definition": "Information needing the strongest protection because disclosure could compromise safety, an investigation, or an assessment.",
+                    "guidance": "Use for building access codes, an active investigation file, or live assessment questions. The host application verifies explicit assignment to the file, case, assessment, or team.",
+                    "id": "RESTRICTED",
+                    "name": "Restricted",
+                    "parents": [],
+                    "position": 0,
+                    "rank": 300,
+                    "views": {
+                        "default": "RESTRICTED",
+                        "long": "RESTRICTED",
+                        "short": "R"
+                    }
+                },
+                {
+                    "aliases": ["student information", "student record"],
+                    "categories": ["sensitive_content"],
+                    "definition": "Protected information about identifiable students, including learning, support, attendance, or individual results.",
+                    "guidance": "Access to one student’s information does not grant access to every student. The host application supplies the record relationship.",
+                    "id": "STUDENT_INFORMATION",
+                    "name": "Student information",
+                    "parents": [],
+                    "position": 0,
+                    "views": {
+                        "default": "STUDENT INFORMATION",
+                        "long": "STUDENT INFORMATION",
+                        "short": "STUDENT"
+                    }
+                },
+                {
+                    "aliases": ["employee information", "personnel"],
+                    "categories": ["sensitive_content"],
+                    "definition": "Private information about individual employees or personnel matters.",
+                    "guidance": "Use for an employee evaluation or personnel investigation. The host application supplies the record or case authorization.",
+                    "id": "EMPLOYEE_INFORMATION",
+                    "name": "Employee information",
+                    "parents": [],
+                    "position": 0,
+                    "views": {
+                        "default": "EMPLOYEE INFORMATION",
+                        "long": "EMPLOYEE INFORMATION",
+                        "short": "EMPLOYEE"
+                    }
+                },
+                {
+                    "aliases": ["financial information", "purchasing notes"],
+                    "categories": ["sensitive_content"],
+                    "definition": "Nonpublic purchasing, payment, or financial information.",
+                    "guidance": "Use for supplier bids or evaluation notes during an active purchasing review. A published budget does not need this tag.",
+                    "id": "FINANCIAL_INFORMATION",
+                    "name": "Financial information",
+                    "parents": [],
+                    "position": 0,
+                    "views": {
+                        "default": "FINANCIAL INFORMATION",
+                        "long": "FINANCIAL INFORMATION",
+                        "short": "FINANCIAL"
+                    }
+                },
+                {
+                    "aliases": [
+                        "secure assessments",
+                        "live exam",
+                        "answer key"
+                    ],
+                    "categories": ["sensitive_content"],
+                    "definition": "Unreleased questions, answer keys, and other controlled assessment material.",
+                    "guidance": "Use for a live assessment booklet or its answer key. The host application verifies assignment to the assessment.",
+                    "id": "SECURE_ASSESSMENTS",
+                    "name": "Secure assessments",
+                    "parents": [],
+                    "position": 0,
+                    "views": {
+                        "default": "SECURE ASSESSMENTS",
+                        "long": "SECURE ASSESSMENTS",
+                        "short": "ASSESSMENT"
+                    }
+                },
+                {
+                    "aliases": ["security information", "access code"],
+                    "categories": ["sensitive_content"],
+                    "definition": "Details that could expose people, buildings, or systems to harm.",
+                    "guidance": "Use for door access codes or security-system blind spots. The host application verifies a reader’s operational need.",
+                    "id": "SECURITY_INFORMATION",
+                    "name": "Security information",
+                    "parents": [],
+                    "position": 0,
+                    "views": {
+                        "default": "SECURITY INFORMATION",
+                        "long": "SECURITY INFORMATION",
+                        "short": "SECURITY"
+                    }
+                },
+                {
+                    "aliases": ["all", "all schools"],
+                    "categories": ["permitted_schools"],
+                    "definition": "A finite group containing Oakwood Middle School, Pinecrest Middle School, and Riverside High School. It is not a wildcard or an access grant.",
+                    "guidance": "Use ALL by itself for a file permitted at all three schools. Combined markings retain only schools permitted by every contributing marking; permission for all three is displayed as ALL.",
+                    "id": "ALL",
+                    "members": ["OAKWOOD", "PINECREST", "RIVERSIDE"],
+                    "name": "All three schools",
+                    "parents": [],
+                    "position": 0,
+                    "views": {
+                        "default": "ALL",
+                        "long": "ALL SCHOOLS",
+                        "short": "ALL"
+                    }
+                },
+                {
+                    "aliases": ["oakwood", "oakwood middle school"],
+                    "categories": ["permitted_schools"],
+                    "definition": "Permitted for Oakwood Middle School. Other protection and access requirements still apply.",
+                    "guidance": "Use for an Oakwood staffing plan or include it with another school when both may receive the file.",
+                    "id": "OAKWOOD",
+                    "name": "Oakwood Middle School",
+                    "parents": [],
+                    "position": 0,
+                    "views": {
+                        "default": "OAKWOOD",
+                        "long": "OAKWOOD MIDDLE SCHOOL",
+                        "short": "OAK"
+                    }
+                },
+                {
+                    "aliases": ["pinecrest", "pinecrest middle school"],
+                    "categories": ["permitted_schools"],
+                    "definition": "Permitted for Pinecrest Middle School. Other protection and access requirements still apply.",
+                    "guidance": "Use for a Pinecrest file or include it with another school when both may receive the file.",
+                    "id": "PINECREST",
+                    "name": "Pinecrest Middle School",
+                    "parents": [],
+                    "position": 0,
+                    "views": {
+                        "default": "PINECREST",
+                        "long": "PINECREST MIDDLE SCHOOL",
+                        "short": "PINE"
+                    }
+                },
+                {
+                    "aliases": ["riverside", "riverside high school"],
+                    "categories": ["permitted_schools"],
+                    "definition": "Permitted for Riverside High School. Other protection and access requirements still apply.",
+                    "guidance": "Use for a Riverside file or include it with another school when both may receive the file.",
+                    "id": "RIVERSIDE",
+                    "name": "Riverside High School",
+                    "parents": [],
+                    "position": 0,
+                    "views": {
+                        "default": "RIVERSIDE",
+                        "long": "RIVERSIDE HIGH SCHOOL",
+                        "short": "RIVER"
+                    }
+                },
+                {
+                    "aliases": [],
+                    "categories": ["allow_sharing_with"],
+                    "definition": "The implicit internal recipient for every nonpublic Cedar Valley file. Authors do not select it; the scheme derives it from Internal, Confidential, or Restricted protection.",
+                    "guidance": "Its presence makes blank external sharing district-only and preserves district access when an external organization is also permitted.",
+                    "id": "CEDAR_VALLEY_DISTRICT",
+                    "name": "Cedar Valley District (implicit)",
+                    "parents": [],
+                    "position": 0,
+                    "views": {
+                        "default": "CEDAR VALLEY DISTRICT",
+                        "long": "CEDAR VALLEY DISTRICT",
+                        "short": "DISTRICT"
+                    }
+                },
+                {
+                    "aliases": [
+                        "commonwealth education department",
+                        "education department"
+                    ],
+                    "categories": ["allow_sharing_with"],
+                    "definition": "Allows delivery to authorized staff of the fictional state education department, in addition to authorized Cedar Valley recipients.",
+                    "guidance": "Use only when this exact nonpublic file may be shared with the department. The marking does not establish a recipient’s identity or business need.",
+                    "id": "COMMONWEALTH_EDUCATION_DEPARTMENT",
+                    "name": "Commonwealth Education Department",
+                    "parents": [],
+                    "position": 0,
+                    "views": {
+                        "default": "COMMONWEALTH EDUCATION DEPARTMENT",
+                        "long": "COMMONWEALTH EDUCATION DEPARTMENT",
+                        "short": "EDUCATION DEPARTMENT"
+                    }
+                },
+                {
+                    "aliases": [
+                        "student transportation services",
+                        "transportation services"
+                    ],
+                    "categories": ["allow_sharing_with"],
+                    "definition": "Allows delivery to authorized staff of Cedar Valley’s contracted transportation provider, in addition to authorized Cedar Valley recipients.",
+                    "guidance": "Use for an approved provider copy such as a bus operations plan without student names or home addresses. The marking does not verify the recipient.",
+                    "id": "STUDENT_TRANSPORTATION_SERVICES",
+                    "name": "Student Transportation Services",
+                    "parents": [],
+                    "position": 0,
+                    "views": {
+                        "default": "STUDENT TRANSPORTATION SERVICES",
+                        "long": "STUDENT TRANSPORTATION SERVICES",
+                        "short": "TRANSPORTATION"
+                    }
+                },
+                {
+                    "aliases": ["do not forward", "no forward"],
+                    "categories": ["handling"],
+                    "definition": "Do not pass this copy on. Ask the owner before distributing it further.",
+                    "guidance": "A human instruction for material such as an internal purchasing memo circulated for review. The marking does not technically block forwarding.",
+                    "id": "DO_NOT_FORWARD",
+                    "name": "Do not forward",
+                    "parents": [],
+                    "position": 0,
+                    "views": {
+                        "default": "DO NOT FORWARD",
+                        "long": "DO NOT FORWARD",
+                        "short": "NO FWD"
+                    }
+                },
+                {
+                    "aliases": ["redact before release", "redact"],
+                    "categories": ["handling"],
+                    "definition": "Remove protected information and obtain approval for a separate public version. This copy stays protected.",
+                    "guidance": "A human instruction for material such as a purchasing report with private contact or payment information. The marking does not perform redaction.",
+                    "id": "REDACT_BEFORE_RELEASE",
+                    "name": "Redact before release",
+                    "parents": [],
+                    "position": 0,
+                    "views": {
+                        "default": "REDACT BEFORE RELEASE",
+                        "long": "REDACT BEFORE RELEASE",
+                        "short": "REDACT"
+                    }
+                },
+                {
+                    "aliases": ["keep sealed", "sealed"],
+                    "categories": ["handling"],
+                    "definition": "Keep the packet closed until its authorized opening time or event.",
+                    "guidance": "A human instruction for a live assessment packet awaiting its scheduled session. The marking does not run a clock or verify the seal.",
+                    "id": "KEEP_SEALED",
+                    "name": "Keep sealed",
+                    "parents": [],
+                    "position": 0,
+                    "views": {
+                        "default": "KEEP SEALED",
+                        "long": "KEEP SEALED",
+                        "short": "SEALED"
+                    }
+                },
+                {
+                    "aliases": ["collect after use", "collect"],
+                    "categories": ["handling"],
+                    "definition": "Collect every issued copy after the authorized activity and return it to its custodian.",
+                    "guidance": "A human instruction for controlled packets or temporary plans. The marking does not prove that every copy was returned.",
+                    "id": "COLLECT_AFTER_USE",
+                    "name": "Collect after use",
+                    "parents": [],
+                    "position": 0,
+                    "views": {
+                        "default": "COLLECT AFTER USE",
+                        "long": "COLLECT AFTER USE",
+                        "short": "COLLECT"
+                    }
+                }
+            ],
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "796ebe93cc0998890b50ffaa43542db81baffcef12e437091ed8942890693e29": {
+            "body": [
+                {
+                    "categoryOrder": [
+                        "level",
+                        "sensitive_content",
+                        "permitted_schools",
+                        "allow_sharing_with",
+                        "handling"
+                    ],
+                    "categorySeparators": {
+                        "allow_sharing_with": "/",
+                        "handling": "/",
+                        "level": "/",
+                        "permitted_schools": "/",
+                        "sensitive_content": "/"
+                    },
+                    "id": "long",
+                    "mode": "inline",
+                    "separator": "//",
+                    "separatorBefore": {
+                        "allow_sharing_with": "//",
+                        "handling": "//",
+                        "permitted_schools": "//",
+                        "sensitive_content": "//"
+                    },
+                    "surface": "marking",
+                    "view": "default"
+                },
+                {
+                    "categoryOrder": [
+                        "level",
+                        "sensitive_content",
+                        "permitted_schools",
+                        "allow_sharing_with",
+                        "handling"
+                    ],
+                    "categorySeparators": {
+                        "allow_sharing_with": "/",
+                        "handling": "/",
+                        "level": "/",
+                        "permitted_schools": "/",
+                        "sensitive_content": "/"
+                    },
+                    "id": "short",
+                    "mode": "inline",
+                    "separator": "//",
+                    "separatorBefore": {
+                        "allow_sharing_with": "//",
+                        "handling": "//",
+                        "permitted_schools": "//",
+                        "sensitive_content": "//"
+                    },
+                    "surface": "marking",
+                    "view": "short"
+                },
+                {
+                    "categoryOrder": [
+                        "level",
+                        "sensitive_content",
+                        "permitted_schools",
+                        "allow_sharing_with",
+                        "handling"
+                    ],
+                    "categorySeparators": {
+                        "allow_sharing_with": ", ",
+                        "handling": ", ",
+                        "level": ", ",
+                        "permitted_schools": ", ",
+                        "sensitive_content": ", "
+                    },
+                    "id": "instructions",
+                    "mode": "inline",
+                    "separator": " // ",
+                    "separatorBefore": {
+                        "allow_sharing_with": " // ",
+                        "handling": " // ",
+                        "permitted_schools": " // ",
+                        "sensitive_content": " // "
+                    },
+                    "surface": "marking",
+                    "view": "long"
+                }
+            ],
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "81234dfa18ec7b6f164b3292088b5a901b9659645dc03273d4c218165c0824b0": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "cedar-valley",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "cedar-valley-guide",
+                            "kind": "guide",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "cedar-valley-access",
+                            "kind": "access",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "cedar-valley",
+                            "kind": "context",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "cedar-valley",
+                    "requestedVersion": "latest",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "categories": [
+                        {
+                            "id": "protection",
+                            "items": [
+                                {
+                                    "dependsOn": [],
+                                    "dependsOnNames": [],
+                                    "id": "public",
+                                    "isComputed": false,
+                                    "keywords": [
+                                        "published lunch menu",
+                                        "school calendar",
+                                        "released practice questions",
+                                        "approved for public release"
+                                    ],
+                                    "matcherLabels": [],
+                                    "name": "Public",
+                                    "outcomeText": "PUBLIC",
+                                    "overrideNames": [],
+                                    "overrides": [],
+                                    "rationale": "Public is a positive approval for this exact version; an unmarked file is not public."
+                                },
+                                {
+                                    "dependsOn": [],
+                                    "dependsOnNames": [],
+                                    "id": "internal",
+                                    "isComputed": false,
+                                    "keywords": [
+                                        "staff plan",
+                                        "district memo",
+                                        "routine operations",
+                                        "bus operations schedule"
+                                    ],
+                                    "matcherLabels": [],
+                                    "name": "Internal",
+                                    "outcomeText": "INTERNAL",
+                                    "overrideNames": [],
+                                    "overrides": [],
+                                    "rationale": "Routine district work that has not been approved for public distribution is Internal."
+                                },
+                                {
+                                    "dependsOn": [],
+                                    "dependsOnNames": [],
+                                    "id": "confidential",
+                                    "isComputed": false,
+                                    "keywords": [
+                                        "student record",
+                                        "employee evaluation",
+                                        "supplier bid",
+                                        "payment information",
+                                        "purchasing notes"
+                                    ],
+                                    "matcherLabels": [],
+                                    "name": "Confidential",
+                                    "outcomeText": "CONFIDENTIAL",
+                                    "overrideNames": [],
+                                    "overrides": [],
+                                    "rationale": "Private records and active purchasing material need confirmed record or business authorization from the host."
+                                },
+                                {
+                                    "dependsOn": [],
+                                    "dependsOnNames": [],
+                                    "id": "restricted",
+                                    "isComputed": false,
+                                    "keywords": [
+                                        "live assessment",
+                                        "answer key",
+                                        "building access code",
+                                        "security blind spot",
+                                        "active investigation"
+                                    ],
+                                    "matcherLabels": [],
+                                    "name": "Restricted",
+                                    "outcomeText": "RESTRICTED",
+                                    "overrideNames": [],
+                                    "overrides": [],
+                                    "rationale": "Safety, investigation, and live-assessment material needs explicit assignment from the host."
+                                }
+                            ],
+                            "label": "1. Protection"
+                        },
+                        {
+                            "id": "content",
+                            "items": [
+                                {
+                                    "dependsOn": [],
+                                    "dependsOnNames": [],
+                                    "id": "student-information",
+                                    "isComputed": false,
+                                    "keywords": [
+                                        "student record",
+                                        "attendance record",
+                                        "individual result",
+                                        "support plan"
+                                    ],
+                                    "matcherLabels": [],
+                                    "name": "Student information",
+                                    "outcomeText": "STUDENT_INFORMATION",
+                                    "overrideNames": [],
+                                    "overrides": [],
+                                    "rationale": "The host still verifies access to the particular student record."
+                                },
+                                {
+                                    "dependsOn": [],
+                                    "dependsOnNames": [],
+                                    "id": "employee-information",
+                                    "isComputed": false,
+                                    "keywords": [
+                                        "employee evaluation",
+                                        "personnel file"
+                                    ],
+                                    "matcherLabels": [],
+                                    "name": "Employee information",
+                                    "outcomeText": "EMPLOYEE_INFORMATION",
+                                    "overrideNames": [],
+                                    "overrides": [],
+                                    "rationale": "The host still verifies access to the employee record or case."
+                                },
+                                {
+                                    "dependsOn": [],
+                                    "dependsOnNames": [],
+                                    "id": "financial-information",
+                                    "isComputed": false,
+                                    "keywords": [
+                                        "supplier bid",
+                                        "payment information",
+                                        "purchasing notes"
+                                    ],
+                                    "matcherLabels": [],
+                                    "name": "Financial information",
+                                    "outcomeText": "FINANCIAL_INFORMATION",
+                                    "overrideNames": [],
+                                    "overrides": [],
+                                    "rationale": "A published budget does not need this tag."
+                                },
+                                {
+                                    "dependsOn": [],
+                                    "dependsOnNames": [],
+                                    "id": "secure-assessments",
+                                    "isComputed": false,
+                                    "keywords": [
+                                        "live assessment",
+                                        "unreleased questions",
+                                        "answer key"
+                                    ],
+                                    "matcherLabels": [],
+                                    "name": "Secure assessments",
+                                    "outcomeText": "SECURE_ASSESSMENTS",
+                                    "overrideNames": [],
+                                    "overrides": [],
+                                    "rationale": "The host verifies assignment to the assessment."
+                                },
+                                {
+                                    "dependsOn": [],
+                                    "dependsOnNames": [],
+                                    "id": "security-information",
+                                    "isComputed": false,
+                                    "keywords": [
+                                        "building access code",
+                                        "security blind spot"
+                                    ],
+                                    "matcherLabels": [],
+                                    "name": "Security information",
+                                    "outcomeText": "SECURITY_INFORMATION",
+                                    "overrideNames": [],
+                                    "overrides": [],
+                                    "rationale": "The host verifies an operational need."
+                                }
+                            ],
+                            "label": "2. Sensitive content"
+                        },
+                        {
+                            "id": "schools",
+                            "items": [
+                                {
+                                    "dependsOn": [],
+                                    "dependsOnNames": [],
+                                    "id": "all-schools",
+                                    "isComputed": false,
+                                    "keywords": [
+                                        "all three schools",
+                                        "districtwide school plan"
+                                    ],
+                                    "matcherLabels": [],
+                                    "name": "All three schools",
+                                    "outcomeText": "ALL",
+                                    "overrideNames": [],
+                                    "overrides": [],
+                                    "rationale": "ALL is the finite Oakwood, Pinecrest, and Riverside group."
+                                },
+                                {
+                                    "dependsOn": [],
+                                    "dependsOnNames": [],
+                                    "id": "oakwood",
+                                    "isComputed": false,
+                                    "keywords": [
+                                        "oakwood",
+                                        "oakwood middle school"
+                                    ],
+                                    "matcherLabels": [],
+                                    "name": "Oakwood",
+                                    "outcomeText": "OAKWOOD",
+                                    "overrideNames": [],
+                                    "overrides": [],
+                                    "rationale": "Select Oakwood only when it is an allowed school recipient."
+                                },
+                                {
+                                    "dependsOn": [],
+                                    "dependsOnNames": [],
+                                    "id": "pinecrest",
+                                    "isComputed": false,
+                                    "keywords": [
+                                        "pinecrest",
+                                        "pinecrest middle school"
+                                    ],
+                                    "matcherLabels": [],
+                                    "name": "Pinecrest",
+                                    "outcomeText": "PINECREST",
+                                    "overrideNames": [],
+                                    "overrides": [],
+                                    "rationale": "Select Pinecrest only when it is an allowed school recipient."
+                                },
+                                {
+                                    "dependsOn": [],
+                                    "dependsOnNames": [],
+                                    "id": "riverside",
+                                    "isComputed": false,
+                                    "keywords": [
+                                        "riverside",
+                                        "riverside high school"
+                                    ],
+                                    "matcherLabels": [],
+                                    "name": "Riverside",
+                                    "outcomeText": "RIVERSIDE",
+                                    "overrideNames": [],
+                                    "overrides": [],
+                                    "rationale": "Select Riverside only when it is an allowed school recipient."
+                                }
+                            ],
+                            "label": "3. Permitted schools"
+                        },
+                        {
+                            "id": "sharing",
+                            "items": [
+                                {
+                                    "dependsOn": [],
+                                    "dependsOnNames": [],
+                                    "id": "education-department",
+                                    "isComputed": false,
+                                    "keywords": [
+                                        "commonwealth education department",
+                                        "state education department"
+                                    ],
+                                    "matcherLabels": [],
+                                    "name": "Commonwealth Education Department",
+                                    "outcomeText": "COMMONWEALTH_EDUCATION_DEPARTMENT",
+                                    "overrideNames": [],
+                                    "overrides": [],
+                                    "rationale": "This adds one external recipient; it does not establish identity or business need."
+                                },
+                                {
+                                    "dependsOn": [],
+                                    "dependsOnNames": [],
+                                    "id": "transportation-services",
+                                    "isComputed": false,
+                                    "keywords": [
+                                        "student transportation services",
+                                        "transportation provider"
+                                    ],
+                                    "matcherLabels": [],
+                                    "name": "Student Transportation Services",
+                                    "outcomeText": "STUDENT_TRANSPORTATION_SERVICES",
+                                    "overrideNames": [],
+                                    "overrides": [],
+                                    "rationale": "This adds one external recipient; it does not establish identity or business need."
+                                }
+                            ],
+                            "label": "4. Allow sharing with"
+                        },
+                        {
+                            "id": "handling",
+                            "items": [
+                                {
+                                    "dependsOn": [],
+                                    "dependsOnNames": [],
+                                    "id": "do-not-forward",
+                                    "isComputed": false,
+                                    "keywords": [
+                                        "do not forward",
+                                        "ask before sharing"
+                                    ],
+                                    "matcherLabels": [],
+                                    "name": "Do not forward",
+                                    "outcomeText": "DO_NOT_FORWARD",
+                                    "overrideNames": [],
+                                    "overrides": [],
+                                    "rationale": "This is a human instruction; the marking does not technically block forwarding."
+                                },
+                                {
+                                    "dependsOn": [],
+                                    "dependsOnNames": [],
+                                    "id": "redact-before-release",
+                                    "isComputed": false,
+                                    "keywords": [
+                                        "redact before release",
+                                        "public copy"
+                                    ],
+                                    "matcherLabels": [],
+                                    "name": "Redact before release",
+                                    "outcomeText": "REDACT_BEFORE_RELEASE",
+                                    "overrideNames": [],
+                                    "overrides": [],
+                                    "rationale": "Create and approve a separate redacted public version; this copy remains protected."
+                                },
+                                {
+                                    "dependsOn": [],
+                                    "dependsOnNames": [],
+                                    "id": "keep-sealed",
+                                    "isComputed": false,
+                                    "keywords": [
+                                        "keep sealed",
+                                        "open at scheduled time"
+                                    ],
+                                    "matcherLabels": [],
+                                    "name": "Keep sealed",
+                                    "outcomeText": "KEEP_SEALED",
+                                    "overrideNames": [],
+                                    "overrides": [],
+                                    "rationale": "The custodian controls the opening event outside the marking engine."
+                                },
+                                {
+                                    "dependsOn": [],
+                                    "dependsOnNames": [],
+                                    "id": "collect-after-use",
+                                    "isComputed": false,
+                                    "keywords": [
+                                        "collect after use",
+                                        "return every copy"
+                                    ],
+                                    "matcherLabels": [],
+                                    "name": "Collect after use",
+                                    "outcomeText": "COLLECT_AFTER_USE",
+                                    "overrideNames": [],
+                                    "overrides": [],
+                                    "rationale": "The custodian records collection outside the marking engine."
+                                }
+                            ],
+                            "label": "5. Handling instructions"
+                        }
+                    ],
+                    "description": "Suggests protection, sensitive-content, school, external-sharing, and handling markings for an author to review. It does not infer identity, record relationships, assignments, approval, or completed handling actions.",
+                    "id": "cedar-valley-guide",
+                    "name": "Cedar Valley District Files Guide",
+                    "uncategorized": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "8fcf3a7e4ed751b13dbcc717ca7efd4aeb5426641e55af5dd451b1d29983a5a8": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "cedar-valley",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "cedar-valley-guide",
+                            "kind": "guide",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "cedar-valley-access",
+                            "kind": "access",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "cedar-valley",
+                            "kind": "context",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "cedar-valley",
+                    "requestedVersion": "latest",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "level": {
+                        "suggestions": [
+                            {
+                                "categoryId": "level",
+                                "conceptId": "PUBLIC",
+                                "description": "Public",
+                                "group": "Protection",
+                                "label": "PUBLIC",
+                                "name": "Public",
+                                "order": 0,
+                                "selected": false,
+                                "views": {
+                                    "default": "PUBLIC",
+                                    "long": "PUBLIC",
+                                    "short": "P"
+                                }
+                            },
+                            {
+                                "categoryId": "level",
+                                "conceptId": "INTERNAL",
+                                "description": "Internal",
+                                "group": "Protection",
+                                "label": "INTERNAL",
+                                "name": "Internal",
+                                "order": 0,
+                                "selected": false,
+                                "views": {
+                                    "default": "INTERNAL",
+                                    "long": "INTERNAL",
+                                    "short": "I"
+                                }
+                            },
+                            {
+                                "categoryId": "level",
+                                "conceptId": "CONFIDENTIAL",
+                                "description": "Confidential",
+                                "group": "Protection",
+                                "label": "CONFIDENTIAL",
+                                "name": "Confidential",
+                                "order": 0,
+                                "selected": false,
+                                "views": {
+                                    "default": "CONFIDENTIAL",
+                                    "long": "CONFIDENTIAL",
+                                    "short": "C"
+                                }
+                            },
+                            {
+                                "categoryId": "level",
+                                "conceptId": "RESTRICTED",
+                                "description": "Restricted",
+                                "group": "Protection",
+                                "label": "RESTRICTED",
+                                "name": "Restricted",
+                                "order": 0,
+                                "selected": false,
+                                "views": {
+                                    "default": "RESTRICTED",
+                                    "long": "RESTRICTED",
+                                    "short": "R"
+                                }
+                            }
+                        ],
+                        "warnings": []
+                    }
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "a1d88f4ca9a7777ec59b3e828bf2f42c648abda4c45d4b866cf88ad920f2a1c6": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "cedar-valley",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "cedar-valley-guide",
+                            "kind": "guide",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "cedar-valley-access",
+                            "kind": "access",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "cedar-valley",
+                            "kind": "context",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "cedar-valley",
+                    "requestedVersion": "latest",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "sensitive_content",
+                            "conceptId": "SECURE_ASSESSMENTS",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            {
+                                "categoryId": "sensitive_content",
+                                "conceptId": "SECURE_ASSESSMENTS"
+                            }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [
+                        {
+                            "categoryId": "level",
+                            "constraintId": "protection-level-required",
+                            "message": "Choose a protection level."
+                        },
+                        {
+                            "constraintId": "required-category:level",
+                            "message": "Protection is required: the marking asserts no concept in this category"
+                        },
+                        {
+                            "affectedConcepts": ["SECURE_ASSESSMENTS"],
+                            "constraintId": "_recognition_incomplete",
+                            "message": "Only part of the input reads as a marking in the \"short\" format; the rest is not recognized."
+                        },
+                        {
+                            "constraintId": "_unmatched_token",
+                            "message": "\"STATE\" was not recognized: it matched no known concept and will be kept visible in the rendered marking."
+                        },
+                        {
+                            "constraintId": "_unmatched_token",
+                            "message": "\"STAFF\" was not recognized: it matched no known concept and will be kept visible in the rendered marking."
+                        }
+                    ],
+                    "inputWasValid": false,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "recognition": {
+                        "corrections": [],
+                        "inputFormat": "short",
+                        "status": "partial",
+                        "surface": "marking",
+                        "unmatched": [
+                            { "end": 5, "start": 0, "text": "STATE" },
+                            { "end": 22, "start": 17, "text": "STAFF" }
+                        ]
+                    },
+                    "rendered": "SECURE ASSESSMENTS//STATE//STAFF",
+                    "renders": {},
+                    "valid": false,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "b34dad493eccac68810284f0e323cb2c95582c808e3dea4d144b7c4b723d2914": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "cedar-valley",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "cedar-valley-guide",
+                            "kind": "guide",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "cedar-valley-access",
+                            "kind": "access",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "cedar-valley",
+                            "kind": "context",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "cedar-valley",
+                    "requestedVersion": "latest",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "sensitive_content",
+                            "conceptId": "SECURE_ASSESSMENTS",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            {
+                                "categoryId": "sensitive_content",
+                                "conceptId": "SECURE_ASSESSMENTS"
+                            }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [
+                        {
+                            "categoryId": "level",
+                            "constraintId": "protection-level-required",
+                            "message": "Choose a protection level."
+                        },
+                        {
+                            "constraintId": "required-category:level",
+                            "message": "Protection is required: the marking asserts no concept in this category"
+                        },
+                        {
+                            "affectedConcepts": ["SECURE_ASSESSMENTS"],
+                            "constraintId": "_recognition_incomplete",
+                            "message": "Only part of the input reads as a marking; the rest is not recognized."
+                        },
+                        {
+                            "constraintId": "_unmatched_token",
+                            "message": "\"STATE\" was not recognized: it matched no known concept and will be kept visible in the rendered marking."
+                        },
+                        {
+                            "constraintId": "_unmatched_token",
+                            "message": "\"STAFF\" was not recognized: it matched no known concept and will be kept visible in the rendered marking."
+                        }
+                    ],
+                    "inputWasValid": false,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "recognition": {
+                        "corrections": [],
+                        "status": "partial",
+                        "surface": "marking",
+                        "unmatched": [
+                            { "end": 25, "start": 20, "text": "STATE" },
+                            { "end": 32, "start": 27, "text": "STAFF" }
+                        ]
+                    },
+                    "rendered": "SECURE ASSESSMENTS//STATE//STAFF",
+                    "renders": {},
+                    "valid": false,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "ba959e9574ca6fba1fde117037f69c15e62cd7ca23b3bf38f5ee680090df5e6f": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "cedar-valley",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "cedar-valley-guide",
+                            "kind": "guide",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "cedar-valley-access",
+                            "kind": "access",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "cedar-valley",
+                            "kind": "context",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "cedar-valley",
+                    "requestedVersion": "latest",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "INTERNAL",
+                            "confidence": "certain",
+                            "source": "aggregate"
+                        },
+                        {
+                            "categoryId": "allow_sharing_with",
+                            "conceptId": "CEDAR_VALLEY_DISTRICT",
+                            "confidence": "inferred",
+                            "source": "aggregate"
+                        }
+                    ],
+                    "displayColor": {
+                        "background": "#1565c0",
+                        "text": "#ffffff"
+                    },
+                    "errors": [],
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "INTERNAL",
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "e070dec6e78862435e7c23c92a6e4a93a9667377aed0b78b533966687028c314": {
+            "body": {
+                "abiVersion": "v1",
+                "engineSha": "",
+                "engineVersion": "1.0.0-dev.30",
+                "gitTag": "",
+                "openapiVersion": "1.0.0-dev.30",
+                "status": "ok"
+            },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "e22f719efcfcb9c835d8200fdeffa272e63f9591cedc26eff1442157dd41f69e": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "cedar-valley",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "cedar-valley-guide",
+                            "kind": "guide",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "cedar-valley-access",
+                            "kind": "access",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "cedar-valley",
+                            "kind": "context",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "cedar-valley",
+                    "requestedVersion": "latest",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "level": {
+                        "suggestions": [
+                            {
+                                "categoryId": "level",
+                                "conceptId": "PUBLIC",
+                                "description": "Public",
+                                "group": "Protection",
+                                "label": "PUBLIC",
+                                "name": "Public",
+                                "order": 0,
+                                "selected": false,
+                                "views": {
+                                    "default": "PUBLIC",
+                                    "long": "PUBLIC",
+                                    "short": "P"
+                                }
+                            },
+                            {
+                                "categoryId": "level",
+                                "conceptId": "INTERNAL",
+                                "description": "Internal",
+                                "group": "Protection",
+                                "label": "INTERNAL",
+                                "name": "Internal",
+                                "order": 0,
+                                "selected": false,
+                                "views": {
+                                    "default": "INTERNAL",
+                                    "long": "INTERNAL",
+                                    "short": "I"
+                                }
+                            },
+                            {
+                                "categoryId": "level",
+                                "conceptId": "CONFIDENTIAL",
+                                "description": "Confidential",
+                                "group": "Protection",
+                                "label": "CONFIDENTIAL",
+                                "name": "Confidential",
+                                "order": 0,
+                                "selected": false,
+                                "views": {
+                                    "default": "CONFIDENTIAL",
+                                    "long": "CONFIDENTIAL",
+                                    "short": "C"
+                                }
+                            },
+                            {
+                                "categoryId": "level",
+                                "conceptId": "RESTRICTED",
+                                "description": "Restricted",
+                                "group": "Protection",
+                                "label": "RESTRICTED",
+                                "name": "Restricted",
+                                "order": 0,
+                                "selected": false,
+                                "views": {
+                                    "default": "RESTRICTED",
+                                    "long": "RESTRICTED",
+                                    "short": "R"
+                                }
+                            }
+                        ],
+                        "warnings": []
+                    }
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "e485116274d6553f123aa894d7a22e4ba5f0ac35eee20c651514e2ec161bd392": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "cedar-valley",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "cedar-valley-guide",
+                            "kind": "guide",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "cedar-valley-access",
+                            "kind": "access",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "cedar-valley",
+                            "kind": "context",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "cedar-valley",
+                    "requestedVersion": "latest",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "CONFIDENTIAL",
+                            "confidence": "certain",
+                            "source": "aggregate"
+                        },
+                        {
+                            "categoryId": "allow_sharing_with",
+                            "conceptId": "CEDAR_VALLEY_DISTRICT",
+                            "confidence": "inferred",
+                            "source": "aggregate"
+                        }
+                    ],
+                    "displayColor": {
+                        "background": "#6a1b9a",
+                        "text": "#ffffff"
+                    },
+                    "errors": [],
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "CONFIDENTIAL",
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "e8ae505c554cfe67976e99c8e09ecd15ebdd38be06c335e228b0d6c0beba21d3": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "cedar-valley",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "cedar-valley-guide",
+                            "kind": "guide",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "cedar-valley-access",
+                            "kind": "access",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "cedar-valley",
+                            "kind": "context",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "cedar-valley",
+                    "requestedVersion": "latest",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [
+                        {
+                            "action": "add",
+                            "add": [
+                                {
+                                    "categoryId": "allow_sharing_with",
+                                    "conceptId": "CEDAR_VALLEY_DISTRICT"
+                                }
+                            ],
+                            "message": "Rule \"nonpublic-is-internal-by-default\": added \"CEDAR_VALLEY_DISTRICT\" to category \"allow_sharing_with\"",
+                            "ruleId": "nonpublic-is-internal-by-default",
+                            "triggerConceptIds": ["CONFIDENTIAL"]
+                        }
+                    ],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "CONFIDENTIAL",
+                            "confidence": "certain",
+                            "source": "user"
+                        },
+                        {
+                            "categoryId": "allow_sharing_with",
+                            "conceptId": "CEDAR_VALLEY_DISTRICT",
+                            "confidence": "inferred",
+                            "source": "infer",
+                            "sourceRule": "nonpublic-is-internal-by-default"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            {
+                                "categoryId": "level",
+                                "conceptId": "CONFIDENTIAL"
+                            }
+                        ],
+                        "omitted": [
+                            {
+                                "categoryId": "allow_sharing_with",
+                                "conceptId": "CEDAR_VALLEY_DISTRICT"
+                            }
+                        ],
+                        "unrepresentable": []
+                    },
+                    "displayColor": {
+                        "background": "#6a1b9a",
+                        "text": "#ffffff"
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "CONFIDENTIAL",
+                    "renders": {},
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "f64766b6d4a0f5ab33e6a01d8d99d473a257fe272062a2e248230306eb7d9809": {
+            "body": [{ "id": "marking", "label": "File marking" }],
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "f70f5378bb51a098b2cbfd47754ba743e86b1463648e381dfbb2363ca589e459": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "cedar-valley",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "cedar-valley-guide",
+                            "kind": "guide",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "cedar-valley-access",
+                            "kind": "access",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "cedar-valley",
+                            "kind": "context",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "cedar-valley",
+                    "requestedVersion": "latest",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [
+                        {
+                            "action": "add",
+                            "add": [
+                                {
+                                    "categoryId": "allow_sharing_with",
+                                    "conceptId": "CEDAR_VALLEY_DISTRICT"
+                                }
+                            ],
+                            "message": "Rule \"nonpublic-is-internal-by-default\": added \"CEDAR_VALLEY_DISTRICT\" to category \"allow_sharing_with\"",
+                            "ruleId": "nonpublic-is-internal-by-default",
+                            "triggerConceptIds": ["INTERNAL"]
+                        }
+                    ],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "INTERNAL",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "allow_sharing_with",
+                            "conceptId": "CEDAR_VALLEY_DISTRICT",
+                            "confidence": "inferred",
+                            "source": "infer",
+                            "sourceRule": "nonpublic-is-internal-by-default"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            { "categoryId": "level", "conceptId": "INTERNAL" }
+                        ],
+                        "omitted": [
+                            {
+                                "categoryId": "allow_sharing_with",
+                                "conceptId": "CEDAR_VALLEY_DISTRICT"
+                            }
+                        ],
+                        "unrepresentable": []
+                    },
+                    "displayColor": {
+                        "background": "#1565c0",
+                        "text": "#ffffff"
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "recognition": {
+                        "corrections": [],
+                        "status": "complete",
+                        "surface": "marking",
+                        "unmatched": []
+                    },
+                    "rendered": "INTERNAL",
+                    "renders": {},
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "fad2aacaf5aa3c6791ae4d41a4f51f6d10547b52c2dc563e1d5988469ad4f3b9": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "cedar-valley",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "cedar-valley-guide",
+                            "kind": "guide",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "cedar-valley-access",
+                            "kind": "access",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "cedar-valley",
+                            "kind": "context",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "cedar-valley",
+                    "requestedVersion": "latest",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [
+                        {
+                            "action": "add",
+                            "add": [
+                                {
+                                    "categoryId": "allow_sharing_with",
+                                    "conceptId": "CEDAR_VALLEY_DISTRICT"
+                                }
+                            ],
+                            "message": "Rule \"nonpublic-is-internal-by-default\": added \"CEDAR_VALLEY_DISTRICT\" to category \"allow_sharing_with\"",
+                            "ruleId": "nonpublic-is-internal-by-default",
+                            "triggerConceptIds": ["CONFIDENTIAL"]
+                        }
+                    ],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "CONFIDENTIAL",
+                            "confidence": "certain",
+                            "source": "user"
+                        },
+                        {
+                            "categoryId": "allow_sharing_with",
+                            "conceptId": "CEDAR_VALLEY_DISTRICT",
+                            "confidence": "inferred",
+                            "source": "infer",
+                            "sourceRule": "nonpublic-is-internal-by-default"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            {
+                                "categoryId": "level",
+                                "conceptId": "CONFIDENTIAL"
+                            }
+                        ],
+                        "omitted": [
+                            {
+                                "categoryId": "allow_sharing_with",
+                                "conceptId": "CEDAR_VALLEY_DISTRICT"
+                            }
+                        ],
+                        "unrepresentable": []
+                    },
+                    "displayColor": {
+                        "background": "#6a1b9a",
+                        "text": "#ffffff"
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "CONFIDENTIAL",
+                    "renders": {},
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        }
+    }
+}

@@ -14,13 +14,19 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { TestBed } from '@angular/core/testing';
 import { Component } from '@angular/core';
-import { Context } from '@ezclassify/engine';
 import type { ContextAdapter } from '@ezclassify/types';
 import { EzClassifyDirective } from './ezclassify.directive';
 import { AngularSignalStore } from './angular-signal-store';
 import { provideEzClassify } from './provide-ezclassify';
-import { openContext } from '../../../../libs/ui/test-fixtures/context-doubles';
+import {
+    openContext,
+    openOperations,
+} from '../../../../libs/ui/test-fixtures/context-doubles';
 import { bucketKey } from '@ezclassify/ui';
+import {
+    connectDemoContext,
+    demoRuntimeSettled,
+} from '../../../../test-support/demo-runtime';
 
 const MINIMAL_SCHEME = {
     scheme: {
@@ -71,8 +77,43 @@ const MINIMAL_SCHEME = {
     },
 };
 
-function buildContext(): ContextAdapter {
-    return openContext(Context.fromComponents({ scheme: MINIMAL_SCHEME }));
+/**
+ * A Context over the demo runtime that answers a rollup with the Promise this
+ * environment's zone.js has patched in. The store tells a pending answer from a
+ * ready one with `instanceof Promise`; zone.js replaces the global Promise, and
+ * the native Promise an async client returns is no instance of it. An Angular
+ * application build compiles async functions down to the zone Promise, so this
+ * only matters where vitest runs the client untransformed.
+ */
+function zoneSafe(client: ContextAdapter): ContextAdapter {
+    const context = openContext(client);
+    const patch = <V extends ContextAdapter['scheme']>(view: V): V => {
+        const open = openOperations(view);
+        const aggregate = open.aggregateAssertions.bind(open);
+        open.aggregateAssertions = (...args) =>
+            Promise.resolve(aggregate(...args));
+        return open;
+    };
+    context.scheme = patch(context.scheme);
+    const get = context.schemes.get.bind(context.schemes);
+    const views = new Map<string, ContextAdapter['scheme']>();
+    Object.defineProperty(context, 'schemes', {
+        configurable: true,
+        enumerable: true,
+        value: {
+            get: (key: string) => {
+                if (!views.has(key)) views.set(key, patch(get(key)));
+                return views.get(key)!;
+            },
+        },
+    });
+    return context;
+}
+
+async function buildContext(): Promise<ContextAdapter> {
+    return zoneSafe(
+        await connectDemoContext({ draft: { scheme: MINIMAL_SCHEME } }),
+    );
 }
 
 @Component({
@@ -96,8 +137,8 @@ class StoreOverrideRootComponent {
 describe('provideEzClassify', () => {
     let context: ContextAdapter;
 
-    beforeEach(() => {
-        context = buildContext();
+    beforeEach(async () => {
+        context = await buildContext();
     });
 
     it('refuses anything that is not a Context', () => {
@@ -129,7 +170,15 @@ describe('provideEzClassify', () => {
     });
 
     it('lets a bare root mark against several Contexts, one bucket each', async () => {
-        const records = buildContext();
+        // A second Context over the same scheme, composed apart.
+        const records = zoneSafe(
+            await connectDemoContext({
+                draft: {
+                    scheme: MINIMAL_SCHEME,
+                    metadata: { id: 'records', resolvedVersion: '1.0.0' },
+                },
+            }),
+        );
         await TestBed.configureTestingModule({
             imports: [BareRootComponent],
             providers: [
@@ -145,11 +194,17 @@ describe('provideEzClassify', () => {
         expect(directive.getContext()).toBeNull();
 
         const store = directive.getStore()!;
+        await demoRuntimeSettled();
         const recordsBucket = bucketKey('records', '');
         store.setBucket('doc', recordsBucket);
         await store.publishRendered('doc', 'HIGH');
+        await demoRuntimeSettled();
+        await vi.waitFor(() =>
+            expect(
+                store.getAggregate().byBucket.get(recordsBucket)?.rendered,
+            ).toBe('HIGH'),
+        );
         const page = store.getAggregate().byBucket;
-        expect(page.get(recordsBucket)?.rendered).toBe('HIGH');
         expect(page.has(bucketKey('district', ''))).toBe(false);
     });
 
@@ -178,14 +233,16 @@ describe('provideEzClassify', () => {
         );
         const read = (name: string): unknown =>
             JSON.parse(readFileSync(resolve(fixtures, `${name}.json`), 'utf8'));
-        const crosswalking = openContext(
-            Context.fromComponents({
-                schemes: [
-                    { key: 'first', scheme: read('ref-scheme-1') },
-                    { key: 'second', scheme: read('ref-scheme-2') },
-                ],
-                primaryScheme: 'first',
-            } as Parameters<typeof Context.fromComponents>[0]),
+        const crosswalking = zoneSafe(
+            await connectDemoContext({
+                draft: {
+                    schemes: [
+                        { key: 'first', scheme: read('ref-scheme-1') },
+                        { key: 'second', scheme: read('ref-scheme-2') },
+                    ],
+                    primaryScheme: 'first',
+                },
+            }),
         );
         await TestBed.configureTestingModule({
             imports: [BareRootComponent],
@@ -198,17 +255,21 @@ describe('provideEzClassify', () => {
             fixture.debugElement.children[0].injector.get(EzClassifyDirective);
 
         const store = directive.getStore()!;
+        await demoRuntimeSettled();
         const second = bucketKey('', 'second');
         store.setBucket('note', second);
         await store.publishRendered('note', 'LOW//ALPHA');
         expect(store.get('note').rendered).toBe('LOW//ALPHA');
+        await demoRuntimeSettled();
         expect(store.getAggregate().byBucket.get(second)?.rendered).toBe(
             'LOW//ALPHA',
         );
     });
 
     it('binds a remote Context scheme without addressed lifecycle methods', async () => {
-        const local = Context.fromComponents({ scheme: MINIMAL_SCHEME });
+        const local = await connectDemoContext({
+            draft: { scheme: MINIMAL_SCHEME },
+        });
         const addressed = new Set([
             'loadScheme',
             'loadLayer',

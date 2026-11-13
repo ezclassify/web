@@ -4,7 +4,7 @@ import {
     runEzClassifyStoreConformance,
     runEzClassifyStoreBudgetConformance,
     runEzClassifyStoreSeedConformance,
-} from '@ezclassify/testing-utils';
+} from '../../../test-support/store-conformance';
 import {
     EMPTY_EZCLASSIFY_STATE,
     SOLE_BUCKET,

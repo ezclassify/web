@@ -7,7 +7,6 @@
 import { describe, it, expect, afterEach } from 'vitest';
 import { defineComponent, h, inject, nextTick } from 'vue';
 import { mount, type VueWrapper } from '@vue/test-utils';
-import { loadCedarValleyContext } from '../../../test-support/community-content';
 import {
     createEzClassify,
     EzClassify,
@@ -16,6 +15,7 @@ import {
     type UseEzClassifyFacetReturn,
     type VueRefStore,
 } from './index';
+import { connectDemoContext } from '../../../test-support/demo-runtime';
 
 /** Flush the async component-init chain and the rollup debounce behind it. */
 async function settle(): Promise<void> {
@@ -71,7 +71,11 @@ describe('<EzClassify> with a facet in a child component', () => {
             attachTo: mountRoot,
             global: {
                 plugins: [
-                    createEzClassify({ context: loadCedarValleyContext() }),
+                    createEzClassify({
+                        context: await connectDemoContext({
+                            contextId: 'cedar-valley',
+                        }),
+                    }),
                 ],
             },
         });

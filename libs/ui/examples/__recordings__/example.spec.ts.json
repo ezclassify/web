@@ -1,0 +1,393 @@
+{
+    "engineVersion": "1.0.0-dev.30",
+    "openapiVersion": "1.0.0-dev.30",
+    "responses": {
+        "0b1adf450d527f91fd8673bdbe466e98c87a61d49fc74e813a0b689d819c7f6f": {
+            "body": [
+                {
+                    "id": "level",
+                    "label": "Level",
+                    "position": 0,
+                    "required": true,
+                    "rollup": "max",
+                    "single": true
+                },
+                {
+                    "id": "controls",
+                    "label": "Controls",
+                    "position": 1,
+                    "required": false,
+                    "rollup": "union",
+                    "single": false
+                }
+            ],
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "352491234c60fdefd87c1317bb4aa82b5be110da1bc9c26c1a954f0f73e1c10c": {
+            "body": [
+                {
+                    "categoryOrder": ["level", "controls"],
+                    "categorySeparators": { "controls": "/" },
+                    "categoryViews": {
+                        "controls": "default",
+                        "level": "default"
+                    },
+                    "id": "default",
+                    "mode": "inline",
+                    "separator": "/",
+                    "separatorBefore": { "controls": "/" },
+                    "surface": "marking"
+                }
+            ],
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "48a4503e3c687427f4a202237ffdfb3040f04641c8987a737dc6306722f72b44": {
+            "body": {
+                "defaultRenderFormat": "default",
+                "description": "Example profile for forms library e2e spec",
+                "id": "forms-example",
+                "name": "Forms Example",
+                "referenceSurfaceLabel": {
+                    "plural": "Handbooks",
+                    "singular": "Handbook"
+                },
+                "roleAware": false,
+                "version": "1.0.0"
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "56ddd44613d87989cad37520ee0d120fef4bb57779c15bfc5c97c227f58e90dd": {
+            "body": {
+                "contextId": "sbx-7d40db4b324b64a13424cc21b3261452025fa9e068c720a63f1952bd71740402"
+            },
+            "method": "PUT",
+            "statusCode": 200
+        },
+        "64837e1b41690703f4a10e8926aa38470f91302605997f07b94b34a81fb74396": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "forms-example",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "sbx-7d40db4b324b64a13424cc21b3261452025fa9e068c720a63f1952bd71740402",
+                            "kind": "context",
+                            "version": "0.0.0"
+                        }
+                    ],
+                    "contextId": "sbx-7d40db4b324b64a13424cc21b3261452025fa9e068c720a63f1952bd71740402",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "0.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "HIGH",
+                            "confidence": "certain",
+                            "source": "aggregate"
+                        },
+                        {
+                            "categoryId": "controls",
+                            "conceptId": "CTRL-B",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "errors": [],
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "HIGH/CTRL-B",
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "96143d702ef4c957ed2a2b82afc8ec8162064011b2082ec32e9f4461730d771f": {
+            "body": [],
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "9d14bf17a955f250c7eb4d8f1e16a3265b0166d9f3a0e29df9e53966138e992b": {
+            "body": [],
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "a7b0058a525886b11f8c7bbc0c426873790ae368d54d3185318e0c6bc18963aa": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "forms-example",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "sbx-7d40db4b324b64a13424cc21b3261452025fa9e068c720a63f1952bd71740402",
+                            "kind": "context",
+                            "version": "0.0.0"
+                        }
+                    ],
+                    "contextId": "sbx-7d40db4b324b64a13424cc21b3261452025fa9e068c720a63f1952bd71740402",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "0.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "HIGH",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "controls",
+                            "conceptId": "CTRL-B",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            { "categoryId": "level", "conceptId": "HIGH" },
+                            { "categoryId": "controls", "conceptId": "CTRL-B" }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "recognition": {
+                        "corrections": [],
+                        "inputFormat": "default",
+                        "status": "complete",
+                        "surface": "marking",
+                        "unmatched": []
+                    },
+                    "rendered": "HIGH/CTRL-B",
+                    "renders": {},
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "b170e552183521977849d735d8bbd0e0fd051c25cf44d7984732440f40ba44b9": {
+            "body": {
+                "id": "sbx-7d40db4b324b64a13424cc21b3261452025fa9e068c720a63f1952bd71740402",
+                "scheme": {
+                    "id": "forms-example",
+                    "resolvedVersion": "1.0.0",
+                    "version": "1.0.0"
+                },
+                "schemes": [
+                    {
+                        "id": "forms-example",
+                        "roles": ["primary"],
+                        "selector": "forms-example",
+                        "version": "1.0.0"
+                    }
+                ],
+                "version": "0.0.0"
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "b781ca8ae43afdb46dee024e7e6cc44b1fcdb0c59a495d24ea8e4c6a38322fca": {
+            "body": [
+                {
+                    "aliases": [],
+                    "categories": ["level"],
+                    "id": "LOW",
+                    "name": "Low",
+                    "parents": [],
+                    "position": 0,
+                    "rank": 0,
+                    "views": { "default": "LOW", "short": "L" }
+                },
+                {
+                    "aliases": [],
+                    "categories": ["level"],
+                    "id": "MED",
+                    "name": "Medium",
+                    "parents": [],
+                    "position": 1,
+                    "rank": 1,
+                    "views": { "default": "MED", "short": "M" }
+                },
+                {
+                    "aliases": [],
+                    "categories": ["level"],
+                    "id": "HIGH",
+                    "name": "High",
+                    "parents": [],
+                    "position": 2,
+                    "rank": 2,
+                    "views": { "default": "HIGH", "short": "H" }
+                },
+                {
+                    "aliases": [],
+                    "categories": ["controls"],
+                    "id": "CTRL-A",
+                    "name": "Control A",
+                    "parents": ["HIGH"],
+                    "position": 0,
+                    "views": { "default": "CTRL-A" }
+                },
+                {
+                    "aliases": [],
+                    "categories": ["controls"],
+                    "id": "CTRL-B",
+                    "name": "Control B",
+                    "parents": [],
+                    "position": 1,
+                    "views": { "default": "CTRL-B" }
+                }
+            ],
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "c052c158feb24a07c1991c9f28f4f166789840a3529f59d654408a0a1a709276": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "forms-example",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "sbx-7d40db4b324b64a13424cc21b3261452025fa9e068c720a63f1952bd71740402",
+                            "kind": "context",
+                            "version": "0.0.0"
+                        }
+                    ],
+                    "contextId": "sbx-7d40db4b324b64a13424cc21b3261452025fa9e068c720a63f1952bd71740402",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "0.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "HIGH",
+                            "confidence": "certain",
+                            "source": "aggregate"
+                        },
+                        {
+                            "categoryId": "controls",
+                            "conceptId": "CTRL-B",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "errors": [],
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "HIGH/CTRL-B",
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "e070dec6e78862435e7c23c92a6e4a93a9667377aed0b78b533966687028c314": {
+            "body": {
+                "abiVersion": "v1",
+                "engineSha": "",
+                "engineVersion": "1.0.0-dev.30",
+                "gitTag": "",
+                "openapiVersion": "1.0.0-dev.30",
+                "status": "ok"
+            },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "fae53e9f7ae26cefaed65e98666e6a44a099b119e4c0f70c7aff29972dbbcd5c": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "forms-example",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "sbx-7d40db4b324b64a13424cc21b3261452025fa9e068c720a63f1952bd71740402",
+                            "kind": "context",
+                            "version": "0.0.0"
+                        }
+                    ],
+                    "contextId": "sbx-7d40db4b324b64a13424cc21b3261452025fa9e068c720a63f1952bd71740402",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "0.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "LOW",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            { "categoryId": "level", "conceptId": "LOW" }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "recognition": {
+                        "corrections": [],
+                        "inputFormat": "default",
+                        "status": "complete",
+                        "surface": "marking",
+                        "unmatched": []
+                    },
+                    "rendered": "LOW",
+                    "renders": {},
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        }
+    }
+}

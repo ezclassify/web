@@ -14,7 +14,6 @@ import { TestBed, type ComponentFixture } from '@angular/core/testing';
 import { Component, Input, type Signal } from '@angular/core';
 import { By } from '@angular/platform-browser';
 import { getActiveConsumer } from '@angular/core/primitives/signals';
-import { loadCedarValleyContext } from '../../../../test-support/community-content';
 import { VanillaEzClassifyStore, type EzClassifyStore } from '@ezclassify/ui';
 import {
     AngularSignalStore,
@@ -27,6 +26,11 @@ import {
 import { EzClassifyDirective } from './ezclassify.directive';
 import { provideEzClassify } from './provide-ezclassify';
 import { openOperations } from '../../../../libs/ui/test-fixtures/context-doubles';
+import type { EzClassifyClient } from '@ezclassify/rest-client';
+import {
+    connectDemoContext,
+    demoRuntimeSettled,
+} from '../../../../test-support/demo-runtime';
 
 @Component({
     selector: 'test-facet-host',
@@ -71,13 +75,19 @@ function facetOf(
 }
 
 async function flush(): Promise<void> {
-    for (let i = 0; i < 8; i++) await Promise.resolve();
+    await demoRuntimeSettled();
 }
 
-function configureRoot(): Promise<unknown> {
+async function configureRoot(): Promise<unknown> {
     return TestBed.configureTestingModule({
         imports: [StoreRootComponent],
-        providers: [provideEzClassify({ context: loadCedarValleyContext() })],
+        providers: [
+            provideEzClassify({
+                context: await connectDemoContext({
+                    contextId: 'cedar-valley',
+                }),
+            }),
+        ],
     }).compileComponents();
 }
 
@@ -89,7 +99,9 @@ describe('injectEzClassifyFacet store contract', () => {
      * project it.
      */
     it('projects a substituted store that answers the signal accessors', async () => {
-        const backing = new AngularSignalStore(loadCedarValleyContext().scheme);
+        const backing = new AngularSignalStore(
+            (await connectDemoContext({ contextId: 'cedar-valley' })).scheme,
+        );
         // Object.create(null) as the proxy target so the wrapper carries none of
         // the backing store's prototype: it satisfies the contract by forwarding,
         // which is the whole point.
@@ -133,7 +145,7 @@ describe('injectEzClassifyFacet store contract', () => {
      */
     it('names the calling facet when the root binds a store it cannot project', async () => {
         const vanilla = new VanillaEzClassifyStore(
-            loadCedarValleyContext().scheme,
+            (await connectDemoContext({ contextId: 'cedar-valley' })).scheme,
         );
         await configureRoot();
 
@@ -150,7 +162,11 @@ describe('injectEzClassifyFacet store contract', () => {
         await TestBed.configureTestingModule({
             imports: [FacetHostComponent],
             providers: [
-                provideEzClassify({ context: loadCedarValleyContext() }),
+                provideEzClassify({
+                    context: await connectDemoContext({
+                        contextId: 'cedar-valley',
+                    }),
+                }),
             ],
         }).compileComponents();
 
@@ -163,10 +179,12 @@ describe('injectEzClassifyFacet store contract', () => {
 describe('injectEzClassifyFacet', () => {
     let store: AngularSignalStore;
     /** The scheme operations the store reads by, open for spying. */
-    let engine: ReturnType<typeof loadCedarValleyContext>['scheme'];
+    let engine: EzClassifyClient['scheme'];
 
     beforeEach(async () => {
-        engine = openOperations(loadCedarValleyContext().scheme);
+        engine = openOperations(
+            (await connectDemoContext({ contextId: 'cedar-valley' })).scheme,
+        );
         store = new AngularSignalStore(engine);
         await configureRoot();
     });
@@ -381,7 +399,11 @@ describe('injectEzClassifyFacet before the runtime has mounted', () => {
         await TestBed.configureTestingModule({
             imports: [RuntimeFormComponent],
             providers: [
-                provideEzClassify({ context: loadCedarValleyContext() }),
+                provideEzClassify({
+                    context: await connectDemoContext({
+                        contextId: 'cedar-valley',
+                    }),
+                }),
             ],
         }).compileComponents();
     });

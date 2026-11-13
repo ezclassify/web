@@ -21,7 +21,7 @@ import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { bucketKey } from '@ezclassify/ui';
-import { Context } from '@ezclassify/engine';
+import type { EzClassifyClient } from '@ezclassify/rest-client';
 import {
     createEzClassify,
     EzClassify,
@@ -36,12 +36,14 @@ import {
 } from '@ezclassify/vue';
 import * as entry from '@ezclassify/vue';
 import { openContext } from '../../../libs/ui/test-fixtures/context-doubles';
+import { connectDemoContext } from '../../../test-support/demo-runtime';
 
 const testProfile = {
     scheme: {
         id: 'public-api-test',
         version: '1.0.0',
         name: 'Public API Test',
+        description: 'Public API Test test fixture.',
         data: {
             categories: [
                 {
@@ -81,8 +83,8 @@ const testProfile = {
     },
 };
 
-function buildContext(): Context {
-    return Context.fromComponents({ scheme: testProfile });
+async function buildContext(): Promise<EzClassifyClient> {
+    return await connectDemoContext({ draft: { scheme: testProfile } });
 }
 
 let wrapper: VueWrapper | null = null;
@@ -94,11 +96,12 @@ afterEach(() => {
 });
 
 /** Mount `child` inside one `<EzClassify>` root of an app using the plugin. */
-function mountInRoot(
+async function mountInRoot(
     child: Component,
-    options: EzClassifyProvision = { context: buildContext() },
+    given?: EzClassifyProvision,
     rootProps: Record<string, unknown> = {},
-): VueWrapper {
+): Promise<VueWrapper> {
+    const options = given ?? { context: await buildContext() };
     const App = defineComponent({
         setup() {
             return () => h(EzClassify, rootProps, { default: () => h(child) });
@@ -133,8 +136,8 @@ describe('createEzClassify', () => {
         ).toThrow(/exactly one of \{ context \} or \{ contexts \}/);
     });
 
-    it('refuses options naming both one Context and several', () => {
-        const context = buildContext();
+    it('refuses options naming both one Context and several', async () => {
+        const context = await buildContext();
         expect(() =>
             createEzClassify({
                 context,
@@ -168,7 +171,7 @@ describe('createEzClassify', () => {
         wrapper = mount(App, {
             attachTo: document.body,
             global: {
-                plugins: [createEzClassify({ context: buildContext() })],
+                plugins: [createEzClassify({ context: await buildContext() })],
             },
         });
         await nextTick();
@@ -187,7 +190,7 @@ describe('<EzClassify>', () => {
     });
 
     it('renders a plain wrapper with no role and runs the scanner over it', async () => {
-        const host = mountInRoot(
+        const host = await mountInRoot(
             defineComponent({ setup: () => () => h('form') }),
         );
         await nextTick();
@@ -201,7 +204,7 @@ describe('<EzClassify>', () => {
 
     it('gives a descendant a two-way marking binding through its store', async () => {
         let marking: WritableComputedRef<string> | null = null;
-        mountInRoot(
+        await mountInRoot(
             defineComponent({
                 setup() {
                     marking = useEzClassify('doc');
@@ -218,7 +221,7 @@ describe('<EzClassify>', () => {
 
     it('gives a facet composable the root store', async () => {
         let facet: UseEzClassifyFacetReturn | null = null;
-        mountInRoot(
+        await mountInRoot(
             defineComponent({
                 setup() {
                     facet = useEzClassifyFacet('doc', 'f1');
@@ -237,7 +240,7 @@ describe('<EzClassify>', () => {
 
     it('gives a descendant its runtime, which marks up an element the page did not', async () => {
         let ui: ReturnType<typeof useEzClassifyUI> | null = null;
-        mountInRoot(
+        await mountInRoot(
             defineComponent({
                 setup() {
                     ui = useEzClassifyUI();
@@ -275,10 +278,10 @@ describe('<EzClassify>', () => {
     });
 
     it('builds its own store over the Context scheme and destroys it on unmount', async () => {
-        const spied = openContext(buildContext());
+        const spied = openContext(await buildContext());
         const meta = vi.spyOn(spied.scheme, 'getSchemeMeta');
         let store: VueRefStore | null = null;
-        const host = mountInRoot(
+        const host = await mountInRoot(
             defineComponent({
                 setup() {
                     store = useInjectedStore();
@@ -305,15 +308,17 @@ describe('<EzClassify>', () => {
         );
         const read = (name: string): unknown =>
             JSON.parse(readFileSync(resolve(fixtures, `${name}.json`), 'utf8'));
-        const context = Context.fromComponents({
-            schemes: [
-                { key: 'first', scheme: read('ref-scheme-1') },
-                { key: 'second', scheme: read('ref-scheme-2') },
-            ],
-            primaryScheme: 'first',
-        } as Parameters<typeof Context.fromComponents>[0]);
+        const context = await connectDemoContext({
+            draft: {
+                schemes: [
+                    { key: 'first', scheme: read('ref-scheme-1') },
+                    { key: 'second', scheme: read('ref-scheme-2') },
+                ],
+                primaryScheme: 'first',
+            },
+        });
         let store: VueRefStore | null = null;
-        mountInRoot(
+        await mountInRoot(
             defineComponent({
                 setup() {
                     store = useInjectedStore();
@@ -348,16 +353,16 @@ describe('<EzClassify>', () => {
     });
 
     it('binds a store the host passes and leaves it alive after unmount', async () => {
-        const appStore = new VueRefStore(buildContext().scheme);
+        const appStore = new VueRefStore((await buildContext()).scheme);
         let bound: VueRefStore | null = null;
-        const host = mountInRoot(
+        const host = await mountInRoot(
             defineComponent({
                 setup() {
                     bound = useInjectedStore();
                     return () => h('div');
                 },
             }),
-            { context: buildContext() },
+            { context: await buildContext() },
             { store: appStore },
         );
         await nextTick();
@@ -390,7 +395,7 @@ describe('<EzClassify>', () => {
         wrapper = mount(App, {
             attachTo: document.body,
             global: {
-                plugins: [createEzClassify({ context: buildContext() })],
+                plugins: [createEzClassify({ context: await buildContext() })],
             },
         });
         await nextTick();
@@ -410,7 +415,7 @@ describe('<EzClassify>', () => {
         wrapper = mount(App, {
             attachTo: document.body,
             global: {
-                plugins: [createEzClassify({ context: buildContext() })],
+                plugins: [createEzClassify({ context: await buildContext() })],
             },
         });
         await nextTick();

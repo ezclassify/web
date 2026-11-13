@@ -10,26 +10,17 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { TestBed, type ComponentFixture } from '@angular/core/testing';
 import { Component, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import yaml from 'js-yaml';
-import { Context } from '@ezclassify/engine';
-import {
-    cedarValleySchemeYaml,
-    cedarValleyGuideYaml,
-    cedarValleyAccessYaml,
-} from '../../../../../test-support/community-content';
+import type { EzClassifyClient } from '@ezclassify/rest-client';
 import { EzClassifyDirective } from '../ezclassify.directive';
 import { provideEzClassify } from '../provide-ezclassify';
 import { EzContextReferenceComponent } from './context-reference.component';
 import { EzContextReferenceTabComponent } from './context-reference-tab.component';
+import { connectDemoContext } from '../../../../../test-support/demo-runtime';
 
 const flush = () => new Promise((r) => setTimeout(r, 50));
 
-function fullContext(): Context {
-    return Context.fromComponents({
-        scheme: yaml.load(cedarValleySchemeYaml),
-        guides: [yaml.load(cedarValleyGuideYaml)],
-        access: yaml.load(cedarValleyAccessYaml),
-    });
+async function fullContext(): Promise<EzClassifyClient> {
+    return await connectDemoContext({ contextId: 'cedar-valley' });
 }
 
 describe('EzContextReferenceComponent: markup', () => {
@@ -113,7 +104,7 @@ describe('EzContextReferenceComponent: inside an ezClassify root', () => {
     beforeEach(async () => {
         await TestBed.configureTestingModule({
             imports: [TestHostComponent],
-            providers: [provideEzClassify({ context: fullContext() })],
+            providers: [provideEzClassify({ context: await fullContext() })],
         }).compileComponents();
     });
 
@@ -182,7 +173,7 @@ describe('EzContextReferenceComponent reactive lifecycle', () => {
     beforeEach(async () => {
         await TestBed.configureTestingModule({
             imports: [ReactiveHostComponent],
-            providers: [provideEzClassify({ context: fullContext() })],
+            providers: [provideEzClassify({ context: await fullContext() })],
         }).compileComponents();
         fixture = TestBed.createComponent(ReactiveHostComponent);
     });

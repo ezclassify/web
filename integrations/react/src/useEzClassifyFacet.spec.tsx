@@ -6,7 +6,6 @@ import {
     renderHook,
     waitFor,
 } from '@testing-library/react';
-import { loadCedarValleyContext } from '../../../test-support/community-content';
 import {
     EzClassify,
     EzClassifyProvider,
@@ -18,10 +17,17 @@ import {
 import { EzClassifyStoreProvider } from './useEzClassify';
 import { publishFacetSelection } from '@ezclassify/ui';
 import { openOperations } from '../../../libs/ui/test-fixtures/context-doubles';
+import type { EzClassifyClient } from '@ezclassify/rest-client';
+import {
+    connectDemoContext,
+    demoRuntimeSettled,
+} from '../../../test-support/demo-runtime';
 
 describe('useEzClassifyFacet', () => {
     it('owns one native subscription per cell and releases both on unmount', async () => {
-        const engine = openOperations(loadCedarValleyContext().scheme);
+        const engine = openOperations(
+            (await connectDemoContext({ contextId: 'cedar-valley' })).scheme,
+        );
         const store = new ReactEzClassifyStore(engine);
         const marking = vi.spyOn(store, 'subscribe');
         const facet = vi.spyOn(store, 'subscribeFacet');
@@ -45,7 +51,9 @@ describe('useEzClassifyFacet', () => {
     });
 
     it('exposes controlled value, options, validation, and updates', async () => {
-        const store = new ReactEzClassifyStore(loadCedarValleyContext().scheme);
+        const store = new ReactEzClassifyStore(
+            (await connectDemoContext({ contextId: 'cedar-valley' })).scheme,
+        );
         await store.publishRendered('document', 'INTERNAL');
         const wrapper = ({ children }: { children: ReactNode }) => (
             <EzClassifyStoreProvider store={store}>
@@ -73,7 +81,9 @@ describe('useEzClassifyFacet', () => {
     });
 
     it('projects the store cells rather than holding a copy of them', async () => {
-        const store = new ReactEzClassifyStore(loadCedarValleyContext().scheme);
+        const store = new ReactEzClassifyStore(
+            (await connectDemoContext({ contextId: 'cedar-valley' })).scheme,
+        );
         const wrapper = ({ children }: { children: ReactNode }) => (
             <EzClassifyStoreProvider store={store}>
                 {children}
@@ -114,7 +124,7 @@ describe('useEzClassifyFacet', () => {
 async function settleRuntime(ready: Promise<void>): Promise<void> {
     await act(async () => {
         await ready;
-        await new Promise<void>((tick) => setTimeout(tick, 0));
+        await demoRuntimeSettled();
     });
 }
 
@@ -139,14 +149,16 @@ describe('useEzClassifyFacet before the runtime has mounted', () => {
     }
 
     function Form({
+        context,
         served,
         pickInEffect,
     }: {
+        context: EzClassifyClient;
         served: string;
         pickInEffect: boolean;
     }) {
         return (
-            <EzClassifyProvider context={loadCedarValleyContext()}>
+            <EzClassifyProvider context={context}>
                 <EzClassify>
                     <input
                         type="hidden"
@@ -171,8 +183,15 @@ describe('useEzClassifyFacet before the runtime has mounted', () => {
                 once: true,
             }),
         );
+        const context = await connectDemoContext({ contextId: 'cedar-valley' });
         act(() => {
-            render(<Form served="INTERNAL//DO NOT FORWARD" pickInEffect />);
+            render(
+                <Form
+                    context={context}
+                    served="INTERNAL//DO NOT FORWARD"
+                    pickInEffect
+                />,
+            );
         });
         await settleRuntime(ready);
 
@@ -233,8 +252,10 @@ describe.each([false, true])(
             );
         }
 
-        function mountApp(): void {
-            const context = loadCedarValleyContext();
+        async function mountApp(): Promise<void> {
+            const context = await connectDemoContext({
+                contextId: 'cedar-valley',
+            });
             const store = new ReactEzClassifyStore(context.scheme);
             const app = (
                 <EzClassifyProvider context={context}>
@@ -257,7 +278,7 @@ describe.each([false, true])(
         }
 
         it('keeps a pick published to the store', async () => {
-            mountApp();
+            await mountApp();
             await act(async () => {
                 await publishFacetSelection(
                     toolbar!.store,
@@ -275,7 +296,7 @@ describe.each([false, true])(
         });
 
         it('keeps a pick made in a toolbar facet', async () => {
-            mountApp();
+            await mountApp();
             await act(async () => {
                 toolbar!.facet.setValue(['CONFIDENTIAL']);
                 await new Promise<void>((tick) => setTimeout(tick, 0));

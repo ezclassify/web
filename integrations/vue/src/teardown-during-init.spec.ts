@@ -12,8 +12,8 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { defineComponent, h, nextTick } from 'vue';
 import { mount } from '@vue/test-utils';
-import { loadCedarValleyContext } from '../../../test-support/community-content';
 import { createEzClassify, EzClassify } from './index';
+import { connectDemoContext } from '../../../test-support/demo-runtime';
 
 /** Flush the async component-init chain and the rollup debounce behind it. */
 async function settle(): Promise<void> {
@@ -69,18 +69,24 @@ const Host = defineComponent({
 });
 
 /** Mount options: attached to the page, with the plugin installed. */
-function options() {
+async function options() {
     return {
         attachTo: root,
         global: {
-            plugins: [createEzClassify({ context: loadCedarValleyContext() })],
+            plugins: [
+                createEzClassify({
+                    context: await connectDemoContext({
+                        contextId: 'cedar-valley',
+                    }),
+                }),
+            ],
         },
     };
 }
 
 describe('a Vue host unmounted while its fields are initializing', () => {
     it('reports no failed mount', async () => {
-        const wrapper = mount(Host, options());
+        const wrapper = mount(Host, await options());
         wrapper.unmount();
         await settle();
 
@@ -88,8 +94,8 @@ describe('a Vue host unmounted while its fields are initializing', () => {
     });
 
     it('lets the next host wire the same fields', async () => {
-        mount(Host, options()).unmount();
-        const second = mount(Host, options());
+        mount(Host, await options()).unmount();
+        const second = mount(Host, await options());
         await settle();
 
         expect(destroyedStoreErrors()).toEqual([]);

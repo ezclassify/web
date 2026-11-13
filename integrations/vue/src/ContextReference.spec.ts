@@ -15,15 +15,10 @@ import {
     type VNodeChild,
 } from 'vue';
 import { mount, type VueWrapper } from '@vue/test-utils';
-import yaml from 'js-yaml';
-import { Context } from '@ezclassify/engine';
-import {
-    cedarValleySchemeYaml,
-    cedarValleyGuideYaml,
-    cedarValleyAccessYaml,
-} from '../../../test-support/community-content';
+import type { EzClassifyClient } from '@ezclassify/rest-client';
 import { createEzClassify, EzClassify } from './index';
 import { ContextReference, ContextReferenceTab } from './ContextReference';
+import { connectDemoContext } from '../../../test-support/demo-runtime';
 
 if (typeof window !== 'undefined' && !window.matchMedia) {
     Object.defineProperty(window, 'matchMedia', {
@@ -109,19 +104,15 @@ describe('Vue <ContextReference> reactive lifecycle', () => {
         root = null;
     });
 
-    function fullContext(): Context {
-        return Context.fromComponents({
-            scheme: yaml.load(cedarValleySchemeYaml),
-            guides: [yaml.load(cedarValleyGuideYaml)],
-            access: yaml.load(cedarValleyAccessYaml),
-        });
+    async function fullContext(): Promise<EzClassifyClient> {
+        return await connectDemoContext({ contextId: 'cedar-valley' });
     }
 
-    function mountDrawer(): HTMLDivElement {
+    async function mountDrawer(): Promise<HTMLDivElement> {
         root = document.createElement('div');
         document.body.appendChild(root);
         const localRoot = root;
-        const context = fullContext();
+        const context = await fullContext();
         const App = defineComponent({
             setup() {
                 showDev = ref(true);
@@ -181,7 +172,7 @@ describe('Vue <ContextReference> reactive lifecycle', () => {
         ).map((t) => t.dataset.tabId);
 
     it('enhances a slotted custom tab into a tab projected in place', async () => {
-        const r = mountDrawer();
+        const r = await mountDrawer();
         await flush();
         expect(ids(r)).toEqual([
             'handbook',
@@ -198,7 +189,7 @@ describe('Vue <ContextReference> reactive lifecycle', () => {
     });
 
     it('removes a custom tab on a reactive removal without throwing', async () => {
-        const r = mountDrawer();
+        const r = await mountDrawer();
         await flush();
         expect(ids(r)).toContain('developers');
         expect(() => {
@@ -209,7 +200,7 @@ describe('Vue <ContextReference> reactive lifecycle', () => {
     });
 
     it('adds a custom tab on a reactive addition', async () => {
-        const r = mountDrawer();
+        const r = await mountDrawer();
         await flush();
         showOps.value = true;
         await flush();
@@ -217,7 +208,7 @@ describe('Vue <ContextReference> reactive lifecycle', () => {
     });
 
     it('reorders custom tabs on a reactive reorder', async () => {
-        const r = mountDrawer();
+        const r = await mountDrawer();
         showOps.value = true;
         await flush();
         expect(ids(r)).toEqual([
@@ -239,7 +230,7 @@ describe('Vue <ContextReference> reactive lifecycle', () => {
     });
 
     it('updates custom panel content in place', async () => {
-        const r = mountDrawer();
+        const r = await mountDrawer();
         await flush();
         label.value = 'updated content';
         await flush();
@@ -249,7 +240,7 @@ describe('Vue <ContextReference> reactive lifecycle', () => {
     });
 
     it('unmounts without throwing', async () => {
-        mountDrawer();
+        await mountDrawer();
         await flush();
         expect(() => wrapper?.unmount()).not.toThrow();
     });

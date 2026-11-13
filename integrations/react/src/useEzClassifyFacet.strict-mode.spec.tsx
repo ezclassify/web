@@ -8,7 +8,6 @@
  */
 import React, { Activity, StrictMode, useState } from 'react';
 import { act, cleanup, render, waitFor } from '@testing-library/react';
-import { loadCedarValleyContext } from '../../../test-support/community-content';
 import {
     EzClassify,
     EzClassifyProvider,
@@ -17,12 +16,16 @@ import {
     useEzClassifyStore,
     type UseEzClassifyFacetReturn,
 } from '@ezclassify/react';
+import {
+    connectDemoContext,
+    demoRuntimeSettled,
+} from '../../../test-support/demo-runtime';
 
 afterEach(() => cleanup());
 
 describe('useEzClassifyFacet under StrictMode', () => {
     it('publishes a selection after its effect has been mounted twice', async () => {
-        const context = loadCedarValleyContext();
+        const context = await connectDemoContext({ contextId: 'cedar-valley' });
         const store = new ReactEzClassifyStore(context.scheme);
         let field: UseEzClassifyFacetReturn | null = null;
         function Picker() {
@@ -59,7 +62,10 @@ describe('useEzClassifyFacet under StrictMode', () => {
         }
         render(
             <StrictMode>
-                <EzClassifyProvider context={loadCedarValleyContext()}>
+                <EzClassifyProvider
+                    context={await connectDemoContext({
+                        contextId: 'cedar-valley',
+                    })}>
                     <EzClassify>
                         <Picker />
                     </EzClassify>
@@ -86,7 +92,7 @@ describe('useEzClassifyFacet under StrictMode', () => {
             field = useEzClassifyFacet('document', 'level');
             return null;
         }
-        const context = loadCedarValleyContext();
+        const context = await connectDemoContext({ contextId: 'cedar-valley' });
         function App() {
             const [mode, set] = useState<'visible' | 'hidden'>('visible');
             setMode = set;
@@ -118,14 +124,15 @@ describe('useEzClassifyFacet under StrictMode', () => {
         });
     });
 
-    it('still refuses a subscription to an application store destroyed under its root', () => {
-        const context = loadCedarValleyContext();
+    it('still refuses a subscription to an application store destroyed under its root', async () => {
+        const context = await connectDemoContext({ contextId: 'cedar-valley' });
         const store = new ReactEzClassifyStore(context.scheme);
         render(
             <EzClassifyProvider context={context}>
                 <EzClassify store={store} />
             </EzClassifyProvider>,
         );
+        await demoRuntimeSettled();
         store.destroy();
 
         expect(() => store.subscribe('document', () => {})).toThrow(

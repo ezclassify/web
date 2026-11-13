@@ -1,13 +1,14 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { TestBed, type ComponentFixture } from '@angular/core/testing';
 import { Component, ErrorHandler } from '@angular/core';
-import { Context } from '@ezclassify/engine';
+import type { EzClassifyClient } from '@ezclassify/rest-client';
 import {
     EzClassifyDirective,
     injectEzClassifyUI,
 } from './ezclassify.directive';
 import { provideEzClassify } from './provide-ezclassify';
 import { AngularSignalStore } from './angular-signal-store';
+import { connectDemoContext } from '../../../../test-support/demo-runtime';
 
 const MINIMAL_SCHEME = {
     scheme: {
@@ -83,10 +84,12 @@ function rootDirective(
 }
 
 describe('EzClassifyDirective: a bare root', () => {
-    let context: Context;
+    let context: EzClassifyClient;
 
     beforeEach(async () => {
-        context = Context.fromComponents({ scheme: MINIMAL_SCHEME });
+        context = await connectDemoContext({
+            draft: { scheme: MINIMAL_SCHEME },
+        });
         await TestBed.configureTestingModule({
             imports: [BareRootComponent, OptionsRootComponent],
             providers: [provideEzClassify({ context })],
@@ -193,7 +196,9 @@ describe('injectEzClassifyUI', () => {
             imports: [RuntimeRootComponent, RuntimeOutsideComponent],
             providers: [
                 provideEzClassify({
-                    context: Context.fromComponents({ scheme: MINIMAL_SCHEME }),
+                    context: await connectDemoContext({
+                        draft: { scheme: MINIMAL_SCHEME },
+                    }),
                 }),
             ],
         }).compileComponents();
@@ -248,24 +253,25 @@ describe('EzClassifyDirective: no Context', () => {
     template: `<form [ezClassifyStore]="store" ezClassify></form>`,
 })
 class DestroyedStoreRootComponent {
-    readonly store = (() => {
-        const store = new AngularSignalStore(
-            Context.fromComponents({ scheme: MINIMAL_SCHEME }).scheme,
-        );
-        store.destroy();
-        return store;
-    })();
+    /** Set by the test before the component is created. */
+    static store: AngularSignalStore;
+    readonly store = DestroyedStoreRootComponent.store;
 }
 
 describe('EzClassifyDirective: a runtime that cannot start', () => {
     it("reports it to the application's ErrorHandler", async () => {
         const handled: unknown[] = [];
+        const context = await connectDemoContext({
+            draft: { scheme: MINIMAL_SCHEME },
+        });
+        DestroyedStoreRootComponent.store = new AngularSignalStore(
+            context.scheme,
+        );
+        DestroyedStoreRootComponent.store.destroy();
         await TestBed.configureTestingModule({
             imports: [DestroyedStoreRootComponent],
             providers: [
-                provideEzClassify({
-                    context: Context.fromComponents({ scheme: MINIMAL_SCHEME }),
-                }),
+                provideEzClassify({ context }),
                 {
                     provide: ErrorHandler,
                     useValue: { handleError: (e: unknown) => handled.push(e) },

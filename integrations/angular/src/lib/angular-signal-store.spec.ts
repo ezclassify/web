@@ -10,7 +10,7 @@ import {
     runEzClassifyStoreConformance,
     runEzClassifyStoreBudgetConformance,
     runEzClassifyStoreSeedConformance,
-} from '@ezclassify/testing-utils';
+} from '../../../../test-support/store-conformance';
 import type { Assertion, RenderAssessment } from '@ezclassify/types';
 import { AngularSignalStore } from './angular-signal-store';
 

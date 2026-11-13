@@ -7,13 +7,13 @@
 import { describe, it, expect } from 'vitest';
 import { TestBed } from '@angular/core/testing';
 import { Component } from '@angular/core';
-import { Context } from '@ezclassify/engine';
 import type { FavoritesConfig } from '@ezclassify/ui';
 import {
     EzClassifyDirective,
     type EzClassifyDirectiveOptions,
 } from './ezclassify.directive';
 import { provideEzClassify } from './provide-ezclassify';
+import { connectDemoContext } from '../../../../test-support/demo-runtime';
 
 const MINIMAL_SCHEME = {
     scheme: {
@@ -93,7 +93,9 @@ describe('EzClassifyDirective ezClassifyOptions.favorites', () => {
             imports: [FavoritesHostComponent],
             providers: [
                 provideEzClassify({
-                    context: Context.fromComponents({ scheme: MINIMAL_SCHEME }),
+                    context: await connectDemoContext({
+                        draft: { scheme: MINIMAL_SCHEME },
+                    }),
                 }),
             ],
         }).compileComponents();
@@ -112,7 +114,9 @@ describe('EzClassifyDirective ezClassifyOptions.favorites', () => {
             imports: [FavoritesHostComponent],
             providers: [
                 provideEzClassify({
-                    context: Context.fromComponents({ scheme: MINIMAL_SCHEME }),
+                    context: await connectDemoContext({
+                        draft: { scheme: MINIMAL_SCHEME },
+                    }),
                 }),
             ],
         }).compileComponents();

@@ -12,7 +12,7 @@ import {
     runEzClassifyStoreConformance,
     runEzClassifyStoreBudgetConformance,
     runEzClassifyStoreSeedConformance,
-} from '@ezclassify/testing-utils';
+} from '../../../../test-support/store-conformance';
 import { VueRefStore } from './vue-ref-store';
 
 /** What a write that wrote everything it was given reports. */

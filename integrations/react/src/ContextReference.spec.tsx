@@ -7,18 +7,13 @@
  * controller derives its tabs.
  */
 
-import { describe, it, expect } from 'vitest';
+import { beforeAll, describe, it, expect } from 'vitest';
 import { render, waitFor, act } from '@testing-library/react';
 import { createElement, useState, type ReactNode } from 'react';
-import yaml from 'js-yaml';
-import { Context } from '@ezclassify/engine';
-import {
-    cedarValleySchemeYaml,
-    cedarValleyGuideYaml,
-    cedarValleyAccessYaml,
-} from '../../../test-support/community-content';
+import type { EzClassifyClient } from '@ezclassify/rest-client';
 import { EzClassify, EzClassifyProvider } from './index';
 import { ContextReference } from './ContextReference';
+import { connectDemoContext } from '../../../test-support/demo-runtime';
 
 if (typeof window !== 'undefined' && !window.matchMedia) {
     Object.defineProperty(window, 'matchMedia', {
@@ -31,12 +26,8 @@ if (typeof window !== 'undefined' && !window.matchMedia) {
     });
 }
 
-function fullContext(): Context {
-    return Context.fromComponents({
-        scheme: yaml.load(cedarValleySchemeYaml),
-        guides: [yaml.load(cedarValleyGuideYaml)],
-        access: yaml.load(cedarValleyAccessYaml),
-    });
+async function fullContext(): Promise<EzClassifyClient> {
+    return await connectDemoContext({ contextId: 'cedar-valley' });
 }
 
 describe('React <ContextReference> markup', () => {
@@ -114,7 +105,7 @@ describe('React <ContextReference> in a root', () => {
         const { container } = render(
             createElement(
                 EzClassifyProvider,
-                { context: fullContext() },
+                { context: await fullContext() },
                 createElement(Host),
             ),
         );
@@ -146,7 +137,10 @@ describe('React <ContextReference> in a root', () => {
  * committed binding: enhancement happens, then React mutates its children.
  */
 describe('React <ContextReference> reactive lifecycle', () => {
-    const ctx = fullContext();
+    let ctx: EzClassifyClient;
+    beforeAll(async () => {
+        ctx = await fullContext();
+    });
 
     interface HarnessApi {
         setShowDev: (v: boolean) => void;
@@ -288,7 +282,7 @@ describe('React <ContextReference> reactive lifecycle', () => {
         const { container } = render(
             createElement(
                 EzClassifyProvider,
-                { context: fullContext() },
+                { context: await fullContext() },
                 createElement(Parent),
             ),
         );

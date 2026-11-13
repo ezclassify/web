@@ -20,7 +20,6 @@ import { fileURLToPath } from 'node:url';
 import { StrictMode, type ReactElement, type ReactNode } from 'react';
 import { describe, it, expect, afterEach, beforeEach, vi } from 'vitest';
 import { render, act, cleanup } from '@testing-library/react';
-import { Context } from '@ezclassify/engine';
 import type { ContextAdapter } from '@ezclassify/ui';
 import {
     EzClassify,
@@ -28,17 +27,20 @@ import {
     useEzClassifyStore,
     type ReactEzClassifyStore,
 } from './index';
+import { connectDemoContext } from '../../../test-support/demo-runtime';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const fixturesDir = resolve(__dirname, '../../../vendor/spec/fixtures/v1');
 
 /** A fresh Context over the reference fixture. */
-function makeContext(): ContextAdapter {
-    return Context.fromComponents({
-        scheme: JSON.parse(
-            readFileSync(resolve(fixturesDir, 'ref-scheme-1.json'), 'utf8'),
-        ),
-    }) as unknown as ContextAdapter;
+async function makeContext(): Promise<ContextAdapter> {
+    return (await connectDemoContext({
+        draft: {
+            scheme: JSON.parse(
+                readFileSync(resolve(fixturesDir, 'ref-scheme-1.json'), 'utf8'),
+            ),
+        },
+    })) as unknown as ContextAdapter;
 }
 
 /** Flush React effects plus EzClassifyUI's async component init. */
@@ -149,7 +151,7 @@ describe('root store lifetime under StrictMode', () => {
     it('hands down a usable store after the double-mount', async () => {
         const probe: { store: ReactEzClassifyStore | null } = { store: null };
         render(
-            <Page context={makeContext()}>
+            <Page context={await makeContext()}>
                 <Root testId="one" probe={probe} />
             </Page>,
         );
@@ -160,7 +162,7 @@ describe('root store lifetime under StrictMode', () => {
     });
 
     it('hands down a fresh usable store after an unmount and a remount', async () => {
-        const context = makeContext();
+        const context = await makeContext();
         const probe: { store: ReactEzClassifyStore | null } = { store: null };
         const first = render(
             <Page context={context}>
@@ -195,7 +197,7 @@ describe('root store lifetime under StrictMode', () => {
         const left: { store: ReactEzClassifyStore | null } = { store: null };
         const right: { store: ReactEzClassifyStore | null } = { store: null };
         render(
-            <Page context={makeContext()}>
+            <Page context={await makeContext()}>
                 <Root testId="left" probe={left} />
                 <Root testId="right" probe={right} />
             </Page>,
@@ -213,7 +215,7 @@ describe('root store lifetime under StrictMode', () => {
     it('leaves the surviving root alone when its neighbor unmounts', async () => {
         const left: { store: ReactEzClassifyStore | null } = { store: null };
         const right: { store: ReactEzClassifyStore | null } = { store: null };
-        const context = makeContext();
+        const context = await makeContext();
         function Two({ both }: { both: boolean }): ReactElement {
             return (
                 <Page context={context}>
@@ -234,7 +236,7 @@ describe('root store lifetime under StrictMode', () => {
 
     it('enhances its fields without reaching a destroyed store', async () => {
         render(
-            <Page context={makeContext()}>
+            <Page context={await makeContext()}>
                 <Root testId="fields" />
             </Page>,
         );

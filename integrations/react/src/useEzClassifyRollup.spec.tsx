@@ -16,7 +16,6 @@ import {
     renderHook,
     screen,
 } from '@testing-library/react';
-import { Context } from '@ezclassify/engine';
 import {
     EMPTY_EZCLASSIFY_STATE,
     bucketKey,
@@ -32,6 +31,7 @@ import {
     type EzClassifyBucket,
 } from './useEzClassifyRollup';
 import type { ReactEzClassifyStore } from './react-ezclassify-store';
+import { connectDemoContext } from '../../../test-support/demo-runtime';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const fixturesDir = resolve(__dirname, '../../../vendor/spec/fixtures/v1');
@@ -39,8 +39,10 @@ const scheme: unknown = JSON.parse(
     readFileSync(resolve(fixturesDir, 'ref-scheme-1.json'), 'utf8'),
 );
 
-function makeContext(): ContextAdapter {
-    return Context.fromComponents({ scheme }) as unknown as ContextAdapter;
+async function makeContext(): Promise<ContextAdapter> {
+    return (await connectDemoContext({
+        draft: { scheme },
+    })) as unknown as ContextAdapter;
 }
 
 const PRIMARY = bucketKey('', '');
@@ -112,45 +114,56 @@ afterEach(() => {
 });
 
 describe('useEzClassifyRollup on one Context', () => {
-    it('is empty before anything at the level is marked', () => {
-        const { result } = mount(new LevelStore(), { context: makeContext() });
+    it('is empty before anything at the level is marked', async () => {
+        const { result } = mount(new LevelStore(), {
+            context: await makeContext(),
+        });
         expect(result.current).toBe(EMPTY_EZCLASSIFY_STATE);
     });
 
-    it('reads the page when given no id, and the named level otherwise', () => {
+    it('reads the page when given no id, and the named level otherwise', async () => {
         const store = new LevelStore();
         store.levels.set(undefined, new Map([[PRIMARY, state('PAGE')]]));
         store.levels.set('folder', new Map([[PRIMARY, state('FOLDER')]]));
 
         expect(
-            mount(store, { context: makeContext() }).result.current.rendered,
+            mount(store, { context: await makeContext() }).result.current
+                .rendered,
         ).toBe('PAGE');
         expect(
-            mount(store, { context: makeContext() }, 'folder').result.current
-                .rendered,
+            mount(store, { context: await makeContext() }, 'folder').result
+                .current.rendered,
         ).toBe('FOLDER');
     });
 
-    it('follows the level as the store commits', () => {
+    it('follows the level as the store commits', async () => {
         const store = new LevelStore();
-        const { result } = mount(store, { context: makeContext() }, 'doc');
+        const { result } = mount(
+            store,
+            { context: await makeContext() },
+            'doc',
+        );
         act(() => store.commit('doc', PRIMARY, state('HIGH')));
         expect(result.current.rendered).toBe('HIGH');
         act(() => store.commit('doc', PRIMARY, state('LOW')));
         expect(result.current.rendered).toBe('LOW');
     });
 
-    it('keeps its reference when a commit leaves its bucket unchanged', () => {
+    it('keeps its reference when a commit leaves its bucket unchanged', async () => {
         const store = new LevelStore();
         const value = state('HIGH');
         store.levels.set('doc', new Map([[PRIMARY, value]]));
-        const { result } = mount(store, { context: makeContext() }, 'doc');
+        const { result } = mount(
+            store,
+            { context: await makeContext() },
+            'doc',
+        );
         const first = result.current;
         act(() => store.commit('doc', PRIMARY, value));
         expect(result.current).toBe(first);
     });
 
-    it('picks the scheme it names on a Context with several', () => {
+    it('picks the scheme it names on a Context with several', async () => {
         const store = new LevelStore();
         store.levels.set(
             undefined,
@@ -159,15 +172,20 @@ describe('useEzClassifyRollup on one Context', () => {
                 [TIER, state('TWO')],
             ]),
         );
-        const { result } = mount(store, { context: makeContext() }, undefined, {
-            scheme: 'tier',
-        });
+        const { result } = mount(
+            store,
+            { context: await makeContext() },
+            undefined,
+            {
+                scheme: 'tier',
+            },
+        );
         expect(result.current.rendered).toBe('TWO');
     });
 
-    it('reads the primary scheme when it names none, whatever another scheme holds', () => {
+    it('reads the primary scheme when it names none, whatever another scheme holds', async () => {
         const store = new LevelStore();
-        const { result } = mount(store, { context: makeContext() });
+        const { result } = mount(store, { context: await makeContext() });
         expect(result.current).toBe(EMPTY_EZCLASSIFY_STATE);
         // Data reaching a second scheme never makes a mounted reader throw.
         act(() => store.commit(undefined, TIER, state('TWO')));
@@ -176,9 +194,13 @@ describe('useEzClassifyRollup on one Context', () => {
         expect(result.current.rendered).toBe('ONE');
     });
 
-    it('stops listening when it unmounts', () => {
+    it('stops listening when it unmounts', async () => {
         const store = new LevelStore();
-        const { unmount } = mount(store, { context: makeContext() }, 'doc');
+        const { unmount } = mount(
+            store,
+            { context: await makeContext() },
+            'doc',
+        );
         expect(store.listeners.get('doc')?.size).toBe(1);
         unmount();
         expect(store.listeners.get('doc')?.size).toBe(0);
@@ -186,9 +208,12 @@ describe('useEzClassifyRollup on one Context', () => {
 });
 
 describe('useEzClassifyRollup on several Contexts', () => {
-    const contexts = () => ({ capco: makeContext(), cui: makeContext() });
+    const contexts = async () => ({
+        capco: await makeContext(),
+        cui: await makeContext(),
+    });
 
-    it('reads the Context it names and never the other', () => {
+    it('reads the Context it names and never the other', async () => {
         const store = new LevelStore();
         store.levels.set(
             undefined,
@@ -197,23 +222,30 @@ describe('useEzClassifyRollup on several Contexts', () => {
                 [bucketKey('cui', ''), state('B')],
             ]),
         );
-        const { result } = mount(store, { contexts: contexts() }, undefined, {
-            context: 'cui',
-        });
+        const { result } = mount(
+            store,
+            { contexts: await contexts() },
+            undefined,
+            {
+                context: 'cui',
+            },
+        );
         expect(result.current.rendered).toBe('B');
     });
 
-    it('must name a Context', () => {
+    it('must name a Context', async () => {
         vi.spyOn(console, 'error').mockImplementation(() => {});
-        expect(() => mount(new LevelStore(), { contexts: contexts() })).toThrow(
+        const held = await contexts();
+        expect(() => mount(new LevelStore(), { contexts: held })).toThrow(
             /must name its Context.*capco, cui/,
         );
     });
 
-    it('refuses a Context the provider does not hold', () => {
+    it('refuses a Context the provider does not hold', async () => {
         vi.spyOn(console, 'error').mockImplementation(() => {});
+        const held = await contexts();
         expect(() =>
-            mount(new LevelStore(), { contexts: contexts() }, undefined, {
+            mount(new LevelStore(), { contexts: held }, undefined, {
                 context: 'other',
             }),
         ).toThrow(/does not hold/);
@@ -227,7 +259,7 @@ describe('useEzClassifyRollup in a root', () => {
             return <output data-testid="page">{page.rendered}</output>;
         }
         render(
-            <EzClassifyProvider context={makeContext()}>
+            <EzClassifyProvider context={await makeContext()}>
                 <EzClassify>
                     <input
                         id="doc"

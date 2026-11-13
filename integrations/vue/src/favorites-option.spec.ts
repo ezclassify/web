@@ -11,9 +11,9 @@
 import { describe, it, expect, afterEach } from 'vitest';
 import { defineComponent, h, nextTick } from 'vue';
 import { mount, type VueWrapper } from '@vue/test-utils';
-import { Context } from '@ezclassify/engine';
 import type { FavoritesConfig } from '@ezclassify/ui';
 import { createEzClassify, EzClassify } from './index';
+import { connectDemoContext } from '../../../test-support/demo-runtime';
 
 const MINIMAL_SCHEME = {
     scheme: {
@@ -76,10 +76,14 @@ afterEach(() => {
     root = null;
 });
 
-function mountTagsField(favorites?: FavoritesConfig): HTMLDivElement {
+async function mountTagsField(
+    favorites?: FavoritesConfig,
+): Promise<HTMLDivElement> {
     root = document.createElement('div');
     document.body.appendChild(root);
-    const context = Context.fromComponents({ scheme: MINIMAL_SCHEME });
+    const context = await connectDemoContext({
+        draft: { scheme: MINIMAL_SCHEME },
+    });
     const App = defineComponent({
         setup() {
             return () =>
@@ -106,7 +110,7 @@ async function flush(): Promise<void> {
 
 describe('createEzClassify({ options: { favorites } })', () => {
     it('forwards favorites to every root: the ★ button renders on a scanner-mounted field', async () => {
-        const mountedRoot = mountTagsField(noopFavorites);
+        const mountedRoot = await mountTagsField(noopFavorites);
         await flush();
 
         expect(
@@ -115,7 +119,7 @@ describe('createEzClassify({ options: { favorites } })', () => {
     });
 
     it('renders no ★ button when favorites is omitted', async () => {
-        const mountedRoot = mountTagsField();
+        const mountedRoot = await mountTagsField();
         await flush();
 
         expect(mountedRoot.querySelector('.ez-favorites-button')).toBeNull();

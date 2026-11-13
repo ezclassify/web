@@ -18,7 +18,6 @@ import {
 } from 'react';
 import { describe, it, expect, afterEach, vi } from 'vitest';
 import { act, cleanup, render, screen } from '@testing-library/react';
-import { Context } from '@ezclassify/engine';
 import { schemeOnlyContext } from '../../../libs/ui/test-fixtures/context-doubles';
 import { bucketKey } from '@ezclassify/ui';
 import type { ContextAdapter, FavoritesConfig } from '@ezclassify/ui';
@@ -32,6 +31,7 @@ import {
     type EzClassifyOptions,
     type EzClassifyProviderProps,
 } from './index';
+import { connectDemoContext } from '../../../test-support/demo-runtime';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const fixturesDir = resolve(__dirname, '../../../vendor/spec/fixtures/v1');
@@ -40,8 +40,10 @@ const scheme: unknown = JSON.parse(
 );
 
 /** A Context over the reference scheme, with its own component engines. */
-function makeContext(): ContextAdapter {
-    return Context.fromComponents({ scheme }) as unknown as ContextAdapter;
+async function makeContext(): Promise<ContextAdapter> {
+    return (await connectDemoContext({
+        draft: { scheme },
+    })) as unknown as ContextAdapter;
 }
 
 /** Flush React effects plus the runtime's async component init. */
@@ -80,7 +82,7 @@ describe('<EzClassify> under <EzClassifyProvider context>', () => {
     it('gives the code inside a root its store and, once started, its runtime', async () => {
         const seen: { store?: ReactEzClassifyStore; forms?: unknown }[] = [];
         render(
-            <EzClassifyProvider context={makeContext()}>
+            <EzClassifyProvider context={await makeContext()}>
                 <EzClassify>
                     <textarea data-ezclassify-controller="marking" />
                     <Probe seen={seen} />
@@ -104,7 +106,7 @@ describe('<EzClassify> under <EzClassifyProvider context>', () => {
             return null;
         }
         const { container } = render(
-            <EzClassifyProvider context={makeContext()}>
+            <EzClassifyProvider context={await makeContext()}>
                 <EzClassify>
                     <Root />
                 </EzClassify>
@@ -133,7 +135,7 @@ describe('<EzClassify> under <EzClassifyProvider context>', () => {
             return null;
         }
         render(
-            <EzClassifyProvider context={makeContext()}>
+            <EzClassifyProvider context={await makeContext()}>
                 <EzClassify>
                     <Page />
                     <Store />
@@ -161,7 +163,7 @@ describe('<EzClassify> under <EzClassifyProvider context>', () => {
             return <output>{state.rendered || 'empty'}</output>;
         }
         render(
-            <EzClassifyProvider context={makeContext()}>
+            <EzClassifyProvider context={await makeContext()}>
                 <EzClassify>
                     <Editor />
                     <Display />
@@ -181,7 +183,7 @@ describe('<EzClassify> under <EzClassifyProvider context>', () => {
         const first: { store?: ReactEzClassifyStore }[] = [];
         const second: { store?: ReactEzClassifyStore }[] = [];
         render(
-            <EzClassifyProvider context={makeContext()}>
+            <EzClassifyProvider context={await makeContext()}>
                 <EzClassify>
                     <Probe seen={first} />
                 </EzClassify>
@@ -196,7 +198,7 @@ describe('<EzClassify> under <EzClassifyProvider context>', () => {
     });
 
     it('binds a store the application passes and leaves it alive on unmount', async () => {
-        const context = makeContext();
+        const context = await makeContext();
         const store = new ReactEzClassifyStore(context.scheme);
         const seen: { store?: ReactEzClassifyStore }[] = [];
         const page = render(
@@ -220,7 +222,7 @@ describe('<EzClassify> under <EzClassifyProvider context>', () => {
     it('destroys the store it built when it unmounts', async () => {
         const seen: { store?: ReactEzClassifyStore }[] = [];
         const page = render(
-            <EzClassifyProvider context={makeContext()}>
+            <EzClassifyProvider context={await makeContext()}>
                 <EzClassify>
                     <Probe seen={seen} />
                 </EzClassify>
@@ -236,7 +238,7 @@ describe('<EzClassify> under <EzClassifyProvider context>', () => {
 
     it('keeps the scanned subtree when its parent re-renders', async () => {
         // One Context for every pass, so only the parent's own render moves.
-        const context = makeContext();
+        const context = await makeContext();
         function Stable({ tick }: { tick: number }): ReactElement {
             return (
                 <EzClassifyProvider context={context}>
@@ -265,7 +267,7 @@ describe('<EzClassify> under <EzClassifyProvider context>', () => {
 
     it('surfaces a runtime that cannot start to the nearest error boundary', async () => {
         vi.spyOn(console, 'error').mockImplementation(() => {});
-        const context = makeContext();
+        const context = await makeContext();
         const released = new ReactEzClassifyStore(context.scheme);
         released.destroy();
         render(
@@ -289,9 +291,9 @@ describe('<EzClassify> under <EzClassifyProvider context>', () => {
 });
 
 describe('<EzClassifyProvider> props', () => {
-    it('refuses both `context` and `contexts`', () => {
+    it('refuses both `context` and `contexts`', async () => {
         vi.spyOn(console, 'error').mockImplementation(() => {});
-        const context = makeContext();
+        const context = await makeContext();
         const props = {
             context,
             contexts: { a: context },
@@ -313,7 +315,10 @@ describe('<EzClassifyProvider> props', () => {
         const seen: { forms?: unknown }[] = [];
         render(
             <EzClassifyProvider
-                contexts={{ first: makeContext(), second: makeContext() }}>
+                contexts={{
+                    first: await makeContext(),
+                    second: await makeContext(),
+                }}>
                 <EzClassify>
                     <div data-ezclassify-context="first">
                         <textarea data-ezclassify-controller="marking" />
@@ -337,15 +342,15 @@ describe('<EzClassifyProvider> props', () => {
         const second: unknown = JSON.parse(
             readFileSync(resolve(fixturesDir, 'ref-scheme-2.json'), 'utf8'),
         );
-        const context = Context.fromComponents({
-            schemes: [
-                { key: 'first', scheme },
-                { key: 'second', scheme: second },
-            ],
-            primaryScheme: 'first',
-        } as Parameters<
-            typeof Context.fromComponents
-        >[0]) as unknown as ContextAdapter;
+        const context = (await connectDemoContext({
+            draft: {
+                schemes: [
+                    { key: 'first', scheme },
+                    { key: 'second', scheme: second },
+                ],
+                primaryScheme: 'first',
+            },
+        })) as unknown as ContextAdapter;
         const seen: { store?: ReactEzClassifyStore; forms?: unknown }[] = [];
         render(
             <EzClassifyProvider context={context}>
@@ -384,9 +389,10 @@ describe('<EzClassifyProvider> props', () => {
 
     it('applies its presentation options to the roots below', async () => {
         const favorites: FavoritesConfig = { load: () => [] };
+        const context = await makeContext();
         function Page({ options }: { options?: EzClassifyOptions }) {
             return (
-                <EzClassifyProvider context={makeContext()} options={options}>
+                <EzClassifyProvider context={context} options={options}>
                     <EzClassify>
                         <input data-ezclassify-controller="tags" id="tags" />
                     </EzClassify>
@@ -443,7 +449,7 @@ describe('a Context composed inline in a render body', () => {
     }
 
     it('builds one store across re-renders that hand over a new wrapper', async () => {
-        const engine = makeContext().scheme;
+        const engine = (await makeContext()).scheme;
         const count: Count = { renders: 0, stores: new Set() };
         const page = render(<Inline engine={engine} count={count} />);
         await flush();
@@ -459,10 +465,12 @@ describe('a Context composed inline in a render body', () => {
     it('rebuilds when the Context is genuinely different', async () => {
         const count: Count = { renders: 0, stores: new Set() };
         const page = render(
-            <Inline engine={makeContext().scheme} count={count} />,
+            <Inline engine={(await makeContext()).scheme} count={count} />,
         );
         await flush();
-        page.rerender(<Inline engine={makeContext().scheme} count={count} />);
+        page.rerender(
+            <Inline engine={(await makeContext()).scheme} count={count} />,
+        );
         await flush();
 
         expect(count.stores.size).toBe(2);
@@ -470,8 +478,9 @@ describe('a Context composed inline in a render body', () => {
 
     it('builds one store for a caller that memoizes the Context', async () => {
         const count: Count = { renders: 0, stores: new Set() };
+        const composed = await makeContext();
         function Memoized(): ReactElement {
-            const context = useMemo(() => makeContext(), []);
+            const context = useMemo(() => composed, []);
             const [, setTick] = useState(0);
             useEffect(() => setTick(1), []);
             return (
