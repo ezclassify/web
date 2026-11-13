@@ -8,33 +8,6 @@
             "method": "GET",
             "statusCode": 200
         },
-        "1e1e1ff61ba9c648c72510d575ba2484a9153651347fbb664692698909c0b8a1": {
-            "body": [
-                {
-                    "categoryOrder": ["level", "control"],
-                    "categorySeparators": { "control": "/", "level": "/" },
-                    "categoryViews": {
-                        "control": "default",
-                        "level": "default"
-                    },
-                    "id": "default",
-                    "mode": "inline",
-                    "separator": "//",
-                    "separatorBefore": { "control": "//" },
-                    "surface": "marking"
-                }
-            ],
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
-            "method": "GET",
-            "statusCode": 200
-        },
-        "21e8266da359349383c31921ec8c7bbeee945974874caf517ff8cad896d1218a": {
-            "body": {
-                "contextId": "sbx-93879b0857ec4a80730243a0e80e216519526db0e4d9cb28d50e5ab55e5be652"
-            },
-            "method": "PUT",
-            "statusCode": 200
-        },
         "3341a13344e1f9d605bf4a6742f20a4bae6b84a819b79d984ccfcdd4ddf5cf8c": {
             "body": {
                 "resolution": {
@@ -193,12 +166,6 @@
             "method": "GET",
             "statusCode": 200
         },
-        "624d5c47f34ca7801ed6d4b9a8973917afb0b6fb9286546166c8ae3475189d93": {
-            "body": [],
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
-            "method": "GET",
-            "statusCode": 200
-        },
         "667d6db9624143827ff8d7ab5e7ab350b31d80fca86d3b2f44ec44232fb442bd": {
             "body": [],
             "headers": { "x-ezclassify-resolved-version": "0.0.0" },
@@ -295,29 +262,6 @@
             "method": "POST",
             "statusCode": 200
         },
-        "7dff5894a7ccf850becd3b94df9b5af02c4d106e7fa47aefc3726477e08cd12a": {
-            "body": [
-                {
-                    "id": "level",
-                    "label": "Level",
-                    "position": 1,
-                    "required": false,
-                    "rollup": "max",
-                    "single": true
-                },
-                {
-                    "id": "control",
-                    "label": "Control",
-                    "position": 2,
-                    "required": false,
-                    "rollup": "union",
-                    "single": false
-                }
-            ],
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
-            "method": "GET",
-            "statusCode": 200
-        },
         "9b8f0b97418e7adce8ded7e7d47acb2ced1f8be6bf6c68359c4e35cc8158c7f3": {
             "body": [
                 {
@@ -371,12 +315,6 @@
                     "views": { "default": "TK" }
                 }
             ],
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
-            "method": "GET",
-            "statusCode": 200
-        },
-        "a8e54c786494755e27242efb79ce92346189a8aa6deb0a4c9c412a81b3c780ba": {
-            "body": [],
             "headers": { "x-ezclassify-resolved-version": "0.0.0" },
             "method": "GET",
             "statusCode": 200
@@ -467,85 +405,6 @@
             "method": "GET",
             "statusCode": 200
         },
-        "d82628fd0b8372aa8a9a401c862203389b996c31b665c75b1846f68162e6c0a1": {
-            "body": [
-                {
-                    "aliases": [],
-                    "categories": ["level"],
-                    "id": "U",
-                    "name": "UNCLASSIFIED",
-                    "parents": [],
-                    "position": 1,
-                    "rank": 1,
-                    "views": { "default": "UNCLASSIFIED" }
-                },
-                {
-                    "aliases": [],
-                    "categories": ["level"],
-                    "id": "S",
-                    "name": "SECRET",
-                    "parents": [],
-                    "position": 2,
-                    "rank": 2,
-                    "views": { "default": "SECRET" }
-                },
-                {
-                    "aliases": [],
-                    "categories": ["control"],
-                    "id": "SI",
-                    "name": "SI",
-                    "parents": [],
-                    "position": 1,
-                    "rank": 1,
-                    "views": { "default": "SI" }
-                },
-                {
-                    "aliases": [],
-                    "categories": ["control"],
-                    "id": "SIG",
-                    "name": "SI-G",
-                    "parents": ["SI"],
-                    "position": 2,
-                    "rank": 2,
-                    "views": { "default": "SI-G" }
-                },
-                {
-                    "aliases": [],
-                    "categories": ["control"],
-                    "id": "TK",
-                    "name": "TK",
-                    "parents": [],
-                    "position": 3,
-                    "rank": 3,
-                    "views": { "default": "TK" }
-                }
-            ],
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
-            "method": "GET",
-            "statusCode": 200
-        },
-        "da5df3bbbcf4c4da86e5f21872961c8a40df57ccef7e36fe9548fac77860e9e8": {
-            "body": {
-                "id": "sbx-93879b0857ec4a80730243a0e80e216519526db0e4d9cb28d50e5ab55e5be652",
-                "scheme": {
-                    "id": "composer-contextual",
-                    "resolvedVersion": "1.0.0",
-                    "version": "1.0.0"
-                },
-                "schemes": [
-                    {
-                        "id": "composer-contextual",
-                        "roles": ["primary"],
-                        "selector": "composer-contextual",
-                        "version": "1.0.0"
-                    }
-                ],
-                "version": "0.0.0"
-            },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
-            "method": "GET",
-            "statusCode": 200
-        },
         "dc5626d615c1d6fd08f07c4e375a3b3a4ac18b87bd8c2ab0bd20ace98cd25e00": {
             "body": {
                 "resolution": {
@@ -628,22 +487,6 @@
                 "openapiVersion": "1.0.0-dev.30",
                 "status": "ok"
             },
-            "method": "GET",
-            "statusCode": 200
-        },
-        "e447d5cd22a391f28138dff85e79962c2a767ea20dbc210e8c91009cdd0e1287": {
-            "body": {
-                "defaultRenderFormat": "default",
-                "id": "composer-contextual",
-                "name": "Composer Contextual",
-                "referenceSurfaceLabel": {
-                    "plural": "Handbooks",
-                    "singular": "Handbook"
-                },
-                "roleAware": false,
-                "version": "1.0.0"
-            },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
             "method": "GET",
             "statusCode": 200
         }

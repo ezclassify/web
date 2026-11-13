@@ -155,6 +155,7 @@ function shownErrors(host: HTMLTextAreaElement): string {
 async function openEditor(
     host: HTMLTextAreaElement,
 ): Promise<HTMLInputElement> {
+    await demoRuntimeSettled();
     host.focus();
     const editor = document.activeElement as HTMLTextAreaElement;
     editor.setSelectionRange(0, 0);

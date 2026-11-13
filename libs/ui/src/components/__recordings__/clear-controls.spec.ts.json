@@ -76,13 +76,6 @@
             "method": "POST",
             "statusCode": 200
         },
-        "07a81d2debc91e111dffd868e5a51c4359618086ab872c61db27cff533366a9c": {
-            "body": {
-                "contextId": "sbx-d58ce371fff9bae791fbb3499677b752cf2d2935c06a3fa3f43d02f96e52aa16"
-            },
-            "method": "PUT",
-            "statusCode": 200
-        },
         "0d08de56f47521ff9470fd257a31992532a359b509c3447839f8b5bb7de128fe": {
             "body": {
                 "resolution": {
@@ -171,12 +164,6 @@
             },
             "headers": { "x-ezclassify-resolved-version": "0.0.0" },
             "method": "POST",
-            "statusCode": 200
-        },
-        "20d526d59a88d8b4aa1836bb10eb4cfacdb239b3ce7c1e035e10792ad52dcefc": {
-            "body": [],
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
-            "method": "GET",
             "statusCode": 200
         },
         "28483074172e59b644bea7dff5073007cafc3075363ab6e8c9fec2786e78971c": {
@@ -513,21 +500,6 @@
             "method": "POST",
             "statusCode": 200
         },
-        "75a7cb141f7311ba8e794ea92da475c6fedc0da725c1298d54933474c2305414": {
-            "body": [
-                {
-                    "id": "level",
-                    "label": "Level",
-                    "position": 0,
-                    "required": false,
-                    "rollup": "max",
-                    "single": true
-                }
-            ],
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
-            "method": "GET",
-            "statusCode": 200
-        },
         "8b55a4f1671a37f2bbb0d3bb0e849bac241751e371762b188517b9764068d70a": {
             "body": {
                 "id": "sbx-83128251879a1231829944ff53cee445f84530c92c7063e2a08fcf95bc46e3cd",
@@ -550,78 +522,7 @@
             "method": "GET",
             "statusCode": 200
         },
-        "8fcaea08db116a4df91b4e8aced0c4403146462f8d752d08cbfb3f2708c6dca9": {
-            "body": {
-                "id": "sbx-d58ce371fff9bae791fbb3499677b752cf2d2935c06a3fa3f43d02f96e52aa16",
-                "scheme": {
-                    "id": "clear-fields",
-                    "resolvedVersion": "1.0.0",
-                    "version": "1.0.0"
-                },
-                "schemes": [
-                    {
-                        "id": "clear-fields",
-                        "roles": ["primary"],
-                        "selector": "clear-fields",
-                        "version": "1.0.0"
-                    }
-                ],
-                "version": "0.0.0"
-            },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
-            "method": "GET",
-            "statusCode": 200
-        },
         "97997abb21ca358de249df708ce85630df36e3a2494a68a29a2d8baf560e14cc": {
-            "body": [],
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
-            "method": "GET",
-            "statusCode": 200
-        },
-        "9e3e9badd153ff65e8831cb8bbbd8487c95eca92b88a70d4b8fdebf074429487": {
-            "body": [
-                {
-                    "aliases": [],
-                    "categories": ["level"],
-                    "id": "LOW",
-                    "name": "LOW",
-                    "parents": [],
-                    "position": 0,
-                    "rank": 0,
-                    "views": { "default": "LOW" }
-                },
-                {
-                    "aliases": [],
-                    "categories": ["level"],
-                    "id": "HIGH",
-                    "name": "HIGH",
-                    "parents": [],
-                    "position": 1,
-                    "rank": 1,
-                    "views": { "default": "HIGH" }
-                }
-            ],
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
-            "method": "GET",
-            "statusCode": 200
-        },
-        "a46b0942cddc975bd4ddbfe7ed1895e3e6ef1fd5aa0d65340dc11102850765d8": {
-            "body": [
-                {
-                    "categoryOrder": ["level"],
-                    "categorySeparators": { "level": "/" },
-                    "categoryViews": { "level": "default" },
-                    "id": "portion",
-                    "mode": "inline",
-                    "separator": "//",
-                    "surface": "marking"
-                }
-            ],
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
-            "method": "GET",
-            "statusCode": 200
-        },
-        "ab11afa5d553a033c993bc57f15a854f7c1d80cb15c9682b0c432be07d8d81ab": {
             "body": [],
             "headers": { "x-ezclassify-resolved-version": "0.0.0" },
             "method": "GET",
@@ -871,25 +772,6 @@
             },
             "headers": { "x-ezclassify-resolved-version": "0.0.0" },
             "method": "POST",
-            "statusCode": 200
-        },
-        "ecebe4f786965678e35ca962384abb9ec3a50074e4fcb39289abe663573c4c95": {
-            "body": {
-                "defaultRenderFormat": "portion",
-                "embeddedMarking": [
-                    { "pattern": "\\(([^)]+)\\)", "template": "({marking}) " }
-                ],
-                "id": "clear-fields",
-                "name": "Field Clear Test",
-                "referenceSurfaceLabel": {
-                    "plural": "Handbooks",
-                    "singular": "Handbook"
-                },
-                "roleAware": false,
-                "version": "1.0.0"
-            },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
-            "method": "GET",
             "statusCode": 200
         }
     }

@@ -2,61 +2,6 @@
     "engineVersion": "1.0.0-dev.30",
     "openapiVersion": "1.0.0-dev.30",
     "responses": {
-        "0f33f2a1edc93bbf5b434a23bf111977ad33e400b8cf80fc8d7c140f8a4d5c9c": {
-            "body": [
-                {
-                    "categoryOrder": ["level"],
-                    "categorySeparators": { "level": "/" },
-                    "categoryViews": { "level": "default" },
-                    "id": "portion",
-                    "mode": "inline",
-                    "separator": "//",
-                    "surface": "marking"
-                }
-            ],
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
-            "method": "GET",
-            "statusCode": 200
-        },
-        "2a2dd9d08a7e9be7cdfb0e8958faedb160100b33589256fde99aa58e178fef8a": {
-            "body": [
-                {
-                    "aliases": [],
-                    "categories": ["level"],
-                    "id": "U",
-                    "name": "Unclassified",
-                    "parents": [],
-                    "position": 1,
-                    "rank": 1,
-                    "views": { "default": "U" }
-                },
-                {
-                    "aliases": [],
-                    "categories": ["level"],
-                    "id": "S",
-                    "name": "Secret",
-                    "parents": [],
-                    "position": 2,
-                    "rank": 2,
-                    "views": { "default": "S" }
-                }
-            ],
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
-            "method": "GET",
-            "statusCode": 200
-        },
-        "49e2c66e4335b1595fa99bacde031737c61aa02b4b6e73b19a137bf208fb695e": {
-            "body": [],
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
-            "method": "GET",
-            "statusCode": 200
-        },
-        "5f4ff11decd9a19218e4cc0cdf65bf56a808eb01ab341329506f108fc5a29d12": {
-            "body": [],
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
-            "method": "GET",
-            "statusCode": 200
-        },
         "64a22fb50ca8925a3850aa7e4f0f02408bb59a304c23d8647fce9b2f4bb6c9be": {
             "body": [
                 {
@@ -132,13 +77,6 @@
             },
             "headers": { "x-ezclassify-resolved-version": "0.0.0" },
             "method": "POST",
-            "statusCode": 200
-        },
-        "7b617e70af043fe8647e80fe947b6060a5379ed1f7a288b4be035c9cea634da0": {
-            "body": {
-                "contextId": "sbx-4f3d386aed0c419bba6b6254f011e2cd3199c58e9fd4f5d2efdea3135f216f71"
-            },
-            "method": "PUT",
             "statusCode": 200
         },
         "7f908acf1dad2d17d0a0e4be6448087b930014146bbcb157c1628d3b58218cf0": {
@@ -254,64 +192,8 @@
             "method": "POST",
             "statusCode": 200
         },
-        "9c72c6245e6ad1e7cdac81d8b294e2a85a0604a16ee0ba739a9a4c84c3e4b169": {
-            "body": {
-                "id": "sbx-4f3d386aed0c419bba6b6254f011e2cd3199c58e9fd4f5d2efdea3135f216f71",
-                "scheme": {
-                    "id": "marked-seed-test",
-                    "resolvedVersion": "1.0.0",
-                    "version": "1.0.0"
-                },
-                "schemes": [
-                    {
-                        "id": "marked-seed-test",
-                        "roles": ["primary"],
-                        "selector": "marked-seed-test",
-                        "version": "1.0.0"
-                    }
-                ],
-                "version": "0.0.0"
-            },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
-            "method": "GET",
-            "statusCode": 200
-        },
-        "a3df5289498203204c751f000bbff35e1af2bf3cdff6d072fc5db8b28b168cb6": {
-            "body": {
-                "defaultRenderFormat": "portion",
-                "embeddedMarking": [
-                    { "pattern": "\\(([^)]+)\\)", "template": "({marking}) " }
-                ],
-                "id": "marked-seed-test",
-                "name": "Marked Seed Test",
-                "referenceSurfaceLabel": {
-                    "plural": "Handbooks",
-                    "singular": "Handbook"
-                },
-                "roleAware": false,
-                "version": "1.0.0"
-            },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
-            "method": "GET",
-            "statusCode": 200
-        },
         "d325ad715bcb20e3f32133cb56eb4ce5ae7ddb4c819e4f5c36cbd9a89b704d0a": {
             "body": [],
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
-            "method": "GET",
-            "statusCode": 200
-        },
-        "d746de5373a893941a9ad90a53ccd6346505ccb872956df3a7ddda80745e1759": {
-            "body": [
-                {
-                    "id": "level",
-                    "label": "Level",
-                    "position": 1,
-                    "required": false,
-                    "rollup": "max",
-                    "single": true
-                }
-            ],
             "headers": { "x-ezclassify-resolved-version": "0.0.0" },
             "method": "GET",
             "statusCode": 200

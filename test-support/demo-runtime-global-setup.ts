@@ -208,8 +208,10 @@ function buildRuntime(): { binary: string; contextIds: string[] } {
         'scripts/assemble-demo-contexts.mjs',
     );
     requirePinned('orchestration', orchestration, [
+        // The assembly script and the two modules it imports, not all of lib.
         'scripts/assemble-demo-contexts.mjs',
-        'scripts/lib',
+        'scripts/lib/entrypoint.mjs',
+        'scripts/lib/workspace-layout.mjs',
         'manifests/demo-contexts.yaml',
     ]);
     const engine = sibling('engine', 'apps/demo-runtime/Cargo.toml');
@@ -314,6 +316,8 @@ function runtimeEnvironment(): NodeJS.ProcessEnv {
         ...env,
         EZCLASSIFY_DEMO_LISTEN: '127.0.0.1:0',
         EZCLASSIFY_DEMO_LOG_LEVEL: 'info',
+        // Test workers send far more requests at once than one Playground page.
+        EZCLASSIFY_DEMO_MAX_REQUESTS_IN_FLIGHT: '1024',
         // A recording run holds every draft it sends for its whole length.
         EZCLASSIFY_DRAFT_IDLE_SECONDS: '3600',
     };

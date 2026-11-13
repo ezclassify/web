@@ -103,65 +103,6 @@
             "method": "GET",
             "statusCode": 200
         },
-        "35700603a9e36f66dbe04a0ebeea689b4d5c5f0bc1d8a9365c3048ede760d194": {
-            "body": {
-                "resolution": {
-                    "artifacts": [
-                        {
-                            "id": "test-select",
-                            "kind": "scheme",
-                            "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-263638ce4badfe4a7a5915b5ae344b38f2688dd46dc155684ea2c411a00cc205",
-                            "kind": "context",
-                            "version": "0.0.0"
-                        }
-                    ],
-                    "contextId": "sbx-263638ce4badfe4a7a5915b5ae344b38f2688dd46dc155684ea2c411a00cc205",
-                    "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
-                },
-                "result": {
-                    "appliedFixes": [],
-                    "assertions": [],
-                    "assessment": {
-                        "collapsed": [],
-                        "conflicts": [],
-                        "emitted": [],
-                        "omitted": [],
-                        "unrepresentable": []
-                    },
-                    "errors": [
-                        {
-                            "constraintId": "_recognition_incomplete",
-                            "message": "The input does not read as a marking."
-                        },
-                        {
-                            "constraintId": "_unmatched_token",
-                            "message": "\"2035-09-30\" was not recognized: it matched no known concept and will be kept visible in the rendered marking."
-                        }
-                    ],
-                    "inputWasValid": false,
-                    "notices": [],
-                    "proposedFixes": [],
-                    "recognition": {
-                        "corrections": [],
-                        "status": "unrecognized",
-                        "unmatched": [
-                            { "end": 10, "start": 0, "text": "2035-09-30" }
-                        ]
-                    },
-                    "rendered": "2035-09-30",
-                    "renders": {},
-                    "valid": false,
-                    "warnings": []
-                }
-            },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
-            "method": "POST",
-            "statusCode": 200
-        },
         "3a0b9bf665bffb128d7985bd5e0e8fe07579e22046b554a3941504299c240467": {
             "body": {
                 "resolution": {

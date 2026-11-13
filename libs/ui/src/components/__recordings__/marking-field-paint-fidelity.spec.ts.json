@@ -243,35 +243,6 @@
             "method": "POST",
             "statusCode": 200
         },
-        "2ec8d3a29705e87f90553bc289dcdfb3da1eb38034edd565252a9d5d473a7ef3": {
-            "body": {
-                "contextId": "sbx-57adfe8817a78d4279881e59392a2ab8711e634b573948f3875e602f54796c7a"
-            },
-            "method": "PUT",
-            "statusCode": 200
-        },
-        "30ef0dc0e54240fc9a2280c41460b3579b91b4623986fd245f94e89dd6f8c9cd": {
-            "body": {
-                "id": "sbx-57adfe8817a78d4279881e59392a2ab8711e634b573948f3875e602f54796c7a",
-                "scheme": {
-                    "id": "mf-tiered",
-                    "resolvedVersion": "1.0.0",
-                    "version": "1.0.0"
-                },
-                "schemes": [
-                    {
-                        "id": "mf-tiered",
-                        "roles": ["primary"],
-                        "selector": "mf-tiered",
-                        "version": "1.0.0"
-                    }
-                ],
-                "version": "0.0.0"
-            },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
-            "method": "GET",
-            "statusCode": 200
-        },
         "3193757285f0e781088fa76cad7b46d8cb42d85466a741b3ead258594c867ab1": {
             "body": [
                 {
@@ -319,13 +290,6 @@
             "method": "GET",
             "statusCode": 200
         },
-        "3a1a57430c3ffb0a40dc8d7c1bd24f43e8cec3951a14134102e8ef0127e4045d": {
-            "body": {
-                "contextId": "sbx-027de6ef1b5e5bab82b164af06ed8465cc1353a407d819462775c59e7d7d5ab1"
-            },
-            "method": "PUT",
-            "statusCode": 200
-        },
         "3f29e66a4f05c1b42be7f93624cbb4dd13cd473ed51d2e1386f4126a0d9a0922": {
             "body": [
                 {
@@ -347,59 +311,6 @@
                     "separatorBefore": { "dissem": "//", "sci": "//" },
                     "surface": "marking",
                     "view": "default"
-                }
-            ],
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
-            "method": "GET",
-            "statusCode": 200
-        },
-        "44cb0fbfec3cdea48777e4927a57478c93379d6c8ad9dce575b2a30eb2eeb4bd": {
-            "body": [],
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
-            "method": "GET",
-            "statusCode": 200
-        },
-        "50d8c1d602f58d2a66d261e361ee84623c6072b7a54e231fb52f4c95dae28560": {
-            "body": [
-                {
-                    "aliases": [],
-                    "categories": ["level"],
-                    "id": "SECRET",
-                    "name": "Secret",
-                    "parents": [],
-                    "position": 0,
-                    "rank": 2,
-                    "views": { "default": "SECRET" }
-                },
-                {
-                    "aliases": [],
-                    "categories": ["sci"],
-                    "id": "SI",
-                    "name": "Special Intelligence",
-                    "parents": [],
-                    "position": 0,
-                    "rank": 1,
-                    "views": { "default": "SI" }
-                },
-                {
-                    "aliases": [],
-                    "categories": ["sci"],
-                    "id": "TK",
-                    "name": "Talent Keyhole",
-                    "parents": [],
-                    "position": 1,
-                    "rank": 1,
-                    "views": { "default": "TK" }
-                },
-                {
-                    "aliases": [],
-                    "categories": ["dissem"],
-                    "id": "NOFORN",
-                    "name": "No Foreign",
-                    "parents": [],
-                    "position": 0,
-                    "rank": 1,
-                    "views": { "default": "NOFORN" }
                 }
             ],
             "headers": { "x-ezclassify-resolved-version": "0.0.0" },
@@ -447,49 +358,6 @@
         },
         "616967a9afaa9a712061308c9f652a4fa9eb12047d8d79e3444db0d9b69cc8c5": {
             "body": [],
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
-            "method": "GET",
-            "statusCode": 200
-        },
-        "6a12818a4bf62be7c2df4bf85e11d8a8223fd224b9672047c4aacc7c5e8f04a0": {
-            "body": {
-                "defaultRenderFormat": "banner",
-                "id": "mf-prefixed",
-                "name": "MarkingField prefixed-category fixture",
-                "referenceSurfaceLabel": {
-                    "plural": "Handbooks",
-                    "singular": "Handbook"
-                },
-                "roleAware": false,
-                "version": "1.0.0"
-            },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
-            "method": "GET",
-            "statusCode": 200
-        },
-        "6cfc6694566434b62469c3f7eb22339dbd05af50bf4728179f34bcb37cee248f": {
-            "body": [
-                {
-                    "categoryOrder": ["level", "sci", "dissem"],
-                    "categorySeparators": {
-                        "dissem": "/",
-                        "level": "/",
-                        "sci": "/"
-                    },
-                    "categoryTiers": {
-                        "sci": [
-                            { "attachedBy": "-", "tier": "subcontrol" },
-                            { "attachedBy": " ", "tier": "subcompartment" }
-                        ]
-                    },
-                    "id": "banner",
-                    "mode": "inline",
-                    "separator": "//",
-                    "separatorBefore": { "dissem": "//", "sci": "//" },
-                    "surface": "marking",
-                    "view": "default"
-                }
-            ],
             "headers": { "x-ezclassify-resolved-version": "0.0.0" },
             "method": "GET",
             "statusCode": 200
@@ -565,40 +433,6 @@
             },
             "headers": { "x-ezclassify-resolved-version": "0.0.0" },
             "method": "POST",
-            "statusCode": 200
-        },
-        "80bc275f12e09b51f88e4c6e6925a5239e93e187cd445ec2f506011dd42d1ee4": {
-            "body": [
-                {
-                    "categoryEach": {
-                        "specified_category": { "prefix": "SP-" }
-                    },
-                    "categoryOrder": [
-                        "cui_designator",
-                        "specified_category",
-                        "basic_category",
-                        "dissem"
-                    ],
-                    "categorySeparators": {
-                        "basic_category": "/",
-                        "cui_designator": "/",
-                        "dissem": "/",
-                        "specified_category": "/"
-                    },
-                    "id": "banner",
-                    "mode": "inline",
-                    "separator": "//",
-                    "separatorBefore": {
-                        "basic_category": "/",
-                        "dissem": "//",
-                        "specified_category": "//"
-                    },
-                    "surface": "marking",
-                    "view": "default"
-                }
-            ],
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
-            "method": "GET",
             "statusCode": 200
         },
         "88f46d458f72bfbffa4c5c7dab2e7ee58d4a88fd8ed25ce31fdc9e90e382b03e": {
@@ -817,102 +651,7 @@
             "method": "PUT",
             "statusCode": 200
         },
-        "97423236eb98d89af2d0b14449ec3f1f57e5bff9d381a045b217733055201eb7": {
-            "body": [],
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
-            "method": "GET",
-            "statusCode": 200
-        },
-        "99900666099a501d60f690a8955093a78a105faf6fb6922d53163067d94101c6": {
-            "body": {
-                "defaultRenderFormat": "banner",
-                "id": "mf-tiered",
-                "name": "MarkingField tiered-category fixture",
-                "referenceSurfaceLabel": {
-                    "plural": "Handbooks",
-                    "singular": "Handbook"
-                },
-                "roleAware": false,
-                "version": "1.0.0"
-            },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
-            "method": "GET",
-            "statusCode": 200
-        },
         "9c01b69adb734bdd9683325aca9c92bdcde6124d0c7ae41a2ba851a71948d0d2": {
-            "body": [
-                {
-                    "aliases": [],
-                    "categories": ["cui_designator"],
-                    "id": "CUI",
-                    "name": "Controlled Unclassified Information",
-                    "parents": [],
-                    "position": 0,
-                    "rank": 1,
-                    "views": { "default": "CUI" }
-                },
-                {
-                    "aliases": [],
-                    "categories": ["basic_category"],
-                    "id": "PROPIN",
-                    "name": "Proprietary Business Information",
-                    "parents": [],
-                    "position": 2,
-                    "rank": 1,
-                    "views": { "default": "PROPIN" }
-                },
-                {
-                    "aliases": [],
-                    "categories": ["basic_category", "specified_category"],
-                    "id": "EXPT",
-                    "name": "Export Controlled",
-                    "parents": [],
-                    "position": 4,
-                    "rank": 1,
-                    "views": { "default": "EXPT" }
-                },
-                {
-                    "aliases": [],
-                    "categories": ["dissem"],
-                    "id": "NOFORN",
-                    "name": "Not Releasable to Foreign Nationals",
-                    "parents": [],
-                    "position": 0,
-                    "rank": 1,
-                    "views": { "default": "NOFORN" }
-                },
-                {
-                    "aliases": [],
-                    "categories": ["dissem"],
-                    "id": "FED-ONLY",
-                    "name": "Federal Employees Only",
-                    "parents": [],
-                    "position": 1,
-                    "rank": 1,
-                    "views": { "default": "FED ONLY" }
-                },
-                {
-                    "aliases": [],
-                    "categories": ["dissem"],
-                    "id": "ONSITE",
-                    "name": "On-Site Access Only",
-                    "parents": [],
-                    "position": 2,
-                    "rank": 1,
-                    "views": { "default": "ON" }
-                }
-            ],
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
-            "method": "GET",
-            "statusCode": 200
-        },
-        "9c8ad81fd843a3b9272342524b33eea7bfca9d92328b3793244f095693fd5369": {
-            "body": [],
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
-            "method": "GET",
-            "statusCode": 200
-        },
-        "9f7dfe7ec9eff4c7d73ef90e32f1a84c1927a898137037b9f111a9309e7aba53": {
             "body": [
                 {
                     "aliases": [],
@@ -1108,12 +847,6 @@
             "method": "GET",
             "statusCode": 200
         },
-        "b7dfad614ba1e897c2ebbb1a5c60ce0a0bb53bb4a29dae684dc02a7a61770666": {
-            "body": [],
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
-            "method": "GET",
-            "statusCode": 200
-        },
         "be12ec7723419f08c8349f273f17bd33adb11b71308367191798e65ece367dcf": {
             "body": {
                 "id": "sbx-b1bfadbec9dc98c8d0aa911df7e3173c4769471800d6289b3eb617c7c046dfc5",
@@ -1197,61 +930,6 @@
         },
         "cf4045de094432a9512e48232d7e50dff196c4f6998020324707167b2a753d18": {
             "body": [],
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
-            "method": "GET",
-            "statusCode": 200
-        },
-        "d1a7dd3b1e452c10c5f782d0941a2409a410f60e6f6a634c94f477e46d313b76": {
-            "body": [
-                {
-                    "id": "level",
-                    "label": "Level",
-                    "position": 0,
-                    "required": false,
-                    "rollup": "max",
-                    "single": true
-                },
-                {
-                    "id": "sci",
-                    "label": "SCI Control System",
-                    "position": 1,
-                    "required": false,
-                    "rollup": "union",
-                    "single": false,
-                    "sort": "position"
-                },
-                {
-                    "id": "dissem",
-                    "label": "Dissemination Control",
-                    "position": 2,
-                    "required": false,
-                    "rollup": "union",
-                    "single": false,
-                    "sort": "position"
-                }
-            ],
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
-            "method": "GET",
-            "statusCode": 200
-        },
-        "d1ecddfc91fa67df3b4078ebfdab390af4df3b9a4a645f9e30bc70b800d2a37d": {
-            "body": {
-                "id": "sbx-027de6ef1b5e5bab82b164af06ed8465cc1353a407d819462775c59e7d7d5ab1",
-                "scheme": {
-                    "id": "mf-prefixed",
-                    "resolvedVersion": "1.0.0",
-                    "version": "1.0.0"
-                },
-                "schemes": [
-                    {
-                        "id": "mf-prefixed",
-                        "roles": ["primary"],
-                        "selector": "mf-prefixed",
-                        "version": "1.0.0"
-                    }
-                ],
-                "version": "0.0.0"
-            },
             "headers": { "x-ezclassify-resolved-version": "0.0.0" },
             "method": "GET",
             "statusCode": 200
@@ -1724,48 +1402,6 @@
             },
             "headers": { "x-ezclassify-resolved-version": "0.0.0" },
             "method": "POST",
-            "statusCode": 200
-        },
-        "fbc61973f29904e9c313a2d865b70c82afdb22e08230848b82c9161cce9f6626": {
-            "body": [
-                {
-                    "id": "cui_designator",
-                    "label": "CUI Designator",
-                    "position": 0,
-                    "required": false,
-                    "rollup": "union",
-                    "single": true
-                },
-                {
-                    "id": "specified_category",
-                    "label": "CUI Specified Category",
-                    "position": 1,
-                    "required": false,
-                    "rollup": "union",
-                    "single": false,
-                    "sort": "alphabetical"
-                },
-                {
-                    "id": "basic_category",
-                    "label": "CUI Basic Category",
-                    "position": 2,
-                    "required": false,
-                    "rollup": "union",
-                    "single": false,
-                    "sort": "alphabetical"
-                },
-                {
-                    "id": "dissem",
-                    "label": "Limited Dissemination Control",
-                    "position": 3,
-                    "required": false,
-                    "rollup": "union",
-                    "single": false,
-                    "sort": "alphabetical"
-                }
-            ],
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
-            "method": "GET",
             "statusCode": 200
         }
     }

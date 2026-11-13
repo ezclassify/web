@@ -59,70 +59,10 @@
             "method": "POST",
             "statusCode": 200
         },
-        "180c8e8e5e30c242ee402f6cf8203926698c921e1bafe716dc70243657475c89": {
-            "body": [
-                {
-                    "id": "kind",
-                    "label": "Kind",
-                    "required": false,
-                    "rollup": "max",
-                    "single": true
-                }
-            ],
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
-            "method": "GET",
-            "statusCode": 200
-        },
-        "1dba0c4940bbf88f9488632d088099db3a4b66b52bee1ac5a6d46a85e363b149": {
-            "body": [],
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
-            "method": "GET",
-            "statusCode": 200
-        },
-        "2c55154263eb13fa347d2d5c1472e708a1f1066bbbc08afe8d7af964f447108c": {
-            "body": {
-                "defaultRenderFormat": "part",
-                "embeddedMarking": [
-                    { "pattern": "\\(([^)]+)\\)", "template": "({marking}) " }
-                ],
-                "id": "error-visibility",
-                "name": "Error visibility",
-                "referenceSurfaceLabel": {
-                    "plural": "Handbooks",
-                    "singular": "Handbook"
-                },
-                "roleAware": false,
-                "version": "1.0.0"
-            },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
-            "method": "GET",
-            "statusCode": 200
-        },
         "323b5667be889d4a37029f3d89cc9bb3e0234c9e1e200f5baf9f2ac0604beac1": {
             "body": [],
             "headers": { "x-ezclassify-resolved-version": "0.0.0" },
             "method": "GET",
-            "statusCode": 200
-        },
-        "6e02e1dbc93dae8abbe0494973e7a2eda37b25497a6ae7c73d97052e214e87f1": {
-            "body": [
-                {
-                    "categoryOrder": ["kind"],
-                    "categoryViews": { "kind": "default" },
-                    "id": "part",
-                    "mode": "inline",
-                    "surface": "marking"
-                }
-            ],
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
-            "method": "GET",
-            "statusCode": 200
-        },
-        "76d2c91f5698ded17e4f4e7a2209afa23a1abdb5e38737bcd71e2b73a40dd6ee": {
-            "body": {
-                "contextId": "sbx-1a2811c9933667ae3af32d80a383e90e100ee592aecab0abe772f9150745869f"
-            },
-            "method": "PUT",
             "statusCode": 200
         },
         "88ab0e475bfd769a398092a95f1466157561ac595b138b934f420fb64bcb6c9f": {
@@ -175,12 +115,6 @@
                     "surface": "marking"
                 }
             ],
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
-            "method": "GET",
-            "statusCode": 200
-        },
-        "c2c72d40065ce8cac077ae367385bc9275af25a6069735bc78680b65fbcac9c8": {
-            "body": [],
             "headers": { "x-ezclassify-resolved-version": "0.0.0" },
             "method": "GET",
             "statusCode": 200
@@ -240,45 +174,6 @@
                 "openapiVersion": "1.0.0-dev.30",
                 "status": "ok"
             },
-            "method": "GET",
-            "statusCode": 200
-        },
-        "e7931c0ba2a80cc546be1d1cf95d248d5d824ae400705bc12bc5f3f91cd79d1e": {
-            "body": [
-                {
-                    "aliases": [],
-                    "categories": ["kind"],
-                    "id": "A",
-                    "name": "Alpha",
-                    "parents": [],
-                    "position": 0,
-                    "rank": 1,
-                    "views": { "default": "A" }
-                }
-            ],
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
-            "method": "GET",
-            "statusCode": 200
-        },
-        "e935291f7a000782efaf8e02da76434172d1c5f22aa8b98b0f6744785fc0b8a1": {
-            "body": {
-                "id": "sbx-1a2811c9933667ae3af32d80a383e90e100ee592aecab0abe772f9150745869f",
-                "scheme": {
-                    "id": "error-visibility",
-                    "resolvedVersion": "1.0.0",
-                    "version": "1.0.0"
-                },
-                "schemes": [
-                    {
-                        "id": "error-visibility",
-                        "roles": ["primary"],
-                        "selector": "error-visibility",
-                        "version": "1.0.0"
-                    }
-                ],
-                "version": "0.0.0"
-            },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
             "method": "GET",
             "statusCode": 200
         },

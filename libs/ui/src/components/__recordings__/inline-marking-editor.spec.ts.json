@@ -61,28 +61,6 @@
             "method": "POST",
             "statusCode": 200
         },
-        "07b74d55b8186fadd4d6a496dd179608920cf7748740d7199e62d182225b4035": {
-            "body": {
-                "id": "sbx-0d2c490c9009dc62ae1630b0c5eeb9133641e23b5cdc1f67832e8b9ccc569757",
-                "scheme": {
-                    "id": "ime-test",
-                    "resolvedVersion": "1.0.0",
-                    "version": "1.0.0"
-                },
-                "schemes": [
-                    {
-                        "id": "ime-test",
-                        "roles": ["primary"],
-                        "selector": "ime-test",
-                        "version": "1.0.0"
-                    }
-                ],
-                "version": "0.0.0"
-            },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
-            "method": "GET",
-            "statusCode": 200
-        },
         "09a05fb084595c12730f0e377b4f7bcba6a3c67b57f37d02281f96aa489d47d5": {
             "body": {
                 "resolution": {
@@ -389,12 +367,6 @@
             "method": "POST",
             "statusCode": 200
         },
-        "16ad203d11ec0f65332cc792ba89e0de724efb33e518e441cb723b1ba4a0311a": {
-            "body": [],
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
-            "method": "GET",
-            "statusCode": 200
-        },
         "171419d8753b7d6df0537b876e1e121268a24aee599428cb3d6cf76922ba2efc": {
             "body": {
                 "resolution": {
@@ -507,12 +479,6 @@
             },
             "headers": { "x-ezclassify-resolved-version": "0.0.0" },
             "method": "POST",
-            "statusCode": 200
-        },
-        "23ddbf6629525db59b8168f12385c0bb61571252c997400a6e28cfc62b59da00": {
-            "body": [],
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
-            "method": "GET",
             "statusCode": 200
         },
         "2439dcbde38258fd5b0c19e8ec3c9ebc15743110bc0a9b6b94d62153b196d891": {
@@ -2112,103 +2078,6 @@
             "method": "POST",
             "statusCode": 200
         },
-        "6655fa4b0a544871c83f7d9122cc5b41eafd739a0c79a88caa1cce1904fa1dc4": {
-            "body": [
-                {
-                    "aliases": [],
-                    "categories": ["level"],
-                    "id": "U",
-                    "name": "Unclassified",
-                    "parents": [],
-                    "position": 1,
-                    "rank": 1,
-                    "views": { "default": "U" }
-                },
-                {
-                    "aliases": [],
-                    "categories": ["level"],
-                    "id": "S",
-                    "name": "Secret",
-                    "parents": [],
-                    "position": 2,
-                    "rank": 2,
-                    "views": { "default": "S" }
-                },
-                {
-                    "aliases": [],
-                    "categories": ["caveat"],
-                    "id": "NF",
-                    "name": "No Foreign",
-                    "parents": [],
-                    "position": 1,
-                    "rank": 1,
-                    "views": { "default": "NF" }
-                },
-                {
-                    "aliases": [],
-                    "categories": ["caveat"],
-                    "id": "SI",
-                    "name": "Special Intelligence",
-                    "parents": [],
-                    "position": 5,
-                    "rank": 1,
-                    "views": { "default": "SI" }
-                },
-                {
-                    "aliases": [],
-                    "categories": ["caveat"],
-                    "id": "TK",
-                    "name": "Talent Keyhole",
-                    "parents": [],
-                    "position": 6,
-                    "rank": 1,
-                    "views": { "default": "TK" }
-                },
-                {
-                    "aliases": [],
-                    "categories": ["caveat"],
-                    "id": "REL",
-                    "name": "Releasable",
-                    "parents": [],
-                    "position": 7,
-                    "rank": 1,
-                    "views": { "default": "REL" }
-                },
-                {
-                    "aliases": [],
-                    "categories": ["rel_countries"],
-                    "id": "USA",
-                    "name": "United States",
-                    "parents": [],
-                    "position": 1,
-                    "rank": 1,
-                    "views": { "default": "USA" }
-                },
-                {
-                    "aliases": [],
-                    "categories": ["rel_countries"],
-                    "id": "GBR",
-                    "name": "United Kingdom",
-                    "parents": [],
-                    "position": 2,
-                    "rank": 1,
-                    "views": { "default": "GBR" }
-                },
-                {
-                    "aliases": [],
-                    "categories": ["branch"],
-                    "id": "MAIN",
-                    "name": "Our School",
-                    "parents": [],
-                    "position": 1,
-                    "rank": 1,
-                    "views": { "default": "OUR SCHOOL" }
-                }
-            ],
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
-            "method": "GET",
-            "statusCode": 200
-        },
         "681bc4f064398854b8f70137d0a973fa5aa0e9cdbd2b6295b80d6552b84c4377": {
             "body": {
                 "resolution": {
@@ -3098,13 +2967,6 @@
             "method": "POST",
             "statusCode": 200
         },
-        "90f9ce058d10959aed2b95d046a4670b33d02695575ec8d5c98d9fc06a7ce59a": {
-            "body": {
-                "contextId": "sbx-0d2c490c9009dc62ae1630b0c5eeb9133641e23b5cdc1f67832e8b9ccc569757"
-            },
-            "method": "PUT",
-            "statusCode": 200
-        },
         "9337213fabeb6602835693b746980c33657b231b8c5513116a4540797c43f7d6": {
             "body": {
                 "resolution": {
@@ -3667,45 +3529,6 @@
             "method": "POST",
             "statusCode": 200
         },
-        "ab29f5f9caa5fcad418ddebfadc8a92beb3b30d284d75fccff956c4c0920e17d": {
-            "body": [
-                {
-                    "id": "level",
-                    "label": "Level",
-                    "position": 1,
-                    "required": false,
-                    "rollup": "max",
-                    "single": true
-                },
-                {
-                    "id": "caveat",
-                    "label": "Caveat",
-                    "position": 2,
-                    "required": false,
-                    "rollup": "union",
-                    "single": false
-                },
-                {
-                    "id": "branch",
-                    "label": "Branch",
-                    "position": 3,
-                    "required": false,
-                    "rollup": "max",
-                    "single": true
-                },
-                {
-                    "id": "rel_countries",
-                    "label": "REL Countries",
-                    "position": 4,
-                    "required": false,
-                    "rollup": "union",
-                    "single": false
-                }
-            ],
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
-            "method": "GET",
-            "statusCode": 200
-        },
         "ab8114fb3d14baafb7a4ea5f5edb2783bd509fdd3c6bbe365a3f6d766dec3fc4": {
             "body": {
                 "resolution": {
@@ -3966,22 +3789,6 @@
             },
             "headers": { "x-ezclassify-resolved-version": "0.0.0" },
             "method": "POST",
-            "statusCode": 200
-        },
-        "b70e6b511bd2e762d763aadc32a6cf8c293e726961a5567401d4963a4123d0e1": {
-            "body": {
-                "defaultRenderFormat": "default",
-                "id": "ime-test",
-                "name": "InlineMarkingEditor Test",
-                "referenceSurfaceLabel": {
-                    "plural": "Handbooks",
-                    "singular": "Handbook"
-                },
-                "roleAware": false,
-                "version": "1.0.0"
-            },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
-            "method": "GET",
             "statusCode": 200
         },
         "b9529d4a00d23ced655f70699a6c84fff56f111fe617b6160f808695ac895562": {
@@ -5168,37 +4975,6 @@
             },
             "headers": { "x-ezclassify-resolved-version": "0.0.0" },
             "method": "POST",
-            "statusCode": 200
-        },
-        "f50838bbb7901c00d44df0d56a7f4f942bb2b623b3c92a3ddf952ba0f1173e29": {
-            "body": [
-                {
-                    "categoryOrder": ["level", "caveat", "rel_countries"],
-                    "categorySeparators": {
-                        "level": "/",
-                        "rel_countries": "/"
-                    },
-                    "categoryViews": {
-                        "level": "default",
-                        "rel_countries": "default"
-                    },
-                    "headers": [
-                        {
-                            "category": "rel_countries",
-                            "concept": "REL",
-                            "headerCategory": "caveat",
-                            "position": "prefix"
-                        }
-                    ],
-                    "id": "default",
-                    "mode": "inline",
-                    "separator": "//",
-                    "separatorBefore": { "rel_countries": "//" },
-                    "surface": "marking"
-                }
-            ],
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
-            "method": "GET",
             "statusCode": 200
         },
         "f796bc6b80897a90d7ba01443604b08885cde742683ab7aa9dd255ec6f002a6c": {

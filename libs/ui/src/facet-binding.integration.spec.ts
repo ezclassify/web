@@ -5,7 +5,10 @@ import {
     createEzClassifyFacetBinding,
 } from '@ezclassify/ui';
 import { asContext } from '../test-fixtures/as-context';
-import { connectDemoContext } from '../../../test-support/demo-runtime';
+import {
+    connectDemoContext,
+    demoRuntimeSettled,
+} from '../../../test-support/demo-runtime';
 
 describe('third-party control integration', () => {
     it('drives native single and multiple selects without controller attributes', async () => {
@@ -165,13 +168,10 @@ function runtimeReady(root: HTMLElement): Promise<void> {
     );
 }
 
-/**
- * Wait for a runtime's seed, then let the edits that land on top of it finish.
- * The in-process engine answers synchronously, so one macrotask drains them.
- */
+/** Wait for a runtime's seed, then let the edits that land on top of it finish. */
 async function settle(ready: Promise<void>): Promise<void> {
     await ready;
-    await new Promise<void>((tick) => setTimeout(tick, 0));
+    await demoRuntimeSettled();
 }
 
 /** A marking host served with `value`, the way a page renders one. */

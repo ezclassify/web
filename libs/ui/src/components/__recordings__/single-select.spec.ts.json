@@ -213,65 +213,6 @@
             "method": "POST",
             "statusCode": 200
         },
-        "1e4ba1fc8aaf64120fcaa72343089c80550e681eb8665830cc4533189784d23b": {
-            "body": {
-                "resolution": {
-                    "artifacts": [
-                        {
-                            "id": "test-select",
-                            "kind": "scheme",
-                            "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-c41a078cf3af68960b044170ccc2ed9065c84ca1cc38a3b2f1d57e6bf0ac241a",
-                            "kind": "context",
-                            "version": "0.0.0"
-                        }
-                    ],
-                    "contextId": "sbx-c41a078cf3af68960b044170ccc2ed9065c84ca1cc38a3b2f1d57e6bf0ac241a",
-                    "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
-                },
-                "result": {
-                    "appliedFixes": [],
-                    "assertions": [],
-                    "assessment": {
-                        "collapsed": [],
-                        "conflicts": [],
-                        "emitted": [],
-                        "omitted": [],
-                        "unrepresentable": []
-                    },
-                    "errors": [
-                        {
-                            "constraintId": "_recognition_incomplete",
-                            "message": "The input does not read as a marking."
-                        },
-                        {
-                            "constraintId": "_unmatched_token",
-                            "message": "\"2035-09-30\" was not recognized: it matched no known concept and will be kept visible in the rendered marking."
-                        }
-                    ],
-                    "inputWasValid": false,
-                    "notices": [],
-                    "proposedFixes": [],
-                    "recognition": {
-                        "corrections": [],
-                        "status": "unrecognized",
-                        "unmatched": [
-                            { "end": 10, "start": 0, "text": "2035-09-30" }
-                        ]
-                    },
-                    "rendered": "2035-09-30",
-                    "renders": {},
-                    "valid": false,
-                    "warnings": []
-                }
-            },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
-            "method": "POST",
-            "statusCode": 200
-        },
         "1f8317f6f509b3117e102e2317aff1c254393d429fc65b220fa8a7c14e69b16a": {
             "body": {
                 "colorFrom": "level",
@@ -520,65 +461,6 @@
             ],
             "headers": { "x-ezclassify-resolved-version": "0.0.0" },
             "method": "GET",
-            "statusCode": 200
-        },
-        "4df4addc92a814560d048bb000b90a6e56de851cbc19d58269d436f83b11f7d4": {
-            "body": {
-                "resolution": {
-                    "artifacts": [
-                        {
-                            "id": "test-select",
-                            "kind": "scheme",
-                            "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-c41a078cf3af68960b044170ccc2ed9065c84ca1cc38a3b2f1d57e6bf0ac241a",
-                            "kind": "context",
-                            "version": "0.0.0"
-                        }
-                    ],
-                    "contextId": "sbx-c41a078cf3af68960b044170ccc2ed9065c84ca1cc38a3b2f1d57e6bf0ac241a",
-                    "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
-                },
-                "result": {
-                    "appliedFixes": [],
-                    "assertions": [],
-                    "assessment": {
-                        "collapsed": [],
-                        "conflicts": [],
-                        "emitted": [],
-                        "omitted": [],
-                        "unrepresentable": []
-                    },
-                    "errors": [
-                        {
-                            "constraintId": "_recognition_incomplete",
-                            "message": "The input does not read as a marking."
-                        },
-                        {
-                            "constraintId": "_unmatched_token",
-                            "message": "\"2035-12-31\" was not recognized: it matched no known concept and will be kept visible in the rendered marking."
-                        }
-                    ],
-                    "inputWasValid": false,
-                    "notices": [],
-                    "proposedFixes": [],
-                    "recognition": {
-                        "corrections": [],
-                        "status": "unrecognized",
-                        "unmatched": [
-                            { "end": 10, "start": 0, "text": "2035-12-31" }
-                        ]
-                    },
-                    "rendered": "2035-12-31",
-                    "renders": {},
-                    "valid": false,
-                    "warnings": []
-                }
-            },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
-            "method": "POST",
             "statusCode": 200
         },
         "4e8ad447c57e53ce9ca5acf8a436a382c20b2415eab2b2305012c783a077fd7a": {

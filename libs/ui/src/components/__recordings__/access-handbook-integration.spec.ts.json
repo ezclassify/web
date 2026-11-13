@@ -9,12 +9,6 @@
             "method": "PUT",
             "statusCode": 200
         },
-        "0be01e006284e00f86638d9b037eb5850df79a31485d4127f413dfe1fa3efe61": {
-            "body": { "error": "Context has no access policy attached." },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
-            "method": "GET",
-            "statusCode": 422
-        },
         "0f602a6e6c9c5f841024700792ab9e2da64c8974d15356742c90ff071b665570": {
             "body": [],
             "headers": { "x-ezclassify-resolved-version": "1.0.0" },

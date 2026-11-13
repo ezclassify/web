@@ -119,105 +119,8 @@
             "method": "GET",
             "statusCode": 200
         },
-        "4cb31121344300406fd9381534b94b8d9cf72d433150c6b9518f8c320e0abfca": {
-            "body": {
-                "id": "sbx-fe96ea96c7104cbf045e47cbe79c6615be4f89e9d738e392f7aacca751ecc31f",
-                "scheme": {
-                    "id": "bound-part-role",
-                    "resolvedVersion": "1.0.0",
-                    "version": "1.0.0"
-                },
-                "schemes": [
-                    {
-                        "id": "bound-part-role",
-                        "roles": ["primary"],
-                        "selector": "bound-part-role",
-                        "version": "1.0.0"
-                    }
-                ],
-                "version": "0.0.0"
-            },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
-            "method": "GET",
-            "statusCode": 200
-        },
-        "510a0ce7f4de4655c9351a10fa85947b7b7cf59c5601cf325c3b1640ca446c26": {
-            "body": {
-                "contextId": "sbx-fe96ea96c7104cbf045e47cbe79c6615be4f89e9d738e392f7aacca751ecc31f"
-            },
-            "method": "PUT",
-            "statusCode": 200
-        },
-        "5a071da540e42b725028e2273153155d5f993f5c45e792a1b9ecacd78f836ff4": {
-            "body": [
-                {
-                    "aliases": [],
-                    "categories": ["level"],
-                    "id": "LOW",
-                    "name": "LOW",
-                    "parents": [],
-                    "position": 1,
-                    "rank": 1,
-                    "views": { "default": "LOW" }
-                },
-                {
-                    "aliases": [],
-                    "categories": ["handling"],
-                    "id": "HOLD",
-                    "name": "HOLD",
-                    "parents": [],
-                    "position": 1,
-                    "rank": 1,
-                    "views": { "default": "HOLD" }
-                },
-                {
-                    "aliases": [],
-                    "categories": ["partners"],
-                    "id": "ALPHA",
-                    "name": "ALPHA",
-                    "parents": [],
-                    "position": 1,
-                    "rank": 1,
-                    "views": { "default": "ALPHA" }
-                }
-            ],
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
-            "method": "GET",
-            "statusCode": 200
-        },
         "5bc2654f6897b7d8586229d7b46d549fd88c82bc60fd5da23840b06812547cdd": {
             "body": [],
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
-            "method": "GET",
-            "statusCode": 200
-        },
-        "68e382f142b5d7ee9f1959708a4c91b81def04153617f521c553ad7524726ada": {
-            "body": [
-                {
-                    "id": "level",
-                    "label": "Level",
-                    "position": 1,
-                    "required": false,
-                    "rollup": "max",
-                    "single": true
-                },
-                {
-                    "id": "handling",
-                    "label": "Handling",
-                    "position": 2,
-                    "required": false,
-                    "rollup": "union",
-                    "single": false
-                },
-                {
-                    "id": "partners",
-                    "label": "Partners",
-                    "position": 3,
-                    "required": false,
-                    "rollup": "intersection",
-                    "single": false
-                }
-            ],
             "headers": { "x-ezclassify-resolved-version": "0.0.0" },
             "method": "GET",
             "statusCode": 200
@@ -338,12 +241,6 @@
             "method": "POST",
             "statusCode": 200
         },
-        "86410ef54b4e53563d3e50e3be3459d365fea32daefa144308369045ef7abc01": {
-            "body": [],
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
-            "method": "GET",
-            "statusCode": 200
-        },
         "91687c18ce872774383431e336a48d04e1b4218e36ab487d4d20ab4e5c56b1ba": {
             "body": {
                 "defaultRenderFormat": "default",
@@ -379,12 +276,6 @@
                 ],
                 "version": "0.0.0"
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
-            "method": "GET",
-            "statusCode": 200
-        },
-        "b9e57c999bd28b244d6f96d61687e71cef6ad000464184203f5fcff6d144034b": {
-            "body": [],
             "headers": { "x-ezclassify-resolved-version": "0.0.0" },
             "method": "GET",
             "statusCode": 200
@@ -461,31 +352,6 @@
             "method": "POST",
             "statusCode": 200
         },
-        "be6687f20c5ded5d9730fe46660f574d765fa330340f57e27d7a105893043429": {
-            "body": [
-                {
-                    "categoryOrder": ["level", "handling", "partners"],
-                    "categorySeparators": {
-                        "handling": "/",
-                        "level": "/",
-                        "partners": ", "
-                    },
-                    "categoryViews": {
-                        "handling": "default",
-                        "level": "default",
-                        "partners": "default"
-                    },
-                    "id": "default",
-                    "mode": "inline",
-                    "separator": "//",
-                    "separatorBefore": { "handling": "//", "partners": "//" },
-                    "surface": "marking"
-                }
-            ],
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
-            "method": "GET",
-            "statusCode": 200
-        },
         "cf87545a9e62f33fca3aefb31541632349ef7d005da8c596e2be4b20f04563e0": {
             "body": [
                 {
@@ -526,22 +392,6 @@
                 "openapiVersion": "1.0.0-dev.30",
                 "status": "ok"
             },
-            "method": "GET",
-            "statusCode": 200
-        },
-        "e10991212881ac851db47ca4dc16b6019b1c9bf3f4c647d382f2124978bb5418": {
-            "body": {
-                "defaultRenderFormat": "default",
-                "id": "bound-part-role",
-                "name": "Bound part role",
-                "referenceSurfaceLabel": {
-                    "plural": "Handbooks",
-                    "singular": "Handbook"
-                },
-                "roleAware": true,
-                "version": "1.0.0"
-            },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
             "method": "GET",
             "statusCode": 200
         },

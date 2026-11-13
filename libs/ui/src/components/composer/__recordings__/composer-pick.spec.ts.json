@@ -131,12 +131,6 @@
             "method": "POST",
             "statusCode": 200
         },
-        "017d2cc0d48b85dfaaa8c62d496a30251525e7bfff3d2e0aa42cabec2ffb1ed1": {
-            "body": [],
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
-            "method": "GET",
-            "statusCode": 200
-        },
         "0860a0d7a94849fe5ddc470e656c25047511b38c09755d9bed4efdf3d7071caf": {
             "body": [
                 {
@@ -295,28 +289,6 @@
             },
             "headers": { "x-ezclassify-resolved-version": "0.0.0" },
             "method": "POST",
-            "statusCode": 200
-        },
-        "20f0d3847f1904b8c5e1ed2b12ca361d435297ece872bb57172ec4d0023fd688": {
-            "body": {
-                "id": "sbx-550d879e4216c0706db41d35a6d3c241283ecdcbc8bed1ff04250ccdde8e9bfb",
-                "scheme": {
-                    "id": "composer-pick",
-                    "resolvedVersion": "1.0.0",
-                    "version": "1.0.0"
-                },
-                "schemes": [
-                    {
-                        "id": "composer-pick",
-                        "roles": ["primary"],
-                        "selector": "composer-pick",
-                        "version": "1.0.0"
-                    }
-                ],
-                "version": "0.0.0"
-            },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
-            "method": "GET",
             "statusCode": 200
         },
         "24871d87fe457e23f59b926a1c604efa6ae0d0038951e3d620a5ee4e630f8832": {
@@ -749,60 +721,6 @@
             },
             "headers": { "x-ezclassify-resolved-version": "0.0.0" },
             "method": "POST",
-            "statusCode": 200
-        },
-        "3bbf86b0fd35635e8d7fbab6b4f4db0af1f3115ed0b9f58959dd7786c8c3b916": {
-            "body": [
-                {
-                    "categoryOrder": [
-                        "level",
-                        "control",
-                        "dissem",
-                        "rel",
-                        "disp"
-                    ],
-                    "categorySeparators": {
-                        "control": "/",
-                        "disp": ", ",
-                        "dissem": "/",
-                        "level": "/",
-                        "rel": ", "
-                    },
-                    "categoryViews": {
-                        "control": "default",
-                        "disp": "default",
-                        "dissem": "default",
-                        "level": "default",
-                        "rel": "default"
-                    },
-                    "headers": [
-                        {
-                            "category": "rel",
-                            "concept": "REL",
-                            "headerCategory": "dissem",
-                            "position": "prefix"
-                        },
-                        {
-                            "category": "disp",
-                            "concept": "DO",
-                            "headerCategory": "dissem",
-                            "position": "prefix"
-                        }
-                    ],
-                    "id": "default",
-                    "mode": "inline",
-                    "separator": "//",
-                    "separatorBefore": {
-                        "control": "//",
-                        "disp": " ",
-                        "dissem": "//",
-                        "rel": " "
-                    },
-                    "surface": "marking"
-                }
-            ],
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
-            "method": "GET",
             "statusCode": 200
         },
         "409a645c2001ef1f2b83589406cffbd374b11bed040754ce8608668864e81644": {
@@ -1932,13 +1850,6 @@
             "method": "POST",
             "statusCode": 200
         },
-        "891c325dfbf90d15db2297c81425a7bb73df4fd5727a7274e16f890053505d19": {
-            "body": {
-                "contextId": "sbx-550d879e4216c0706db41d35a6d3c241283ecdcbc8bed1ff04250ccdde8e9bfb"
-            },
-            "method": "PUT",
-            "statusCode": 200
-        },
         "8a5148f77a9931187e0c3244472f8b2904ef32c1f9f80a0c11c2ff95992bc078": {
             "body": {
                 "resolution": {
@@ -2286,113 +2197,6 @@
             "method": "POST",
             "statusCode": 200
         },
-        "907fcd81908e4f419882df4bc9174f65b859096922df3851f01163520ffeebf9": {
-            "body": [
-                {
-                    "aliases": [],
-                    "categories": ["level"],
-                    "id": "U",
-                    "name": "Unclassified",
-                    "parents": [],
-                    "position": 1,
-                    "rank": 1,
-                    "views": { "default": "UNCLASSIFIED" }
-                },
-                {
-                    "aliases": [],
-                    "categories": ["level"],
-                    "id": "S",
-                    "name": "Secret",
-                    "parents": [],
-                    "position": 2,
-                    "rank": 2,
-                    "views": { "default": "SECRET" }
-                },
-                {
-                    "aliases": [],
-                    "categories": ["control"],
-                    "id": "SI",
-                    "name": "Si",
-                    "parents": [],
-                    "position": 1,
-                    "rank": 1,
-                    "views": { "default": "SI" }
-                },
-                {
-                    "aliases": [],
-                    "categories": ["control"],
-                    "id": "TK",
-                    "name": "Tk",
-                    "parents": [],
-                    "position": 2,
-                    "rank": 2,
-                    "views": { "default": "TK" }
-                },
-                {
-                    "aliases": [],
-                    "categories": ["dissem"],
-                    "id": "NF",
-                    "name": "Noforn",
-                    "parents": [],
-                    "position": 1,
-                    "rank": 1,
-                    "views": { "default": "NOFORN" }
-                },
-                {
-                    "aliases": [],
-                    "categories": ["dissem"],
-                    "id": "REL",
-                    "name": "Rel to",
-                    "parents": [],
-                    "position": 2,
-                    "rank": 2,
-                    "views": { "default": "REL TO" }
-                },
-                {
-                    "aliases": [],
-                    "categories": ["dissem"],
-                    "id": "DO",
-                    "name": "Display only",
-                    "parents": [],
-                    "position": 3,
-                    "rank": 3,
-                    "views": { "default": "DISPLAY ONLY" }
-                },
-                {
-                    "aliases": [],
-                    "categories": ["rel"],
-                    "id": "USA",
-                    "name": "Usa",
-                    "parents": [],
-                    "position": 0,
-                    "rank": 0,
-                    "views": { "default": "USA" }
-                },
-                {
-                    "aliases": [],
-                    "categories": ["rel", "disp"],
-                    "id": "AUS",
-                    "name": "Aus",
-                    "parents": [],
-                    "position": 1,
-                    "rank": 1,
-                    "views": { "default": "AUS" }
-                },
-                {
-                    "aliases": [],
-                    "categories": ["rel", "disp"],
-                    "id": "CAN",
-                    "name": "Can",
-                    "parents": [],
-                    "position": 2,
-                    "rank": 2,
-                    "views": { "default": "CAN" }
-                }
-            ],
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
-            "method": "GET",
-            "statusCode": 200
-        },
         "94fc15eb92c8c40027da410ec953c1acb592b1c4032b2e0abaa692640b5d464e": {
             "body": [
                 {
@@ -2494,53 +2298,6 @@
                     "position": 2,
                     "rank": 2,
                     "views": { "default": "CAN" }
-                }
-            ],
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
-            "method": "GET",
-            "statusCode": 200
-        },
-        "a46e5572860aff1abd520af5b8be36c1d760dae6efb6baa03cc37439713e8e54": {
-            "body": [
-                {
-                    "id": "level",
-                    "label": "Level",
-                    "position": 1,
-                    "required": false,
-                    "rollup": "max",
-                    "single": true
-                },
-                {
-                    "id": "control",
-                    "label": "Control system",
-                    "position": 2,
-                    "required": false,
-                    "rollup": "union",
-                    "single": false
-                },
-                {
-                    "id": "dissem",
-                    "label": "Dissemination",
-                    "position": 3,
-                    "required": false,
-                    "rollup": "union",
-                    "single": false
-                },
-                {
-                    "id": "rel",
-                    "label": "Releasable To",
-                    "position": 4,
-                    "required": false,
-                    "rollup": "intersection",
-                    "single": false
-                },
-                {
-                    "id": "disp",
-                    "label": "Display Only To",
-                    "position": 5,
-                    "required": false,
-                    "rollup": "intersection",
-                    "single": false
                 }
             ],
             "headers": { "x-ezclassify-resolved-version": "0.0.0" },
@@ -2832,12 +2589,6 @@
             "method": "POST",
             "statusCode": 200
         },
-        "bea94dd116e01a490ab87aeaf7d5d04def444bf0c480db662cea3fcf199c1381": {
-            "body": [],
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
-            "method": "GET",
-            "statusCode": 200
-        },
         "c2aa41c54d8ab14a19da8ff059c7ae496ab670f7829e06bafea78f2c7c0c1cb9": {
             "body": {
                 "resolution": {
@@ -3069,22 +2820,6 @@
             },
             "headers": { "x-ezclassify-resolved-version": "0.0.0" },
             "method": "POST",
-            "statusCode": 200
-        },
-        "d6b4e196c39de81bd96d835aca711c2fe98cb7e1a873c0adb07cc5b7344b7dcd": {
-            "body": {
-                "defaultRenderFormat": "default",
-                "id": "composer-pick",
-                "name": "Composer Pick",
-                "referenceSurfaceLabel": {
-                    "plural": "Handbooks",
-                    "singular": "Handbook"
-                },
-                "roleAware": false,
-                "version": "1.0.0"
-            },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
-            "method": "GET",
             "statusCode": 200
         },
         "da730a9b1442f405a9948cfad7413856c14f1eb781389204d961a196bf627ecc": {

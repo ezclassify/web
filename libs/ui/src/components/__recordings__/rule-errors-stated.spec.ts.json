@@ -257,26 +257,6 @@
             "method": "POST",
             "statusCode": 200
         },
-        "1ad0a2f352c215749dc4662236d5205d9ddfb0f3e468a8985663d53b3244270a": {
-            "body": [
-                {
-                    "categoryOrder": ["level", "caveat"],
-                    "categorySeparators": { "caveat": "/", "level": "/" },
-                    "categoryViews": {
-                        "caveat": "default",
-                        "level": "default"
-                    },
-                    "id": "default",
-                    "mode": "inline",
-                    "separator": "//",
-                    "separatorBefore": { "caveat": "//" },
-                    "surface": "marking"
-                }
-            ],
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
-            "method": "GET",
-            "statusCode": 200
-        },
         "2054f47a8ba4c9e437a611a84bd370375906c091b3af3723edd98f4b7b1726e5": {
             "body": {
                 "resolution": {
@@ -375,13 +355,6 @@
             },
             "headers": { "x-ezclassify-resolved-version": "0.0.0" },
             "method": "POST",
-            "statusCode": 200
-        },
-        "2a30e0f8d0c3685223d7adab6f1c7a28d56f93c07cf22fc86cd5e3a0b4c02a8d": {
-            "body": {
-                "contextId": "sbx-44b7392f937282fdce10c3fa51ec3fddf22fe91b7a20c5525b31afcd5549bd42"
-            },
-            "method": "PUT",
             "statusCode": 200
         },
         "2de5a27342d76ab041d4a3caca077b0cab4f0cc8acfdeabc08fa65b59ce2af38": {
@@ -635,12 +608,6 @@
             "method": "POST",
             "statusCode": 200
         },
-        "47cd3ee521462a9c9f3dcdbf6dc71688ce28b63dce6e2c8ff6a79b704a10dcce": {
-            "body": [],
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
-            "method": "GET",
-            "statusCode": 200
-        },
         "4adcbde0edc75f512725b6461b3e828edb21723a5aeda798d88d166cfe87bb0d": {
             "body": {
                 "resolution": {
@@ -698,25 +665,6 @@
             },
             "headers": { "x-ezclassify-resolved-version": "0.0.0" },
             "method": "POST",
-            "statusCode": 200
-        },
-        "4d72f13eb2bc4be62ccc4063733b572add77b5170b25242294e2b11f14c59c9a": {
-            "body": {
-                "defaultRenderFormat": "default",
-                "embeddedMarking": [
-                    { "pattern": "\\(([^)]+)\\)", "template": "({marking}) " }
-                ],
-                "id": "stated-fix-test",
-                "name": "Stated Fix Test",
-                "referenceSurfaceLabel": {
-                    "plural": "Handbooks",
-                    "singular": "Handbook"
-                },
-                "roleAware": false,
-                "version": "1.0.0"
-            },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
-            "method": "GET",
             "statusCode": 200
         },
         "4dd5409641201a68b6f22a234212d5e905bd1752146050760c24b27342c6d8e1": {
@@ -1392,63 +1340,6 @@
             "method": "POST",
             "statusCode": 200
         },
-        "8b74672df6e530854895322735b8cb056aea830cdd8208c279f981ecb7880ba0": {
-            "body": [
-                {
-                    "aliases": [],
-                    "categories": ["level"],
-                    "id": "LOW",
-                    "name": "LOW",
-                    "parents": [],
-                    "position": 1,
-                    "rank": 1,
-                    "views": { "default": "LOW" }
-                },
-                {
-                    "aliases": [],
-                    "categories": ["level"],
-                    "id": "HIGH",
-                    "name": "HIGH",
-                    "parents": [],
-                    "position": 2,
-                    "rank": 2,
-                    "views": { "default": "HIGH" }
-                },
-                {
-                    "aliases": [],
-                    "categories": ["caveat"],
-                    "id": "A",
-                    "name": "A",
-                    "parents": [],
-                    "position": 1,
-                    "rank": 1,
-                    "views": { "default": "A" }
-                },
-                {
-                    "aliases": [],
-                    "categories": ["caveat"],
-                    "id": "B",
-                    "name": "B",
-                    "parents": [],
-                    "position": 2,
-                    "rank": 2,
-                    "views": { "default": "B" }
-                },
-                {
-                    "aliases": [],
-                    "categories": ["caveat"],
-                    "id": "C",
-                    "name": "C",
-                    "parents": [],
-                    "position": 3,
-                    "rank": 3,
-                    "views": { "default": "C" }
-                }
-            ],
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
-            "method": "GET",
-            "statusCode": 200
-        },
         "8d4aa0782a9669f7f740328d758a241643eaf550ffa2d76cc5f17fb70f11fbdd": {
             "body": [
                 {
@@ -1524,29 +1415,6 @@
             },
             "headers": { "x-ezclassify-resolved-version": "0.0.0" },
             "method": "POST",
-            "statusCode": 200
-        },
-        "9021e80305fa201f4b46dcdbf8d41777ee574a4b2dc289f8f1dd9f754e8a1c7f": {
-            "body": [
-                {
-                    "id": "level",
-                    "label": "Level",
-                    "position": 1,
-                    "required": false,
-                    "rollup": "max",
-                    "single": true
-                },
-                {
-                    "id": "caveat",
-                    "label": "Caveat",
-                    "position": 2,
-                    "required": false,
-                    "rollup": "union",
-                    "single": false
-                }
-            ],
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
-            "method": "GET",
             "statusCode": 200
         },
         "95e7de64b15183cb8ac28fe0edc2b0e5081cebec4e0a37099ebe65c5428f9b07": {
@@ -1733,12 +1601,6 @@
             },
             "headers": { "x-ezclassify-resolved-version": "0.0.0" },
             "method": "POST",
-            "statusCode": 200
-        },
-        "a8f201201ee239da4024c4d223cdc6cafbd6f464f697284ba3e67796e1d71f9c": {
-            "body": [],
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
-            "method": "GET",
             "statusCode": 200
         },
         "b19a58251498c8d04c786e28493b425bb024bde5cc6b8433817bf15503530249": {
@@ -1990,28 +1852,6 @@
             },
             "headers": { "x-ezclassify-resolved-version": "0.0.0" },
             "method": "POST",
-            "statusCode": 200
-        },
-        "c4146e59c1e7bd3ec64d43df0599f9d5e1c1e063a1dbd1e1cb67489e1ae815cf": {
-            "body": {
-                "id": "sbx-44b7392f937282fdce10c3fa51ec3fddf22fe91b7a20c5525b31afcd5549bd42",
-                "scheme": {
-                    "id": "stated-fix-test",
-                    "resolvedVersion": "1.0.0",
-                    "version": "1.0.0"
-                },
-                "schemes": [
-                    {
-                        "id": "stated-fix-test",
-                        "roles": ["primary"],
-                        "selector": "stated-fix-test",
-                        "version": "1.0.0"
-                    }
-                ],
-                "version": "0.0.0"
-            },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
-            "method": "GET",
             "statusCode": 200
         },
         "c56ba4f0a46cb011f7c10bdcf49e4c0c821f3f7287842d43445139ff9915b957": {

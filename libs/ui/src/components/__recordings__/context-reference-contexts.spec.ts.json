@@ -60,33 +60,6 @@
             "method": "GET",
             "statusCode": 200
         },
-        "0f776219f71ef546f0108a2516c72a99fb0431047ac5257255d3686d558aba56": {
-            "body": [
-                {
-                    "aliases": [],
-                    "categories": ["tag"],
-                    "id": "PUBLIC",
-                    "name": "PUBLIC",
-                    "parents": [],
-                    "position": 0,
-                    "rank": 0,
-                    "views": { "default": "PUBLIC" }
-                },
-                {
-                    "aliases": [],
-                    "categories": ["tag"],
-                    "id": "LIMITED",
-                    "name": "LIMITED",
-                    "parents": [],
-                    "position": 0,
-                    "rank": 1,
-                    "views": { "default": "LIMITED" }
-                }
-            ],
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
-            "method": "GET",
-            "statusCode": 200
-        },
         "1116493b77174c9a160e7157e341f990c5f7acd2701eb0617a6e646eefb261d7": {
             "body": {
                 "contextId": "sbx-fc3c89908bc99c65f0af468f11f2ab4d0a569621549c607a8cd5bb8fd0417e19"
@@ -152,39 +125,7 @@
             "method": "GET",
             "statusCode": 200
         },
-        "2378834d64f28defd477a815642e05a21177307c2e345d9efec662941fb30920": {
-            "body": {
-                "defaultRenderFormat": "default",
-                "id": "label",
-                "name": "label scheme",
-                "referenceSurfaceLabel": {
-                    "plural": "Handbooks",
-                    "singular": "Handbook"
-                },
-                "roleAware": false,
-                "version": "1.0.0"
-            },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
-            "method": "GET",
-            "statusCode": 200
-        },
         "23c090aaab438dfb289d245fdaaca055ac5901344856b275fa6496754822c0ab": {
-            "body": [
-                {
-                    "categoryOrder": ["level"],
-                    "categorySeparators": { "level": " " },
-                    "id": "default",
-                    "mode": "inline",
-                    "separator": " ",
-                    "surface": "default",
-                    "view": "default"
-                }
-            ],
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
-            "method": "GET",
-            "statusCode": 200
-        },
-        "24337d41cc2769869b43a353cfcd7fb735f3d7ea2341ce876581580308184d24": {
             "body": [
                 {
                     "categoryOrder": ["level"],
@@ -303,41 +244,6 @@
             "method": "GET",
             "statusCode": 200
         },
-        "2e9c200ccf80a832019118ac429a5259e9bfc87a884790469eed3709c284fc9a": {
-            "body": {
-                "crosswalks": [
-                    {
-                        "id": "tier-to-label",
-                        "resolvedVersion": "1.0.0",
-                        "version": "1.0.0"
-                    }
-                ],
-                "id": "sbx-6840cc8ff89ce98ca533b193795360adb05ceb565930e38dd77d487b02641f58",
-                "scheme": {
-                    "id": "tier",
-                    "resolvedVersion": "1.0.0",
-                    "version": "1.0.0"
-                },
-                "schemes": [
-                    {
-                        "id": "tier",
-                        "roles": ["primary", "crosswalk-source"],
-                        "selector": "tier",
-                        "version": "1.0.0"
-                    },
-                    {
-                        "id": "label",
-                        "roles": ["crosswalk-target"],
-                        "selector": "label",
-                        "version": "1.0.0"
-                    }
-                ],
-                "version": "0.0.0"
-            },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
-            "method": "GET",
-            "statusCode": 200
-        },
         "313e86d861371d3df29cbe777763569e418969bdebca56621c6a6af79d47b915": {
             "body": [{ "id": "banner", "label": "Banner" }],
             "headers": { "x-ezclassify-resolved-version": "0.0.0" },
@@ -393,12 +299,6 @@
                     "views": { "default": "CTRL-A" }
                 }
             ],
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
-            "method": "GET",
-            "statusCode": 200
-        },
-        "343efd88409c126bd354eaca4cd14a4120fb1a77eb0500eb301fe57bf1051e32": {
-            "body": [],
             "headers": { "x-ezclassify-resolved-version": "0.0.0" },
             "method": "GET",
             "statusCode": 200
@@ -526,22 +426,6 @@
                     "views": { "default": "LIMITED" }
                 }
             ],
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
-            "method": "GET",
-            "statusCode": 200
-        },
-        "4442005a6f746bcf6d7ae7543d27822487ac44fbf866a57a36627bcb88617ef3": {
-            "body": {
-                "defaultRenderFormat": "default",
-                "id": "tier",
-                "name": "tier scheme",
-                "referenceSurfaceLabel": {
-                    "plural": "Handbooks",
-                    "singular": "Handbook"
-                },
-                "roleAware": false,
-                "version": "1.0.0"
-            },
             "headers": { "x-ezclassify-resolved-version": "0.0.0" },
             "method": "GET",
             "statusCode": 200
@@ -831,12 +715,6 @@
             "method": "POST",
             "statusCode": 200
         },
-        "828d34434615dd4821df8779bd48980a45af154afce453de06a8bbf5ac0fd37f": {
-            "body": [],
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
-            "method": "GET",
-            "statusCode": 200
-        },
         "88c42b3712910f66cd51d311509f6015d8ebed6dcbc951f6222cadc30e90ff3b": {
             "body": [
                 {
@@ -912,20 +790,6 @@
                     "required": false,
                     "rollup": "union",
                     "single": false
-                }
-            ],
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
-            "method": "GET",
-            "statusCode": 200
-        },
-        "90105f79347c9ac3eede1e5448323e8d044e889cd19779e6145fcce066b16311": {
-            "body": [
-                {
-                    "id": "level",
-                    "label": "level",
-                    "required": true,
-                    "rollup": "max",
-                    "single": true
                 }
             ],
             "headers": { "x-ezclassify-resolved-version": "0.0.0" },
@@ -1082,21 +946,8 @@
             "method": "GET",
             "statusCode": 200
         },
-        "b64812b2a307428d7c8c98cc2bb9dea6cbc7ffcf374a872e28168a6d24d7fca9": {
-            "body": {
-                "contextId": "sbx-6840cc8ff89ce98ca533b193795360adb05ceb565930e38dd77d487b02641f58"
-            },
-            "method": "PUT",
-            "statusCode": 200
-        },
         "badf477e578c914e0ed15f52efd22ff451d8afa9a62a3c65588582957933f6b5": {
             "body": [{ "id": "banner", "label": "Banner" }],
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
-            "method": "GET",
-            "statusCode": 200
-        },
-        "bc1017c283893fd13e39dabae74dac1a32b898a6e6d513624a642e19270f7291": {
-            "body": [],
             "headers": { "x-ezclassify-resolved-version": "0.0.0" },
             "method": "GET",
             "statusCode": 200
@@ -1138,22 +989,6 @@
         },
         "bdeb3e7af8539bc7e1d1bd81cd9ac0c0499524a48a42ff02a71b10b067e16049": {
             "body": [],
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
-            "method": "GET",
-            "statusCode": 200
-        },
-        "bdeff327feeeda73d0c41111be0a7fa8fe5763ce19f931c2004151ac0cd215f2": {
-            "body": [
-                {
-                    "categoryOrder": ["tag"],
-                    "categorySeparators": { "tag": " " },
-                    "id": "default",
-                    "mode": "inline",
-                    "separator": " ",
-                    "surface": "default",
-                    "view": "default"
-                }
-            ],
             "headers": { "x-ezclassify-resolved-version": "0.0.0" },
             "method": "GET",
             "statusCode": 200
@@ -1229,12 +1064,6 @@
             "method": "PUT",
             "statusCode": 200
         },
-        "ccd9fca18b52ed86dd3a8561a46797bdc731e056839a18b8da590292f19b47a7": {
-            "body": [],
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
-            "method": "GET",
-            "statusCode": 200
-        },
         "d070f85ae5ab889c73963e01719fa498c4166ae90cd210efbe96fa9ca88beb1d": {
             "body": [],
             "headers": { "x-ezclassify-resolved-version": "0.0.0" },
@@ -1266,20 +1095,6 @@
                 ],
                 "version": "0.0.0"
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
-            "method": "GET",
-            "statusCode": 200
-        },
-        "d6d7b1f519dc59ef1c085602d7d07bd81e244d6609a375797aeebfe707c4b308": {
-            "body": [
-                {
-                    "id": "tag",
-                    "label": "tag",
-                    "required": true,
-                    "rollup": "max",
-                    "single": true
-                }
-            ],
             "headers": { "x-ezclassify-resolved-version": "0.0.0" },
             "method": "GET",
             "statusCode": 200
@@ -1526,33 +1341,6 @@
                 "roleAware": false,
                 "version": "1.0.0"
             },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
-            "method": "GET",
-            "statusCode": 200
-        },
-        "f387a67a80a1305c1f497c58d5d6f8ab0db0d703c3f53e7a2185f287f7307434": {
-            "body": [
-                {
-                    "aliases": [],
-                    "categories": ["level"],
-                    "id": "LOW",
-                    "name": "LOW",
-                    "parents": [],
-                    "position": 0,
-                    "rank": 0,
-                    "views": { "default": "LOW" }
-                },
-                {
-                    "aliases": [],
-                    "categories": ["level"],
-                    "id": "HIGH",
-                    "name": "HIGH",
-                    "parents": [],
-                    "position": 0,
-                    "rank": 1,
-                    "views": { "default": "HIGH" }
-                }
-            ],
             "headers": { "x-ezclassify-resolved-version": "0.0.0" },
             "method": "GET",
             "statusCode": 200

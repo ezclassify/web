@@ -1507,26 +1507,6 @@
             "method": "POST",
             "statusCode": 200
         },
-        "276a069ee4f560bf59a749b743f856227559e07f305de89e24a16a345099c9c8": {
-            "body": [
-                {
-                    "categoryOrder": ["level", "caveat"],
-                    "categorySeparators": { "caveat": "/", "level": "/" },
-                    "categoryViews": {
-                        "caveat": "default",
-                        "level": "default"
-                    },
-                    "id": "default",
-                    "mode": "inline",
-                    "separator": "//",
-                    "separatorBefore": { "caveat": "//" },
-                    "surface": "marking"
-                }
-            ],
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
-            "method": "GET",
-            "statusCode": 200
-        },
         "28af101ff7a12c0a1d921d75f361cd3b5811b134c2e72b5b26aee2612fdb89f2": {
             "body": {
                 "resolution": {
@@ -1946,25 +1926,6 @@
             },
             "headers": { "x-ezclassify-resolved-version": "0.0.0" },
             "method": "POST",
-            "statusCode": 200
-        },
-        "34d1b8230403aeed8cfa8bc878cf3ffc04b00a2945c93e028b99edf749b19973": {
-            "body": {
-                "defaultRenderFormat": "default",
-                "embeddedMarking": [
-                    { "pattern": "\\(([^)]+)\\)", "template": "({marking}) " }
-                ],
-                "id": "composer-contract",
-                "name": "Composer Contract",
-                "referenceSurfaceLabel": {
-                    "plural": "Handbooks",
-                    "singular": "Handbook"
-                },
-                "roleAware": false,
-                "version": "1.0.0"
-            },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
-            "method": "GET",
             "statusCode": 200
         },
         "396631fc4d3ae0e3c1ec6662ac6a65a8dd4863aeb436275ede4913a9f66aa5a8": {
@@ -2999,29 +2960,6 @@
             "method": "POST",
             "statusCode": 200
         },
-        "541691423b0d6f128c8c6c6edd82e155debd9150d463f2b9aeb5e3d2f24d45d5": {
-            "body": [
-                {
-                    "id": "level",
-                    "label": "Level",
-                    "position": 1,
-                    "required": false,
-                    "rollup": "max",
-                    "single": true
-                },
-                {
-                    "id": "caveat",
-                    "label": "Caveat",
-                    "position": 2,
-                    "required": false,
-                    "rollup": "union",
-                    "single": false
-                }
-            ],
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
-            "method": "GET",
-            "statusCode": 200
-        },
         "550128a80e0bdfab3d7c18a150a4fdff5cf9a3f61bd0fbb873c2aff5a357ae04": {
             "body": {
                 "resolution": {
@@ -3147,12 +3085,6 @@
             },
             "headers": { "x-ezclassify-resolved-version": "0.0.0" },
             "method": "POST",
-            "statusCode": 200
-        },
-        "59e4529260ba3e22150cb27356dd2e8b2f965e6353560d76bae11d15d0423e54": {
-            "body": [],
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
-            "method": "GET",
             "statusCode": 200
         },
         "5b4ea898916e6d4aedfb8017162c037ee5badb916cb4dbb78158b0f4e24d214a": {
@@ -4505,53 +4437,6 @@
             },
             "headers": { "x-ezclassify-resolved-version": "0.0.0" },
             "method": "POST",
-            "statusCode": 200
-        },
-        "8d7b65bee0a3817563d4539fcc1221e638b7967d4dec6c056d3b50514e05d942": {
-            "body": [
-                {
-                    "aliases": [],
-                    "categories": ["level"],
-                    "id": "U",
-                    "name": "Unclassified",
-                    "parents": [],
-                    "position": 1,
-                    "rank": 1,
-                    "views": { "default": "UNCLASSIFIED" }
-                },
-                {
-                    "aliases": [],
-                    "categories": ["level"],
-                    "id": "S",
-                    "name": "Secret",
-                    "parents": [],
-                    "position": 2,
-                    "rank": 2,
-                    "views": { "default": "SECRET" }
-                },
-                {
-                    "aliases": [],
-                    "categories": ["caveat"],
-                    "id": "NF",
-                    "name": "Noforn",
-                    "parents": [],
-                    "position": 1,
-                    "rank": 1,
-                    "views": { "default": "NOFORN" }
-                },
-                {
-                    "aliases": [],
-                    "categories": ["caveat"],
-                    "id": "OC",
-                    "name": "Orcon",
-                    "parents": [],
-                    "position": 2,
-                    "rank": 2,
-                    "views": { "default": "ORCON" }
-                }
-            ],
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
-            "method": "GET",
             "statusCode": 200
         },
         "92388bbd42c67065722135ce61584a518bd80e015ab030a06d155b983d3736c1": {
@@ -6188,28 +6073,6 @@
             "method": "POST",
             "statusCode": 200
         },
-        "c3926ced4e4f96415a27d6db975c49d385c69c3868e80ab1f2d7a5549124a8e4": {
-            "body": {
-                "id": "sbx-3982b0dbf285f6c0286f05458038c85daecd33611d8148f0698a6d849c8329e8",
-                "scheme": {
-                    "id": "composer-contract",
-                    "resolvedVersion": "1.0.0",
-                    "version": "1.0.0"
-                },
-                "schemes": [
-                    {
-                        "id": "composer-contract",
-                        "roles": ["primary"],
-                        "selector": "composer-contract",
-                        "version": "1.0.0"
-                    }
-                ],
-                "version": "0.0.0"
-            },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
-            "method": "GET",
-            "statusCode": 200
-        },
         "c47473cd501453e87a3019b17a9467e25d5ff87401659b3836a372a963843eed": {
             "body": {
                 "resolution": {
@@ -6596,12 +6459,6 @@
             },
             "headers": { "x-ezclassify-resolved-version": "0.0.0" },
             "method": "POST",
-            "statusCode": 200
-        },
-        "cfdabf6e6c030e425bd01a8a5b51570876a2e930a161df778160637a73e83993": {
-            "body": [],
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
-            "method": "GET",
             "statusCode": 200
         },
         "d0e5244a27f153dd38ee97fe7aabaf4ec7b65ee5bf504667df420b39e57c4080": {
@@ -7687,13 +7544,6 @@
             },
             "headers": { "x-ezclassify-resolved-version": "0.0.0" },
             "method": "POST",
-            "statusCode": 200
-        },
-        "fd7cd128937b5386758dc77754f37b3bd133e9ebef7bca3a178fb92101f7970a": {
-            "body": {
-                "contextId": "sbx-3982b0dbf285f6c0286f05458038c85daecd33611d8148f0698a6d849c8329e8"
-            },
-            "method": "PUT",
             "statusCode": 200
         },
         "fe7ec4f861157247faeaee6275e099e0f3e6eafc86f963baa3ee50a1d3c72af0": {

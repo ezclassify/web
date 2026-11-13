@@ -63,35 +63,6 @@
             "method": "POST",
             "statusCode": 200
         },
-        "039e7370885a857173538cb09cce4200437fc8788dcc3a97fce28f4da001d460": {
-            "body": {
-                "contextId": "sbx-563dcea4cc641c4520b93b1f1c664ce03427eba49decf68b36803b5da84d1a98"
-            },
-            "method": "PUT",
-            "statusCode": 200
-        },
-        "08a73c446ee648601062464097026242c1e8f0fc7cf8a77eacfbc113e37c8583": {
-            "body": {
-                "id": "sbx-87d3aeddd72241c41dc5145f922ad16070c388fcf6bf251f11d4ca5861e000ab",
-                "scheme": {
-                    "id": "marked-bare",
-                    "resolvedVersion": "1.0.0",
-                    "version": "1.0.0"
-                },
-                "schemes": [
-                    {
-                        "id": "marked-bare",
-                        "roles": ["primary"],
-                        "selector": "marked-bare",
-                        "version": "1.0.0"
-                    }
-                ],
-                "version": "0.0.0"
-            },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
-            "method": "GET",
-            "statusCode": 200
-        },
         "0eeed68bede351e44bd5ef92b0ab5a2ef92273b8533787b7ba1eadef8efeb2be": {
             "body": {
                 "resolution": {
@@ -194,21 +165,6 @@
             "method": "GET",
             "statusCode": 200
         },
-        "1817e57642e014ed8bed2111cfa2195950ee98517adbd468e3f85175de2a5bc2": {
-            "body": [
-                {
-                    "id": "level",
-                    "label": "Level",
-                    "position": 1,
-                    "required": false,
-                    "rollup": "max",
-                    "single": true
-                }
-            ],
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
-            "method": "GET",
-            "statusCode": 200
-        },
         "18a9916fc1171cfde674853f70ec25c606cfbc8c504f60f22d973a9c4f06f993": {
             "body": {
                 "resolution": {
@@ -272,25 +228,6 @@
                     "single": true
                 }
             ],
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
-            "method": "GET",
-            "statusCode": 200
-        },
-        "1dbe66b91bacbb7d17d7c225a473a71b330870d406a8892dda9bd4a0db1bfa19": {
-            "body": {
-                "defaultRenderFormat": "portion",
-                "embeddedMarking": [
-                    { "pattern": "\\(([^)]+)\\)", "template": "({marking}) " }
-                ],
-                "id": "marked-test",
-                "name": "Marked Test",
-                "referenceSurfaceLabel": {
-                    "plural": "Handbooks",
-                    "singular": "Handbook"
-                },
-                "roleAware": false,
-                "version": "1.0.0"
-            },
             "headers": { "x-ezclassify-resolved-version": "0.0.0" },
             "method": "GET",
             "statusCode": 200
@@ -361,21 +298,6 @@
             "method": "POST",
             "statusCode": 200
         },
-        "240bff986398db00d21c9ae3afdf5fd866d6412494dfa9d8f13509c487f6f1cb": {
-            "body": [
-                {
-                    "id": "level",
-                    "label": "Level",
-                    "position": 1,
-                    "required": false,
-                    "rollup": "max",
-                    "single": true
-                }
-            ],
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
-            "method": "GET",
-            "statusCode": 200
-        },
         "2b5cb163bc910b7a60b197692cbb16c1aeb3cf2994279975a2311882de15fa08": {
             "body": [
                 {
@@ -404,28 +326,6 @@
                     "surface": "marking"
                 }
             ],
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
-            "method": "GET",
-            "statusCode": 200
-        },
-        "2e66ca2c3c0bc8d1b3c956168553cdca15a3b77b3acd4d02206d60af7e3fb0fb": {
-            "body": {
-                "id": "sbx-c2ad1b497fc03128633195848e6d72a82bdd5534b8f7c092260b7c8d7b40232d",
-                "scheme": {
-                    "id": "marked-test",
-                    "resolvedVersion": "1.0.0",
-                    "version": "1.0.0"
-                },
-                "schemes": [
-                    {
-                        "id": "marked-test",
-                        "roles": ["primary"],
-                        "selector": "marked-test",
-                        "version": "1.0.0"
-                    }
-                ],
-                "version": "0.0.0"
-            },
             "headers": { "x-ezclassify-resolved-version": "0.0.0" },
             "method": "GET",
             "statusCode": 200
@@ -613,32 +513,6 @@
             },
             "headers": { "x-ezclassify-resolved-version": "0.0.0" },
             "method": "POST",
-            "statusCode": 200
-        },
-        "36cdea73cbd2a698e13a4f4424161362765d1ad35af433180b1b639f0fb187aa": {
-            "body": {
-                "contextId": "sbx-c2ad1b497fc03128633195848e6d72a82bdd5534b8f7c092260b7c8d7b40232d"
-            },
-            "method": "PUT",
-            "statusCode": 200
-        },
-        "37487e4539b2809ae84da94e6071b9574d459813f0a8d90eb98cddeb81a0ee4f": {
-            "body": {
-                "defaultRenderFormat": "portion",
-                "embeddedMarking": [
-                    { "pattern": "\\(([^)]+)\\)", "template": "({marking}) " }
-                ],
-                "id": "marked-bare",
-                "name": "Marked Test Bare",
-                "referenceSurfaceLabel": {
-                    "plural": "Handbooks",
-                    "singular": "Handbook"
-                },
-                "roleAware": false,
-                "version": "1.0.0"
-            },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
-            "method": "GET",
             "statusCode": 200
         },
         "3a166ec0323fbf12fdc3a4ffff38c0cb76163916e27de2bb79e7cb8bac097a9b": {
@@ -985,22 +859,6 @@
             "method": "GET",
             "statusCode": 200
         },
-        "506c915aed06344d678b0da73152780d321a1e6074ccf35ce4258e502540a6a1": {
-            "body": [
-                {
-                    "categoryOrder": ["level"],
-                    "categorySeparators": { "level": "/" },
-                    "categoryViews": { "level": "default" },
-                    "id": "portion",
-                    "mode": "inline",
-                    "separator": "//",
-                    "surface": "marking"
-                }
-            ],
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
-            "method": "GET",
-            "statusCode": 200
-        },
         "5137711cc81e03297877c6ef6ae3288bb6b97b2aa5285469f44dafed20f09479": {
             "body": {
                 "resolution": {
@@ -1198,12 +1056,6 @@
             },
             "headers": { "x-ezclassify-resolved-version": "0.0.0" },
             "method": "POST",
-            "statusCode": 200
-        },
-        "60dee6c914f3109f88b447ce749c76dd0075b17d350be53832cc92c7ea906f28": {
-            "body": [],
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
-            "method": "GET",
             "statusCode": 200
         },
         "618670d16ec3e7fd282d952bd9d1af9d8b8c135da6f6fb79d7c461416cb666ba": {
@@ -1716,28 +1568,6 @@
             "method": "POST",
             "statusCode": 200
         },
-        "7ae811279fb50c1f9387540e9d154873ecead424378dfd657801b7045d83ed85": {
-            "body": {
-                "id": "sbx-563dcea4cc641c4520b93b1f1c664ce03427eba49decf68b36803b5da84d1a98",
-                "scheme": {
-                    "id": "mta-fav-test",
-                    "resolvedVersion": "1.0.0",
-                    "version": "1.0.0"
-                },
-                "schemes": [
-                    {
-                        "id": "mta-fav-test",
-                        "roles": ["primary"],
-                        "selector": "mta-fav-test",
-                        "version": "1.0.0"
-                    }
-                ],
-                "version": "0.0.0"
-            },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
-            "method": "GET",
-            "statusCode": 200
-        },
         "7bc3dcf0818eccc8276831b1cd47895a634273ba506c57689cfd2db82045587c": {
             "body": [],
             "headers": { "x-ezclassify-resolved-version": "0.0.0" },
@@ -1868,33 +1698,6 @@
             "method": "POST",
             "statusCode": 200
         },
-        "7fdf44ca255c82156426707ec0d177fc1770ac9adfbb34a65bbae6721678966a": {
-            "body": [
-                {
-                    "aliases": [],
-                    "categories": ["level"],
-                    "id": "U",
-                    "name": "Unclassified",
-                    "parents": [],
-                    "position": 1,
-                    "rank": 1,
-                    "views": { "default": "U" }
-                },
-                {
-                    "aliases": [],
-                    "categories": ["level"],
-                    "id": "S",
-                    "name": "Secret",
-                    "parents": [],
-                    "position": 2,
-                    "rank": 2,
-                    "views": { "default": "S" }
-                }
-            ],
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
-            "method": "GET",
-            "statusCode": 200
-        },
         "803417418f02239ce0c43ca660cad5bafa2a9218a0d4ee16828cea9a05e87503": {
             "body": {
                 "resolution": {
@@ -1975,33 +1778,6 @@
             "method": "GET",
             "statusCode": 200
         },
-        "82e0060e56a2d4bc1919c739d8f5333fc80ac9800244cfbe962e3cfd5bd1ce1d": {
-            "body": [
-                {
-                    "aliases": [],
-                    "categories": ["level"],
-                    "id": "U",
-                    "name": "Unclassified",
-                    "parents": [],
-                    "position": 1,
-                    "rank": 1,
-                    "views": { "default": "U" }
-                },
-                {
-                    "aliases": [],
-                    "categories": ["level"],
-                    "id": "S",
-                    "name": "Secret",
-                    "parents": [],
-                    "position": 2,
-                    "rank": 2,
-                    "views": { "default": "S" }
-                }
-            ],
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
-            "method": "GET",
-            "statusCode": 200
-        },
         "84445b5fcc4e87a4302a1c2c98beb4adf2d7a95cdf5749d4bc8b06e47d397c32": {
             "body": {
                 "resolution": {
@@ -2041,12 +1817,6 @@
             },
             "headers": { "x-ezclassify-resolved-version": "0.0.0" },
             "method": "POST",
-            "statusCode": 200
-        },
-        "8814285ea9620fc07016e044b62d9370bfc29737b9ab3473c1883af086dcf194": {
-            "body": [],
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
-            "method": "GET",
             "statusCode": 200
         },
         "891036cf7de6b19560905a07a7f7601ddf01cf59b8dfa869e789aafe3f89964f": {
@@ -2301,12 +2071,6 @@
             "method": "POST",
             "statusCode": 200
         },
-        "99e69ad9966c6f98e084ac1ad19cc19c12222087b8bd93ae35e783f58d9be8b6": {
-            "body": [],
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
-            "method": "GET",
-            "statusCode": 200
-        },
         "9a01a89edd4c9ebef4bfa21c5dfaded3ce34fec7c79d7604606ca10572407752": {
             "body": [
                 {
@@ -2373,25 +2137,6 @@
             "method": "POST",
             "statusCode": 200
         },
-        "9d9026c666f41090fcc76f3f7364f1d097d964be263f9abbcdc4a5ea09ccff98": {
-            "body": {
-                "defaultRenderFormat": "portion",
-                "embeddedMarking": [
-                    { "pattern": "\\(([^)]+)\\)", "template": "({marking}) " }
-                ],
-                "id": "mta-fav-test",
-                "name": "MarkedTextArea Favorites Test",
-                "referenceSurfaceLabel": {
-                    "plural": "Handbooks",
-                    "singular": "Handbook"
-                },
-                "roleAware": false,
-                "version": "1.0.0"
-            },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
-            "method": "GET",
-            "statusCode": 200
-        },
         "a3b4b0811b19bc07987f0e6ff7020163090bf4ebbbdbc5f6be642eb11c425bee": {
             "body": {
                 "resolution": {
@@ -2456,28 +2201,6 @@
                 "contextId": "sbx-144664b91f12ad7cdb079287c35937fe51cdf493ee529327509925d890afe4b0"
             },
             "method": "PUT",
-            "statusCode": 200
-        },
-        "a770e2a9b670febd6df806037493d8e3f27e6441b0f60299f8813155c6bec342": {
-            "body": [
-                {
-                    "categoryOrder": ["level"],
-                    "categorySeparators": { "level": "/" },
-                    "categoryViews": { "level": "default" },
-                    "id": "portion",
-                    "mode": "inline",
-                    "separator": "//",
-                    "surface": "marking"
-                }
-            ],
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
-            "method": "GET",
-            "statusCode": 200
-        },
-        "a785fd12128c775a39c67d55d5b9fac92dfcfbd7a30e2574502123035b85f42c": {
-            "body": [],
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
-            "method": "GET",
             "statusCode": 200
         },
         "adf9c9aa70995eb0eb77c9b6e12a1d5257a3a2bdeb7768bc5ac9568a57391e18": {
@@ -2578,12 +2301,6 @@
             },
             "headers": { "x-ezclassify-resolved-version": "0.0.0" },
             "method": "POST",
-            "statusCode": 200
-        },
-        "aec1422bcbc00ec0212c76a2915b7a5ce9753698c51f3fb518c52c20b543c5cd": {
-            "body": [],
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
-            "method": "GET",
             "statusCode": 200
         },
         "afbd3ee5a9d9e431367cfd3fad72080dc6d737f70a68c6d5b237b5ede31ae7d9": {
@@ -3097,33 +2814,6 @@
             "method": "POST",
             "statusCode": 200
         },
-        "c5a9ae33d89986ceb869d4c9ff1ef12bc8cfd027d1f759e9f0bf1aeba5274ad0": {
-            "body": [
-                {
-                    "aliases": [],
-                    "categories": ["level"],
-                    "id": "U",
-                    "name": "Unclassified",
-                    "parents": [],
-                    "position": 1,
-                    "rank": 1,
-                    "views": { "default": "U" }
-                },
-                {
-                    "aliases": [],
-                    "categories": ["level"],
-                    "id": "S",
-                    "name": "Secret",
-                    "parents": [],
-                    "position": 2,
-                    "rank": 2,
-                    "views": { "default": "S" }
-                }
-            ],
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
-            "method": "GET",
-            "statusCode": 200
-        },
         "c7329a081db0dbf920395a6bf7d610f9604556f09cd70a41005e557e77fa2d85": {
             "body": [
                 {
@@ -3211,12 +2901,6 @@
             },
             "headers": { "x-ezclassify-resolved-version": "0.0.0" },
             "method": "POST",
-            "statusCode": 200
-        },
-        "ca748470610b0f18a9b4376b631b3f5b8f50d75d3b1270f89f162d05f6a470a3": {
-            "body": [],
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
-            "method": "GET",
             "statusCode": 200
         },
         "ccea87df7f856a171e728f286ad394c4c56c845be1e85fe6943f4af74472fde1": {
@@ -3490,30 +3174,8 @@
             "method": "POST",
             "statusCode": 200
         },
-        "d5138653a6b24559c91920179e73fd21336cbd21f44f5f5e980e179740cc9ab5": {
-            "body": {
-                "contextId": "sbx-87d3aeddd72241c41dc5145f922ad16070c388fcf6bf251f11d4ca5861e000ab"
-            },
-            "method": "PUT",
-            "statusCode": 200
-        },
         "db3bf77b93a0215f3a3002db854785cfbc2c456f9999e81ff8dc7668fdd92f8f": {
             "body": [],
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
-            "method": "GET",
-            "statusCode": 200
-        },
-        "df43618768437d6f5f2ef1b25e2c2d8120c13e11d0bbbff447a97d94508acf26": {
-            "body": [
-                {
-                    "id": "level",
-                    "label": "Level",
-                    "position": 1,
-                    "required": false,
-                    "rollup": "max",
-                    "single": true
-                }
-            ],
             "headers": { "x-ezclassify-resolved-version": "0.0.0" },
             "method": "GET",
             "statusCode": 200
@@ -3785,22 +3447,6 @@
             },
             "headers": { "x-ezclassify-resolved-version": "0.0.0" },
             "method": "POST",
-            "statusCode": 200
-        },
-        "ee38ed84709bbe36e95794af50de6e981f775ff2857051115060447363575017": {
-            "body": [
-                {
-                    "categoryOrder": ["level"],
-                    "categorySeparators": { "level": "/" },
-                    "categoryViews": { "level": "default" },
-                    "id": "portion",
-                    "mode": "inline",
-                    "separator": "//",
-                    "surface": "marking"
-                }
-            ],
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
-            "method": "GET",
             "statusCode": 200
         },
         "ee8129af1cda56b14a0bd342a1a2284c18f5e1a0939b9d783d61c8ebc1ccc766": {

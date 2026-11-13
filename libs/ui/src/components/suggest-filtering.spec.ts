@@ -398,7 +398,7 @@ describe('store-driven suggest filtering (facet subscription)', () => {
             container
                 .querySelector<HTMLButtonElement>('.ez-decision-flow__option')
                 ?.focus();
-            await new Promise((resolve) => setTimeout(resolve, 0));
+            await demoRuntimeSettled();
 
             const optionNames = Array.from(
                 container.querySelectorAll('.ez-decision-flow__option'),

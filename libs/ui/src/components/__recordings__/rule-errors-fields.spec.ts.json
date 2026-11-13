@@ -275,26 +275,6 @@
             "method": "GET",
             "statusCode": 200
         },
-        "179f4f96df1b05b90e013e85f863f7e68b2b13d8f606e764be146a928cbc7c83": {
-            "body": [
-                {
-                    "categoryOrder": ["level", "caveat"],
-                    "categorySeparators": { "caveat": "/", "level": "/" },
-                    "categoryViews": {
-                        "caveat": "default",
-                        "level": "default"
-                    },
-                    "id": "default",
-                    "mode": "inline",
-                    "separator": "//",
-                    "separatorBefore": { "caveat": "//" },
-                    "surface": "marking"
-                }
-            ],
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
-            "method": "GET",
-            "statusCode": 200
-        },
         "18037fd06f3e6c0e20e5de6a5c177924a84bad30e34fef806a82827d9e05ef5b": {
             "body": {
                 "resolution": {
@@ -450,72 +430,6 @@
             "method": "GET",
             "statusCode": 200
         },
-        "41e884c8e163c0aeb892c8161504776fffc975c6d2a330807954bca80c1a653f": {
-            "body": {
-                "id": "sbx-da57903be7d37a2e069f37a45cbb57b1128c017b64d335027dba76520881b881",
-                "scheme": {
-                    "id": "rule-errors-test",
-                    "resolvedVersion": "1.0.0",
-                    "version": "1.0.0"
-                },
-                "schemes": [
-                    {
-                        "id": "rule-errors-test",
-                        "roles": ["primary"],
-                        "selector": "rule-errors-test",
-                        "version": "1.0.0"
-                    }
-                ],
-                "version": "0.0.0"
-            },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
-            "method": "GET",
-            "statusCode": 200
-        },
-        "453a38297648981dcabd9ee922afc6f21f040271926f51fb3dbd245d99e091b8": {
-            "body": [
-                {
-                    "aliases": [],
-                    "categories": ["level"],
-                    "id": "LOW",
-                    "name": "LOW",
-                    "parents": [],
-                    "position": 1,
-                    "rank": 1,
-                    "views": { "default": "LOW" }
-                },
-                {
-                    "aliases": [],
-                    "categories": ["level"],
-                    "id": "HIGH",
-                    "name": "HIGH",
-                    "parents": [],
-                    "position": 2,
-                    "rank": 2,
-                    "views": { "default": "HIGH" }
-                },
-                {
-                    "aliases": [],
-                    "categories": ["caveat"],
-                    "id": "HOLD",
-                    "name": "HOLD",
-                    "parents": [],
-                    "position": 1,
-                    "rank": 1,
-                    "views": { "default": "HOLD" }
-                }
-            ],
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
-            "method": "GET",
-            "statusCode": 200
-        },
-        "5498cae24d9c60be4cd30bb276bed6ab4bd91394d7a4c4a009363530e984a0bf": {
-            "body": {
-                "contextId": "sbx-da57903be7d37a2e069f37a45cbb57b1128c017b64d335027dba76520881b881"
-            },
-            "method": "PUT",
-            "statusCode": 200
-        },
         "733f3ad29c5d72c5d7a5fec1f792dc554ba37202c518890bc48931b96f65b7a2": {
             "body": {
                 "resolution": {
@@ -564,31 +478,6 @@
             "statusCode": 200
         },
         "7c2ec297003611165143f27cabd5c927666834e8f5573314363cf57faa17d896": {
-            "body": [],
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
-            "method": "GET",
-            "statusCode": 200
-        },
-        "890508d6961dfa74aa7be22a8cede04160bf5a4b0974a61d1ba42b64b3a47077": {
-            "body": {
-                "defaultRenderFormat": "default",
-                "embeddedMarking": [
-                    { "pattern": "\\(([^)]+)\\)", "template": "({marking}) " }
-                ],
-                "id": "rule-errors-test",
-                "name": "Rule Errors Test",
-                "referenceSurfaceLabel": {
-                    "plural": "Handbooks",
-                    "singular": "Handbook"
-                },
-                "roleAware": false,
-                "version": "1.0.0"
-            },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
-            "method": "GET",
-            "statusCode": 200
-        },
-        "8e718442c505097e2ca81e84b546cfd14ea9935970279bd0a73c0112b629e2f2": {
             "body": [],
             "headers": { "x-ezclassify-resolved-version": "0.0.0" },
             "method": "GET",
@@ -730,35 +619,6 @@
                     "surface": "marking"
                 }
             ],
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
-            "method": "GET",
-            "statusCode": 200
-        },
-        "a8b2b103b64a594796643499bddbecffe58773e755fe8988a59b30a4f7096ab4": {
-            "body": [
-                {
-                    "id": "level",
-                    "label": "Level",
-                    "position": 1,
-                    "required": false,
-                    "rollup": "max",
-                    "single": true
-                },
-                {
-                    "id": "caveat",
-                    "label": "Caveat",
-                    "position": 2,
-                    "required": false,
-                    "rollup": "union",
-                    "single": false
-                }
-            ],
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
-            "method": "GET",
-            "statusCode": 200
-        },
-        "aa093cab80d347e62825c9ba2ea54f549c1cace38cd48390545a9be3195a14c1": {
-            "body": [],
             "headers": { "x-ezclassify-resolved-version": "0.0.0" },
             "method": "GET",
             "statusCode": 200
@@ -966,49 +826,6 @@
                         "unmatched": []
                     },
                     "rendered": "HIGH//HOLD",
-                    "renders": {},
-                    "valid": true,
-                    "warnings": []
-                }
-            },
-            "headers": { "x-ezclassify-resolved-version": "0.0.0" },
-            "method": "POST",
-            "statusCode": 200
-        },
-        "ebc8c548eaac179357b6a120cb418aff09fd6c1a2e81aff247c561aa7e2ee29f": {
-            "body": {
-                "resolution": {
-                    "artifacts": [
-                        {
-                            "id": "rule-errors-test",
-                            "kind": "scheme",
-                            "version": "1.0.0"
-                        },
-                        {
-                            "id": "sbx-03aa024b9ec553eec837198ae35b9dd5e1f01c638c00d68df0ad9f69dd2ea58e",
-                            "kind": "context",
-                            "version": "0.0.0"
-                        }
-                    ],
-                    "contextId": "sbx-03aa024b9ec553eec837198ae35b9dd5e1f01c638c00d68df0ad9f69dd2ea58e",
-                    "requestedVersion": "0.0.0",
-                    "resolvedVersion": "0.0.0"
-                },
-                "result": {
-                    "appliedFixes": [],
-                    "assertions": [],
-                    "assessment": {
-                        "collapsed": [],
-                        "conflicts": [],
-                        "emitted": [],
-                        "omitted": [],
-                        "unrepresentable": []
-                    },
-                    "errors": [],
-                    "inputWasValid": true,
-                    "notices": [],
-                    "proposedFixes": [],
-                    "rendered": "",
                     "renders": {},
                     "valid": true,
                     "warnings": []
