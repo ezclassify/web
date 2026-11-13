@@ -20,6 +20,8 @@ export interface ReplayerRecording {
 export type LookupResult =
     | {
           kind: 'hit';
+          /** The recording key that answered. */
+          key: string;
           statusCode: number;
           body: unknown;
           headers: Record<string, string>;
@@ -41,6 +43,7 @@ export function lookup(
     if (hit !== undefined) {
         return {
             kind: 'hit',
+            key,
             statusCode: hit.statusCode,
             body: hit.body,
             headers: hit.headers ?? {},

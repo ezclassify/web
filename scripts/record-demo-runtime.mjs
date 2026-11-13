@@ -3,8 +3,8 @@
  * The maintainer lane: record every spec's demo-runtime traffic, and check that
  * the committed recordings are fresh.
  *
- * Npm run record delete every recordings file and record afresh npm run
- * check:recordings the same, then fail if anything differs from Git
+ *     npm run record             delete every recordings file and record afresh
+ *     npm run check:recordings   the same, then fail if anything differs from Git
  *
  * Specs reach the demo runtime through `test-support/demo-runtime.ts`. In the
  * public lane they replay `__recordings__/*.json`; with `EZCLASSIFY_RECORD=1`
@@ -20,6 +20,12 @@
  * that leaves every file unchanged sent nothing new; that is the recording. A
  * run that does not settle within the pass limit fails, because a replay of it
  * would not be repeatable.
+ *
+ * A live pass also sends requests a replay never does, because it answers at
+ * live speed. So the run ends with one replay of the public lane that keeps
+ * only the answers it used (`EZCLASSIFY_PRUNE_RECORDINGS=1`): what is committed
+ * is exactly what the public lane replays, and it comes out the same however
+ * the live passes were timed.
  *
  * The check is the freshness check. Recording from nothing against the current
  * engine and content must reproduce the committed files byte for byte, so a
@@ -80,19 +86,24 @@ function digest() {
     return hash.digest('hex');
 }
 
-function recordPass(pass) {
-    console.log(`\n=== record pass ${pass} ===`);
+/** Run every test project once with `env` added; exit when any fails. */
+function runSuite(label, env) {
+    console.log(`\n=== ${label} ===`);
     const run = spawnSync(process.execPath, ['scripts/run-test-projects.mjs'], {
         cwd: ROOT,
         stdio: 'inherit',
-        env: { ...process.env, EZCLASSIFY_RECORD: '1' },
+        env: { ...process.env, ...env },
     });
     if (run.status !== 0) {
         console.error(
-            `record pass ${pass} failed; nothing is recorded until every spec passes`,
+            `${label} failed; nothing is recorded until every spec passes`,
         );
         process.exit(1);
     }
+}
+
+function recordPass(pass) {
+    runSuite(`record pass ${pass}`, { EZCLASSIFY_RECORD: '1' });
 }
 
 const check = process.argv.includes('--check');
@@ -116,6 +127,10 @@ if (!settled) {
     );
     process.exit(1);
 }
+runSuite('pruning replay', {
+    EZCLASSIFY_RECORD: '0',
+    EZCLASSIFY_PRUNE_RECORDINGS: '1',
+});
 console.log(`\nrecorded ${recordingFiles().length} recordings file(s)`);
 
 if (check) {

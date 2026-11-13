@@ -13,24 +13,37 @@
  *   Valley among them) are the ones the Playground serves. Assembly reads the
  *   content checkouts the manifest names.
  *
- * The build runs `cargo build -p ezclassify-demo-runtime --features provide` in
- * the engine checkout with `CARGO_BUILD_JOBS=4`, into whatever target directory
- * cargo uses there, and takes the binary path from cargo's own build messages.
- * The runtime listens on a loopback port the kernel picks; the setup reads the
- * address from the runtime's startup log, waits a bounded time for it to answer
- * `/v1/ready`, and checks that it lists every Context of the set.
+ * The build runs `cargo build -p ezclassify-demo-runtime --features provide`
+ * with `CARGO_BUILD_JOBS=4` into the engine checkout's `target`, on the engine
+ * source of the commit in `engine.pin`, which it extracts from that checkout
+ * with `git archive`; the checkout's own branch and edits do not matter. The
+ * binary path comes from cargo's own build messages, and a build is reused
+ * while the pin and the assembled demo set are unchanged. The runtime listens
+ * on a loopback port the kernel picks; the setup reads the address from the
+ * runtime's startup log, waits a bounded time for it to answer `/v1/ready`, and
+ * checks that it lists every Context of the set.
  *
- * Recordings have to be reproducible, so the Cedar Valley documents the set is
- * assembled from come from the community-content commit in
- * `community-content.pin`: the setup refuses a sibling checkout whose
- * `scheme-folder` differs from that commit, committed or not. Moving the pin
- * and re-recording is one change.
+ * Recordings have to be reproducible from this repository, so every input is
+ * pinned in `test-support/<checkout>.pin`: the engine source as above, and the
+ * community-content `scheme-folder` the Cedar Valley documents come from and
+ * orchestration's assembly script and manifest, which the setup refuses when
+ * they differ from their pins in any way, committed, edited or untracked.
+ * Moving a pin and re-recording is one change.
  *
  * Specs reach it through `test-support/demo-runtime.ts`, which reads the origin
  * and health this setup provides.
  */
 import { spawn, spawnSync, type ChildProcess } from 'node:child_process';
-import { existsSync, readFileSync, readdirSync } from 'node:fs';
+import { createHash } from 'node:crypto';
+import {
+    copyFileSync,
+    existsSync,
+    mkdirSync,
+    readFileSync,
+    readdirSync,
+    renameSync,
+    rmSync,
+} from 'node:fs';
 import * as path from 'node:path';
 import type { TestProject } from 'vitest/node';
 import { RECORD_VARIABLE, recording } from './record-mode';
@@ -88,40 +101,122 @@ function run(
     return result.stdout;
 }
 
-/** The community-content commit the recordings are made from. */
-const CONTENT_PIN = path.join(import.meta.dirname, 'community-content.pin');
+/** Where the pins of the checkouts the recordings are made from live. */
+const PINS = import.meta.dirname;
 
-/** Refuse a community-content checkout whose scheme folder is not the pin's. */
-function requirePinnedContent(): void {
-    const content = sibling('community-content', 'scheme-folder');
-    const pin = readFileSync(CONTENT_PIN, 'utf8').trim();
-    const diff = spawnSync(
-        'git',
-        ['diff', '--quiet', pin, '--', 'scheme-folder'],
-        {
-            cwd: content,
-            encoding: 'utf8',
-        },
-    );
-    if (diff.status !== 0) {
-        throw new Error(
-            `${content}/scheme-folder is not community-content ${pin} ` +
-                '(test-support/community-content.pin)' +
-                (diff.status === 1 ? '' : `: ${diff.stderr.trim()}`) +
-                '. Check out the pinned commit, or move the pin and re-record.',
-        );
-    }
+/** A pinned commit, read from `test-support/<name>.pin`. */
+function pin(name: string): string {
+    return readFileSync(path.join(PINS, `${name}.pin`), 'utf8').trim();
 }
 
-/** Assemble the demo set and build the runtime; returns the binary's path. */
+/**
+ * Refuse a sibling checkout whose `paths` are not its pinned commit's, with a
+ * change committed after the pin, an edit, or a file Git does not track.
+ */
+function requirePinned(name: string, dir: string, paths: string[]): void {
+    const commit = pin(name);
+    const refuse = (why: string): never => {
+        throw new Error(
+            `${dir} is not ${name} ${commit} (test-support/${name}.pin) in ` +
+                `${paths.join(', ')}: ${why}. Check out the pinned commit, or ` +
+                'move the pin and re-record.',
+        );
+    };
+    const diff = spawnSync('git', ['diff', '--quiet', commit, '--', ...paths], {
+        cwd: dir,
+        encoding: 'utf8',
+    });
+    if (diff.status === 1) refuse('it differs from the pin');
+    if (diff.status !== 0)
+        refuse(diff.stderr.trim() || `git exited ${diff.status}`);
+    const untracked = run(
+        'git',
+        ['ls-files', '--others', '--exclude-standard', '--', ...paths],
+        { cwd: dir },
+    ).trim();
+    if (untracked)
+        refuse(`untracked files: ${untracked.split('\n').join(', ')}`);
+}
+
+/**
+ * The engine source at its pin, extracted from the sibling checkout with `git
+ * archive`. The checkout itself is left alone: it may be at any commit, with
+ * any edits, while the recordings are made from the pinned source only.
+ *
+ * @returns The directory holding the pinned source tree
+ */
+function pinnedEngineSource(engine: string): string {
+    const commit = pin('engine');
+    const dir = path.join(
+        engine,
+        'target',
+        'web-recordings',
+        `engine-${commit}`,
+    );
+    if (existsSync(path.join(dir, 'Cargo.toml'))) return dir;
+    const staging = `${dir}.partial`;
+    rmSync(staging, { recursive: true, force: true });
+    mkdirSync(staging, { recursive: true });
+    const archive = `${staging}.tar`;
+    run('git', ['archive', '--format=tar', '-o', archive, commit], {
+        cwd: engine,
+    });
+    run('tar', ['-xf', archive, '-C', staging], { cwd: engine });
+    rmSync(archive, { force: true });
+    renameSync(staging, dir);
+    return dir;
+}
+
+/** One digest over every file under `dir`, by relative path and bytes. */
+function treeDigest(dir: string): string {
+    const hash = createHash('sha256');
+    const walk = (at: string) => {
+        for (const entry of readdirSync(at, { withFileTypes: true }).sort(
+            (a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0),
+        )) {
+            const full = path.join(at, entry.name);
+            if (entry.isDirectory()) walk(full);
+            else {
+                hash.update(path.relative(dir, full))
+                    .update('\0')
+                    .update(readFileSync(full))
+                    .update('\0');
+            }
+        }
+    };
+    walk(dir);
+    return hash.digest('hex');
+}
+
+/**
+ * Assemble the demo set and build the runtime from the pinned engine source.
+ *
+ * Every test project of a recording run calls this, and `npm run record` runs
+ * each several times. A build whose demo set and engine pin are unchanged is
+ * reused as it stands, so only the first call compiles.
+ *
+ * @returns The binary's path and the Context ids of the set it embeds
+ */
 function buildRuntime(): { binary: string; contextIds: string[] } {
-    requirePinnedContent();
-    const engine = sibling('engine', 'apps/demo-runtime/Cargo.toml');
+    requirePinned(
+        'community-content',
+        sibling('community-content', 'scheme-folder'),
+        ['scheme-folder'],
+    );
     const orchestration = sibling(
         'orchestration',
         'scripts/assemble-demo-contexts.mjs',
     );
-    const contexts = path.join(engine, 'target', 'demo-contexts', DEMO_SET);
+    requirePinned('orchestration', orchestration, [
+        'scripts/assemble-demo-contexts.mjs',
+        'scripts/lib',
+        'manifests/demo-contexts.yaml',
+    ]);
+    const engine = sibling('engine', 'apps/demo-runtime/Cargo.toml');
+    const source = pinnedEngineSource(engine);
+    const builds = path.join(engine, 'target', 'web-recordings');
+    const assembled = path.join(builds, `demo-contexts-${process.pid}`);
+    rmSync(assembled, { recursive: true, force: true });
     run(
         process.execPath,
         [
@@ -129,7 +224,7 @@ function buildRuntime(): { binary: string; contextIds: string[] } {
             '--set',
             DEMO_SET,
             '--out',
-            contexts,
+            assembled,
         ],
         // The checkouts beside this repository are the ones to read, even when
         // orchestration is a link to a checkout that sits somewhere else.
@@ -138,43 +233,67 @@ function buildRuntime(): { binary: string; contextIds: string[] } {
             env: { ...process.env, EZ_REPOS_DIR: WORKSPACE },
         },
     );
-    const messages = run(
-        'cargo',
-        [
-            'build',
-            '-p',
-            'ezclassify-demo-runtime',
-            '--features',
-            'provide',
-            '--message-format=json-render-diagnostics',
-        ],
-        {
-            cwd: engine,
-            env: {
-                ...process.env,
-                CARGO_BUILD_JOBS: '4',
-                EZCLASSIFY_DEMO_CONTEXTS_DIR: contexts,
+    const key = createHash('sha256')
+        .update(pin('engine'))
+        .update('\0')
+        .update(treeDigest(assembled))
+        .digest('hex')
+        .slice(0, 32);
+    const build = path.join(builds, `runtime-${key}`);
+    const contexts = path.join(build, 'demo-contexts');
+    const binary = path.join(build, 'ezclassify-demo-runtime');
+    if (existsSync(binary)) {
+        rmSync(assembled, { recursive: true, force: true });
+    } else {
+        rmSync(build, { recursive: true, force: true });
+        mkdirSync(build, { recursive: true });
+        renameSync(assembled, contexts);
+        const messages = run(
+            'cargo',
+            [
+                'build',
+                '-p',
+                'ezclassify-demo-runtime',
+                '--features',
+                'provide',
+                '--message-format=json-render-diagnostics',
+            ],
+            {
+                cwd: source,
+                env: {
+                    ...process.env,
+                    CARGO_BUILD_JOBS: '4',
+                    // The engine checkout's own target, so dependencies built
+                    // there are reused.
+                    CARGO_TARGET_DIR: path.join(engine, 'target'),
+                    EZCLASSIFY_DEMO_CONTEXTS_DIR: contexts,
+                },
             },
-        },
-    );
-    let binary: string | undefined;
-    for (const line of messages.split('\n')) {
-        if (!line.startsWith('{')) continue;
-        const message = JSON.parse(line) as {
-            reason?: string;
-            target?: { name?: string };
-            executable?: string | null;
-        };
-        if (
-            message.reason === 'compiler-artifact' &&
-            message.target?.name === 'ezclassify-demo-runtime' &&
-            message.executable
-        ) {
-            binary = message.executable;
+        );
+        let built: string | undefined;
+        for (const line of messages.split('\n')) {
+            if (!line.startsWith('{')) continue;
+            const message = JSON.parse(line) as {
+                reason?: string;
+                target?: { name?: string };
+                executable?: string | null;
+            };
+            if (
+                message.reason === 'compiler-artifact' &&
+                message.target?.name === 'ezclassify-demo-runtime' &&
+                message.executable
+            ) {
+                built = message.executable;
+            }
         }
-    }
-    if (!binary) {
-        throw new Error('cargo built no ezclassify-demo-runtime executable');
+        if (!built) {
+            throw new Error(
+                'cargo built no ezclassify-demo-runtime executable',
+            );
+        }
+        // Cargo's own copy is overwritten by the next build of the same
+        // target from any checkout, so the runtime runs from a copy of its own.
+        copyFileSync(built, binary);
     }
     const contextIds = readdirSync(contexts, { withFileTypes: true })
         .filter((entry) => entry.isDirectory())

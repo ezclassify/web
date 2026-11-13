@@ -158,11 +158,14 @@ export function createRecordingFetch(
  *
  * @param recordings - Recorded responses keyed by recording key
  * @param onMiss - Told about every request that had no recording
+ * @param onHit - Told the key of every recording that answered, so a caller can
+ *   tell which recordings a run used
  * @returns A fetch to hand the client under test
  */
 export function createReplayFetch(
     recordings: Record<string, ReplayerRecording>,
     onMiss: (miss: MissEnvelope & { method: string }) => void = () => {},
+    onHit: (key: string) => void = () => {},
 ): typeof fetch {
     return async (input, init) => {
         const request = keyed(input, init);
@@ -172,6 +175,7 @@ export function createReplayFetch(
             onMiss({ ...result.envelope, method: request.method });
             throw new Error(`${request.method}: ${result.envelope.message}`);
         }
+        onHit(result.key);
         return new Response(JSON.stringify(result.body), {
             status: result.statusCode,
             headers: { ...result.headers, 'content-type': 'application/json' },

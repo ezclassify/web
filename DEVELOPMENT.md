@@ -151,7 +151,15 @@ are answered from the spec file's recordings, `__recordings__/<spec file
 name>.json` beside the spec, and nothing is started. A request with no
 recording fails the spec file, listing every unrecorded request, even when the
 code under test caught the error. A spec file with no recordings fails on its
-first connection. Nothing is skipped.
+first connection. Nothing is skipped. A changed request or fixture is a new
+request, because a recording is keyed by the request, so it fails the same way
+until it is recorded.
+
+The runtime answers over the wire, so the UI paints its answers when they land,
+not during the call that asked. A spec that reads the page after an action
+awaits `demoRuntimeSettled()` from the same module: it resolves once no request
+of the spec file is in flight and none has started for two turns of the event
+loop, and it fails rather than hangs when code keeps sending.
 
 Prefer the built-in demo Contexts (Cedar Valley is built in as `cedar-valley`,
 `cedar-valley-protection` and `cedar-valley-handling`). A fixture of this
@@ -171,23 +179,36 @@ EZCLASSIFY_RECORD=1 npx vitest run <spec>   # record one spec file's traffic
 With `EZCLASSIFY_RECORD=1`, each test project's global setup
 ([`test-support/demo-runtime-global-setup.ts`](test-support/demo-runtime-global-setup.ts)) assembles the website demo set
 with orchestration's `assemble-demo-contexts.mjs`, builds
-`ezclassify-demo-runtime` with its `provide` feature in the engine checkout
-(`CARGO_BUILD_JOBS=4`), starts it on a loopback port and waits a bounded time
-for it to answer. Every request then goes to that runtime unless the spec
-file's recordings already hold it, and the recordings file is rewritten at the
-end of the file. UI code sends requests whose timing depends on how fast
-answers arrive, so `npm run record` runs the suite in record mode until a pass
-adds nothing, which is a pass at replay speed. Recording one file by hand,
-delete its recordings first and run it twice.
+`ezclassify-demo-runtime` with its `provide` feature (`CARGO_BUILD_JOBS=4`,
+into the engine checkout's `target`), starts it on a loopback port and waits a
+bounded time for it to answer. A build is reused while the engine pin and the
+assembled demo set are unchanged, so only the first project of a run compiles.
+Every request then goes to that runtime unless the spec file's recordings
+already hold it, and the recordings file is rewritten at the end of the file.
+UI code sends requests whose timing depends on how fast answers arrive, so `npm
+run record` runs the suite in record mode until a pass adds nothing, which is a
+pass at replay speed, and then replays it once keeping only the answers the
+replay used (`EZCLASSIFY_PRUNE_RECORDINGS=1`). Recording one file by hand,
+delete its recordings first, record it twice and prune it with one replay.
 
-Recordings have to be reproducible, so recording refuses a `community-content`
-checkout whose `scheme-folder` differs from the commit in
-[`test-support/community-content.pin`](test-support/community-content.pin). Moving the pin and re-recording is one
-change. `check:recordings` is the freshness check: recording from nothing
-against the current engine and content must reproduce the committed files byte
-for byte, so a changed answer, a new request or a request no spec sends any more
-all fail it. [`.github/workflows/recordings.yml`](.github/workflows/recordings.yml) runs it on demand in the
-official repository; a fork has nothing to run there.
+Recordings have to be reproducible from this repository, so every input is
+pinned in `test-support`:
+
+- [`engine.pin`](test-support/engine.pin): the engine commit the runtime is built from. The setup
+  extracts that commit's source from the engine checkout with `git archive`,
+  so the checkout's own branch and edits do not reach a recording.
+- [`community-content.pin`](test-support/community-content.pin): recording refuses a checkout whose
+  `scheme-folder` differs from it, committed, edited or untracked.
+- [`orchestration.pin`](test-support/orchestration.pin): the same, for the assembly script, its `lib`
+  and `manifests/demo-contexts.yaml`.
+
+Moving a pin and re-recording is one change. `check:recordings` is the
+freshness check: recording from nothing against the pinned engine and content
+must reproduce the committed files byte for byte, so a changed answer, a new
+request or a request no spec sends any more all fail it.
+[`.github/workflows/recordings.yml`](.github/workflows/recordings.yml) runs it in the official repository on
+demand, every week, and on a pull request that changes a spec, a fixture, the
+harness, a recording or a pin; a fork has nothing to run there.
 
 The [`libs/ui-tools/`](libs/ui-tools/) helper is outside the public workspace closure. Its
 record and replay core needs nothing it installs, so the harness imports that

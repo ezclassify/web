@@ -5,16 +5,31 @@ name: Recordings
 # recorder and the only freshness check (DEVELOPMENT.md, "Engine behavior in
 # tests").
 #
-# It runs on demand in the official repository only. It reads private
-# checkouts (the engine the demo runtime is built from, and the content the
-# demo set is assembled from), so a fork has nothing to run here and needs no
-# secret: the job is skipped. Public CI replays the committed recordings and
-# needs none of this.
+# It runs in the official repository only: on demand, every week, and on a
+# pull request that changes what the recordings are made from (a spec, a
+# fixture, the harness, a recording or a pin). It reads private checkouts (the
+# engine the demo runtime is built from, and the content the demo set is
+# assembled from), each at the commit its pin in test-support names, so a fork
+# has nothing to run here and needs no secret: the job is skipped. Public CI
+# replays the committed recordings and needs none of this.
 #
 # A stale run uploads what it recorded, for a maintainer to review and commit.
 
 on:
   workflow_dispatch: null
+  schedule:
+    - cron: '17 6 * * 1'
+  pull_request:
+    paths:
+      - '**/*.spec.ts'
+      - '**/*.spec.tsx'
+      - '**/__recordings__/**'
+      - 'libs/ui/test-fixtures/**'
+      - 'libs/ui-tools/src/record-replay/**'
+      - 'test-support/**'
+      - 'vendor/spec/fixtures/**'
+      - 'scripts/record-demo-runtime.mjs'
+      - '.github/workflows/recordings.yml'
 
 permissions:
   contents: read
@@ -26,7 +41,11 @@ concurrency:
 
 jobs:
   record:
-    if: ${{ github.repository == 'ezclassify/web' }}
+    # A pull request from a fork has no access to the private checkouts.
+    if: >-
+      github.repository == 'ezclassify/web' &&
+      (github.event_name != 'pull_request' ||
+      github.event.pull_request.head.repo.full_name == github.repository)
     runs-on: ubuntu-latest
     timeout-minutes: 90
     steps:
@@ -35,20 +54,24 @@ jobs:
           path: web
           persist-credentials: false
 
-      - name: Read the community-content pin
+      - name: Read the pins the recordings are made from
         id: pin
-        run: echo "commit=$(tr -d '[:space:]' < web/test-support/community-content.pin)" >> "$GITHUB_OUTPUT"
+        run: |
+          for name in community-content engine orchestration; do
+            echo "${name//-/_}=$(tr -d '[:space:]' < "web/test-support/${name}.pin")" >> "$GITHUB_OUTPUT"
+          done
 
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           repository: ezclassify/community-content
-          ref: ${{ steps.pin.outputs.commit }}
+          ref: ${{ steps.pin.outputs.community_content }}
           path: community-content
           persist-credentials: false
 
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           repository: ezclassify/engine
+          ref: ${{ steps.pin.outputs.engine }}
           path: engine
           token: ${{ secrets.EZ_REPOS_READ_TOKEN }}
           persist-credentials: false
@@ -56,6 +79,7 @@ jobs:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           repository: ezclassify/orchestration
+          ref: ${{ steps.pin.outputs.orchestration }}
           path: orchestration
           token: ${{ secrets.EZ_REPOS_READ_TOKEN }}
           persist-credentials: false

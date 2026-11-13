@@ -40,14 +40,18 @@
  *   Context id the runtime assigned. It rejects with {@link DraftRefusedError},
  *   carrying the status and the runtime's error body, when the documents do not
  *   compose, which is how a spec asserts an engine refusal.
+ * - `demoRuntimeSettled()` resolves once no request of the spec file is in flight
+ *   and none has started for two turns of the event loop: the point at which a
+ *   UI over a remote Context has painted every answer it asked for.
  * - `demoRuntimeFetch()` is the harness transport itself, for a spec that has to
  *   drive the wire directly. Request paths are taken from its URL; the origin
  *   is ignored.
  *
  * A draft is the body the draft door takes: `scheme` (with `layers`) or keyed
  * `schemes`, `guides`, `access`, `crosswalks`, each a parsed document or its
- * YAML or JSON text. The runtime names a draft by the hash of that body, so the
- * same documents always reach the same recordings.
+ * YAML or JSON text (see {@link DraftComponents}). The runtime names a draft by
+ * the hash of that body, so the same documents always reach the same
+ * recordings.
  *
  * ## Lanes
  *
@@ -65,9 +69,11 @@
  * depends on how fast answers arrive (a store's detached refreshes, rollups
  * that coalesce), so one live pass does not capture what a replay sends. `npm
  * run record` therefore deletes every recordings file and runs the suite in
- * record mode until a pass adds nothing, which is a pass at replay speed. `npm
- * run check:recordings` does the same and fails when the result differs from
- * what is committed: that is the freshness check. See DEVELOPMENT.md.
+ * record mode until a pass adds nothing, which is a pass at replay speed, then
+ * replays it once with `EZCLASSIFY_PRUNE_RECORDINGS=1`, which rewrites each
+ * file to the answers the replay used. `npm run check:recordings` does the same
+ * and fails when the result differs from what is committed: that is the
+ * freshness check. See DEVELOPMENT.md.
  *
  * In the public lane a draft's documents must come from this repository. A
  * draft read from a community-content checkout cannot be keyed where that
@@ -91,7 +97,7 @@ import {
     type MissEnvelope,
     type RecordingsFile,
 } from '../libs/ui-tools/src/record-replay';
-import { RECORD_VARIABLE, recording } from './record-mode';
+import { RECORD_VARIABLE, pruning, recording } from './record-mode';
 
 export { RECORD_VARIABLE, recording };
 
@@ -112,16 +118,24 @@ const DRAFT_VERSION = '0.0.0';
 export const RECORDINGS_DIR = '__recordings__';
 
 /**
- * Documents for the draft door, as `PUT /v1/sandbox/ctx` takes them. Each value
- * is a parsed document or its YAML or JSON text.
+ * Documents for the draft door, as `PUT /v1/sandbox/ctx` takes them: the
+ * arguments of `Context.fromComponents`. Each document is a parsed document or
+ * its YAML or JSON text.
  */
 export interface DraftComponents {
+    /** The primary scheme. */
     scheme?: unknown;
+    /** Layers over the primary scheme, in composition order. */
     layers?: unknown[];
-    schemes?: Record<string, unknown>;
+    /** Several schemes, each under the key a selector names it by. */
+    schemes?: Array<{ key: string; scheme: unknown; [field: string]: unknown }>;
+    /** Which of `schemes` is primary. */
+    primaryScheme?: string;
     guides?: unknown[];
     access?: unknown;
     crosswalks?: unknown[];
+    /** The Context's own id and version, when it names them. */
+    metadata?: Record<string, unknown>;
     [component: string]: unknown;
 }
 
@@ -164,6 +178,8 @@ interface FileStore {
     fetch: typeof fetch;
     recorder?: Recorder;
     misses: Array<MissEnvelope & { method: string }>;
+    /** In the public lane, what was recorded and which of it a request used. */
+    replayed?: { file: RecordingsFile; hits: Set<string> };
     /** Requests still in flight, which the file waits for before it closes. */
     inFlight: Set<Promise<unknown>>;
 }
@@ -262,13 +278,21 @@ function storeForCurrentFile(): FileStore {
         }
         const recorded: RecordingsFile = readRecordingsFile(file);
         const misses: FileStore['misses'] = [];
-        const state = { file, misses, inFlight: new Set<Promise<unknown>>() };
+        const hits = new Set<string>();
+        const state = {
+            file,
+            misses,
+            replayed: { file: recorded, hits },
+            inFlight: new Set<Promise<unknown>>(),
+        };
         store = {
             ...state,
             fetch: tracked(
                 state,
-                createReplayFetch(recorded.responses, (miss) =>
-                    misses.push(miss),
+                createReplayFetch(
+                    recorded.responses,
+                    (miss) => misses.push(miss),
+                    (key) => hits.add(key),
                 ),
             ),
         };
@@ -348,10 +372,44 @@ export async function connectDemoContext(
     });
 }
 
+/** The most quiet-checks {@link demoRuntimeSettled} makes before it gives up. */
+const SETTLE_ROUNDS = 200;
+
+/**
+ * Wait until the code under test has nothing left to hear from the runtime: no
+ * request of this spec file in flight, and two turns of the event loop in a row
+ * on which none started.
+ *
+ * The UI treats a remote Context's answers as promises and paints when they
+ * land, so a spec that reads the page after an action waits for this instead of
+ * guessing a delay. It is bounded: code that keeps sending requests fails the
+ * wait rather than hanging it.
+ *
+ * @throws When requests are still being sent after {@link SETTLE_ROUNDS} turns
+ */
+export async function demoRuntimeSettled(): Promise<void> {
+    const store = stores.get(currentSpecFile());
+    let quiet = 0;
+    for (let round = 0; round < SETTLE_ROUNDS; round += 1) {
+        await new Promise((resolve) => setTimeout(resolve, 0));
+        if (!store || store.inFlight.size === 0) {
+            quiet += 1;
+            if (quiet === 2) return;
+            continue;
+        }
+        quiet = 0;
+        await Promise.allSettled([...store.inFlight]);
+    }
+    throw new Error(
+        `the code under test was still sending requests after ${SETTLE_ROUNDS} turns`,
+    );
+}
+
 /**
  * Close the running spec file's recordings: write them in record mode, and fail
- * in the public lane when a request had no recording. Called from
- * `demo-runtime-setup-file.ts` after every spec file.
+ * in the public lane when a request had no recording. A pruning replay (the
+ * last step of `npm run record`) rewrites the file to the recordings it used.
+ * Called from `demo-runtime-setup-file.ts` after every spec file.
  *
  * @param format - Formats the recordings file's JSON text before it is written
  * @throws Listing every request that had no recording
@@ -381,6 +439,21 @@ export async function closeSpecRecordings(
         writeFileSync(
             store.file,
             await format(JSON.stringify(data), store.file),
+            'utf8',
+        );
+        return;
+    }
+    if (store.misses.length === 0 && pruning && store.replayed) {
+        const { file: recorded, hits } = store.replayed;
+        const responses = Object.fromEntries(
+            Object.entries(recorded.responses).filter(([key]) => hits.has(key)),
+        );
+        writeFileSync(
+            store.file,
+            await format(
+                JSON.stringify({ ...recorded, responses }),
+                store.file,
+            ),
             'utf8',
         );
         return;

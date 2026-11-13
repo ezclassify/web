@@ -7,12 +7,21 @@
  * in the public lane it fails the file when any request had no recording. See
  * `demo-runtime.ts`.
  */
+import { createRequire } from 'node:module';
 import { afterAll } from 'vitest';
 import { closeSpecRecordings } from './demo-runtime';
 
+/**
+ * Prettier's Node entry. A jsdom project resolves the `browser` condition,
+ * which would hand an `import` the standalone build, and that build cannot read
+ * the repository's configuration.
+ */
+const prettier = createRequire(import.meta.url)(
+    'prettier',
+) as typeof import('prettier');
+
 afterAll(async () => {
     await closeSpecRecordings(async (json, file) => {
-        const prettier = await import('prettier');
         const config = (await prettier.resolveConfig(file)) ?? {};
         return prettier.format(json, { ...config, filepath: file });
     });

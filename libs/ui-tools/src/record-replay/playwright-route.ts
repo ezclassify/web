@@ -6,6 +6,7 @@
  */
 import type { Page, Route } from '@playwright/test';
 import { lookup, type ReplayerRecording } from './replayer';
+import { routeRequest } from './route-request';
 
 /** Options for {@link installReplayer}. */
 export interface PlaywrightReplayerOptions {
@@ -37,21 +38,16 @@ export function installReplayer(
     for (const pattern of patterns) {
         page.route(pattern, async (route: Route) => {
             const request = route.request();
-            // Path and query, as the fetch transport keys them.
-            const url = new URL(request.url());
-            const path = url.pathname + url.search;
-            let body: unknown;
-            try {
-                const raw = request.postData();
-                body = raw !== null ? JSON.parse(raw) : null;
-            } catch {
-                body = null;
-            }
+            const { path, body } = routeRequest(
+                request.url(),
+                request.postData(),
+            );
             const result = lookup(recordings, { path, body });
             if (result.kind === 'hit') {
                 tracker.hits.add(path);
                 await route.fulfill({
                     status: result.statusCode,
+                    headers: result.headers,
                     contentType: 'application/json',
                     body: JSON.stringify(result.body),
                 });
