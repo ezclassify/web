@@ -106,12 +106,15 @@ Tokens shared by both `Handbook` and `AccessHandbook` components.
 
 ## Typography
 
-| Variable           | Default   | Description                       |
-| ------------------ | --------- | --------------------------------- |
-| `--ez-font-family` | `inherit` | Font family for all form controls |
-| `--ez-font-size`   | `inherit` | Base font size                    |
-| `--ez-font-weight` | `inherit` | Base font weight                  |
-| `--ez-line-height` | `inherit` | Base line height                  |
+Field text takes its control's font. Library chrome takes the page font,
+overridable with `--ez-font-family`.
+
+| Variable           | Default   | Description                    |
+| ------------------ | --------- | ------------------------------ |
+| `--ez-font-family` | `inherit` | Font family for library chrome |
+| `--ez-font-size`   | `inherit` | Base font size                 |
+| `--ez-font-weight` | `inherit` | Base font weight               |
+| `--ez-line-height` | `inherit` | Base line height               |
 
 ## Spacing
 

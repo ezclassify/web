@@ -112,6 +112,24 @@ describe('a plain bound input mounted after construction', () => {
         expect(forms.fields).not.toContain(input);
     });
 
+    it('reserves trailing room for the status mark and gives it back on destroy', async () => {
+        const input = document.createElement('input');
+        input.id = 'plain-host';
+        input.setAttribute('data-ezclassify-bound-to', MARKING_ID);
+        root.appendChild(input);
+
+        forms = new EzClassifyUI(
+            await connectDemoContext({ contextId: 'cedar-valley' }),
+            { root },
+        );
+        await flush();
+
+        expect(input.style.paddingInlineEnd).toContain('1.75rem');
+        forms.destroy();
+        forms = null;
+        expect(input.style.paddingInlineEnd).toBe('');
+    });
+
     it('hydrates from state published before it mounted', async () => {
         forms = new EzClassifyUI(
             await connectDemoContext({ contextId: 'cedar-valley' }),

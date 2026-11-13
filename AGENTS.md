@@ -82,13 +82,18 @@ The README examples follow their own rules:
   [`scripts/readme-examples.spec.ts`](scripts/readme-examples.spec.ts) fails when a README block and its example
   file differ, so change both together. Each example runs with its CLI's own
   dev command (`npm run dev` for Vite, `npm start` for `ng serve`) and connects
-  to `http://127.0.0.1:4010` unless `VITE_EZCLASSIFY_URL` (Vite) or
+  to `http://localhost:3000` unless `VITE_EZCLASSIFY_URL` (Vite) or
   `src/environments/environment.ts` (Angular) says otherwise. Page styles stay
   in `src/styles.css`: page layout plus one minimal style for native `input`,
   `textarea` and `button`, the edge, padding and font the controls take from
   the field they enhance, and a focus ring like the library's. Keep that file's
   field rules identical across the four examples and never style anything
   inside a control.
+
+    The README path is the free developer runtime, started with `docker run
+  --rm -p 3000:8080 -e EZCLASSIFY_DEMO_ALLOWED_ORIGINS=<the example's
+  origin> ghcr.io/ezclassify/developer-runtime`. The e2e lane below does not
+    use it: its replay server is test tooling that stands in for the runtime.
 
     They carry NO engine (not as a dependency, not in a bundle), and
     `npm run check:consumer-engine-free` enforces it. That gate runs in CI and
@@ -99,7 +104,8 @@ The browser lanes live in [`e2e/`](e2e/), one Playwright configuration whose lan
 environment selects ([`e2e/lanes.mjs`](e2e/lanes.mjs)):
 
 - Default: [`e2e/examples/document-form.spec.ts`](e2e/examples/document-form.spec.ts) drives all four examples
-  through the README path against the Cedar Valley replay. Playwright starts
+  through the README path against the Cedar Valley replay, which stands in for
+  the developer runtime so the lane needs no Docker. Playwright starts
   one `@ezclassify/conformance-server` per example (the server permits one
   browser origin) and each example's own dev server. Any refused request or
   console error fails the run. `npm run e2e` runs it.

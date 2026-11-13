@@ -773,7 +773,7 @@ describe('popoverSide', () => {
         expect(popoverSide(ctx.surface)).toBe('below');
     });
 
-    it('reports "below" or "above" matching the branch positionDropdown took, for drawer/chrome callers to mirror', () => {
+    it('reports "below" or "above" matching the branch positionDropdown took', () => {
         const ctx = createDropdownContext();
         ctx.surface.style.display = 'block';
         Object.defineProperty(ctx.surface, 'offsetWidth', { value: 320 });

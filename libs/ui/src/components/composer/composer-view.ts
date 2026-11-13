@@ -31,7 +31,6 @@ import type { AdoptedStyles } from '../../styles/adopt';
 import {
     isInternalScroll,
     listenForViewportChanges,
-    popoverSide,
     positionPopover,
     positionCompactSheet,
     positionSheet,
@@ -111,10 +110,7 @@ export interface ComposerViewOptions {
         categoryId: string,
     ) => string | undefined;
     /** The composer opened, closed or changed side. */
-    readonly onPlacement?: (
-        open: boolean,
-        side: 'above' | 'below' | 'sheet',
-    ) => void;
+    readonly onPlacement?: (open: boolean) => void;
     /** The draft text changed; the field mirrors it (height, width, paint). */
     readonly onDraft?: (text: string) => void;
     /**
@@ -947,10 +943,7 @@ export class ComposerView {
         ) {
             this.sideLocked = true;
         }
-        this.opts.onPlacement?.(
-            true,
-            this.sheet ? 'sheet' : popoverSide(this.surface),
-        );
+        this.opts.onPlacement?.(true);
     }
 
     /**
@@ -1121,7 +1114,7 @@ export class ComposerView {
             this.releasePage = null;
             if (this.placed) {
                 this.placed = false;
-                this.opts.onPlacement?.(false, 'below');
+                this.opts.onPlacement?.(false);
             }
             return;
         }

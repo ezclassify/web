@@ -46,14 +46,15 @@ This example uses the public `cedar-valley@1.0.0` Context, including its
 parenthesized inline markings. Its whole and part formats are chosen from
 Context metadata.
 
-Start the Cedar Valley replay server first. It answers recorded requests for
-Cedar Valley, a fictional school district's teaching policy, over real HTTP, so
-the form works before you have a runtime. `--cors-origin` is your dev server's
-exact origin; `http://localhost:5173` is the Vite default.
+Start the free developer runtime first. It serves the public demo Contexts,
+Cedar Valley (a fictional school district's teaching policy) among them, over
+real HTTP, so the form works before you have a runtime of your own.
+`EZCLASSIFY_DEMO_ALLOWED_ORIGINS` is your dev server's exact origin; `http://localhost:5173` is the Vite default.
 
 ```bash
-npx @ezclassify/conformance-server --scenario cedar-valley --port 4010 \
-  --cors-origin http://localhost:5173
+docker run --rm -p 3000:8080 \
+  -e EZCLASSIFY_DEMO_ALLOWED_ORIGINS=http://localhost:5173 \
+  ghcr.io/ezclassify/developer-runtime
 ```
 
 The complete app is in [`examples/react-example`](https://github.com/ezclassify/web/tree/main/examples/react-example).
@@ -69,7 +70,7 @@ import { EzClassifyProvider } from '@ezclassify/react';
 import { DocumentForm } from './DocumentForm';
 
 const client = await connectContext({
-    baseUrl: import.meta.env.VITE_EZCLASSIFY_URL ?? 'http://127.0.0.1:4010',
+    baseUrl: import.meta.env.VITE_EZCLASSIFY_URL ?? 'http://localhost:3000',
     contextId: 'cedar-valley',
     contextVersion: '1.0.0',
 });
@@ -82,7 +83,7 @@ createRoot(document.getElementById('app')!).render(
 
 The page contains `<div id="app"></div>`. Show startup failures through your
 application's error UI. `VITE_EZCLASSIFY_URL` names the server when you start
-Vite; without it, the app connects to the replay server above.
+Vite; without it, the app connects to the developer runtime above.
 
 ```tsx
 // src/DocumentForm.tsx
@@ -198,12 +199,12 @@ export function DocumentState() {
 Changing the whole to CONFIDENTIAL through the button writes the same store
 that its MarkingField and preview read.
 
-The replay records this form used as written: focus each control, browse each
+Try this form as written: focus each control, browse each
 picker, open the marking popup in the title and body (Ctrl+Enter, or Cmd+Enter
 on macOS), select **Set document to CONFIDENTIAL**, then change the title to
 `(PUBLIC) District report card` and the body's first line to
 `(CONFIDENTIAL) Planning notes.` The whole ends at CONFIDENTIAL and covers its
-parts. Other values need your runtime.
+parts. The runtime applies the Context's real rules, so other values work too.
 
 ### Switch to Your Runtime
 

@@ -5,15 +5,17 @@ as an app you can run. One document marking, the parts inside it, one form
 store, and nothing else. No engine ships in it: every answer comes from the
 EzClassify server it connects to.
 
-## Run it against the replay server
+## Run it against the developer runtime
 
-The conformance server replays recorded answers for Cedar Valley, a fictional
-school district's teaching policy, so you can see the form working before you
-have a runtime. In one terminal:
+The developer runtime is a free Docker image that serves the public demo
+Contexts, Cedar Valley (a fictional school district's teaching policy) among
+them, so you can see the form working before you have a runtime of your own.
+`EZCLASSIFY_DEMO_ALLOWED_ORIGINS` is the app's exact origin. In one terminal:
 
 ```bash
-npx @ezclassify/conformance-server --scenario cedar-valley --port 4010 \
-  --cors-origin http://localhost:4200
+docker run --rm -p 3000:8080 \
+  -e EZCLASSIFY_DEMO_ALLOWED_ORIGINS=http://localhost:4200 \
+  ghcr.io/ezclassify/developer-runtime
 ```
 
 In another, from this directory:
@@ -27,8 +29,8 @@ Open `http://localhost:4200`. Focus each control, browse its picker, open the
 marking popup in the title or body with Ctrl+Enter (Cmd+Enter on macOS), select
 **Set document to CONFIDENTIAL**, then edit the title to `(PUBLIC) District
 report card` and the body's first line to `(CONFIDENTIAL) Planning notes.` The
-document marking ends at CONFIDENTIAL and covers every part. The replay records
-that path; other values need your runtime.
+document marking ends at CONFIDENTIAL and covers every part. The runtime
+applies the Context's real rules, so other values work too.
 
 ## Point it at your runtime
 

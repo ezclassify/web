@@ -45,14 +45,15 @@ the body MarkedTextArea. A `source` banner shows the authored whole, and an
 vocabulary and UI metadata before returning. Rule evaluation stays on the REST
 deployment.
 
-Start the Cedar Valley replay server first. It answers recorded requests for
-Cedar Valley, a fictional school district's teaching policy, over real HTTP, so
-the form works before you have a runtime. `--cors-origin` is your dev server's
-exact origin; `http://localhost:4200` is the Angular CLI default.
+Start the free developer runtime first. It serves the public demo Contexts,
+Cedar Valley (a fictional school district's teaching policy) among them, over
+real HTTP, so the form works before you have a runtime of your own.
+`EZCLASSIFY_DEMO_ALLOWED_ORIGINS` is your dev server's exact origin; `http://localhost:4200` is the Angular CLI default.
 
 ```bash
-npx @ezclassify/conformance-server --scenario cedar-valley --port 4010 \
-  --cors-origin http://localhost:4200
+docker run --rm -p 3000:8080 \
+  -e EZCLASSIFY_DEMO_ALLOWED_ORIGINS=http://localhost:4200 \
+  ghcr.io/ezclassify/developer-runtime
 ```
 
 The complete app is in [`examples/angular-example`](https://github.com/ezclassify/web/tree/main/examples/angular-example).
@@ -65,7 +66,7 @@ somewhere else is a one-line change:
 ```ts
 // src/environments/environment.ts
 export const environment = {
-    ezclassifyUrl: 'http://127.0.0.1:4010',
+    ezclassifyUrl: 'http://localhost:3000',
 };
 ```
 
@@ -231,12 +232,12 @@ export class DocumentStateComponent {
 }
 ```
 
-The replay records this form used as written: focus each control, browse each
+Try this form as written: focus each control, browse each
 picker, open the marking popup in the title and body (Ctrl+Enter, or Cmd+Enter
 on macOS), select **Set document to CONFIDENTIAL**, then change the title to
 `(PUBLIC) District report card` and the body's first line to
 `(CONFIDENTIAL) Planning notes.` The whole ends at CONFIDENTIAL and covers its
-parts. Other values need your runtime.
+parts. The runtime applies the Context's real rules, so other values work too.
 
 ### Switch to Your Runtime
 

@@ -50,7 +50,7 @@ describe('browser lanes', () => {
         expect(
             EXAMPLES.find((e: { name: string }) => e.name === 'angular-example')
                 .serverPort,
-        ).toBe(4010);
+        ).toBe(3000);
     });
 
     it('runs the hosts against the golden corpus when it is named', () => {

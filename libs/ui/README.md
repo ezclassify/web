@@ -25,7 +25,7 @@ marking means. Opening, modifying, or redistributing this UI code grants no
 right to use the engine or EzClassify-maintained content.
 
 The adapter you use is `@ezclassify/rest-client`, the thin REST client. The
-document form below runs it against a replay server that needs no license. In
+document form below runs it against the free developer runtime. In
 production the same client points at your EzClassify runtime.
 
 ## Install
@@ -64,18 +64,20 @@ the store they share. Pass `{ root }` to enhance one part of the page instead.
 
 ## Mark a document and its parts
 
-You can see the controls working before you have a runtime. The conformance
-server replays recorded answers for Cedar Valley, a fictional school district's
-teaching policy, over real HTTP. Your page talks to it through the same client
-and components it will use in production.
+You can see the controls working before you have a runtime of your own. The
+free developer runtime serves the public demo Contexts, Cedar Valley (a
+fictional school district's teaching policy) among them, over real HTTP. Your
+page talks to it through the same client and components it will use in
+production.
 
-Start the server. A browser app on a different origin from the server needs
-`--cors-origin` with that exact origin (no wildcard). `5173` is the Vite
+Start the runtime. A browser app on a different origin from the runtime needs
+`EZCLASSIFY_DEMO_ALLOWED_ORIGINS` set to that exact origin (no wildcard). `5173` is the Vite
 default, so use your dev server's own origin if it differs.
 
 ```bash
-npx @ezclassify/conformance-server --scenario cedar-valley --port 4010 \
-  --cors-origin http://localhost:5173
+docker run --rm -p 3000:8080 \
+  -e EZCLASSIFY_DEMO_ALLOWED_ORIGINS=http://localhost:5173 \
+  ghcr.io/ezclassify/developer-runtime
 ```
 
 `data-ezclassify-whole="document"` on the form says the form holds the
@@ -160,7 +162,7 @@ import { EzClassifyUI } from '@ezclassify/ui';
 import { showDocumentState } from './document-state';
 
 const client = await connectContext({
-    baseUrl: import.meta.env.VITE_EZCLASSIFY_URL ?? 'http://127.0.0.1:4010',
+    baseUrl: import.meta.env.VITE_EZCLASSIFY_URL ?? 'http://localhost:3000',
     contextId: 'cedar-valley',
     contextVersion: '1.0.0',
 });
@@ -170,7 +172,7 @@ showDocumentState(forms);
 
 The example adds a small page stylesheet, [`src/styles.css`](https://github.com/ezclassify/web/blob/main/examples/vanilla-example/src/styles.css), for layout and a plain style for the page's inputs and its button. The controls take their edge, padding and font from the input or textarea they enhance, so they match the rest of your form.
 `VITE_EZCLASSIFY_URL` names the server when you start Vite; without it, the page
-connects to the replay server above.
+connects to the developer runtime above.
 
 The authored whole starts at INTERNAL. The CONFIDENTIAL summary part changes
 what that whole must cover; it does not silently replace the whole. The whole
@@ -211,18 +213,12 @@ export function showDocumentState(forms: EzClassifyUI): void {
 The button publishes a real store edit, which updates the whole editor and its
 preview.
 
-The replay records this form used as written: focus each control, browse each
+Try this form as written: focus each control, browse each
 picker, open the marking popup in the title and body (Ctrl+Enter, or Cmd+Enter
 on macOS), select **Set document to CONFIDENTIAL**, then change the title to
 `(PUBLIC) District report card` and the body's first line to
 `(CONFIDENTIAL) Planning notes.` The whole ends at CONFIDENTIAL and covers its
-parts. Other values need your runtime; the
-[scenario catalog](https://github.com/ezclassify/contracts/tree/main/packages/conformance-server/scenarios/cedar-valley)
-lists everything the replay records. By default the server does not check
-credentials. Add `--auth simulated` to exercise yours with the published test
-bearer; the
-[conformance server guide](https://github.com/ezclassify/contracts/tree/main/packages/conformance-server#testing-an-application-integration)
-covers that, the failure profiles and the other scenarios.
+parts. The runtime applies the Context's real rules, so other values work too.
 
 ### Switch to your runtime
 
@@ -247,7 +243,7 @@ The markup and the rest of `main.ts` stay as they are.
 ## Larger pages
 
 Each case below adds attributes only where the page's structure cannot say it.
-They need your runtime; the replay records only the document form above.
+They assume a Context of your own, served by your runtime.
 
 ### Several independent fields and a page marking
 
@@ -629,6 +625,14 @@ injectDefaultStyles();
     --ez-color-error: #c62828;
 }
 ```
+
+### Fonts
+
+Text you type into a field takes the font of the control it enhances, so the
+field reads like the rest of your form. The library's own chrome (pickers,
+lists, tooltips, banners, labels) takes the page font. Set `--ez-font-family`
+to give that chrome a different font. It leaves field text alone unless you
+opt into the library's styled inputs (`styleInputs: true`), which use it too.
 
 ## Adapter capabilities used by the UI
 
