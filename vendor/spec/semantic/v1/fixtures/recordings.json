@@ -8893,7 +8893,7 @@
             "inputWasValid": false,
             "errors": [
               {
-                "constraintId": "part-excess:share:ALPHA",
+                "constraintId": "_part-excess:share:ALPHA",
                 "categoryId": "share",
                 "message": "The whole carries ALPHA (Share), which not every part allows.",
                 "affectedConcepts": [
@@ -8901,7 +8901,7 @@
                 ]
               },
               {
-                "constraintId": "part-excess:share:CHARLIE",
+                "constraintId": "_part-excess:share:CHARLIE",
                 "categoryId": "share",
                 "message": "The whole carries CHARLIE (Share), which not every part allows.",
                 "affectedConcepts": [

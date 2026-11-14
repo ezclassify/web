@@ -2,7 +2,7 @@
     "contractDivergences": [],
     "corpusVersion": "v1",
     "coverage": {
-        "cases": 119,
+        "cases": 109,
         "operationsCovered": 34
     },
     "determinism": {
@@ -36,7 +36,7 @@
     "generation": {
         "contractVersion": "1.0.0-dev.30",
         "generator": "ezclassify-wire-corpus-recorder",
-        "generatorDigest": "sha256:7654ee4607d08af48bf473471b11b7bd3bd5a39a09f977911d7e74a298a07887"
+        "generatorDigest": "sha256:dd0ea7156d7594e40209229845f53c02316f2dba163e5a1d875ffc6d7f0959c4"
     },
     "runtime": {
         "engineVersion": "1.0.0-dev.30"

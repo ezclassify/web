@@ -389,7 +389,8 @@
               "LOW",
               "HIGH"
             ],
-            "constraintId": "single-category:level",
+            "categoryId": "level",
+            "constraintId": "_single-category:level",
             "message": "Level allows one value; LOW and HIGH were given."
           }
         ],
