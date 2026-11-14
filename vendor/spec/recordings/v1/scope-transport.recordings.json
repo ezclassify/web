@@ -52,6 +52,7 @@
         ],
         "errors": [
           {
+            "categoryId": "authority",
             "constraintId": "required-category:authority",
             "message": "Authority is required: the marking asserts no concept in this category"
           }
@@ -280,6 +281,7 @@
         },
         "errors": [
           {
+            "categoryId": "level",
             "constraintId": "required-category:level",
             "message": "Level is required: the marking asserts no concept in this category"
           }
@@ -357,6 +359,7 @@
         },
         "errors": [
           {
+            "categoryId": "authority",
             "constraintId": "required-category:authority",
             "message": "Authority is required: the marking asserts no concept in this category"
           }
@@ -438,6 +441,7 @@
         ],
         "errors": [
           {
+            "categoryId": "level",
             "constraintId": "required-category:level",
             "message": "Level is required: the marking asserts no concept in this category"
           }
