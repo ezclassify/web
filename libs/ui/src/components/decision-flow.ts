@@ -155,6 +155,8 @@ export class DecisionFlow extends ComponentBase {
     private titleEl!: HTMLDivElement;
     /** A flow of one scope's line, in the header while the flow is at rest. */
     private restEl!: HTMLDivElement;
+    /** The header's line: the dots, then the step's title or the rest line. */
+    private headerMainEl!: HTMLDivElement;
     /** The open step: its options between the previous and next arrows. */
     private stepEl!: HTMLDivElement;
     /** One line per scope: what the marking writes there, and its errors. */
@@ -548,6 +550,7 @@ export class DecisionFlow extends ComponentBase {
         const headerMain = document.createElement('div');
         headerMain.className = 'ez-decision-flow__header-main';
         headerMain.append(this.dotsEl, this.titleEl, this.restEl);
+        this.headerMainEl = headerMain;
         this.headerEl.appendChild(headerMain);
         this.stepEl = document.createElement('div');
         this.stepEl.className = 'ez-decision-flow__step';
@@ -1222,6 +1225,7 @@ export class DecisionFlow extends ComponentBase {
             '--ez-decision-flow-names',
             String(this.multiScope ? groups.filter((g) => g.scope).length : 0),
         );
+        this.dotsEl.toggleAttribute('data-scoped', this.multiScope);
         for (const group of groups) {
             let target: HTMLElement = this.dotsEl;
             if (this.multiScope && group.scope) {
@@ -1231,9 +1235,8 @@ export class DecisionFlow extends ComponentBase {
                 target.setAttribute('role', 'group');
                 target.setAttribute('aria-label', label);
                 target.dataset.scope = group.scope;
-                // The name sits before its group rather than in it, so on a
-                // narrow open flow the names give up room and the dots keep
-                // theirs. At rest the name and its dots move as one.
+                // The name sits over its group, outside it, so the group
+                // holds the dots alone; a name and its dots move as one.
                 const caption = document.createElement('span');
                 caption.className = 'ez-decision-flow__dot-group-label';
                 caption.setAttribute('aria-hidden', 'true');
@@ -1406,6 +1409,13 @@ export class DecisionFlow extends ComponentBase {
 
         const q = document.createElement('div');
         q.className = 'ez-decision-flow__question';
+        // A flow of several scopes names each scope over its dots, which keep
+        // their places when it opens, so the step's title heads the step
+        // rather than sitting beside them. A flow of one scope keeps it in
+        // its header line.
+        if (this.multiScope) q.appendChild(this.titleEl);
+        else if (this.titleEl.parentElement !== this.headerMainEl)
+            this.headerMainEl.insertBefore(this.titleEl, this.restEl);
 
         if (!step.single && !this.isTextInputStep(step)) {
             const hint = document.createElement('div');

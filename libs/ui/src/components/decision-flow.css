@@ -59,10 +59,7 @@
     gap: 0;
 }
 
-/* A flow across scopes groups its dots by scope, each group after its scope's
-   name; the space and the name are the break between groups. On a narrow
-   field the names shorten with an ellipsis, each by its share; the group's
-   accessible name and the dot's label keep it whole. */
+/* A flow across scopes groups its dots by scope. */
 .ez-decision-flow__dot-group {
     flex: 0 0 auto;
     display: inline-flex;
@@ -70,48 +67,31 @@
     align-items: center;
     gap: 0;
 }
-/* A scope's name and its dots. */
+/* A flow of several scopes: each scope's name over its dots, the scopes side
+   by side, and a scope that does not fit moves, name and dots, to the next
+   line. The layout is the same at rest and open, so no dot moves when the flow
+   opens, and no name or dot is cut. */
+.ez-decision-flow__progress[data-scoped] {
+    min-width: 0;
+    max-width: 100%;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 0.25rem 1rem;
+}
 .ez-decision-flow__dot-scope {
     flex: 0 1 auto;
-    min-width: 0;
+    max-width: 100%;
     display: inline-flex;
-    flex-wrap: nowrap;
-    align-items: center;
+    flex-direction: column;
+    align-items: flex-start;
 }
-.ez-decision-flow__dot-scope:not(:last-child) {
-    margin-inline-end: 1rem;
-}
-/* At rest the header shows no step, so the dots show every scope's name in
-   full. A field too narrow for them on one line moves a scope, name and dots
-   together, to the next line; one too narrow for a scope's name beside its
-   dots puts the name above them. No name or dot is cut. */
-.ez-decision-flow:not([data-open]) .ez-decision-flow__progress {
-    max-width: 100%;
-    flex-wrap: wrap;
-    row-gap: 0.25rem;
-}
-.ez-decision-flow:not([data-open]) .ez-decision-flow__dot-scope {
-    max-width: 100%;
-    flex-wrap: wrap;
-}
-.ez-decision-flow:not([data-open]) .ez-decision-flow__dot-group {
-    flex-wrap: wrap;
-}
-.ez-decision-flow:not([data-open]) .ez-decision-flow__dot-group-label {
-    flex: 0 1 auto;
-    overflow: visible;
-    white-space: normal;
-}
-
 .ez-decision-flow__dot-group-label {
-    flex: 0 1 auto;
-    min-width: 0;
-    margin-inline-end: 0.25rem;
-    overflow: hidden;
-    text-overflow: ellipsis;
     font-size: 0.6875rem;
+    line-height: 1.2;
     color: var(--ez-color-muted, #6b7280);
-    white-space: nowrap;
+}
+.ez-decision-flow__dot-scope > .ez-decision-flow__dot-group {
+    flex-wrap: wrap;
 }
 
 /* A dot is a button: a small visible disc in a larger target. */
@@ -180,6 +160,12 @@
    one line and shortens with an ellipsis. */
 .ez-decision-flow:not([data-open]) .ez-decision-flow__question-label {
     display: none;
+}
+/* A flow of several scopes heads its open step with the title, on lines of
+   its own. */
+.ez-decision-flow__question > .ez-decision-flow__question-label {
+    white-space: normal;
+    margin-block-end: 0.25rem;
 }
 .ez-decision-flow__question-label {
     flex: 0 1000 auto;

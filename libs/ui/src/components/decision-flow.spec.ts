@@ -1801,10 +1801,18 @@ describe('DecisionFlow: scope filtering', () => {
                 ),
             ].map((label) => label.textContent),
         ).toEqual(['Marking', 'Admin']);
+        // The title heads the open step, so the dots under their scope names
+        // keep their places when the flow opens.
         expect(
-            container.querySelector('.ez-decision-flow__question-label')
-                ?.textContent,
+            container.querySelector(
+                '.ez-decision-flow__step .ez-decision-flow__question-label',
+            )?.textContent,
         ).toBe('1 of 2 \u00b7 Level');
+        expect(
+            container.querySelector(
+                '.ez-decision-flow__header .ez-decision-flow__question-label',
+            ),
+        ).toBeNull();
         // Every engine call names the surface of the step it is for.
         const surfaces = (engine.suggest as any).mock.calls.map(
             ([, options]: [unknown, { surface?: string }]) => options.surface,
