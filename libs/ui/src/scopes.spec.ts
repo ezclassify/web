@@ -3,11 +3,13 @@ import {
     categoriesByScope,
     factsInScopes,
     inDeclarationOrder,
+    listedScopesOf,
     parseScopeList,
     reachesPastScopes,
     scopeLabel,
     scopeSetOf,
     scopesOfCategory,
+    writesCategoryOf,
 } from './scopes';
 
 const meta = {
@@ -70,6 +72,38 @@ describe('scope membership', () => {
             'marking',
         ]);
         expect(scopeSetOf([], {})).toEqual([]);
+    });
+
+    it("reads a component's scopes from its list, else its lone scope", () => {
+        expect(listedScopesOf({ scopes: ['record', 'marking'] })).toEqual([
+            'record',
+            'marking',
+        ]);
+        expect(listedScopesOf({ scope: 'record', scopes: [] })).toEqual([
+            'record',
+        ]);
+        expect(listedScopesOf({})).toEqual([]);
+        expect(listedScopesOf(undefined)).toEqual([]);
+    });
+
+    it('writes the categories of the scopes a component writes', () => {
+        const shared = [
+            ...categories,
+            { id: 'kept', scopes: ['marking', 'record'] },
+        ];
+        const record = writesCategoryOf(['record'], shared, meta);
+        expect(['level', 'signer', 'kept', 'unknown'].filter(record)).toEqual([
+            'signer',
+            'kept',
+        ]);
+        // A component that lists none writes the default scope.
+        const unlisted = writesCategoryOf([], shared, meta);
+        expect(['level', 'signer', 'kept'].filter(unlisted)).toEqual([
+            'level',
+            'kept',
+        ]);
+        // A scheme with no default scope is written whole.
+        expect(writesCategoryOf([], shared, {})('anything')).toBe(true);
     });
 
     it('says when a fact reaches a scope the component does not write', () => {

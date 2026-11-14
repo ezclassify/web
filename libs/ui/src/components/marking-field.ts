@@ -29,11 +29,7 @@ import { getMountHost } from '../mount-host-registry';
 import { resolveMarkingColor } from '../color-resolver';
 import { COMPONENT_CSS } from './component-utils';
 import { heightAtLeastFloor } from './dom-helpers';
-import {
-    ensureStatusMark,
-    explainedChanges,
-    setStatusMarkFixes,
-} from './status-mark';
+import { ensureStatusMark, setStatusMarkFixes } from './status-mark';
 import { mountFieldChrome, type FieldChrome } from './field-chrome';
 import {
     ensureFavoritesButton,
@@ -52,7 +48,7 @@ import {
 import { ComposerView, accessibleLabel } from './composer/composer-view';
 import markingFieldCss from './marking-field.css?inline';
 import { defaultSurfaceOf, writesSeveralLines } from '../format-resolver';
-import { inDeclarationOrder } from '../scopes';
+import { inDeclarationOrder, listedScopesOf } from '../scopes';
 
 /**
  * Enhances a native text input or textarea whose `.value` is the complete
@@ -109,13 +105,11 @@ export class MarkingField extends ComponentBase {
      * lists, else the surface of the scheme's default output.
      */
     private writtenSurface(): string | undefined {
-        const listed = this.options.scopes?.length
-            ? this.options.scopes
-            : this.options.scope
-              ? [this.options.scope]
-              : [];
         return (
-            inDeclarationOrder(listed, this.schemeMeta)[0] ??
+            inDeclarationOrder(
+                listedScopesOf(this.options),
+                this.schemeMeta,
+            )[0] ??
             defaultSurfaceOf(
                 this.schemeMeta.formats ?? [],
                 this.schemeMeta.defaultRenderFormat,
@@ -263,10 +257,7 @@ export class MarkingField extends ComponentBase {
             shouldShowTooltip: () => this.options.tooltips !== false,
         });
         // The value read at init may already carry fixes the engine applied.
-        setStatusMarkFixes(
-            this.chrome.status,
-            explainedChanges(this.getAppliedFixes(), this.assertions),
-        );
+        setStatusMarkFixes(this.chrome.status, this.fieldStatusChanges());
         if (
             this.options.favorites ||
             schemeOffersPresets(this.scheme, this.options.scope)
@@ -514,10 +505,7 @@ export class MarkingField extends ComponentBase {
             this.paintTokens();
         }
         if (this.chrome)
-            setStatusMarkFixes(
-                this.chrome.status,
-                explainedChanges(this.getAppliedFixes(), this.assertions),
-            );
+            setStatusMarkFixes(this.chrome.status, this.fieldStatusChanges());
         if (this.favoritesPanel) {
             this.favoritesPanel.updateHost(
                 this.favoritesHost(this.options.favorites),

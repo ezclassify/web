@@ -668,6 +668,10 @@ export class DecisionFlow extends ComponentBase {
         this.flowEl.addEventListener('pointerdown', (event) => {
             this.pointerActive = true;
             this.lastPointerType = event.pointerType;
+            // A press on a dot or an option moves on from what the status
+            // mark's list explained, even when it changes no value.
+            if (!this.suiteChrome?.element.contains(event.target as Node))
+                this.dismissSuiteStatusPopover();
         });
         this.flowEl.addEventListener('click', (event) => {
             this.finishPointer();

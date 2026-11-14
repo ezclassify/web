@@ -32,11 +32,13 @@ import {
 import { removeAssertionCascade } from './assertion-removal';
 import { fixAssertions } from './rule-errors';
 import {
+    dismissStatusMarkPopover,
     ensureStatusMark,
     explainedChanges,
     recordAppliedFixes,
     setStatusMarkFixes,
 } from './status-mark';
+import { listedScopesOf, writesCategoryOf } from '../scopes';
 import {
     applyFieldFrame,
     mountFieldChrome,
@@ -203,23 +205,44 @@ export abstract class ComponentBase extends ReadOnlyComponentBase {
      */
     private updateSuiteStatusMark(): void {
         if (!this.suiteChrome) return;
-        const changes = explainedChanges(
-            this.getAppliedFixes(),
-            this.assertions,
-        );
         const category = this.options.facetOf
             ? this.options.categoryId
             : undefined;
         setStatusMarkFixes(
             this.suiteChrome.status,
-            category
-                ? changes.filter((change) =>
-                      [...(change.add ?? []), ...(change.remove ?? [])].some(
-                          (ref) => ref.categoryId === category,
-                      ),
-                  )
-                : changes,
+            explainedChanges(this.getAppliedFixes(), this.assertions, {
+                writes: category ? (id) => id === category : undefined,
+                showsUnwritten: true,
+            }),
         );
+    }
+
+    /**
+     * Close the popover the suite's status mark opened, if it is open. A
+     * control whose presses change what it shows without changing its value
+     * calls this for a press anywhere but its chrome.
+     */
+    protected dismissSuiteStatusPopover(): void {
+        const mark = this.suiteChrome?.status.querySelector<HTMLElement>(
+            ':scope > .ez-status-mark',
+        );
+        if (mark) dismissStatusMarkPopover(mark);
+    }
+
+    /**
+     * The changes a text or chip field's status mark explains for the value it
+     * holds: those its scopes write or it changed, and for a field that shows
+     * each fact as a chip, the facts a rule filled in (see explainedChanges).
+     */
+    protected fieldStatusChanges(): Change[] {
+        return explainedChanges(this.getAppliedFixes(), this.assertions, {
+            writes: writesCategoryOf(
+                listedScopesOf(this.options),
+                this.scheme.categories,
+                this.schemeMeta,
+            ),
+            showsUnwritten: !this.writesScopesAsText(),
+        });
     }
     /**
      * Set to true by destroy(): prevents async callbacks from mutating

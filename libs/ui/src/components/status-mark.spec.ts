@@ -63,6 +63,9 @@ function held(conceptId: string, sourceRule?: string): Assertion {
           };
 }
 
+/** A field that shows each fact it holds and writes every category. */
+const SHOWS_FACTS = { showsUnwritten: true } as const;
+
 /** Stub matchMedia with a controllable `matches` value for a single query. */
 function stubMatchMedia(matches: boolean): void {
     Object.defineProperty(window, 'matchMedia', {
@@ -364,6 +367,7 @@ describe('acknowledgment via the tooltip actually presenting', () => {
             explainedChanges(
                 [makeFix('r1', 'r1 added USA', 'USA')],
                 [held('GROUP'), held('USA', 'r1')],
+                SHOWS_FACTS,
             ),
         );
         await hoverPastIntent(mark);
@@ -374,6 +378,7 @@ describe('acknowledgment via the tooltip actually presenting', () => {
             explainedChanges(
                 [makeFix('r1', 'r1 added USA', 'USA')],
                 [held('GROUP'), held('USA', 'r1'), held('AUS', 'expand')],
+                SHOWS_FACTS,
             ),
         );
         expect(mark.classList.contains('ez-status-mark--unseen')).toBe(true);
@@ -606,6 +611,7 @@ describe('tooltip content', () => {
                         sourceRule: 'shares',
                     },
                 ],
+                SHOWS_FACTS,
             ),
         );
 
@@ -629,6 +635,7 @@ describe('tooltip content', () => {
                     makeFix('kept', 'Rule "kept": added "NEW"', 'NEW'),
                 ],
                 [held('NEW', 'kept')],
+                SHOWS_FACTS,
             ),
         );
 
@@ -637,6 +644,86 @@ describe('tooltip content', () => {
         expect(lineTexts(tip)).toEqual([
             'EzClassify fixed this marking:',
             '• Rule "kept": added "NEW"',
+        ]);
+    });
+
+    it('leaves out a removal whose concept the field holds again', () => {
+        const removed = (conceptId: string): Change => ({
+            ruleId: 'drops',
+            action: 'remove',
+            remove: [{ conceptId, categoryId: 'cat' }],
+            message: `Rule "drops": removed "${conceptId}"`,
+        });
+        expect(
+            explainedChanges(
+                [removed('BACK'), removed('GONE')],
+                [held('BACK')],
+                SHOWS_FACTS,
+            ).map((change) => change.message),
+        ).toEqual(['Rule "drops": removed "GONE"']);
+    });
+
+    it('a field that shows only its text lists no fact a rule filled in', () => {
+        // The text writes the group's name, not its members: the engine names
+        // every added fact the text writes in the applied changes.
+        const applied = [makeFix('adds', 'Rule "adds": added "USA"', 'USA')];
+        const holds = [
+            held('GROUP'),
+            held('USA', 'adds'),
+            held('AUS', 'expand'),
+        ];
+        expect(
+            explainedChanges(applied, holds, { showsUnwritten: false }).map(
+                (change) => change.message,
+            ),
+        ).toEqual(['Rule "adds": added "USA"']);
+        expect(
+            explainedChanges(applied, holds, SHOWS_FACTS).map(
+                (change) => change.message,
+            ),
+        ).toEqual([
+            'Rule "adds": added "USA"',
+            'Rule "expand": added "AUS" to category "cat"',
+        ]);
+    });
+
+    it('lists only the changes to categories the field writes, and every note', () => {
+        const elsewhere = (conceptId: string, sourceRule?: string) => ({
+            ...held(conceptId, sourceRule),
+            categoryId: 'other',
+        });
+        const changes = explainedChanges(
+            [
+                makeFix('own', 'Rule "own": added "MINE"', 'MINE'),
+                {
+                    ruleId: 'far',
+                    action: 'add',
+                    add: [{ conceptId: 'FAR', categoryId: 'other' }],
+                    message: 'Rule "far": added "FAR"',
+                },
+                {
+                    ruleId: 'swap',
+                    action: 'replace',
+                    remove: [{ conceptId: 'OLD', categoryId: 'other' }],
+                    add: [{ conceptId: 'NEW', categoryId: 'cat' }],
+                    message: 'Rule "swap": NEW in place of OLD',
+                },
+                { ruleId: '_order', action: 'reorder', message: 'Moved it.' },
+            ],
+            [
+                held('MINE', 'own'),
+                held('NEW', 'swap'),
+                elsewhere('FAR', 'far'),
+                held('FILLED', 'fills'),
+                elsewhere('MEMBER', 'expand'),
+            ],
+            { writes: (id) => id === 'cat', showsUnwritten: true },
+        );
+        expect(changes.map((change) => change.message)).toEqual([
+            'Rule "own": added "MINE"',
+            'Rule "swap": NEW in place of OLD',
+            'Moved it.',
+            'Rule "fills": added "FILLED" to category "cat"',
         ]);
     });
 

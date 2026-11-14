@@ -63,7 +63,7 @@ import {
 } from '../render-refusal';
 import { getMountHost } from '../mount-host-registry';
 import { assertWritesScopes, viewOutputOf } from '../format-resolver';
-import { categoriesByScope } from '../scopes';
+import { categoriesByScope, listedScopesOf } from '../scopes';
 
 /**
  * Scheme operations a component marks with: a Context's scheme view.
@@ -496,11 +496,7 @@ export abstract class ReadOnlyComponentBase implements ComponentInstance {
         // else the default output of the first of them, and several of them
         // only when that format writes every one of them in one string.
         // A lone `scope` is a list of one.
-        const listed = options?.scopes?.length
-            ? options.scopes
-            : options?.scope
-              ? [options.scope]
-              : [];
+        const listed = listedScopesOf(options);
         if (this.writesScopesAsText() && listed.length > 0) {
             if (!options?.formatId)
                 this.formatId = viewOutputOf(

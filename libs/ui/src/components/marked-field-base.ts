@@ -53,7 +53,12 @@ import {
     resolveOutput,
     viewOutputOf,
 } from '../format-resolver';
-import { inDeclarationOrder } from '../scopes';
+import {
+    inDeclarationOrder,
+    listedScopesOf,
+    writesCategoryOf,
+} from '../scopes';
+import { explainedChanges } from './status-mark';
 import type { InlineMarkingEditor } from './inline-marking-editor';
 import { createClearButton, type ClearButton } from './clear-button';
 import { mountFieldChrome, type FieldChrome } from './field-chrome';
@@ -277,11 +282,7 @@ export abstract class MarkedFieldBase<
             ).embeddedMarking?.[0] ?? null;
         const formats = this.scheme.formats ?? [];
         // A lone `scope` is a list of one, and a list of one is that scope.
-        const listed = this.options.scopes?.length
-            ? this.options.scopes
-            : this.options.scope
-              ? [this.options.scope]
-              : [];
+        const listed = listedScopesOf(this.options);
         const meta = resolvedEngine.getSchemeMeta();
         // The host's spelling is resolved to the output it names: an output id
         // as it is, a bare view id to that view on the field's surface (the
@@ -589,6 +590,29 @@ export abstract class MarkedFieldBase<
         } finally {
             this._selfDispatch = false;
         }
+    }
+
+    /**
+     * The changes the field's status mark explains for what it holds: those its
+     * scopes write or it changed. A text field shows only its text, so a fact a
+     * rule filled in that the text does not write is not one of them (see
+     * explainedChanges).
+     *
+     * @param applied - The applied changes the field has recorded
+     * @param holds - What the field holds now, every mark of it
+     */
+    protected textStatusChanges(
+        applied: readonly Change[],
+        holds: readonly Assertion[],
+    ): Change[] {
+        return explainedChanges(applied, holds, {
+            writes: writesCategoryOf(
+                listedScopesOf(this.options),
+                this.scheme.categories,
+                this.engine.getSchemeMeta(),
+            ),
+            showsUnwritten: false,
+        });
     }
 
     /**
