@@ -239,6 +239,18 @@
 .ez-decision-flow__text-field-wrap {
     width: 100%;
 }
+/* The form a value field expects, under it and whole. */
+.ez-decision-flow__text-hint {
+    margin-top: 0.25rem;
+    font-size: 0.75rem;
+    color: var(--ez-color-muted, #6b7280);
+}
+/* The arrow keys move between the dots, so the key hints show only while a
+   dot has focus. */
+.ez-decision-flow:not(:has(.ez-decision-flow__step-dot:focus))
+    ~ .proto-kbd-hints.ez-field-hints {
+    display: none;
+}
 .ez-decision-flow__text-field {
     width: 100%;
     min-height: 2rem;

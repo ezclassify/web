@@ -1258,8 +1258,61 @@ describe('DecisionFlow: text_input steps', () => {
         );
         expect(textField).not.toBeNull();
         expect(textField?.tagName).toBe('INPUT');
-        expect(textField?.getAttribute('placeholder')).toBe('Name or initials');
+        // The expected form is a line under the field, never a placeholder a
+        // narrow field would cut short.
+        expect(textField?.hasAttribute('placeholder')).toBe(false);
+        const hint = container.querySelector('.ez-decision-flow__text-hint');
+        expect(hint?.textContent).toBe('Name or initials');
+        expect(textField?.getAttribute('aria-describedby')).toBe(hint?.id);
         expect(textField?.getAttribute('aria-label')).toBe('Labeled By');
+    });
+
+    it("shows a stored date in the spelling its scope's output writes", async () => {
+        const dated = createTextInputEngine();
+        const label = (dated.getScheme() as SchemePublicView).concepts.find(
+            (concept) => concept.id === 'LABEL_TEXT',
+        )!;
+        (label.textInput as Record<string, unknown>).encoding = {
+            type: 'calendar-date',
+            canonical: 'YYYY-MM-DD',
+            accepts: ['YYYYMMDD', 'YYYY-MM-DD'],
+            views: { default: 'YYYYMMDD' },
+        };
+        const host = document.createElement('div');
+        host.setAttribute(
+            'data-ezclassify-decisionflow-categories',
+            '["level","label"]',
+        );
+        document.body.appendChild(host);
+        const datedFlow = new DecisionFlow();
+        await datedFlow.init(host, toCtx(dated));
+        datedFlow.setAssertions([
+            {
+                conceptId: 'LEVEL_A',
+                categoryId: 'level',
+                confidence: 'certain',
+                source: 'user',
+            },
+            {
+                conceptId: 'LABEL_TEXT',
+                categoryId: 'label',
+                value: '2048-12-31',
+                confidence: 'certain',
+                source: 'user',
+            },
+        ] as Assertion[]);
+        await settle();
+        await enterFlow(host);
+        host.querySelectorAll<HTMLButtonElement>(
+            '.ez-decision-flow__step-dot',
+        )[1].click();
+        expect(
+            host.querySelector<HTMLInputElement>(
+                '.ez-decision-flow__text-field',
+            )?.value,
+        ).toBe('20481231');
+        datedFlow.destroy();
+        host.remove();
     });
 
     it('typing a value commits an assertion with that value', () => {
@@ -2546,28 +2599,84 @@ describe('DecisionFlow: compact layout', () => {
         expect(title()).toBe('2 of 2 · Impact');
     });
 
-    it('marks a required unanswered step missing once the engine reports an error', async () => {
+    it('holds a required step back as required while open, and shows it missing once passed or at rest', async () => {
+        const outside = document.createElement('button');
+        document.body.appendChild(outside);
         const engine = createMockEngine();
         const profile = engine.getScheme() as SchemePublicView;
         (profile.categories[1] as { required?: boolean }).required = true;
         await flow.init(container, toCtx(engine));
         await enterFlow(container);
-        // Unanswered and nothing reported: it waits for an answer.
-        expect(dots()[1].dataset.state).toBe('unset');
         flow.updateValidationErrors([
-            { constraintId: 'required', message: 'Impact is required' },
+            {
+                constraintId: 'required',
+                categoryId: 'impact',
+                message: 'Impact is required',
+            } as never,
         ]);
+        // Open on step 1: step 2 is not reached, so it is required, not an
+        // error, and its message is held back.
+        expect(dots()[1].dataset.state).toBe('unset');
+        expect(dots()[1].getAttribute('aria-label')).toContain(
+            'Impact: required, not set',
+        );
+        expect(
+            container.querySelector('.ez-decision-flow__value-errors'),
+        ).toBeNull();
+        // An optional unset step is never missing.
+        expect(dots()[0].dataset.state).toBe('optional');
+
+        // At rest everything missing shows.
+        outside.focus();
         expect(dots()[1].dataset.state).toBe('missing');
         expect(dots()[1].getAttribute('aria-label')).toContain(
             'Impact: needs an answer',
         );
-        // An optional unset step is never missing.
-        expect(dots()[0].dataset.state).toBe('optional');
         const count = container.querySelector<HTMLElement>(
             '.ez-decision-flow__value-errors',
         );
         expect(count?.textContent).toBe('1 error');
         expect(count?.title).toBe('Impact is required');
+    });
+
+    it('names a step the engine asks for as required, whatever its category says', async () => {
+        await flow.init(container, toCtx(createMockEngine()));
+        // Neither category is required, but a rule asks for one of Impact's
+        // choices, naming the concepts and no category.
+        const impact = (createMockEngine().getScheme() as SchemePublicView)
+            .categories[1].id;
+        const choices = (
+            createMockEngine().getScheme() as SchemePublicView
+        ).concepts
+            .filter((concept) => concept.categories.includes(impact))
+            .map((concept) => concept.id);
+        flow.updateValidationErrors([
+            {
+                constraintId: 'rule',
+                message: 'Impact is needed for this scope',
+                affectedConcepts: choices,
+            } as never,
+        ]);
+        expect(dots()[1].getAttribute('aria-label')).not.toContain('optional');
+        expect(dots()[1].dataset.state).toBe('missing');
+        expect(dots()[0].getAttribute('aria-label')).toContain('optional');
+    });
+
+    it('goes to rest on a press anywhere else, errors and all', async () => {
+        const outside = document.createElement('div');
+        document.body.appendChild(outside);
+        await flow.init(container, toCtx(createMockEngine()));
+        await enterFlow(container);
+        flow.updateValidationErrors([
+            { constraintId: 'required', message: 'Impact is required' },
+        ]);
+        expect(step().hidden).toBe(false);
+        outside.dispatchEvent(new Event('pointerdown', { bubbles: true }));
+        expect(step().hidden).toBe(true);
+        expect(
+            container.querySelector('.ez-decision-flow__value-errors')
+                ?.textContent,
+        ).toBe('1 error');
     });
 
     it('advances a multi-choice step on Enter and toggles it on a press', async () => {

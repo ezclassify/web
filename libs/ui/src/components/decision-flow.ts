@@ -179,6 +179,11 @@ export class DecisionFlow extends ComponentBase {
     private dotFocus = -1;
     /** The engine's error messages for the marking, by the category named. */
     private errorsByCategory = new Map<string, string[]>();
+    /**
+     * The furthest step the author has reached in this flow. A step before it
+     * has been passed; a step at or after it has not been reached yet.
+     */
+    private furthestStep = 0;
     /** The engine's error messages, by the scope it judged them on. */
     private errorsByScope = new Map<string, string[]>();
     /** Every error message of the last judgment. */
@@ -283,8 +288,10 @@ export class DecisionFlow extends ComponentBase {
     private readonly outsidePointer = (event: Event) => {
         if (this.flowEl.contains(event.target as Node)) return;
         this.finishPointer();
-        // A tap anywhere else puts a previewed dot back.
+        // A tap anywhere else puts a previewed dot back, and the flow at
+        // rest, whatever its errors.
         this.setPreview(null);
+        this.setOpen(false);
     };
     /** Focus left the flow: the step closes and the flow is one line again. */
     private readonly focusOut = (event: FocusEvent) => {
@@ -753,11 +760,25 @@ export class DecisionFlow extends ComponentBase {
     ): void {
         this.allErrors = errors.map((error) => error.message);
         this.errorsByCategory = new Map();
+        // An error belongs to the category it names, or to the categories
+        // of the concepts it asks for (a rule that wants one of a step's
+        // choices), so the step it asks about reads as required.
+        const categoryOf = new Map<string, string>();
+        for (const step of this.steps ?? [])
+            for (const concept of step.concepts)
+                categoryOf.set(concept.id, step.categoryId);
         for (const error of errors) {
-            if (!error.categoryId) continue;
-            const list = this.errorsByCategory.get(error.categoryId) ?? [];
-            list.push(error.message);
-            this.errorsByCategory.set(error.categoryId, list);
+            const categories = new Set<string>();
+            if (error.categoryId) categories.add(error.categoryId);
+            for (const conceptId of error.affectedConcepts ?? []) {
+                const categoryId = categoryOf.get(conceptId);
+                if (categoryId) categories.add(categoryId);
+            }
+            for (const categoryId of categories) {
+                const list = this.errorsByCategory.get(categoryId) ?? [];
+                list.push(error.message);
+                this.errorsByCategory.set(categoryId, list);
+            }
         }
         // An error the engine reports on several scopes belongs to the first
         // of them, in the scheme's declaration order, so it is counted once.
@@ -1141,6 +1162,27 @@ export class DecisionFlow extends ComponentBase {
         return !step.required;
     }
 
+    /** The concept view the step's scope output writes its category in. */
+    private viewOf(step: StepDef): string | undefined {
+        return viewForCategory(
+            getPublicFormatLayout(this.schemeMeta, this.outputFor(step.scope)),
+            step.categoryId,
+        );
+    }
+
+    /** A stored value, spelled the way the step's scope output writes it. */
+    private shownValue(
+        step: StepDef,
+        concept: ConceptDef,
+        value: string,
+    ): string {
+        return writtenValue(
+            value,
+            concept.textInput?.encoding,
+            this.viewOf(step),
+        );
+    }
+
     /**
      * What a step holds, in words: its choices as the step's scope writes them,
      * or empty when it holds none.
@@ -1148,10 +1190,7 @@ export class DecisionFlow extends ComponentBase {
     private selectionText(step: StepDef): string {
         // A typed value shows the way the step's scope writes it, not in the
         // spelling it is stored in.
-        const view = viewForCategory(
-            getPublicFormatLayout(this.schemeMeta, this.outputFor(step.scope)),
-            step.categoryId,
-        );
+        const view = this.viewOf(step);
         return this.assertions
             .filter((a) => a.categoryId === step.categoryId)
             .map((a) => {
@@ -1175,14 +1214,60 @@ export class DecisionFlow extends ComponentBase {
         step: StepDef,
     ): 'answered' | 'missing' | 'optional' | 'unset' {
         if (this.chosenIn(step).size > 0) return 'answered';
-        // The engine names the category, or judges the step's scope wrong
-        // while this required step is still unanswered.
-        if (
-            this.errorsByCategory.has(step.categoryId) ||
-            (step.required && this.errorsIn(step.scope).length > 0)
-        )
-            return 'missing';
-        return step.required ? 'unset' : 'optional';
+        // A step is required when its category is, or when the engine asks
+        // for it now, so its dot, its label and its error say the same thing.
+        const asked = this.errorsByCategory.has(step.categoryId);
+        if (!step.required && !asked) return 'optional';
+        // While the flow is open, a step the author has not reached yet is
+        // required, not an error: it becomes one once passed without an
+        // answer, or when the flow goes to rest.
+        if (!this.reachedPast(step)) return 'unset';
+        return asked || this.errorsIn(step.scope).length > 0
+            ? 'missing'
+            : 'unset';
+    }
+
+    /**
+     * Whether a step's missing answer is due: always at rest, and while the
+     * flow is open once the author has passed the step.
+     */
+    private reachedPast(step: StepDef): boolean {
+        if (!this.open) return true;
+        const index = this.steps.indexOf(step);
+        return index >= 0 && index < this.furthestStep;
+    }
+
+    /**
+     * The engine's messages the flow holds back while it is open: those that
+     * ask for an answer to a step the author has not reached yet.
+     */
+    private heldBack(): Set<string> {
+        const held = new Set<string>();
+        if (!this.open) return held;
+        for (const step of this.steps) {
+            if (this.chosenIn(step).size > 0 || this.reachedPast(step))
+                continue;
+            for (const message of this.errorsByCategory.get(step.categoryId) ??
+                [])
+                held.add(message);
+        }
+        return held;
+    }
+
+    /** Bring each dot's state and label up to date in place, keeping focus. */
+    private refreshDots(): void {
+        for (const dot of this.dotsEl.querySelectorAll<HTMLElement>(
+            '.ez-decision-flow__step-dot',
+        )) {
+            const index = Number(dot.dataset.index);
+            const step = this.steps[index];
+            if (!step) continue;
+            dot.dataset.state = this.stepState(step);
+            dot.setAttribute(
+                'aria-label',
+                `Step ${index + 1} of ${this.steps.length}, ${this.dotLabel(step)}`,
+            );
+        }
     }
 
     /** A dot's label: the category and its selections, or why it has none. */
@@ -1196,7 +1281,7 @@ export class DecisionFlow extends ComponentBase {
                   ? 'needs an answer'
                   : state === 'optional'
                     ? `optional, ${NOT_SET}`
-                    : NOT_SET;
+                    : `required, ${NOT_SET}`;
         return `${step.label}: ${said}`;
     }
 
@@ -1391,8 +1476,13 @@ export class DecisionFlow extends ComponentBase {
         this.open = open;
         this.stepEl.hidden = !open;
         this.flowEl.toggleAttribute('data-open', open);
-        // The open step's scope reads as current on its caption.
-        if (this.multiScope) this.renderValues();
+        // Opening holds back what the author has not reached yet; at rest
+        // everything missing shows. The open step's scope reads as current
+        // on its caption.
+        if (open)
+            this.furthestStep = Math.max(this.furthestStep, this.currentStep);
+        this.refreshDots();
+        this.renderValues();
     }
 
     /** The open step's first line: "3 of 8 · Dissemination Control". */
@@ -1566,9 +1656,10 @@ export class DecisionFlow extends ComponentBase {
             inputEl.dataset.conceptId = concept.id;
             inputEl.readOnly = this.locked;
             inputEl.className = 'ez-decision-flow__text-field';
-            inputEl.placeholder = ti.placeholder ?? '';
             inputEl.setAttribute('aria-label', ti.label ?? concept.name);
             applyTextInputAttributes(inputEl, ti);
+            const hint = valueHint(ti.placeholder, `df-hint-${concept.id}`);
+            if (hint) inputEl.setAttribute('aria-describedby', hint.id);
             const draft =
                 this.pendingText?.conceptId === concept.id &&
                 this.pendingText.categoryId === step.categoryId
@@ -1576,7 +1667,11 @@ export class DecisionFlow extends ComponentBase {
                     : undefined;
             if (draft !== undefined) inputEl.value = draft;
             else if (existingAssertion?.value)
-                inputEl.value = existingAssertion.value;
+                inputEl.value = this.shownValue(
+                    step,
+                    concept,
+                    existingAssertion.value,
+                );
 
             inputEl.addEventListener('input', () => {
                 if (
@@ -1597,6 +1692,7 @@ export class DecisionFlow extends ComponentBase {
             });
 
             wrap.appendChild(inputEl);
+            if (hint) wrap.appendChild(hint);
             optionsEl.appendChild(wrap);
         }
     }
@@ -1638,16 +1734,23 @@ export class DecisionFlow extends ComponentBase {
             inputEl.dataset.conceptId = concept.id;
             inputEl.readOnly = this.locked;
             inputEl.className = 'ez-decision-flow__text-field';
-            inputEl.placeholder = ti.placeholder ?? '';
             inputEl.required = ti.required !== false;
+            const hint = valueHint(ti.placeholder, `${fieldId}-hint`);
             applyTextInputAttributes(inputEl, ti);
-            inputEl.value = pending ? pending.value : (assertion?.value ?? '');
+            inputEl.value = pending
+                ? pending.value
+                : assertion?.value
+                  ? this.shownValue(step, concept, assertion.value)
+                  : '';
 
             const errorEl = document.createElement('div');
             errorEl.className = 'ez-decision-flow__companion-error';
             errorEl.id = `${fieldId}-error`;
             errorEl.setAttribute('role', 'alert');
-            inputEl.setAttribute('aria-describedby', errorEl.id);
+            inputEl.setAttribute(
+                'aria-describedby',
+                hint ? `${hint.id} ${errorEl.id}` : errorEl.id,
+            );
 
             const showError = (blurred: boolean) => {
                 const value = inputEl.value.trim();
@@ -1681,7 +1784,7 @@ export class DecisionFlow extends ComponentBase {
             });
             showError(false);
 
-            wrap.append(label, inputEl, errorEl);
+            wrap.append(label, inputEl, ...(hint ? [hint] : []), errorEl);
             target.appendChild(wrap);
         }
     }
@@ -1846,6 +1949,7 @@ export class DecisionFlow extends ComponentBase {
         if (index < 0 || index >= steps.length) return;
         this.pendingText = null;
         this.currentStep = index;
+        this.furthestStep = Math.max(this.furthestStep, index);
         this._currentCategoryId = steps[index].categoryId;
         this.dotFocus = index;
         this._restoreFocusAfterRender = from === 'step';
@@ -2042,8 +2146,12 @@ export class DecisionFlow extends ComponentBase {
      * flow of one.
      */
     private errorsIn(scope: string | undefined): string[] {
-        if (!this.multiScope || scope === undefined) return this.allErrors;
-        return this.errorsByScope.get(scope) ?? [];
+        const all =
+            !this.multiScope || scope === undefined
+                ? this.allErrors
+                : (this.errorsByScope.get(scope) ?? []);
+        const held = this.heldBack();
+        return held.size === 0 ? all : all.filter((m) => !held.has(m));
     }
 
     /** The facts the scope lines are written for. */
@@ -2202,4 +2310,17 @@ function writeBreakable(el: HTMLElement, text: string): void {
                 el.appendChild(document.createElement('wbr'));
         }
     });
+}
+
+/**
+ * The form a value field expects, as a line under the field. A placeholder
+ * would be cut short in a narrow field and gone once the author types.
+ */
+function valueHint(text: string | undefined, id: string): HTMLElement | null {
+    if (!text) return null;
+    const hint = document.createElement('div');
+    hint.className = 'ez-decision-flow__text-hint';
+    hint.id = id;
+    hint.textContent = text;
+    return hint;
 }
