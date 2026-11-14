@@ -927,7 +927,8 @@
                             "message": "Choose a protection level."
                         },
                         {
-                            "constraintId": "required-category:level",
+                            "categoryId": "level",
+                            "constraintId": "_required-category:level",
                             "message": "Protection is required: the marking asserts no concept in this category"
                         }
                     ],
@@ -2005,7 +2006,8 @@
                             "message": "Choose a protection level."
                         },
                         {
-                            "constraintId": "required-category:level",
+                            "categoryId": "level",
+                            "constraintId": "_required-category:level",
                             "message": "Protection is required: the marking asserts no concept in this category"
                         },
                         {
@@ -2103,7 +2105,8 @@
                             "message": "Choose a protection level."
                         },
                         {
-                            "constraintId": "required-category:level",
+                            "categoryId": "level",
+                            "constraintId": "_required-category:level",
                             "message": "Protection is required: the marking asserts no concept in this category"
                         },
                         {

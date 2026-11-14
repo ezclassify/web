@@ -83,19 +83,19 @@
                         {
                             "affectedConcepts": ["CONFIDENTIAL"],
                             "categoryId": "level",
-                            "constraintId": "part-coverage:level:CONFIDENTIAL",
+                            "constraintId": "_part-coverage:level:CONFIDENTIAL",
                             "message": "The whole does not cover CONFIDENTIAL, which a part carries."
                         },
                         {
                             "affectedConcepts": ["FINANCIAL_INFORMATION"],
                             "categoryId": "sensitive_content",
-                            "constraintId": "part-coverage:sensitive_content:FINANCIAL_INFORMATION",
+                            "constraintId": "_part-coverage:sensitive_content:FINANCIAL_INFORMATION",
                             "message": "The whole does not cover FINANCIAL INFORMATION, which a part carries."
                         },
                         {
                             "affectedConcepts": ["OAKWOOD"],
                             "categoryId": "permitted_schools",
-                            "constraintId": "part-coverage:permitted_schools:OAKWOOD",
+                            "constraintId": "_part-coverage:permitted_schools:OAKWOOD",
                             "message": "The whole does not cover OAKWOOD, which a part carries."
                         }
                     ],
@@ -1249,19 +1249,19 @@
                         {
                             "affectedConcepts": ["CONFIDENTIAL"],
                             "categoryId": "level",
-                            "constraintId": "part-coverage:level:CONFIDENTIAL",
+                            "constraintId": "_part-coverage:level:CONFIDENTIAL",
                             "message": "The whole does not cover CONFIDENTIAL, which a part carries."
                         },
                         {
                             "affectedConcepts": ["FINANCIAL_INFORMATION"],
                             "categoryId": "sensitive_content",
-                            "constraintId": "part-coverage:sensitive_content:FINANCIAL_INFORMATION",
+                            "constraintId": "_part-coverage:sensitive_content:FINANCIAL_INFORMATION",
                             "message": "The whole does not cover FINANCIAL INFORMATION, which a part carries."
                         },
                         {
                             "affectedConcepts": ["OAKWOOD"],
                             "categoryId": "permitted_schools",
-                            "constraintId": "part-coverage:permitted_schools:OAKWOOD",
+                            "constraintId": "_part-coverage:permitted_schools:OAKWOOD",
                             "message": "The whole does not cover OAKWOOD, which a part carries."
                         }
                     ],
@@ -1962,25 +1962,25 @@
                         {
                             "affectedConcepts": ["CONFIDENTIAL"],
                             "categoryId": "level",
-                            "constraintId": "part-coverage:level:CONFIDENTIAL",
+                            "constraintId": "_part-coverage:level:CONFIDENTIAL",
                             "message": "The whole does not cover CONFIDENTIAL, which a part carries."
                         },
                         {
                             "affectedConcepts": ["FINANCIAL_INFORMATION"],
                             "categoryId": "sensitive_content",
-                            "constraintId": "part-coverage:sensitive_content:FINANCIAL_INFORMATION",
+                            "constraintId": "_part-coverage:sensitive_content:FINANCIAL_INFORMATION",
                             "message": "The whole does not cover FINANCIAL INFORMATION, which a part carries."
                         },
                         {
                             "affectedConcepts": ["OAKWOOD"],
                             "categoryId": "permitted_schools",
-                            "constraintId": "part-coverage:permitted_schools:OAKWOOD",
+                            "constraintId": "_part-coverage:permitted_schools:OAKWOOD",
                             "message": "The whole does not cover OAKWOOD, which a part carries."
                         },
                         {
                             "affectedConcepts": ["CEDAR_VALLEY_DISTRICT"],
                             "categoryId": "allow_sharing_with",
-                            "constraintId": "part-coverage:allow_sharing_with:CEDAR_VALLEY_DISTRICT",
+                            "constraintId": "_part-coverage:allow_sharing_with:CEDAR_VALLEY_DISTRICT",
                             "message": "The whole does not cover CEDAR VALLEY DISTRICT, which a part carries."
                         }
                     ],
@@ -2542,19 +2542,19 @@
                         {
                             "affectedConcepts": ["RESTRICTED"],
                             "categoryId": "level",
-                            "constraintId": "part-coverage:level:RESTRICTED",
+                            "constraintId": "_part-coverage:level:RESTRICTED",
                             "message": "The whole does not cover RESTRICTED, which a part carries."
                         },
                         {
                             "affectedConcepts": ["FINANCIAL_INFORMATION"],
                             "categoryId": "sensitive_content",
-                            "constraintId": "part-coverage:sensitive_content:FINANCIAL_INFORMATION",
+                            "constraintId": "_part-coverage:sensitive_content:FINANCIAL_INFORMATION",
                             "message": "The whole does not cover FINANCIAL INFORMATION, which a part carries."
                         },
                         {
                             "affectedConcepts": ["SECURE_ASSESSMENTS"],
                             "categoryId": "sensitive_content",
-                            "constraintId": "part-coverage:sensitive_content:SECURE_ASSESSMENTS",
+                            "constraintId": "_part-coverage:sensitive_content:SECURE_ASSESSMENTS",
                             "message": "The whole does not cover SECURE ASSESSMENTS, which a part carries."
                         }
                     ],
@@ -3281,13 +3281,13 @@
                         {
                             "affectedConcepts": ["CONFIDENTIAL"],
                             "categoryId": "level",
-                            "constraintId": "part-coverage:level:CONFIDENTIAL",
+                            "constraintId": "_part-coverage:level:CONFIDENTIAL",
                             "message": "The whole does not cover CONFIDENTIAL, which a part carries."
                         },
                         {
                             "affectedConcepts": ["CEDAR_VALLEY_DISTRICT"],
                             "categoryId": "allow_sharing_with",
-                            "constraintId": "part-coverage:allow_sharing_with:CEDAR_VALLEY_DISTRICT",
+                            "constraintId": "_part-coverage:allow_sharing_with:CEDAR_VALLEY_DISTRICT",
                             "message": "The whole does not cover CEDAR VALLEY DISTRICT, which a part carries."
                         }
                     ],
@@ -3832,19 +3832,19 @@
                         {
                             "affectedConcepts": ["CONFIDENTIAL"],
                             "categoryId": "level",
-                            "constraintId": "part-coverage:level:CONFIDENTIAL",
+                            "constraintId": "_part-coverage:level:CONFIDENTIAL",
                             "message": "The whole does not cover CONFIDENTIAL, which a part carries."
                         },
                         {
                             "affectedConcepts": ["FINANCIAL_INFORMATION"],
                             "categoryId": "sensitive_content",
-                            "constraintId": "part-coverage:sensitive_content:FINANCIAL_INFORMATION",
+                            "constraintId": "_part-coverage:sensitive_content:FINANCIAL_INFORMATION",
                             "message": "The whole does not cover FINANCIAL INFORMATION, which a part carries."
                         },
                         {
                             "affectedConcepts": ["OAKWOOD"],
                             "categoryId": "permitted_schools",
-                            "constraintId": "part-coverage:permitted_schools:OAKWOOD",
+                            "constraintId": "_part-coverage:permitted_schools:OAKWOOD",
                             "message": "The whole does not cover OAKWOOD, which a part carries."
                         }
                     ],
@@ -3974,19 +3974,19 @@
                         {
                             "affectedConcepts": ["RESTRICTED"],
                             "categoryId": "level",
-                            "constraintId": "part-coverage:level:RESTRICTED",
+                            "constraintId": "_part-coverage:level:RESTRICTED",
                             "message": "The whole does not cover R, which a part carries."
                         },
                         {
                             "affectedConcepts": ["SECURE_ASSESSMENTS"],
                             "categoryId": "sensitive_content",
-                            "constraintId": "part-coverage:sensitive_content:SECURE_ASSESSMENTS",
+                            "constraintId": "_part-coverage:sensitive_content:SECURE_ASSESSMENTS",
                             "message": "The whole does not cover ASSESSMENT, which a part carries."
                         },
                         {
                             "affectedConcepts": ["FINANCIAL_INFORMATION"],
                             "categoryId": "sensitive_content",
-                            "constraintId": "part-coverage:sensitive_content:FINANCIAL_INFORMATION",
+                            "constraintId": "_part-coverage:sensitive_content:FINANCIAL_INFORMATION",
                             "message": "The whole does not cover FINANCIAL, which a part carries."
                         }
                     ],
@@ -4116,19 +4116,19 @@
                         {
                             "affectedConcepts": ["RESTRICTED"],
                             "categoryId": "level",
-                            "constraintId": "part-coverage:level:RESTRICTED",
+                            "constraintId": "_part-coverage:level:RESTRICTED",
                             "message": "The whole does not cover RESTRICTED, which a part carries."
                         },
                         {
                             "affectedConcepts": ["FINANCIAL_INFORMATION"],
                             "categoryId": "sensitive_content",
-                            "constraintId": "part-coverage:sensitive_content:FINANCIAL_INFORMATION",
+                            "constraintId": "_part-coverage:sensitive_content:FINANCIAL_INFORMATION",
                             "message": "The whole does not cover FINANCIAL INFORMATION, which a part carries."
                         },
                         {
                             "affectedConcepts": ["SECURE_ASSESSMENTS"],
                             "categoryId": "sensitive_content",
-                            "constraintId": "part-coverage:sensitive_content:SECURE_ASSESSMENTS",
+                            "constraintId": "_part-coverage:sensitive_content:SECURE_ASSESSMENTS",
                             "message": "The whole does not cover SECURE ASSESSMENTS, which a part carries."
                         }
                     ],
@@ -5010,13 +5010,13 @@
                         {
                             "affectedConcepts": ["INTERNAL"],
                             "categoryId": "level",
-                            "constraintId": "part-coverage:level:INTERNAL",
+                            "constraintId": "_part-coverage:level:INTERNAL",
                             "message": "The whole does not cover INTERNAL, which a part carries."
                         },
                         {
                             "affectedConcepts": ["CEDAR_VALLEY_DISTRICT"],
                             "categoryId": "allow_sharing_with",
-                            "constraintId": "part-coverage:allow_sharing_with:CEDAR_VALLEY_DISTRICT",
+                            "constraintId": "_part-coverage:allow_sharing_with:CEDAR_VALLEY_DISTRICT",
                             "message": "The whole does not cover CEDAR VALLEY DISTRICT, which a part carries."
                         }
                     ],
@@ -5763,13 +5763,13 @@
                         {
                             "affectedConcepts": ["RESTRICTED"],
                             "categoryId": "level",
-                            "constraintId": "part-coverage:level:RESTRICTED",
+                            "constraintId": "_part-coverage:level:RESTRICTED",
                             "message": "The whole does not cover RESTRICTED, which a part carries."
                         },
                         {
                             "affectedConcepts": ["CEDAR_VALLEY_DISTRICT"],
                             "categoryId": "allow_sharing_with",
-                            "constraintId": "part-coverage:allow_sharing_with:CEDAR_VALLEY_DISTRICT",
+                            "constraintId": "_part-coverage:allow_sharing_with:CEDAR_VALLEY_DISTRICT",
                             "message": "The whole does not cover CEDAR VALLEY DISTRICT, which a part carries."
                         }
                     ],
@@ -6724,7 +6724,7 @@
                         {
                             "affectedConcepts": ["CONFIDENTIAL"],
                             "categoryId": "level",
-                            "constraintId": "part-coverage:level:CONFIDENTIAL",
+                            "constraintId": "_part-coverage:level:CONFIDENTIAL",
                             "message": "The whole does not cover CONFIDENTIAL, which a part carries."
                         }
                     ],
@@ -7687,25 +7687,25 @@
                         {
                             "affectedConcepts": ["RESTRICTED"],
                             "categoryId": "level",
-                            "constraintId": "part-coverage:level:RESTRICTED",
+                            "constraintId": "_part-coverage:level:RESTRICTED",
                             "message": "The whole does not cover RESTRICTED, which a part carries."
                         },
                         {
                             "affectedConcepts": ["FINANCIAL_INFORMATION"],
                             "categoryId": "sensitive_content",
-                            "constraintId": "part-coverage:sensitive_content:FINANCIAL_INFORMATION",
+                            "constraintId": "_part-coverage:sensitive_content:FINANCIAL_INFORMATION",
                             "message": "The whole does not cover FINANCIAL INFORMATION, which a part carries."
                         },
                         {
                             "affectedConcepts": ["SECURE_ASSESSMENTS"],
                             "categoryId": "sensitive_content",
-                            "constraintId": "part-coverage:sensitive_content:SECURE_ASSESSMENTS",
+                            "constraintId": "_part-coverage:sensitive_content:SECURE_ASSESSMENTS",
                             "message": "The whole does not cover SECURE ASSESSMENTS, which a part carries."
                         },
                         {
                             "affectedConcepts": ["CEDAR_VALLEY_DISTRICT"],
                             "categoryId": "allow_sharing_with",
-                            "constraintId": "part-coverage:allow_sharing_with:CEDAR_VALLEY_DISTRICT",
+                            "constraintId": "_part-coverage:allow_sharing_with:CEDAR_VALLEY_DISTRICT",
                             "message": "The whole does not cover CEDAR VALLEY DISTRICT, which a part carries."
                         }
                     ],
@@ -8694,13 +8694,13 @@
                         {
                             "affectedConcepts": ["RESTRICTED"],
                             "categoryId": "level",
-                            "constraintId": "part-coverage:level:RESTRICTED",
+                            "constraintId": "_part-coverage:level:RESTRICTED",
                             "message": "The whole does not cover RESTRICTED, which a part carries."
                         },
                         {
                             "affectedConcepts": ["CEDAR_VALLEY_DISTRICT"],
                             "categoryId": "allow_sharing_with",
-                            "constraintId": "part-coverage:allow_sharing_with:CEDAR_VALLEY_DISTRICT",
+                            "constraintId": "_part-coverage:allow_sharing_with:CEDAR_VALLEY_DISTRICT",
                             "message": "The whole does not cover CEDAR VALLEY DISTRICT, which a part carries."
                         }
                     ],
@@ -9325,19 +9325,19 @@
                         {
                             "affectedConcepts": ["RESTRICTED"],
                             "categoryId": "level",
-                            "constraintId": "part-coverage:level:RESTRICTED",
+                            "constraintId": "_part-coverage:level:RESTRICTED",
                             "message": "The whole does not cover RESTRICTED, which a part carries."
                         },
                         {
                             "affectedConcepts": ["FINANCIAL_INFORMATION"],
                             "categoryId": "sensitive_content",
-                            "constraintId": "part-coverage:sensitive_content:FINANCIAL_INFORMATION",
+                            "constraintId": "_part-coverage:sensitive_content:FINANCIAL_INFORMATION",
                             "message": "The whole does not cover FINANCIAL INFORMATION, which a part carries."
                         },
                         {
                             "affectedConcepts": ["SECURE_ASSESSMENTS"],
                             "categoryId": "sensitive_content",
-                            "constraintId": "part-coverage:sensitive_content:SECURE_ASSESSMENTS",
+                            "constraintId": "_part-coverage:sensitive_content:SECURE_ASSESSMENTS",
                             "message": "The whole does not cover SECURE ASSESSMENTS, which a part carries."
                         }
                     ],
@@ -11010,7 +11010,7 @@
                         {
                             "affectedConcepts": ["RESTRICTED"],
                             "categoryId": "level",
-                            "constraintId": "part-coverage:level:RESTRICTED",
+                            "constraintId": "_part-coverage:level:RESTRICTED",
                             "message": "The whole does not cover RESTRICTED, which a part carries."
                         }
                     ],
@@ -11363,7 +11363,7 @@
                         {
                             "affectedConcepts": ["RESTRICTED"],
                             "categoryId": "level",
-                            "constraintId": "part-coverage:level:RESTRICTED",
+                            "constraintId": "_part-coverage:level:RESTRICTED",
                             "message": "The whole does not cover RESTRICTED, which a part carries."
                         }
                     ],
@@ -11588,19 +11588,19 @@
                         {
                             "affectedConcepts": ["CONFIDENTIAL"],
                             "categoryId": "level",
-                            "constraintId": "part-coverage:level:CONFIDENTIAL",
+                            "constraintId": "_part-coverage:level:CONFIDENTIAL",
                             "message": "The whole does not cover C, which a part carries."
                         },
                         {
                             "affectedConcepts": ["FINANCIAL_INFORMATION"],
                             "categoryId": "sensitive_content",
-                            "constraintId": "part-coverage:sensitive_content:FINANCIAL_INFORMATION",
+                            "constraintId": "_part-coverage:sensitive_content:FINANCIAL_INFORMATION",
                             "message": "The whole does not cover FINANCIAL, which a part carries."
                         },
                         {
                             "affectedConcepts": ["OAKWOOD"],
                             "categoryId": "permitted_schools",
-                            "constraintId": "part-coverage:permitted_schools:OAKWOOD",
+                            "constraintId": "_part-coverage:permitted_schools:OAKWOOD",
                             "message": "The whole does not cover OAK, which a part carries."
                         }
                     ],
@@ -12256,13 +12256,13 @@
                         {
                             "affectedConcepts": ["RESTRICTED"],
                             "categoryId": "level",
-                            "constraintId": "part-coverage:level:RESTRICTED",
+                            "constraintId": "_part-coverage:level:RESTRICTED",
                             "message": "The whole does not cover RESTRICTED, which a part carries."
                         },
                         {
                             "affectedConcepts": ["CEDAR_VALLEY_DISTRICT"],
                             "categoryId": "allow_sharing_with",
-                            "constraintId": "part-coverage:allow_sharing_with:CEDAR_VALLEY_DISTRICT",
+                            "constraintId": "_part-coverage:allow_sharing_with:CEDAR_VALLEY_DISTRICT",
                             "message": "The whole does not cover CEDAR VALLEY DISTRICT, which a part carries."
                         }
                     ],

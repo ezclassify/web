@@ -2713,7 +2713,8 @@
                         },
                         {
                             "affectedConcepts": ["RESTRICTED", "PUBLIC"],
-                            "constraintId": "single-category:level",
+                            "categoryId": "level",
+                            "constraintId": "_single-category:level",
                             "message": "Protection allows one value; RESTRICTED and PUBLIC were given."
                         }
                     ],
@@ -2987,7 +2988,8 @@
                         },
                         {
                             "affectedConcepts": ["RESTRICTED", "PUBLIC"],
-                            "constraintId": "single-category:level",
+                            "categoryId": "level",
+                            "constraintId": "_single-category:level",
                             "message": "Protection allows one value; RESTRICTED and PUBLIC were given."
                         }
                     ],
@@ -7073,7 +7075,8 @@
                         },
                         {
                             "affectedConcepts": ["RESTRICTED", "PUBLIC"],
-                            "constraintId": "single-category:level",
+                            "categoryId": "level",
+                            "constraintId": "_single-category:level",
                             "message": "Protection allows one value; RESTRICTED and PUBLIC were given."
                         }
                     ],

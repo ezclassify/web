@@ -383,7 +383,7 @@ or through `data-ezclassify-bound-to="<whole-id>"`. Each whole gets its
 coverage finding from exactly one place:
 
 - A whole field that judges its parts itself (the runtime gave it
-  `resolveParts`; see below) shows the engine's `part-coverage` error and its
+  `resolveParts`; see below) shows the engine's `_part-coverage` error and its
   fix paths under the field, with the rest of its rule errors. The rollup adds
   nothing beside it: no notice and no correction action. It still dispatches
   `ezclassify:validation` on the whole and records the whole's coverage state.

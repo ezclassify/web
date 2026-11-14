@@ -2715,7 +2715,7 @@
                         {
                             "affectedConcepts": ["S"],
                             "categoryId": "level",
-                            "constraintId": "part-coverage:level:S",
+                            "constraintId": "_part-coverage:level:S",
                             "message": "The whole does not cover S, which a part carries."
                         }
                     ],

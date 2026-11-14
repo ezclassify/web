@@ -141,7 +141,8 @@
                     },
                     "errors": [
                         {
-                            "constraintId": "required-category:release_type",
+                            "categoryId": "release_type",
+                            "constraintId": "_required-category:release_type",
                             "message": "Release is required: the marking asserts no concept in this category"
                         }
                     ],
@@ -247,7 +248,8 @@
                     },
                     "errors": [
                         {
-                            "constraintId": "required-category:release_type",
+                            "categoryId": "release_type",
+                            "constraintId": "_required-category:release_type",
                             "message": "Release is required: the marking asserts no concept in this category"
                         }
                     ],
@@ -1232,11 +1234,13 @@
                     },
                     "errors": [
                         {
-                            "constraintId": "required-category:origin_type",
+                            "categoryId": "origin_type",
+                            "constraintId": "_required-category:origin_type",
                             "message": "Decision Type is required: the marking asserts no concept in this category"
                         },
                         {
-                            "constraintId": "required-category:release_type",
+                            "categoryId": "release_type",
+                            "constraintId": "_required-category:release_type",
                             "message": "Release is required: the marking asserts no concept in this category"
                         }
                     ],
@@ -1494,7 +1498,8 @@
                     },
                     "errors": [
                         {
-                            "constraintId": "required-category:release_type",
+                            "categoryId": "release_type",
+                            "constraintId": "_required-category:release_type",
                             "message": "Release is required: the marking asserts no concept in this category"
                         }
                     ],
@@ -1665,7 +1670,8 @@
                             "message": "An original decision cites no source."
                         },
                         {
-                            "constraintId": "required-category:release_type",
+                            "categoryId": "release_type",
+                            "constraintId": "_required-category:release_type",
                             "message": "Release is required: the marking asserts no concept in this category"
                         }
                     ],
@@ -2829,7 +2835,8 @@
                     },
                     "errors": [
                         {
-                            "constraintId": "required-category:release_type",
+                            "categoryId": "release_type",
+                            "constraintId": "_required-category:release_type",
                             "message": "Release is required: the marking asserts no concept in this category"
                         }
                     ],
@@ -2974,7 +2981,8 @@
                             "message": "An original decision cites no source."
                         },
                         {
-                            "constraintId": "required-category:release_type",
+                            "categoryId": "release_type",
+                            "constraintId": "_required-category:release_type",
                             "message": "Release is required: the marking asserts no concept in this category"
                         }
                     ],
@@ -3363,7 +3371,8 @@
                     },
                     "errors": [
                         {
-                            "constraintId": "required-category:release_type",
+                            "categoryId": "release_type",
+                            "constraintId": "_required-category:release_type",
                             "message": "Release is required: the marking asserts no concept in this category"
                         }
                     ],
@@ -3536,7 +3545,8 @@
                     },
                     "errors": [
                         {
-                            "constraintId": "required-category:release_type",
+                            "categoryId": "release_type",
+                            "constraintId": "_required-category:release_type",
                             "message": "Release is required: the marking asserts no concept in this category"
                         }
                     ],
@@ -3741,7 +3751,8 @@
                     },
                     "errors": [
                         {
-                            "constraintId": "required-category:release_type",
+                            "categoryId": "release_type",
+                            "constraintId": "_required-category:release_type",
                             "message": "Release is required: the marking asserts no concept in this category"
                         }
                     ],
@@ -3938,7 +3949,8 @@
                     },
                     "errors": [
                         {
-                            "constraintId": "required-category:release_type",
+                            "categoryId": "release_type",
+                            "constraintId": "_required-category:release_type",
                             "message": "Release is required: the marking asserts no concept in this category"
                         }
                     ],
@@ -4771,7 +4783,8 @@
                     },
                     "errors": [
                         {
-                            "constraintId": "required-category:release_type",
+                            "categoryId": "release_type",
+                            "constraintId": "_required-category:release_type",
                             "message": "Release is required: the marking asserts no concept in this category"
                         }
                     ],
@@ -4947,7 +4960,8 @@
                     },
                     "errors": [
                         {
-                            "constraintId": "required-category:release_type",
+                            "categoryId": "release_type",
+                            "constraintId": "_required-category:release_type",
                             "message": "Release is required: the marking asserts no concept in this category"
                         }
                     ],
@@ -5009,7 +5023,8 @@
                     },
                     "errors": [
                         {
-                            "constraintId": "required-category:release_type",
+                            "categoryId": "release_type",
+                            "constraintId": "_required-category:release_type",
                             "message": "Release is required: the marking asserts no concept in this category"
                         }
                     ],
@@ -5171,11 +5186,13 @@
                     },
                     "errors": [
                         {
-                            "constraintId": "required-category:origin_type",
+                            "categoryId": "origin_type",
+                            "constraintId": "_required-category:origin_type",
                             "message": "Decision Type is required: the marking asserts no concept in this category"
                         },
                         {
-                            "constraintId": "required-category:release_type",
+                            "categoryId": "release_type",
+                            "constraintId": "_required-category:release_type",
                             "message": "Release is required: the marking asserts no concept in this category"
                         }
                     ],
@@ -5595,7 +5612,8 @@
                     },
                     "errors": [
                         {
-                            "constraintId": "required-category:release_type",
+                            "categoryId": "release_type",
+                            "constraintId": "_required-category:release_type",
                             "message": "Release is required: the marking asserts no concept in this category"
                         }
                     ],
@@ -5768,7 +5786,8 @@
                     },
                     "errors": [
                         {
-                            "constraintId": "required-category:release_type",
+                            "categoryId": "release_type",
+                            "constraintId": "_required-category:release_type",
                             "message": "Release is required: the marking asserts no concept in this category"
                         }
                     ],
@@ -6230,7 +6249,8 @@
                     },
                     "errors": [
                         {
-                            "constraintId": "required-category:release_type",
+                            "categoryId": "release_type",
+                            "constraintId": "_required-category:release_type",
                             "message": "Release is required: the marking asserts no concept in this category"
                         }
                     ],
@@ -7610,7 +7630,8 @@
                             "message": "An original decision cites no source."
                         },
                         {
-                            "constraintId": "required-category:release_type",
+                            "categoryId": "release_type",
+                            "constraintId": "_required-category:release_type",
                             "message": "Release is required: the marking asserts no concept in this category"
                         }
                     ],
@@ -7735,7 +7756,8 @@
                     },
                     "errors": [
                         {
-                            "constraintId": "required-category:origin_type",
+                            "categoryId": "origin_type",
+                            "constraintId": "_required-category:origin_type",
                             "message": "Decision Type is required: the marking asserts no concept in this category"
                         }
                     ],

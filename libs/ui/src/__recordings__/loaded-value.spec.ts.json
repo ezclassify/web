@@ -461,7 +461,8 @@
                     "errors": [
                         {
                             "affectedConcepts": ["A", "B"],
-                            "constraintId": "single-category:level",
+                            "categoryId": "level",
+                            "constraintId": "_single-category:level",
                             "message": "Level allows one value; LEVEL A and LEVEL B were given."
                         }
                     ],
@@ -1706,7 +1707,8 @@
                     "errors": [
                         {
                             "affectedConcepts": ["A", "B"],
-                            "constraintId": "single-category:level",
+                            "categoryId": "level",
+                            "constraintId": "_single-category:level",
                             "message": "Level allows one value; LEVEL A and LEVEL B were given."
                         },
                         {
@@ -2864,7 +2866,8 @@
                     "errors": [
                         {
                             "affectedConcepts": ["A", "B"],
-                            "constraintId": "single-category:level",
+                            "categoryId": "level",
+                            "constraintId": "_single-category:level",
                             "message": "Level allows one value; LEVEL A and LEVEL B were given."
                         },
                         {
@@ -3257,7 +3260,8 @@
                         },
                         {
                             "affectedConcepts": ["A", "B"],
-                            "constraintId": "single-category:level",
+                            "categoryId": "level",
+                            "constraintId": "_single-category:level",
                             "message": "Contributor 1: Level allows one value; LEVEL A and LEVEL B were given."
                         }
                     ],
@@ -3708,7 +3712,8 @@
                     "errors": [
                         {
                             "affectedConcepts": ["A", "B"],
-                            "constraintId": "single-category:level",
+                            "categoryId": "level",
+                            "constraintId": "_single-category:level",
                             "message": "Level allows one value; LEVEL A and LEVEL B were given."
                         }
                     ],

@@ -524,7 +524,8 @@
                     },
                     "errors": [
                         {
-                            "constraintId": "required-category:level",
+                            "categoryId": "level",
+                            "constraintId": "_required-category:level",
                             "message": "Minimum audience level is required: the marking asserts no concept in this category"
                         },
                         {
@@ -4908,7 +4909,8 @@
                     },
                     "errors": [
                         {
-                            "constraintId": "required-category:level",
+                            "categoryId": "level",
+                            "constraintId": "_required-category:level",
                             "message": "Minimum audience level is required: the marking asserts no concept in this category"
                         },
                         {
@@ -5254,7 +5256,8 @@
                     },
                     "errors": [
                         {
-                            "constraintId": "required-category:level",
+                            "categoryId": "level",
+                            "constraintId": "_required-category:level",
                             "message": "Minimum audience level is required: the marking asserts no concept in this category"
                         }
                     ],
@@ -7654,7 +7657,8 @@
                     ],
                     "errors": [
                         {
-                            "constraintId": "required-category:level",
+                            "categoryId": "level",
+                            "constraintId": "_required-category:level",
                             "message": "Minimum audience level is required: the marking asserts no concept in this category"
                         }
                     ],
@@ -8015,13 +8019,14 @@
                     },
                     "errors": [
                         {
-                            "constraintId": "required-category:level",
+                            "categoryId": "level",
+                            "constraintId": "_required-category:level",
                             "message": "Minimum audience level is required: the marking asserts no concept in this category"
                         },
                         {
                             "affectedConcepts": ["STUDENTS"],
                             "categoryId": "level",
-                            "constraintId": "part-coverage:level:STUDENTS",
+                            "constraintId": "_part-coverage:level:STUDENTS",
                             "message": "The test does not cover STUDENTS, which a question carries."
                         }
                     ],

@@ -67,7 +67,7 @@
                         {
                             "affectedConcepts": ["DISTRICT_COORDINATORS"],
                             "categoryId": "level",
-                            "constraintId": "part-coverage:level:DISTRICT_COORDINATORS",
+                            "constraintId": "_part-coverage:level:DISTRICT_COORDINATORS",
                             "message": "The test does not cover DISTRICT COORDINATORS, which a question carries."
                         }
                     ],
@@ -245,7 +245,7 @@
                         {
                             "affectedConcepts": ["DISTRICT_COORDINATORS"],
                             "categoryId": "level",
-                            "constraintId": "part-coverage:level:DISTRICT_COORDINATORS",
+                            "constraintId": "_part-coverage:level:DISTRICT_COORDINATORS",
                             "message": "The test does not cover DISTRICT COORDINATORS, which a question carries."
                         }
                     ],
@@ -818,7 +818,8 @@
                     },
                     "errors": [
                         {
-                            "constraintId": "required-category:level",
+                            "categoryId": "level",
+                            "constraintId": "_required-category:level",
                             "message": "Minimum audience level is required: the marking asserts no concept in this category"
                         }
                     ],

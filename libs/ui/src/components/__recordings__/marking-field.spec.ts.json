@@ -8853,7 +8853,8 @@
                     "errors": [
                         {
                             "affectedConcepts": ["U", "S"],
-                            "constraintId": "single-category:level",
+                            "categoryId": "level",
+                            "constraintId": "_single-category:level",
                             "message": "Level allows one value; UNCLASSIFIED and SECRET were given."
                         }
                     ],
@@ -11637,7 +11638,8 @@
                     "errors": [
                         {
                             "affectedConcepts": ["U", "S"],
-                            "constraintId": "single-category:level",
+                            "categoryId": "level",
+                            "constraintId": "_single-category:level",
                             "message": "Level allows one value; UNCLASSIFIED and SECRET were given."
                         }
                     ],
