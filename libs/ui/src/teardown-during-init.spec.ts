@@ -132,3 +132,49 @@ describe('an instance destroyed while its fields are initializing', () => {
         second.destroy();
     });
 });
+
+describe('an instance torn down beside a store that outlives it', () => {
+    it('stops hearing the store before it releases its markings', async () => {
+        // The page's banner views a marking the instance holds. Releasing that
+        // marking commits it empty; a view still listening then would read
+        // again through a Context its host may already have destroyed.
+        container.innerHTML = `
+            <input type="hidden" id="doc-marking" data-ezclassify-marking />
+            <input id="tag-field"
+                   data-ezclassify-controller="tags"
+                   data-ezclassify-bound-to="doc-marking" />
+            <div data-ezclassify-controller="banner" data-ezclassify-source="doc-marking"></div>
+        `;
+        const context = await newContext();
+        const store = new VanillaEzClassifyStore(context.scheme);
+        let tearingDown = false;
+        const heardDuringTeardown: string[] = [];
+        const subscribe = store.subscribe.bind(store);
+        vi.spyOn(store, 'subscribe').mockImplementation(
+            (id, listener, source) =>
+                subscribe(
+                    id,
+                    (state) => {
+                        if (tearingDown) heardDuringTeardown.push(id);
+                        listener(state);
+                    },
+                    source,
+                ),
+        );
+        const ui = await mount(store);
+        await settle();
+        await store.publishRendered('doc-marking', 'HIGH');
+        await settle();
+
+        // Its host takes the page away first, as React does: the markings
+        // have left, so destroy releases them.
+        container.remove();
+        tearingDown = true;
+        ui.destroy();
+        await settle();
+        tearingDown = false;
+
+        expect(heardDuringTeardown).toEqual([]);
+        store.destroy();
+    });
+});

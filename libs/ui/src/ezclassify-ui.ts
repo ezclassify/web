@@ -4723,6 +4723,16 @@ export class EzClassifyUI {
      */
     destroy(): void {
         this._destroyed = true;
+        // Stop hearing the store first. Releasing this instance's markings
+        // below commits them empty, and a store its host owns lives on: a view
+        // still listening would read again through a Context that may already
+        // be gone with this instance.
+        this.storeUnsubscribers.forEach((unsubscribe) => unsubscribe());
+        this.storeUnsubscribers.clear();
+        this.partUnsubscribers.forEach((unsubscribe) => unsubscribe());
+        this.partUnsubscribers.clear();
+        this.wholeUnsubscribers.forEach((unsubscribe) => unsubscribe());
+        this.wholeUnsubscribers.clear();
         // Zero out this scope's contribution, notify the parent to re-aggregate
         // (the page banner loses this scope's whole) while the edge still exists,
         // THEN drop the edge from the registry.
@@ -4811,12 +4821,6 @@ export class EzClassifyUI {
         this.aggregates.clear();
         this.plainBehaviorCleanups.forEach((cleanup) => cleanup());
         this.plainBehaviorCleanups.clear();
-        this.storeUnsubscribers.forEach((unsubscribe) => unsubscribe());
-        this.storeUnsubscribers.clear();
-        this.partUnsubscribers.forEach((unsubscribe) => unsubscribe());
-        this.partUnsubscribers.clear();
-        this.wholeUnsubscribers.forEach((unsubscribe) => unsubscribe());
-        this.wholeUnsubscribers.clear();
         this.wholeCommits.clear();
         // Clean up scoped tooltips
         cleanupTooltipForRoot(this.root);
