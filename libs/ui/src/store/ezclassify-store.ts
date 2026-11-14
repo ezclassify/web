@@ -658,6 +658,17 @@ export interface EzClassifyStore extends Partial<MarkingEntriesStore> {
     setStandalonePart(markingId: string, standalone: boolean): void;
 
     /**
+     * Write a marking's `rendered` in `output`: the one the field that owns the
+     * marking writes, so a view reading `rendered` sees what that field shows.
+     * `null` returns it to its role's default (the part format for a part, the
+     * whole format otherwise). A marking holding a value is written again in
+     * the new output. Idempotent.
+     *
+     * @throws When the marking's scheme declares no such output.
+     */
+    setRenderedOutput(markingId: string, output: string | null): void;
+
+    /**
      * Place a marking in a bucket: the Context and scheme it is read in. A
      * marking nobody placed is in the store's default bucket; with no default,
      * a seed or publish to it is refused.

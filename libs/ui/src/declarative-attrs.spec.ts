@@ -453,7 +453,7 @@ describe('Declarative attribute system (EzClassifyUI)', () => {
 
         // Verify the checklist rendered concepts from the 'level' category
         const mount = fieldset.nextElementSibling as HTMLElement;
-        const heading = mount?.querySelector('.category-checklist-header h3');
+        const heading = mount?.querySelector('.category-checklist-name');
         expect(heading?.textContent).toBe('Level');
 
         forms.destroy();

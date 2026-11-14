@@ -988,3 +988,70 @@ describe('facetStateEqual', () => {
         ).toBe(false);
     });
 });
+
+describe('BaseEzClassifyStore setRenderedOutput', () => {
+    /** An engine that writes `rendered` in whichever output it is asked for. */
+    function outputEngine() {
+        const outputs: (string | undefined)[] = [];
+        const engine = passThroughEngine({
+            getSchemeMeta: () =>
+                ({
+                    scopes: [],
+                    defaultRenderFormat: 'whole',
+                    defaultPartRenderFormat: 'part',
+                    formats: [{ id: 'whole' }, { id: 'part' }],
+                }) as never,
+            process(input, options) {
+                const format = (options as { outputFormat?: string })
+                    ?.outputFormat;
+                outputs.push(format);
+                const assertions = Array.isArray(input)
+                    ? (input as Assertion[])
+                    : ((options as { assertions?: Assertion[] })?.assertions ??
+                      []);
+                return {
+                    rendered: `${format}:${assertions.map((a) => a.conceptId).join(',')}`,
+                    assessment: EMPTY_RENDER_ASSESSMENT,
+                    renders: {},
+                    assertions,
+                    valid: true,
+                    errors: [],
+                };
+            },
+        });
+        return { engine, outputs };
+    }
+
+    it("writes a marking's rendered in the output its own field names, and back in its role's default when released", async () => {
+        const { engine } = outputEngine();
+        const store = new TestStore(engine);
+        const facts = [mockAssertion({ categoryId: 'level', conceptId: 'S' })];
+        await store.publishAssertions('title', facts);
+        // A whole marking is written in the whole output by default.
+        expect(store.get('title').rendered).toBe('whole:S');
+        store.setRenderedOutput('title', 'part');
+        await flushMicrotasks();
+        await vi.waitFor(() =>
+            expect(store.get('title').rendered).toBe('part:S'),
+        );
+        store.setRenderedOutput('title', null);
+        await vi.waitFor(() =>
+            expect(store.get('title').rendered).toBe('whole:S'),
+        );
+    });
+
+    it('refuses an output the scheme does not declare', () => {
+        const { engine } = outputEngine();
+        const store = new TestStore(engine);
+        expect(() => store.setRenderedOutput('title', 'banner')).toThrow(
+            /setRenderedOutput\("banner"\) names an output the scheme does not declare/,
+        );
+    });
+
+    it('lets a field torn down after its store put nothing back', () => {
+        const { engine } = outputEngine();
+        const store = new TestStore(engine);
+        store.destroy();
+        expect(() => store.setRenderedOutput('title', null)).not.toThrow();
+    });
+});

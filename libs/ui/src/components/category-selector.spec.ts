@@ -194,6 +194,71 @@ describe('CategorySelector', () => {
         ).toHaveLength(0);
     });
 
+    it("puts each category's name on its own line above its buttons, with the suite chrome ending the first line", async () => {
+        await init();
+        const body = container.querySelector('.category-selector-body')!;
+        expect(body.classList.contains('ez-field-frame')).toBe(true);
+        const rows = [
+            ...container.querySelectorAll<HTMLElement>(
+                '.category-selector-row',
+            ),
+        ];
+        for (const row of rows) {
+            // Name line first, then the buttons: never side by side.
+            expect(row.children[0].className).toBe('category-selector-head');
+            expect(row.children[1].className).toBe('category-selector-options');
+        }
+        const firstHead = rows[0].querySelector('.category-selector-head')!;
+        const chrome = firstHead.querySelector('.ez-field-chrome')!;
+        expect(chrome.querySelector('.ez-status-mark')).not.toBeNull();
+        expect(chrome.querySelector('.ez-clear-button')).not.toBeNull();
+        // One chrome for the control, however many categories it shows.
+        expect(container.querySelectorAll('.ez-field-chrome')).toHaveLength(1);
+        // A rebuild keeps the same chrome at the first line's end.
+        rows[0]
+            .querySelector<HTMLButtonElement>('.category-selector-btn')!
+            .click();
+        await new Promise((resolve) => setTimeout(resolve, 0));
+        expect(
+            container.querySelector(
+                '.category-selector-row .category-selector-head .ez-field-chrome',
+            ),
+        ).toBe(chrome);
+    });
+
+    it("marks a facet's status only with fixes to its own category", async () => {
+        await init({ facetOf: 'doc', categoryId: 'f1' });
+        const mark = () =>
+            container.querySelector<HTMLElement>('.ez-status-mark')!;
+        const state = (categoryId: string) => ({
+            rendered: 'Low',
+            renders: {},
+            valid: true,
+            errors: [],
+            assertions: [
+                {
+                    conceptId: 'c1',
+                    categoryId: 'f1',
+                    confidence: 'certain' as const,
+                    source: 'user' as const,
+                },
+            ],
+            appliedFixes: [
+                {
+                    ruleId: `adds-${categoryId}`,
+                    action: 'add',
+                    add: [{ categoryId, conceptId: 'x' }],
+                    message: `Added to ${categoryId}`,
+                },
+            ],
+        });
+        // A fix to another category is not this facet's to explain.
+        selector.applyStoreState(state('f2') as never);
+        expect(mark().classList.contains('ez-status-mark--unseen')).toBe(false);
+        selector.applyStoreState(state('f1') as never);
+        expect(mark().classList.contains('ez-status-mark--unseen')).toBe(true);
+    });
+
     it('should render category rows for each category', async () => {
         await init();
         const rows = container.querySelectorAll('.category-selector-row');

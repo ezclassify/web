@@ -418,6 +418,38 @@ describe('MarkedInput', () => {
         ).toBeTruthy();
     });
 
+    it("takes its host input's padding, as the other fields of the family do", async () => {
+        // An input-only host rule: the owned editor is a textarea and never
+        // matches it, so the padding has to come from the host input itself.
+        const engine = await createTestEngine();
+        root.innerHTML = `
+      <style>
+        .demo input { padding: 8px 10px; }
+      </style>
+      <div class="demo">
+        <input type="text" id="field" data-ezclassify-controller="marked-input">
+      </div>
+    `;
+        const forms = new EzClassifyUI(asContext(engine as never), { root });
+        activeForms.push(forms);
+        await wait(50);
+        await new Promise<void>((resolve) =>
+            requestAnimationFrame(() => resolve()),
+        );
+
+        const control = editingField('field') as HTMLTextAreaElement;
+        const display = root.querySelector(
+            '.marked-input-display',
+        ) as HTMLDivElement;
+        // Both layers start the text where the host's padding puts it, so a
+        // press over the display lands on the same character in the editor.
+        for (const layer of [display, control]) {
+            expect(layer.style.paddingTop).toBe('8px');
+            expect(layer.style.paddingLeft).toBe('10px');
+            expect(layer.style.paddingBottom).toBe('8px');
+        }
+    });
+
     it("keeps the display's typography identical to its control after enhancement", async () => {
         // jsdom does not inherit fonts, so the owned editor textarea is given
         // the face a browser would pass it from the authored input's styles.

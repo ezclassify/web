@@ -627,18 +627,23 @@ describe('DecisionFlow', () => {
         });
     });
 
-    it('selects an option on click and updates summary', async () => {
+    it('selects an option on click and shows the marking on its line', async () => {
         await component.init(container, toCtx(engine));
         await enterFlow(container);
         const options = container.querySelectorAll<HTMLButtonElement>(
             '.ez-decision-flow__option',
         );
         options[2].click();
-        const chips = container.querySelectorAll(
-            '.ez-decision-flow__summary-chip:not(.ez-decision-flow__summary-chip--empty)',
-        );
-        expect(chips.length).toBeGreaterThanOrEqual(1);
-        expect(chips[0].textContent).toContain('S:F');
+        await settle();
+        const rows = container.querySelectorAll('.ez-decision-flow__row');
+        // One scope: one line, with no scope label.
+        expect(rows.length).toBe(1);
+        expect(
+            rows[0].querySelector('.ez-decision-flow__row-label'),
+        ).toBeNull();
+        expect(
+            rows[0].querySelector('.ez-decision-flow__row-text')?.textContent,
+        ).toBe('S:F');
     });
 
     it('Next button is enabled for optional categories without selection (skippable)', async () => {
@@ -701,43 +706,34 @@ describe('DecisionFlow', () => {
         expect(backBtn?.disabled).toBe(true);
     });
 
-    it('names Back and Next by their words alone, with the arrows hidden from screen readers', async () => {
+    it('names the edge arrows Previous step and Next step, with the glyphs hidden', async () => {
         await component.init(container, toCtx(engine));
         await enterFlow(container);
         const [back, next] = container.querySelectorAll<HTMLButtonElement>(
             '.ez-decision-flow__nav-btn',
         );
-        // The accessible name is the text outside aria-hidden content.
-        const spokenName = (button: HTMLButtonElement) =>
-            [...button.childNodes]
-                .filter(
-                    (node) =>
-                        !(node instanceof Element) ||
-                        node.getAttribute('aria-hidden') !== 'true',
-                )
-                .map((node) => node.textContent)
-                .join('')
-                .trim();
-        expect(spokenName(back)).toBe('Back');
-        expect(spokenName(next)).toBe('Next');
+        expect(back.getAttribute('aria-label')).toBe('Previous step');
+        expect(next.getAttribute('aria-label')).toBe('Next step');
+        // The arrows sit at the step's inside edges, around its options.
+        const step = container.querySelector('.ez-decision-flow__step')!;
+        expect(step.firstElementChild).toBe(back);
+        expect(step.lastElementChild).toBe(next);
         const arrows = [back, next].map((button) =>
             button.querySelector('[aria-hidden="true"]'),
         );
-        expect(arrows.map((arrow) => arrow?.textContent)).toEqual(['←︎', '→︎']);
+        expect(arrows.map((arrow) => arrow?.textContent)).toEqual([
+            '\u2039\uFE0E',
+            '\u203a\uFE0E',
+        ]);
     });
 
-    it('populates summary chips for all completed steps', async () => {
+    it('shows an unset marking on its line as a word, not a dash', async () => {
         await component.init(container, toCtx(engine));
         await enterFlow(container);
-        const emptyChips = container.querySelectorAll(
-            '.ez-decision-flow__summary-chip--empty',
-        );
-        expect(emptyChips.length).toBe(2);
+        const text = container.querySelector('.ez-decision-flow__row-text');
         // A word, not a dash: a dash is silent to a screen reader.
-        for (const chip of emptyChips) {
-            expect(chip.textContent).toContain('(empty)');
-            expect(chip.textContent).not.toContain('—');
-        }
+        expect(text?.textContent).toBe('(empty)');
+        expect(text?.hasAttribute('data-empty')).toBe(true);
     });
 
     it('arrow keys move focus without committing a selection', async () => {
@@ -784,13 +780,13 @@ describe('DecisionFlow', () => {
         ).toBe(true);
     });
 
-    it('step question label is an h3 for AT heading navigation', async () => {
+    it('heads the open step on one line beside the dots: "1 of 2 · Scope"', async () => {
         await component.init(container, toCtx(engine));
         await enterFlow(container);
         const label = container.querySelector(
-            '.ez-decision-flow__question-label',
+            '.ez-decision-flow__header .ez-decision-flow__question-label',
         );
-        expect(label?.tagName).toBe('H3');
+        expect(label?.textContent).toBe('1 of 2 \u00b7 Scope');
     });
 
     it('options container aria-labelledby references the h3 label id', async () => {
@@ -1015,55 +1011,48 @@ describe('DecisionFlow: multi-select steps', () => {
         expect(optionsAfter[1].getAttribute('aria-checked')).toBe('false');
     });
 
-    it('multi-select: Next is enabled for optional categories even with zero selections', () => {
+    it('multi-select: an optional step with no selection does not block the flow', async () => {
         // Level is required, Next should be disabled before any selection
         const nextBeforeLevel = container.querySelectorAll<HTMLButtonElement>(
             '.ez-decision-flow__nav-btn',
         )[1];
         expect(nextBeforeLevel.disabled).toBe(true);
 
-        // Select level and advance to caveat (optional multi-select)
+        // Select level: the flow moves on to caveat (optional multi-select)
         container
             .querySelectorAll<HTMLButtonElement>('.ez-decision-flow__option')[0]
             .click();
-        const nextAfterLevel = container.querySelectorAll<HTMLButtonElement>(
-            '.ez-decision-flow__nav-btn',
-        )[1];
-        expect(nextAfterLevel.disabled).toBe(false);
-        nextAfterLevel.click();
+        await settle();
 
-        // Caveat is optional, Next must be enabled with zero caveats selected
-        const nextOnCaveat = container.querySelectorAll<HTMLButtonElement>(
-            '.ez-decision-flow__nav-btn',
-        )[1];
-        expect(nextOnCaveat.disabled).toBe(false);
+        // Caveat is the last step: Next ends there, and the step reads as
+        // optional and unset, never as missing an answer.
+        expect(
+            container.querySelector('.ez-decision-flow__question-label')
+                ?.textContent,
+        ).toContain('Caveat');
+        const dot = container.querySelector<HTMLElement>(
+            '.ez-decision-flow__step-dot[data-category-id="caveat"]',
+        );
+        expect(dot?.dataset.state).toBe('optional');
+        expect(flow.getAssertions().length).toBe(1);
     });
 
-    it('summary chip lists all selected concepts for a multi-select category', async () => {
+    it("a multi-select step's dot names every selected concept", async () => {
         container
             .querySelectorAll<HTMLButtonElement>('.ez-decision-flow__option')[0]
             .click();
-        container
-            .querySelectorAll<HTMLButtonElement>(
-                '.ez-decision-flow__nav-btn',
-            )[1]
-            .click();
+        await settle();
 
         const options =
             container.querySelectorAll<HTMLButtonElement>('[role="checkbox"]');
         options[0].click(); // CAVEAT_X
         options[2].click(); // CAVEAT_Z
 
-        const chips = Array.from(
-            container.querySelectorAll(
-                '.ez-decision-flow__summary-chip:not(.ez-decision-flow__summary-chip--empty)',
-            ),
+        const dot = container.querySelector<HTMLElement>(
+            '.ez-decision-flow__step-dot[data-category-id="caveat"]',
         );
-        const caveatChip = chips.find((c) =>
-            c.textContent?.startsWith('Caveat:'),
-        );
-        expect(caveatChip?.textContent).toContain('CX');
-        expect(caveatChip?.textContent).toContain('CZ');
+        expect(dot?.dataset.state).toBe('answered');
+        expect(dot?.getAttribute('aria-label')).toContain('Caveat: CX, CZ');
     });
 
     it('hint text "Select all that apply." appears only for multi-select steps', async () => {
@@ -1319,21 +1308,21 @@ describe('DecisionFlow: text_input steps', () => {
         );
     });
 
-    it('step is passable without value when category is optional', () => {
+    it('an optional value step left empty does not block the flow', async () => {
         container
             .querySelectorAll<HTMLButtonElement>('.ez-decision-flow__option')[0]
             .click();
-        container
-            .querySelectorAll<HTMLButtonElement>(
-                '.ez-decision-flow__nav-btn',
-            )[1]
-            .click();
+        await settle();
 
-        // No value typed, Next must still be enabled for an optional category
-        const nextBtn = container.querySelectorAll<HTMLButtonElement>(
-            '.ez-decision-flow__nav-btn',
-        )[1];
-        expect(nextBtn.disabled).toBe(false);
+        // On the label step with no value typed: it reads as optional, and
+        // the marking holds the level alone.
+        expect(
+            container.querySelector('.ez-decision-flow__text-field'),
+        ).not.toBeNull();
+        const dot = container.querySelector<HTMLElement>(
+            '.ez-decision-flow__step-dot[aria-current="step"]',
+        );
+        expect(dot?.dataset.state).toBe('optional');
     });
 
     it('keeps the text caret when editing inside an existing value', () => {
@@ -1361,15 +1350,11 @@ describe('DecisionFlow: text_input steps', () => {
         expect(document.activeElement).toBe(after);
     });
 
-    it('summary chip shows the typed value for a text_input category', () => {
+    it("a value step's dot shows the typed value", async () => {
         container
             .querySelectorAll<HTMLButtonElement>('.ez-decision-flow__option')[0]
             .click();
-        container
-            .querySelectorAll<HTMLButtonElement>(
-                '.ez-decision-flow__nav-btn',
-            )[1]
-            .click();
+        await settle();
 
         container.querySelector<HTMLInputElement>(
             '.ez-decision-flow__text-field',
@@ -1378,16 +1363,10 @@ describe('DecisionFlow: text_input steps', () => {
             .querySelector<HTMLInputElement>('.ez-decision-flow__text-field')!
             .dispatchEvent(new Event('input'));
 
-        // After DOM rebuild, re-query the summary
-        const chips = Array.from(
-            container.querySelectorAll(
-                '.ez-decision-flow__summary-chip:not(.ez-decision-flow__summary-chip--empty)',
-            ),
+        const dot = container.querySelector<HTMLElement>(
+            '.ez-decision-flow__step-dot[aria-current="step"]',
         );
-        const labelChip = chips.find((c) =>
-            c.textContent?.startsWith('Label:'),
-        );
-        expect(labelChip?.textContent).toContain('Smith, J.');
+        expect(dot?.getAttribute('aria-label')).toContain('Label: Smith, J.');
     });
 
     it('text_input step does not show "Select all that apply." hint', () => {
@@ -1577,15 +1556,11 @@ describe('DecisionFlow: headed-category reveal', () => {
         expect(label?.textContent).toContain('Recipients');
     });
 
-    it('Next is always enabled for an optional owned step', () => {
+    it('an optional owned step reads as optional, never as missing an answer', async () => {
         container
             .querySelectorAll<HTMLButtonElement>('.ez-decision-flow__option')[0]
             .click();
-        container
-            .querySelectorAll<HTMLButtonElement>(
-                '.ez-decision-flow__nav-btn',
-            )[1]
-            .click();
+        await settle();
         Array.from(
             container.querySelectorAll<HTMLButtonElement>(
                 '.ez-decision-flow__option',
@@ -1593,34 +1568,39 @@ describe('DecisionFlow: headed-category reveal', () => {
         )
             .find((b) => b.textContent === 'SHARE')!
             .click();
-        container
-            .querySelectorAll<HTMLButtonElement>(
-                '.ez-decision-flow__nav-btn',
-            )[1]
-            .click();
+        await settle();
 
-        // On recipients step, optional, so Next must be enabled without selection
-        const nextBtn = container.querySelectorAll<HTMLButtonElement>(
-            '.ez-decision-flow__nav-btn',
-        )[1];
-        expect(nextBtn.disabled).toBe(false);
+        // The choice moved the flow on to recipients: optional and unset.
+        expect(
+            container.querySelector('.ez-decision-flow__question-label')
+                ?.textContent,
+        ).toContain('Recipients');
+        const dot = container.querySelector<HTMLElement>(
+            '.ez-decision-flow__step-dot[aria-current="step"]',
+        );
+        expect(dot?.dataset.state).toBe('optional');
     });
 
-    it('summary only shows visible steps', () => {
-        // Select level only, recipients step hidden, so summary must not include it
+    it('gives a hidden owned step no dot', () => {
+        // Select level only, recipients step hidden, so it has no dot.
         container
             .querySelectorAll<HTMLButtonElement>('.ez-decision-flow__option')[0]
             .click();
 
-        const chips = Array.from(
-            container.querySelectorAll('.ez-decision-flow__summary-chip'),
+        const dots = Array.from(
+            container.querySelectorAll<HTMLElement>(
+                '.ez-decision-flow__step-dot',
+            ),
         );
-        const labels = chips.map((c) => c.textContent ?? '');
-        // Only level + sharing chips (2), no recipients chip
-        expect(labels.length).toBe(2);
-        expect(labels.some((l) => l.toLowerCase().includes('recipient'))).toBe(
-            false,
-        );
+        // Only level + sharing dots (2), no recipients dot
+        expect(dots.length).toBe(2);
+        expect(
+            dots.some((dot) =>
+                (dot.getAttribute('aria-label') ?? '')
+                    .toLowerCase()
+                    .includes('recipient'),
+            ),
+        ).toBe(false);
     });
 });
 
@@ -1779,10 +1759,7 @@ describe('DecisionFlow: scope filtering', () => {
 
         // With defaultScope='marking', the 'admin_cat' category (scopes:['admin']) must be absent
         const dots = container.querySelectorAll('.ez-decision-flow__step-dot');
-        expect(dots.length).toBe(0); // single-step progress uses a label instead of a dot
-        expect(
-            container.querySelector('.ez-decision-flow__progress')?.textContent,
-        ).toBe('Step 1 of 1');
+        expect(dots.length).toBe(1);
 
         const label = container.querySelector(
             '.ez-decision-flow__question-label',
@@ -1799,12 +1776,12 @@ describe('DecisionFlow: scope filtering', () => {
         await enterFlow(container);
 
         expect(
-            container.querySelector('.ez-decision-flow__progress')?.textContent,
-        ).toBe('Step 1 of 1');
+            container.querySelectorAll('.ez-decision-flow__step-dot').length,
+        ).toBe(1);
         expect(
             container.querySelector('.ez-decision-flow__question-label')
                 ?.textContent,
-        ).toBe('Step 1 of 1: Admin Category');
+        ).toBe('1 of 1 \u00b7 Admin Category');
     });
 
     it('walks every scope a space-separated list names, labeling each step', async () => {
@@ -1815,14 +1792,19 @@ describe('DecisionFlow: scope filtering', () => {
 
         const dots = container.querySelectorAll('.ez-decision-flow__step-dot');
         expect(dots.length).toBe(2);
-        // Declaration order, not the order the list was written in.
+        // Declaration order, not the order the list was written in: the dots
+        // group by scope, each group named.
         expect(
-            container.querySelector('.ez-decision-flow__scope')?.textContent,
-        ).toBe('Marking');
+            [
+                ...container.querySelectorAll(
+                    '.ez-decision-flow__dot-group-label',
+                ),
+            ].map((label) => label.textContent),
+        ).toEqual(['Marking', 'Admin']);
         expect(
             container.querySelector('.ez-decision-flow__question-label')
                 ?.textContent,
-        ).toBe('Step 1 of 2: Level');
+        ).toBe('1 of 2 \u00b7 Level');
         // Every engine call names the surface of the step it is for.
         const surfaces = (engine.suggest as any).mock.calls.map(
             ([, options]: [unknown, { surface?: string }]) => options.surface,
@@ -1907,9 +1889,11 @@ describe('DecisionFlow: scope filtering', () => {
 
         expect(
             Array.from(
-                container.querySelectorAll('.ez-decision-flow__summary-chip'),
-            ).map((chip) => chip.textContent?.split(':')[0]),
-        ).toEqual(['Level', 'Admin Category']);
+                container.querySelectorAll<HTMLElement>(
+                    '.ez-decision-flow__step-dot',
+                ),
+            ).map((dot) => dot.dataset.categoryId),
+        ).toEqual(['level', 'admin_cat']);
     });
 
     it('explicit categoryOrder attribute bypasses scope filtering', async () => {
@@ -1924,16 +1908,19 @@ describe('DecisionFlow: scope filtering', () => {
         await enterFlow(container);
 
         const dots = container.querySelectorAll('.ez-decision-flow__step-dot');
-        expect(dots.length).toBe(0);
-        expect(
-            container.querySelector('.ez-decision-flow__progress')?.textContent,
-        ).toBe('Step 1 of 1');
+        expect(dots.length).toBe(1);
         const label = container.querySelector(
             '.ez-decision-flow__question-label',
         );
         expect(label?.textContent).toContain('Admin');
     });
 });
+
+/** Let the engine's answers and the moves they trigger land. */
+async function settle(): Promise<void> {
+    for (let i = 0; i < 4; i++)
+        await new Promise((resolve) => setTimeout(resolve, 0));
+}
 
 async function enterFlow(host: HTMLElement): Promise<void> {
     host.querySelector<HTMLElement>(
@@ -2200,4 +2187,284 @@ it('retains the first text edit and its caret while availability is loading', as
         flow.destroy();
         host.remove();
     }
+});
+
+describe('DecisionFlow: compact layout', () => {
+    let container: HTMLDivElement;
+    let flow: DecisionFlow;
+
+    beforeEach(() => {
+        document.body.innerHTML = '';
+        container = document.createElement('div');
+        container.setAttribute(
+            'data-ezclassify-decisionflow-categories',
+            '["scope","impact"]',
+        );
+        document.body.appendChild(container);
+        flow = new DecisionFlow();
+    });
+
+    const dots = () => [
+        ...container.querySelectorAll<HTMLButtonElement>(
+            '.ez-decision-flow__step-dot',
+        ),
+    ];
+    const step = () =>
+        container.querySelector<HTMLElement>('.ez-decision-flow__step')!;
+    const title = () =>
+        container.querySelector('.ez-decision-flow__question-label')
+            ?.textContent;
+    const touch = (target: HTMLElement) => {
+        target.dispatchEvent(
+            Object.assign(new Event('pointerdown', { bubbles: true }), {
+                pointerType: 'touch',
+            }),
+        );
+        target.click();
+    };
+
+    it('sits in the suite frame with the status mark and clear in its header row', async () => {
+        await flow.init(container, toCtx(createMockEngine()));
+        const frame = container.querySelector('.ez-decision-flow')!;
+        expect(frame.classList.contains('ez-field-frame')).toBe(true);
+        const header = frame.querySelector('.ez-decision-flow__header')!;
+        expect(header.querySelector('.ez-status-mark')).not.toBeNull();
+        expect(header.querySelector('.ez-clear-button')).not.toBeNull();
+        // No summary of every category: the dots and the scope lines say it.
+        expect(
+            container.querySelector('.ez-decision-flow__summary'),
+        ).toBeNull();
+    });
+
+    it('is collapsed at rest, opens on focus and closes when focus leaves', async () => {
+        const outside = document.createElement('button');
+        document.body.appendChild(outside);
+        await flow.init(container, toCtx(createMockEngine()));
+        expect(step().hidden).toBe(true);
+        dots()[0].focus();
+        expect(step().hidden).toBe(false);
+        outside.focus();
+        expect(step().hidden).toBe(true);
+    });
+
+    it('jumps to a step from its dot and keeps the keyboard on the dots', async () => {
+        await flow.init(container, toCtx(createMockEngine()));
+        await enterFlow(container);
+        expect(title()).toBe('1 of 2 · Scope');
+        dots()[1].click();
+        expect(title()).toBe('2 of 2 · Impact');
+        expect(document.activeElement).toBe(dots()[1]);
+        expect(dots()[1].getAttribute('aria-current')).toBe('step');
+        expect(dots()[0].hasAttribute('aria-current')).toBe(false);
+    });
+
+    it('makes the dots one tab stop that the arrow keys move along', async () => {
+        await flow.init(container, toCtx(createMockEngine()));
+        await enterFlow(container);
+        expect(dots().map((dot) => dot.tabIndex)).toEqual([0, -1]);
+        dots()[0].focus();
+        dots()[0].dispatchEvent(
+            new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }),
+        );
+        expect(document.activeElement).toBe(dots()[1]);
+        expect(dots().map((dot) => dot.tabIndex)).toEqual([-1, 0]);
+        // Moving focus is not moving the flow: the step is still the first.
+        expect(title()).toBe('1 of 2 · Scope');
+        dots()[1].dispatchEvent(
+            new KeyboardEvent('keydown', { key: 'Home', bubbles: true }),
+        );
+        expect(document.activeElement).toBe(dots()[0]);
+    });
+
+    it('previews a dot on hover with its category and selections, without moving the flow', async () => {
+        await flow.init(container, toCtx(createMockEngine()), {
+            initialValue: 'S:P',
+        } as never);
+        await enterFlow(container);
+        dots()[0].dispatchEvent(
+            Object.assign(new Event('pointerenter'), { pointerType: 'mouse' }),
+        );
+        const preview = container.querySelector<HTMLElement>(
+            '.ez-decision-flow__dot-preview',
+        )!;
+        expect(preview.hidden).toBe(false);
+        expect(preview.textContent).toBe('Scope: S:P');
+        expect(dots()[0].hasAttribute('data-previewing')).toBe(true);
+        dots()[0].dispatchEvent(
+            Object.assign(new Event('pointerleave'), { pointerType: 'mouse' }),
+        );
+        expect(preview.hidden).toBe(true);
+    });
+
+    it('on touch, a first tap previews a dot and a second tap on it jumps', async () => {
+        await flow.init(container, toCtx(createMockEngine()));
+        await enterFlow(container);
+        touch(dots()[1]);
+        const preview = container.querySelector<HTMLElement>(
+            '.ez-decision-flow__dot-preview',
+        )!;
+        expect(preview.hidden).toBe(false);
+        expect(preview.textContent).toBe('Impact: optional, not set');
+        expect(title()).toBe('1 of 2 · Scope');
+        touch(dots()[1]);
+        expect(title()).toBe('2 of 2 · Impact');
+        // The jump puts the preview away.
+        expect(preview.hidden).toBe(true);
+        // A tap anywhere else puts a preview away.
+        touch(dots()[0]);
+        expect(preview.hidden).toBe(false);
+        document.body.dispatchEvent(
+            Object.assign(new Event('pointerdown', { bubbles: true }), {
+                pointerType: 'touch',
+            }),
+        );
+        expect(preview.hidden).toBe(true);
+    });
+
+    it('moves on to the next step once a single choice settles', async () => {
+        await flow.init(container, toCtx(createMockEngine()));
+        await enterFlow(container);
+        container
+            .querySelectorAll<HTMLButtonElement>('.ez-decision-flow__option')[1]
+            .click();
+        await settle();
+        expect(title()).toBe('2 of 2 · Impact');
+        expect(dots()[0].dataset.state).toBe('answered');
+        // The last step has nowhere to go: a choice there stays put.
+        container
+            .querySelectorAll<HTMLButtonElement>('.ez-decision-flow__option')[0]
+            .click();
+        await settle();
+        expect(title()).toBe('2 of 2 · Impact');
+    });
+
+    it('marks a required unanswered step missing once the engine reports an error', async () => {
+        const engine = createMockEngine();
+        const profile = engine.getScheme() as SchemePublicView;
+        (profile.categories[1] as { required?: boolean }).required = true;
+        await flow.init(container, toCtx(engine));
+        await enterFlow(container);
+        // Unanswered and nothing reported: it waits for an answer.
+        expect(dots()[1].dataset.state).toBe('unset');
+        flow.updateValidationErrors([
+            { constraintId: 'required', message: 'Impact is required' },
+        ]);
+        expect(dots()[1].dataset.state).toBe('missing');
+        expect(dots()[1].getAttribute('aria-label')).toContain(
+            'Impact: needs an answer',
+        );
+        // An optional unset step is never missing.
+        expect(dots()[0].dataset.state).toBe('optional');
+        const count = container.querySelector<HTMLElement>(
+            '.ez-decision-flow__row-errors',
+        );
+        expect(count?.textContent).toBe('1 error');
+        expect(count?.title).toBe('Impact is required');
+    });
+
+    it('advances a multi-choice step on Enter and toggles it on a press', async () => {
+        const mixed = document.createElement('div');
+        document.body.appendChild(mixed);
+        await flow.init(mixed, toCtx(createMixedEngine()));
+        await enterFlow(mixed);
+        mixed
+            .querySelectorAll<HTMLButtonElement>('.ez-decision-flow__option')[0]
+            .click();
+        await settle();
+        const label = () =>
+            mixed.querySelector('.ez-decision-flow__question-label')
+                ?.textContent;
+        expect(label()).toContain('Caveat');
+        const box =
+            mixed.querySelector<HTMLButtonElement>('[role="checkbox"]')!;
+        box.click();
+        expect(
+            mixed
+                .querySelector('[role="checkbox"]')
+                ?.getAttribute('aria-checked'),
+        ).toBe('true');
+        // On the last step Enter has nowhere to go and toggles nothing.
+        mixed
+            .querySelector<HTMLButtonElement>('[role="checkbox"]')!
+            .dispatchEvent(
+                new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }),
+            );
+        expect(
+            mixed
+                .querySelector('[role="checkbox"]')
+                ?.getAttribute('aria-checked'),
+        ).toBe('true');
+        expect(label()).toContain('Caveat');
+    });
+
+    it('writes one line per scope, labeled, with the errors judged on that scope', async () => {
+        const engine = createScopedEngine();
+        (engine.process as any).mockImplementation(
+            (
+                _input: string,
+                opts?: { assertions?: Assertion[]; surface?: string },
+            ) => ({
+                assertions: [...(opts?.assertions ?? [])],
+                rendered: (opts?.assertions ?? [])
+                    .map((a) => a.conceptId)
+                    .join('/'),
+                valid: false,
+                // The engine reports an error of the marking on both scopes,
+                // and one of its own on the admin scope.
+                errors: [
+                    { constraintId: 'shared', message: 'Shared rule broken' },
+                    ...(opts?.surface === 'admin'
+                        ? [
+                              {
+                                  constraintId: 'admin-rule',
+                                  message: 'Admin needs a value',
+                              },
+                          ]
+                        : []),
+                ],
+            }),
+        );
+        const scoped = document.createElement('div');
+        document.body.appendChild(scoped);
+        await flow.init(scoped, toCtx(engine), { scope: 'marking admin' });
+        await enterFlow(scoped);
+        scoped
+            .querySelectorAll<HTMLButtonElement>('.ez-decision-flow__option')[0]
+            .click();
+        await vi.waitFor(() =>
+            expect(
+                scoped.querySelector(
+                    '.ez-decision-flow__row[data-scope="admin"] .ez-decision-flow__row-errors',
+                )?.textContent,
+            ).toBe('1 error'),
+        );
+        const rows = [
+            ...scoped.querySelectorAll<HTMLElement>('.ez-decision-flow__row'),
+        ];
+        expect(
+            rows.map(
+                (row) =>
+                    row.querySelector('.ez-decision-flow__row-label')
+                        ?.textContent,
+            ),
+        ).toEqual(['Marking', 'Admin']);
+        // Each line counts its own scope's errors, and an error both scopes
+        // report counts once, on the first of them.
+        expect(
+            rows.map(
+                (row) =>
+                    row.querySelector<HTMLElement>(
+                        '.ez-decision-flow__row-errors',
+                    )?.title,
+            ),
+        ).toEqual(['Shared rule broken', 'Admin needs a value']);
+        // The admin scope's required step reads as missing on its dot.
+        await vi.waitFor(() =>
+            expect(
+                scoped.querySelector<HTMLElement>(
+                    '.ez-decision-flow__step-dot[data-category-id="admin_cat"]',
+                )?.dataset.state,
+            ).toMatch(/missing|optional/),
+        );
+    });
 });

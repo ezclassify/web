@@ -1530,6 +1530,46 @@
             "method": "POST",
             "statusCode": 200
         },
+        "414d70c4d180bbd7c6f6358309876ef24e8891307ce10d381d5c364692ce2105": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "two-scope-flow",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "two-scope-flow",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            {
+                                "categoryId": "decided_by",
+                                "conceptId": "DECIDED_BY_TEXT",
+                                "value": "J. Doe, Editor"
+                            }
+                        ],
+                        "omitted": [
+                            {
+                                "categoryId": "origin_type",
+                                "conceptId": "COPIED"
+                            }
+                        ],
+                        "unrepresentable": []
+                    },
+                    "result": "Decided By: J. Doe, Editor"
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
         "47f6b6fb6c4c4e684a79d97bcbb5f59c3acc7fac0c26453bdab522387c5b97d6": {
             "body": {
                 "resolution": {

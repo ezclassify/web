@@ -50,9 +50,6 @@ interface CategoryRow {
  * rendered as rows of toggle buttons.
  */
 export class CategorySelector extends ComponentBase {
-    protected override clearButtonMount(): HTMLElement {
-        return this.clearButtonFrame(this.bodyEl);
-    }
     private preview!: HTMLDivElement;
     private bodyEl!: HTMLDivElement;
     private announcer!: HTMLDivElement;
@@ -139,6 +136,7 @@ export class CategorySelector extends ComponentBase {
         // Body container
         this.bodyEl = document.createElement('div');
         this.bodyEl.className = 'category-selector-body';
+        this.applySuiteFrame(this.bodyEl);
         this.container.appendChild(this.bodyEl);
 
         // Announcer
@@ -188,6 +186,7 @@ export class CategorySelector extends ComponentBase {
     }
 
     destroy(): void {
+        this._destroyed = true;
         this.destroyClearButton();
         this.removeRuleErrors();
         this.container.innerHTML = '';
@@ -213,6 +212,13 @@ export class CategorySelector extends ComponentBase {
         } else {
             this.renderFlat();
         }
+
+        // The suite's chrome ends the control's first row, after the first
+        // category's name (or the first group's heading).
+        const firstRow = this.bodyEl.querySelector<HTMLElement>(
+            '.category-selector-group-heading, .category-selector-head',
+        );
+        if (firstRow) this.mountSuiteChrome(firstRow);
     }
 
     /** Render all category rows without grouping */
@@ -282,13 +288,17 @@ export class CategorySelector extends ComponentBase {
         rowEl.dataset.categoryId = row.category.id;
         rowEl.dataset.rowIndex = String(rowIndex);
 
-        // Label
+        // The category's name, on its own line above its buttons. The control's
+        // first line also carries the suite's chrome at its trailing end.
+        const head = document.createElement('div');
+        head.className = 'category-selector-head';
         const label = document.createElement('div');
         label.className = 'category-selector-label';
         label.textContent = row.category.label;
         label.id = `category-label-${row.category.id}`;
         rowEl.setAttribute('aria-labelledby', label.id);
-        rowEl.appendChild(label);
+        head.appendChild(label);
+        rowEl.appendChild(head);
 
         // Options container
         const optionsEl = document.createElement('div');

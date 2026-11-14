@@ -24,6 +24,15 @@
     gap: 0.25rem;
 }
 
+/* A control with a header row of its own places the row at that row's
+   trailing end, in flow: the pickers and DecisionFlow. */
+.ez-field-chrome--inline {
+    position: static;
+    transform: none;
+    flex: 0 0 auto;
+    margin-inline-start: auto;
+}
+
 /* A multi-line field pins the row to its first line, the way a native
    textarea's own controls sit at its top corner. */
 .ez-field-chrome--start {
@@ -47,7 +56,8 @@
 .marked-input-wrap > .marked-input-native,
 .marked-input-wrap > .marked-input-display,
 .marked-textarea-wrap > .marked-textarea-input,
-.marked-textarea-wrap > .marked-textarea-display {
+.marked-textarea-wrap > .marked-textarea-display,
+.select-dropdown-field {
     padding-inline-end: calc(
         var(--ez-field-chrome-inline-size, 0px) + 0.5rem
     ) !important;
@@ -63,5 +73,45 @@
     }
     .ez-field-chrome__status {
         gap: 1.5rem;
+    }
+}
+
+/* ── The suite's field frame ──────────────────────────────
+   The box every control sits in, at the weight of an ordinary input: one
+   edge, the input radius, the field background and the input padding, from
+   the library's tokens. A control that enhances a text input takes that
+   input's own values instead (mirrorHostFrame in field-chrome.ts), as the text
+   fields do. No shadow, no panel: a control is a peer of the host's inputs. */
+.ez-field-frame {
+    position: relative;
+    box-sizing: border-box;
+    min-width: 0;
+    min-height: 2rem;
+    padding: 0.375rem 0.5rem;
+    background: var(--ez-color-background, inherit);
+    border: 1px solid var(--ez-color-border, #d1d5db);
+    border-radius: var(--ez-border-radius, 0.25rem);
+    color: var(--ez-color-text, inherit);
+}
+/* Inset, like the text fields' own ring, so every control draws focus the
+   same way inside its own edge. Focus on a chrome control shows that
+   control's own ring instead: clearing is a form action, not editing. */
+.ez-field-frame:focus-within:not(:has(.ez-field-chrome :focus)) {
+    outline: 2px solid var(--ez-color-primary, #fdb827);
+    outline-offset: -2px;
+}
+/* A control whose host is locked reads as a disabled input. */
+.ez-field-frame[data-ezclassify-locked] {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+@media (forced-colors: active) {
+    .ez-field-frame {
+        border: 1px solid ButtonText;
+        background: Field;
+        color: FieldText;
+    }
+    .ez-field-frame:focus-within {
+        outline: 2px solid Highlight;
     }
 }

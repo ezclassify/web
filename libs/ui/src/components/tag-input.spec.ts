@@ -645,11 +645,14 @@ describe('TagInput', () => {
         expect([chrome.className, [...chrome.children]]).toEqual(atRest);
     });
 
-    it('draws its focus ring inside the field border, except while clear has focus', () => {
+    it('draws the suite focus ring inside the field border, except while the chrome has focus', async () => {
+        await mountTagInput('');
+        const wrap = root.querySelector('.tag-input-wrap')!;
+        expect(wrap.classList.contains('ez-field-frame')).toBe(true);
         const here = dirname(fileURLToPath(import.meta.url));
-        const css = readFileSync(join(here, 'tag-input.css'), 'utf8');
+        const css = readFileSync(join(here, 'field-chrome.css'), 'utf8');
         expect(css).toMatch(
-            /\.tag-input-wrap:focus-within:not\(\s*:has\(> \.ez-field-chrome \.ez-clear-button:focus\)\s*\)\s*\{[^}]*outline-offset:\s*-2px/,
+            /\.ez-field-frame:focus-within:not\(:has\(\.ez-field-chrome :focus\)\)\s*\{[^}]*outline-offset:\s*-2px/,
         );
     });
 

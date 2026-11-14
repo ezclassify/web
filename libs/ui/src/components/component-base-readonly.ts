@@ -118,6 +118,12 @@ export interface ComponentInstance {
      */
     pendingDraft?(): string | null;
     /**
+     * The output a field that owns its marking writes it in, for a field that
+     * writes its own marking text (MarkedInput). The store writes the marking's
+     * `rendered` in the same output, so views read what the field shows.
+     */
+    writtenOutput?(): string;
+    /**
      * Render the UI into the container, marking with the Context (or the
      * Context's scheme view) it is given. There is no other way to find one.
      */
@@ -741,14 +747,17 @@ export abstract class ReadOnlyComponentBase implements ComponentInstance {
         try {
             result = await this.readHeld(value);
         } catch (error) {
-            if (seq !== this.valueReadSeq) return;
+            // A field torn down while its value was read has nothing to show.
+            if (seq !== this.valueReadSeq || this.abandoned) return;
             // Nothing was read, so the marking the field holds stays as it
             // was and nothing is published; the field says why instead.
             this.failedRead = value;
             this.showReadFailure(error);
             return;
         }
-        if (seq !== this.valueReadSeq) return;
+        // Nor does it publish what the read found: its runtime, and the
+        // Context it read through, may be gone already.
+        if (seq !== this.valueReadSeq || this.abandoned) return;
         this.failedRead = null;
         this.assertions = result.assertions;
         this._lastRendered = acceptedValue(value, result);

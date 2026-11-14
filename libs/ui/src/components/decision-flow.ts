@@ -1,10 +1,20 @@
 /**
  * DecisionFlow: sequential decision-point stepper component.
  *
- * Renders one profile category at a time as radio-card options with step
- * indicators, Next/Back navigation, and a summary stripe showing all completed
- * selections. Each step calls `reprocess()` so constraints and inference fire
- * as the user progresses through the flow.
+ * A field-sized control in the suite's frame. Its header row holds one dot per
+ * step, the step header ("3 of 8 · Dissemination Control") and the suite's
+ * status mark and clear. Under it, one line per scope shows what the marking
+ * writes there and how many errors it has. Focusing or pressing the control
+ * opens the current step between the two: its options in a row, with the
+ * previous and next step arrows at the box's inside edges. Each choice calls
+ * `reprocess()` so constraints and inference fire as the author goes, and a
+ * choice in a single-choice step moves on to the next step.
+ *
+ * The dots are the navigation: each one jumps to its step, and says at a glance
+ * whether the step is current, answered, missing an answer the engine asks for,
+ * or optional and unset. Hovering or focusing a dot grows it and shows the
+ * category with its selections; on a touch screen the first tap previews and a
+ * second tap on the same dot jumps.
  *
  * Useful for any scheme with ordered single-select categories, multi-tier
  * access levels, incident severity ratings, risk triage workflows, etc.
@@ -21,9 +31,10 @@
  * category order. Each step belongs to the scope its category declares, and
  * every engine call made for a step (its options, the choices it accepts) is
  * made on that scope's surface. A flow whose steps span more than one scope
- * labels each step with its scope, groups the summary by scope, judges the
- * marking on each scope's surface, and ends by showing each scope written in
- * its own output. A flow of one scope looks as it always has.
+ * groups its dots by scope under each scope's label, judges the marking on each
+ * scope's surface, and gives each scope a line of its own, written in that
+ * scope's own output with the errors judged there. A flow of one scope has one
+ * unlabeled line.
  *
  * Which steps show is the engine's answer: a step shows while the engine offers
  * an option for it or it holds a choice. A choice that leaves a step with
@@ -128,8 +139,36 @@ interface PendingText {
  */
 export class DecisionFlow extends ComponentBase {
     protected override clearButtonMount(): HTMLElement | null {
-        return this.flowEl ? this.clearButtonFrame(this.flowEl) : null;
+        return this.suiteChrome?.element ?? null;
     }
+    /** The header row: the dots, the step header and the suite's chrome. */
+    private headerEl!: HTMLDivElement;
+    /** The dots, one per visible step. */
+    private dotsEl!: HTMLDivElement;
+    /** "3 of 8 · Dissemination Control". */
+    private titleEl!: HTMLDivElement;
+    /** The open step: its options between the previous and next arrows. */
+    private stepEl!: HTMLDivElement;
+    /** One line per scope: what the marking writes there, and its errors. */
+    private rowsEl!: HTMLDivElement;
+    /** The label a previewed dot shows, laid over the flow. */
+    private previewEl!: HTMLDivElement;
+    /** Whether the current step is open under the header. */
+    private open = false;
+    /** The dot whose label shows, by index into the visible steps. */
+    private previewIndex: number | null = null;
+    /** How the last press on the flow was made: 'touch', 'mouse', 'pen'. */
+    private lastPointerType = '';
+    /** True while a press on a dot moves the flow to its step. */
+    private jumping = false;
+    /** The keyboard's dot among the dots (roving tabindex). */
+    private dotFocus = -1;
+    /** The engine's error messages for the marking, by the category named. */
+    private errorsByCategory = new Map<string, string[]>();
+    /** The engine's error messages, by the scope it judged them on. */
+    private errorsByScope = new Map<string, string[]>();
+    /** Every error message of the last judgment. */
+    private allErrors: string[] = [];
     /** Full step list built once at setup: includes owned/conditional steps. */
     private _allSteps: StepDef[] = [];
     /** The scopes the flow's steps belong to, in declaration order. */
@@ -195,6 +234,8 @@ export class DecisionFlow extends ComponentBase {
     private catalogs = new Map<string, SuggestionCatalog>();
     private pickerPort!: ComposerPort;
     private catalogReady = false;
+    /** The latest load of the engine's options, settled or not. */
+    private optionsLoading: Promise<void> = Promise.resolve();
     private userEdit = false;
     /** The category the author last changed, which a prune never clears. */
     private editedCategory = '';
@@ -209,7 +250,7 @@ export class DecisionFlow extends ComponentBase {
     private pendingText: PendingText | null = null;
     /** True while a committed store state is being applied. */
     private applyingStoreState = false;
-    /** The end-of-flow writing of each scope, keyed by the facts written. */
+    /** Each scope's writing, for a flow of several, keyed by the facts written. */
     private result: { key: string; texts: Map<string, string> } | null = null;
     private resultSequence = 0;
     /** The facts the result is being written for, while a write is in flight. */
@@ -227,7 +268,19 @@ export class DecisionFlow extends ComponentBase {
         this.finishPointer();
     };
     private readonly outsidePointer = (event: Event) => {
-        if (!this.flowEl.contains(event.target as Node)) this.finishPointer();
+        if (this.flowEl.contains(event.target as Node)) return;
+        this.finishPointer();
+        // A tap anywhere else puts a previewed dot back.
+        this.setPreview(null);
+    };
+    /** Focus left the flow: the step closes and the flow is one line again. */
+    private readonly focusOut = (event: FocusEvent) => {
+        // A render replaces the focused element and puts focus back itself.
+        if (this.rendering) return;
+        const next = event.relatedTarget as Node | null;
+        if (next && this.flowEl.contains(next)) return;
+        this.setPreview(null);
+        this.setOpen(false);
     };
     private readonly requestOptions = () => {
         if (
@@ -268,7 +321,13 @@ export class DecisionFlow extends ComponentBase {
         return this.catalogs.get(this.multiScope ? (step.scope ?? '') : '');
     }
 
-    private async refreshOptions(paint = true): Promise<void> {
+    private refreshOptions(paint = true): Promise<void> {
+        const loading = this.loadOptions(paint);
+        this.optionsLoading = loading;
+        return loading;
+    }
+
+    private async loadOptions(paint: boolean): Promise<void> {
         const sequence = ++this.optionsSequence;
         const contextKey = JSON.stringify(this.getProcessingContext()) ?? '';
         const live = statedAssertions(this.assertions);
@@ -460,14 +519,52 @@ export class DecisionFlow extends ComponentBase {
         this._currentCategoryId =
             visibleSteps[this.currentStep]?.categoryId ?? '';
 
+        // The flow in the suite's field frame: the header row, the open step
+        // and one line per scope. The header and the preview overlay last the
+        // component's life; render() rebuilds what is inside them.
         this.flowEl = document.createElement('div');
         this.flowEl.className = 'ez-decision-flow';
         this.flowEl.setAttribute('role', 'group');
         this.flowEl.setAttribute('aria-label', 'Decision flow');
+        this.applySuiteFrame(this.flowEl);
+        this.headerEl = document.createElement('div');
+        this.headerEl.className = 'ez-decision-flow__header';
+        this.dotsEl = document.createElement('div');
+        this.dotsEl.className = 'ez-decision-flow__progress';
+        this.dotsEl.setAttribute('role', 'toolbar');
+        this.dotsEl.setAttribute('aria-label', 'Steps');
+        this.titleEl = document.createElement('div');
+        this.titleEl.className = 'ez-decision-flow__question-label';
+        // The dots and the step header share the row and wrap within it; the
+        // chrome keeps the row's trailing end.
+        const headerMain = document.createElement('div');
+        headerMain.className = 'ez-decision-flow__header-main';
+        headerMain.append(this.dotsEl, this.titleEl);
+        this.headerEl.appendChild(headerMain);
+        this.stepEl = document.createElement('div');
+        this.stepEl.className = 'ez-decision-flow__step';
+        this.stepEl.hidden = true;
+        this.rowsEl = document.createElement('div');
+        this.rowsEl.className = 'ez-decision-flow__rows';
+        this.previewEl = document.createElement('div');
+        this.previewEl.className = 'ez-decision-flow__dot-preview';
+        this.previewEl.setAttribute('aria-hidden', 'true');
+        this.previewEl.hidden = true;
+        this.flowEl.append(
+            this.headerEl,
+            this.stepEl,
+            this.rowsEl,
+            this.previewEl,
+        );
         this.container.appendChild(this.flowEl);
+        this.mountSuiteChrome(this.headerEl);
 
         this.announcer = createAnnouncer();
         this.container.appendChild(this.announcer);
+        this.appendKeyboardHints([
+            { keys: '\u2190/\u2192', action: 'steps' },
+            { keys: 'Enter', action: 'go to step' },
+        ]);
 
         this.pickerPort = this.composerPort('additive');
         if (this.multiScope) {
@@ -490,12 +587,21 @@ export class DecisionFlow extends ComponentBase {
             );
         }
         this.flowEl.addEventListener('focusin', this.requestOptions);
-        this.flowEl.addEventListener('pointerdown', () => {
-            this.pointerActive = true;
+        // Focus inside the flow opens its step; leaving closes it.
+        this.flowEl.addEventListener('focusin', (event) => {
+            if (!this.suiteChrome?.element.contains(event.target as Node))
+                this.setOpen(true);
         });
-        this.flowEl.addEventListener('click', () => {
+        this.flowEl.addEventListener('focusout', this.focusOut);
+        this.flowEl.addEventListener('pointerdown', (event) => {
+            this.pointerActive = true;
+            this.lastPointerType = event.pointerType;
+        });
+        this.flowEl.addEventListener('click', (event) => {
             this.finishPointer();
             this.requestOptions();
+            if (!this.suiteChrome?.element.contains(event.target as Node))
+                this.setOpen(true);
         });
         // Touch browsers may dispatch click after pointerup in a later task.
         // Keep an inside press mounted until click; an outside release cancels it.
@@ -606,10 +712,54 @@ export class DecisionFlow extends ComponentBase {
     ): void {
         if (!this.judgesInOwnScopes()) {
             ++this.judgeSequence;
-            super.updateValidationErrors(errors, proposedFixes, warnings);
+            this.showJudgment(errors, proposedFixes, warnings);
             return;
         }
         void this.judgeInScopes();
+    }
+
+    /**
+     * Show the engine's judgment of the marking: under the flow, as every
+     * control shows it, and on the dots and scope lines, where each error marks
+     * the step of the category it names.
+     */
+    private showJudgment(
+        errors: readonly ValidationError[],
+        proposedFixes: readonly Fix[],
+        warnings: readonly Warning[],
+        refused?: { assessment?: RenderAssessment },
+        byScope?: ReadonlyMap<string, readonly ValidationError[]>,
+    ): void {
+        this.allErrors = errors.map((error) => error.message);
+        this.errorsByCategory = new Map();
+        for (const error of errors) {
+            if (!error.categoryId) continue;
+            const list = this.errorsByCategory.get(error.categoryId) ?? [];
+            list.push(error.message);
+            this.errorsByCategory.set(error.categoryId, list);
+        }
+        // An error the engine reports on several scopes belongs to the first
+        // of them, in the scheme's declaration order, so it is counted once.
+        const counted = new Set<string>();
+        this.errorsByScope = new Map(
+            [...(byScope ?? [])].map(([scope, list]) => [
+                scope,
+                list
+                    .map((error) => error.message)
+                    .filter((message) => {
+                        if (counted.has(message)) return false;
+                        counted.add(message);
+                        return true;
+                    }),
+            ]),
+        );
+        if (refused)
+            super.showRenderRefusal(refused, errors, proposedFixes, warnings);
+        else super.updateValidationErrors([...errors], proposedFixes, warnings);
+        if (this.flowEl && !this.rendering) {
+            this.renderProgress();
+            this.renderRows();
+        }
     }
 
     /**
@@ -624,7 +774,7 @@ export class DecisionFlow extends ComponentBase {
     ): void {
         if (!this.judgesInOwnScopes()) {
             ++this.judgeSequence;
-            super.showRenderRefusal(write, errors, proposedFixes, warnings);
+            this.showJudgment(errors, proposedFixes, warnings, write);
             return;
         }
         void this.judgeInScopes(write);
@@ -671,15 +821,15 @@ export class DecisionFlow extends ComponentBase {
             errors: ValidationError[],
             proposedFixes: Fix[] = [],
             warnings: Warning[] = [],
+            byScope?: ReadonlyMap<string, readonly ValidationError[]>,
         ) =>
-            refused
-                ? super.showRenderRefusal(
-                      refused,
-                      errors,
-                      proposedFixes,
-                      warnings,
-                  )
-                : super.updateValidationErrors(errors, proposedFixes, warnings);
+            this.showJudgment(
+                errors,
+                proposedFixes,
+                warnings,
+                refused,
+                byScope,
+            );
         const stated = statedAssertions(this.assertions);
         if (stated.length === 0) {
             show([]);
@@ -715,6 +865,11 @@ export class DecisionFlow extends ComponentBase {
                 once(results.flatMap((r) => r.errors ?? [])),
                 once(results.flatMap((r) => r.proposedFixes ?? [])),
                 once(results.flatMap((r) => r.warnings ?? [])),
+                new Map(
+                    scopes.flatMap((scope, i) =>
+                        scope ? [[scope, results[i].errors ?? []]] : [],
+                    ),
+                ),
             );
         } catch (error) {
             if (this._destroyed || sequence !== this.judgeSequence) return;
@@ -731,6 +886,7 @@ export class DecisionFlow extends ComponentBase {
         document.removeEventListener('pointerdown', this.outsidePointer);
         document.removeEventListener('pointerup', this.releasePointer);
         document.removeEventListener('pointercancel', this.finishPointer);
+        this.flowEl?.removeEventListener('focusout', this.focusOut);
         this.container.innerHTML = '';
     }
 
@@ -770,6 +926,11 @@ export class DecisionFlow extends ComponentBase {
             const prevFocused = document.activeElement as HTMLElement | null;
             const focusedInComponent = this.flowEl.contains(prevFocused);
             const prevConceptId = prevFocused?.dataset?.conceptId ?? '';
+            const prevDot = prevFocused?.classList?.contains(
+                'ez-decision-flow__step-dot',
+            )
+                ? (prevFocused.dataset.index ?? null)
+                : null;
             const prevWasTextField =
                 prevFocused?.classList?.contains(
                     'ez-decision-flow__text-field',
@@ -802,12 +963,17 @@ export class DecisionFlow extends ComponentBase {
                 }
             };
 
-            this.flowEl.innerHTML = '';
             this.renderProgress();
+            this.renderTitle();
+            this.stepEl.replaceChildren();
+            this.renderNavigation('start');
             this.renderCurrentStep();
-            this.renderNavigation();
-            this.renderSummary();
-            this.renderResult();
+            this.renderNavigation('end');
+            this.stepEl.hidden = !this.open;
+            this.renderRows();
+            this.flowEl.toggleAttribute('data-ezclassify-locked', this.locked);
+            // A rebuilt dot keeps its label showing.
+            if (this.previewIndex !== null) this.setPreview(this.previewIndex);
 
             // Restore keyboard focus after DOM rebuild. Set _restoreFocusAfterRender before
             // any action that calls render() as a side-effect (concept selection, Next/Back).
@@ -847,7 +1013,16 @@ export class DecisionFlow extends ComponentBase {
             } else if (focusedInComponent) {
                 // Secondary render (e.g. from catalog updates), restore to whatever was
                 // focused before the DOM rebuild so we don't silently push focus to body.
-                if (prevWasTextField) {
+                if (prevDot !== null) {
+                    (
+                        this.dotsEl.querySelector<HTMLElement>(
+                            `.ez-decision-flow__step-dot[data-index="${prevDot}"]`,
+                        ) ??
+                        this.dotsEl.querySelector<HTMLElement>(
+                            '.ez-decision-flow__step-dot[tabindex="0"]',
+                        )
+                    )?.focus();
+                } else if (prevWasTextField) {
                     restoreTextFocus();
                 } else if (prevConceptId) {
                     const restored =
@@ -945,33 +1120,244 @@ export class DecisionFlow extends ComponentBase {
         return !step.required;
     }
 
+    /**
+     * What a step holds, in words: its choices as the step's scope writes them,
+     * or empty when it holds none.
+     */
+    private selectionText(step: StepDef): string {
+        // A typed value shows the way the step's scope writes it, not in the
+        // spelling it is stored in.
+        const view = viewForCategory(
+            getPublicFormatLayout(this.schemeMeta, this.outputFor(step.scope)),
+            step.categoryId,
+        );
+        return this.assertions
+            .filter((a) => a.categoryId === step.categoryId)
+            .map((a) => {
+                const concept = step.concepts.find((c) => c.id === a.conceptId);
+                if (concept?.textInput && a.value)
+                    return writtenValue(
+                        a.value,
+                        concept.textInput.encoding,
+                        view,
+                    );
+                return concept?.name ?? a.conceptId;
+            })
+            .join(', ');
+    }
+
+    /**
+     * A step's state at a glance: answered; missing, when the engine asks for
+     * an answer there; optional and unset; or unset.
+     */
+    private stepState(
+        step: StepDef,
+    ): 'answered' | 'missing' | 'optional' | 'unset' {
+        if (this.chosenIn(step).size > 0) return 'answered';
+        // The engine names the category, or judges the step's scope wrong
+        // while this required step is still unanswered.
+        if (
+            this.errorsByCategory.has(step.categoryId) ||
+            (step.required && this.errorsIn(step.scope).length > 0)
+        )
+            return 'missing';
+        return step.required ? 'unset' : 'optional';
+    }
+
+    /** A dot's label: the category and its selections, or why it has none. */
+    private dotLabel(step: StepDef): string {
+        const state = this.stepState(step);
+        const held = this.selectionText(step);
+        const said =
+            state === 'answered'
+                ? held || 'chosen'
+                : state === 'missing'
+                  ? 'needs an answer'
+                  : state === 'optional'
+                    ? 'optional, not set'
+                    : 'not set';
+        return `${step.label}: ${said}`;
+    }
+
+    /**
+     * The dots: one button per visible step, grouped by scope with the scope's
+     * label when the flow spans several. They are one tab stop; the arrow keys
+     * move between them, and Enter, Space or a press jumps to the step.
+     */
     private renderProgress(): void {
-        const bar = document.createElement('div');
-        bar.className = 'ez-decision-flow__progress';
-        bar.setAttribute('aria-hidden', 'true');
-        if (this.steps.length === 1) {
-            bar.textContent = 'Step 1 of 1';
-            this.flowEl.appendChild(bar);
+        const steps = this.steps;
+        this.dotsEl.replaceChildren();
+        if (this.dotFocus < 0 || this.dotFocus >= steps.length)
+            this.dotFocus = this.currentStep;
+        const groups: { scope?: string; steps: number[] }[] = [];
+        steps.forEach((step, i) => {
+            const last = groups[groups.length - 1];
+            if (this.multiScope && last && last.scope !== step.scope)
+                groups.push({ scope: step.scope, steps: [i] });
+            else if (last) last.steps.push(i);
+            else groups.push({ scope: step.scope, steps: [i] });
+        });
+        for (const group of groups) {
+            let target: HTMLElement = this.dotsEl;
+            if (this.multiScope && group.scope) {
+                const label = scopeLabel(group.scope, this.schemeMeta);
+                target = document.createElement('span');
+                target.className = 'ez-decision-flow__dot-group';
+                target.setAttribute('role', 'group');
+                target.setAttribute('aria-label', label);
+                target.dataset.scope = group.scope;
+                const caption = document.createElement('span');
+                caption.className = 'ez-decision-flow__dot-group-label';
+                caption.setAttribute('aria-hidden', 'true');
+                caption.textContent = label;
+                target.appendChild(caption);
+                this.dotsEl.appendChild(target);
+            }
+            for (const i of group.steps) target.appendChild(this.dot(i));
+        }
+    }
+
+    private dot(i: number): HTMLButtonElement {
+        const steps = this.steps;
+        const step = steps[i];
+        const dot = document.createElement('button');
+        dot.type = 'button';
+        dot.className = 'ez-decision-flow__step-dot';
+        dot.dataset.state = this.stepState(step);
+        dot.dataset.index = String(i);
+        dot.dataset.categoryId = step.categoryId;
+        if (i === this.currentStep) {
+            dot.dataset.current = '';
+            dot.setAttribute('aria-current', 'step');
+        }
+        dot.tabIndex = i === this.dotFocus ? 0 : -1;
+        dot.setAttribute(
+            'aria-label',
+            `Step ${i + 1} of ${steps.length}, ${this.dotLabel(step)}`,
+        );
+        dot.addEventListener('click', () => {
+            // A finger has no hover: its first tap shows the dot's label and
+            // a second tap on the same dot goes there.
+            if (this.lastPointerType === 'touch' && this.previewIndex !== i) {
+                this.lastPointerType = '';
+                this.setPreview(i);
+                return;
+            }
+            this.lastPointerType = '';
+            this.dotFocus = i;
+            this.setPreview(null);
+            this.setOpen(true);
+            // The jump keeps focus on the dot; that focus is no request to
+            // preview the step the author just went to.
+            this.jumping = true;
+            try {
+                this.goToStep(i, 'dot');
+            } finally {
+                this.jumping = false;
+            }
+        });
+        dot.addEventListener('pointerenter', (event) => {
+            if (event.pointerType !== 'touch') this.setPreview(i);
+        });
+        dot.addEventListener('pointerleave', (event) => {
+            if (event.pointerType !== 'touch' && this.previewIndex === i)
+                this.setPreview(null);
+        });
+        dot.addEventListener('focus', () => {
+            this.dotFocus = i;
+            // Focus a render or a jump puts back is no request to preview.
+            if (!this.jumping && !this.rendering) this.setPreview(i);
+        });
+        dot.addEventListener('blur', () => {
+            if (this.previewIndex === i) this.setPreview(null);
+        });
+        dot.addEventListener('keydown', (event) => this.onDotKeydown(event, i));
+        return dot;
+    }
+
+    /** Arrow keys, Home and End move between the dots. */
+    private onDotKeydown(event: KeyboardEvent, i: number): void {
+        const count = this.steps.length;
+        const next =
+            event.key === 'ArrowRight' || event.key === 'ArrowDown'
+                ? (i + 1) % count
+                : event.key === 'ArrowLeft' || event.key === 'ArrowUp'
+                  ? (i - 1 + count) % count
+                  : event.key === 'Home'
+                    ? 0
+                    : event.key === 'End'
+                      ? count - 1
+                      : -1;
+        if (next < 0) return;
+        event.preventDefault();
+        const dots = [
+            ...this.dotsEl.querySelectorAll<HTMLButtonElement>(
+                '.ez-decision-flow__step-dot',
+            ),
+        ];
+        dots.forEach((dot, j) => (dot.tabIndex = j === next ? 0 : -1));
+        this.dotFocus = next;
+        dots[next]?.focus();
+    }
+
+    /**
+     * Show the label of the dot at `index` over the flow, or hide it. The label
+     * never moves the layout and stays inside the viewport.
+     */
+    private setPreview(index: number | null): void {
+        if (!this.previewEl) return;
+        const step = index === null ? undefined : this.steps[index];
+        const dot =
+            index === null
+                ? null
+                : this.dotsEl.querySelector<HTMLElement>(
+                      `.ez-decision-flow__step-dot[data-index="${index}"]`,
+                  );
+        for (const other of this.dotsEl.querySelectorAll<HTMLElement>(
+            '[data-previewing]',
+        ))
+            other.removeAttribute('data-previewing');
+        if (!step || !dot) {
+            this.previewIndex = null;
+            this.previewEl.hidden = true;
             return;
         }
+        this.previewIndex = index;
+        dot.setAttribute('data-previewing', '');
+        this.previewEl.textContent = this.dotLabel(step);
+        this.previewEl.dataset.state = this.stepState(step);
+        this.previewEl.hidden = false;
+        // Centered under the dot, then pulled back inside the viewport.
+        const frame = this.flowEl.getBoundingClientRect();
+        const at = dot.getBoundingClientRect();
+        this.previewEl.style.top = `${at.bottom - frame.top + 4}px`;
+        this.previewEl.style.left = '0px';
+        const width = this.previewEl.getBoundingClientRect().width;
+        const viewport =
+            document.documentElement.clientWidth || window.innerWidth;
+        const margin = 8;
+        let left = at.left + at.width / 2 - width / 2;
+        left = Math.min(left, viewport - margin - width);
+        left = Math.max(left, margin);
+        this.previewEl.style.left = `${left - frame.left}px`;
+    }
 
-        this.steps.forEach((step, i) => {
-            if (i > 0) {
-                const connector = document.createElement('div');
-                connector.className = 'ez-decision-flow__step-connector';
-                if (i <= this.currentStep) connector.dataset.state = 'complete';
-                bar.appendChild(connector);
-            }
-            const dot = document.createElement('div');
-            dot.className = 'ez-decision-flow__step-dot';
-            const hasSelection = this.assertions.some(
-                (a) => a.categoryId === step.categoryId,
-            );
-            if (i === this.currentStep) dot.dataset.state = 'current';
-            else if (hasSelection) dot.dataset.state = 'complete';
-            bar.appendChild(dot);
-        });
-        this.flowEl.appendChild(bar);
+    /** Open or close the current step under the header. */
+    private setOpen(open: boolean): void {
+        if (this.open === open || !this.stepEl) return;
+        this.open = open;
+        this.stepEl.hidden = !open;
+        this.flowEl.toggleAttribute('data-open', open);
+    }
+
+    /** The step header beside the dots: "3 of 8 · Dissemination Control". */
+    private renderTitle(): void {
+        const steps = this.steps;
+        const step = steps[this.currentStep];
+        this.titleEl.id = step ? `df-label-${step.categoryId}` : '';
+        this.titleEl.textContent = step
+            ? `${this.currentStep + 1} of ${steps.length} · ${step.label}`
+            : '';
     }
 
     private renderCurrentStep(): void {
@@ -980,20 +1366,6 @@ export class DecisionFlow extends ComponentBase {
 
         const q = document.createElement('div');
         q.className = 'ez-decision-flow__question';
-
-        // A flow of several scopes says which one each step belongs to.
-        if (this.multiScope && step.scope) {
-            const scope = document.createElement('div');
-            scope.className = 'ez-decision-flow__scope';
-            scope.textContent = scopeLabel(step.scope, this.schemeMeta);
-            q.appendChild(scope);
-        }
-
-        const label = document.createElement('h3');
-        label.className = 'ez-decision-flow__question-label';
-        label.id = `df-label-${step.categoryId}`;
-        label.textContent = `Step ${this.currentStep + 1} of ${this.steps.length}: ${step.label}`;
-        q.appendChild(label);
 
         if (!step.single && !this.isTextInputStep(step)) {
             const hint = document.createElement('div');
@@ -1022,7 +1394,7 @@ export class DecisionFlow extends ComponentBase {
 
         q.appendChild(optionsEl);
         if (!this.isTextInputStep(step)) this.renderCompanions(step, q);
-        this.flowEl.appendChild(q);
+        this.stepEl.appendChild(q);
     }
 
     /**
@@ -1072,9 +1444,15 @@ export class DecisionFlow extends ComponentBase {
                 this._restoreFocusAfterRender = true;
                 this._lastFocusConceptId = concept.id;
                 this.pick(step, concept.id, () => {
+                    // A plain choice answers the step, so the flow moves on;
+                    // a value-taking one waits for its value.
                     if (concept.textInput)
                         this.chooseValueConcept(step, concept);
-                    else this.selectConcept(step.categoryId, concept.id);
+                    else
+                        void this.selectConcept(
+                            step.categoryId,
+                            concept.id,
+                        ).then(() => void this.advanceFrom(step.categoryId));
                     announce(this.announcer, `Selected ${concept.name}`);
                 });
             });
@@ -1163,8 +1541,14 @@ export class DecisionFlow extends ComponentBase {
                 this.enterValue(step, concept, inputEl);
             });
 
-            // Prevent arrow keys from bubbling to the flow's keyboard handler.
-            inputEl.addEventListener('keydown', (e) => e.stopPropagation());
+            // Enter moves on to the next step. Other keys stay in the field.
+            inputEl.addEventListener('keydown', (e) => {
+                e.stopPropagation();
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    this.goToStep(this.currentStep + 1);
+                }
+            });
 
             wrap.appendChild(inputEl);
             optionsEl.appendChild(wrap);
@@ -1242,7 +1626,13 @@ export class DecisionFlow extends ComponentBase {
                 this.enterValue(step, concept, inputEl);
             });
             inputEl.addEventListener('blur', () => showError(true));
-            inputEl.addEventListener('keydown', (e) => e.stopPropagation());
+            inputEl.addEventListener('keydown', (e) => {
+                e.stopPropagation();
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    this.goToStep(this.currentStep + 1);
+                }
+            });
             showError(false);
 
             wrap.append(label, inputEl, errorEl);
@@ -1391,160 +1781,166 @@ export class DecisionFlow extends ComponentBase {
                 });
             });
 
+            // Space toggles a choice; Enter moves on to the next step.
+            btn.addEventListener('keydown', (event: KeyboardEvent) => {
+                if (event.key !== 'Enter') return;
+                event.preventDefault();
+                this.goToStep(this.currentStep + 1);
+            });
+
             optionsEl.appendChild(btn);
         });
     }
 
     /**
      * Move to another step. A value-taking choice left without a value is
-     * dropped; one with a value is in the marking already.
+     * dropped; one with a value is in the marking already. A jump from a dot
+     * keeps the keyboard on the dots; any other move takes it to the step.
      */
-    private goToStep(index: number): void {
+    private goToStep(index: number, from: 'dot' | 'step' = 'step'): void {
         const steps = this.steps;
         if (index < 0 || index >= steps.length) return;
         this.pendingText = null;
         this.currentStep = index;
         this._currentCategoryId = steps[index].categoryId;
-        this._restoreFocusAfterRender = true;
+        this.dotFocus = index;
+        this._restoreFocusAfterRender = from === 'step';
         this.render();
+        if (from === 'dot')
+            this.dotsEl
+                .querySelector<HTMLElement>(
+                    `.ez-decision-flow__step-dot[data-index="${index}"]`,
+                )
+                ?.focus();
         announce(
             this.announcer,
             `Step ${index + 1}: ${steps[index].label ?? ''}`,
         );
     }
 
-    private renderNavigation(): void {
-        const nav = document.createElement('div');
-        nav.className = 'ez-decision-flow__nav';
-
-        const back = document.createElement('button');
-        back.type = 'button';
-        back.className = 'ez-decision-flow__nav-btn';
-        setNavLabel(back, 'Back', '←', 'start');
-        back.disabled = this.currentStep === 0;
-        back.addEventListener('click', () => {
-            if (this.currentStep > 0) this.goToStep(this.currentStep - 1);
-        });
-        nav.appendChild(back);
-
-        const next = document.createElement('button');
-        next.type = 'button';
-        next.className = 'ez-decision-flow__nav-btn';
-        if (this.currentStep === this.steps.length - 1) {
-            setNavLabel(next, 'Done');
-        } else {
-            setNavLabel(next, 'Next', '→', 'end');
+    /**
+     * After a choice in the step for `categoryId` settles, move on to the next
+     * step, unless the author has moved somewhere else meanwhile.
+     */
+    private async advanceFrom(categoryId: string): Promise<void> {
+        // Which step comes next is the engine's answer for the new marking: a
+        // choice can bring steps or take them away. Wait for the options it
+        // started loading, and for any load that one started in turn, a
+        // bounded number of times.
+        for (let i = 0; i < ADVANCE_SETTLE_ROUNDS; i++) {
+            const loading = this.optionsLoading;
+            await loading.catch(() => {});
+            if (loading === this.optionsLoading) break;
         }
-        // Optional categories (required: false) are skippable, Next stays enabled even without
-        // a selection so the user can advance through them without being forced to pick.
-        next.disabled = !this.isStepPassable(this.currentStep);
-        next.addEventListener('click', () => {
-            if (this.currentStep < this.steps.length - 1)
-                this.goToStep(this.currentStep + 1);
-        });
-        nav.appendChild(next);
-
-        this.flowEl.appendChild(nav);
-    }
-
-    private summaryChip(step: StepDef): HTMLSpanElement {
-        const stepAssertions = this.assertions.filter(
-            (a) => a.categoryId === step.categoryId,
-        );
-        // A typed value shows the way the step's scope writes it, not in the
-        // spelling it is stored in.
-        const view = viewForCategory(
-            getPublicFormatLayout(this.schemeMeta, this.outputFor(step.scope)),
-            step.categoryId,
-        );
-        const names = stepAssertions.map((a) => {
-            const concept = step.concepts.find((c) => c.id === a.conceptId);
-            if (concept?.textInput && a.value)
-                return writtenValue(a.value, concept.textInput.encoding, view);
-            return concept?.name ?? a.conceptId;
-        });
-        const chip = document.createElement('span');
-        chip.className =
-            stepAssertions.length > 0
-                ? 'ez-decision-flow__summary-chip'
-                : 'ez-decision-flow__summary-chip ez-decision-flow__summary-chip--empty';
-        chip.textContent = `${step.label}: ${
-            stepAssertions.length === 0
-                ? EMPTY_VALUE
-                : step.single
-                  ? names[0]
-                  : names.join(', ')
-        }`;
-        return chip;
-    }
-
-    private renderSummary(): void {
-        const summary = document.createElement('div');
-        summary.className = 'ez-decision-flow__summary';
-        summary.setAttribute('aria-label', 'Selected decisions');
-
-        if (!this.multiScope) {
-            for (const step of this.steps)
-                summary.appendChild(this.summaryChip(step));
-            this.flowEl.appendChild(summary);
-            return;
-        }
-
-        // A flow of several scopes groups its decisions by scope.
-        summary.classList.add('ez-decision-flow__summary--grouped');
-        const steps = this.steps;
-        for (const scope of this.stepScopes) {
-            const inScope = steps.filter((s) => s.scope === scope);
-            if (inScope.length === 0) continue;
-            const group = document.createElement('div');
-            group.className = 'ez-decision-flow__summary-group';
-            group.setAttribute('role', 'group');
-            const label = scopeLabel(scope, this.schemeMeta);
-            group.setAttribute('aria-label', label);
-            const heading = document.createElement('span');
-            heading.className = 'ez-decision-flow__summary-scope';
-            heading.textContent = label;
-            group.appendChild(heading);
-            for (const step of inScope)
-                group.appendChild(this.summaryChip(step));
-            summary.appendChild(group);
-        }
-        this.flowEl.appendChild(summary);
+        if (this._destroyed || this._currentCategoryId !== categoryId) return;
+        this.goToStep(this.currentStep + 1);
     }
 
     /**
-     * At the end of a flow of several scopes, the finished marking: each scope
-     * written in its own output, under its label.
+     * The previous or next step arrow, at the open step's inside edge. Both
+     * stay; each is disabled at its end, and Next waits for an answer the step
+     * requires.
      */
-    private renderResult(): void {
-        if (!this.multiScope) return;
-        if (this.currentStep !== this.steps.length - 1) return;
-        const result = document.createElement('div');
-        result.className = 'ez-decision-flow__result';
-        result.setAttribute('role', 'group');
-        result.setAttribute('aria-label', 'Finished marking');
-        const key = JSON.stringify(
+    private renderNavigation(side: 'start' | 'end'): void {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = `ez-decision-flow__nav-btn ez-decision-flow__nav-btn--${side}`;
+        const glyph = document.createElement('span');
+        glyph.setAttribute('aria-hidden', 'true');
+        // Text presentation (U+FE0E), so no platform swaps in an emoji.
+        glyph.textContent = `${side === 'start' ? '‹' : '›'}︎`;
+        button.appendChild(glyph);
+        if (side === 'start') {
+            button.setAttribute('aria-label', 'Previous step');
+            button.disabled = this.currentStep === 0;
+            button.addEventListener('click', () => {
+                if (this.currentStep > 0) this.goToStep(this.currentStep - 1);
+            });
+        } else {
+            button.setAttribute('aria-label', 'Next step');
+            // An optional step (required: false) can be passed unanswered.
+            button.disabled =
+                this.currentStep >= this.steps.length - 1 ||
+                !this.isStepPassable(this.currentStep);
+            button.addEventListener('click', () => {
+                if (this.currentStep < this.steps.length - 1)
+                    this.goToStep(this.currentStep + 1);
+            });
+        }
+        this.stepEl.appendChild(button);
+    }
+
+    /**
+     * One line per scope: the scope's label when the flow spans several, what
+     * the marking writes in that scope's own output, and how many errors the
+     * engine reports there. The count's title holds the messages, which the
+     * error list under the flow also shows in full.
+     */
+    private renderRows(): void {
+        this.rowsEl.replaceChildren();
+        const scopes: (string | undefined)[] = this.multiScope
+            ? this.stepScopes
+            : [undefined];
+        const key = this.factsKey();
+        const texts =
+            this.multiScope && this.result?.key === key
+                ? this.result.texts
+                : null;
+        for (const scope of scopes) {
+            const row = document.createElement('div');
+            row.className = 'ez-decision-flow__row';
+            if (scope) row.dataset.scope = scope;
+            if (scope) {
+                const label = document.createElement('span');
+                label.className = 'ez-decision-flow__row-label';
+                label.textContent = scopeLabel(scope, this.schemeMeta);
+                row.appendChild(label);
+            }
+            const text = scope ? (texts?.get(scope) ?? '') : this._lastRendered;
+            const value = document.createElement('span');
+            value.className = 'ez-decision-flow__row-text';
+            // A block of several lines reads on one; the title keeps them.
+            value.textContent = text
+                ? text.split(/\n+/).join(' · ')
+                : EMPTY_VALUE;
+            if (!text) value.dataset.empty = '';
+            value.title = text;
+            row.appendChild(value);
+            const messages = this.errorsIn(scope);
+            if (messages.length > 0) {
+                row.dataset.invalid = '';
+                const count = document.createElement('span');
+                count.className = 'ez-decision-flow__row-errors';
+                count.textContent =
+                    messages.length === 1
+                        ? '1 error'
+                        : `${messages.length} errors`;
+                count.title = messages.join('\n');
+                row.appendChild(count);
+            }
+            this.rowsEl.appendChild(row);
+        }
+        if (this.multiScope && !texts && this.resultWriting !== key)
+            void this.writeResult(key);
+    }
+
+    /**
+     * The error messages for one scope's line: those the engine reported
+     * judging the marking on that scope, for a flow of several; every one for a
+     * flow of one.
+     */
+    private errorsIn(scope: string | undefined): string[] {
+        if (!this.multiScope || scope === undefined) return this.allErrors;
+        return this.errorsByScope.get(scope) ?? [];
+    }
+
+    /** The facts the scope lines are written for. */
+    private factsKey(): string {
+        return JSON.stringify(
             this.assertions
                 .map((a) => [a.categoryId, a.conceptId, a.value ?? null])
                 .sort(),
         );
-        const texts = this.result?.key === key ? this.result.texts : null;
-        const writing = this.resultWriting === key;
-        for (const scope of this.stepScopes) {
-            const block = document.createElement('div');
-            block.className = 'ez-decision-flow__result-scope';
-            block.dataset.scope = scope;
-            const heading = document.createElement('div');
-            heading.className = 'ez-decision-flow__result-label';
-            heading.textContent = scopeLabel(scope, this.schemeMeta);
-            const text = document.createElement('pre');
-            text.className = 'ez-decision-flow__result-text';
-            text.textContent = texts?.get(scope) || EMPTY_VALUE;
-            block.append(heading, text);
-            result.appendChild(block);
-        }
-        this.flowEl.appendChild(result);
-        if (!texts && !writing) void this.writeResult(key);
     }
 
     /** Write each scope's facts in that scope's own output, then show them. */
@@ -1582,18 +1978,18 @@ export class DecisionFlow extends ComponentBase {
             this.result = { key, texts: new Map() };
         }
         this.resultWriting = null;
-        for (const block of this.flowEl.querySelectorAll<HTMLElement>(
-            '.ez-decision-flow__result-scope',
-        )) {
-            const text = block.querySelector('.ez-decision-flow__result-text');
-            if (text)
-                text.textContent =
-                    this.result.texts.get(block.dataset.scope ?? '') ||
-                    EMPTY_VALUE;
-        }
+        this.renderRows();
     }
 
-    private selectConcept(categoryId: string, conceptId: string): void {
+    /**
+     * Choose a concept in a single-choice step.
+     *
+     * @returns Settles once the engine's answer for the choice is applied
+     */
+    private selectConcept(
+        categoryId: string,
+        conceptId: string,
+    ): Promise<void> {
         this.userEdit = true;
         if (this.pendingText?.categoryId === categoryId)
             this.pendingText = null;
@@ -1606,7 +2002,7 @@ export class DecisionFlow extends ComponentBase {
             conceptId,
             categoryId,
         });
-        this.reprocess();
+        return this.reprocessNow();
     }
 
     /**
@@ -1629,33 +2025,17 @@ export class DecisionFlow extends ComponentBase {
 }
 
 /**
+ * How many chained loads of the engine's options a move to the next step waits
+ * through. A choice starts one load; clearing a path the engine no longer
+ * offers starts one more. Any further load is a change from elsewhere, which
+ * the move does not wait for.
+ */
+const ADVANCE_SETTLE_ROUNDS = 3;
+
+/**
  * The category ids a `data-ezclassify-decisionflow-categories` value lists: a
  * JSON array of ids, or ids separated by commas or spaces.
  */
-/**
- * Writes a navigation button's label with an optional direction arrow. The
- * arrow is decoration, hidden from assistive technology so the button's name is
- * only its label, and drawn in text presentation (U+FE0E) so no platform swaps
- * in an emoji glyph.
- */
-function setNavLabel(
-    button: HTMLButtonElement,
-    label: string,
-    arrow?: string,
-    side: 'start' | 'end' = 'end',
-): void {
-    button.replaceChildren(document.createTextNode(label));
-    if (!arrow) return;
-    const glyph = document.createElement('span');
-    glyph.setAttribute('aria-hidden', 'true');
-    glyph.textContent = `${arrow}\uFE0E`;
-    if (side === 'start') {
-        button.prepend(glyph, ' ');
-    } else {
-        button.append(' ', glyph);
-    }
-}
-
 function parseCategoryList(value: string): string[] {
     const text = value.trim();
     if (text.startsWith('[')) {

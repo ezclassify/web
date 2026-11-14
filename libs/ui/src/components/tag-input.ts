@@ -24,7 +24,6 @@
 
 import type { SchemeMetaView } from '@ezclassify/types';
 import { teardownAfterWrite } from './teardown-write';
-import { heightAtLeastFloor } from './dom-helpers';
 import { ComponentBase, type ComponentOptions } from './component-base';
 import { createKeyboardHints, COMPONENT_CSS } from './component-utils';
 import tagInputCss from './tag-input.css?inline';
@@ -37,7 +36,12 @@ import {
 } from './tag-input-keyboard';
 import { renderTagChips } from './tag-input-renderer';
 import { ensureStatusMark, setStatusMarkFixes } from './status-mark';
-import { mountFieldChrome, type FieldChrome } from './field-chrome';
+import {
+    applyFieldFrame,
+    mirrorHostFrame,
+    mountFieldChrome,
+    type FieldChrome,
+} from './field-chrome';
 import {
     ensureFavoritesButton,
     schemeOffersPresets,
@@ -82,7 +86,7 @@ export class TagInput extends ComponentBase {
      * hint.
      */
     private emptyPlaceholder = '';
-    private hostStyleObserver: MutationObserver | null = null;
+    private stopHostFrame: () => void = () => {};
 
     /** CSS for TagInput (exported for external injection) */
     static readonly CSS: string = COMPONENT_CSS + tagInputCss;
@@ -118,6 +122,7 @@ export class TagInput extends ComponentBase {
         // Input wrapper (chips + filter input)
         this.inputWrap = document.createElement('div');
         this.inputWrap.className = 'tag-input-wrap';
+        applyFieldFrame(this.inputWrap, this.options.root ?? this.container);
         this.inputWrap.setAttribute('role', 'group');
         this.inputWrap.setAttribute(
             'aria-label',
@@ -273,8 +278,8 @@ export class TagInput extends ComponentBase {
         this.destroyClearButton();
         this.removeRuleErrors();
         this._destroyed = true;
-        this.hostStyleObserver?.disconnect();
-        this.hostStyleObserver = null;
+        this.stopHostFrame();
+        this.stopHostFrame = () => {};
         this.view.destroy();
         this.controller.dispose();
         this.favoritesPanel?.destroy();
@@ -382,93 +387,15 @@ export class TagInput extends ComponentBase {
 
     /** Keep native form styling on its replacement, including nested themes. */
     private followHostAppearance(): void {
-        const host = getMountHost(this.container) ?? this.enhancedInput;
-        // A hidden data field has no visual contract to preserve. Explicit
-        // styled-input opt-in keeps the library's own field palette/sizing.
-        if (
-            !(host instanceof HTMLInputElement) ||
-            host.type === 'hidden' ||
-            this.options.styleInputs
-        )
-            return;
-        const sync = () => {
-            const styles = window.getComputedStyle(host);
-            // The wrap's own stylesheet floor, read before the host's values
-            // are written over it: the field family's single-line height.
-            this.inputWrap.style.minHeight = '';
-            const floor = window.getComputedStyle(this.inputWrap).minHeight;
-            const explicitPalette =
-                !!this.options.theme ||
-                this.container.hasAttribute('data-color-scheme');
-            for (const property of [
-                'boxSizing',
-                'backgroundColor',
-                'color',
-                'font',
-                'lineHeight',
-                'borderWidth',
-                'borderStyle',
-                'borderColor',
-                'borderRadius',
-                'marginTop',
-                'marginBottom',
-                'minHeight',
-                'paddingTop',
-                'paddingBottom',
-                'paddingLeft',
-            ] as const) {
-                this.inputWrap.style[property] =
-                    explicitPalette &&
-                    ['backgroundColor', 'color', 'borderColor'].includes(
-                        property,
-                    )
-                        ? ''
-                        : styles[property];
-            }
-            // The floor is the wrap's outer height; a content-box wrap
-            // measures min-height inside the host padding and border it
-            // just took on.
-            const wrap = window.getComputedStyle(this.inputWrap);
-            const chrome =
-                wrap.boxSizing === 'border-box'
-                    ? 0
-                    : [
-                          wrap.paddingTop,
-                          wrap.paddingBottom,
-                          wrap.borderTopWidth,
-                          wrap.borderBottomWidth,
-                      ].reduce(
-                          (sum, length) => sum + (parseFloat(length) || 0),
-                          0,
-                      );
-            this.inputWrap.style.minHeight = heightAtLeastFloor(
-                styles.minHeight,
-                `${Math.max(0, (parseFloat(floor) || 0) - chrome)}px`,
-            );
-        };
-        sync();
-        if (typeof MutationObserver === 'undefined') return;
-        this.hostStyleObserver = new MutationObserver(sync);
-        this.hostStyleObserver.observe(this.container, {
-            attributes: true,
-            attributeFilter: ['data-color-scheme'],
-        });
-        for (
-            let ancestor: HTMLElement | null = host;
-            ancestor;
-            ancestor = ancestor.parentElement
-        ) {
-            this.hostStyleObserver.observe(ancestor, {
-                attributes: true,
-                attributeFilter: [
-                    'style',
-                    'class',
-                    'data-theme',
-                    'data-bs-theme',
-                    'data-color-scheme',
-                ],
-            });
-        }
+        this.stopHostFrame = mirrorHostFrame(
+            this.inputWrap,
+            getMountHost(this.container) ?? this.enhancedInput,
+            {
+                container: this.container,
+                styleInputs: this.options.styleInputs,
+                explicitPalette: () => !!this.options.theme,
+            },
+        );
     }
 
     /**

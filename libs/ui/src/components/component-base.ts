@@ -31,7 +31,16 @@ import {
 } from './concept-description';
 import { removeAssertionCascade } from './assertion-removal';
 import { fixAssertions } from './rule-errors';
-import { recordAppliedFixes } from './status-mark';
+import {
+    ensureStatusMark,
+    recordAppliedFixes,
+    setStatusMarkFixes,
+} from './status-mark';
+import {
+    applyFieldFrame,
+    mountFieldChrome,
+    type FieldChrome,
+} from './field-chrome';
 import { assertionFactKey, takenFromWhole } from '../assertion-identity';
 import type { EzClassifyState } from '../store/ezclassify-store';
 import { createComposerPort } from './composer/composer-port';
@@ -100,18 +109,69 @@ export abstract class ComponentBase extends ReadOnlyComponentBase {
         this.container.addEventListener('input', this.updateClearButton);
     }
 
-    /** Components place clear inside their own stable field chrome. */
+    /**
+     * Where clear goes: the component's suite chrome when it mounted one (see
+     * {@link mountSuiteChrome}), else the container. A component whose header
+     * already carries a clear action returns null.
+     */
     protected clearButtonMount(): HTMLElement | null {
-        return this.container;
+        return this.suiteChrome?.element ?? this.container;
     }
 
-    /** Keep clear outside content that a render replaces, without a new row. */
-    protected clearButtonFrame(content: HTMLElement): HTMLElement {
-        const frame = document.createElement('div');
-        frame.className = 'ez-clear-frame';
-        content.replaceWith(frame);
-        frame.appendChild(content);
-        return frame;
+    /**
+     * The suite's chrome for a control with a header row of its own: the status
+     * mark and, once init finishes, clear, at the row's trailing end. Null
+     * until the component mounts one.
+     */
+    protected suiteChrome: FieldChrome | null = null;
+
+    /** The root the component's styles and overlays live in. */
+    private get styleRoot(): HTMLElement {
+        return this.options.root ?? this.container;
+    }
+
+    /**
+     * Give `frame` the suite's field frame (field-chrome.css): the box an
+     * ordinary input draws, from the library's tokens.
+     */
+    protected applySuiteFrame(frame: HTMLElement): void {
+        applyFieldFrame(frame, this.styleRoot);
+    }
+
+    /**
+     * Mount the suite's chrome at the trailing end of `row`: the same status
+     * mark the text fields carry, and clear after it. A header row takes it in
+     * flow (`'inline'`); a single-line field lays it over its trailing edge
+     * (`'overlay'`), as the text fields do. The chrome is one element for the
+     * component's life; a component that rebuilds its header moves
+     * {@link suiteChrome} into the new row.
+     */
+    protected mountSuiteChrome(
+        row: HTMLElement,
+        placement: 'inline' | 'overlay' = 'inline',
+    ): FieldChrome {
+        if (this.suiteChrome) {
+            row.appendChild(this.suiteChrome.element);
+            return this.suiteChrome;
+        }
+        const chrome = mountFieldChrome(row, {
+            root: this.styleRoot,
+            placement,
+        });
+        ensureStatusMark(chrome.status, {
+            shape: 'chrome',
+            root: this.styleRoot,
+            shouldShowTooltip: () => this.shouldShowTooltip(),
+        });
+        setStatusMarkFixes(chrome.status, this.ownFixes());
+        this.suiteChrome = chrome;
+        return chrome;
+    }
+
+    /** Remove the suite's chrome; every component's destroy() calls this. */
+    protected destroySuiteChrome(): void {
+        this.suiteChrome?.destroy();
+        this.suiteChrome = null;
     }
 
     protected hasClearValue(): boolean {
@@ -124,11 +184,33 @@ export abstract class ComponentBase extends ReadOnlyComponentBase {
         this.container.removeEventListener('input', this.updateClearButton);
         this.clearControl?.destroy();
         this.clearControl = undefined;
+        this.destroySuiteChrome();
     }
 
     protected override onAssertionsChanged(): void {
         super.onAssertionsChanged();
         this.clearControl?.update();
+        // The mark says what EzClassify changed in the value the field holds.
+        if (this.suiteChrome)
+            setStatusMarkFixes(this.suiteChrome.status, this.ownFixes());
+    }
+
+    /**
+     * The applied fixes the control's status mark explains: every one for a
+     * control that holds the whole marking; for a facet, those that changed its
+     * own category, the slice of the marking it holds.
+     */
+    private ownFixes(): readonly Change[] {
+        const fixes = this.getAppliedFixes();
+        const category = this.options.facetOf
+            ? this.options.categoryId
+            : undefined;
+        if (!category) return fixes;
+        return fixes.filter((fix) =>
+            [...(fix.add ?? []), ...(fix.remove ?? [])].some(
+                (ref) => ref.categoryId === category,
+            ),
+        );
     }
     /**
      * Set to true by destroy(): prevents async callbacks from mutating
@@ -978,10 +1060,16 @@ export abstract class ComponentBase extends ReadOnlyComponentBase {
     }
 
     /** Append keyboard hint bar to the container */
+    /**
+     * The control's keys, in the suite's quiet hint row under the control. The
+     * row shows while the control has focus, on a pointer with keys.
+     */
     protected appendKeyboardHints(
         hints: Array<{ keys: string; action: string }>,
     ): void {
-        this.container.appendChild(createKeyboardHints(hints));
+        const row = createKeyboardHints(hints);
+        row.classList.add('ez-field-hints');
+        this.container.appendChild(row);
     }
 
     /** Darken a hex color */

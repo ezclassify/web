@@ -3908,6 +3908,9 @@ export class EzClassifyUI {
             lastSeenFacetSig: '',
             publishesFacts: false,
             publish: (assertions: EngineAssertion[], rendered: string) => {
+                // A torn-down runtime publishes nothing; the Context it read
+                // through may be gone with it.
+                if (this._destroyed) return;
                 if (isFacet) {
                     const cat = category ?? '';
                     const filtered = assertions.filter(
@@ -4490,6 +4493,14 @@ export class EzClassifyUI {
         binding: StoreBinding,
     ): void {
         this.publishStructurally(binding);
+        // The field's own marking is written in the output the field shows,
+        // so a view reading the store's `rendered` sees what the field does.
+        const host = binding.token.token as HTMLElement;
+        const owned =
+            host.id === binding.markingId
+                ? component.writtenOutput?.()
+                : undefined;
+        if (owned) this.store.setRenderedOutput(binding.markingId, owned);
 
         const applyState = (state: EzClassifyState) => {
             if (state.rendered === binding.lastSeenRendered) return;
@@ -4514,10 +4525,10 @@ export class EzClassifyUI {
             binding.token,
         );
         this.hydrateFromStore(binding.markingId, applyState);
-        this.storeUnsubscribers.set(
-            binding.token.token as HTMLElement,
-            unsubscribe,
-        );
+        this.storeUnsubscribers.set(host, () => {
+            unsubscribe();
+            if (owned) this.store.setRenderedOutput(binding.markingId, null);
+        });
     }
 
     /**

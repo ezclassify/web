@@ -128,44 +128,6 @@
             "method": "POST",
             "statusCode": 200
         },
-        "1beec7525b9377696d88dd004e92225369574ac5705d744ec7637345f988fe78": {
-            "body": {
-                "resolution": {
-                    "artifacts": [
-                        {
-                            "id": "surfaces",
-                            "kind": "scheme",
-                            "version": "1.0.0"
-                        }
-                    ],
-                    "contextId": "surfaces",
-                    "requestedVersion": "0.0.0",
-                    "resolvedVersion": "1.0.0"
-                },
-                "result": {
-                    "appliedFixes": [],
-                    "assertions": [],
-                    "assessment": {
-                        "collapsed": [],
-                        "conflicts": [],
-                        "emitted": [],
-                        "omitted": [],
-                        "unrepresentable": []
-                    },
-                    "errors": [],
-                    "inputWasValid": true,
-                    "notices": [],
-                    "proposedFixes": [],
-                    "rendered": "",
-                    "renders": {},
-                    "valid": true,
-                    "warnings": []
-                }
-            },
-            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
-            "method": "POST",
-            "statusCode": 200
-        },
         "1f1f46a6a72e42fc8cee9f6f0087ad049c35f98b371921c3193af352ef547c3a": {
             "body": [
                 { "id": "sensitivity", "label": "Sensitivity" },
@@ -913,6 +875,44 @@
             "method": "POST",
             "statusCode": 200
         },
+        "67b0822eda53e65352d9a40be375c351b914f236933f12fa230fba909412af40": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "surfaces",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "surfaces",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "",
+                    "renders": {},
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
         "6cdd7dc96875a0f82f4c98e4553efbb1bbc23f9effd5572652f2215584134366": {
             "body": {
                 "contextFormats": {
@@ -967,6 +967,44 @@
             ],
             "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "GET",
+            "statusCode": 200
+        },
+        "7455ce353e4d5e498e1a63d79f8df4dac3bf2bc82e6057dcf07d41fd13564646": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "two-scope-flow",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "two-scope-flow",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "",
+                    "renders": {},
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
             "statusCode": 200
         },
         "781299b7adc536336f83cf9a81f8bde136ccefc596b9824c328c109f4366fb09": {
@@ -1828,6 +1866,44 @@
                     "notices": [],
                     "proposedFixes": [],
                     "rendered": "CONFIDENTIAL\nKEEP 7 YEARS",
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "c1135582053e96aad390fb86134940067b5ceb2c89d339e3896cb7f2ce4921a9": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "surfaces",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "surfaces",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "",
+                    "renders": {},
                     "valid": true,
                     "warnings": []
                 }

@@ -1,48 +1,55 @@
 /* ── Category Selector ──────────────────────────────── */
 
+/* The control sits in the suite's field frame (field-chrome.css). Each
+   category's name is on its own line, the chrome at the first line's end, and
+   its buttons flow in rows beneath it at every width. */
+.category-selector-body {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
 /* ── Group heading ───────────────────────────────── */
 .category-selector-group-heading {
-    font-size: 0.75rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-    color: var(--ez-color-muted, #555);
-    padding: 0.625rem 0 0.25rem;
-    margin-top: 0.25rem;
-    border-bottom: 1px solid var(--ez-color-border, #e5e7eb);
-}
-
-/* ── One row per category: label + buttons ──────────── */
-.category-selector-row {
     display: flex;
-    align-items: flex-start;
-    gap: 0.625rem;
-    padding: 0.375rem 0;
-    border-bottom: 1px solid var(--ez-color-border, #e5e7eb);
-    flex-wrap: wrap;
-}
-
-/* ── Category label on the left ─────────────────────── */
-.category-selector-label {
-    min-width: 6rem;
-    max-width: 10rem;
+    align-items: center;
+    gap: 0.5rem;
+    min-height: 1.5rem;
     font-size: 0.75rem;
     font-weight: 600;
-    font-family: var(--ez-font-family, inherit);
-    color: var(--ez-color-text, #1a1a2e);
-    padding-top: 0.375rem;
-    flex-shrink: 0;
+    color: var(--ez-color-muted, #555);
 }
 
-/* ── Button container, flex wrap ─────────────────── */
-/* The buttons take the rest of the row, and drop below the label when less
-   than 8rem is left there; squeezed beside it, a button would run past its
-   column. */
+/* ── One block per category: name, then buttons ──── */
+.category-selector-row {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    min-width: 0;
+}
+
+/* The name's line; the chrome takes its trailing end on the first one. */
+.category-selector-head {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-height: 1.5rem;
+}
+
+.category-selector-label {
+    min-width: 0;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--ez-color-text, inherit);
+    overflow-wrap: normal;
+    word-break: normal;
+}
+
+/* ── Buttons, in rows under the name ─────────────── */
 .category-selector-options {
     display: flex;
     flex-wrap: wrap;
     gap: 0.25rem;
-    flex: 1 1 8rem;
     min-width: 0;
 }
 
@@ -73,7 +80,6 @@
 /* ── Hover state ─────────────────────────────────── */
 .category-selector-btn:hover {
     border-color: var(--ez-color-primary, #fdb827);
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 }
 
 /* ── Focus state ─────────────────────────────────── */
@@ -90,9 +96,7 @@
     border-color: var(--category-btn-color, var(--ez-color-primary, #fdb827));
     background: var(--category-btn-bg, rgba(59, 130, 246, 0.12));
     color: var(--ez-color-text, #1a1a2e);
-    font-weight: 700;
-    box-shadow: 0 0 0 1px
-        var(--category-btn-color, var(--ez-color-primary, #fdb827));
+    font-weight: 600;
 }
 
 /* ── Code badge (short view) ─────────────────────── */
@@ -143,9 +147,5 @@
     }
     .category-selector-group-heading {
         color: GrayText;
-        border-bottom-color: ButtonText;
-    }
-    .category-selector-row {
-        border-bottom-color: ButtonText;
     }
 }

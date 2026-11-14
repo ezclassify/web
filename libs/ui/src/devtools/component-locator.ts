@@ -128,6 +128,12 @@ const REFERENCE_CONTROLLERS: ReadonlySet<string> = new Set([
     'context-reference',
 ]);
 
+/**
+ * Controllers that show a marking rather than edit one: the banner and the text
+ * view. They read as views when a view attribute points them at a marking.
+ */
+const DISPLAY_CONTROLLERS: ReadonlySet<string> = new Set(['banner', 'text']);
+
 /** The attributes a chip names after what the element is. */
 const RELATION_ATTRS: readonly string[] = [
     ...STRUCTURE_ATTRS,
@@ -438,6 +444,10 @@ function controllerOf(element: HTMLElement): string | null {
 function markerKind(element: HTMLElement): XrayKind | null {
     const host = mountedHost(element);
     if (host) return markerKind(host) ?? 'component';
+    // An editing control is a component however it is bound: binding a
+    // MarkingField or a DecisionFlow to a marking with a view attribute does
+    // not make it a view.
+    if (editsMarking(element)) return 'component';
     for (const [kind, attrs] of KIND_ATTRIBUTES) {
         if (!attrs.some((attr) => isPresent(element, attr))) continue;
         if (
@@ -448,6 +458,18 @@ function markerKind(element: HTMLElement): XrayKind | null {
         return kind;
     }
     return null;
+}
+
+/** Whether the element hosts a control that edits a marking. */
+function editsMarking(element: HTMLElement): boolean {
+    if (isPresent(element, IGNORE_ATTR)) return false;
+    const controller = element.getAttribute(CONTROLLER_ATTR);
+    return (
+        !!controller &&
+        !REFERENCE_CONTROLLERS.has(controller) &&
+        !DISPLAY_CONTROLLERS.has(controller) &&
+        !HEADLESS_CONTROLLERS.has(controller)
+    );
 }
 
 /** `whole: doc-1`, or the bare name for a presence attribute. */

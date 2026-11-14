@@ -316,6 +316,15 @@
     line-height: 1.3;
 }
 
+/* The suite's hint row for a control with keys of its own (the pickers,
+   DecisionFlow): shown while the control has focus, so it adds nothing to the
+   form at rest. Two classes, like TagInput's, so it shows whatever order the
+   root's sheets were adopted in. */
+:focus-within > .proto-kbd-hints.ez-field-hints {
+    display: flex;
+    margin-top: 0.25rem;
+}
+
 /* TagInput's own row-gap (default and coarse-pointer) lives in
    tag-input.css, not here: `injectComponentStyles` always concatenates
    `COMPONENT_CSS + <component>Css`, so a rule placed in this file loads
@@ -329,6 +338,9 @@
     /* Keyboard-hint chrome is useless on a touch device and just clutters
      the field, so hide it on coarse pointers. */
     .proto-kbd-hints,
+    :focus-within > .proto-kbd-hints.ez-field-hints {
+        display: none;
+    }
     /* The remove control is visible at rest on every pointer; on a coarse
      (touch) pointer it also needs a bigger hit area for a thumb. Grow the tap
      target with an INVISIBLE overlay (::after) rather than padding or a
@@ -439,48 +451,10 @@
     opacity: 0.45;
     cursor: default;
 }
-.ez-clear-frame {
-    position: relative;
-}
-.ez-clear-frame > .ez-clear-button {
-    position: absolute;
-    inset-inline-end: 0.25rem;
-    top: 0.25rem;
-    z-index: 4;
-}
-.ez-clear-preview > .proto-preview {
-    padding-inline-end: 2.75rem;
-    min-height: 2.5rem;
-    box-sizing: border-box;
-}
-.ez-clear-preview > .ez-clear-button {
-    top: 50%;
-    transform: translateY(-50%);
-}
-.ez-clear-frame > .select-cards,
-.ez-clear-frame > .category-selector-body > :first-child,
-.ez-clear-frame > .ez-decision-flow > :first-child {
-    padding-inline-end: 2.5rem;
-}
-.ez-clear-frame > .ez-decision-flow > :first-child {
-    min-height: 2.5rem;
-}
 @media (pointer: coarse) {
     .ez-clear-button {
         width: 2.75rem;
         height: 2.75rem;
-    }
-    .ez-clear-frame > .select-cards,
-    .ez-clear-frame > .category-selector-body > :first-child,
-    .ez-clear-frame > .ez-decision-flow > :first-child {
-        padding-inline-end: 3.25rem;
-    }
-    .ez-clear-frame > .ez-decision-flow > :first-child {
-        min-height: 3.25rem;
-    }
-    .ez-clear-preview > .proto-preview {
-        padding-inline-end: 3.5rem;
-        min-height: 3.25rem;
     }
 }
 @media (forced-colors: active) {

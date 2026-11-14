@@ -29,6 +29,8 @@ import type {
 } from '@ezclassify/types';
 import { applyTextInputAttributes } from './text-input-attributes';
 import singleSelectCss from './single-select.css?inline';
+import { mirrorHostFrame } from './field-chrome';
+import { getMountHost } from '../mount-host-registry';
 
 const SINGLE_SELECT_CSS: string = singleSelectCss;
 
@@ -74,10 +76,10 @@ function sameAssertionState(left: unknown, right: unknown): boolean {
  */
 export class SingleSelect extends ComponentBase {
     protected override clearButtonMount(): HTMLElement | null {
-        return this.isDropdownMode
-            ? (this.dropdownEl?.parentElement ?? null)
-            : this.clearButtonFrame(this.cardsContainer);
+        return this.suiteChrome?.element ?? null;
     }
+    /** Stops the field frame following the host input's look. */
+    private stopHostFrame: () => void = () => {};
     private preview!: HTMLDivElement;
     private cardsContainer!: HTMLDivElement;
     private detailPanel!: HTMLDivElement;
@@ -192,7 +194,11 @@ export class SingleSelect extends ComponentBase {
         // Preview bar
         this.preview = this.createPreviewBar();
 
-        // Cards container
+        // Cards container, in the suite's field frame with the chrome beside
+        // it.
+        const frame = document.createElement('div');
+        frame.className = 'select-cards-frame';
+        this.applySuiteFrame(frame);
         this.cardsContainer = document.createElement('div');
         this.cardsContainer.className = 'select-cards';
         this.cardsContainer.setAttribute('role', 'radiogroup');
@@ -200,7 +206,9 @@ export class SingleSelect extends ComponentBase {
             'aria-label',
             `Select ${singleCategory.label ?? 'option'}`,
         );
-        this.container.appendChild(this.cardsContainer);
+        frame.appendChild(this.cardsContainer);
+        this.container.appendChild(frame);
+        this.mountSuiteChrome(frame);
 
         // One stable explanation region replaces repeated prose in every
         // option. Its value follows hover/focus, then returns to the selection.
@@ -276,10 +284,24 @@ export class SingleSelect extends ComponentBase {
         });
 
         this.dropdownEl = select;
+        // The select sits in the suite's field frame, which takes the host
+        // input's own look when the select enhances one, with the chrome at
+        // its trailing end.
         const field = document.createElement('div');
         field.className = 'select-dropdown-field';
+        this.applySuiteFrame(field);
         field.appendChild(select);
         this.container.appendChild(field);
+        this.mountSuiteChrome(field, 'overlay');
+        this.stopHostFrame = mirrorHostFrame(
+            field,
+            getMountHost(this.container) ?? this.enhancedInput,
+            {
+                container: this.container,
+                styleInputs: this.options.styleInputs,
+                explicitPalette: () => !!this.options.theme,
+            },
+        );
         this.dropdownSupplement = document.createElement('div');
         this.dropdownSupplement.className = 'select-dropdown-supplement';
         this.container.appendChild(this.dropdownSupplement);
@@ -378,6 +400,8 @@ export class SingleSelect extends ComponentBase {
     }
 
     destroy(): void {
+        this._destroyed = true;
+        this.stopHostFrame();
         this.destroyClearButton();
         this.removeRuleErrors();
         this.pendingText = null;

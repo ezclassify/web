@@ -176,12 +176,12 @@ export class MarkedInput extends MarkedFieldBase<HTMLTextAreaElement> {
         // if we read the live object after that class is applied). The base helper
         // does the snapshot + mirror once the display exists.
         //
-        // The native input owns the field's visible box: its paint and its whole
-        // edge, the same edge MarkingField and TagInput take from their native
-        // inputs, so the family reads as one set of controls. The owned
-        // textarea can't stand in for it: its own edge is a textarea's (a
-        // browser's default input and textarea borders differ) and input-only
-        // host rules never reach it.
+        // The native input owns the field's visible box: its paint, its whole
+        // edge and its padding, the same box MarkingField and TagInput take
+        // from their native inputs, so the family reads as one set of
+        // controls. The owned textarea can't stand in for it: its own edge is
+        // a textarea's (a browser's default input and textarea borders differ)
+        // and input-only host rules never reach it.
         const nativeBoxProps = [
             'color',
             'backgroundColor',
@@ -189,6 +189,10 @@ export class MarkedInput extends MarkedFieldBase<HTMLTextAreaElement> {
             'borderWidth',
             'borderStyle',
             'borderRadius',
+            'paddingTop',
+            'paddingRight',
+            'paddingBottom',
+            'paddingLeft',
         ] as const;
         const readNativeBox = () => {
             const style = window.getComputedStyle(this.nativeInput);
@@ -225,6 +229,11 @@ export class MarkedInput extends MarkedFieldBase<HTMLTextAreaElement> {
             }
             input.style.borderWidth = box.borderWidth;
             input.style.borderStyle = box.borderStyle;
+            // The text starts where the host's padding puts it, in both layers.
+            input.style.paddingTop = box.paddingTop;
+            input.style.paddingRight = box.paddingRight;
+            input.style.paddingBottom = box.paddingBottom;
+            input.style.paddingLeft = box.paddingLeft;
         };
         mirrorNativeBox(authoredBox);
 
@@ -239,7 +248,7 @@ export class MarkedInput extends MarkedFieldBase<HTMLTextAreaElement> {
         // The owned textarea supplies wrapping/font metrics. Native input CSS
         // remains authoritative for the visible box, including late styles and
         // theme changes; the editor's transparent capture layer is never paint.
-        const editorLayoutProps = ['padding', 'font', 'lineHeight'] as const;
+        const editorLayoutProps = ['font', 'lineHeight'] as const;
 
         // Re-read the host's computed styles one frame after mount to catch host
         // stylesheets that load async after component init. Without this, the
@@ -613,6 +622,11 @@ export class MarkedInput extends MarkedFieldBase<HTMLTextAreaElement> {
 
     getAssertions(): Assertion[] {
         return [...this.assertions];
+    }
+
+    /** The output this field writes its leading marking in. */
+    writtenOutput(): string {
+        return this.scanFormat;
     }
 
     setAssertions(assertions: Assertion[]): void {

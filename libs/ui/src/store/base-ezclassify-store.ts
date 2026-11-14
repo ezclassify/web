@@ -582,6 +582,11 @@ export abstract class BaseEzClassifyStore implements EzClassifyStore {
     /** Parts with no whole on the page: see {@link setStandalonePart}. */
     private readonly standaloneParts = new Set<string>();
     /**
+     * The output a marking's `rendered` is written in when the field that owns
+     * it names one: see {@link setRenderedOutput}.
+     */
+    private readonly renderedOutputs = new Map<string, string>();
+    /**
      * Observed context provenance is positive evidence of dependence, including
      * a stand-in that takes the whole's list. Absence cannot prove
      * independence; only the canonical metadata's explicit false permits that
@@ -781,18 +786,7 @@ export abstract class BaseEzClassifyStore implements EzClassifyStore {
 
     requestOutput(id: string, output: string): () => void {
         this.assertAlive();
-        const declared = (
-            this.bucketOf(id).engine.getSchemeMeta().formats ?? []
-        ).map((layout) => layout.id);
-        if (!declared.includes(output)) {
-            const listed =
-                declared.length > 0
-                    ? declared.map((one) => `"${one}"`).join(', ')
-                    : 'none';
-            throw new Error(
-                `${this.storeLabel()}: requestOutput("${output}") names an output the scheme does not declare. It declares ${listed}.`,
-            );
-        }
+        this.assertDeclaredOutput(id, output, 'requestOutput');
         let held = this.outputRequests.get(id);
         if (!held) {
             held = new Map();
@@ -810,6 +804,25 @@ export abstract class BaseEzClassifyStore implements EzClassifyStore {
             else current.delete(output);
             if (current.size === 0) this.outputRequests.delete(id);
         };
+    }
+
+    /** Throw unless the scheme of `id`'s bucket declares `output`. */
+    private assertDeclaredOutput(
+        id: string,
+        output: string,
+        caller: string,
+    ): void {
+        const declared = (
+            this.bucketOf(id).engine.getSchemeMeta().formats ?? []
+        ).map((layout) => layout.id);
+        if (declared.includes(output)) return;
+        const listed =
+            declared.length > 0
+                ? declared.map((one) => `"${one}"`).join(', ')
+                : 'none';
+        throw new Error(
+            `${this.storeLabel()}: ${caller}("${output}") names an output the scheme does not declare. It declares ${listed}.`,
+        );
     }
 
     /**
@@ -1447,6 +1460,29 @@ export abstract class BaseEzClassifyStore implements EzClassifyStore {
         void this.recomputeLevel(this.levelOfWhole(markingId));
     }
 
+    setRenderedOutput(markingId: string, output: string | null): void {
+        // A field torn down after its store has nothing to put back.
+        if (this.destroyed && output === null) return;
+        this.assertAlive();
+        if ((this.renderedOutputs.get(markingId) ?? null) === output) return;
+        if (output === null) this.renderedOutputs.delete(markingId);
+        else {
+            this.assertDeclaredOutput(markingId, output, 'setRenderedOutput');
+            this.renderedOutputs.set(markingId, output);
+        }
+        // What was written in the old output is written again in the new
+        // one. An empty marking has nothing to write; its next change is
+        // written in the new output.
+        this.dropReadings(markingId);
+        const held = this.get(markingId);
+        if (
+            this.hasCompositionInFlight(markingId) ||
+            (this.committedMarkings.has(markingId) &&
+                (held.assertions.length > 0 || held.rendered !== ''))
+        )
+            this.recompose(markingId).catch(() => {});
+    }
+
     setBucket(markingId: string, bucket: BucketKey): void {
         this.assertAlive();
         if (this.bucketKeyOf(markingId) === bucket) {
@@ -1725,6 +1761,7 @@ export abstract class BaseEzClassifyStore implements EzClassifyStore {
         this.membershipByMarking.clear();
         this.noRollupMarkings.clear();
         this.standaloneParts.clear();
+        this.renderedOutputs.clear();
         this.bucketByMarking.clear();
         this.partOfByMarking.clear();
         this.standInParts.clear();
@@ -1854,6 +1891,9 @@ export abstract class BaseEzClassifyStore implements EzClassifyStore {
      * written in the view of whatever role its text reads as, so part-spelled
      * text would put a part's spelling in a whole marking.
      *
+     * A marking whose own field names its output ({@link setRenderedOutput}) is
+     * written in that output, whatever its role.
+     *
      * A marking registered through {@link setPartOf} is not on that surface: it
      * is a part of another marking, and a scheme writes its parts in its own
      * part format. The scheme's metadata names both, so the role of the entry
@@ -1862,6 +1902,9 @@ export abstract class BaseEzClassifyStore implements EzClassifyStore {
      * what a scheme with one surface means.
      */
     private formatFor(id: string): string | undefined {
+        // The field that owns the marking writes it in this output.
+        const owned = this.renderedOutputs.get(id);
+        if (owned !== undefined) return owned;
         const bucket = this.bucketOf(id);
         if (!this.partOfByMarking.has(id) && !this.standaloneParts.has(id)) {
             if (bucket.format) return bucket.format;

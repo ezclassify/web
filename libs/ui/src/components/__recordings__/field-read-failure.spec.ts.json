@@ -3385,6 +3385,65 @@
             "method": "POST",
             "statusCode": 200
         },
+        "7fb137b4048e70282ff9a1447378653ab2164ac74b8fb0d020acf130d3b4547c": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "cedar-valley",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "cedar-valley-guide",
+                            "kind": "guide",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "cedar-valley-access",
+                            "kind": "access",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "cedar-valley",
+                            "kind": "context",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "cedar-valley",
+                    "requestedVersion": "latest",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [
+                        {
+                            "categoryId": "level",
+                            "constraintId": "protection-level-required",
+                            "message": "Choose a protection level."
+                        }
+                    ],
+                    "inputWasValid": false,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "",
+                    "renders": {},
+                    "valid": false,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
         "81234dfa18ec7b6f164b3292088b5a901b9659645dc03273d4c218165c0824b0": {
             "body": {
                 "resolution": {
@@ -5809,65 +5868,6 @@
                     "proposedFixes": [],
                     "rendered": "RESTRICTED",
                     "valid": true,
-                    "warnings": []
-                }
-            },
-            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
-            "method": "POST",
-            "statusCode": 200
-        },
-        "f416052279314075ebd9eac9e9a237dd0e688e7492cf0652e51177a6b2e54d03": {
-            "body": {
-                "resolution": {
-                    "artifacts": [
-                        {
-                            "id": "cedar-valley",
-                            "kind": "scheme",
-                            "version": "1.0.0"
-                        },
-                        {
-                            "id": "cedar-valley-guide",
-                            "kind": "guide",
-                            "version": "1.0.0"
-                        },
-                        {
-                            "id": "cedar-valley-access",
-                            "kind": "access",
-                            "version": "1.0.0"
-                        },
-                        {
-                            "id": "cedar-valley",
-                            "kind": "context",
-                            "version": "1.0.0"
-                        }
-                    ],
-                    "contextId": "cedar-valley",
-                    "requestedVersion": "latest",
-                    "resolvedVersion": "1.0.0"
-                },
-                "result": {
-                    "appliedFixes": [],
-                    "assertions": [],
-                    "assessment": {
-                        "collapsed": [],
-                        "conflicts": [],
-                        "emitted": [],
-                        "omitted": [],
-                        "unrepresentable": []
-                    },
-                    "errors": [
-                        {
-                            "categoryId": "level",
-                            "constraintId": "protection-level-required",
-                            "message": "Choose a protection level."
-                        }
-                    ],
-                    "inputWasValid": false,
-                    "notices": [],
-                    "proposedFixes": [],
-                    "rendered": "",
-                    "renders": {},
-                    "valid": false,
                     "warnings": []
                 }
             },

@@ -212,6 +212,7 @@ describe('the reserve rule', () => {
             '.marked-input-wrap > .marked-input-display',
             '.marked-textarea-wrap > .marked-textarea-input',
             '.marked-textarea-wrap > .marked-textarea-display',
+            '.select-dropdown-field',
         ]);
     });
 });

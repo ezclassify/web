@@ -300,7 +300,7 @@ describe('each kind has its own outline and legend row', () => {
         locator.destroy();
     });
 
-    it('reads a mount as its host: a category view stays a view', () => {
+    it('reads a mount as its host: an editing control is a component however it is bound', () => {
         const target = page(
             '<select id="host" hidden data-ezclassify-controller="checklist" data-ezclassify-facet-of="doc"></select><div id="mount" data-ezclassify-mount="checklist"><div class="category-checklist"></div></div>',
         );
@@ -308,10 +308,51 @@ describe('each kind has its own outline and legend row', () => {
         const mount = target.querySelector<HTMLElement>('#mount')!;
         setMountHost(mount, host);
         const locator = createComponentLocator({ target, active: true });
-        expect(mount.dataset.ezclassifyXrayKind).toBe('view');
+        expect(mount.dataset.ezclassifyXrayKind).toBe('component');
         expect(mount.dataset.ezclassifyXrayLabel).toBe(
-            'facet-of: doc · CategoryChecklist',
+            '@ezclassify/ui: CategoryChecklist',
         );
+        locator.destroy();
+    });
+});
+
+describe('editing controls bound to a marking', () => {
+    afterEach(() => {
+        document.body.replaceChildren();
+    });
+
+    it.each(['marking', 'decisionflow', 'tags', 'select'])(
+        'outlines a %s bound with bound-to as a component, under Components in the legend',
+        (controller) => {
+            const target = page(
+                `<input id="doc" type="hidden" data-ezclassify-marking><div id="it" data-ezclassify-controller="${controller}" data-ezclassify-bound-to="doc"></div>`,
+            );
+            const locator = createComponentLocator({ target, active: true });
+            const element = target.querySelector<HTMLElement>('#it')!;
+            expect(element.dataset.ezclassifyXrayKind).toBe('component');
+            // Its legend row is Components, not Views and handbooks.
+            expect(
+                locator.element.querySelector(
+                    '.ezclassify-locator__legend > .ezclassify-locator__item--component',
+                )?.textContent,
+            ).toBe('Components');
+            locator.destroy();
+        },
+    );
+
+    it.each([
+        ['banner', 'data-ezclassify-source="doc"'],
+        ['text', 'data-ezclassify-source="doc"'],
+        ['guidebook', ''],
+    ])('keeps a %s a view', (controller, binding) => {
+        const target = page(
+            `<input id="doc" type="hidden" data-ezclassify-marking><div id="it" data-ezclassify-controller="${controller}" ${binding}></div>`,
+        );
+        const locator = createComponentLocator({ target, active: true });
+        expect(
+            target.querySelector<HTMLElement>('#it')!.dataset
+                .ezclassifyXrayKind,
+        ).toBe('view');
         locator.destroy();
     });
 });

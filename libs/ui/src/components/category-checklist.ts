@@ -103,19 +103,31 @@ export class CategoryChecklist extends ComponentBase {
         // Preview bar
         this.preview = this.createPreviewBar();
 
-        // Header: category label + count badge + toggle buttons
+        // The control sits in the suite's field frame. Its first row: the
+        // category's name, then the count, Select all and Clear all, and the
+        // suite's status mark at the end. On a narrow field the name keeps its
+        // line and the rest wraps beneath it as one unit.
+        const frame = document.createElement('div');
+        frame.className = 'category-checklist-frame';
+        this.applySuiteFrame(frame);
+        this.container.appendChild(frame);
+
         this.headerEl = document.createElement('div');
         this.headerEl.className = 'category-checklist-header';
 
-        const heading = document.createElement('h3');
-        heading.textContent = category.label;
-        this.headerEl.appendChild(heading);
+        const name = document.createElement('span');
+        name.className = 'category-checklist-name';
+        name.textContent = category.label;
+        this.headerEl.appendChild(name);
+
+        const controls = document.createElement('div');
+        controls.className = 'category-checklist-controls';
 
         this.countEl = document.createElement('span');
         this.countEl.className = 'category-checklist-count';
         this.countEl.setAttribute('aria-live', 'polite');
         this.countEl.setAttribute('aria-atomic', 'true');
-        this.headerEl.appendChild(this.countEl);
+        controls.appendChild(this.countEl);
 
         // Toggle buttons
         const showToggle = opts.showToggleAll !== false;
@@ -140,10 +152,13 @@ export class CategoryChecklist extends ComponentBase {
             clearAll.addEventListener('click', () => this.clearAll());
             toggleEl.appendChild(clearAll);
 
-            this.headerEl.appendChild(toggleEl);
+            controls.appendChild(toggleEl);
         }
+        this.headerEl.appendChild(controls);
+        // Clear all is this control's clear, so the chrome carries the mark.
+        this.mountSuiteChrome(controls);
 
-        this.container.appendChild(this.headerEl);
+        frame.appendChild(this.headerEl);
 
         // Search input
         const showSearch = opts.showSearch !== false;
@@ -157,7 +172,7 @@ export class CategoryChecklist extends ComponentBase {
             this.renderList();
         });
         if (showSearch) {
-            this.container.appendChild(this.searchInput);
+            frame.appendChild(this.searchInput);
         }
 
         // Checkbox list
@@ -165,15 +180,7 @@ export class CategoryChecklist extends ComponentBase {
         this.listEl.className = 'category-checklist-list';
         this.listEl.setAttribute('role', 'group');
         this.listEl.setAttribute('aria-label', category.label);
-        this.container.appendChild(this.listEl);
-
-        // Progress bar
-        const progress = document.createElement('div');
-        progress.className = 'category-checklist-progress';
-        const progressFill = document.createElement('div');
-        progressFill.className = 'category-checklist-progress-fill';
-        progress.appendChild(progressFill);
-        this.container.appendChild(progress);
+        frame.appendChild(this.listEl);
 
         // Announcer
         this.announcer = createAnnouncer();
@@ -223,6 +230,7 @@ export class CategoryChecklist extends ComponentBase {
     }
 
     destroy(): void {
+        this._destroyed = true;
         this.destroyClearButton();
         this.removeRuleErrors();
         this.container.innerHTML = '';
@@ -300,7 +308,7 @@ export class CategoryChecklist extends ComponentBase {
         }
     }
 
-    /** Update the count badge and progress bar */
+    /** Update the count */
     private updateCount(): void {
         const visible =
             this._allowedConceptIds !== null
@@ -315,19 +323,6 @@ export class CategoryChecklist extends ComponentBase {
                 visible.some((c) => c.id === a.conceptId),
         ).length;
         this.countEl.textContent = `${selected} of ${total}`;
-        this.countEl.classList.toggle(
-            'category-checklist-count--zero',
-            selected === 0,
-        );
-
-        // Update progress bar if present
-        const fill = this.container.querySelector(
-            '.category-checklist-progress-fill',
-        ) as HTMLDivElement | null;
-        if (fill) {
-            fill.style.width =
-                total > 0 ? `${(selected / total) * 100}%` : '0%';
-        }
     }
 
     /** Render the checkbox list, filtered by search text and engine allowability */
@@ -371,7 +366,12 @@ export class CategoryChecklist extends ComponentBase {
         for (const concept of filtered) {
             const isChecked = selectedIds.has(concept.id);
 
-            const item = document.createElement('div');
+            // The whole row is the checkbox's label, so a press anywhere on
+            // it toggles the box. It labels the box it holds, not one found
+            // by id: two checklists of a category share their ids. The native input keeps the semantics and
+            // the focus; the box beside it is the library's own drawing, which
+            // a host's input rules cannot repaint.
+            const item = document.createElement('label');
             item.className =
                 'category-checklist-item' +
                 (isChecked ? ' category-checklist-item--checked' : '');
@@ -381,10 +381,6 @@ export class CategoryChecklist extends ComponentBase {
             checkbox.className = 'category-checklist-checkbox';
             checkbox.id = `checklist-${this.categoryId}-${concept.id}`;
             checkbox.checked = isChecked;
-            checkbox.setAttribute(
-                'aria-label',
-                concept.views['default'] ?? concept.name,
-            );
             checkbox.dataset.conceptId = concept.id;
 
             checkbox.addEventListener('change', () => {
@@ -401,16 +397,24 @@ export class CategoryChecklist extends ComponentBase {
                         `Deselected ${concept.views['default'] ?? concept.name}`,
                     );
                 }
+                item.classList.toggle(
+                    'category-checklist-item--checked',
+                    checkbox.checked,
+                );
                 this.updateCount();
             });
 
-            const label = document.createElement('label');
+            const box = document.createElement('span');
+            box.className = 'category-checklist-box';
+            box.setAttribute('aria-hidden', 'true');
+            box.innerHTML =
+                '<svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 8.5 6.5 11.5 12.5 4.5"/></svg>';
+
+            const label = document.createElement('span');
             label.className = 'category-checklist-label';
-            label.htmlFor = checkbox.id;
             label.textContent = concept.views['default'] ?? concept.name;
 
-            item.appendChild(checkbox);
-            item.appendChild(label);
+            item.append(checkbox, box, label);
             this.listEl.appendChild(item);
         }
     }

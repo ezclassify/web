@@ -67,8 +67,38 @@ async function enter(host: HTMLElement): Promise<void> {
 
 const question = (host: HTMLElement) =>
     host.querySelector('.ez-decision-flow__question-label')?.textContent ?? '';
+/** The scope the current step's dot is grouped under, for a flow of several. */
 const scopeHeading = (host: HTMLElement) =>
-    host.querySelector('.ez-decision-flow__scope')?.textContent ?? null;
+    host
+        .querySelector('.ez-decision-flow__step-dot[aria-current="step"]')
+        ?.closest('.ez-decision-flow__dot-group')
+        ?.getAttribute('aria-label') ?? null;
+/** The category a dot stands for, as its accessible name says it. */
+const dotCategory = (dot: Element) =>
+    (dot.getAttribute('aria-label') ?? '')
+        .replace(/^Step \d+ of \d+, /, '')
+        .split(':')[0];
+/** Each dot group's scope and the categories of its dots. */
+const dotGroups = (host: HTMLElement) =>
+    Array.from(host.querySelectorAll('.ez-decision-flow__dot-group')).map(
+        (group) => [
+            group.getAttribute('aria-label'),
+            Array.from(
+                group.querySelectorAll('.ez-decision-flow__step-dot'),
+            ).map(dotCategory),
+        ],
+    );
+/** The dot of the step for `label`, by its accessible name. */
+const dotFor = (host: HTMLElement, label: string) =>
+    Array.from(
+        host.querySelectorAll<HTMLElement>('.ez-decision-flow__step-dot'),
+    ).find((dot) => dotCategory(dot) === label)!;
+/** Each scope line: its label and the full text it writes. */
+const lines = (host: HTMLElement) =>
+    Array.from(host.querySelectorAll('.ez-decision-flow__row')).map((row) => [
+        row.querySelector('.ez-decision-flow__row-label')?.textContent ?? null,
+        row.querySelector<HTMLElement>('.ez-decision-flow__row-text')?.title,
+    ]);
 const optionNames = (host: HTMLElement) =>
     Array.from(host.querySelectorAll('.ez-decision-flow__option')).map(
         (el) => el.textContent,
@@ -89,16 +119,13 @@ async function choose(host: HTMLElement, name: string): Promise<void> {
 }
 
 async function next(host: HTMLElement): Promise<void> {
-    Array.from(host.querySelectorAll<HTMLButtonElement>('button'))
-        .find((b) => /Next|Done/.test(b.textContent ?? ''))!
-        .click();
+    host.querySelector<HTMLButtonElement>('[aria-label="Next step"]')!.click();
     await demoRuntimeSettled();
 }
 
-async function back(host: HTMLElement): Promise<void> {
-    Array.from(host.querySelectorAll<HTMLButtonElement>('button'))
-        .find((b) => /Back/.test(b.textContent ?? ''))!
-        .click();
+/** Jump to the step for `label` from its dot. */
+async function jump(host: HTMLElement, label: string): Promise<void> {
+    dotFor(host, label).click();
     await demoRuntimeSettled();
 }
 
@@ -138,10 +165,10 @@ describe('DecisionFlow across scopes', () => {
         )!;
         await enter(mount);
 
-        const chips = Array.from(
-            mount.querySelectorAll('.ez-decision-flow__summary-chip'),
-        ).map((chip) => chip.textContent?.split(':')[0]);
-        expect(chips).toEqual(['Level', 'Decision Type']);
+        expect(dotGroups(mount)).toEqual([
+            ['Label Line', ['Level']],
+            ['Origin Block', ['Decision Type']],
+        ]);
     });
 
     it('walks the listed scopes in declaration order, then category order', async () => {
@@ -149,23 +176,15 @@ describe('DecisionFlow across scopes', () => {
         const { host } = await mountFlow({ scopes: ['origin', 'label'] });
         await enter(host);
 
-        expect(question(host)).toBe('Step 1 of 3: Level');
+        expect(question(host)).toBe('1 of 3 \u00b7 Level');
         expect(scopeHeading(host)).toBe('Label Line');
-        const walked = Array.from(
-            host.querySelectorAll('.ez-decision-flow__summary-group'),
-        ).map((group) => [
-            group.getAttribute('aria-label'),
-            Array.from(
-                group.querySelectorAll('.ez-decision-flow__summary-chip'),
-            ).map((chip) => chip.textContent?.split(':')[0]),
-        ]);
-        expect(walked).toEqual([
+        expect(dotGroups(host)).toEqual([
             ['Label Line', ['Level']],
             ['Origin Block', ['Decision Type', 'Release']],
         ]);
+        // A single choice moves the flow on to the next step.
         await choose(host, 'HIGH');
-        await next(host);
-        expect(question(host)).toBe('Step 2 of 3: Decision Type');
+        expect(question(host)).toBe('2 of 3 \u00b7 Decision Type');
         expect(scopeHeading(host)).toBe('Origin Block');
     });
 
@@ -180,37 +199,33 @@ describe('DecisionFlow across scopes', () => {
         );
         expect(new Set(surfaces)).toEqual(new Set(['label', 'origin']));
         await choose(host, 'HIGH');
-        await next(host);
         // The origin step has its options, so the required choice can be made.
         expect(optionNames(host)).toEqual(['Original', 'Copied']);
         await choose(host, 'Copied');
-        expect(
-            host
-                .querySelector<HTMLButtonElement>(
-                    '.ez-decision-flow__nav-btn:last-child',
-                )!
-                .hasAttribute('disabled'),
-        ).toBe(false);
+        expect(dotFor(host, 'Decision Type').dataset.state).toBe('answered');
     });
 
     it('labels steps and groups the summary by scope only when it spans scopes', async () => {
         const { host } = await mountFlow({ scope: 'origin' });
         await enter(host);
 
-        expect(question(host)).toBe('Step 1 of 2: Decision Type');
+        expect(question(host)).toBe('1 of 2 \u00b7 Decision Type');
         expect(scopeHeading(host)).toBeNull();
-        expect(
-            host.querySelector('.ez-decision-flow__summary-group'),
-        ).toBeNull();
-        expect(host.querySelector('.ez-decision-flow__result')).toBeNull();
+        expect(host.querySelector('.ez-decision-flow__dot-group')).toBeNull();
+        // One scope: one line, unlabeled.
+        expect(lines(host).map(([label]) => label)).toEqual([null]);
         flow!.destroy();
 
         const spanning = await mountFlow({ scope: 'label origin' });
         await enter(spanning.host);
-        const groups = Array.from(
-            spanning.host.querySelectorAll('.ez-decision-flow__summary-group'),
-        ).map((group) => group.getAttribute('aria-label'));
-        expect(groups).toEqual(['Label Line', 'Origin Block']);
+        expect(dotGroups(spanning.host).map(([scope]) => scope)).toEqual([
+            'Label Line',
+            'Origin Block',
+        ]);
+        expect(lines(spanning.host).map(([label]) => label)).toEqual([
+            'Label Line',
+            'Origin Block',
+        ]);
     });
 
     it('takes a value for a value-taking choice beside plain ones, stating it only with a value', async () => {
@@ -247,16 +262,14 @@ describe('DecisionFlow across scopes', () => {
             )!,
             '20451231',
         );
-        // Stored in the encoding's canonical spelling, and shown in the
-        // summary the way the origin block writes it.
+        // Stored in the encoding's canonical spelling, and shown on its dot
+        // the way the origin block writes it.
         expect(
             flow!.getAssertions().find((a) => a.conceptId === 'ON_DATE')?.value,
         ).toBe('2045-12-31');
-        expect(
-            Array.from(host.querySelectorAll('.ez-decision-flow__summary-chip'))
-                .map((chip) => chip.textContent)
-                .find((text) => text?.startsWith('Release:')),
-        ).toBe('Release: 20451231');
+        expect(dotFor(host, 'Release').getAttribute('aria-label')).toContain(
+            'Release: 20451231',
+        );
         // No request ever stated the value-taking choice without its value.
         const stated = process.mock.calls.flatMap(
             ([, options]) =>
@@ -276,30 +289,28 @@ describe('DecisionFlow across scopes', () => {
     it('shows a step only while the engine offers it, and clears a path not taken', async () => {
         const { host } = await mountFlow({ scope: 'origin' });
         await enter(host);
-        expect(question(host)).toBe('Step 1 of 2: Decision Type');
+        expect(question(host)).toBe('1 of 2 \u00b7 Decision Type');
 
+        // The choice brings the copied path's steps, and moves on to them.
         await choose(host, 'Copied');
-        expect(question(host)).toBe('Step 1 of 4: Decision Type');
+        expect(question(host)).toMatch(/^2 of 4 \u00b7 /);
         await next(host);
-        await next(host);
-        expect(question(host)).toBe('Step 3 of 4: Source');
+        expect(question(host)).toBe('3 of 4 \u00b7 Source');
         await choose(host, 'Many Sources');
         expect(held(flow!.getAssertions())).toContain(
             'source_type:MANY_SOURCES',
         );
 
-        await back(host);
-        await back(host);
+        await jump(host, 'Decision Type');
         await choose(host, 'Original');
         // The engine offers no source to an original decision, so the source
         // choice is cleared and its step goes; the reasons step comes.
         expect(
             flow!.getAssertions().some((a) => a.categoryId === 'source_type'),
         ).toBe(false);
-        expect(question(host)).toBe('Step 1 of 4: Decision Type');
+        expect(question(host)).toMatch(/^2 of 4 \u00b7 /);
         await next(host);
-        await next(host);
-        expect(question(host)).toBe('Step 3 of 4: Reason');
+        expect(question(host)).toBe('3 of 4 \u00b7 Reason');
     });
 
     it('judges the marking on each scope it walks, the same way every time', async () => {
@@ -308,7 +319,6 @@ describe('DecisionFlow across scopes', () => {
         const { host } = await mountFlow({ scope: 'label origin' }, ctx);
         await enter(host);
         await choose(host, 'HIGH');
-        await next(host);
         await choose(host, 'Original');
         await stepTo(host, 'Release');
         await choose(host, 'Exempt');
@@ -323,7 +333,6 @@ describe('DecisionFlow across scopes', () => {
         expect(shown).toContain('An exemption names its exemption code.');
 
         // Moving on paints the same report.
-        await next(host);
         expect(question(host)).toContain('Exemption Code');
         expect(errors(host)).toEqual(shown);
         await choose(host, 'X1');
@@ -332,13 +341,11 @@ describe('DecisionFlow across scopes', () => {
         );
     });
 
-    it('ends by showing each scope written in its own output', async () => {
+    it('shows each scope written in its own output on its line', async () => {
         const { host } = await mountFlow({ scope: 'label origin' });
         await enter(host);
         await choose(host, 'HIGH');
-        await next(host);
         await choose(host, 'Copied');
-        await next(host);
         await type(
             host.querySelector<HTMLInputElement>(
                 '.ez-decision-flow__text-field',
@@ -355,16 +362,11 @@ describe('DecisionFlow across scopes', () => {
         );
         await stepTo(host, 'Release');
         await choose(host, 'Never');
-        expect(question(host)).toBe('Step 5 of 5: Release');
+        expect(question(host)).toBe('5 of 5 \u00b7 Release');
         await demoRuntimeSettled();
 
-        const result = Array.from(
-            host.querySelectorAll('.ez-decision-flow__result-scope'),
-        ).map((block) => [
-            block.querySelector('.ez-decision-flow__result-label')?.textContent,
-            block.querySelector('.ez-decision-flow__result-text')?.textContent,
-        ]);
-        expect(result).toEqual([
+        // Each scope's line holds that scope written in its own output.
+        expect(lines(host)).toEqual([
             ['Label Line', 'HIGH'],
             [
                 'Origin Block',
@@ -395,7 +397,6 @@ describe('declarative views of a scope', () => {
         )!;
         await enter(host);
         await choose(host, 'HIGH');
-        await next(host);
         await choose(host, 'Copied');
         await stepTo(host, 'Release');
         await choose(host, 'Never');
