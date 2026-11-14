@@ -38,7 +38,6 @@ import { revealClearOfPinned } from './composer/composer-placement';
 import { replacesMarks } from './composer/composer-controller';
 import {
     ensureStatusMark,
-    explainedChanges,
     recordAppliedFixes,
     setStatusMarkError,
     setStatusMarkFixes,
@@ -1441,7 +1440,7 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
     private updateStatusMark(): void {
         setStatusMarkFixes(
             this.chrome.status,
-            explainedChanges(
+            this.textStatusChanges(
                 [...this._appliedFixes.values()],
                 this._fixesHeld.flat(),
             ),

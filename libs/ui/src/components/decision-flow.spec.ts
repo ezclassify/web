@@ -10,6 +10,7 @@ import type {
     CategoryView,
 } from '@ezclassify/types';
 import { schemeOnlyContext } from '../../test-fixtures/context-doubles';
+import { setStatusMarkFixes } from './status-mark';
 import {
     mockRenderFormat,
     mockRenderFormats,
@@ -2447,6 +2448,34 @@ describe('DecisionFlow: compact layout', () => {
         expect(
             container.querySelector('.ez-decision-flow__summary'),
         ).toBeNull();
+    });
+
+    it("a press on a dot closes the status mark's list; a press on the mark keeps it its own", async () => {
+        await flow.init(container, toCtx(createMockEngine()));
+        const mark = container.querySelector<HTMLElement>('.ez-status-mark')!;
+        setStatusMarkFixes(mark.parentElement!, [
+            {
+                ruleId: 'r1',
+                action: 'add',
+                add: [{ conceptId: 'SCOPE_NONE', categoryId: 'scope' }],
+                message: 'Rule "r1": added "SCOPE_NONE"',
+            },
+        ]);
+        const tip = () => document.querySelector<HTMLElement>('.ez-tooltip');
+        touch(mark);
+        expect(tip()?.hidden).toBe(false);
+        expect(mark.getAttribute('aria-expanded')).toBe('true');
+
+        touch(dots()[0]);
+        expect(tip()?.hidden).toBe(true);
+        expect(mark.getAttribute('aria-expanded')).toBe('false');
+
+        // The mark's own press opens it again and a second one closes it.
+        touch(mark);
+        expect(tip()?.hidden).toBe(false);
+        touch(mark);
+        expect(tip()?.hidden).toBe(true);
+        flow.destroy();
     });
 
     it('is collapsed at rest, opens on focus and closes when focus leaves', async () => {

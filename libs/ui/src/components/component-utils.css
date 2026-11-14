@@ -426,14 +426,16 @@
     }
 }
 
-/* Clear is a normal form action. Keep it quieter than the marking status. */
+/* Clear is a normal form action. Keep it quieter than the marking status.
+   With a mouse its target is 24px, the WCAG 2.2 AA minimum (2.5.8); a finger
+   gets 44px below. */
 .ez-clear-button {
     display: inline-flex;
     align-items: center;
     justify-content: center;
     flex: 0 0 auto;
-    width: 2rem;
-    height: 2rem;
+    width: 1.5rem;
+    height: 1.5rem;
     padding: 0;
     border: 1px solid transparent;
     border-radius: 0.25rem;

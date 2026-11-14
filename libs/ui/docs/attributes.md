@@ -244,9 +244,11 @@ check all of its text, as when a MarkedTextArea's scan stops before the end of
 the body: the sparkle takes the error color and the popover and label lead with
 the reason. Hovering or focusing an active (non-quiet) mark lists each change
 EzClassify made to the marking once, however many rules made it, in the
-engine's own words for it. The list includes the facts a rule filled in that
-the marking does not write, such as the members of a group, and it opens above
-or below the field (beside it when neither has room), never over it. Style hooks:
+engine's own words for it. It lists only what the field's scopes write or
+what it changed. A field that shows each fact, such as TagInput or
+DecisionFlow, also lists the facts a rule filled in that the marking does not
+write, such as the members of a group; a text field does not. The list opens
+above or below the field (beside it when neither has room), never over it. Style hooks:
 `--ez-status-mark-color` for the quiet, muted glyph,
 `--ez-status-mark-strong-color` for the glyph of a mark with a message (any
 state but quiet; the field's text color on a light palette, gold on a dark

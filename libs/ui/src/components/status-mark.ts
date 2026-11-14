@@ -27,13 +27,15 @@
  * do. Hovering (past the tooltip's hover-intent delay) or focusing an active
  * mark previews every change EzClassify made to what the author chose, one line
  * per change to the marking however many rules made it, in the engine's own
- * words for it (the change's `message`). That includes the facts a rule filled
- * in that the marking does not write, such as the members a group stands for.
- * Pressing it (a tap, a click, Enter or Space) opens that list until a second
- * press, Escape, or a press or focus outside the field closes it; a phone has
- * no hover, so the press is its only way in. The list sits outside the field's
- * box, so it never covers what it explains. The indicator communicates state;
- * it is not a per-fix activity feed.
+ * words for it (the change's `message`). It lists only what the field's scopes
+ * write or what it changed. A field that shows each fact, not only its text,
+ * also lists the facts a rule filled in that the marking does not write, such
+ * as the members a group stands for. Pressing it (a tap, a click, Enter or
+ * Space) opens that list until a second press, Escape, or a press or focus
+ * outside the field closes it; a phone has no hover, so the press is its only
+ * way in. The list sits outside the field's box, so it never covers what it
+ * explains. The indicator communicates state; it is not a per-fix activity
+ * feed.
  *
  * The module owns the single-mark invariant: `ensureStatusMark` is idempotent
  * per wrap element and `setStatusMarkFixes` mutates the existing mark in place,
@@ -87,6 +89,22 @@ function ruleAdded(assertion: Assertion): boolean {
     );
 }
 
+/** What a field shows of the marking it holds, so its mark explains that. */
+export interface ExplainedField {
+    /**
+     * Whether the field writes a category's facts: those of the scopes it
+     * writes. Every category when omitted.
+     */
+    writes?: (categoryId: string) => boolean;
+    /**
+     * Whether the field shows facts its marking does not write, a chip or a dot
+     * or a row for each fact, so a fact a rule filled in would show up changed
+     * with nothing said. A field that shows only its text does not: the engine
+     * names every fact a rule adds that the text writes.
+     */
+    showsUnwritten: boolean;
+}
+
 /**
  * The changes a field's status mark explains for the value it holds: pass the
  * result to {@link setStatusMarkFixes}.
@@ -94,32 +112,54 @@ function ruleAdded(assertion: Assertion): boolean {
  * The engine names a fact a rule adds in `appliedFixes` only when the marking
  * writes it. A fact the marking does not write (a group's members, when the
  * group's name is written) arrives only as a derived assertion, so a field that
- * shows its facts would show it changed with nothing said. Each such fact
- * becomes one change here, in the engine's wording for an added concept. An
- * applied change that added a concept the field no longer holds describes a
- * value the field has moved on from, so it is left out.
+ * shows its facts would show it changed with nothing said. For such a field
+ * each such fact becomes one change here, in the engine's wording for an added
+ * concept. A field that shows only its text lists none of them.
+ *
+ * An applied change describes a value the field has moved on from, and is left
+ * out, when a concept it added is no longer held or a concept it removed is
+ * held again. A change to categories the field does not write is left out too:
+ * the mark explains what this field writes or changed, not the rest of the
+ * marking.
  *
  * @param applied - The applied changes the field has recorded
  * @param holds - The assertions the field holds now (every marking it holds,
  *   for a field that holds several)
+ * @param field - What the field writes and shows
  * @returns The applied changes still behind the value, then one change per
  *   filled-in fact no applied change names
  */
 export function explainedChanges(
     applied: readonly Change[],
     holds: readonly Assertion[],
+    field: ExplainedField,
 ): Change[] {
+    const writes = field.writes ?? (() => true);
     const held = new Set(holds.map(refKey));
-    const current = applied.filter((change) =>
-        (change.add ?? []).every((ref) => held.has(refKey(ref))),
-    );
+    const current = applied.filter((change) => {
+        const added = change.add ?? [];
+        const removed = change.remove ?? [];
+        const touched = [...added, ...removed];
+        return (
+            added.every((ref) => held.has(refKey(ref))) &&
+            !removed.some((ref) => held.has(refKey(ref))) &&
+            (touched.length === 0 ||
+                touched.some((ref) => writes(ref.categoryId)))
+        );
+    });
+    if (!field.showsUnwritten) return current;
     const explained = new Set(
         current.flatMap((change) => (change.add ?? []).map(refKey)),
     );
     const filledIn: Change[] = [];
     for (const assertion of holds) {
         const key = refKey(assertion);
-        if (!ruleAdded(assertion) || explained.has(key)) continue;
+        if (
+            !ruleAdded(assertion) ||
+            !writes(assertion.categoryId) ||
+            explained.has(key)
+        )
+            continue;
         explained.add(key);
         const ref = {
             conceptId: assertion.conceptId,

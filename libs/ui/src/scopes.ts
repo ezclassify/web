@@ -34,6 +34,19 @@ export function parseScopeList(value: string | null | undefined): string[] {
 }
 
 /**
+ * The scope ids a component's options list: its `scopes`, else its lone `scope`
+ * as a list of one, else none.
+ *
+ * @param options - The component's `scope` and `scopes` options
+ */
+export function listedScopesOf(
+    options: { scope?: string; scopes?: readonly string[] } | undefined,
+): string[] {
+    if (options?.scopes?.length) return [...options.scopes];
+    return options?.scope ? [options.scope] : [];
+}
+
+/**
  * The scopes a component writes: the ones its host lists, or the scheme's
  * default scope when it lists none. Empty for a scheme that declares no default
  * scope, whose marking is written whole.
@@ -47,6 +60,34 @@ export function scopeSetOf(
 ): string[] {
     if (listed.length > 0) return [...listed];
     return meta.defaultScope ? [meta.defaultScope] : [];
+}
+
+/**
+ * Whether a component writes a category's facts: those of a category that
+ * belongs to a scope it writes (see {@link scopeSetOf}). A component that writes
+ * no scope writes the whole marking, every category in it.
+ *
+ * @param listed - The scope ids the component lists
+ * @param categories - The scheme's categories, with the scopes they declare
+ * @param meta - The scheme's scope metadata
+ * @returns A test of a category id
+ */
+export function writesCategoryOf(
+    listed: readonly string[],
+    categories: ReadonlyArray<{ id: string; scopes?: readonly string[] }>,
+    meta: ScopeSource,
+): (categoryId: string) => boolean {
+    const scopes = scopeSetOf(listed, meta);
+    if (scopes.length === 0) return () => true;
+    const written = new Set(
+        factsInScopes(
+            categories.map((category) => ({ categoryId: category.id })),
+            categories,
+            scopes,
+            meta,
+        ).map((fact) => fact.categoryId),
+    );
+    return (categoryId) => written.has(categoryId);
 }
 
 /**

@@ -1,0 +1,275 @@
+/**
+ * What a field's status mark explains: what the scopes it writes write, or what
+ * it changed. A text field writes its marking as text, so a fact a rule filled
+ * in that the text does not write (a group's members) is not on its list, and
+ * neither is a change to a scope the field does not write. A field that draws
+ * each fact as a chip lists the facts a rule filled in among its scopes, since
+ * each one is a chip the author sees appear.
+ *
+ * The engine here is a stand-in: the cases are about what a field does with an
+ * answer, so each answer is written out.
+ */
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import type { Assertion, Change, ScanResult } from '@ezclassify/types';
+import { schemeOnlyContext } from '../../test-fixtures/context-doubles';
+import { mockRenderFormats } from '../render-format-layout-mock';
+import { mockScanOutcome } from '../engine-result-mock';
+import { MarkedInput } from './marked-input';
+import { MarkedTextArea } from './marked-text-area';
+import { MarkingField } from './marking-field';
+import { TagInput } from './tag-input';
+import type { ComponentInstance } from './component-base';
+import { cleanupTooltipForRoot } from './tooltip-manager';
+
+const NO_LOSS = {
+    emitted: [],
+    omitted: [],
+    collapsed: [],
+    conflicts: [],
+    unrepresentable: [],
+};
+
+/** A fact the marking holds: read from the text, or added by `rule`. */
+function fact(conceptId: string, categoryId: string, rule?: string): Assertion {
+    return rule
+        ? {
+              conceptId,
+              categoryId,
+              confidence: 'inferred',
+              source: 'infer',
+              sourceRule: rule,
+          }
+        : { conceptId, categoryId, confidence: 'certain', source: 'parse' };
+}
+
+/** A change a rule made, adding one concept. */
+function added(rule: string, conceptId: string, categoryId: string): Change {
+    return {
+        ruleId: rule,
+        action: 'add',
+        add: [{ conceptId, categoryId }],
+        message: `Rule "${rule}": added "${conceptId}"`,
+    };
+}
+
+/**
+ * Reading `LOW` leaves the marking holding: LOW, as written; STD, which a rule
+ * added and the text writes; MEMBER, which a rule filled in under the written
+ * group and the text does not write; and SIGNED, which a rule added in the
+ * record scope, a scope the fields here do not write.
+ */
+const HOLDS = [
+    fact('LOW', 'level'),
+    fact('GROUP', 'group'),
+    fact('STD', 'handling', 'adds-std'),
+    fact('MEMBER', 'group', 'expands-group'),
+    fact('SIGNED', 'signer', 'signs'),
+];
+const APPLIED = [
+    added('adds-std', 'STD', 'handling'),
+    added('signs', 'SIGNED', 'signer'),
+];
+
+function engine() {
+    const ids: Array<[string, string]> = [
+        ['LOW', 'level'],
+        ['GROUP', 'group'],
+        ['MEMBER', 'group'],
+        ['STD', 'handling'],
+        ['SIGNED', 'signer'],
+    ];
+    const concepts = ids.map(([id, category], index) => ({
+        id,
+        name: id,
+        views: { default: id },
+        categories: [category],
+        parents: [],
+        aliases: [],
+        position: index,
+    }));
+    const categories = [
+        { id: 'level', single: true },
+        { id: 'group', single: false },
+        { id: 'handling', single: false },
+        { id: 'signer', single: true, scopes: ['record'] },
+    ].map((category, index) => ({
+        label: category.id,
+        required: false,
+        rollup: 'union',
+        position: index,
+        ...category,
+    }));
+    const formats = [
+        {
+            id: 'default',
+            categoryOrder: ['level', 'group', 'handling'],
+            separator: '/',
+            categorySeparator: '//',
+            view: 'default',
+        },
+    ];
+    const scheme = {
+        id: 'field-changes',
+        version: '1.0.0',
+        name: 'Field changes',
+        concepts,
+        categories,
+        formats,
+        defaultRenderFormat: 'default',
+        embeddedMarking: [
+            { pattern: '\\(([^)]+)\\)', template: '({marking}) ' },
+        ],
+        contextFormats: { part: ['default'] },
+    };
+    const result = {
+        assertions: HOLDS,
+        rendered: 'LOW//GROUP//STD',
+        valid: true,
+        inputWasValid: false,
+        errors: [],
+        warnings: [],
+        appliedFixes: APPLIED,
+        proposedFixes: [],
+        notices: [],
+        assessment: NO_LOSS,
+    };
+    return {
+        getScheme: () => scheme,
+        getSchemeMeta: () => ({
+            id: scheme.id,
+            version: scheme.version,
+            name: scheme.name,
+            defaultRenderFormat: scheme.defaultRenderFormat,
+            formats: mockRenderFormats(formats),
+            scopes: [
+                { id: 'marking', label: 'Marking' },
+                { id: 'record', label: 'Record' },
+            ],
+            defaultScope: 'marking',
+        }),
+        listCategories: () => categories,
+        getConceptsInCategory: (categoryId: string) =>
+            concepts.filter((c) => c.categories.includes(categoryId)),
+        process: () => result,
+        validate: () => result,
+        render: () => ({ ...result }),
+        scan: (text: string) => {
+            const results: object[] = [];
+            const re = /\(([^)]+)\)/g;
+            let m;
+            while ((m = re.exec(text)) !== null)
+                results.push({
+                    start: m.index,
+                    end: m.index + m[0].length,
+                    marking: m[0],
+                    wrapped: true,
+                    inner: m[1],
+                    result,
+                });
+            return mockScanOutcome(results as ScanResult[]);
+        },
+        suggest: () => ({ suggestions: [] }),
+        aggregate: () => ({ rendered: '', assertions: [] }),
+        describeConcept: (conceptId: string) => ({ lines: [conceptId] }),
+    };
+}
+
+const wait = (ms = 400) => new Promise((r) => setTimeout(r, ms));
+
+/** Hover the field's status mark past its delay and read its list. */
+async function markLines(root: Element): Promise<string[]> {
+    const mark = root.querySelector<HTMLElement>('.ez-status-mark')!;
+    mark.dispatchEvent(new Event('mouseenter'));
+    await wait();
+    const tip = document.querySelector<HTMLElement>('.ez-tooltip');
+    const lines =
+        tip && !tip.hidden
+            ? [...tip.querySelectorAll(':scope > div')].map(
+                  (row) => row.textContent ?? '',
+              )
+            : [];
+    mark.dispatchEvent(new Event('mouseleave'));
+    return lines;
+}
+
+let container: HTMLDivElement;
+let mounted: ComponentInstance | undefined;
+
+beforeEach(() => {
+    container = document.createElement('div');
+    document.body.appendChild(container);
+});
+
+afterEach(() => {
+    mounted?.destroy();
+    mounted = undefined;
+    // The marks mount with no tooltip root, so the shared tooltip is keyed to
+    // the body: drop it before the DOM goes, or the next case reuses a
+    // detached one.
+    cleanupTooltipForRoot(document.body);
+    document.body.innerHTML = '';
+});
+
+const context = () => schemeOnlyContext(engine() as never);
+
+describe('a field explains only what its scopes write or it changed', () => {
+    it('MarkedTextArea lists the change its text writes, not a filled-in fact or another scope', async () => {
+        const textarea = document.createElement('textarea');
+        textarea.value = '(LOW) Paragraph.';
+        container.appendChild(textarea);
+        const field = new MarkedTextArea();
+        mounted = field;
+        await field.init(container, context());
+        await wait();
+        // A loaded marking's fixes are flagged, not made; editing the marking
+        // makes them.
+        textarea.value = '(LOW/) Paragraph.';
+        textarea.dispatchEvent(new Event('input', { bubbles: true }));
+        await wait(800);
+
+        expect(await markLines(container)).toEqual([
+            'EzClassify fixed this marking:',
+            '• Rule "adds-std": added "STD"',
+        ]);
+    });
+
+    it('MarkedInput lists the same for its leading mark', async () => {
+        container.innerHTML = '<input type="text" value="(LOW) A note.">';
+        const field = new MarkedInput();
+        mounted = field;
+        await field.init(container, context());
+        await wait();
+
+        expect(await markLines(container)).toEqual([
+            'EzClassify fixed this marking:',
+            '• Rule "adds-std": added "STD"',
+        ]);
+    });
+
+    it('MarkingField writes its marking as text and lists the same', async () => {
+        container.innerHTML = '<input value="LOW">';
+        const field = new MarkingField();
+        mounted = field;
+        await field.init(container, context(), { initialValue: 'LOW' });
+        await wait();
+
+        expect(await markLines(container)).toEqual([
+            'EzClassify fixed this marking:',
+            '• Rule "adds-std": added "STD"',
+        ]);
+    });
+
+    it('TagInput draws each fact as a chip, so it also lists the fact a rule filled in', async () => {
+        container.innerHTML = '<input value="LOW">';
+        const field = new TagInput();
+        mounted = field;
+        await field.init(container, context(), { initialValue: 'LOW' });
+        await wait();
+
+        expect(await markLines(container)).toEqual([
+            'EzClassify fixed this marking:',
+            '• Rule "adds-std": added "STD"',
+            '• Rule "expands-group": added "MEMBER" to category "group"',
+        ]);
+    });
+});
