@@ -288,9 +288,20 @@ export class DecisionFlow extends ComponentBase {
     private readonly outsidePointer = (event: Event) => {
         if (this.flowEl.contains(event.target as Node)) return;
         this.finishPointer();
-        // A tap anywhere else puts a previewed dot back, and the flow at
-        // rest, whatever its errors.
+        // A tap anywhere else puts a previewed dot back.
         this.setPreview(null);
+        this.pressingOutside = true;
+    };
+    /** A press outside the flow is down and has not clicked yet. */
+    private pressingOutside = false;
+    /**
+     * A press anywhere else puts the flow at rest, whatever its errors. It
+     * closes once the press has landed, on its click, so the step folding away
+     * never moves what the press was aimed at out from under it.
+     */
+    private readonly outsideClick = (event: Event) => {
+        this.pressingOutside = false;
+        if (this.flowEl.contains(event.target as Node)) return;
         this.setOpen(false);
     };
     /** Focus left the flow: the step closes and the flow is one line again. */
@@ -300,6 +311,8 @@ export class DecisionFlow extends ComponentBase {
         const next = event.relatedTarget as Node | null;
         if (next && this.flowEl.contains(next)) return;
         this.setPreview(null);
+        // A press elsewhere closes the flow on its click (see outsideClick).
+        if (this.pressingOutside) return;
         this.setOpen(false);
     };
     private readonly requestOptions = () => {
@@ -633,6 +646,7 @@ export class DecisionFlow extends ComponentBase {
         // Keep an inside press mounted until click; an outside release cancels it.
         this.flowEl.addEventListener('keyup', this.finishPointer);
         document.addEventListener('pointerdown', this.outsidePointer);
+        document.addEventListener('click', this.outsideClick);
         document.addEventListener('pointerup', this.releasePointer);
         document.addEventListener('pointercancel', this.finishPointer);
         this.stopObservingLock = observeNativeLock(
@@ -926,6 +940,7 @@ export class DecisionFlow extends ComponentBase {
         for (const catalog of this.catalogs.values()) catalog.dispose();
         this.stopObservingLock?.();
         document.removeEventListener('pointerdown', this.outsidePointer);
+        document.removeEventListener('click', this.outsideClick);
         document.removeEventListener('pointerup', this.releasePointer);
         document.removeEventListener('pointercancel', this.finishPointer);
         this.flowEl?.removeEventListener('focusout', this.focusOut);

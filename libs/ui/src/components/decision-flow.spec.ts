@@ -2671,7 +2671,14 @@ describe('DecisionFlow: compact layout', () => {
             { constraintId: 'required', message: 'Impact is required' },
         ]);
         expect(step().hidden).toBe(false);
-        outside.dispatchEvent(new Event('pointerdown', { bubbles: true }));
+        // The press lands first: nothing moves under it until its click, even
+        // as focus leaves the flow.
+        const target = document.createElement('button');
+        outside.appendChild(target);
+        target.dispatchEvent(new Event('pointerdown', { bubbles: true }));
+        target.focus();
+        expect(step().hidden).toBe(false);
+        target.click();
         expect(step().hidden).toBe(true);
         expect(
             container.querySelector('.ez-decision-flow__value-errors')
