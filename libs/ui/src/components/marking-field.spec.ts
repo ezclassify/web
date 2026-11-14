@@ -311,6 +311,30 @@ async function createTestEngine(
     ).scheme as RemoteContextSchemeEngineAdapter;
 }
 
+/** The engine calls an async adapter has started, and how many are still out. */
+interface EngineCalls {
+    started: number;
+    out: number;
+}
+
+/**
+ * Wait until every engine call a field started has been answered and the
+ * answers started nothing more for a few adapter delays: each chain of reads
+ * has landed, however slowly the engine answers (a live runtime while recording
+ * is far slower than a replay).
+ */
+async function engineQuiet(calls: EngineCalls, delayMs = 10): Promise<void> {
+    for (;;) {
+        await vi.waitFor(() => expect(calls.out).toBe(0), {
+            timeout: 10_000,
+            interval: delayMs,
+        });
+        const started = calls.started;
+        await wait(delayMs * 3);
+        if (calls.out === 0 && calls.started === started) return;
+    }
+}
+
 /**
  * Wrap a real (synchronous) engine so process()/render()/suggest() return
  * Promises, the shape a genuine remote (REST) adapter actually has. Everything
@@ -323,6 +347,7 @@ async function createTestEngine(
 function toAsyncAdapter(
     engine: RemoteContextSchemeEngineAdapter,
     delayMs = 10,
+    calls?: EngineCalls,
 ): RemoteContextSchemeEngineAdapter {
     const asyncMethods = new Set(['process', 'render', 'suggest']);
     return new Proxy(engine as object, {
@@ -334,9 +359,15 @@ function toAsyncAdapter(
                     const result = (
                         value as (...a: unknown[]) => unknown
                     ).apply(target, args);
+                    if (calls) {
+                        calls.started++;
+                        calls.out++;
+                    }
                     return new Promise((resolve) =>
                         setTimeout(() => resolve(result), delayMs),
-                    );
+                    ).finally(() => {
+                        if (calls) calls.out--;
+                    });
                 };
             }
             return (value as (...a: unknown[]) => unknown).bind(target);
@@ -2388,43 +2419,41 @@ describe('MarkingField', () => {
         expect(input.value).toBe('SECRET');
     });
 
-    it('releases the re-entrancy guard only once an async accept write actually lands, not synchronously', async () => {
+    it('sends nothing more once an async accept and its own reads have landed', async () => {
         const real = await createTestEngine();
         const suggestSpy = vi.spyOn(real, 'suggest');
+        const calls: EngineCalls = { started: 0, out: 0 };
         root.innerHTML = `<textarea id="mf" data-ezclassify-controller="marking"></textarea>`;
-        forms = new EzClassifyUI(asContext(toAsyncAdapter(real) as never), {
-            root,
-        });
-        await wait(60);
+        forms = new EzClassifyUI(
+            asContext(toAsyncAdapter(real, 10, calls) as never),
+            { root },
+        );
+        await engineQuiet(calls);
         const input = document.getElementById('mf') as HTMLTextAreaElement;
 
         input.dispatchEvent(new FocusEvent('focus'));
-        await wait(60);
+        await engineQuiet(calls);
         input.value = 'SEC';
         input.dispatchEvent(new Event('input', { bubbles: true }));
-        await wait(120);
+        await engineQuiet(calls);
 
         input.dispatchEvent(
             new KeyboardEvent('keydown', { key: 'Tab', bubbles: true }),
         );
-        // The accept's own refreshSuggestions() call now resolves its live
-        // assertions (a process() call on the typed text) before its
-        // suggest() call, so both settle asynchronously instead of the
-        // suggest() firing synchronously within the keydown dispatch. Wait
-        // for that chain to fully land before taking the baseline count.
-        await wait(60);
+        // The accept reads its pick and refreshes what the field offers beside
+        // it: a process() that settles the facts, then a suggest(). Count from
+        // once all of that has landed, however long the engine takes.
+        await engineQuiet(calls);
+        expect(input.value).toBe('SECRET');
         const callsAfterAcceptSettles = suggestSpy.mock.calls.length;
 
-        // Let the async engine.process() write land (fires
-        // onAssertionsChanged -> host-value write -> bubbling `input` event
-        // this field listens to itself), then wait through a full debounce
-        // window past that with nothing else happening. If the guard had
-        // released synchronously instead of in onAssertionsChanged, that
-        // bubbling event would have been treated as real typing and scheduled
-        // one more suggest() call here.
+        // An accept changes only the draft. Nothing it set off may start
+        // another lookup after that: no read of the field's own text as new
+        // typing, and no refresh that answers itself.
         await wait(200);
 
         expect(suggestSpy.mock.calls.length).toBe(callsAfterAcceptSettles);
+        expect(calls.out).toBe(0);
     });
 
     it('keeps what is typed while a commit is still being stored', async () => {
