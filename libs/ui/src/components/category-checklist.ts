@@ -5,8 +5,9 @@
  * Multi-select. Shows a count of selected items ("7 of 18"). Think "which of
  * these 18 identifiers are present?"
  *
- * Supports filtering/searching via an optional search input at the top, and a
- * "select all / clear all" toggle.
+ * Supports filtering/searching via a search input at the top, and a "select all
+ * / clear all" toggle. The search input shows when the list is longer than the
+ * room it is given (it scrolls), or while it holds a filter.
  */
 
 import { ComponentBase, type ComponentOptions } from './component-base';
@@ -21,7 +22,10 @@ const CATEGORY_CHECKLIST_CSS: string = categoryChecklistCss;
 export interface CategoryChecklistOptions extends ComponentOptions {
     /** Which category to display. Required. */
     categoryId: string;
-    /** Show a search/filter input. Default: true */
+    /**
+     * Show a search/filter input: always (true) or never (false). Default: when
+     * the list is longer than its room, and while a filter is typed.
+     */
     showSearch?: boolean;
     /** Show a "select all / clear all" toggle. Default: true */
     showToggleAll?: boolean;
@@ -55,6 +59,13 @@ export class CategoryChecklist extends ComponentBase {
     private categoryId!: string;
     /** Current filter text */
     private filterText = '';
+    /**
+     * Whether the search input shows: always, never, or when the list
+     * overflows.
+     */
+    private searchMode: 'always' | 'never' | 'overflow' = 'overflow';
+    /** Rechecks the list's overflow when its box changes size. */
+    private listResize: ResizeObserver | null = null;
     /**
      * Concept IDs currently allowed by the store's facet subscription. null =
      * show all.
@@ -161,7 +172,12 @@ export class CategoryChecklist extends ComponentBase {
         frame.appendChild(this.headerEl);
 
         // Search input
-        const showSearch = opts.showSearch !== false;
+        this.searchMode =
+            opts.showSearch === true
+                ? 'always'
+                : opts.showSearch === false
+                  ? 'never'
+                  : 'overflow';
         this.searchInput = document.createElement('input');
         this.searchInput.type = 'text';
         this.searchInput.className = 'category-checklist-search';
@@ -171,7 +187,7 @@ export class CategoryChecklist extends ComponentBase {
             this.filterText = this.searchInput.value;
             this.renderList();
         });
-        if (showSearch) {
+        if (this.searchMode !== 'never') {
             frame.appendChild(this.searchInput);
         }
 
@@ -181,6 +197,15 @@ export class CategoryChecklist extends ComponentBase {
         this.listEl.setAttribute('role', 'group');
         this.listEl.setAttribute('aria-label', category.label);
         frame.appendChild(this.listEl);
+        if (
+            this.searchMode === 'overflow' &&
+            typeof ResizeObserver === 'function'
+        ) {
+            this.listResize = new ResizeObserver(() =>
+                this.updateSearchVisibility(),
+            );
+            this.listResize.observe(this.listEl);
+        }
 
         // Announcer
         this.announcer = createAnnouncer();
@@ -231,6 +256,8 @@ export class CategoryChecklist extends ComponentBase {
 
     destroy(): void {
         this._destroyed = true;
+        this.listResize?.disconnect();
+        this.listResize = null;
         this.destroyClearButton();
         this.removeRuleErrors();
         this.container.innerHTML = '';
@@ -325,8 +352,32 @@ export class CategoryChecklist extends ComponentBase {
         this.countEl.textContent = `${selected} of ${total}`;
     }
 
+    /**
+     * Show the search input when it helps: always or never when the host says
+     * so, else while the list is longer than its room (it scrolls) or the input
+     * is in use.
+     */
+    private updateSearchVisibility(): void {
+        if (this._destroyed || this.searchMode !== 'overflow') return;
+        const list = this.listEl;
+        // A filter being typed or cleared keeps its input, and its focus.
+        this.searchInput.hidden = !(
+            this.filterText !== '' ||
+            this.searchInput.ownerDocument.activeElement === this.searchInput ||
+            list.scrollHeight > list.clientHeight + 1
+        );
+    }
+
     /** Render the checkbox list, filtered by search text and engine allowability */
     private renderList(): void {
+        try {
+            this.fillList();
+        } finally {
+            this.updateSearchVisibility();
+        }
+    }
+
+    private fillList(): void {
         this.listEl.innerHTML = '';
 
         // Apply engine availability filter first, then user text filter

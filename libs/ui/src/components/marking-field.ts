@@ -236,7 +236,7 @@ export class MarkingField extends ComponentBase {
                 ? (conceptId, categoryId) =>
                       this.resolveConceptDescription(conceptId, categoryId)
                 : undefined,
-            onPlacement: (open) => this.setEditorOpen(open),
+            onPlacement: (open) => this.setReportInField(open),
             onDraft: (text) => {
                 if (this.editor) this.enhancedInput!.value = text;
                 if (this.hasFocus || this.controller.snapshot().invalid) {

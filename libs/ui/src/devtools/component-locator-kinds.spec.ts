@@ -310,7 +310,7 @@ describe('each kind has its own outline and legend row', () => {
         const locator = createComponentLocator({ target, active: true });
         expect(mount.dataset.ezclassifyXrayKind).toBe('component');
         expect(mount.dataset.ezclassifyXrayLabel).toBe(
-            '@ezclassify/ui: CategoryChecklist',
+            '@ezclassify/ui: CategoryChecklist · facet-of: doc',
         );
         locator.destroy();
     });
@@ -330,6 +330,10 @@ describe('editing controls bound to a marking', () => {
             const locator = createComponentLocator({ target, active: true });
             const element = target.querySelector<HTMLElement>('#it')!;
             expect(element.dataset.ezclassifyXrayKind).toBe('component');
+            // Its chip names the control, then the marking it is bound to.
+            expect(element.getAttribute('data-ezclassify-xray-label')).toMatch(
+                /^@ezclassify\/ui: \w+ · bound-to: doc$/,
+            );
             // Its legend row is Components, not Views and handbooks.
             expect(
                 locator.element.querySelector(

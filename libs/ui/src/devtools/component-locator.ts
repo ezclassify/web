@@ -505,7 +505,11 @@ function markerLabel(marker: HTMLElement, kind: XrayKind): string {
     let head: string;
     switch (kind) {
         case 'component':
-            head = library;
+            // A control bound to a marking by a view attribute is still a
+            // component; its chip says what it is bound to after its name.
+            head = [library, ...attributesText(element, VIEW_ATTRS)].join(
+                ' · ',
+            );
             break;
         case 'marking':
             head = element.id ? `marking #${element.id}` : 'marking';

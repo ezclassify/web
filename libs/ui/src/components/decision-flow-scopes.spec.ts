@@ -286,6 +286,19 @@ describe('DecisionFlow across scopes', () => {
         ).toBe('20451231');
     });
 
+    it('shows at rest the steps the engine offers, the same dots it shows open', async () => {
+        const { host } = await mountFlow({ scope: 'label origin' });
+        await demoRuntimeSettled();
+        const atRest = dotGroups(host);
+        // The copied and original paths' steps are not on offer yet.
+        expect(atRest).toEqual([
+            ['Label Line', ['Level']],
+            ['Origin Block', ['Decision Type', 'Release']],
+        ]);
+        await enter(host);
+        expect(dotGroups(host)).toEqual(atRest);
+    });
+
     it('shows a step only while the engine offers it, and clears a path not taken', async () => {
         const { host } = await mountFlow({ scope: 'origin' });
         await enter(host);
@@ -388,7 +401,9 @@ describe('declarative views of a scope', () => {
             <div id="line" data-ezclassify-controller="banner"
                  data-ezclassify-source="doc" data-ezclassify-scope="label"></div>
             <div id="block" data-ezclassify-controller="banner"
-                 data-ezclassify-source="doc" data-ezclassify-scope="origin"></div>`;
+                 data-ezclassify-source="doc" data-ezclassify-scope="origin"></div>
+            <span id="mirror" data-ezclassify-source="doc"
+                  data-ezclassify-scope="origin"></span>`;
         document.body.appendChild(root);
         forms = new EzClassifyUI(await context(), { root });
         await demoRuntimeSettled();
@@ -406,6 +421,10 @@ describe('declarative views of a scope', () => {
             root.querySelector(`#${id} .status-banner-label`)?.textContent;
         expect(label('line')).toBe('HIGH');
         expect(label('block')).toBe('Release: Never');
+        // A plain mirror with no controller honors its scope the same way.
+        expect(root.querySelector('#mirror')?.textContent).toBe(
+            'Release: Never',
+        );
         expect(
             forms.store.get('doc').assertions.map((a) => a.conceptId),
         ).toEqual(expect.arrayContaining(['HIGH', 'COPIED', 'NEVER']));

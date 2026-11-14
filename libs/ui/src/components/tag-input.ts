@@ -251,7 +251,7 @@ export class TagInput extends ComponentBase {
                 ? (conceptId, categoryId) =>
                       this.resolveConceptDescription(conceptId, categoryId)
                 : undefined,
-            onPlacement: (open) => this.setEditorOpen(open),
+            onPlacement: (open) => this.setReportInField(open),
         });
         this.container.appendChild(this.view.announcer);
         this.wrapOuter.insertAdjacentElement('afterend', this.view.note);

@@ -2190,8 +2190,27 @@ export class EzClassifyUI {
         ) {
             const sourceId = binding.source;
             if (this.validMarkingIds.has(sourceId)) {
+                // A mirror that names scopes shows those scopes' own output,
+                // as a text view does (see writeInScopes): an authority block
+                // mirror shows the authority block, not the banner. Only the
+                // newest state's write is shown.
+                const viewScopes = parseScopeList(
+                    el.getAttribute('data-ezclassify-scope'),
+                );
+                let scopedWrite = 0;
                 const update = (s: EzClassifyState) => {
-                    el.textContent = s.rendered || EMPTY_VALUE;
+                    const write = ++scopedWrite;
+                    if (viewScopes.length === 0 || renderViewRefused(s)) {
+                        el.textContent = s.rendered || EMPTY_VALUE;
+                        return;
+                    }
+                    void this.writeInScopes(el, s.assertions, viewScopes)
+                        .catch(() => null)
+                        .then((text) => {
+                            if (write !== scopedWrite || this._destroyed)
+                                return;
+                            el.textContent = text || EMPTY_VALUE;
+                        });
                 };
                 const unsub = this.store.subscribe(sourceId, update);
                 this.storeUnsubscribers.set(el, unsub);

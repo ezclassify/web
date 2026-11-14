@@ -305,9 +305,9 @@ export class RuleErrorList {
     }
 
     /**
-     * Hide the list while the field's editor is open and shows the same report
-     * in its own list, and show it again (with whatever it last reported) when
-     * the editor closes.
+     * Hide the list while the field carries the same report itself (an open
+     * editor's list, a compact control's error count), and show it again, with
+     * whatever it last reported, when the field stops carrying it.
      */
     setSuppressed(suppressed: boolean): void {
         this.suppressed = suppressed;

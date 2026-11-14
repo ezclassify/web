@@ -271,39 +271,34 @@
 /* The select sits in the suite's field frame (field-chrome.css), which draws
    the edge, the padding and the focus ring; the select itself is bare inside
    it, and the chrome lies over the trailing edge the way it does on the text
-   fields, with its reserve kept clear. */
+   fields, with its reserve kept clear. Its rules weigh one class, so a host's
+   own rule for its selects (a class and an element, say) still sets the
+   select's type. */
 .select-dropdown-field {
     display: flex;
     align-items: center;
 }
-.select-dropdown-field > .select-dropdown {
+.select-dropdown {
     flex: 1;
     min-width: 0;
     width: 0;
     align-self: stretch;
+    box-sizing: border-box;
     padding: 0;
     border: 0;
     background: transparent;
     color: inherit;
     font: inherit;
+    cursor: pointer;
 }
-.select-dropdown-field > .select-dropdown:focus {
+.select-dropdown:focus {
     outline: none;
 }
 @media (pointer: coarse) {
-    .select-dropdown-field > .select-dropdown {
+    .select-dropdown {
         min-height: 2.75rem;
         font-size: max(1em, 16px);
     }
-}
-.select-dropdown {
-    display: block;
-    width: 100%;
-    font-family: var(--ez-font-family, inherit);
-    font-size: 0.875rem;
-    color: var(--ez-color-text, inherit);
-    cursor: pointer;
-    box-sizing: border-box;
 }
 .select-dropdown-supplement:empty {
     display: none;

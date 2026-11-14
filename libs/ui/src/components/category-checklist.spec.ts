@@ -350,10 +350,49 @@ describe('CategoryChecklist', () => {
         expect(count?.textContent).toBe('2 of 5');
     });
 
-    it('should show search input by default', async () => {
+    it('shows the search input only when the list is longer than its room', async () => {
         await init();
-        const search = container.querySelector('.category-checklist-search');
-        expect(search).not.toBeNull();
+        const search = container.querySelector<HTMLInputElement>(
+            '.category-checklist-search',
+        )!;
+        const list = container.querySelector<HTMLElement>(
+            '.category-checklist-list',
+        )!;
+        // Every item fits: no filter to take up room.
+        expect(search.hidden).toBe(true);
+        // The engine offers nothing, then everything again, and the list
+        // that comes back scrolls: the filter shows.
+        checklist.applyAllowableOptions([]);
+        expect(search.hidden).toBe(true);
+        Object.defineProperty(list, 'scrollHeight', {
+            configurable: true,
+            value: 600,
+        });
+        Object.defineProperty(list, 'clientHeight', {
+            configurable: true,
+            value: 352,
+        });
+        checklist.applyAllowableOptions(null);
+        expect(search.hidden).toBe(false);
+    });
+
+    it('keeps the search input while it holds a filter, and always when asked', async () => {
+        await init();
+        const search = container.querySelector<HTMLInputElement>(
+            '.category-checklist-search',
+        )!;
+        search.value = 'Alpha';
+        search.dispatchEvent(new Event('input', { bubbles: true }));
+        expect(search.hidden).toBe(false);
+        checklist.destroy();
+        container.innerHTML = '';
+        checklist = new CategoryChecklist();
+        await init({ showSearch: true });
+        expect(
+            container.querySelector<HTMLInputElement>(
+                '.category-checklist-search',
+            )!.hidden,
+        ).toBe(false);
     });
 
     it('should hide search input when showSearch is false', async () => {

@@ -941,6 +941,331 @@
             "method": "POST",
             "statusCode": 200
         },
+        "5357047609aedcf37c2762f598f9ee90e6bd2704e9368885e41f7fd6e5a7bcb7": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "multi-scope-regression",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "multi-scope-regression",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "suggestions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "STUDENTS",
+                            "description": "Students",
+                            "group": "Minimum audience level",
+                            "label": "STUDENTS",
+                            "name": "Students",
+                            "order": 0,
+                            "selected": true,
+                            "views": {
+                                "default": "STUDENTS",
+                                "long": "STUDENTS",
+                                "short": "ST"
+                            }
+                        },
+                        {
+                            "categoryId": "status",
+                            "conceptId": "FINAL",
+                            "description": "Final",
+                            "group": "Release Status",
+                            "label": "FINAL",
+                            "name": "Final",
+                            "order": 0,
+                            "selected": false,
+                            "views": {
+                                "default": "FINAL",
+                                "long": "FINAL",
+                                "short": "FINAL"
+                            }
+                        },
+                        {
+                            "categoryId": "artifact",
+                            "conceptId": "TEST",
+                            "description": "Test",
+                            "group": "What It Is",
+                            "label": "TEST",
+                            "name": "Test",
+                            "order": 0,
+                            "selected": false,
+                            "views": {
+                                "default": "TEST",
+                                "long": "TEST",
+                                "short": "TEST"
+                            }
+                        },
+                        {
+                            "categoryId": "from_school",
+                            "conceptId": "HILLTOP",
+                            "description": "Hilltop",
+                            "group": "From School",
+                            "label": "HILLTOP",
+                            "name": "Hilltop",
+                            "order": 0,
+                            "selected": false,
+                            "views": {
+                                "default": "HILLTOP",
+                                "long": "HILLTOP",
+                                "short": "HILL"
+                            }
+                        },
+                        {
+                            "categoryId": "from_school",
+                            "conceptId": "LINCOLN",
+                            "description": "Lincoln",
+                            "group": "From School",
+                            "label": "LINCOLN",
+                            "name": "Lincoln",
+                            "order": 0,
+                            "selected": false,
+                            "views": {
+                                "default": "LINCOLN",
+                                "long": "LINCOLN",
+                                "short": "LIN"
+                            }
+                        },
+                        {
+                            "categoryId": "from_school",
+                            "conceptId": "OAKWOOD",
+                            "description": "Oakwood",
+                            "group": "From School",
+                            "label": "OAKWOOD",
+                            "name": "Oakwood",
+                            "order": 0,
+                            "selected": false,
+                            "views": {
+                                "default": "OAKWOOD",
+                                "long": "OAKWOOD",
+                                "short": "OAK"
+                            }
+                        },
+                        {
+                            "categoryId": "from_school",
+                            "conceptId": "OUR_SCHOOL",
+                            "description": "Our School",
+                            "group": "From School",
+                            "label": "OUR SCHOOL",
+                            "name": "Our School",
+                            "order": 0,
+                            "selected": false,
+                            "views": {
+                                "default": "OUR SCHOOL",
+                                "long": "OUR SCHOOL",
+                                "short": "OURS"
+                            }
+                        },
+                        {
+                            "categoryId": "from_school",
+                            "conceptId": "RIVERSIDE",
+                            "description": "Riverside",
+                            "group": "From School",
+                            "label": "RIVERSIDE",
+                            "name": "Riverside",
+                            "order": 0,
+                            "selected": false,
+                            "views": {
+                                "default": "RIVERSIDE",
+                                "long": "RIVERSIDE",
+                                "short": "RIV"
+                            }
+                        },
+                        {
+                            "categoryId": "questions_from",
+                            "conceptId": "HILLTOP",
+                            "description": "Hilltop",
+                            "group": "Questions From",
+                            "label": "HILLTOP",
+                            "name": "Hilltop",
+                            "order": 0,
+                            "selected": false,
+                            "views": {
+                                "default": "HILLTOP",
+                                "long": "HILLTOP",
+                                "short": "HILL"
+                            }
+                        },
+                        {
+                            "categoryId": "questions_from",
+                            "conceptId": "LINCOLN",
+                            "description": "Lincoln",
+                            "group": "Questions From",
+                            "label": "LINCOLN",
+                            "name": "Lincoln",
+                            "order": 0,
+                            "selected": false,
+                            "views": {
+                                "default": "LINCOLN",
+                                "long": "LINCOLN",
+                                "short": "LIN"
+                            }
+                        },
+                        {
+                            "categoryId": "questions_from",
+                            "conceptId": "OAKWOOD",
+                            "description": "Oakwood",
+                            "group": "Questions From",
+                            "label": "OAKWOOD",
+                            "name": "Oakwood",
+                            "order": 0,
+                            "selected": false,
+                            "views": {
+                                "default": "OAKWOOD",
+                                "long": "OAKWOOD",
+                                "short": "OAK"
+                            }
+                        },
+                        {
+                            "categoryId": "questions_from",
+                            "conceptId": "OUR_SCHOOL",
+                            "description": "Our School",
+                            "group": "Questions From",
+                            "label": "OUR SCHOOL",
+                            "name": "Our School",
+                            "order": 0,
+                            "selected": false,
+                            "views": {
+                                "default": "OUR SCHOOL",
+                                "long": "OUR SCHOOL",
+                                "short": "OURS"
+                            }
+                        },
+                        {
+                            "categoryId": "questions_from",
+                            "conceptId": "RIVERSIDE",
+                            "description": "Riverside",
+                            "group": "Questions From",
+                            "label": "RIVERSIDE",
+                            "name": "Riverside",
+                            "order": 0,
+                            "selected": false,
+                            "views": {
+                                "default": "RIVERSIDE",
+                                "long": "RIVERSIDE",
+                                "short": "RIV"
+                            }
+                        },
+                        {
+                            "categoryId": "test_section",
+                            "conceptId": "MATH",
+                            "description": "Math",
+                            "group": "Test Section",
+                            "label": "MATH",
+                            "name": "Math",
+                            "order": 0,
+                            "selected": false,
+                            "views": {
+                                "default": "MATH",
+                                "long": "MATH",
+                                "short": "MATH"
+                            }
+                        },
+                        {
+                            "categoryId": "test_section",
+                            "conceptId": "READING",
+                            "description": "Reading",
+                            "group": "Test Section",
+                            "label": "READING",
+                            "name": "Reading",
+                            "order": 0,
+                            "selected": false,
+                            "views": { "default": "READING", "short": "READ" }
+                        },
+                        {
+                            "categoryId": "test_section",
+                            "conceptId": "SCIENCE",
+                            "description": "Science",
+                            "group": "Test Section",
+                            "label": "SCIENCE",
+                            "name": "Science",
+                            "order": 0,
+                            "selected": false,
+                            "views": { "default": "SCIENCE", "short": "SCI" }
+                        },
+                        {
+                            "categoryId": "sharing",
+                            "conceptId": "SCHOOL_ONLY",
+                            "description": "School Only",
+                            "group": "Sharing",
+                            "label": "SCHOOL ONLY",
+                            "name": "School Only",
+                            "order": 0,
+                            "selected": false,
+                            "views": {
+                                "default": "SCHOOL ONLY",
+                                "long": "SCHOOL ONLY",
+                                "short": "SCHOOL"
+                            }
+                        },
+                        {
+                            "categoryId": "sharing",
+                            "conceptId": "SHARE_WITH",
+                            "description": "Share With",
+                            "group": "Sharing",
+                            "label": "SHARE WITH",
+                            "name": "Share With",
+                            "order": 1,
+                            "selected": false,
+                            "views": {
+                                "default": "SHARE WITH",
+                                "long": "SHARE WITH",
+                                "short": "SHARE"
+                            }
+                        },
+                        {
+                            "categoryId": "sharing",
+                            "conceptId": "READ_IN_CLASS",
+                            "description": "Read In Class",
+                            "group": "Sharing",
+                            "label": "READ IN CLASS",
+                            "name": "Read In Class",
+                            "order": 2,
+                            "selected": false,
+                            "views": {
+                                "default": "READ IN CLASS",
+                                "short": "IN CLASS"
+                            }
+                        },
+                        {
+                            "categoryId": "filing_status",
+                            "conceptId": "FILED",
+                            "description": "Filed",
+                            "group": "Filing",
+                            "label": "FILED",
+                            "name": "Filed",
+                            "order": 0,
+                            "selected": false,
+                            "views": { "default": "FILED", "short": "FILED" }
+                        },
+                        {
+                            "categoryId": "filing_status",
+                            "conceptId": "NOT_FILED",
+                            "description": "Not Filed",
+                            "group": "Filing",
+                            "label": "NOT FILED",
+                            "name": "Not Filed",
+                            "order": 0,
+                            "selected": false,
+                            "views": {
+                                "default": "NOT FILED",
+                                "short": "NOT FILED"
+                            }
+                        }
+                    ],
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
         "5aa25f3239be35f5b5a2b0b1cd2af1436cf236563dd5e531f4acad3d3f7a9f21": {
             "body": {
                 "contextId": "sbx-d439b2590804695e96e6172d9fb1c5c6277e8331758fac94a953613284d9bda6"
@@ -2057,6 +2382,301 @@
                     "rendered": "ST",
                     "renders": {},
                     "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "a6dca2e5b50c7d937b4d0e6436b01816f5d8f38bd81395dbfcdde9b499b9721f": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "multi-scope-regression",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "multi-scope-regression",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "suggestions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "STUDENTS",
+                            "description": "Students",
+                            "group": "Minimum audience level",
+                            "label": "STUDENTS",
+                            "name": "Students",
+                            "order": 0,
+                            "selected": false,
+                            "views": {
+                                "default": "STUDENTS",
+                                "long": "STUDENTS",
+                                "short": "ST"
+                            }
+                        },
+                        {
+                            "categoryId": "level",
+                            "conceptId": "SCHOOL_STAFF",
+                            "description": "School Staff",
+                            "group": "Minimum audience level",
+                            "label": "SCHOOL STAFF",
+                            "name": "School Staff",
+                            "order": 0,
+                            "selected": false,
+                            "views": {
+                                "default": "SCHOOL STAFF",
+                                "long": "SCHOOL STAFF",
+                                "short": "SS"
+                            }
+                        },
+                        {
+                            "categoryId": "level",
+                            "conceptId": "DISTRICT_COORDINATORS",
+                            "description": "District Coordinators",
+                            "group": "Minimum audience level",
+                            "label": "DISTRICT COORDINATORS",
+                            "name": "District Coordinators",
+                            "order": 0,
+                            "selected": false,
+                            "views": {
+                                "default": "DISTRICT COORDINATORS",
+                                "long": "DISTRICT COORDINATORS",
+                                "short": "DC"
+                            }
+                        },
+                        {
+                            "categoryId": "level",
+                            "conceptId": "STATE_ASSESSMENT_STAFF",
+                            "description": "State Assessment Staff",
+                            "group": "Minimum audience level",
+                            "label": "STATE ASSESSMENT STAFF",
+                            "name": "State Assessment Staff",
+                            "order": 0,
+                            "selected": false,
+                            "views": {
+                                "default": "STATE ASSESSMENT STAFF",
+                                "long": "STATE ASSESSMENT STAFF",
+                                "short": "SA"
+                            }
+                        },
+                        {
+                            "categoryId": "status",
+                            "conceptId": "FINAL",
+                            "description": "Final",
+                            "group": "Release Status",
+                            "label": "FINAL",
+                            "name": "Final",
+                            "order": 0,
+                            "selected": false,
+                            "views": {
+                                "default": "FINAL",
+                                "long": "FINAL",
+                                "short": "FINAL"
+                            }
+                        },
+                        {
+                            "categoryId": "artifact",
+                            "conceptId": "TEST",
+                            "description": "Test",
+                            "group": "What It Is",
+                            "label": "TEST",
+                            "name": "Test",
+                            "order": 0,
+                            "selected": false,
+                            "views": {
+                                "default": "TEST",
+                                "long": "TEST",
+                                "short": "TEST"
+                            }
+                        },
+                        {
+                            "categoryId": "questions_from",
+                            "conceptId": "HILLTOP",
+                            "description": "Hilltop",
+                            "group": "Questions From",
+                            "label": "HILLTOP",
+                            "name": "Hilltop",
+                            "order": 0,
+                            "selected": false,
+                            "views": {
+                                "default": "HILLTOP",
+                                "long": "HILLTOP",
+                                "short": "HILL"
+                            }
+                        },
+                        {
+                            "categoryId": "questions_from",
+                            "conceptId": "LINCOLN",
+                            "description": "Lincoln",
+                            "group": "Questions From",
+                            "label": "LINCOLN",
+                            "name": "Lincoln",
+                            "order": 0,
+                            "selected": false,
+                            "views": {
+                                "default": "LINCOLN",
+                                "long": "LINCOLN",
+                                "short": "LIN"
+                            }
+                        },
+                        {
+                            "categoryId": "questions_from",
+                            "conceptId": "OAKWOOD",
+                            "description": "Oakwood",
+                            "group": "Questions From",
+                            "label": "OAKWOOD",
+                            "name": "Oakwood",
+                            "order": 0,
+                            "selected": false,
+                            "views": {
+                                "default": "OAKWOOD",
+                                "long": "OAKWOOD",
+                                "short": "OAK"
+                            }
+                        },
+                        {
+                            "categoryId": "questions_from",
+                            "conceptId": "OUR_SCHOOL",
+                            "description": "Our School",
+                            "group": "Questions From",
+                            "label": "OUR SCHOOL",
+                            "name": "Our School",
+                            "order": 0,
+                            "selected": false,
+                            "views": {
+                                "default": "OUR SCHOOL",
+                                "long": "OUR SCHOOL",
+                                "short": "OURS"
+                            }
+                        },
+                        {
+                            "categoryId": "questions_from",
+                            "conceptId": "RIVERSIDE",
+                            "description": "Riverside",
+                            "group": "Questions From",
+                            "label": "RIVERSIDE",
+                            "name": "Riverside",
+                            "order": 0,
+                            "selected": false,
+                            "views": {
+                                "default": "RIVERSIDE",
+                                "long": "RIVERSIDE",
+                                "short": "RIV"
+                            }
+                        },
+                        {
+                            "categoryId": "test_section",
+                            "conceptId": "MATH",
+                            "description": "Math",
+                            "group": "Test Section",
+                            "label": "MATH",
+                            "name": "Math",
+                            "order": 0,
+                            "selected": false,
+                            "views": {
+                                "default": "MATH",
+                                "long": "MATH",
+                                "short": "MATH"
+                            }
+                        },
+                        {
+                            "categoryId": "test_section",
+                            "conceptId": "READING",
+                            "description": "Reading",
+                            "group": "Test Section",
+                            "label": "READING",
+                            "name": "Reading",
+                            "order": 0,
+                            "selected": false,
+                            "views": { "default": "READING", "short": "READ" }
+                        },
+                        {
+                            "categoryId": "test_section",
+                            "conceptId": "SCIENCE",
+                            "description": "Science",
+                            "group": "Test Section",
+                            "label": "SCIENCE",
+                            "name": "Science",
+                            "order": 0,
+                            "selected": false,
+                            "views": { "default": "SCIENCE", "short": "SCI" }
+                        },
+                        {
+                            "categoryId": "sharing",
+                            "conceptId": "SCHOOL_ONLY",
+                            "description": "School Only",
+                            "group": "Sharing",
+                            "label": "SCHOOL ONLY",
+                            "name": "School Only",
+                            "order": 0,
+                            "selected": false,
+                            "views": {
+                                "default": "SCHOOL ONLY",
+                                "long": "SCHOOL ONLY",
+                                "short": "SCHOOL"
+                            }
+                        },
+                        {
+                            "categoryId": "sharing",
+                            "conceptId": "SHARE_WITH",
+                            "description": "Share With",
+                            "group": "Sharing",
+                            "label": "SHARE WITH",
+                            "name": "Share With",
+                            "order": 1,
+                            "selected": false,
+                            "views": {
+                                "default": "SHARE WITH",
+                                "long": "SHARE WITH",
+                                "short": "SHARE"
+                            }
+                        },
+                        {
+                            "categoryId": "sharing",
+                            "conceptId": "READ_IN_CLASS",
+                            "description": "Read In Class",
+                            "group": "Sharing",
+                            "label": "READ IN CLASS",
+                            "name": "Read In Class",
+                            "order": 2,
+                            "selected": false,
+                            "views": {
+                                "default": "READ IN CLASS",
+                                "short": "IN CLASS"
+                            }
+                        },
+                        {
+                            "categoryId": "filing_status",
+                            "conceptId": "FILED",
+                            "description": "Filed",
+                            "group": "Filing",
+                            "label": "FILED",
+                            "name": "Filed",
+                            "order": 0,
+                            "selected": false,
+                            "views": { "default": "FILED", "short": "FILED" }
+                        },
+                        {
+                            "categoryId": "filing_status",
+                            "conceptId": "NOT_FILED",
+                            "description": "Not Filed",
+                            "group": "Filing",
+                            "label": "NOT FILED",
+                            "name": "Not Filed",
+                            "order": 0,
+                            "selected": false,
+                            "views": {
+                                "default": "NOT FILED",
+                                "short": "NOT FILED"
+                            }
+                        }
+                    ],
                     "warnings": []
                 }
             },

@@ -732,7 +732,7 @@ describe('DecisionFlow', () => {
         await enterFlow(container);
         const text = container.querySelector('.ez-decision-flow__row-text');
         // A word, not a dash: a dash is silent to a screen reader.
-        expect(text?.textContent).toBe('(empty)');
+        expect(text?.textContent).toBe('not set');
         expect(text?.hasAttribute('data-empty')).toBe(true);
     });
 
@@ -1929,26 +1929,32 @@ async function enterFlow(host: HTMLElement): Promise<void> {
     await new Promise((resolve) => setTimeout(resolve, 0));
 }
 
-describe('DecisionFlow interaction-driven catalog', () => {
-    it('mounts and accepts external state without requesting suggestions, then loads on focus', async () => {
+describe('DecisionFlow options at rest', () => {
+    it('asks the engine for its options at mount and after a change from elsewhere, not on a repaint', async () => {
         const host = document.createElement('div');
         document.body.appendChild(host);
         const engine = createMockEngine();
         const flow = new DecisionFlow();
         try {
             await flow.init(host, toCtx(engine));
-            expect(engine.suggest).not.toHaveBeenCalled();
-            flow.setAssertions([]);
-            expect(engine.suggest).not.toHaveBeenCalled();
-            host.querySelector<HTMLButtonElement>('[role="radio"]')!.focus();
+            // The dots at rest are the steps the engine offers.
             await vi.waitFor(() =>
                 expect(engine.suggest).toHaveBeenCalledTimes(1),
             );
             (flow as any).render();
-            flow.setAssertions([]);
-            await Promise.resolve();
             await Promise.resolve();
             expect(engine.suggest).toHaveBeenCalledTimes(1);
+            flow.setAssertions([
+                {
+                    conceptId: 'IMPACT_LOW',
+                    categoryId: 'impact',
+                    confidence: 'certain',
+                    source: 'user',
+                },
+            ]);
+            await vi.waitFor(() =>
+                expect(engine.suggest).toHaveBeenCalledTimes(2),
+            );
         } finally {
             flow.destroy();
             host.remove();
@@ -2245,6 +2251,137 @@ describe('DecisionFlow: compact layout', () => {
         expect(step().hidden).toBe(false);
         outside.focus();
         expect(step().hidden).toBe(true);
+    });
+
+    it('at rest is one line: the dots, its marking and error count, then the chrome', async () => {
+        await flow.init(container, toCtx(createMockEngine()), {
+            initialValue: 'S:P',
+        } as never);
+        await settle();
+        flow.updateValidationErrors([
+            { constraintId: 'required', message: 'Impact is required' },
+        ]);
+        const frame = container.querySelector('.ez-decision-flow')!;
+        const header = frame.querySelector('.ez-decision-flow__header')!;
+        const rows = frame.querySelector<HTMLElement>(
+            '.ez-decision-flow__rows',
+        )!;
+        // The header holds the line, after the dots and before the chrome.
+        const line = header.querySelector(
+            '.ez-decision-flow__rest .ez-decision-flow__row',
+        )!;
+        expect(
+            line.querySelector('.ez-decision-flow__row-text')?.textContent,
+        ).not.toBe('not set');
+        expect(
+            line.querySelector('.ez-decision-flow__row-errors')?.textContent,
+        ).toBe('1 error');
+        expect(line.querySelector('.ez-decision-flow__row-label')).toBeNull();
+        const order = [
+            header.querySelector('.ez-decision-flow__progress')!,
+            line,
+            header.querySelector('.ez-status-mark')!,
+        ];
+        for (let i = 1; i < order.length; i++)
+            expect(
+                order[i - 1].compareDocumentPosition(order[i]) &
+                    Node.DOCUMENT_POSITION_FOLLOWING,
+            ).toBeTruthy();
+        // Nothing else shows: no step, no lines under the header, and the
+        // step header is the open flow's (it shows only under data-open).
+        expect(step().hidden).toBe(true);
+        expect(rows.hidden).toBe(true);
+        expect(rows.children).toHaveLength(0);
+        expect(frame.hasAttribute('data-open')).toBe(false);
+
+        // Open, the line moves under the step and the header names the step.
+        dots()[0].focus();
+        expect(frame.hasAttribute('data-open')).toBe(true);
+        expect(title()).toMatch(/^\d of 2 · /);
+        expect(
+            header.querySelector('.ez-decision-flow__rest')!.children,
+        ).toHaveLength(0);
+        expect(rows.hidden).toBe(false);
+        expect(
+            [...rows.querySelectorAll('.ez-decision-flow__row')].map(
+                (row) =>
+                    row.querySelector('.ez-decision-flow__row-label') === null,
+            ),
+        ).toEqual([true]);
+    });
+
+    it('says "not set" on its rest line when nothing is answered', async () => {
+        await flow.init(container, toCtx(createMockEngine()));
+        const text = container.querySelector<HTMLElement>(
+            '.ez-decision-flow__rest .ez-decision-flow__row-text',
+        )!;
+        expect(text.textContent).toBe('not set');
+        expect(text.hasAttribute('data-empty')).toBe(true);
+    });
+
+    it('lists the engine errors under it only while open; at rest the count carries them', async () => {
+        const outside = document.createElement('button');
+        document.body.appendChild(outside);
+        await flow.init(container, toCtx(createMockEngine()));
+        flow.updateValidationErrors([
+            { constraintId: 'required', message: 'Impact is required' },
+        ]);
+        const list = () =>
+            document.querySelector<HTMLElement>('.ez-validation-errors')!;
+        expect(list().hidden).toBe(true);
+        dots()[0].focus();
+        expect(list().hidden).toBe(false);
+        expect(list().textContent).toContain('Impact is required');
+        outside.focus();
+        expect(list().hidden).toBe(true);
+    });
+
+    it('at rest across scopes is the header and one labeled line per scope', async () => {
+        const scoped = document.createElement('div');
+        document.body.appendChild(scoped);
+        await flow.init(scoped, toCtx(createScopedEngine()), {
+            scope: 'marking admin',
+        });
+        await settle();
+        const frame = scoped.querySelector('.ez-decision-flow')!;
+        const header = frame.querySelector('.ez-decision-flow__header')!;
+        // The header is the grouped dots and the chrome: no line in it.
+        expect(header.querySelector('.ez-decision-flow__row')).toBeNull();
+        expect(
+            [...header.querySelectorAll('.ez-decision-flow__dot-group')].map(
+                (group) => group.getAttribute('aria-label'),
+            ),
+        ).toEqual(['Marking', 'Admin']);
+        expect(frame.hasAttribute('data-open')).toBe(false);
+        const rows = frame.querySelector<HTMLElement>(
+            '.ez-decision-flow__rows',
+        )!;
+        expect(rows.hidden).toBe(false);
+        expect(
+            [...rows.querySelectorAll('.ez-decision-flow__row')].map(
+                (row) =>
+                    row.querySelector('.ez-decision-flow__row-label')
+                        ?.textContent,
+            ),
+        ).toEqual(['Marking', 'Admin']);
+    });
+
+    it("names a dot's scope in its preview when the flow spans scopes", async () => {
+        const scoped = document.createElement('div');
+        document.body.appendChild(scoped);
+        await flow.init(scoped, toCtx(createScopedEngine()), {
+            scope: 'marking admin',
+        });
+        await settle();
+        const adminDot = scoped.querySelector<HTMLElement>(
+            '.ez-decision-flow__step-dot[data-category-id="admin_cat"]',
+        )!;
+        adminDot.dispatchEvent(
+            Object.assign(new Event('pointerenter'), { pointerType: 'mouse' }),
+        );
+        expect(
+            scoped.querySelector('.ez-decision-flow__dot-preview')?.textContent,
+        ).toMatch(/^Admin · /);
     });
 
     it('jumps to a step from its dot and keeps the keyboard on the dots', async () => {

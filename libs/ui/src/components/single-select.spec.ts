@@ -7,6 +7,9 @@ import type {
     Assertion,
     LocalContextSchemeEngineAdapter,
 } from '@ezclassify/types';
+import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { SingleSelect } from './single-select';
 import {
     connectDemoContext,
@@ -217,6 +220,46 @@ async function makeColoredEngine(): Promise<LocalContextSchemeEngineAdapter> {
 }
 
 const toCtx = (eng: unknown) => schemeOnlyContext(eng as never);
+
+/**
+ * A selector's weight: ids, then classes, attributes and pseudo-classes, then
+ * elements.
+ */
+type Specificity = [number, number, number];
+
+/**
+ * The specificity of one compound selector list item, enough for the selectors
+ * this library writes: `:where()` weighs nothing, and `:is()` and `:not()`
+ * weigh their heaviest argument.
+ */
+function specificity(selector: string): Specificity {
+    let rest = selector;
+    const weight: Specificity = [0, 0, 0];
+    rest = rest.replace(/:where\((?:[^()]|\([^()]*\))*\)/g, ' ');
+    rest = rest.replace(
+        /:(?:is|not)\(((?:[^()]|\([^()]*\))*)\)/g,
+        (_, inner: string) => {
+            const heaviest = inner
+                .split(',')
+                .map(specificity)
+                .sort((a, b) => compareSpecificity(b, a))[0];
+            for (let i = 0; i < 3; i++) weight[i] += heaviest[i];
+            return ' ';
+        },
+    );
+    weight[0] += (rest.match(/#[\w-]+/g) ?? []).length;
+    weight[1] += (rest.match(/\.[\w-]+|\[[^\]]*\]|:(?!:)[\w-]+/g) ?? []).length;
+    weight[2] += (
+        rest.match(/(?:^|[\s>+~])[a-z][\w-]*|::[\w-]+/gi) ?? []
+    ).length;
+    return weight;
+}
+
+function compareSpecificity(a: Specificity, b: Specificity): number {
+    for (let i = 0; i < 3; i++) if (a[i] !== b[i]) return a[i] - b[i];
+    return 0;
+}
+
 describe('SingleSelect', () => {
     let container: HTMLDivElement;
     let engine: LocalContextSchemeEngineAdapter;
@@ -236,6 +279,45 @@ describe('SingleSelect', () => {
         expect(container.querySelector('.select-card')).toBeNull();
         component.destroy();
     });
+    it("leaves the select's type size to a host rule for its selects", async () => {
+        await component.init(container, toCtx(engine));
+        const select =
+            container.querySelector<HTMLSelectElement>('.select-dropdown')!;
+        // A host sizes its selects with a class and an element, e.g.
+        // `.demo select { font-size: 1rem }`. Every library rule that sets the
+        // select's type must weigh less, so the host's size stands.
+        const host: Specificity = [0, 1, 1];
+        const style = document.createElement('style');
+        style.textContent = readFileSync(
+            join(dirname(fileURLToPath(import.meta.url)), 'single-select.css'),
+            'utf8',
+        );
+        document.head.appendChild(style);
+        const typeRules: string[] = [];
+        const walk = (rules: CSSRuleList) => {
+            for (const rule of Array.from(rules)) {
+                if (rule instanceof CSSMediaRule) walk(rule.cssRules);
+                if (!(rule instanceof CSSStyleRule)) continue;
+                const setsType = ['font', 'font-size'].some((name) =>
+                    rule.style.getPropertyValue(name),
+                );
+                if (!setsType) continue;
+                for (const selector of rule.selectorText.split(','))
+                    if (select.matches(selector))
+                        typeRules.push(selector.trim());
+            }
+        };
+        walk(style.sheet!.cssRules);
+        style.remove();
+        expect(typeRules.length).toBeGreaterThan(0);
+        for (const selector of typeRules)
+            expect(
+                compareSpecificity(specificity(selector), host),
+                selector,
+            ).toBeLessThan(0);
+        component.destroy();
+    });
+
     it('keeps choices compact and previews help in one shared detail panel', async () => {
         await component.init(container, toCtx(engine), { mode: 'cards' });
         const cards = container.querySelectorAll<HTMLElement>('.select-card');

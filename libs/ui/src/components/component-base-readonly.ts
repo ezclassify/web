@@ -457,8 +457,8 @@ export abstract class ReadOnlyComponentBase implements ComponentInstance {
      * print still holds it.
      */
     protected unprinted: readonly AssertionRef[] = [];
-    /** See {@link setEditorOpen}. */
-    private editorOpen = false;
+    /** See {@link setReportInField}. */
+    private reportInField = false;
 
     /** The original <input> element being progressively enhanced (if any) */
     protected enhancedInput: HTMLInputElement | null = null;
@@ -1010,7 +1010,7 @@ export abstract class ReadOnlyComponentBase implements ComponentInstance {
                     this.container.ownerDocument,
                     (pointerType) => this.focusAfterFix(pointerType),
                 );
-                this.ruleErrorList.setSuppressed(this.editorOpen);
+                this.ruleErrorList.setSuppressed(this.reportInField);
             }
             this.placeRuleErrors();
             this.ruleErrorList.update(report, this.ruleFixHandler());
@@ -1019,14 +1019,14 @@ export abstract class ReadOnlyComponentBase implements ComponentInstance {
     }
 
     /**
-     * The field's editor opened or closed. While it is open its list carries
-     * the field's report, so the list under the field steps aside and the field
-     * shows one list.
+     * Whether the field carries its report itself: an open editor's own list,
+     * or a compact control's error count at rest. While it does, the list under
+     * the field steps aside, so the field shows the report once.
      */
-    protected setEditorOpen(open: boolean): void {
-        if (this.editorOpen === open) return;
-        this.editorOpen = open;
-        this.ruleErrorList?.setSuppressed(open);
+    protected setReportInField(inField: boolean): void {
+        if (this.reportInField === inField) return;
+        this.reportInField = inField;
+        this.ruleErrorList?.setSuppressed(inField);
         this.onRuleErrorsChanged();
     }
 
