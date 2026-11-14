@@ -578,6 +578,60 @@
             "method": "GET",
             "statusCode": 200
         },
+        "4e133b5bcabebc7d40fcfffb1959d1492d4d958d58f514120e06e4e81131ab17": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "two-scope-flow",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "two-scope-flow",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "LOW",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            { "categoryId": "level", "conceptId": "LOW" }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "recognition": {
+                        "corrections": [],
+                        "inputFormat": "label/line",
+                        "status": "complete",
+                        "surface": "label",
+                        "unmatched": []
+                    },
+                    "rendered": "LOW",
+                    "renders": {},
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
         "50a29d44c7a184ddf0fffa3d9e982c24793ec6ddc09f0843068f790f12a167f1": {
             "body": {
                 "contextFormats": {
@@ -781,6 +835,53 @@
                     "notices": [],
                     "proposedFixes": [],
                     "rendered": "CONFIDENTIAL // KEEP 7 YEARS",
+                    "renders": {},
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "5c62837553bc7e494e035d7fa793ef647c62ffbd1304cac58c24bb108bc08423": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "two-scope-flow",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "two-scope-flow",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "LOW",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            { "categoryId": "level", "conceptId": "LOW" }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "LOW",
                     "renders": {},
                     "valid": true,
                     "warnings": []
@@ -2256,6 +2357,60 @@
                     "proposedFixes": [],
                     "rendered": "CONFIDENTIAL",
                     "renders": {},
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "ddad51611375936f5e05db008357bb3495b5f622e624ee75cccbf59283e57663": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "two-scope-flow",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "two-scope-flow",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "LOW",
+                            "confidence": "certain",
+                            "source": "aggregate"
+                        },
+                        {
+                            "categoryId": "source_type",
+                            "conceptId": "MANY_SOURCES",
+                            "confidence": "certain",
+                            "source": "aggregate"
+                        },
+                        {
+                            "categoryId": "release_type",
+                            "conceptId": "NEVER",
+                            "confidence": "certain",
+                            "source": "aggregate"
+                        },
+                        {
+                            "categoryId": "origin_type",
+                            "conceptId": "COPIED",
+                            "confidence": "certain",
+                            "source": "aggregate"
+                        }
+                    ],
+                    "errors": [],
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "LOW\nSource: Many Sources\nRelease: Never",
                     "valid": true,
                     "warnings": []
                 }

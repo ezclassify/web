@@ -1232,12 +1232,16 @@ export class DecisionFlow extends ComponentBase {
                 target.setAttribute('aria-label', label);
                 target.dataset.scope = group.scope;
                 // The name sits before its group rather than in it, so on a
-                // narrow field the names give up room and the dots keep theirs.
+                // narrow open flow the names give up room and the dots keep
+                // theirs. At rest the name and its dots move as one.
                 const caption = document.createElement('span');
                 caption.className = 'ez-decision-flow__dot-group-label';
                 caption.setAttribute('aria-hidden', 'true');
                 caption.textContent = label;
-                this.dotsEl.append(caption, target);
+                const named = document.createElement('span');
+                named.className = 'ez-decision-flow__dot-scope';
+                named.append(caption, target);
+                this.dotsEl.append(named);
             }
             for (const i of group.steps) target.appendChild(this.dot(i));
         }

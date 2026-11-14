@@ -2848,6 +2848,30 @@ export class EzClassifyUI {
     }
 
     /**
+     * The facts of a marking a component shows: those of the scopes it writes,
+     * the scheme's default scope when it lists none. A scheme with no default
+     * scope writes its marking whole, so every fact is shown.
+     *
+     * @param el - The component's host
+     * @param assertions - The marking's facts
+     */
+    private factsOfOwnScopes(
+        el: HTMLElement,
+        assertions: readonly EngineAssertion[],
+    ): EngineAssertion[] {
+        if (assertions.length === 0) return [];
+        const engine = schemeEngineOf(this.resolveContext(el), el);
+        const meta = engine.getSchemeMeta();
+        const scopes = scopeSetOf(
+            parseScopeList(el.getAttribute('data-ezclassify-scope')),
+            meta,
+        );
+        return scopes.length === 0
+            ? [...assertions]
+            : factsInScopes(assertions, engine.listCategories(), scopes, meta);
+    }
+
+    /**
      * Whether a view writes scopes other than the scheme's default scope alone,
      * so its text is not the marking's default-scope text.
      *
@@ -3952,13 +3976,18 @@ export class EzClassifyUI {
                         .catch(() => {});
                 } else {
                     // A marking's text states its default scope only, so a
-                    // view of other scopes, or one whose facts reach past the
+                    // view of other scopes, one whose facts reach past the
                     // default (a decision flow across scopes, a text field
-                    // holding a fact of another scope), publishes its facts,
-                    // which carry every scope. Its text would lose them.
+                    // holding a fact of another scope), or one bound to a
+                    // marking that holds facts of other scopes publishes its
+                    // facts, which keep every scope. Its text would lose them.
                     handle.publishesFacts ||=
                         this.writesPastDefaultScope(el) ||
-                        this.statesOtherScopes(el, assertions);
+                        this.statesOtherScopes(el, assertions) ||
+                        this.statesOtherScopes(
+                            el,
+                            this.store.get(markingId).assertions,
+                        );
                     if (handle.publishesFacts) {
                         // The view states the facts of its own scopes only,
                         // so the store keeps the ones of every other scope.
@@ -4069,7 +4098,9 @@ export class EzClassifyUI {
                     component.applyStoreState(state);
                     return;
                 }
-                component.setAssertions(state.assertions ?? []);
+                component.setAssertions(
+                    this.factsOfOwnScopes(host, state.assertions ?? []),
+                );
             } else {
                 if (state.rendered === binding.lastSeenRendered) return;
                 // A refused state's text is the engine's marker. The field
@@ -4097,7 +4128,15 @@ export class EzClassifyUI {
                 // the receiver's view format. Interactive components reprocess the
                 // assertions and the binding's lastSeenRendered guard absorbs that
                 // subscriber-driven onChange echo.
-                component.setAssertions(state.assertions ?? []);
+                //
+                // A component shows the facts of the scopes it writes, the
+                // scheme's default scope when it lists none, whatever else the
+                // marking holds. Its echo of them states the same marking, so
+                // the facts guard absorbs it once its publish keeps the rest.
+                binding.lastSeenFacetSig = signAssertions(state.assertions);
+                component.setAssertions(
+                    this.factsOfOwnScopes(host, state.assertions ?? []),
+                );
             }
         };
 
@@ -4527,15 +4566,17 @@ export class EzClassifyUI {
             // The store reflecting the field's own marking back (the host seed,
             // or its own publish) changes nothing the field holds. Applying it
             // would rewrite the author's mark as the repaired render and clear
-            // the errors the engine reported on what the author wrote.
+            // the errors the engine reported on what the author wrote. The
+            // field holds the facts of its own scopes only.
+            const own = this.factsOfOwnScopes(host, state.assertions ?? []);
             if (
-                signAssertions(state.assertions ?? []) ===
+                signAssertions(own) ===
                 signAssertions(component.getAssertions() as EngineAssertion[])
             )
                 return;
             // setAssertions rebuilds input.value as "<new-marking> <existing-free-text>".
             // setValue would replace the entire value with just the rendered string.
-            component.setAssertions(state.assertions ?? []);
+            component.setAssertions(own);
         };
 
         const unsubscribe = this.store.subscribe(

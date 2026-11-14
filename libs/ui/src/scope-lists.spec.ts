@@ -26,6 +26,7 @@ import { EzClassifyUI } from './ezclassify-ui';
 import { CategorySelector } from './components/category-selector';
 import { SingleSelect } from './components/single-select';
 import { MarkingField } from './components/marking-field';
+import { TagInput } from './components/tag-input';
 import { MarkedInput } from './components/marked-input';
 import { openSurface, press } from './components/composer/composer-harness';
 
@@ -380,6 +381,78 @@ describe('a view that names no scope', () => {
             expect(shown()).not.toContain('Source');
         },
     );
+});
+
+describe('a component bound to a marking that names no scope', () => {
+    const marking = [
+        ['level', 'HIGH'],
+        ['origin_type', 'COPIED'],
+        ['source_type', 'MANY_SOURCES'],
+        ['release_type', 'NEVER'],
+    ].map(([categoryId, conceptId]) => ({
+        categoryId: categoryId!,
+        conceptId: conceptId!,
+        confidence: 'certain' as const,
+        source: 'user',
+    }));
+    const ids = (assertions: readonly { conceptId: string }[]) =>
+        assertions.map((a) => a.conceptId).sort();
+
+    /**
+     * Mount `controller` bound to `m`, seed `m` with both scopes' facts, and
+     * return the component.
+     */
+    async function bound(controller: string) {
+        Element.prototype.scrollIntoView = vi.fn();
+        const root = host();
+        root.innerHTML = `
+            <input type="hidden" id="m" data-ezclassify-marking>
+            <input id="field" data-ezclassify-controller="${controller}"
+                   data-ezclassify-bound-to="m">`;
+        forms = new EzClassifyUI(await context(), { root });
+        await demoRuntimeSettled();
+        await forms.store.publishAssertions('m', marking);
+        await demoRuntimeSettled();
+        const el = root.querySelector<HTMLInputElement>('#field')!;
+        // A tag input on a text input is an autocompleter over the host.
+        const field = (forms.components.get(el) ??
+            (
+                forms as unknown as {
+                    autocompleters: Map<Element, TagInput>;
+                }
+            ).autocompleters.get(el)) as MarkingField | TagInput;
+        return { el, field };
+    }
+
+    it.each(['marking', 'tags'])(
+        'a %s shows the default scope of the marking, not the other scopes it holds',
+        async (controller) => {
+            const { field } = await bound(controller);
+            const shown = ids(field.getAssertions());
+            expect(shown).toContain('HIGH');
+            expect(shown).not.toContain('MANY_SOURCES');
+            expect(shown).not.toContain('NEVER');
+            expect(ids(forms!.store.get('m').assertions)).toEqual([
+                'COPIED',
+                'HIGH',
+                'MANY_SOURCES',
+                'NEVER',
+            ]);
+        },
+    );
+
+    it("a marking field shows its scope's text and an edit keeps the other scopes' facts", async () => {
+        const { el, field } = await bound('marking');
+        expect(el.value).toBe('HIGH');
+
+        await (field as MarkingField).setValue('LOW');
+        await demoRuntimeSettled();
+        const held = ids(forms!.store.get('m').assertions);
+        expect(held).toContain('LOW');
+        expect(held).not.toContain('HIGH');
+        expect(held).toContain('MANY_SOURCES');
+        expect(held).toContain('NEVER');
+    });
 });
 
 describe('a view that lists several scopes', () => {

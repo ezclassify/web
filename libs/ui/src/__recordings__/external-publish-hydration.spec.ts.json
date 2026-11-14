@@ -124,6 +124,54 @@
             "method": "POST",
             "statusCode": 200
         },
+        "0e4d852fc451f5563d27f1281d65be4eb230cdfa4005cdc5e224af2527b95d3c": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "multi-scope-regression",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "multi-scope-regression",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            {
+                                "categoryId": "level",
+                                "conceptId": "STATE_ASSESSMENT_STAFF"
+                            },
+                            {
+                                "categoryId": "artifact",
+                                "conceptId": "ANSWER_KEY"
+                            },
+                            { "categoryId": "artifact", "conceptId": "TEST" }
+                        ],
+                        "omitted": [
+                            {
+                                "categoryId": "from_school",
+                                "conceptId": "OUR_SCHOOL"
+                            },
+                            {
+                                "categoryId": "filing_status",
+                                "conceptId": "FILED"
+                            }
+                        ],
+                        "unrepresentable": []
+                    },
+                    "result": "STATE ASSESSMENT STAFF//ANSWER KEY/TEST"
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
         "20c4461f445c3b863e27308d27e7e730856fa5431ad3434ff1a4cf36df5419c0": {
             "body": {
                 "resolution": {
@@ -2142,6 +2190,106 @@
                     ],
                     "proposedFixes": [],
                     "rendered": "STATE ASSESSMENT STAFF//ANSWER KEY/TEST",
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "a46f06067ccf3f88faa0e4b0ee15529032e38e17c1a4d26df16f92748ca2c925": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "multi-scope-regression",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "multi-scope-regression",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "STATE_ASSESSMENT_STAFF",
+                            "confidence": "certain",
+                            "source": "user"
+                        },
+                        {
+                            "categoryId": "artifact",
+                            "conceptId": "ANSWER_KEY",
+                            "confidence": "certain",
+                            "source": "user"
+                        },
+                        {
+                            "categoryId": "artifact",
+                            "conceptId": "TEST",
+                            "confidence": "certain",
+                            "source": "user"
+                        },
+                        {
+                            "categoryId": "from_school",
+                            "conceptId": "OUR_SCHOOL",
+                            "confidence": "certain",
+                            "source": "default"
+                        },
+                        {
+                            "categoryId": "filing_status",
+                            "conceptId": "FILED",
+                            "confidence": "certain",
+                            "source": "default"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            {
+                                "categoryId": "level",
+                                "conceptId": "STATE_ASSESSMENT_STAFF"
+                            },
+                            {
+                                "categoryId": "artifact",
+                                "conceptId": "ANSWER_KEY"
+                            },
+                            { "categoryId": "artifact", "conceptId": "TEST" }
+                        ],
+                        "omitted": [
+                            {
+                                "categoryId": "from_school",
+                                "conceptId": "OUR_SCHOOL"
+                            },
+                            {
+                                "categoryId": "filing_status",
+                                "conceptId": "FILED"
+                            }
+                        ],
+                        "unrepresentable": []
+                    },
+                    "displayColor": {
+                        "background": "#ff8c00",
+                        "text": "#000000"
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [
+                        {
+                            "conceptId": "STATE_ASSESSMENT_STAFF",
+                            "conceptName": "State Assessment Staff",
+                            "required": true,
+                            "text": "Record access according to the state assessment program’s procedures.",
+                            "type": "admonition"
+                        }
+                    ],
+                    "proposedFixes": [],
+                    "rendered": "SA//KEY/TEST",
+                    "renders": {},
                     "valid": true,
                     "warnings": []
                 }

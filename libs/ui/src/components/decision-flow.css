@@ -70,8 +70,28 @@
     align-items: center;
     gap: 0;
 }
-.ez-decision-flow__dot-group:not(:last-child) {
+/* A scope's name and its dots. */
+.ez-decision-flow__dot-scope {
+    flex: 0 1 auto;
+    min-width: 0;
+    display: inline-flex;
+    flex-wrap: nowrap;
+    align-items: center;
+}
+.ez-decision-flow__dot-scope:not(:last-child) {
     margin-inline-end: 1rem;
+}
+/* At rest the header shows no step, so the dots show every scope's name in
+   full. A field too narrow for them on one line moves a scope, name and dots
+   together, to the next line. */
+.ez-decision-flow:not([data-open]) .ez-decision-flow__progress {
+    max-width: 100%;
+    flex-wrap: wrap;
+    row-gap: 0.25rem;
+}
+.ez-decision-flow:not([data-open]) .ez-decision-flow__dot-scope,
+.ez-decision-flow:not([data-open]) .ez-decision-flow__dot-group-label {
+    flex: 0 0 auto;
 }
 
 .ez-decision-flow__dot-group-label {
@@ -332,8 +352,13 @@
     gap: 0.125rem 0.5rem;
     font-size: 0.875rem;
 }
+/* A scope's name takes its natural width, and wraps between words on a
+   narrow field rather than lose any of them; the marking beside it gives up
+   room with an ellipsis instead. */
 .ez-decision-flow__rows[data-labeled] {
-    grid-template-columns: fit-content(50%) minmax(0, 1fr) max-content;
+    grid-template-columns:
+        minmax(min-content, max-content) minmax(0, 1fr)
+        max-content;
 }
 .ez-decision-flow__rows[hidden] {
     display: none;
@@ -359,15 +384,9 @@
     min-width: 0;
     font-size: 0.875rem;
 }
-/* A scope's label keeps its width, up to half the line, so the lines stay
-   told apart; the marking gives up room with an ellipsis instead. */
 .ez-decision-flow__row-label {
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
     font-size: 0.75rem;
     color: var(--ez-color-muted, #6b7280);
-    white-space: nowrap;
 }
 .ez-decision-flow__row-text {
     flex: 1 1 auto;
