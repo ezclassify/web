@@ -4020,58 +4020,6 @@
             "method": "POST",
             "statusCode": 200
         },
-        "bca70602c23c7a8b39ca5fc7f08acd0aa9c27b9f711359d6bb132333423228ab": {
-            "body": {
-                "resolution": {
-                    "artifacts": [
-                        {
-                            "id": "multi-scope-regression",
-                            "kind": "scheme",
-                            "version": "1.0.0"
-                        }
-                    ],
-                    "contextId": "multi-scope-regression",
-                    "requestedVersion": "0.0.0",
-                    "resolvedVersion": "1.0.0"
-                },
-                "result": {
-                    "appliedFixes": [],
-                    "assertions": [
-                        {
-                            "categoryId": "level",
-                            "conceptId": "DISTRICT_COORDINATORS",
-                            "confidence": "certain",
-                            "source": "aggregate"
-                        },
-                        {
-                            "categoryId": "from_school",
-                            "conceptId": "OUR_SCHOOL",
-                            "confidence": "certain",
-                            "source": "default"
-                        },
-                        {
-                            "categoryId": "filing_status",
-                            "conceptId": "FILED",
-                            "confidence": "certain",
-                            "source": "default"
-                        }
-                    ],
-                    "displayColor": {
-                        "background": "#546e7a",
-                        "text": "#ffffff"
-                    },
-                    "errors": [],
-                    "notices": [],
-                    "proposedFixes": [],
-                    "rendered": "DISTRICT COORDINATORS",
-                    "valid": true,
-                    "warnings": []
-                }
-            },
-            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
-            "method": "POST",
-            "statusCode": 200
-        },
         "c35a1a4e2dbc9a688bcd6a21685593105c92debb9d5402d43009d141536c055f": {
             "body": {
                 "resolution": {

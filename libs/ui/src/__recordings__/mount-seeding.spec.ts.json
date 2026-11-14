@@ -505,58 +505,6 @@
             "method": "GET",
             "statusCode": 200
         },
-        "2421e8426d95d9fcdf202c572664b69c347e080b625e84d5bef95bd360f93241": {
-            "body": {
-                "resolution": {
-                    "artifacts": [
-                        {
-                            "id": "multi-scope-regression",
-                            "kind": "scheme",
-                            "version": "1.0.0"
-                        }
-                    ],
-                    "contextId": "multi-scope-regression",
-                    "requestedVersion": "0.0.0",
-                    "resolvedVersion": "1.0.0"
-                },
-                "result": {
-                    "appliedFixes": [],
-                    "assertions": [
-                        {
-                            "categoryId": "level",
-                            "conceptId": "DISTRICT_COORDINATORS",
-                            "confidence": "certain",
-                            "source": "aggregate"
-                        },
-                        {
-                            "categoryId": "from_school",
-                            "conceptId": "OUR_SCHOOL",
-                            "confidence": "certain",
-                            "source": "default"
-                        },
-                        {
-                            "categoryId": "filing_status",
-                            "conceptId": "FILED",
-                            "confidence": "certain",
-                            "source": "default"
-                        }
-                    ],
-                    "displayColor": {
-                        "background": "#546e7a",
-                        "text": "#ffffff"
-                    },
-                    "errors": [],
-                    "notices": [],
-                    "proposedFixes": [],
-                    "rendered": "DISTRICT COORDINATORS",
-                    "valid": true,
-                    "warnings": []
-                }
-            },
-            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
-            "method": "POST",
-            "statusCode": 200
-        },
         "24b6b5ade6b9c96d965085fc4bf5c5c68f58cb7620e610d458bb45000368cc7e": {
             "body": {
                 "resolution": {
@@ -3833,58 +3781,6 @@
                         }
                     ],
                     "unread": []
-                }
-            },
-            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
-            "method": "POST",
-            "statusCode": 200
-        },
-        "fccf81a546dcc6a42162e3e86ea02cb5c950b4beccee6ac00081bfc87f3d757d": {
-            "body": {
-                "resolution": {
-                    "artifacts": [
-                        {
-                            "id": "multi-scope-regression",
-                            "kind": "scheme",
-                            "version": "1.0.0"
-                        }
-                    ],
-                    "contextId": "multi-scope-regression",
-                    "requestedVersion": "0.0.0",
-                    "resolvedVersion": "1.0.0"
-                },
-                "result": {
-                    "appliedFixes": [],
-                    "assertions": [
-                        {
-                            "categoryId": "level",
-                            "conceptId": "DISTRICT_COORDINATORS",
-                            "confidence": "certain",
-                            "source": "aggregate"
-                        },
-                        {
-                            "categoryId": "from_school",
-                            "conceptId": "OUR_SCHOOL",
-                            "confidence": "certain",
-                            "source": "default"
-                        },
-                        {
-                            "categoryId": "filing_status",
-                            "conceptId": "FILED",
-                            "confidence": "certain",
-                            "source": "default"
-                        }
-                    ],
-                    "displayColor": {
-                        "background": "#546e7a",
-                        "text": "#ffffff"
-                    },
-                    "errors": [],
-                    "notices": [],
-                    "proposedFixes": [],
-                    "rendered": "DISTRICT COORDINATORS",
-                    "valid": true,
-                    "warnings": []
                 }
             },
             "headers": { "x-ezclassify-resolved-version": "1.0.0" },
