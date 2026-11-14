@@ -93,6 +93,13 @@ const dotFor = (host: HTMLElement, label: string) =>
     Array.from(
         host.querySelectorAll<HTMLElement>('.ez-decision-flow__step-dot'),
     ).find((dot) => dotCategory(dot) === label)!;
+/** A value's text as written, its line breaks kept. */
+const written = (el: Element | null | undefined) => {
+    if (!el || el.hasAttribute('data-empty')) return undefined;
+    const copy = el.cloneNode(true) as Element;
+    for (const br of copy.querySelectorAll('br')) br.replaceWith('\n');
+    return copy.textContent ?? undefined;
+};
 /**
  * Each value: its scope's name, for a flow of several, and the full text it
  * writes.
@@ -101,11 +108,10 @@ const lines = (host: HTMLElement) =>
     Array.from(host.querySelectorAll('.ez-decision-flow__value')).map(
         (value) => [
             value
-                .closest('.ez-decision-flow__dot-scope')
-                ?.querySelector('.ez-decision-flow__dot-group-label')
-                ?.textContent ?? null,
-            value.querySelector<HTMLElement>('.ez-decision-flow__value-text')
-                ?.title,
+                .closest('.ez-decision-flow__scope')
+                ?.querySelector('.ez-decision-flow__scope-name')?.textContent ??
+                null,
+            written(value.querySelector('.ez-decision-flow__value-text')),
         ],
     );
 const optionNames = (host: HTMLElement) =>

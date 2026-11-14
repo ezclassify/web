@@ -161,8 +161,10 @@ export class DecisionFlow extends ComponentBase {
     /** The open step: its options between the previous and next arrows. */
     private stepEl!: HTMLDivElement;
     /** One line per scope: what the marking writes there, and its errors. */
-    /** The scopes whose value line is open to its full value and messages. */
+    /** The scopes whose value is open to its messages. */
     private readonly openValues = new Set<string>();
+    /** A flow of several scopes: each scope's caption and value, under the step. */
+    private valuesEl!: HTMLDivElement;
     /** The label a previewed dot shows, laid over the flow. */
     private previewEl!: HTMLDivElement;
     /** Whether the current step is open under the header. */
@@ -547,10 +549,9 @@ export class DecisionFlow extends ComponentBase {
         this.titleEl.className = 'ez-decision-flow__question-label';
         this.restEl = document.createElement('div');
         this.restEl.className = 'ez-decision-flow__rest';
-        // The dots and the marking's value: for one scope, the value after
-        // the dots, under them when it does not fit beside them; for several,
-        // each scope's name, dots and value stacked. The chrome keeps the
-        // first line's trailing end. Opening the flow changes none of it.
+        // One row of dots, and for a flow of one scope its marking beside
+        // them, under them when it does not fit. The chrome keeps the row's
+        // trailing end. Opening the flow changes none of it.
         const headerMain = document.createElement('div');
         headerMain.className = 'ez-decision-flow__header-main';
         headerMain.append(this.dotsEl, this.restEl);
@@ -559,15 +560,22 @@ export class DecisionFlow extends ComponentBase {
         this.stepEl = document.createElement('div');
         this.stepEl.className = 'ez-decision-flow__step';
         this.stepEl.hidden = true;
+        this.valuesEl = document.createElement('div');
+        this.valuesEl.className = 'ez-decision-flow__values';
         this.previewEl = document.createElement('div');
         this.previewEl.className = 'ez-decision-flow__dot-preview';
         this.previewEl.setAttribute('aria-hidden', 'true');
         this.previewEl.hidden = true;
-        this.flowEl.append(this.headerEl, this.stepEl, this.previewEl);
+        this.flowEl.append(
+            this.headerEl,
+            this.stepEl,
+            this.valuesEl,
+            this.previewEl,
+        );
         this.container.appendChild(this.flowEl);
         this.mountSuiteChrome(this.headerEl);
-        // The error count on each value line carries the report, and the
-        // line opens to its messages, so the list under the flow stays aside.
+        // The error count by each value carries the report, and the value
+        // opens to its messages, so the list under the flow stays aside.
         this.setReportInField(true);
 
         this.announcer = createAnnouncer();
@@ -1223,7 +1231,6 @@ export class DecisionFlow extends ComponentBase {
             '--ez-decision-flow-names',
             String(this.multiScope ? groups.filter((g) => g.scope).length : 0),
         );
-        this.dotsEl.toggleAttribute('data-scoped', this.multiScope);
         for (const group of groups) {
             let target: HTMLElement = this.dotsEl;
             if (this.multiScope && group.scope) {
@@ -1233,20 +1240,10 @@ export class DecisionFlow extends ComponentBase {
                 target.setAttribute('role', 'group');
                 target.setAttribute('aria-label', label);
                 target.dataset.scope = group.scope;
-                // A scope is a block: its name, its dots under it, and its
-                // value under them. The group holds the dots alone.
-                const caption = document.createElement('span');
-                caption.className = 'ez-decision-flow__dot-group-label';
-                caption.setAttribute('aria-hidden', 'true');
-                caption.textContent = label;
-                const value = document.createElement('div');
-                value.className = 'ez-decision-flow__scope-value';
-                value.dataset.scope = group.scope;
-                const named = document.createElement('div');
-                named.className = 'ez-decision-flow__dot-scope';
-                named.dataset.scope = group.scope;
-                named.append(caption, target, value);
-                this.dotsEl.append(named);
+                // The scopes' dots share one row, a gap between scopes. The
+                // scope's name is the group's accessible name, its dots'
+                // labels and its value's caption, not a word in the row.
+                this.dotsEl.appendChild(target);
             }
             for (const i of group.steps) target.appendChild(this.dot(i));
         }
@@ -1394,6 +1391,8 @@ export class DecisionFlow extends ComponentBase {
         this.open = open;
         this.stepEl.hidden = !open;
         this.flowEl.toggleAttribute('data-open', open);
+        // The open step's scope reads as current on its caption.
+        if (this.multiScope) this.renderValues();
     }
 
     /** The open step's first line: "3 of 8 · Dissemination Control". */
@@ -1916,73 +1915,96 @@ export class DecisionFlow extends ComponentBase {
     }
 
     /**
-     * What the marking writes: for a flow of one scope, the value after the
-     * dots; for several, each scope's value in its own output under that
-     * scope's dots. Each ends with the number of errors the engine reports
-     * there. A scope's value is one line that opens, on a press or Enter, to
-     * the full value and that scope's messages; the value of a flow of one
-     * scope is shown whole, and opens to its messages when it has any.
+     * What the marking writes, never shortened. A flow of one scope shows it
+     * beside the dots, with its error count after it. A flow of several shows,
+     * under the step, each scope's caption (its name, then its error count) and
+     * its value under it, written in the scope's own output: a block of several
+     * lines keeps its lines. While the flow is open, the caption of the open
+     * step's scope reads as current. A value with messages opens to them on a
+     * press or Enter.
      */
     private renderValues(): void {
-        const key = this.factsKey();
-        const texts =
-            this.multiScope && this.result?.key === key
-                ? this.result.texts
-                : null;
         this.restEl.replaceChildren();
-        if (this.multiScope) {
-            for (const slot of this.dotsEl.querySelectorAll<HTMLElement>(
-                '.ez-decision-flow__scope-value',
-            )) {
-                const scope = slot.dataset.scope ?? '';
-                this.renderValue(slot, scope, texts?.get(scope) ?? '');
-            }
-            if (!texts && this.resultWriting !== key)
-                void this.writeResult(key);
-        } else {
-            this.renderValue(this.restEl, undefined, this._lastRendered);
+        this.valuesEl.replaceChildren();
+        this.valuesEl.hidden = !this.multiScope;
+        if (!this.multiScope) {
+            this.restEl.appendChild(
+                this.valueOf(undefined, this._lastRendered, true),
+            );
+            return;
         }
+        const key = this.factsKey();
+        const texts = this.result?.key === key ? this.result.texts : null;
+        const current = this.open
+            ? this.steps[this.currentStep]?.scope
+            : undefined;
+        for (const scope of this.stepScopes) {
+            const block = document.createElement('div');
+            block.className = 'ez-decision-flow__scope';
+            block.dataset.scope = scope;
+            const caption = document.createElement('div');
+            caption.className = 'ez-decision-flow__scope-caption';
+            const name = document.createElement('span');
+            name.className = 'ez-decision-flow__scope-name';
+            name.textContent = scopeLabel(scope, this.schemeMeta);
+            caption.appendChild(name);
+            if (scope === current) {
+                caption.dataset.current = '';
+                caption.setAttribute('aria-current', 'step');
+            }
+            const count = this.errorCount(scope);
+            if (count) caption.appendChild(count);
+            block.append(
+                caption,
+                this.valueOf(scope, texts?.get(scope) ?? '', false),
+            );
+            this.valuesEl.appendChild(block);
+        }
+        if (!texts && this.resultWriting !== key) void this.writeResult(key);
+    }
+
+    /** "2 errors" for a scope's messages, or null when it has none. */
+    private errorCount(scope: string | undefined): HTMLElement | null {
+        const messages = this.errorsIn(scope);
+        if (messages.length === 0) return null;
+        const count = document.createElement('span');
+        count.className = 'ez-decision-flow__value-errors';
+        count.textContent =
+            messages.length === 1 ? '1 error' : `${messages.length} errors`;
+        count.title = messages.join('\n');
+        return count;
     }
 
     /**
-     * One value line, and under it, while it is open, the full value and its
-     * messages.
+     * A value, whole, breaking only at spaces, its own line ends and its
+     * separators, then, while it is open, its messages.
      */
-    private renderValue(
-        slot: HTMLElement,
+    private valueOf(
         scope: string | undefined,
         text: string,
-    ): void {
-        slot.replaceChildren();
+        withCount: boolean,
+    ): HTMLElement {
+        const wrap = document.createElement('div');
+        wrap.className = 'ez-decision-flow__value-wrap';
         const messages = this.errorsIn(scope);
-        const oneLine = scope !== undefined;
-        const discloses = oneLine || messages.length > 0;
         const openKey = scope ?? '';
-        const open = discloses && this.openValues.has(openKey);
-        const line = document.createElement(discloses ? 'button' : 'div');
+        const open = messages.length > 0 && this.openValues.has(openKey);
+        const line = document.createElement(
+            messages.length > 0 ? 'button' : 'div',
+        );
         line.className = 'ez-decision-flow__value';
-        if (oneLine) line.dataset.oneLine = '';
         if (messages.length > 0) line.dataset.invalid = '';
         const shown = document.createElement('span');
         shown.className = 'ez-decision-flow__value-text';
-        // A block of several lines reads on one line; opening shows it whole.
-        shown.textContent = text
-            ? oneLine
-                ? text.split(/\n+/).join(' · ')
-                : text
-            : NOT_SET;
-        if (!text) shown.dataset.empty = '';
-        else shown.title = text;
-        line.appendChild(shown);
-        if (messages.length > 0) {
-            const count = document.createElement('span');
-            count.className = 'ez-decision-flow__value-errors';
-            count.textContent =
-                messages.length === 1 ? '1 error' : `${messages.length} errors`;
-            line.appendChild(count);
-            count.title = messages.join('\n');
+        if (text) writeBreakable(shown, text);
+        else {
+            shown.textContent = NOT_SET;
+            shown.dataset.empty = '';
         }
-        slot.appendChild(line);
+        line.appendChild(shown);
+        const count = withCount ? this.errorCount(scope) : null;
+        if (count) line.appendChild(count);
+        wrap.appendChild(line);
         if (line instanceof HTMLButtonElement) {
             line.type = 'button';
             line.setAttribute('aria-expanded', String(open));
@@ -1991,21 +2013,17 @@ export class DecisionFlow extends ComponentBase {
                     this.openValues.delete(openKey);
                 else this.openValues.add(openKey);
                 this.renderValues();
-                slot.querySelector<HTMLElement>(
-                    '.ez-decision-flow__value',
-                )?.focus();
+                const again = scope
+                    ? this.valuesEl.querySelector<HTMLElement>(
+                          `.ez-decision-flow__scope[data-scope="${scope}"] .ez-decision-flow__value`,
+                      )
+                    : this.restEl.querySelector<HTMLElement>(
+                          '.ez-decision-flow__value',
+                      );
+                again?.focus();
             });
         }
-        if (!open) return;
-        const detail = document.createElement('div');
-        detail.className = 'ez-decision-flow__value-detail';
-        if (oneLine && text) {
-            const full = document.createElement('div');
-            full.className = 'ez-decision-flow__value-full';
-            full.textContent = text;
-            detail.appendChild(full);
-        }
-        if (messages.length > 0) {
+        if (open) {
             const list = document.createElement('ul');
             list.className = 'ez-decision-flow__value-messages';
             for (const message of messages) {
@@ -2013,9 +2031,9 @@ export class DecisionFlow extends ComponentBase {
                 item.textContent = message;
                 list.appendChild(item);
             }
-            detail.appendChild(list);
+            wrap.appendChild(list);
         }
-        slot.appendChild(detail);
+        return wrap;
     }
 
     /**
@@ -2168,4 +2186,20 @@ function visibleTop(el: HTMLElement): number {
             top = Math.max(top, node.getBoundingClientRect().top);
     }
     return top;
+}
+
+/**
+ * Write `text` into `el` so it breaks only at spaces, at its own line ends, and
+ * after a run of separator slashes, never inside a token: a marking wraps at
+ * its "//" and "/", and a block keeps each of its lines.
+ */
+function writeBreakable(el: HTMLElement, text: string): void {
+    text.split('\n').forEach((line, index) => {
+        if (index > 0) el.appendChild(document.createElement('br'));
+        for (const part of line.split(/(?<=\/)(?!\/)/)) {
+            el.appendChild(document.createTextNode(part));
+            if (part.endsWith('/'))
+                el.appendChild(document.createElement('wbr'));
+        }
+    });
 }

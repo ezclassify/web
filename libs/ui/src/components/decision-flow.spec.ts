@@ -1803,16 +1803,25 @@ describe('DecisionFlow: scope filtering', () => {
         const dots = container.querySelectorAll('.ez-decision-flow__step-dot');
         expect(dots.length).toBe(2);
         // Declaration order, not the order the list was written in: the dots
-        // group by scope, each group named.
+        // group by scope, each group named, and each scope's value is
+        // captioned with its name.
+        expect(
+            [...container.querySelectorAll('.ez-decision-flow__dot-group')].map(
+                (group) => group.getAttribute('aria-label'),
+            ),
+        ).toEqual(['Marking', 'Admin']);
         expect(
             [
-                ...container.querySelectorAll(
-                    '.ez-decision-flow__dot-group-label',
-                ),
-            ].map((label) => label.textContent),
+                ...container.querySelectorAll('.ez-decision-flow__scope-name'),
+            ].map((name) => name.textContent),
         ).toEqual(['Marking', 'Admin']);
-        // The title heads the open step, so the dots under their scope names
-        // keep their places when the flow opens.
+        // The open step's scope reads as current on its caption.
+        expect(
+            container.querySelector(
+                '.ez-decision-flow__scope-caption[aria-current]',
+            )?.textContent,
+        ).toBe('Marking');
+        // The title heads the open step, under the dots.
         expect(
             container.querySelector(
                 '.ez-decision-flow__step .ez-decision-flow__question-label',
@@ -2328,6 +2337,19 @@ describe('DecisionFlow: compact layout', () => {
         expect(settled(header.innerHTML)).toBe(settled(before));
     });
 
+    it('shows its marking whole, breaking only after a separator and at its own line ends', async () => {
+        await flow.init(container, toCtx(createMockEngine()), {
+            initialValue: 'TOP SECRET//SI/TK//REL TO USA, AUS\nSecond line',
+        } as never);
+        await settle();
+        const text = container.querySelector<HTMLElement>(
+            '.ez-decision-flow__rest .ez-decision-flow__value-text',
+        )!;
+        expect(text.innerHTML).toBe(
+            'TOP SECRET//<wbr>SI/<wbr>TK//<wbr>REL TO USA, AUS<br>Second line',
+        );
+    });
+
     it('says "not set" on its value when nothing is answered', async () => {
         await flow.init(container, toCtx(createMockEngine()));
         const text = container.querySelector<HTMLElement>(
@@ -2362,7 +2384,7 @@ describe('DecisionFlow: compact layout', () => {
         ).toContain('Impact is required');
     });
 
-    it('at rest across scopes stacks a block per scope: its name, its dots, its value', async () => {
+    it("across scopes keeps one row of dots, and captions each scope's value under the step", async () => {
         const scoped = document.createElement('div');
         document.body.appendChild(scoped);
         await flow.init(scoped, toCtx(createScopedEngine()), {
@@ -2371,10 +2393,22 @@ describe('DecisionFlow: compact layout', () => {
         await settle();
         const frame = scoped.querySelector('.ez-decision-flow')!;
         const header = frame.querySelector('.ez-decision-flow__header')!;
-        const blocks = [
-            ...header.querySelectorAll<HTMLElement>(
-                '.ez-decision-flow__dot-scope',
+        // The row holds the dots, grouped by scope, and no scope's name.
+        expect(
+            [...header.querySelectorAll('.ez-decision-flow__dot-group')].map(
+                (group) => group.getAttribute('aria-label'),
             ),
+        ).toEqual(['Marking', 'Admin']);
+        expect(header.textContent).not.toMatch(/Marking|Admin/);
+        // The values follow the step: the header, the step, then the values.
+        expect([...frame.children].map((child) => child.className)).toEqual([
+            'ez-decision-flow__header',
+            'ez-decision-flow__step',
+            'ez-decision-flow__values',
+            'ez-decision-flow__dot-preview',
+        ]);
+        const blocks = [
+            ...frame.querySelectorAll<HTMLElement>('.ez-decision-flow__scope'),
         ];
         expect(blocks.map((block) => block.dataset.scope)).toEqual([
             'marking',
@@ -2383,25 +2417,24 @@ describe('DecisionFlow: compact layout', () => {
         for (const block of blocks)
             expect([...block.children].map((child) => child.className)).toEqual(
                 [
-                    'ez-decision-flow__dot-group-label',
-                    'ez-decision-flow__dot-group',
-                    'ez-decision-flow__scope-value',
+                    'ez-decision-flow__scope-caption',
+                    'ez-decision-flow__value-wrap',
                 ],
             );
         expect(
             blocks.map(
                 (block) =>
-                    block.querySelector('.ez-decision-flow__dot-group-label')
+                    block.querySelector('.ez-decision-flow__scope-name')
                         ?.textContent,
             ),
         ).toEqual(['Marking', 'Admin']);
-        // A scope's value is one line that opens to the full value.
-        const value = blocks[0].querySelector<HTMLButtonElement>(
-            'button.ez-decision-flow__value',
-        )!;
-        expect(value.hasAttribute('data-one-line')).toBe(true);
+        // At rest no caption reads as current.
+        expect(
+            frame.querySelector(
+                '.ez-decision-flow__scope-caption[aria-current]',
+            ),
+        ).toBeNull();
         expect(frame.hasAttribute('data-open')).toBe(false);
-        expect(frame.querySelector('.ez-decision-flow__rows')).toBeNull();
     });
 
     it("names a dot's scope in its preview when the flow spans scopes", async () => {
@@ -2609,19 +2642,17 @@ describe('DecisionFlow: compact layout', () => {
         await vi.waitFor(() =>
             expect(
                 scoped.querySelector(
-                    '.ez-decision-flow__dot-scope[data-scope="admin"] .ez-decision-flow__value-errors',
+                    '.ez-decision-flow__scope[data-scope="admin"] .ez-decision-flow__value-errors',
                 )?.textContent,
             ).toBe('1 error'),
         );
         const rows = [
-            ...scoped.querySelectorAll<HTMLElement>(
-                '.ez-decision-flow__dot-scope',
-            ),
+            ...scoped.querySelectorAll<HTMLElement>('.ez-decision-flow__scope'),
         ];
         expect(
             rows.map(
                 (row) =>
-                    row.querySelector('.ez-decision-flow__dot-group-label')
+                    row.querySelector('.ez-decision-flow__scope-name')
                         ?.textContent,
             ),
         ).toEqual(['Marking', 'Admin']);
