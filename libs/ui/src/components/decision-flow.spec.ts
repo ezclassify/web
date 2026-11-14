@@ -2662,6 +2662,14 @@ describe('DecisionFlow: compact layout', () => {
         expect(dots()[0].getAttribute('aria-label')).toContain('optional');
     });
 
+    it('stays open when a press on a dot rebuilds the dots before its click reaches the page', async () => {
+        await flow.init(container, toCtx(createMockEngine()));
+        await enterFlow(container);
+        dots()[1].click();
+        expect(step().hidden).toBe(false);
+        expect(title()).toBe('2 of 2 · Impact');
+    });
+
     it('goes to rest on a press anywhere else, errors and all', async () => {
         const outside = document.createElement('div');
         document.body.appendChild(outside);

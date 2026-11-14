@@ -301,7 +301,9 @@ export class DecisionFlow extends ComponentBase {
      */
     private readonly outsideClick = (event: Event) => {
         this.pressingOutside = false;
-        if (this.flowEl.contains(event.target as Node)) return;
+        // The path the click took, not where its target is now: a press on a
+        // dot rebuilds the dots before the click reaches the document.
+        if (event.composedPath().includes(this.flowEl)) return;
         this.setOpen(false);
     };
     /** Focus left the flow: the step closes and the flow is one line again. */
