@@ -9,11 +9,12 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
-import type { Change } from '@ezclassify/types';
+import type { Assertion, Change } from '@ezclassify/types';
 import { hasAdoptedStyles } from '../styles/adopt';
 import statusMarkCss from './status-mark.css?inline';
 import {
     ensureStatusMark,
+    explainedChanges,
     setStatusMarkError,
     setStatusMarkFixes,
 } from './status-mark';
@@ -30,13 +31,36 @@ function lineTexts(tip: HTMLElement): string[] {
     ).filter((line) => line.trim());
 }
 
-function makeFix(ruleId: string, message = `fix by ${ruleId}`): Change {
+/** A change rule `ruleId` made, adding `conceptId` (its own, by default). */
+function makeFix(
+    ruleId: string,
+    message = `fix by ${ruleId}`,
+    conceptId = `X-${ruleId}`,
+): Change {
     return {
         ruleId,
         action: 'add',
-        add: [{ conceptId: 'X', categoryId: 'cat' }],
+        add: [{ conceptId, categoryId: 'cat' }],
         message,
     };
+}
+
+/** A fact the marking holds, stated unless a rule is named for it. */
+function held(conceptId: string, sourceRule?: string): Assertion {
+    return sourceRule
+        ? {
+              conceptId,
+              categoryId: 'cat',
+              confidence: 'inferred',
+              source: 'infer',
+              sourceRule,
+          }
+        : {
+              conceptId,
+              categoryId: 'cat',
+              confidence: 'certain',
+              source: 'user',
+          };
 }
 
 /** Stub matchMedia with a controllable `matches` value for a single query. */
@@ -242,12 +266,13 @@ describe('setStatusMarkFixes state machine', () => {
         expect(mark.getAttribute('aria-label')).toContain('2 fixes applied');
     });
 
-    it('counts each change once, however many readings made it', () => {
+    it('counts each change to the marking once, however many readings or rules made it', () => {
         const mark = ensureStatusMark(wrap, { shape: 'input' });
         setStatusMarkFixes(wrap, [
-            makeFix('r1', 'first message'),
-            makeFix('r1', 'first message'),
-            makeFix('r1', 'second message'),
+            makeFix('r1', 'first message', 'USA'),
+            makeFix('r1', 'first message', 'USA'),
+            makeFix('r2', 'second message', 'USA'),
+            makeFix('r3', 'third message', 'GBR'),
         ]);
         expect(mark.getAttribute('aria-label')).toContain('2 fixes applied');
     });
@@ -317,6 +342,41 @@ describe('acknowledgment via the tooltip actually presenting', () => {
         setStatusMarkFixes(wrap, [makeFix('r1'), makeFix('r2')]);
         expect(mark.classList.contains('ez-status-mark--unseen')).toBe(true);
         expect(mark.classList.contains('ez-status-mark--seen')).toBe(false);
+    });
+
+    it('a change already shown stays seen when another rule makes it again', async () => {
+        const mark = ensureStatusMark(wrap, { shape: 'input' });
+        setStatusMarkFixes(wrap, [makeFix('r1', 'r1 added USA', 'USA')]);
+        await hoverPastIntent(mark);
+        expect(mark.classList.contains('ez-status-mark--seen')).toBe(true);
+
+        setStatusMarkFixes(wrap, [
+            makeFix('r1', 'r1 added USA', 'USA'),
+            makeFix('r2', 'r2 added USA', 'USA'),
+        ]);
+        expect(mark.classList.contains('ez-status-mark--seen')).toBe(true);
+    });
+
+    it('a filled-in fact not shown yet re-arms unseen', async () => {
+        const mark = ensureStatusMark(wrap, { shape: 'input' });
+        setStatusMarkFixes(
+            wrap,
+            explainedChanges(
+                [makeFix('r1', 'r1 added USA', 'USA')],
+                [held('GROUP'), held('USA', 'r1')],
+            ),
+        );
+        await hoverPastIntent(mark);
+        expect(mark.classList.contains('ez-status-mark--seen')).toBe(true);
+
+        setStatusMarkFixes(
+            wrap,
+            explainedChanges(
+                [makeFix('r1', 'r1 added USA', 'USA')],
+                [held('GROUP'), held('USA', 'r1'), held('AUS', 'expand')],
+            ),
+        );
+        expect(mark.classList.contains('ez-status-mark--unseen')).toBe(true);
     });
 
     it('a clean reprocess forgets acknowledgment, so the next fix starts unseen', async () => {
@@ -503,6 +563,83 @@ describe('tooltip content', () => {
         ]);
     });
 
+    it('lists a change two rules made once, in the words of the first', async () => {
+        const mark = ensureStatusMark(wrap, { shape: 'input' });
+        setStatusMarkFixes(wrap, [
+            makeFix('requires', 'Rule "requires": added "USA"', 'USA'),
+            makeFix('adds', 'Rule "adds": added "USA"', 'USA'),
+        ]);
+
+        await hoverPastIntent(mark);
+        const tip = document.querySelector('.ez-tooltip') as HTMLElement;
+        expect(lineTexts(tip)).toEqual([
+            'EzClassify fixed this marking:',
+            '• Rule "requires": added "USA"',
+        ]);
+        expect(mark.getAttribute('aria-label')).toContain('1 fix applied');
+    });
+
+    it('also lists each fact a rule filled in that no applied fix names', async () => {
+        const mark = ensureStatusMark(wrap, { shape: 'input' });
+        setStatusMarkFixes(
+            wrap,
+            explainedChanges(
+                [makeFix('adds', 'Rule "adds": added "USA"', 'USA')],
+                [
+                    held('GROUP'),
+                    held('USA', 'adds'),
+                    held('AUS', 'expand'),
+                    held('CAN', 'expand'),
+                    // A category's default and a value taken from the whole are
+                    // not changes to what the author chose.
+                    {
+                        conceptId: 'DEFAULTED',
+                        categoryId: 'other',
+                        confidence: 'certain',
+                        source: 'default',
+                    },
+                    {
+                        conceptId: 'FROM_WHOLE',
+                        categoryId: 'cat',
+                        confidence: 'inferred',
+                        source: 'context',
+                        sourceRule: 'shares',
+                    },
+                ],
+            ),
+        );
+
+        await hoverPastIntent(mark);
+        const tip = document.querySelector('.ez-tooltip') as HTMLElement;
+        expect(lineTexts(tip)).toEqual([
+            'EzClassify fixed this marking:',
+            '• Rule "adds": added "USA"',
+            '• Rule "expand": added "AUS" to category "cat"',
+            '• Rule "expand": added "CAN" to category "cat"',
+        ]);
+    });
+
+    it('leaves out an applied addition the field no longer holds', async () => {
+        const mark = ensureStatusMark(wrap, { shape: 'input' });
+        setStatusMarkFixes(
+            wrap,
+            explainedChanges(
+                [
+                    makeFix('gone', 'Rule "gone": added "OLD"', 'OLD'),
+                    makeFix('kept', 'Rule "kept": added "NEW"', 'NEW'),
+                ],
+                [held('NEW', 'kept')],
+            ),
+        );
+
+        await hoverPastIntent(mark);
+        const tip = document.querySelector('.ez-tooltip') as HTMLElement;
+        expect(lineTexts(tip)).toEqual([
+            'EzClassify fixed this marking:',
+            '• Rule "kept": added "NEW"',
+        ]);
+    });
+
     it('lists every change once, in the engine’s own words for it', async () => {
         const mark = ensureStatusMark(wrap, { shape: 'input' });
         // One rule that removes two concepts made two changes; the field
@@ -610,43 +747,83 @@ describe('the applied-changes popover does not outstay the value it described', 
         expect(tip()?.hidden).toBe(true);
     });
 
-    it('never sits over the field error list: it moves above the mark, or closes', async () => {
+    const box = (left: number, top: number, right: number, bottom: number) =>
+        ({
+            left,
+            top,
+            right,
+            bottom,
+            width: right - left,
+            height: bottom - top,
+        }) as DOMRect;
+
+    /** Run `body` with every tooltip measuring `width` x `height`. */
+    async function withTipSize(
+        width: number,
+        height: number,
+        body: () => Promise<void>,
+    ): Promise<void> {
+        const realRect = HTMLElement.prototype.getBoundingClientRect;
+        HTMLElement.prototype.getBoundingClientRect = function () {
+            return this.classList.contains('ez-tooltip')
+                ? box(0, 0, width, height)
+                : realRect.call(this);
+        };
+        try {
+            await body();
+        } finally {
+            HTMLElement.prototype.getBoundingClientRect = realRect;
+        }
+    }
+
+    it('opens outside the box of the field it belongs to, whatever control draws it', async () => {
+        // A control with a header row (a picker, DecisionFlow) puts its mark
+        // inside the suite frame, at the top of a tall box.
+        const frame = document.createElement('div');
+        frame.className = 'ez-field-frame';
+        const header = document.createElement('div');
+        const body = document.createElement('div');
+        frame.append(header, body);
+        document.body.appendChild(frame);
+        const mark = ensureStatusMark(header, { shape: 'chrome' });
+        setStatusMarkFixes(header, [makeFix('r1')]);
+        frame.getBoundingClientRect = () => box(300, 300, 700, 700);
+        mark.getBoundingClientRect = () => box(660, 306, 684, 330);
+
+        await withTipSize(300, 120, async () => {
+            mark.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+            const shown = tip()!;
+            expect(shown.hidden).toBe(false);
+            // No room below in jsdom's 768px viewport, so above the frame.
+            const top = parseFloat(shown.style.top);
+            expect(top + 120).toBeLessThanOrEqual(300);
+            expect(top).toBe(174);
+        });
+    });
+
+    it('opens past the field error list rather than over it, or closes', async () => {
         const { field, mark } = fieldWithMark();
         const list = document.createElement('div');
         list.className = 'ez-validation-errors';
         field.insertBefore(list, field.lastElementChild);
-        const rect = (top: number, bottom: number) =>
-            ({
-                left: 0,
-                right: 300,
-                top,
-                bottom,
-                width: 300,
-                height: bottom - top,
-            }) as DOMRect;
-        list.getBoundingClientRect = () => rect(100, 200);
-        mark.getBoundingClientRect = () => rect(80, 96);
-        const realRect = HTMLElement.prototype.getBoundingClientRect;
-        // The tooltip lands right under the mark, over the list.
-        HTMLElement.prototype.getBoundingClientRect = function () {
-            return this.classList.contains('ez-tooltip')
-                ? rect(102, 152)
-                : realRect.call(this);
-        };
-        try {
-            await hoverPastIntent(mark);
-            // 80 - 50 - 6 = 24: room above, so it moves there.
-            expect(tip()?.hidden).toBe(false);
-            expect(tip()?.style.top).toBe('24px');
+        field.getBoundingClientRect = () => box(0, 40, 300, 100);
+        list.getBoundingClientRect = () => box(0, 100, 300, 200);
+        mark.getBoundingClientRect = () => box(270, 44, 294, 68);
 
-            mark.dispatchEvent(new Event('mouseleave'));
-            mark.getBoundingClientRect = () => rect(40, 56);
+        await withTipSize(200, 50, async () => {
             await hoverPastIntent(mark);
-            // No room above: it closes rather than cover the fixes.
+            // Below the field and its errors: 200 + 6.
+            expect(tip()?.hidden).toBe(false);
+            expect(tip()?.style.top).toBe('206px');
+            mark.dispatchEvent(new Event('mouseleave'));
+        });
+
+        // A tooltip as tall as the viewport fits nowhere outside them: it
+        // closes rather than cover the errors.
+        await withTipSize(1000, 760, async () => {
+            await hoverPastIntent(mark);
             expect(tip()?.hidden).toBe(true);
-        } finally {
-            HTMLElement.prototype.getBoundingClientRect = realRect;
-        }
+        });
     });
 });
 

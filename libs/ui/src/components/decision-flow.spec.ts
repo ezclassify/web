@@ -1,4 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { DecisionFlow } from './decision-flow';
 import type { SchemeEngineAdapter, Assertion } from '@ezclassify/types';
 import type {
@@ -11,6 +14,40 @@ import {
     mockRenderFormat,
     mockRenderFormats,
 } from '../render-format-layout-mock';
+
+/**
+ * Answer a process call that names `suggestFor` with each named category's
+ * options, taken from the double's own `suggest` in one call, so a spec that
+ * counts or stubs `suggest` still sees every options request.
+ */
+function withSuggestFor(engine: SchemeEngineAdapter): SchemeEngineAdapter {
+    type Options = { assertions?: Assertion[]; suggestFor?: string[] };
+    const process = engine.process as unknown as (
+        input: string,
+        opts?: Options,
+    ) => unknown;
+    (engine as any).process = vi.fn((input: string, opts?: Options) => {
+        const named = opts?.suggestFor;
+        if (!named) return process(input, opts);
+        return Promise.resolve(
+            (engine.suggest as any)(opts.assertions ?? [], opts),
+        ).then((answer: { suggestions: { categoryId: string }[] }) => ({
+            ...(process(input, opts) as object),
+            suggestionsFor: Object.fromEntries(
+                named.map((categoryId) => [
+                    categoryId,
+                    {
+                        suggestions: answer.suggestions.filter(
+                            (s) => s.categoryId === categoryId,
+                        ),
+                        warnings: [],
+                    },
+                ]),
+            ),
+        }));
+    });
+    return engine;
+}
 
 function createStepProfile(): SchemePublicView {
     const concepts: ConceptView[] = [
@@ -96,7 +133,7 @@ function createStepProfile(): SchemePublicView {
 
 function createMockEngine(): SchemeEngineAdapter {
     const p = createStepProfile();
-    return {
+    return withSuggestFor({
         getScheme: () => p,
         getSchemeMeta: () => ({
             id: (p as any).id ?? 'test',
@@ -171,7 +208,7 @@ function createMockEngine(): SchemeEngineAdapter {
             })),
         }),
         describeConcept: (conceptId: string) => ({ lines: [conceptId] }),
-    } as unknown as SchemeEngineAdapter;
+    } as unknown as SchemeEngineAdapter);
 }
 
 /** Profile with one single-select and one multi-select category. */
@@ -259,7 +296,7 @@ function createMixedProfile(): SchemePublicView {
 
 function createMixedEngine(): SchemeEngineAdapter {
     const p = createMixedProfile();
-    return {
+    return withSuggestFor({
         getScheme: () => p,
         getSchemeMeta: () => ({
             id: 'mixed',
@@ -317,7 +354,7 @@ function createMixedEngine(): SchemeEngineAdapter {
             })),
         }),
         describeConcept: (conceptId: string) => ({ lines: [conceptId] }),
-    } as unknown as SchemeEngineAdapter;
+    } as unknown as SchemeEngineAdapter);
 }
 
 /**
@@ -408,7 +445,7 @@ function createOwnedCategoryProfile(): SchemePublicView {
 
 function createOwnedCategoryEngine(): SchemeEngineAdapter {
     const p = createOwnedCategoryProfile();
-    return {
+    return withSuggestFor({
         getScheme: () => p,
         getSchemeMeta: () => ({
             id: 'owned',
@@ -478,7 +515,7 @@ function createOwnedCategoryEngine(): SchemeEngineAdapter {
             })),
         }),
         describeConcept: (conceptId: string) => ({ lines: [conceptId] }),
-    } as unknown as SchemeEngineAdapter;
+    } as unknown as SchemeEngineAdapter);
 }
 
 const toCtx = (eng: unknown) => schemeOnlyContext(eng as never);
@@ -922,6 +959,49 @@ describe('DecisionFlow: multi-select steps', () => {
         await enterFlow(container);
     });
 
+    it('asks a single-choice step for its options without its own choice, and a multiple-choice step beside every choice', async () => {
+        flow.setAssertions([
+            {
+                conceptId: 'LEVEL_A',
+                categoryId: 'level',
+                confidence: 'certain',
+                source: 'user',
+            },
+            {
+                conceptId: 'CAVEAT_X',
+                categoryId: 'caveat',
+                confidence: 'certain',
+                source: 'user',
+            },
+        ]);
+        // The level step lists what the caveats allow in place of LEVEL_A,
+        // not only LEVEL_A; the caveat step is asked with LEVEL_A and
+        // CAVEAT_X both held, so a caveat that conflicts with one stays out.
+        await vi.waitFor(() =>
+            expect(mixedEngine.process).toHaveBeenCalledWith(
+                '',
+                expect.objectContaining({
+                    suggestFor: ['level'],
+                    assertions: expect.arrayContaining([
+                        expect.objectContaining({ conceptId: 'CAVEAT_X' }),
+                    ]),
+                }),
+            ),
+        );
+        const asked = (mixedEngine.process as any).mock.calls.flatMap(
+            ([, options]: [string, { suggestFor?: string[] }]) =>
+                options?.suggestFor ?? [],
+        );
+        expect(asked).not.toContain('caveat');
+        expect(mixedEngine.suggest).toHaveBeenCalledWith(
+            expect.arrayContaining([
+                expect.objectContaining({ conceptId: 'LEVEL_A' }),
+                expect.objectContaining({ conceptId: 'CAVEAT_X' }),
+            ]),
+            expect.anything(),
+        );
+    });
+
     it('renders a checkbox group for multi-select categories', async () => {
         // Advance past the required level step by selecting one option first
         const levelOpts = container.querySelectorAll<HTMLButtonElement>(
@@ -1062,7 +1142,9 @@ describe('DecisionFlow: multi-select steps', () => {
             '.ez-decision-flow__step-dot[data-category-id="caveat"]',
         );
         expect(dot?.dataset.state).toBe('answered');
-        expect(dot?.getAttribute('aria-label')).toContain('Caveat: CX, CZ');
+        expect(dot?.getAttribute('aria-label')).toContain(
+            'Caveat: Caveat X, Caveat Z',
+        );
     });
 
     it('hint text "Select all that apply." appears only for multi-select steps', async () => {
@@ -1155,7 +1237,7 @@ function createTextInputProfile(): SchemePublicView {
 
 function createTextInputEngine(): SchemeEngineAdapter {
     const p = createTextInputProfile();
-    return {
+    return withSuggestFor({
         getScheme: () => p,
         getSchemeMeta: () => ({
             id: 'ti-test',
@@ -1216,7 +1298,7 @@ function createTextInputEngine(): SchemeEngineAdapter {
             })),
         }),
         describeConcept: (conceptId: string) => ({ lines: [conceptId] }),
-    } as unknown as SchemeEngineAdapter;
+    } as unknown as SchemeEngineAdapter);
 }
 
 describe('DecisionFlow: text_input steps', () => {
@@ -1242,8 +1324,8 @@ describe('DecisionFlow: text_input steps', () => {
         container.remove();
     });
 
-    it('renders a text input field for a text_input concept category', () => {
-        // Advance past level (required single-select) to the label step
+    /** Answer the level step and move on to the value step. */
+    const toValueStep = () => {
         container
             .querySelectorAll<HTMLButtonElement>('.ez-decision-flow__option')[0]
             .click();
@@ -1252,19 +1334,58 @@ describe('DecisionFlow: text_input steps', () => {
                 '.ez-decision-flow__nav-btn',
             )[1]
             .click();
-
-        const textField = container.querySelector<HTMLInputElement>(
+    };
+    const valueField = () =>
+        container.querySelector<HTMLInputElement>(
             '.ez-decision-flow__text-field',
+        )!;
+    const formatLine = () =>
+        container.querySelector<HTMLElement>('.ez-decision-flow__text-hint')!;
+
+    it('shows the expected form once, in the empty box, with the field label as its name', () => {
+        toValueStep();
+        const field = valueField();
+        expect(field.tagName).toBe('INPUT');
+        expect(field.placeholder).toBe('Name or initials');
+        expect(formatLine().hidden).toBe(true);
+        expect(field.getAttribute('aria-describedby')).toBe(
+            `${field.id}-error`,
         );
-        expect(textField).not.toBeNull();
-        expect(textField?.tagName).toBe('INPUT');
-        // The expected form is a line under the field, never a placeholder a
-        // narrow field would cut short.
-        expect(textField?.hasAttribute('placeholder')).toBe(false);
-        const hint = container.querySelector('.ez-decision-flow__text-hint');
-        expect(hint?.textContent).toBe('Name or initials');
-        expect(textField?.getAttribute('aria-describedby')).toBe(hint?.id);
-        expect(textField?.getAttribute('aria-label')).toBe('Labeled By');
+        expect(field.getAttribute('aria-label')).toBe('Labeled By');
+        // One value concept: the box is the whole step, with no second label.
+        expect(
+            container.querySelector('.ez-decision-flow__value-name'),
+        ).toBeNull();
+    });
+
+    it('shows the expected form as a line under a box too narrow for it, and drops it once typed', () => {
+        // The box has 40px for text; the form needs 200px.
+        const room = vi
+            .spyOn(HTMLElement.prototype, 'clientWidth', 'get')
+            .mockReturnValue(40);
+        const measure = vi
+            .spyOn(HTMLElement.prototype, 'getBoundingClientRect')
+            .mockImplementation(function (this: HTMLElement) {
+                const width = this.tagName === 'SPAN' ? 200 : 0;
+                return { width, height: 0, top: 0, left: 0 } as DOMRect;
+            });
+        try {
+            toValueStep();
+            expect(valueField().hasAttribute('placeholder')).toBe(false);
+            expect(formatLine().hidden).toBe(false);
+            expect(formatLine().textContent).toBe('Name or initials');
+            expect(valueField().getAttribute('aria-describedby')).toBe(
+                `${formatLine().id} ${valueField().id}-error`,
+            );
+
+            valueField().value = 'Smith';
+            valueField().dispatchEvent(new Event('input'));
+            expect(formatLine().hidden).toBe(true);
+            expect(valueField().hasAttribute('placeholder')).toBe(false);
+        } finally {
+            room.mockRestore();
+            measure.mockRestore();
+        }
     });
 
     it("shows a stored date in the spelling its scope's output writes", async () => {
@@ -1426,10 +1547,13 @@ describe('DecisionFlow: text_input steps', () => {
             .querySelector<HTMLInputElement>('.ez-decision-flow__text-field')!
             .dispatchEvent(new Event('input'));
 
+        // A step of typed values names each by its choice, then its value.
         const dot = container.querySelector<HTMLElement>(
             '.ez-decision-flow__step-dot[aria-current="step"]',
         );
-        expect(dot?.getAttribute('aria-label')).toContain('Label: Smith, J.');
+        expect(dot?.getAttribute('aria-label')).toBe(
+            'Step 2 of 2, Labeled By: Smith, J.',
+        );
     });
 
     it('text_input step does not show "Select all that apply." hint', () => {
@@ -1524,7 +1648,7 @@ describe('DecisionFlow: headed-category reveal', () => {
             '.ez-decision-flow__option',
         );
         const shareOption = Array.from(options).find(
-            (b) => b.textContent === 'SHARE',
+            (b) => b.textContent === 'Share Allowed',
         );
         expect(shareOption).toBeDefined();
         shareOption!.click();
@@ -1550,7 +1674,7 @@ describe('DecisionFlow: headed-category reveal', () => {
                 '.ez-decision-flow__option',
             ),
         )
-            .find((b) => b.textContent === 'SHARE')!
+            .find((b) => b.textContent === 'Share Allowed')!
             .click();
 
         // Advance to recipients step and select GROUP_A
@@ -1576,7 +1700,7 @@ describe('DecisionFlow: headed-category reveal', () => {
             container.querySelectorAll<HTMLButtonElement>(
                 '.ez-decision-flow__option',
             ),
-        ).find((b) => b.textContent === 'NONE')!;
+        ).find((b) => b.textContent === 'No Sharing')!;
         noSharingOption.click();
 
         // Recipients step hidden again
@@ -1604,7 +1728,7 @@ describe('DecisionFlow: headed-category reveal', () => {
                 '.ez-decision-flow__option',
             ),
         )
-            .find((b) => b.textContent === 'SHARE')!
+            .find((b) => b.textContent === 'Share Allowed')!
             .click();
 
         // Advance to next step, must be recipients, not some other category
@@ -1629,7 +1753,7 @@ describe('DecisionFlow: headed-category reveal', () => {
                 '.ez-decision-flow__option',
             ),
         )
-            .find((b) => b.textContent === 'SHARE')!
+            .find((b) => b.textContent === 'Share Allowed')!
             .click();
         await settle();
 
@@ -1743,7 +1867,7 @@ function createScopedProfile(): SchemePublicView {
 
 function createScopedEngine(): SchemeEngineAdapter {
     const p = createScopedProfile();
-    return {
+    return withSuggestFor({
         getScheme: () => p,
         getSchemeMeta: () => ({
             id: 'scoped',
@@ -1803,7 +1927,7 @@ function createScopedEngine(): SchemeEngineAdapter {
             })),
         }),
         describeConcept: (conceptId: string) => ({ lines: [conceptId] }),
-    } as unknown as SchemeEngineAdapter;
+    } as unknown as SchemeEngineAdapter);
 }
 
 describe('DecisionFlow: scope filtering', () => {
@@ -2042,6 +2166,10 @@ describe('DecisionFlow options at rest', () => {
     });
 });
 
+/** The options a step offers, leaving out those shown only as unavailable. */
+const available = (host: HTMLElement) =>
+    host.querySelectorAll('[role="radio"]:not([aria-disabled="true"])');
+
 it.each(['pointerup', 'pointercancel'])(
     'settles deferred options after %s ends a press outside the flow',
     async (eventType) => {
@@ -2072,13 +2200,14 @@ it.each(['pointerup', 'pointercancel'])(
             ],
         });
         await new Promise((r) => setTimeout(r, 0));
-        expect(host.querySelectorAll('[role="radio"]')).toHaveLength(3);
+        // The press is still down: the options it may land on stay as they were.
+        expect(available(host)).toHaveLength(3);
         outside.dispatchEvent(new Event(eventType, { bubbles: true }));
         outside.focus();
         radio.focus();
         await new Promise((r) => setTimeout(r, 30));
         try {
-            expect(host.querySelectorAll('[role="radio"]')).toHaveLength(1);
+            expect(available(host)).toHaveLength(1);
         } finally {
             flow.destroy();
             host.remove();
@@ -2115,9 +2244,7 @@ it('waits for engine availability before accepting the first choice', async () =
                 },
             ],
         });
-        await vi.waitFor(() =>
-            expect(host.querySelectorAll('[role="radio"]')).toHaveLength(1),
-        );
+        await vi.waitFor(() => expect(available(host)).toHaveLength(1));
         expect(flow.getAssertions()).toEqual([]);
         host.querySelector<HTMLButtonElement>(
             '[data-concept-id="SCOPE_NONE"]',
@@ -2333,7 +2460,7 @@ describe('DecisionFlow: compact layout', () => {
         expect(step().hidden).toBe(true);
     });
 
-    it('at rest is one line: the dots, its marking and error count, then the chrome', async () => {
+    it('at rest is one line: the dots, its marking and what is wrong with it, then the chrome', async () => {
         await flow.init(container, toCtx(createMockEngine()), {
             initialValue: 'S:P',
         } as never);
@@ -2351,8 +2478,10 @@ describe('DecisionFlow: compact layout', () => {
             value.querySelector('.ez-decision-flow__value-text')?.textContent,
         ).not.toBe('not set');
         expect(
-            value.querySelector('.ez-decision-flow__value-errors')?.textContent,
-        ).toBe('1 error');
+            header.querySelector(
+                '.ez-decision-flow__rest .ez-decision-flow__problems',
+            )?.textContent,
+        ).toContain('Impact is required');
         expect(
             header.querySelector('.ez-decision-flow__dot-group-label'),
         ).toBeNull();
@@ -2384,9 +2513,12 @@ describe('DecisionFlow: compact layout', () => {
             header.querySelectorAll('.ez-decision-flow__value'),
         ).toHaveLength(1);
         const settled = (html: string) =>
-            html.replace(/ (tabindex="-?\d"|data-previewing="")/g, '');
-        // Focus moves the dots' tab stop and previews a dot; nothing else in
-        // the header changes.
+            html.replace(
+                / (tabindex="-?\d"|data-previewing=""|data-current=""|aria-current="step")/g,
+                '',
+            );
+        // Focus moves the dots' tab stop, previews a dot and rings the open
+        // step's dot; nothing else in the header changes.
         expect(settled(header.innerHTML)).toBe(settled(before));
     });
 
@@ -2412,29 +2544,146 @@ describe('DecisionFlow: compact layout', () => {
         expect(text.hasAttribute('data-empty')).toBe(true);
     });
 
-    it('carries its errors as a count that opens to the messages, never as a list under the flow', async () => {
+    it('says under its value which steps are missing, never as a list under the flow, each a way to its step', async () => {
         await flow.init(container, toCtx(createMockEngine()));
         flow.updateValidationErrors([
-            { constraintId: 'required', message: 'Impact is required' },
+            {
+                constraintId: 'required',
+                message: 'Impact is required',
+                categoryId: 'impact',
+            },
         ]);
         const list = () =>
             document.querySelector<HTMLElement>('.ez-validation-errors');
-        dots()[0].focus();
         expect(list()?.hidden ?? true).toBe(true);
-        const value = container.querySelector<HTMLButtonElement>(
-            'button.ez-decision-flow__value',
+        const problems = container.querySelector<HTMLElement>(
+            '.ez-decision-flow__rest .ez-decision-flow__problems',
         )!;
-        expect(value.getAttribute('aria-expanded')).toBe('false');
-        value.click();
+        // In words, with no bare count.
+        expect(problems.textContent).toBe('Missing: Impact');
         expect(
-            container
-                .querySelector('button.ez-decision-flow__value')
-                ?.getAttribute('aria-expanded'),
-        ).toBe('true');
+            container.querySelector('.ez-decision-flow__value-errors'),
+        ).toBeNull();
+        const go = problems.querySelector<HTMLButtonElement>(
+            '.ez-decision-flow__missing-step',
+        )!;
+        // Focus alone, as a press gives it, does not open the flow and
+        // rebuild the line out from under the press.
+        go.focus();
+        expect(step().hidden).toBe(true);
+        go.click();
+        expect(step().hidden).toBe(false);
+        expect(title()).toBe('2 of 2 · Impact');
+    });
+
+    it('shows no line under its value while nothing is wrong', async () => {
+        await flow.init(container, toCtx(createMockEngine()));
+        flow.updateValidationErrors([]);
         expect(
-            container.querySelector('.ez-decision-flow__value-messages')
+            container.querySelector('.ez-decision-flow__problems'),
+        ).toBeNull();
+    });
+
+    it('names each option by its concept, with how a marking writes it as its tooltip and description', async () => {
+        await flow.init(container, toCtx(createMockEngine()));
+        await enterFlow(container);
+        const partial = container.querySelector<HTMLButtonElement>(
+            '.ez-decision-flow__option[data-concept-id="SCOPE_PARTIAL"]',
+        )!;
+        expect(partial.textContent).toBe('Partial');
+        expect(partial.title).toBe('Appears as: S:P');
+        expect(
+            document.getElementById(partial.getAttribute('aria-describedby')!)
                 ?.textContent,
-        ).toContain('Impact is required');
+        ).toBe('Appears as: S:P.');
+    });
+
+    it('shows an option the current choices rule out in its place, unavailable, with the reason, and never takes it', async () => {
+        const engine = createMockEngine();
+        // The engine offers only None beside the marking, and says why Full
+        // is out when asked about it.
+        (engine.suggest as any).mockReturnValue({
+            suggestions: [
+                {
+                    conceptId: 'SCOPE_NONE',
+                    categoryId: 'scope',
+                    label: 'S:N',
+                    name: 'None',
+                    group: 'scope',
+                },
+            ],
+        });
+        const process = engine.process as any;
+        const plain = process.getMockImplementation();
+        process.mockImplementation(
+            (input: string, opts?: { assertions?: Assertion[] }) => {
+                const answer = plain(input, opts);
+                return opts?.assertions?.some(
+                    (a) => a.conceptId === 'SCOPE_FULL',
+                )
+                    ? {
+                          ...answer,
+                          errors: [
+                              {
+                                  constraintId: 'full-needs-impact',
+                                  message: 'Full scope needs a high impact.',
+                                  affectedConcepts: ['SCOPE_FULL'],
+                              },
+                          ],
+                      }
+                    : answer;
+            },
+        );
+        await flow.init(container, toCtx(engine));
+        await enterFlow(container);
+        await settle();
+        const full = container.querySelector<HTMLButtonElement>(
+            '.ez-decision-flow__option[data-concept-id="SCOPE_FULL"]',
+        )!;
+        expect(full.getAttribute('aria-disabled')).toBe('true');
+        const reason = () =>
+            container.querySelector<HTMLElement>(
+                '.ez-decision-flow__option-reason',
+            )!;
+        expect(reason().hidden).toBe(true);
+        full.dispatchEvent(
+            Object.assign(new Event('pointerenter'), { pointerType: 'mouse' }),
+        );
+        await vi.waitFor(() =>
+            expect(reason().textContent).toBe(
+                'Full is not available: Full scope needs a high impact.',
+            ),
+        );
+        expect(reason().hidden).toBe(false);
+        expect(reason().getAttribute('role')).toBe('status');
+        full.click();
+        await settle();
+        expect(flow.getAssertions().map((a) => a.conceptId)).not.toContain(
+            'SCOPE_FULL',
+        );
+        container
+            .querySelector<HTMLButtonElement>(
+                '.ez-decision-flow__option[data-concept-id="SCOPE_FULL"]',
+            )!
+            .dispatchEvent(
+                Object.assign(new Event('pointerleave'), {
+                    pointerType: 'mouse',
+                }),
+            );
+        expect(reason().hidden).toBe(true);
+    });
+
+    it('rings the current dot only while a step is open', async () => {
+        await flow.init(container, toCtx(createMockEngine()));
+        const ringed = () =>
+            dots().filter((dot) => dot.hasAttribute('data-current'));
+        expect(ringed()).toHaveLength(0);
+        expect(dots().some((dot) => dot.hasAttribute('aria-current'))).toBe(
+            false,
+        );
+        dots()[1].focus();
+        expect(ringed()).toEqual([dots()[0]]);
+        expect(dots()[0].getAttribute('aria-current')).toBe('step');
     });
 
     it("across scopes keeps one row of dots, and captions each scope's value under the step", async () => {
@@ -2549,7 +2798,7 @@ describe('DecisionFlow: compact layout', () => {
             '.ez-decision-flow__dot-preview',
         )!;
         expect(preview.hidden).toBe(false);
-        expect(preview.textContent).toBe('Scope: S:P');
+        expect(preview.textContent).toBe('Scope: Partial');
         expect(dots()[0].hasAttribute('data-previewing')).toBe(true);
         dots()[0].dispatchEvent(
             Object.assign(new Event('pointerleave'), { pointerType: 'mouse' }),
@@ -2621,7 +2870,7 @@ describe('DecisionFlow: compact layout', () => {
             'Impact: required, not set',
         );
         expect(
-            container.querySelector('.ez-decision-flow__value-errors'),
+            container.querySelector('.ez-decision-flow__problems'),
         ).toBeNull();
         // An optional unset step is never missing.
         expect(dots()[0].dataset.state).toBe('optional');
@@ -2632,11 +2881,9 @@ describe('DecisionFlow: compact layout', () => {
         expect(dots()[1].getAttribute('aria-label')).toContain(
             'Impact: needs an answer',
         );
-        const count = container.querySelector<HTMLElement>(
-            '.ez-decision-flow__value-errors',
-        );
-        expect(count?.textContent).toBe('1 error');
-        expect(count?.title).toBe('Impact is required');
+        expect(
+            container.querySelector('.ez-decision-flow__problems')?.textContent,
+        ).toBe('Missing: Impact');
     });
 
     it('names a step the engine asks for as required, whatever its category says', async () => {
@@ -2689,9 +2936,8 @@ describe('DecisionFlow: compact layout', () => {
         target.click();
         expect(step().hidden).toBe(true);
         expect(
-            container.querySelector('.ez-decision-flow__value-errors')
-                ?.textContent,
-        ).toBe('1 error');
+            container.querySelector('.ez-decision-flow__problems')?.textContent,
+        ).toContain('Impact is required');
     });
 
     it('advances a multi-choice step on Enter and toggles it on a press', async () => {
@@ -2766,9 +3012,9 @@ describe('DecisionFlow: compact layout', () => {
         await vi.waitFor(() =>
             expect(
                 scoped.querySelector(
-                    '.ez-decision-flow__scope[data-scope="admin"] .ez-decision-flow__value-errors',
+                    '.ez-decision-flow__scope[data-scope="admin"] .ez-decision-flow__problem',
                 )?.textContent,
-            ).toBe('1 error'),
+            ).toBe('Admin needs a value'),
         );
         const rows = [
             ...scoped.querySelectorAll<HTMLElement>('.ez-decision-flow__scope'),
@@ -2780,16 +3026,15 @@ describe('DecisionFlow: compact layout', () => {
                         ?.textContent,
             ),
         ).toEqual(['Marking', 'Admin']);
-        // Each line counts its own scope's errors, and an error both scopes
-        // report counts once, on the first of them.
+        // Each value says its own scope's errors, and an error both scopes
+        // report shows once, under the first of them.
         expect(
-            rows.map(
-                (row) =>
-                    row.querySelector<HTMLElement>(
-                        '.ez-decision-flow__value-errors',
-                    )?.title,
+            rows.map((row) =>
+                [...row.querySelectorAll('.ez-decision-flow__problem')].map(
+                    (line) => line.textContent,
+                ),
             ),
-        ).toEqual(['Shared rule broken', 'Admin needs a value']);
+        ).toEqual([['Shared rule broken'], ['Admin needs a value']]);
         // The admin scope's required step reads as missing on its dot.
         await vi.waitFor(() =>
             expect(
@@ -2799,4 +3044,143 @@ describe('DecisionFlow: compact layout', () => {
             ).toMatch(/missing|optional/),
         );
     });
+});
+
+/**
+ * On a touch screen the dots fit one line beside the status mark and clear
+ * whenever they can: each dot a 24px square target with its disc inside, the
+ * targets edge to edge within a scope, a narrower gap between scopes. When they
+ * still do not fit, the row breaks only between scopes and a scope that wraps
+ * starts at the row's edge. The stylesheet is read from disk: the `?inline` CSS
+ * import is empty under test.
+ */
+describe('DecisionFlow dots on a touch screen', () => {
+    const css = readFileSync(
+        join(dirname(fileURLToPath(import.meta.url)), 'decision-flow.css'),
+        'utf8',
+    );
+    /** The body of the first rule for `selector` in `text`. */
+    const rule = (text: string, selector: string): string => {
+        const at = text.indexOf(`${selector} {`);
+        expect(at, selector).toBeGreaterThanOrEqual(0);
+        return text.slice(at, text.indexOf('}', at));
+    };
+    const coarse = css.slice(
+        css.indexOf('@media (pointer: coarse)'),
+        css.indexOf('@media (prefers-reduced-motion'),
+    );
+    const rem = (body: string, property: string): number => {
+        const value = new RegExp(`${property}:\\s*([\\d.]+)rem`).exec(body);
+        expect(value, property).not.toBeNull();
+        return Number(value![1]);
+    };
+
+    it('gives each dot a 24px square target, edge to edge with the next', () => {
+        const flow = rule(coarse, '.ez-decision-flow');
+        const dot = rule(coarse, '.ez-decision-flow__step-dot');
+        expect(rem(flow, '--ez-decision-flow-dot-width') * 16).toBe(24);
+        expect(rem(dot, 'height') * 16).toBe(24);
+        expect(
+            rule(css, '.ez-decision-flow__step-dot').includes(
+                'width: var(--ez-decision-flow-dot-width)',
+            ),
+        ).toBe(true);
+        expect(rule(css, '.ez-decision-flow__dot-group')).toMatch(/gap: 0;/);
+    });
+
+    it('keeps 8 to 12px between scopes, as a gap that a wrapped scope does not carry', () => {
+        const gap = rem(
+            rule(coarse, '.ez-decision-flow'),
+            '--ez-decision-flow-scope-gap',
+        );
+        expect(gap * 16).toBeGreaterThanOrEqual(8);
+        expect(gap * 16).toBeLessThanOrEqual(12);
+        expect(
+            rule(
+                css,
+                '.ez-decision-flow__progress:has(> .ez-decision-flow__dot-group)',
+            ),
+        ).toMatch(/column-gap: var\(--ez-decision-flow-scope-gap\)/);
+        // A margin would indent a scope that wraps to the next line.
+        expect(css).not.toMatch(
+            /\.ez-decision-flow__dot-group \+ \.ez-decision-flow__dot-group/,
+        );
+    });
+
+    it('wraps only between scopes, never inside one', () => {
+        expect(rule(css, '.ez-decision-flow__progress')).toMatch(
+            /flex-wrap: wrap/,
+        );
+        expect(rule(css, '.ez-decision-flow__dot-group')).toMatch(
+            /flex-wrap: nowrap/,
+        );
+    });
+});
+
+it("holds back the open step's required message while its chosen value is still being typed, and says it at rest", async () => {
+    const engine = createTextInputEngine();
+    const profile = engine.getScheme() as SchemePublicView;
+    // The label step offers a plain choice beside the value-taking one, and
+    // wants an answer.
+    (profile.categories[1] as { required?: boolean }).required = true;
+    profile.concepts.push({
+        id: 'LABEL_NONE',
+        name: 'Unlabeled',
+        views: { default: 'UNLABELED' },
+        categories: ['label'],
+        parents: [],
+        aliases: [],
+        position: 2,
+    } as ConceptView);
+    (engine.suggest as any).mockReturnValue({
+        suggestions: profile.concepts.map((c) => ({
+            conceptId: c.id,
+            categoryId: c.categories[0],
+            label: c.views?.default ?? c.name,
+            name: c.name,
+            group: c.categories[0],
+        })),
+    });
+    const host = document.createElement('div');
+    host.setAttribute(
+        'data-ezclassify-decisionflow-categories',
+        '["level","label"]',
+    );
+    const outside = document.createElement('button');
+    document.body.append(host, outside);
+    const flow = new DecisionFlow();
+    try {
+        await flow.init(host, toCtx(engine));
+        await enterFlow(host);
+        host.querySelectorAll<HTMLButtonElement>(
+            '.ez-decision-flow__option',
+        )[0].click();
+        host.querySelectorAll<HTMLButtonElement>(
+            '.ez-decision-flow__nav-btn',
+        )[1].click();
+        host.querySelector<HTMLButtonElement>(
+            '.ez-decision-flow__option[data-concept-id="LABEL_TEXT"]',
+        )!.click();
+        // Chosen, the value option is the box the value is typed in.
+        expect(
+            host.querySelector('.ez-decision-flow__value-option input'),
+        ).not.toBeNull();
+        flow.updateValidationErrors([
+            {
+                constraintId: 'required',
+                categoryId: 'label',
+                message: 'Label is required',
+            } as never,
+        ]);
+        const problems = () =>
+            host.querySelector('.ez-decision-flow__problems')?.textContent ??
+            '';
+        expect(problems()).not.toContain('Label is required');
+        outside.focus();
+        expect(problems()).toContain('Label is required');
+    } finally {
+        flow.destroy();
+        host.remove();
+        outside.remove();
+    }
 });

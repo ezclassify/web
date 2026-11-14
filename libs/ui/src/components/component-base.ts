@@ -33,6 +33,7 @@ import { removeAssertionCascade } from './assertion-removal';
 import { fixAssertions } from './rule-errors';
 import {
     ensureStatusMark,
+    explainedChanges,
     recordAppliedFixes,
     setStatusMarkFixes,
 } from './status-mark';
@@ -163,8 +164,8 @@ export abstract class ComponentBase extends ReadOnlyComponentBase {
             root: this.styleRoot,
             shouldShowTooltip: () => this.shouldShowTooltip(),
         });
-        setStatusMarkFixes(chrome.status, this.ownFixes());
         this.suiteChrome = chrome;
+        this.updateSuiteStatusMark();
         return chrome;
     }
 
@@ -191,25 +192,33 @@ export abstract class ComponentBase extends ReadOnlyComponentBase {
         super.onAssertionsChanged();
         this.clearControl?.update();
         // The mark says what EzClassify changed in the value the field holds.
-        if (this.suiteChrome)
-            setStatusMarkFixes(this.suiteChrome.status, this.ownFixes());
+        this.updateSuiteStatusMark();
     }
 
     /**
-     * The applied fixes the control's status mark explains: every one for a
-     * control that holds the whole marking; for a facet, those that changed its
-     * own category, the slice of the marking it holds.
+     * Show on the suite's status mark what EzClassify changed in the value the
+     * control holds: every change for a control that holds the whole marking;
+     * for a facet, those that changed its own category, the slice of the
+     * marking it holds.
      */
-    private ownFixes(): readonly Change[] {
-        const fixes = this.getAppliedFixes();
+    private updateSuiteStatusMark(): void {
+        if (!this.suiteChrome) return;
+        const changes = explainedChanges(
+            this.getAppliedFixes(),
+            this.assertions,
+        );
         const category = this.options.facetOf
             ? this.options.categoryId
             : undefined;
-        if (!category) return fixes;
-        return fixes.filter((fix) =>
-            [...(fix.add ?? []), ...(fix.remove ?? [])].some(
-                (ref) => ref.categoryId === category,
-            ),
+        setStatusMarkFixes(
+            this.suiteChrome.status,
+            category
+                ? changes.filter((change) =>
+                      [...(change.add ?? []), ...(change.remove ?? [])].some(
+                          (ref) => ref.categoryId === category,
+                      ),
+                  )
+                : changes,
         );
     }
     /**
@@ -953,37 +962,19 @@ export abstract class ComponentBase extends ReadOnlyComponentBase {
      * the list must show the other choices in a filled single-choice category
      * (a replace row), and which rows are checked comes from the composer's own
      * reading, not from the engine's `selected` flag. Asked again with `live`,
-     * the draft's assertions, for what the scheme offers only in their
-     * context.
+     * the draft's assertions, for what the scheme offers in their context (see
+     * {@link offeredBeside}).
      */
     protected async composerSuggestions(
         live?: readonly Assertion[],
     ): Promise<Suggestion[]> {
-        const context = this.getProcessingContext();
+        const categories = this.engine.getScheme().categories.map((c) => ({
+            id: c.id,
+            single: c.single === true,
+        }));
         const asked = await Promise.all(
-            this.suggestionSurfaces().map(async (options) =>
-                context?.role === 'part' || context?.partOf
-                    ? Object.values(
-                          (
-                              await Promise.resolve(
-                                  this.callProcess('', {
-                                      ...options,
-                                      context,
-                                      assertions: [...(live ?? [])],
-                                      suggestFor: this.engine
-                                          .getScheme()
-                                          .categories.map(
-                                              (category) => category.id,
-                                          ),
-                                  }),
-                              )
-                          ).suggestionsFor ?? {},
-                      ).flatMap((result) => result.suggestions)
-                    : (
-                          await Promise.resolve(
-                              this.callSuggest([...(live ?? [])], options),
-                          )
-                      ).suggestions,
+            this.suggestionSurfaces().map((options) =>
+                this.offeredBeside(live ?? [], options, categories),
             ),
         );
         const suggestions = asked.flat();
@@ -995,6 +986,52 @@ export abstract class ComponentBase extends ReadOnlyComponentBase {
                     (!bound || s.categoryId === bound),
             ),
         );
+    }
+
+    /**
+     * What the scheme offers for `categories` on one surface beside the facts
+     * in `live`. The engine settles the facts first, so what its rules infer
+     * from them (a parent concept a stated child implies) counts. A
+     * single-choice category is then asked without its own facts, so it lists
+     * every option the other categories allow, not only the one it holds: a
+     * choice there replaces its value. Any other category is asked beside every
+     * settled fact, so an option that conflicts with one it holds is not
+     * offered beside it. A part is asked category by category in its whole's
+     * context.
+     */
+    protected async offeredBeside(
+        live: readonly Assertion[],
+        options: SuggestionSurface,
+        categories: readonly { id: string; single: boolean }[],
+    ): Promise<Suggestion[]> {
+        const context = this.getProcessingContext();
+        const part = context?.role === 'part' || !!context?.partOf;
+        if (live.length === 0 && !part)
+            return Promise.resolve(this.callSuggest([], options)).then(
+                (result) => result.suggestions,
+            );
+        const alone = part
+            ? categories.map((c) => c.id)
+            : categories.filter((c) => c.single).map((c) => c.id);
+        const settled = await Promise.resolve(
+            this.callProcess('', {
+                ...options,
+                context,
+                assertions: [...live],
+                ...(alone.length > 0 ? { suggestFor: alone } : {}),
+            }),
+        );
+        const replacing = Object.values(settled.suggestionsFor ?? {}).flatMap(
+            (answer) => answer.suggestions,
+        );
+        if (alone.length === categories.length) return replacing;
+        const asked = new Set(alone);
+        const beside = (
+            await Promise.resolve(
+                this.callSuggest(settled.assertions ?? [...live], options),
+            )
+        ).suggestions.filter((s) => !asked.has(s.categoryId));
+        return [...beside, ...replacing];
     }
 
     /** Rows the scheme's rules gate for `query` given the live assertions. */

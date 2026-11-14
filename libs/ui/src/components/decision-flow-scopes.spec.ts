@@ -198,7 +198,7 @@ describe('DecisionFlow across scopes', () => {
             ['Origin Block', ['Decision Type', 'Release']],
         ]);
         // A single choice moves the flow on to the next step.
-        await choose(host, 'HIGH');
+        await choose(host, 'High');
         expect(question(host)).toBe('2 of 3 \u00b7 Decision Type');
         expect(scopeHeading(host)).toBe('Origin Block');
     });
@@ -213,10 +213,13 @@ describe('DecisionFlow across scopes', () => {
             ([, options]) => (options as { surface?: string }).surface,
         );
         expect(new Set(surfaces)).toEqual(new Set(['label', 'origin']));
-        await choose(host, 'HIGH');
+        await choose(host, 'High');
         // The origin step has its options, so the required choice can be made.
-        expect(optionNames(host)).toEqual(['Original', 'Copied']);
-        await choose(host, 'Copied');
+        expect(optionNames(host)).toEqual([
+            'Original Decision',
+            'Copied Decision',
+        ]);
+        await choose(host, 'Copied Decision');
         expect(dotFor(host, 'Decision Type').dataset.state).toBe('answered');
     });
 
@@ -243,25 +246,58 @@ describe('DecisionFlow across scopes', () => {
         ]);
     });
 
-    it('takes a value for a value-taking choice beside plain ones, stating it only with a value', async () => {
+    it("takes a value in the chosen option's own box, beside plain ones, stating it only with a value", async () => {
         const ctx = await context();
         const process = vi.spyOn(ctx.scheme, 'process');
         const { host } = await mountFlow({ scope: 'origin' }, ctx);
         await enter(host);
-        await choose(host, 'Original');
+        await choose(host, 'Original Decision');
         await stepTo(host, 'Release');
 
+        // Until chosen, a value option looks like the others.
+        expect(optionNames(host)).toEqual(['On a Date', 'Never', 'Exempt']);
         await choose(host, 'On a Date');
-        expect(option(host, 'On a Date').getAttribute('aria-checked')).toBe(
-            'true',
-        );
-        const field = host.querySelector<HTMLInputElement>(
-            '.ez-decision-flow__companion input',
-        )!;
+        // Chosen, it is a box in its own place among the options: the
+        // option, still checked, is the small label on it, and the value goes
+        // under it. Its form shows once, in the empty box.
+        const box = () =>
+            host.querySelector<HTMLElement>(
+                '.ez-decision-flow__options > .ez-decision-flow__value-option',
+            )!;
+        const valueInput = () =>
+            box().querySelector<HTMLInputElement>(
+                '.ez-decision-flow__value-box > input',
+            )!;
+        // In its own place: first, where the option was.
         expect(
-            host.querySelector('.ez-decision-flow__companion label')
-                ?.textContent,
-        ).toBe('Release date (YYYYMMDD)');
+            [...host.querySelector('.ez-decision-flow__options')!.children]
+                .filter((el) => !(el as HTMLElement).hidden)
+                .map(
+                    (el) =>
+                        (el as HTMLElement).dataset.conceptId ??
+                        el.querySelector<HTMLElement>('[data-concept-id]')
+                            ?.dataset.conceptId,
+                ),
+        ).toEqual(['ON_DATE', 'NEVER', 'EXEMPT']);
+        const name = box().querySelector<HTMLElement>(
+            '.ez-decision-flow__value-name',
+        )!;
+        expect(name.textContent).toBe('On a Date');
+        expect(name.getAttribute('aria-checked')).toBe('true');
+        const field = valueInput();
+        expect(field.getAttribute('aria-label')).toBe(
+            'Release date (YYYYMMDD)',
+        );
+        expect(field.placeholder).toBe('YYYYMMDD');
+        expect(host.querySelector('.ez-decision-flow__companion')).toBeNull();
+        expect(
+            [...host.querySelectorAll('.ez-decision-flow__step *')].filter(
+                (el) =>
+                    !(el as HTMLElement).hidden &&
+                    el.children.length === 0 &&
+                    el.textContent?.includes('YYYYMMDD'),
+            ),
+        ).toEqual([]);
         expect(held(flow!.getAssertions())).not.toContain(
             expect.stringContaining('release_type'),
         );
@@ -271,20 +307,19 @@ describe('DecisionFlow across scopes', () => {
             flow!.getAssertions().some((a) => a.conceptId === 'ON_DATE'),
         ).toBe(false);
 
-        await type(
-            host.querySelector<HTMLInputElement>(
-                '.ez-decision-flow__companion input',
-            )!,
-            '20451231',
-        );
+        await type(valueInput(), '20451231');
         // Stored in the encoding's canonical spelling, and shown on its dot
-        // the way the origin block writes it.
+        // under the choice's name, the way the origin block writes it.
         expect(
             flow!.getAssertions().find((a) => a.conceptId === 'ON_DATE')?.value,
         ).toBe('2045-12-31');
-        expect(dotFor(host, 'Release').getAttribute('aria-label')).toContain(
-            'Release: 20451231',
-        );
+        expect(
+            host
+                .querySelector(
+                    '.ez-decision-flow__step-dot[data-category-id="release_type"]',
+                )
+                ?.getAttribute('aria-label'),
+        ).toMatch(/, On a Date: 20451231$/);
         // No request ever stated the value-taking choice without its value.
         const stated = process.mock.calls.flatMap(
             ([, options]) =>
@@ -293,12 +328,12 @@ describe('DecisionFlow across scopes', () => {
         expect(
             stated.filter((a) => a.conceptId === 'ON_DATE' && !a.value),
         ).toEqual([]);
-        // The typed text stays as typed.
+        // The typed text stays as typed, and the form is gone once it is in.
+        expect(valueInput().value).toBe('20451231');
         expect(
-            host.querySelector<HTMLInputElement>(
-                '.ez-decision-flow__companion input',
-            )!.value,
-        ).toBe('20451231');
+            host.querySelector<HTMLElement>('.ez-decision-flow__text-hint')
+                ?.hidden ?? true,
+        ).toBe(true);
     });
 
     it('shows at rest the steps the engine offers, the same dots it shows open', async () => {
@@ -320,7 +355,7 @@ describe('DecisionFlow across scopes', () => {
         expect(question(host)).toBe('1 of 2 \u00b7 Decision Type');
 
         // The choice brings the copied path's steps, and moves on to them.
-        await choose(host, 'Copied');
+        await choose(host, 'Copied Decision');
         expect(question(host)).toMatch(/^2 of 4 \u00b7 /);
         await next(host);
         expect(question(host)).toBe('3 of 4 \u00b7 Source');
@@ -330,7 +365,7 @@ describe('DecisionFlow across scopes', () => {
         );
 
         await jump(host, 'Decision Type');
-        await choose(host, 'Original');
+        await choose(host, 'Original Decision');
         // The engine offers no source to an original decision, so the source
         // choice is cleared and its step goes; the reasons step comes.
         expect(
@@ -346,8 +381,8 @@ describe('DecisionFlow across scopes', () => {
         const process = vi.spyOn(ctx.scheme, 'process');
         const { host } = await mountFlow({ scope: 'label origin' }, ctx);
         await enter(host);
-        await choose(host, 'HIGH');
-        await choose(host, 'Original');
+        await choose(host, 'High');
+        await choose(host, 'Original Decision');
         await stepTo(host, 'Release');
         await choose(host, 'Exempt');
 
@@ -363,7 +398,7 @@ describe('DecisionFlow across scopes', () => {
         // Moving on paints the same report.
         expect(question(host)).toContain('Exemption Code');
         expect(errors(host)).toEqual(shown);
-        await choose(host, 'X1');
+        await choose(host, 'Exemption 1');
         expect(errors(host)).not.toContain(
             'An exemption names its exemption code.',
         );
@@ -372,8 +407,8 @@ describe('DecisionFlow across scopes', () => {
     it('shows each scope written in its own output on its line', async () => {
         const { host } = await mountFlow({ scope: 'label origin' });
         await enter(host);
-        await choose(host, 'HIGH');
-        await choose(host, 'Copied');
+        await choose(host, 'High');
+        await choose(host, 'Copied Decision');
         await type(
             host.querySelector<HTMLInputElement>(
                 '.ez-decision-flow__text-field',
@@ -384,7 +419,7 @@ describe('DecisionFlow across scopes', () => {
         await choose(host, 'One Source');
         await type(
             host.querySelector<HTMLInputElement>(
-                '.ez-decision-flow__companion input',
+                '.ez-decision-flow__value-option input',
             )!,
             'Memo 1',
         );
@@ -426,8 +461,8 @@ describe('declarative views of a scope', () => {
             '[data-ezclassify-mount="decisionflow"]',
         )!;
         await enter(host);
-        await choose(host, 'HIGH');
-        await choose(host, 'Copied');
+        await choose(host, 'High');
+        await choose(host, 'Copied Decision');
         await stepTo(host, 'Release');
         await choose(host, 'Never');
         await demoRuntimeSettled();

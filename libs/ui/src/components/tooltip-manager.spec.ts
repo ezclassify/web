@@ -190,6 +190,123 @@ describe('tooltip-manager', () => {
         });
     });
 
+    describe('showTooltip placement clear of a box', () => {
+        // jsdom lays nothing out, so each test states the boxes. The viewport
+        // is jsdom's 1024 x 768; the tooltip measures 200 x 100.
+        const realRect = HTMLElement.prototype.getBoundingClientRect;
+        const box = (
+            left: number,
+            top: number,
+            right: number,
+            bottom: number,
+        ) =>
+            ({
+                left,
+                top,
+                right,
+                bottom,
+                width: right - left,
+                height: bottom - top,
+                x: left,
+                y: top,
+                toJSON: () => ({}),
+            }) as DOMRect;
+        const at = (el: HTMLElement, rect: DOMRect) => {
+            el.getBoundingClientRect = () => rect;
+        };
+
+        beforeEach(() => {
+            HTMLElement.prototype.getBoundingClientRect = function () {
+                return this.classList.contains('ez-tooltip')
+                    ? box(0, 0, 200, 100)
+                    : realRect.call(this);
+            };
+        });
+        afterEach(() => {
+            HTMLElement.prototype.getBoundingClientRect = realRect;
+        });
+
+        /** A field holding a target near its top-right corner. */
+        function field(rect: DOMRect): {
+            field: HTMLElement;
+            target: HTMLElement;
+        } {
+            const el = document.createElement('div');
+            const target = document.createElement('button');
+            el.appendChild(target);
+            root.appendChild(el);
+            at(el, rect);
+            at(
+                target,
+                box(
+                    rect.right - 30,
+                    rect.top + 4,
+                    rect.right - 6,
+                    rect.top + 28,
+                ),
+            );
+            return { field: el, target };
+        }
+        const shown = () =>
+            document.querySelector<HTMLElement>('.ez-tooltip')!.style;
+
+        it('goes below the whole box when there is room', () => {
+            const { field: f, target } = field(box(300, 100, 700, 400));
+            showTooltip(target, 'Hi', root, { clearOf: f });
+            expect(shown().top).toBe('406px');
+        });
+
+        it('goes above the box when there is no room below', () => {
+            const { field: f, target } = field(box(300, 300, 700, 700));
+            showTooltip(target, 'Hi', root, { clearOf: f });
+            expect(shown().top).toBe('194px');
+        });
+
+        it('goes beside the box, right or left, when neither above nor below has room', () => {
+            const { field: f, target } = field(box(100, 60, 700, 700));
+            showTooltip(target, 'Hi', root, { clearOf: f });
+            expect(shown().left).toBe('706px');
+            expect(shown().top).toBe('64px');
+
+            hideTooltip(root);
+            const other = field(box(400, 60, 1000, 700));
+            showTooltip(other.target, 'Hi', root, { clearOf: other.field });
+            expect(shown().left).toBe('194px');
+        });
+
+        it('keeps clear of every element named, as one box', () => {
+            const { field: f, target } = field(box(300, 100, 700, 300));
+            const errors = document.createElement('div');
+            root.appendChild(errors);
+            at(errors, box(300, 300, 700, 420));
+            showTooltip(target, 'Hi', root, { clearOf: [f, errors] });
+            expect(shown().top).toBe('426px');
+        });
+
+        it('stays inside an ancestor that clips the box when that has room', () => {
+            const scroller = document.createElement('div');
+            scroller.style.overflow = 'auto';
+            root.appendChild(scroller);
+            at(scroller, box(0, 0, 1024, 500));
+            const { field: f, target } = field(box(300, 250, 700, 420));
+            scroller.appendChild(f);
+            // The viewport has room below the field, the scroller does not.
+            showTooltip(target, 'Hi', root, { clearOf: f });
+            expect(shown().top).toBe('144px');
+        });
+
+        it('uses the viewport when the clipping ancestor has no room anywhere', () => {
+            const clip = document.createElement('div');
+            clip.style.overflow = 'hidden';
+            root.appendChild(clip);
+            at(clip, box(300, 100, 700, 400));
+            const { field: f, target } = field(box(300, 100, 700, 400));
+            clip.appendChild(f);
+            showTooltip(target, 'Hi', root, { clearOf: f });
+            expect(shown().top).toBe('406px');
+        });
+    });
+
     describe('hideTooltip', () => {
         it('hides the tooltip and removes aria-describedby', () => {
             const target = document.createElement('span');

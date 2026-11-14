@@ -367,7 +367,7 @@ describe('the engine calls one keystroke makes', () => {
         await wait(100);
     }
 
-    it('reads a whole draft with one process call, and asks once what its new facts offer', async () => {
+    it('reads a whole draft with one process call, and asks once more of each kind what its new facts offer', async () => {
         const { input } = await open('marking');
         const engine = forms!.engine;
         const process = vi.spyOn(engine, 'process');
@@ -377,11 +377,21 @@ describe('the engine calls one keystroke makes', () => {
         // A separator ends the word, so nothing is being searched for.
         await type(input, 'SECRET//SI/TK//REL TO/');
 
-        expect(process).toHaveBeenCalledTimes(1);
-        expect(process.mock.calls[0][0]).toBe('SECRET//SI/TK//REL TO/');
-        expect(process.mock.calls[0][1]).not.toHaveProperty('suggestFor');
+        const reads = process.mock.calls.filter(
+            ([, options]) => !(options as { suggestFor?: string[] }).suggestFor,
+        );
+        expect(reads).toHaveLength(1);
+        expect(reads[0][0]).toBe('SECRET//SI/TK//REL TO/');
         expect(validate).not.toHaveBeenCalled();
-        // REL TO is new, so the list asks what the draft offers now.
+        // REL TO is new, so the list asks what the draft offers now: each
+        // single-choice category without its own facts, in one process
+        // call, and the other categories beside every fact.
+        expect(
+            process.mock.calls.filter(
+                ([, options]) =>
+                    (options as { suggestFor?: string[] }).suggestFor,
+            ),
+        ).toHaveLength(1);
         expect(suggest).toHaveBeenCalledTimes(1);
         expect(suggest.mock.calls[0][0] as Assertion[]).toEqual(
             expect.arrayContaining([
@@ -415,10 +425,13 @@ describe('the engine calls one keystroke makes', () => {
         await type(input, 'UNCLASSIFIED ');
 
         expect(validate).toHaveBeenCalledTimes(1);
-        expect(process).toHaveBeenCalledTimes(1);
+        const reads = process.mock.calls.filter(
+            ([, asked]) => !(asked as { suggestFor?: string[] }).suggestFor,
+        );
+        expect(reads).toHaveLength(1);
         // The typed level replaces the held one; the rest of the value goes
         // beside the text as facts already chosen.
-        const [text, options] = process.mock.calls[0];
+        const [text, options] = reads[0];
         expect(text).toBe('UNCLASSIFIED ');
         expect(
             (options as { assertions?: Assertion[] }).assertions

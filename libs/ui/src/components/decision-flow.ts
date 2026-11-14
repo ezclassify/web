@@ -4,11 +4,11 @@
  * A field-sized control in the suite's frame. The status mark and clear sit at
  * the trailing end of its first line.
  *
- * A flow of one scope is one line at rest: the dots, then what the marking
- * writes and how many errors it has. A value that does not fit beside the dots
- * goes under them, whole. A flow of several scopes stacks one block per scope:
- * the scope's name, its dots under the name, and its value under the dots, one
- * line that opens to the full value and that scope's messages.
+ * One row of dots heads the control, a gap between scopes. A flow of one scope
+ * writes its marking beside the dots, or under them, whole, when it does not
+ * fit. A flow of several writes each scope's value under its name, below the
+ * step. Under a value with something wrong, a line names the steps it is
+ * missing, each a way to its step, and gives the engine's other messages.
  *
  * Focusing or pressing the control opens it, and opening adds one thing, the
  * step, at the bottom: its title ("3 of 8 · Dissemination Control") on a line
@@ -16,13 +16,17 @@
  * arrows. Nothing above the step moves, hides or changes size when it opens or
  * when the step changes. Each choice calls `reprocess()` so constraints and
  * inference fire as the author goes; a choice in a single-choice step moves on
- * to the next step, and a multiple-choice step's toggles do not.
+ * to the next step, and a multiple-choice step's toggles do not. An option
+ * reads as its concept's name. One the marking's current choices rule out stays
+ * in its place, unavailable, and says why. A value-taking option, once chosen,
+ * becomes the box its value is typed in.
  *
  * The dots are the navigation: each one jumps to its step, and says at a glance
- * whether the step is current, answered, missing an answer the engine asks for,
- * or optional and unset. Hovering or focusing a dot grows it and shows the
- * category with its selections; on a touch screen the first tap previews and a
- * second tap on the same dot jumps.
+ * whether the step is answered, missing an answer the engine asks for, or
+ * optional and unset; while a step is open, its dot is ringed as current.
+ * Hovering or focusing a dot grows it and shows the category with its
+ * selections; on a touch screen the first tap previews and a second tap on the
+ * same dot jumps.
  *
  * Useful for any scheme with ordered single-select categories, multi-tier
  * access levels, incident severity ratings, risk triage workflows, etc.
@@ -39,10 +43,9 @@
  * category order. Each step belongs to the scope its category declares, and
  * every engine call made for a step (its options, the choices it accepts) is
  * made on that scope's surface. A flow whose steps span more than one scope
- * groups its dots by scope under each scope's label, judges the marking on each
- * scope's surface, and gives each scope a line of its own, written in that
- * scope's own output with the errors judged there. A flow of one scope has one
- * unlabeled line.
+ * groups its dots by scope, judges the marking on each scope's surface, and
+ * gives each scope a value of its own, written in that scope's own output with
+ * what is wrong there. A flow of one scope has one unlabeled value.
  *
  * Which steps show is the engine's answer: a step shows while the engine offers
  * an option for it or it holds a choice. A choice that leaves a step with
@@ -61,6 +64,7 @@ import { statedAssertions } from './composer/composer-controller';
 import type { ComposerPort } from './composer/composer-controller';
 import type {
     Assertion,
+    AssertionRef,
     ConceptTextInput,
     Fix,
     ProcessResult,
@@ -77,6 +81,7 @@ import type { EzClassifyState } from '../store/ezclassify-store';
 import { viewOutputOf } from '../format-resolver';
 import { renderViewRefused } from '../render-refusal';
 import { writtenValue } from '../value-spelling';
+import { t } from '../i18n';
 import {
     categoriesByScope,
     factsInScopes,
@@ -99,7 +104,13 @@ export interface DecisionFlowOptions extends ComponentOptions {
 
 interface ConceptDef {
     id: string;
+    /** What the option says: the concept's name, as the composer names it. */
     name: string;
+    /**
+     * How a marking writes the concept, for its tooltip and description. Absent
+     * for a value-taking concept, whose view is a template.
+     */
+    view?: string;
     description: string;
     /**
      * Present when the concept accepts a user-typed value (e.g. "{value}"
@@ -160,9 +171,6 @@ export class DecisionFlow extends ComponentBase {
     private headerMainEl!: HTMLDivElement;
     /** The open step: its options between the previous and next arrows. */
     private stepEl!: HTMLDivElement;
-    /** One line per scope: what the marking writes there, and its errors. */
-    /** The scopes whose value is open to its messages. */
-    private readonly openValues = new Set<string>();
     /** A flow of several scopes: each scope's caption and value, under the step. */
     private valuesEl!: HTMLDivElement;
     /** The label a previewed dot shows, laid over the flow. */
@@ -242,8 +250,22 @@ export class DecisionFlow extends ComponentBase {
     private announcer!: HTMLDivElement;
     /** When true, render() focuses the active option after rebuilding the DOM. */
     private _restoreFocusAfterRender = false;
-    /** When true, render() focuses the companion value field instead. */
-    private _focusCompanion = false;
+    /** When true, render() focuses the chosen option's value field instead. */
+    private _focusValueField = false;
+    /**
+     * Each value field's line for its expected form, used when the box is too
+     * narrow.
+     */
+    private readonly formatHints = new WeakMap<HTMLInputElement, HTMLElement>();
+    /** Refits the open value fields' expected form as their boxes resize. */
+    private formatObserver: ResizeObserver | null = null;
+    /** Under the step's options: why the option in question is unavailable. */
+    private reasonEl!: HTMLDivElement;
+    /** The concept whose reason shows, if any. */
+    private reasonConcept: string | null = null;
+    /** Reasons already asked, by step and concept, for the facts below. */
+    private readonly blockReasons = new Map<string, string>();
+    private reasonsFacts = '';
     /**
      * The concept id last interacted with: used to restore focus after
      * multi-select toggles.
@@ -506,11 +528,9 @@ export class DecisionFlow extends ComponentBase {
                     required: cat?.required !== false,
                     concepts: concepts.map((c) => ({
                         id: c.id,
-                        // For text_input concepts, show the concept's human name (e.g. "Labeled By"),
-                        // not the view template (e.g. "{value}") which is meaningless without a value.
-                        name: c.textInput
-                            ? c.name
-                            : (c.views?.['default'] ?? c.name),
+                        // Named the way the composer names a concept.
+                        name: c.name || c.views?.['default'] || c.id,
+                        view: c.textInput ? undefined : c.views?.['default'],
                         description: c.definition ?? '',
                         textInput: c.textInput ?? undefined,
                     })),
@@ -582,6 +602,10 @@ export class DecisionFlow extends ComponentBase {
         this.stepEl = document.createElement('div');
         this.stepEl.className = 'ez-decision-flow__step';
         this.stepEl.hidden = true;
+        this.reasonEl = document.createElement('div');
+        this.reasonEl.className = 'ez-decision-flow__option-reason';
+        this.reasonEl.setAttribute('role', 'status');
+        this.reasonEl.hidden = true;
         this.valuesEl = document.createElement('div');
         this.valuesEl.className = 'ez-decision-flow__values';
         this.previewEl = document.createElement('div');
@@ -596,8 +620,8 @@ export class DecisionFlow extends ComponentBase {
         );
         this.container.appendChild(this.flowEl);
         this.mountSuiteChrome(this.headerEl);
-        // The error count by each value carries the report, and the value
-        // opens to its messages, so the list under the flow stays aside.
+        // The line under each value carries the report, so the list under
+        // the flow stays aside.
         this.setReportInField(true);
 
         this.announcer = createAnnouncer();
@@ -628,9 +652,16 @@ export class DecisionFlow extends ComponentBase {
             );
         }
         this.flowEl.addEventListener('focusin', this.requestOptions);
-        // Focus inside the flow opens its step; leaving closes it.
+        // Focus inside the flow opens its step; leaving closes it. A way to a
+        // missing step opens the flow at that step when it is pressed, not
+        // when a press focuses it, which would rebuild it out from under the
+        // press.
         this.flowEl.addEventListener('focusin', (event) => {
-            if (!this.suiteChrome?.element.contains(event.target as Node))
+            const target = event.target as Element;
+            if (
+                !this.suiteChrome?.element.contains(target) &&
+                !target.closest?.('.ez-decision-flow__missing')
+            )
                 this.setOpen(true);
         });
         this.flowEl.addEventListener('focusout', this.focusOut);
@@ -673,30 +704,13 @@ export class DecisionFlow extends ComponentBase {
         scope: string,
         live?: readonly Assertion[],
     ): Promise<Suggestion[]> {
-        const context = this.getProcessingContext();
-        const options = { outputFormat: this.outputFor(scope), surface: scope };
-        const categories = this._allSteps
-            .filter((s) => s.scope === scope)
-            .map((s) => s.categoryId);
-        const suggestions =
-            context?.role === 'part' || context?.partOf
-                ? Object.values(
-                      (
-                          await Promise.resolve(
-                              this.callProcess('', {
-                                  ...options,
-                                  context,
-                                  assertions: [...(live ?? [])],
-                                  suggestFor: categories,
-                              }),
-                          )
-                      ).suggestionsFor ?? {},
-                  ).flatMap((result) => result.suggestions)
-                : (
-                      await Promise.resolve(
-                          this.callSuggest([...(live ?? [])], options),
-                      )
-                  ).suggestions;
+        const suggestions = await this.offeredBeside(
+            live ?? [],
+            { outputFormat: this.outputFor(scope), surface: scope },
+            this._allSteps
+                .filter((s) => s.scope === scope)
+                .map((s) => ({ id: s.categoryId, single: s.single })),
+        );
         return this.disambiguateSuggestions(
             suggestions.filter((s) => !s.conceptId.startsWith('preset:')),
         );
@@ -779,8 +793,10 @@ export class DecisionFlow extends ComponentBase {
         // An error belongs to the category it names, or to the categories
         // of the concepts it asks for (a rule that wants one of a step's
         // choices), so the step it asks about reads as required.
+        // Every step counts, not only those showing: a judgment can land
+        // before the engine offers the step it asks about.
         const categoryOf = new Map<string, string>();
-        for (const step of this.steps ?? [])
+        for (const step of this._allSteps)
             for (const concept of step.concepts)
                 categoryOf.set(concept.id, step.categoryId);
         for (const error of errors) {
@@ -936,6 +952,7 @@ export class DecisionFlow extends ComponentBase {
     }
 
     destroy(): void {
+        this.formatObserver?.disconnect();
         this.destroyClearButton();
         this.removeRuleErrors();
         this._destroyed = true;
@@ -1029,6 +1046,7 @@ export class DecisionFlow extends ComponentBase {
             this.renderCurrentStep();
             this.renderNavigation('end');
             this.stepEl.hidden = !this.open;
+            this.fitFormats();
             this.renderValues();
             this.flowEl.toggleAttribute('data-ezclassify-locked', this.locked);
             // A rebuilt dot keeps its label showing.
@@ -1037,12 +1055,12 @@ export class DecisionFlow extends ComponentBase {
             // Restore keyboard focus after DOM rebuild. Set _restoreFocusAfterRender before
             // any action that calls render() as a side-effect (concept selection, Next/Back).
             // Initial setup render leaves the flag false so mount doesn't steal page focus.
-            if (this._focusCompanion) {
-                this._focusCompanion = false;
+            if (this._focusValueField) {
+                this._focusValueField = false;
                 this._restoreFocusAfterRender = false;
                 this.flowEl
                     .querySelector<HTMLInputElement>(
-                        '.ez-decision-flow__companion .ez-decision-flow__text-field',
+                        '.ez-decision-flow__value-option .ez-decision-flow__text-field',
                     )
                     ?.focus();
             } else if (this._restoreFocusAfterRender) {
@@ -1213,14 +1231,30 @@ export class DecisionFlow extends ComponentBase {
             .map((a) => {
                 const concept = step.concepts.find((c) => c.id === a.conceptId);
                 if (concept?.textInput && a.value)
-                    return writtenValue(
+                    return `${concept.name}: ${writtenValue(
                         a.value,
                         concept.textInput.encoding,
                         view,
-                    );
+                    )}`;
                 return concept?.name ?? a.conceptId;
             })
             .join(', ');
+    }
+
+    /** Whether everything a step holds is a typed value. */
+    private holdsOnlyValues(step: StepDef): boolean {
+        const held = this.assertions.filter(
+            (a) => a.categoryId === step.categoryId,
+        );
+        return (
+            held.length > 0 &&
+            held.every(
+                (a) =>
+                    a.value !== undefined &&
+                    !!step.concepts.find((c) => c.id === a.conceptId)
+                        ?.textInput,
+            )
+        );
     }
 
     /**
@@ -1256,14 +1290,17 @@ export class DecisionFlow extends ComponentBase {
 
     /**
      * The engine's messages the flow holds back while it is open: those that
-     * ask for an answer to a step the author has not reached yet.
+     * ask for an answer to a step the author has not passed yet, including the
+     * step they are on while its value is still being typed.
      */
     private heldBack(): Set<string> {
         const held = new Set<string>();
         if (!this.open) return held;
         for (const step of this.steps) {
-            if (this.chosenIn(step).size > 0 || this.reachedPast(step))
-                continue;
+            const stated = this.assertions.some(
+                (a) => a.categoryId === step.categoryId,
+            );
+            if (stated || this.reachedPast(step)) continue;
             for (const message of this.errorsByCategory.get(step.categoryId) ??
                 [])
                 held.add(message);
@@ -1280,6 +1317,7 @@ export class DecisionFlow extends ComponentBase {
             const step = this.steps[index];
             if (!step) continue;
             dot.dataset.state = this.stepState(step);
+            this.markCurrent(dot, index);
             dot.setAttribute(
                 'aria-label',
                 `Step ${index + 1} of ${this.steps.length}, ${this.dotLabel(step)}`,
@@ -1287,10 +1325,24 @@ export class DecisionFlow extends ComponentBase {
         }
     }
 
-    /** A dot's label: the category and its selections, or why it has none. */
+    /** The open step's dot is current; at rest no dot is. */
+    private markCurrent(dot: HTMLElement, index: number): void {
+        const current = this.open && index === this.currentStep;
+        dot.toggleAttribute('data-current', current);
+        if (current) dot.setAttribute('aria-current', 'step');
+        else dot.removeAttribute('aria-current');
+    }
+
+    /**
+     * A dot's label: the category and its selections, or why it has none. A
+     * step that holds only typed values names each by its choice and value
+     * ("Specific Date: 20481231").
+     */
     private dotLabel(step: StepDef): string {
         const state = this.stepState(step);
         const held = this.selectionText(step);
+        if (state === 'answered' && held && this.holdsOnlyValues(step))
+            return held;
         const said =
             state === 'answered'
                 ? held || 'chosen'
@@ -1320,19 +1372,6 @@ export class DecisionFlow extends ComponentBase {
             else if (last) last.steps.push(i);
             else groups.push({ scope: step.scope, steps: [i] });
         });
-        // The row sizes itself from these (see decision-flow.css).
-        this.dotsEl.style.setProperty(
-            '--ez-decision-flow-dots',
-            String(steps.length),
-        );
-        this.dotsEl.style.setProperty(
-            '--ez-decision-flow-breaks',
-            String(Math.max(0, groups.length - 1)),
-        );
-        this.dotsEl.style.setProperty(
-            '--ez-decision-flow-names',
-            String(this.multiScope ? groups.filter((g) => g.scope).length : 0),
-        );
         for (const group of groups) {
             let target: HTMLElement = this.dotsEl;
             if (this.multiScope && group.scope) {
@@ -1360,10 +1399,7 @@ export class DecisionFlow extends ComponentBase {
         dot.dataset.state = this.stepState(step);
         dot.dataset.index = String(i);
         dot.dataset.categoryId = step.categoryId;
-        if (i === this.currentStep) {
-            dot.dataset.current = '';
-            dot.setAttribute('aria-current', 'step');
-        }
+        this.markCurrent(dot, i);
         dot.tabIndex = i === this.dotFocus ? 0 : -1;
         dot.setAttribute(
             'aria-label',
@@ -1546,7 +1582,18 @@ export class DecisionFlow extends ComponentBase {
         }
 
         q.appendChild(optionsEl);
-        if (!this.isTextInputStep(step)) this.renderCompanions(step, q);
+        // The reason line outlives a render, so a reason showing keeps showing
+        // while its option is still ruled out.
+        const blocked = new Set(
+            this.isTextInputStep(step)
+                ? []
+                : this.stepOptions(step)
+                      .filter((o) => o.blocked)
+                      .map((o) => o.concept.id),
+        );
+        if (this.reasonConcept !== null && !blocked.has(this.reasonConcept))
+            this.hideBlockReason();
+        q.appendChild(this.reasonEl);
         this.stepEl.appendChild(q);
     }
 
@@ -1568,10 +1615,12 @@ export class DecisionFlow extends ComponentBase {
     }
 
     private renderRadioOptions(step: StepDef, optionsEl: HTMLElement): void {
-        const selected = [...this.chosenIn(step)][0];
-        const visibleConcepts = this.visibleConcepts(step);
+        const chosen = this.chosenIn(step);
+        const selected = [...chosen][0];
+        const options = this.stepOptions(step);
+        const first = options.find((o) => !o.blocked)?.concept.id;
 
-        visibleConcepts.forEach((concept, i) => {
+        for (const { concept, blocked } of options) {
             const btn = document.createElement('button');
             btn.type = 'button';
             btn.disabled = this.locked;
@@ -1582,10 +1631,13 @@ export class DecisionFlow extends ComponentBase {
                 concept.id === selected ? 'true' : 'false',
             );
             btn.tabIndex =
-                concept.id === selected || (!selected && i === 0) ? 0 : -1;
+                concept.id === selected || (!selected && concept.id === first)
+                    ? 0
+                    : -1;
             btn.textContent = concept.name;
             btn.dataset.conceptId = concept.id;
-            if (concept.description) btn.title = concept.description;
+            this.describeOption(btn, step, concept, optionsEl);
+            if (blocked) this.blockOption(btn, step, concept);
 
             btn.addEventListener('click', () => {
                 if (
@@ -1593,6 +1645,10 @@ export class DecisionFlow extends ComponentBase {
                     this.enhancedInput?.matches(':disabled, [readonly]')
                 )
                     return;
+                if (blocked) {
+                    void this.showBlockReason(step, concept);
+                    return;
+                }
                 // Restore focus to this option after the DOM rebuild that follows reprocess().
                 this._restoreFocusAfterRender = true;
                 this._lastFocusConceptId = concept.id;
@@ -1611,18 +1667,18 @@ export class DecisionFlow extends ComponentBase {
             });
 
             btn.addEventListener('keydown', (e: KeyboardEvent) => {
-                const options = Array.from(
+                const radios = Array.from(
                     optionsEl.querySelectorAll<HTMLButtonElement>(
                         '[role="radio"]',
                     ),
                 );
-                const idx = options.indexOf(btn);
+                const idx = radios.indexOf(btn);
                 let next = -1;
 
                 if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
-                    next = (idx + 1) % options.length;
+                    next = (idx + 1) % radios.length;
                 } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
-                    next = (idx - 1 + options.length) % options.length;
+                    next = (idx - 1 + radios.length) % radios.length;
                 }
 
                 if (next >= 0) {
@@ -1630,15 +1686,188 @@ export class DecisionFlow extends ComponentBase {
                     // Arrow keys move focus only: no selection commit. The user presses
                     // Enter or Space (which triggers a click event on the focused button)
                     // to confirm a choice.
-                    options.forEach((o, j) => {
+                    radios.forEach((o, j) => {
                         o.tabIndex = j === next ? 0 : -1;
                     });
-                    options[next].focus();
+                    radios[next].focus();
                 }
             });
 
-            optionsEl.appendChild(btn);
+            optionsEl.appendChild(
+                concept.textInput && chosen.has(concept.id)
+                    ? this.valueOption(step, concept, btn)
+                    : btn,
+            );
+        }
+    }
+
+    /**
+     * The options a step shows: those the engine offers, and those it holds
+     * back only because they conflict with what the marking holds, which show
+     * blocked with the reason. An option under a parent concept stays out until
+     * one of its parents is chosen, and one outside the step's scope never
+     * shows.
+     */
+    private stepOptions(
+        step: StepDef,
+    ): { concept: ConceptDef; blocked: boolean }[] {
+        const offered = new Set(this.visibleConcepts(step).map((c) => c.id));
+        if (!this.catalogReady || !this.catalogFor(step))
+            return step.concepts.map((concept) => ({
+                concept,
+                blocked: false,
+            }));
+        const held = new Set(this.assertions.map((a) => a.conceptId));
+        return step.concepts.flatMap<{
+            concept: ConceptDef;
+            blocked: boolean;
+        }>((concept) => {
+            if (offered.has(concept.id)) return [{ concept, blocked: false }];
+            const view = this.scheme.concepts.find((c) => c.id === concept.id);
+            const parents = view?.parents ?? [];
+            const inScope =
+                !step.scope ||
+                !view?.scopes ||
+                view.scopes.includes(step.scope);
+            return inScope &&
+                (parents.length === 0 || parents.some((p) => held.has(p)))
+                ? [{ concept, blocked: true }]
+                : [];
         });
+    }
+
+    /**
+     * An option's tooltip and description: how a marking writes the concept,
+     * when that differs from its name and is not a value template, and what the
+     * concept means.
+     */
+    private describeOption(
+        btn: HTMLButtonElement,
+        step: StepDef,
+        concept: ConceptDef,
+        optionsEl: HTMLElement,
+    ): void {
+        const lines = [
+            concept.view && concept.view !== concept.name
+                ? `Appears as: ${concept.view}`
+                : '',
+            concept.description,
+        ].filter(Boolean);
+        if (lines.length === 0) return;
+        btn.title = lines.join('\n');
+        const description = document.createElement('span');
+        description.hidden = true;
+        description.id = `df-desc-${step.categoryId}-${concept.id}`;
+        description.textContent = lines
+            .map((line) => (/[.!?]$/.test(line) ? line : `${line}.`))
+            .join(' ');
+        optionsEl.appendChild(description);
+        btn.setAttribute('aria-describedby', description.id);
+    }
+
+    /**
+     * An option the marking's current choices rule out: it stays in its place,
+     * unavailable, and says why on hover, focus or a tap. Choosing it never
+     * takes another choice away.
+     */
+    private blockOption(
+        btn: HTMLButtonElement,
+        step: StepDef,
+        concept: ConceptDef,
+    ): void {
+        btn.setAttribute('aria-disabled', 'true');
+        btn.dataset.blocked = '';
+        const show = () => void this.showBlockReason(step, concept);
+        const hide = () => {
+            if (this.reasonConcept === concept.id) this.hideBlockReason();
+        };
+        btn.addEventListener('pointerenter', (event) => {
+            if (event.pointerType !== 'touch') show();
+        });
+        btn.addEventListener('pointerleave', (event) => {
+            if (event.pointerType !== 'touch') hide();
+        });
+        btn.addEventListener('focus', show);
+        btn.addEventListener('blur', hide);
+    }
+
+    /** Show why `concept` is unavailable, under the step's options. */
+    private async showBlockReason(
+        step: StepDef,
+        concept: ConceptDef,
+    ): Promise<void> {
+        const facts = this.factsKey();
+        if (facts !== this.reasonsFacts) {
+            this.reasonsFacts = facts;
+            this.blockReasons.clear();
+        }
+        const key = `${step.categoryId}\u0000${concept.id}`;
+        this.reasonConcept = concept.id;
+        const known = this.blockReasons.get(key);
+        this.reasonEl.hidden = false;
+        this.reasonEl.textContent = known
+            ? `${concept.name} is not available: ${known}`
+            : '';
+        if (known) return;
+        let reason: string;
+        try {
+            reason = await this.blockReason(step, concept);
+        } catch {
+            reason = t('composer.unavailable');
+        }
+        if (this._destroyed || facts !== this.reasonsFacts) return;
+        this.blockReasons.set(key, reason);
+        if (this.reasonConcept === concept.id)
+            this.reasonEl.textContent = `${concept.name} is not available: ${reason}`;
+    }
+
+    private hideBlockReason(): void {
+        this.reasonConcept = null;
+        this.reasonEl.hidden = true;
+        this.reasonEl.textContent = '';
+    }
+
+    /**
+     * Why the engine rules out `concept` beside the marking's current choices,
+     * in its own words: what it says about the marking with the concept added
+     * that it does not say about the marking now.
+     */
+    private async blockReason(
+        step: StepDef,
+        concept: ConceptDef,
+    ): Promise<string> {
+        const stated = statedAssertions(this.assertions).filter(
+            (a) => !(step.single && a.categoryId === step.categoryId),
+        );
+        const result = await Promise.resolve(
+            this.callProcess('', {
+                outputFormat: this.outputFor(step.scope),
+                assertions: [
+                    ...stated,
+                    {
+                        conceptId: concept.id,
+                        categoryId: step.categoryId,
+                        confidence: 'certain',
+                        source: 'user',
+                    },
+                ],
+                context: this.getProcessingContext(),
+                ...(step.scope ? { surface: step.scope } : {}),
+            }),
+        );
+        const fresh = (message: string) => !this.allErrors.includes(message);
+        const errors = (result.errors ?? []).filter((e) => fresh(e.message));
+        const fixes = result.appliedFixes ?? [];
+        const touches = (refs: readonly AssertionRef[] | undefined) =>
+            (refs ?? []).some((ref) => ref.conceptId === concept.id);
+        return (
+            errors.find((e) => e.affectedConcepts?.includes(concept.id))
+                ?.message ??
+            fixes.find((f) => touches(f.remove) || touches(f.add))?.message ??
+            fixes.find((f) => (f.remove ?? []).length > 0)?.message ??
+            errors[0]?.message ??
+            t('composer.unavailable')
+        );
     }
 
     /**
@@ -1650,159 +1879,184 @@ export class DecisionFlow extends ComponentBase {
         return visible.length > 0 && visible.every((c) => c.textInput != null);
     }
 
+    /**
+     * A step of value-taking concepts. One concept's box is the whole step,
+     * with no label of its own; several each carry their concept's name.
+     */
     private renderTextInputOptions(
         step: StepDef,
         optionsEl: HTMLElement,
     ): void {
-        const visibleConcepts = this.visibleConcepts(step);
-        for (const concept of visibleConcepts) {
-            if (!concept.textInput) continue;
-            const ti = concept.textInput;
-
-            const existingAssertion = this.assertions.find(
-                (a) =>
-                    a.conceptId === concept.id &&
-                    a.categoryId === step.categoryId,
-            );
-
+        const concepts = this.visibleConcepts(step).filter((c) => c.textInput);
+        const named = concepts.length > 1;
+        for (const concept of concepts) {
+            const { input, after } = this.valueField(step, concept, false);
             const wrap = document.createElement('div');
             wrap.className = 'ez-decision-flow__text-field-wrap';
-
-            const inputEl = document.createElement('input');
-            inputEl.type = 'text';
-            inputEl.dataset.conceptId = concept.id;
-            inputEl.readOnly = this.locked;
-            inputEl.className = 'ez-decision-flow__text-field';
-            inputEl.setAttribute('aria-label', ti.label ?? concept.name);
-            applyTextInputAttributes(inputEl, ti);
-            const hint = valueHint(ti.placeholder, `df-hint-${concept.id}`);
-            if (hint) inputEl.setAttribute('aria-describedby', hint.id);
-            const draft =
-                this.pendingText?.conceptId === concept.id &&
-                this.pendingText.categoryId === step.categoryId
-                    ? this.pendingText.value
-                    : undefined;
-            if (draft !== undefined) inputEl.value = draft;
-            else if (existingAssertion?.value)
-                inputEl.value = this.shownValue(
-                    step,
-                    concept,
-                    existingAssertion.value,
-                );
-
-            inputEl.addEventListener('input', () => {
-                if (
-                    this._destroyed ||
-                    this.enhancedInput?.matches(':disabled, [readonly]')
-                )
-                    return;
-                this.enterValue(step, concept, inputEl);
-            });
-
-            // Enter moves on to the next step. Other keys stay in the field.
-            inputEl.addEventListener('keydown', (e) => {
-                e.stopPropagation();
-                if (e.key === 'Enter') {
-                    e.preventDefault();
-                    this.goToStep(this.currentStep + 1);
-                }
-            });
-
-            wrap.appendChild(inputEl);
-            if (hint) wrap.appendChild(hint);
+            if (named) {
+                const box = document.createElement('div');
+                box.className = 'ez-decision-flow__value-box';
+                const name = document.createElement('label');
+                name.className = 'ez-decision-flow__value-name';
+                name.htmlFor = input.id;
+                name.textContent = concept.name;
+                box.append(name, input);
+                wrap.append(box, ...after);
+            } else {
+                wrap.append(input, ...after);
+            }
             optionsEl.appendChild(wrap);
         }
     }
 
     /**
-     * The value fields of a step that mixes value-taking concepts with plain
-     * ones: one labeled field under the options for each value-taking choice
-     * the step holds or has pending.
+     * A chosen value-taking option: its own box in its place among the options,
+     * the concept's name a small label on the box (the option itself, still the
+     * choice) and the value under it.
      */
-    private renderCompanions(step: StepDef, target: HTMLElement): void {
-        const chosen = this.chosenIn(step);
-        for (const concept of step.concepts) {
-            if (!concept.textInput || !chosen.has(concept.id)) continue;
-            const ti = concept.textInput;
-            const assertion = this.assertions.find(
-                (a) =>
-                    a.conceptId === concept.id &&
-                    a.categoryId === step.categoryId,
-            );
-            const pending =
-                this.pendingText?.conceptId === concept.id &&
-                this.pendingText.categoryId === step.categoryId
-                    ? this.pendingText
-                    : null;
+    private valueOption(
+        step: StepDef,
+        concept: ConceptDef,
+        btn: HTMLButtonElement,
+    ): HTMLElement {
+        const option = document.createElement('div');
+        option.className = 'ez-decision-flow__value-option';
+        const box = document.createElement('div');
+        box.className = 'ez-decision-flow__value-box';
+        btn.classList.add('ez-decision-flow__value-name');
+        const { input, after } = this.valueField(step, concept, true);
+        box.append(btn, input);
+        option.append(box, ...after);
+        return option;
+    }
 
-            const wrap = document.createElement('div');
-            wrap.className =
-                'ez-decision-flow__text-field-wrap ez-decision-flow__companion';
-            const fieldId = `df-value-${step.categoryId}-${concept.id}`;
+    /**
+     * A value-taking concept's input. Its accessible name is the concept's
+     * field label; the form it expects shows once, in the empty box, or as a
+     * line under the box when it does not fit there, and after typing only in
+     * an error. A value the author chose from a step's options wants its value
+     * before the flow leaves it.
+     */
+    private valueField(
+        step: StepDef,
+        concept: ConceptDef,
+        chosen: boolean,
+    ): { input: HTMLInputElement; after: HTMLElement[] } {
+        const ti = concept.textInput!;
+        const assertion = this.assertions.find(
+            (a) =>
+                a.conceptId === concept.id && a.categoryId === step.categoryId,
+        );
+        const pending =
+            this.pendingText?.conceptId === concept.id &&
+            this.pendingText.categoryId === step.categoryId
+                ? this.pendingText
+                : null;
+        const fieldId = `df-value-${step.categoryId}-${concept.id}`;
 
-            const label = document.createElement('label');
-            label.className = 'ez-decision-flow__companion-label';
-            label.htmlFor = fieldId;
-            label.textContent = ti.label ?? concept.name;
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.id = fieldId;
+        input.dataset.conceptId = concept.id;
+        input.readOnly = this.locked;
+        input.className = 'ez-decision-flow__text-field';
+        input.setAttribute('aria-label', ti.label ?? concept.name);
+        input.required = chosen && ti.required !== false;
+        applyTextInputAttributes(input, ti);
+        input.value = pending
+            ? pending.value
+            : assertion?.value
+              ? this.shownValue(step, concept, assertion.value)
+              : '';
 
-            const inputEl = document.createElement('input');
-            inputEl.type = 'text';
-            inputEl.id = fieldId;
-            inputEl.dataset.conceptId = concept.id;
-            inputEl.readOnly = this.locked;
-            inputEl.className = 'ez-decision-flow__text-field';
-            inputEl.required = ti.required !== false;
-            const hint = valueHint(ti.placeholder, `${fieldId}-hint`);
-            applyTextInputAttributes(inputEl, ti);
-            inputEl.value = pending
-                ? pending.value
-                : assertion?.value
-                  ? this.shownValue(step, concept, assertion.value)
-                  : '';
+        const after: HTMLElement[] = [];
+        if (ti.placeholder) {
+            const hint = document.createElement('div');
+            hint.className = 'ez-decision-flow__text-hint';
+            hint.id = `${fieldId}-hint`;
+            hint.textContent = ti.placeholder;
+            hint.hidden = true;
+            this.formatHints.set(input, hint);
+            after.push(hint);
+        }
+        const errorEl = document.createElement('div');
+        errorEl.className = 'ez-decision-flow__value-error';
+        errorEl.id = `${fieldId}-error`;
+        errorEl.setAttribute('role', 'alert');
+        after.push(errorEl);
 
-            const errorEl = document.createElement('div');
-            errorEl.className = 'ez-decision-flow__companion-error';
-            errorEl.id = `${fieldId}-error`;
-            errorEl.setAttribute('role', 'alert');
-            inputEl.setAttribute(
-                'aria-describedby',
-                hint ? `${hint.id} ${errorEl.id}` : errorEl.id,
-            );
+        const showError = (blurred: boolean) => {
+            const value = input.value.trim();
+            const message =
+                value && !input.validity.valid
+                    ? `Invalid format. Expected: ${ti.placeholder ?? 'the required value format'}`
+                    : !value && input.required && blurred
+                      ? 'Required'
+                      : '';
+            errorEl.textContent = message;
+            if (message) input.setAttribute('aria-invalid', 'true');
+            else input.removeAttribute('aria-invalid');
+        };
 
-            const showError = (blurred: boolean) => {
-                const value = inputEl.value.trim();
-                const message =
-                    value && !inputEl.validity.valid
-                        ? `Invalid format. Expected: ${ti.placeholder ?? 'the required value format'}`
-                        : !value && inputEl.required && blurred
-                          ? 'Required'
-                          : '';
-                errorEl.textContent = message;
-                if (message) inputEl.setAttribute('aria-invalid', 'true');
-                else inputEl.removeAttribute('aria-invalid');
-            };
-
-            inputEl.addEventListener('input', () => {
-                if (
-                    this._destroyed ||
-                    this.enhancedInput?.matches(':disabled, [readonly]')
-                )
-                    return;
-                showError(false);
-                this.enterValue(step, concept, inputEl);
-            });
-            inputEl.addEventListener('blur', () => showError(true));
-            inputEl.addEventListener('keydown', (e) => {
-                e.stopPropagation();
-                if (e.key === 'Enter') {
-                    e.preventDefault();
-                    this.goToStep(this.currentStep + 1);
-                }
-            });
+        input.addEventListener('input', () => {
+            if (
+                this._destroyed ||
+                this.enhancedInput?.matches(':disabled, [readonly]')
+            )
+                return;
             showError(false);
+            this.fitFormat(input);
+            this.enterValue(step, concept, input);
+        });
+        input.addEventListener('blur', () => showError(true));
+        // Enter moves on to the next step. Other keys stay in the field.
+        input.addEventListener('keydown', (e) => {
+            e.stopPropagation();
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                this.goToStep(this.currentStep + 1);
+            }
+        });
+        showError(false);
+        this.fitFormat(input);
+        return { input, after };
+    }
 
-            wrap.append(label, inputEl, ...(hint ? [hint] : []), errorEl);
-            target.appendChild(wrap);
+    /**
+     * Show a value field's expected form once: in the empty box when it fits
+     * there, or else as the line under the box while the box is empty.
+     */
+    private fitFormat(input: HTMLInputElement): void {
+        const hint = this.formatHints.get(input);
+        if (!hint) return;
+        const text = hint.textContent ?? '';
+        const fits = formatFits(input, text);
+        if (fits) input.placeholder = text;
+        else input.removeAttribute('placeholder');
+        hint.hidden = fits || input.value !== '';
+        input.setAttribute(
+            'aria-describedby',
+            [hint.hidden ? '' : hint.id, `${input.id}-error`]
+                .filter(Boolean)
+                .join(' '),
+        );
+    }
+
+    /** Fit each open value field's expected form now and as its box resizes. */
+    private fitFormats(): void {
+        this.formatObserver?.disconnect();
+        const inputs = this.stepEl.querySelectorAll<HTMLInputElement>(
+            '.ez-decision-flow__text-field',
+        );
+        if (inputs.length === 0) return;
+        if (!this.formatObserver && typeof ResizeObserver === 'function')
+            this.formatObserver = new ResizeObserver((entries) => {
+                for (const entry of entries)
+                    this.fitFormat(entry.target as HTMLInputElement);
+            });
+        for (const input of inputs) {
+            this.fitFormat(input);
+            this.formatObserver?.observe(input);
         }
     }
 
@@ -1879,7 +2133,7 @@ export class DecisionFlow extends ComponentBase {
             else this.render();
             return;
         }
-        this._focusCompanion = true;
+        this._focusValueField = true;
         if (held) {
             this.render();
             return;
@@ -1903,9 +2157,8 @@ export class DecisionFlow extends ComponentBase {
 
     private renderCheckboxOptions(step: StepDef, optionsEl: HTMLElement): void {
         const selectedIds = this.chosenIn(step);
-        const visibleConcepts = this.visibleConcepts(step);
 
-        visibleConcepts.forEach((concept) => {
+        for (const { concept, blocked } of this.stepOptions(step)) {
             const isChecked = selectedIds.has(concept.id);
             const btn = document.createElement('button');
             btn.type = 'button';
@@ -1917,7 +2170,8 @@ export class DecisionFlow extends ComponentBase {
             btn.tabIndex = 0;
             btn.textContent = concept.name;
             btn.dataset.conceptId = concept.id;
-            if (concept.description) btn.title = concept.description;
+            this.describeOption(btn, step, concept, optionsEl);
+            if (blocked) this.blockOption(btn, step, concept);
 
             btn.addEventListener('click', () => {
                 if (
@@ -1925,6 +2179,10 @@ export class DecisionFlow extends ComponentBase {
                     this.enhancedInput?.matches(':disabled, [readonly]')
                 )
                     return;
+                if (blocked) {
+                    void this.showBlockReason(step, concept);
+                    return;
+                }
                 this._restoreFocusAfterRender = true;
                 this._lastFocusConceptId = concept.id;
                 this.pick(step, concept.id, () => {
@@ -1952,8 +2210,12 @@ export class DecisionFlow extends ComponentBase {
                 this.goToStep(this.currentStep + 1);
             });
 
-            optionsEl.appendChild(btn);
-        });
+            optionsEl.appendChild(
+                concept.textInput && isChecked
+                    ? this.valueOption(step, concept, btn)
+                    : btn,
+            );
+        }
     }
 
     /**
@@ -2037,12 +2299,12 @@ export class DecisionFlow extends ComponentBase {
 
     /**
      * What the marking writes, never shortened. A flow of one scope shows it
-     * beside the dots, with its error count after it. A flow of several shows,
-     * under the step, each scope's caption (its name, then its error count) and
-     * its value under it, written in the scope's own output: a block of several
-     * lines keeps its lines. While the flow is open, the caption of the open
-     * step's scope reads as current. A value with messages opens to them on a
-     * press or Enter.
+     * beside the dots. A flow of several shows, under the step, each scope's
+     * caption and its value under it, written in the scope's own output: a
+     * block of several lines keeps its lines. While the flow is open, the
+     * caption of the open step's scope reads as current. Under a value that has
+     * something wrong, a line says what: the steps it is missing, each a way to
+     * its step, and the engine's other messages.
      */
     private renderValues(): void {
         this.restEl.replaceChildren();
@@ -2050,7 +2312,7 @@ export class DecisionFlow extends ComponentBase {
         this.valuesEl.hidden = !this.multiScope;
         if (!this.multiScope) {
             this.restEl.appendChild(
-                this.valueOf(undefined, this._lastRendered, true),
+                this.valueOf(undefined, this._lastRendered),
             );
             return;
         }
@@ -2073,48 +2335,21 @@ export class DecisionFlow extends ComponentBase {
                 caption.dataset.current = '';
                 caption.setAttribute('aria-current', 'step');
             }
-            const count = this.errorCount(scope);
-            if (count) caption.appendChild(count);
-            block.append(
-                caption,
-                this.valueOf(scope, texts?.get(scope) ?? '', false),
-            );
+            block.append(caption, this.valueOf(scope, texts?.get(scope) ?? ''));
             this.valuesEl.appendChild(block);
         }
         if (!texts && this.resultWriting !== key) void this.writeResult(key);
     }
 
-    /** "2 errors" for a scope's messages, or null when it has none. */
-    private errorCount(scope: string | undefined): HTMLElement | null {
-        const messages = this.errorsIn(scope);
-        if (messages.length === 0) return null;
-        const count = document.createElement('span');
-        count.className = 'ez-decision-flow__value-errors';
-        count.textContent =
-            messages.length === 1 ? '1 error' : `${messages.length} errors`;
-        count.title = messages.join('\n');
-        return count;
-    }
-
     /**
      * A value, whole, breaking only at spaces, its own line ends and its
-     * separators, then, while it is open, its messages.
+     * separators, then what is wrong with it, if anything.
      */
-    private valueOf(
-        scope: string | undefined,
-        text: string,
-        withCount: boolean,
-    ): HTMLElement {
+    private valueOf(scope: string | undefined, text: string): HTMLElement {
         const wrap = document.createElement('div');
         wrap.className = 'ez-decision-flow__value-wrap';
-        const messages = this.errorsIn(scope);
-        const openKey = scope ?? '';
-        const open = messages.length > 0 && this.openValues.has(openKey);
-        const line = document.createElement(
-            messages.length > 0 ? 'button' : 'div',
-        );
+        const line = document.createElement('div');
         line.className = 'ez-decision-flow__value';
-        if (messages.length > 0) line.dataset.invalid = '';
         const shown = document.createElement('span');
         shown.className = 'ez-decision-flow__value-text';
         if (text) writeBreakable(shown, text);
@@ -2123,38 +2358,68 @@ export class DecisionFlow extends ComponentBase {
             shown.dataset.empty = '';
         }
         line.appendChild(shown);
-        const count = withCount ? this.errorCount(scope) : null;
-        if (count) line.appendChild(count);
         wrap.appendChild(line);
-        if (line instanceof HTMLButtonElement) {
-            line.type = 'button';
-            line.setAttribute('aria-expanded', String(open));
-            line.addEventListener('click', () => {
-                if (this.openValues.has(openKey))
-                    this.openValues.delete(openKey);
-                else this.openValues.add(openKey);
-                this.renderValues();
-                const again = scope
-                    ? this.valuesEl.querySelector<HTMLElement>(
-                          `.ez-decision-flow__scope[data-scope="${scope}"] .ez-decision-flow__value`,
-                      )
-                    : this.restEl.querySelector<HTMLElement>(
-                          '.ez-decision-flow__value',
-                      );
-                again?.focus();
-            });
-        }
-        if (open) {
-            const list = document.createElement('ul');
-            list.className = 'ez-decision-flow__value-messages';
-            for (const message of messages) {
-                const item = document.createElement('li');
-                item.textContent = message;
-                list.appendChild(item);
-            }
-            wrap.appendChild(list);
+        const problems = this.problemsOf(scope);
+        if (problems) {
+            line.dataset.invalid = '';
+            wrap.appendChild(problems);
         }
         return wrap;
+    }
+
+    /**
+     * What is wrong with a scope's value, in words, or null when nothing is:
+     * "Missing: " and the steps the engine wants answered, each a button to its
+     * step, then each of the engine's other messages on a line of its own.
+     * While the flow is open, what the author has not reached yet is not wrong
+     * yet.
+     */
+    private problemsOf(scope: string | undefined): HTMLElement | null {
+        const due = this.steps
+            .map((step, index) => ({ step, index }))
+            .filter(({ step }) => this.stepState(step) === 'missing');
+        const missing = due.filter(
+            ({ step }) => !this.multiScope || step.scope === scope,
+        );
+        // A message that asks for a missing step is said by naming the step,
+        // under the value of the scope the step belongs to.
+        const said = new Set(
+            due.flatMap(
+                ({ step }) => this.errorsByCategory.get(step.categoryId) ?? [],
+            ),
+        );
+        const others = this.errorsIn(scope).filter((m) => !said.has(m));
+        if (missing.length === 0 && others.length === 0) return null;
+
+        const problems = document.createElement('div');
+        problems.className = 'ez-decision-flow__problems';
+        if (missing.length > 0) {
+            const line = document.createElement('div');
+            line.className = 'ez-decision-flow__missing';
+            line.append('Missing: ');
+            missing.forEach(({ step, index }, i) => {
+                if (i > 0) line.append(', ');
+                const go = document.createElement('button');
+                go.type = 'button';
+                go.className = 'ez-decision-flow__missing-step';
+                go.textContent = step.label;
+                go.addEventListener('click', () => {
+                    if (this._destroyed) return;
+                    this.dotFocus = index;
+                    this.setOpen(true);
+                    this.goToStep(index);
+                });
+                line.appendChild(go);
+            });
+            problems.appendChild(line);
+        }
+        for (const message of others) {
+            const line = document.createElement('div');
+            line.className = 'ez-decision-flow__problem';
+            line.textContent = message;
+            problems.appendChild(line);
+        }
+        return problems;
     }
 
     /**
@@ -2330,14 +2595,29 @@ function writeBreakable(el: HTMLElement, text: string): void {
 }
 
 /**
- * The form a value field expects, as a line under the field. A placeholder
- * would be cut short in a narrow field and gone once the author types.
+ * Whether `text` fits whole in the empty `input` as its placeholder. An input
+ * with no width yet (a closed step, or no layout) counts as fitting; it is
+ * measured again once it has one.
  */
-function valueHint(text: string | undefined, id: string): HTMLElement | null {
-    if (!text) return null;
-    const hint = document.createElement('div');
-    hint.className = 'ez-decision-flow__text-hint';
-    hint.id = id;
-    hint.textContent = text;
-    return hint;
+function formatFits(input: HTMLInputElement, text: string): boolean {
+    const style = getComputedStyle(input);
+    const room =
+        input.clientWidth -
+        (parseFloat(style.paddingLeft) || 0) -
+        (parseFloat(style.paddingRight) || 0);
+    if (room <= 0) return true;
+    const probe = document.createElement('span');
+    probe.style.position = 'absolute';
+    probe.style.visibility = 'hidden';
+    probe.style.whiteSpace = 'pre';
+    probe.style.fontFamily = style.fontFamily;
+    probe.style.fontSize = style.fontSize;
+    probe.style.fontWeight = style.fontWeight;
+    probe.style.fontStyle = style.fontStyle;
+    probe.style.letterSpacing = style.letterSpacing;
+    probe.textContent = text;
+    (input.parentElement ?? document.body).appendChild(probe);
+    const needed = probe.getBoundingClientRect().width;
+    probe.remove();
+    return needed <= room;
 }

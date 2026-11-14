@@ -662,300 +662,6 @@
             "method": "POST",
             "statusCode": 200
         },
-        "37384d61673e754fe2e3445bbb649264f82534607e83d8ee8b0b63bf6e0893b9": {
-            "body": {
-                "resolution": {
-                    "artifacts": [
-                        {
-                            "id": "cedar-valley",
-                            "kind": "scheme",
-                            "version": "1.0.0"
-                        },
-                        {
-                            "id": "cedar-valley-guide",
-                            "kind": "guide",
-                            "version": "1.0.0"
-                        },
-                        {
-                            "id": "cedar-valley-access",
-                            "kind": "access",
-                            "version": "1.0.0"
-                        },
-                        {
-                            "id": "cedar-valley",
-                            "kind": "context",
-                            "version": "1.0.0"
-                        }
-                    ],
-                    "contextId": "cedar-valley",
-                    "requestedVersion": "latest",
-                    "resolvedVersion": "1.0.0"
-                },
-                "result": {
-                    "suggestions": [
-                        {
-                            "categoryId": "level",
-                            "conceptId": "INTERNAL",
-                            "description": "Internal",
-                            "group": "Protection",
-                            "label": "INTERNAL",
-                            "name": "Internal",
-                            "order": 0,
-                            "selected": true,
-                            "views": {
-                                "default": "INTERNAL",
-                                "long": "INTERNAL",
-                                "short": "I"
-                            }
-                        },
-                        {
-                            "categoryId": "sensitive_content",
-                            "conceptId": "EMPLOYEE_INFORMATION",
-                            "description": "Employee information",
-                            "group": "Sensitive content",
-                            "label": "EMPLOYEE INFORMATION",
-                            "name": "Employee information",
-                            "order": 0,
-                            "selected": false,
-                            "views": {
-                                "default": "EMPLOYEE INFORMATION",
-                                "long": "EMPLOYEE INFORMATION",
-                                "short": "EMPLOYEE"
-                            }
-                        },
-                        {
-                            "categoryId": "sensitive_content",
-                            "conceptId": "FINANCIAL_INFORMATION",
-                            "description": "Financial information",
-                            "group": "Sensitive content",
-                            "label": "FINANCIAL INFORMATION",
-                            "name": "Financial information",
-                            "order": 0,
-                            "selected": false,
-                            "views": {
-                                "default": "FINANCIAL INFORMATION",
-                                "long": "FINANCIAL INFORMATION",
-                                "short": "FINANCIAL"
-                            }
-                        },
-                        {
-                            "categoryId": "sensitive_content",
-                            "conceptId": "SECURE_ASSESSMENTS",
-                            "description": "Secure assessments",
-                            "group": "Sensitive content",
-                            "label": "SECURE ASSESSMENTS",
-                            "name": "Secure assessments",
-                            "order": 0,
-                            "selected": false,
-                            "views": {
-                                "default": "SECURE ASSESSMENTS",
-                                "long": "SECURE ASSESSMENTS",
-                                "short": "ASSESSMENT"
-                            }
-                        },
-                        {
-                            "categoryId": "sensitive_content",
-                            "conceptId": "SECURITY_INFORMATION",
-                            "description": "Security information",
-                            "group": "Sensitive content",
-                            "label": "SECURITY INFORMATION",
-                            "name": "Security information",
-                            "order": 0,
-                            "selected": false,
-                            "views": {
-                                "default": "SECURITY INFORMATION",
-                                "long": "SECURITY INFORMATION",
-                                "short": "SECURITY"
-                            }
-                        },
-                        {
-                            "categoryId": "sensitive_content",
-                            "conceptId": "STUDENT_INFORMATION",
-                            "description": "Student information",
-                            "group": "Sensitive content",
-                            "label": "STUDENT INFORMATION",
-                            "name": "Student information",
-                            "order": 0,
-                            "selected": false,
-                            "views": {
-                                "default": "STUDENT INFORMATION",
-                                "long": "STUDENT INFORMATION",
-                                "short": "STUDENT"
-                            }
-                        },
-                        {
-                            "categoryId": "permitted_schools",
-                            "conceptId": "ALL",
-                            "description": "All three schools",
-                            "group": "Permitted schools",
-                            "label": "ALL",
-                            "name": "All three schools",
-                            "order": 0,
-                            "selected": false,
-                            "views": {
-                                "default": "ALL",
-                                "long": "ALL SCHOOLS",
-                                "short": "ALL"
-                            }
-                        },
-                        {
-                            "categoryId": "permitted_schools",
-                            "conceptId": "OAKWOOD",
-                            "description": "Oakwood Middle School",
-                            "group": "Permitted schools",
-                            "label": "OAKWOOD",
-                            "name": "Oakwood Middle School",
-                            "order": 0,
-                            "selected": true,
-                            "views": {
-                                "default": "OAKWOOD",
-                                "long": "OAKWOOD MIDDLE SCHOOL",
-                                "short": "OAK"
-                            }
-                        },
-                        {
-                            "categoryId": "permitted_schools",
-                            "conceptId": "PINECREST",
-                            "description": "Pinecrest Middle School",
-                            "group": "Permitted schools",
-                            "label": "PINECREST",
-                            "name": "Pinecrest Middle School",
-                            "order": 0,
-                            "selected": false,
-                            "views": {
-                                "default": "PINECREST",
-                                "long": "PINECREST MIDDLE SCHOOL",
-                                "short": "PINE"
-                            }
-                        },
-                        {
-                            "categoryId": "permitted_schools",
-                            "conceptId": "RIVERSIDE",
-                            "description": "Riverside High School",
-                            "group": "Permitted schools",
-                            "label": "RIVERSIDE",
-                            "name": "Riverside High School",
-                            "order": 0,
-                            "selected": false,
-                            "views": {
-                                "default": "RIVERSIDE",
-                                "long": "RIVERSIDE HIGH SCHOOL",
-                                "short": "RIVER"
-                            }
-                        },
-                        {
-                            "categoryId": "allow_sharing_with",
-                            "conceptId": "CEDAR_VALLEY_DISTRICT",
-                            "description": "Cedar Valley District (implicit)",
-                            "group": "Allow sharing with",
-                            "label": "CEDAR VALLEY DISTRICT",
-                            "name": "Cedar Valley District (implicit)",
-                            "order": 0,
-                            "selected": false,
-                            "views": {
-                                "default": "CEDAR VALLEY DISTRICT",
-                                "long": "CEDAR VALLEY DISTRICT",
-                                "short": "DISTRICT"
-                            }
-                        },
-                        {
-                            "categoryId": "allow_sharing_with",
-                            "conceptId": "COMMONWEALTH_EDUCATION_DEPARTMENT",
-                            "description": "Commonwealth Education Department",
-                            "group": "Allow sharing with",
-                            "label": "COMMONWEALTH EDUCATION DEPARTMENT",
-                            "name": "Commonwealth Education Department",
-                            "order": 0,
-                            "selected": false,
-                            "views": {
-                                "default": "COMMONWEALTH EDUCATION DEPARTMENT",
-                                "long": "COMMONWEALTH EDUCATION DEPARTMENT",
-                                "short": "EDUCATION DEPARTMENT"
-                            }
-                        },
-                        {
-                            "categoryId": "allow_sharing_with",
-                            "conceptId": "STUDENT_TRANSPORTATION_SERVICES",
-                            "description": "Student Transportation Services",
-                            "group": "Allow sharing with",
-                            "label": "STUDENT TRANSPORTATION SERVICES",
-                            "name": "Student Transportation Services",
-                            "order": 0,
-                            "selected": false,
-                            "views": {
-                                "default": "STUDENT TRANSPORTATION SERVICES",
-                                "long": "STUDENT TRANSPORTATION SERVICES",
-                                "short": "TRANSPORTATION"
-                            }
-                        },
-                        {
-                            "categoryId": "handling",
-                            "conceptId": "COLLECT_AFTER_USE",
-                            "description": "Collect after use",
-                            "group": "Handling",
-                            "label": "COLLECT AFTER USE",
-                            "name": "Collect after use",
-                            "order": 0,
-                            "selected": false,
-                            "views": {
-                                "default": "COLLECT AFTER USE",
-                                "long": "COLLECT AFTER USE",
-                                "short": "COLLECT"
-                            }
-                        },
-                        {
-                            "categoryId": "handling",
-                            "conceptId": "DO_NOT_FORWARD",
-                            "description": "Do not forward",
-                            "group": "Handling",
-                            "label": "DO NOT FORWARD",
-                            "name": "Do not forward",
-                            "order": 0,
-                            "selected": false,
-                            "views": {
-                                "default": "DO NOT FORWARD",
-                                "long": "DO NOT FORWARD",
-                                "short": "NO FWD"
-                            }
-                        },
-                        {
-                            "categoryId": "handling",
-                            "conceptId": "KEEP_SEALED",
-                            "description": "Keep sealed",
-                            "group": "Handling",
-                            "label": "KEEP SEALED",
-                            "name": "Keep sealed",
-                            "order": 0,
-                            "selected": false,
-                            "views": {
-                                "default": "KEEP SEALED",
-                                "long": "KEEP SEALED",
-                                "short": "SEALED"
-                            }
-                        },
-                        {
-                            "categoryId": "handling",
-                            "conceptId": "REDACT_BEFORE_RELEASE",
-                            "description": "Redact before release",
-                            "group": "Handling",
-                            "label": "REDACT BEFORE RELEASE",
-                            "name": "Redact before release",
-                            "order": 0,
-                            "selected": false,
-                            "views": {
-                                "default": "REDACT BEFORE RELEASE",
-                                "long": "REDACT BEFORE RELEASE",
-                                "short": "REDACT"
-                            }
-                        }
-                    ],
-                    "warnings": []
-                }
-            },
-            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
-            "method": "POST",
-            "statusCode": 200
-        },
         "3b9ae2fdbad6b29d5ea7301e5b9d65d7a665ef85e8e670dc1e2a5fc570adfa89": {
             "body": {
                 "access": {
@@ -3217,6 +2923,174 @@
             "method": "POST",
             "statusCode": 200
         },
+        "c23a0bffad07087293853eb7529963a36fd3dd3f4799f6c99f23354482d7299e": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "cedar-valley",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "cedar-valley-guide",
+                            "kind": "guide",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "cedar-valley-access",
+                            "kind": "access",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "cedar-valley",
+                            "kind": "context",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "cedar-valley",
+                    "requestedVersion": "latest",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [
+                        {
+                            "action": "add",
+                            "add": [
+                                {
+                                    "categoryId": "allow_sharing_with",
+                                    "conceptId": "CEDAR_VALLEY_DISTRICT"
+                                }
+                            ],
+                            "message": "Rule \"nonpublic-is-internal-by-default\": added \"CEDAR_VALLEY_DISTRICT\" to category \"allow_sharing_with\"",
+                            "ruleId": "nonpublic-is-internal-by-default",
+                            "triggerConceptIds": ["INTERNAL"]
+                        }
+                    ],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "INTERNAL",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "permitted_schools",
+                            "conceptId": "OAKWOOD",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "allow_sharing_with",
+                            "conceptId": "CEDAR_VALLEY_DISTRICT",
+                            "confidence": "inferred",
+                            "source": "infer",
+                            "sourceRule": "nonpublic-is-internal-by-default"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            { "categoryId": "level", "conceptId": "INTERNAL" },
+                            {
+                                "categoryId": "permitted_schools",
+                                "conceptId": "OAKWOOD"
+                            }
+                        ],
+                        "omitted": [
+                            {
+                                "categoryId": "allow_sharing_with",
+                                "conceptId": "CEDAR_VALLEY_DISTRICT"
+                            }
+                        ],
+                        "unrepresentable": []
+                    },
+                    "displayColor": {
+                        "background": "#1565c0",
+                        "text": "#ffffff"
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "INTERNAL//OAKWOOD",
+                    "renders": {},
+                    "suggestionsFor": {
+                        "level": {
+                            "suggestions": [
+                                {
+                                    "categoryId": "level",
+                                    "conceptId": "PUBLIC",
+                                    "description": "Public",
+                                    "group": "Protection",
+                                    "label": "PUBLIC",
+                                    "name": "Public",
+                                    "order": 0,
+                                    "selected": false,
+                                    "views": {
+                                        "default": "PUBLIC",
+                                        "long": "PUBLIC",
+                                        "short": "P"
+                                    }
+                                },
+                                {
+                                    "categoryId": "level",
+                                    "conceptId": "INTERNAL",
+                                    "description": "Internal",
+                                    "group": "Protection",
+                                    "label": "INTERNAL",
+                                    "name": "Internal",
+                                    "order": 0,
+                                    "selected": false,
+                                    "views": {
+                                        "default": "INTERNAL",
+                                        "long": "INTERNAL",
+                                        "short": "I"
+                                    }
+                                },
+                                {
+                                    "categoryId": "level",
+                                    "conceptId": "CONFIDENTIAL",
+                                    "description": "Confidential",
+                                    "group": "Protection",
+                                    "label": "CONFIDENTIAL",
+                                    "name": "Confidential",
+                                    "order": 0,
+                                    "selected": false,
+                                    "views": {
+                                        "default": "CONFIDENTIAL",
+                                        "long": "CONFIDENTIAL",
+                                        "short": "C"
+                                    }
+                                },
+                                {
+                                    "categoryId": "level",
+                                    "conceptId": "RESTRICTED",
+                                    "description": "Restricted",
+                                    "group": "Protection",
+                                    "label": "RESTRICTED",
+                                    "name": "Restricted",
+                                    "order": 0,
+                                    "selected": false,
+                                    "views": {
+                                        "default": "RESTRICTED",
+                                        "long": "RESTRICTED",
+                                        "short": "R"
+                                    }
+                                }
+                            ],
+                            "warnings": []
+                        }
+                    },
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
         "c34f8bad5e665899f1ba28dc47e8a2c3246870ae7aaebfb744efc748fbe7a3dc": {
             "body": {
                 "resolution": {
@@ -3346,6 +3220,285 @@
                     "rendered": "I//OAK",
                     "renders": {},
                     "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "ccef96a9c72a9941408b656f80c1580d279ec0559073aacffba746c4116b20dc": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "cedar-valley",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "cedar-valley-guide",
+                            "kind": "guide",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "cedar-valley-access",
+                            "kind": "access",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "cedar-valley",
+                            "kind": "context",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "cedar-valley",
+                    "requestedVersion": "latest",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "suggestions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "INTERNAL",
+                            "description": "Internal",
+                            "group": "Protection",
+                            "label": "INTERNAL",
+                            "name": "Internal",
+                            "order": 0,
+                            "selected": true,
+                            "views": {
+                                "default": "INTERNAL",
+                                "long": "INTERNAL",
+                                "short": "I"
+                            }
+                        },
+                        {
+                            "categoryId": "sensitive_content",
+                            "conceptId": "EMPLOYEE_INFORMATION",
+                            "description": "Employee information",
+                            "group": "Sensitive content",
+                            "label": "EMPLOYEE INFORMATION",
+                            "name": "Employee information",
+                            "order": 0,
+                            "selected": false,
+                            "views": {
+                                "default": "EMPLOYEE INFORMATION",
+                                "long": "EMPLOYEE INFORMATION",
+                                "short": "EMPLOYEE"
+                            }
+                        },
+                        {
+                            "categoryId": "sensitive_content",
+                            "conceptId": "FINANCIAL_INFORMATION",
+                            "description": "Financial information",
+                            "group": "Sensitive content",
+                            "label": "FINANCIAL INFORMATION",
+                            "name": "Financial information",
+                            "order": 0,
+                            "selected": false,
+                            "views": {
+                                "default": "FINANCIAL INFORMATION",
+                                "long": "FINANCIAL INFORMATION",
+                                "short": "FINANCIAL"
+                            }
+                        },
+                        {
+                            "categoryId": "sensitive_content",
+                            "conceptId": "SECURE_ASSESSMENTS",
+                            "description": "Secure assessments",
+                            "group": "Sensitive content",
+                            "label": "SECURE ASSESSMENTS",
+                            "name": "Secure assessments",
+                            "order": 0,
+                            "selected": false,
+                            "views": {
+                                "default": "SECURE ASSESSMENTS",
+                                "long": "SECURE ASSESSMENTS",
+                                "short": "ASSESSMENT"
+                            }
+                        },
+                        {
+                            "categoryId": "sensitive_content",
+                            "conceptId": "SECURITY_INFORMATION",
+                            "description": "Security information",
+                            "group": "Sensitive content",
+                            "label": "SECURITY INFORMATION",
+                            "name": "Security information",
+                            "order": 0,
+                            "selected": false,
+                            "views": {
+                                "default": "SECURITY INFORMATION",
+                                "long": "SECURITY INFORMATION",
+                                "short": "SECURITY"
+                            }
+                        },
+                        {
+                            "categoryId": "sensitive_content",
+                            "conceptId": "STUDENT_INFORMATION",
+                            "description": "Student information",
+                            "group": "Sensitive content",
+                            "label": "STUDENT INFORMATION",
+                            "name": "Student information",
+                            "order": 0,
+                            "selected": false,
+                            "views": {
+                                "default": "STUDENT INFORMATION",
+                                "long": "STUDENT INFORMATION",
+                                "short": "STUDENT"
+                            }
+                        },
+                        {
+                            "categoryId": "permitted_schools",
+                            "conceptId": "ALL",
+                            "description": "All three schools",
+                            "group": "Permitted schools",
+                            "label": "ALL",
+                            "name": "All three schools",
+                            "order": 0,
+                            "selected": false,
+                            "views": {
+                                "default": "ALL",
+                                "long": "ALL SCHOOLS",
+                                "short": "ALL"
+                            }
+                        },
+                        {
+                            "categoryId": "permitted_schools",
+                            "conceptId": "OAKWOOD",
+                            "description": "Oakwood Middle School",
+                            "group": "Permitted schools",
+                            "label": "OAKWOOD",
+                            "name": "Oakwood Middle School",
+                            "order": 0,
+                            "selected": true,
+                            "views": {
+                                "default": "OAKWOOD",
+                                "long": "OAKWOOD MIDDLE SCHOOL",
+                                "short": "OAK"
+                            }
+                        },
+                        {
+                            "categoryId": "permitted_schools",
+                            "conceptId": "PINECREST",
+                            "description": "Pinecrest Middle School",
+                            "group": "Permitted schools",
+                            "label": "PINECREST",
+                            "name": "Pinecrest Middle School",
+                            "order": 0,
+                            "selected": false,
+                            "views": {
+                                "default": "PINECREST",
+                                "long": "PINECREST MIDDLE SCHOOL",
+                                "short": "PINE"
+                            }
+                        },
+                        {
+                            "categoryId": "permitted_schools",
+                            "conceptId": "RIVERSIDE",
+                            "description": "Riverside High School",
+                            "group": "Permitted schools",
+                            "label": "RIVERSIDE",
+                            "name": "Riverside High School",
+                            "order": 0,
+                            "selected": false,
+                            "views": {
+                                "default": "RIVERSIDE",
+                                "long": "RIVERSIDE HIGH SCHOOL",
+                                "short": "RIVER"
+                            }
+                        },
+                        {
+                            "categoryId": "allow_sharing_with",
+                            "conceptId": "COMMONWEALTH_EDUCATION_DEPARTMENT",
+                            "description": "Commonwealth Education Department",
+                            "group": "Allow sharing with",
+                            "label": "COMMONWEALTH EDUCATION DEPARTMENT",
+                            "name": "Commonwealth Education Department",
+                            "order": 0,
+                            "selected": false,
+                            "views": {
+                                "default": "COMMONWEALTH EDUCATION DEPARTMENT",
+                                "long": "COMMONWEALTH EDUCATION DEPARTMENT",
+                                "short": "EDUCATION DEPARTMENT"
+                            }
+                        },
+                        {
+                            "categoryId": "allow_sharing_with",
+                            "conceptId": "STUDENT_TRANSPORTATION_SERVICES",
+                            "description": "Student Transportation Services",
+                            "group": "Allow sharing with",
+                            "label": "STUDENT TRANSPORTATION SERVICES",
+                            "name": "Student Transportation Services",
+                            "order": 0,
+                            "selected": false,
+                            "views": {
+                                "default": "STUDENT TRANSPORTATION SERVICES",
+                                "long": "STUDENT TRANSPORTATION SERVICES",
+                                "short": "TRANSPORTATION"
+                            }
+                        },
+                        {
+                            "categoryId": "handling",
+                            "conceptId": "COLLECT_AFTER_USE",
+                            "description": "Collect after use",
+                            "group": "Handling",
+                            "label": "COLLECT AFTER USE",
+                            "name": "Collect after use",
+                            "order": 0,
+                            "selected": false,
+                            "views": {
+                                "default": "COLLECT AFTER USE",
+                                "long": "COLLECT AFTER USE",
+                                "short": "COLLECT"
+                            }
+                        },
+                        {
+                            "categoryId": "handling",
+                            "conceptId": "DO_NOT_FORWARD",
+                            "description": "Do not forward",
+                            "group": "Handling",
+                            "label": "DO NOT FORWARD",
+                            "name": "Do not forward",
+                            "order": 0,
+                            "selected": false,
+                            "views": {
+                                "default": "DO NOT FORWARD",
+                                "long": "DO NOT FORWARD",
+                                "short": "NO FWD"
+                            }
+                        },
+                        {
+                            "categoryId": "handling",
+                            "conceptId": "KEEP_SEALED",
+                            "description": "Keep sealed",
+                            "group": "Handling",
+                            "label": "KEEP SEALED",
+                            "name": "Keep sealed",
+                            "order": 0,
+                            "selected": false,
+                            "views": {
+                                "default": "KEEP SEALED",
+                                "long": "KEEP SEALED",
+                                "short": "SEALED"
+                            }
+                        },
+                        {
+                            "categoryId": "handling",
+                            "conceptId": "REDACT_BEFORE_RELEASE",
+                            "description": "Redact before release",
+                            "group": "Handling",
+                            "label": "REDACT BEFORE RELEASE",
+                            "name": "Redact before release",
+                            "order": 0,
+                            "selected": false,
+                            "views": {
+                                "default": "REDACT BEFORE RELEASE",
+                                "long": "REDACT BEFORE RELEASE",
+                                "short": "REDACT"
+                            }
+                        }
+                    ],
                     "warnings": []
                 }
             },

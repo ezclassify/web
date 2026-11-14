@@ -242,8 +242,11 @@ clears but the accent sparkle stays). A fourth state,
 `.ez-status-mark--error`, overrides the other three while the field could not
 check all of its text, as when a MarkedTextArea's scan stops before the end of
 the body: the sparkle takes the error color and the popover and label lead with
-the reason. Hovering or focusing an active (non-quiet) mark lists each change the
-engine applied, once, in the engine's own words for it. Style hooks:
+the reason. Hovering or focusing an active (non-quiet) mark lists each change
+EzClassify made to the marking once, however many rules made it, in the
+engine's own words for it. The list includes the facts a rule filled in that
+the marking does not write, such as the members of a group, and it opens above
+or below the field (beside it when neither has room), never over it. Style hooks:
 `--ez-status-mark-color` for the quiet, muted glyph,
 `--ez-status-mark-strong-color` for the glyph of a mark with a message (any
 state but quiet; the field's text color on a light palette, gold on a dark

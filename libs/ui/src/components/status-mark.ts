@@ -23,23 +23,120 @@
  * and forgets what was seen, so the next fix starts unseen again. State lives
  * in-memory per mark element; there is no persistence across mounts.
  *
- * A proposed fix never changes the mark; only fixes EzClassify actually applied
+ * A proposed fix never changes the mark; only changes EzClassify actually made
  * do. Hovering (past the tooltip's hover-intent delay) or focusing an active
- * mark previews every change the engine made, each change once, in the engine's
- * own words for it (the change's `message`). Pressing it (a tap, a click, Enter
- * or Space) opens that list until a second press, Escape, or a press or focus
- * outside the field closes it; a phone has no hover, so the press is its only
- * way in. The indicator communicates state; it is not a per-fix activity feed.
+ * mark previews every change EzClassify made to what the author chose, one line
+ * per change to the marking however many rules made it, in the engine's own
+ * words for it (the change's `message`). That includes the facts a rule filled
+ * in that the marking does not write, such as the members a group stands for.
+ * Pressing it (a tap, a click, Enter or Space) opens that list until a second
+ * press, Escape, or a press or focus outside the field closes it; a phone has
+ * no hover, so the press is its only way in. The list sits outside the field's
+ * box, so it never covers what it explains. The indicator communicates state;
+ * it is not a per-fix activity feed.
  *
  * The module owns the single-mark invariant: `ensureStatusMark` is idempotent
  * per wrap element and `setStatusMarkFixes` mutates the existing mark in place,
  * so re-renders can never stack indicators.
  */
 
-import type { AssertionRef, Change } from '@ezclassify/types';
-import { attachTooltip, hideTooltip, showTooltip } from './tooltip-manager';
+import type { Assertion, AssertionRef, Change } from '@ezclassify/types';
+import {
+    attachTooltip,
+    hideTooltip,
+    showTooltip,
+    type TooltipPlacement,
+} from './tooltip-manager';
+import { derivedAssertion, takenFromWhole } from '../assertion-identity';
+import { t } from '../i18n';
 import { adoptStylesOnce } from '../styles/adopt';
 import statusMarkCss from './status-mark.css?inline';
+
+/** A concept in a category, as one string. */
+function refKey(ref: Pick<AssertionRef, 'categoryId' | 'conceptId'>): string {
+    return `${ref.categoryId}\u0000${ref.conceptId}`;
+}
+
+/**
+ * What a change did to the marking: the concepts it added and removed, in their
+ * categories. Two rules that each add the same concept made one change to the
+ * marking, so the mark explains it once. A change that adds and removes nothing
+ * (a spelling or order the reading went through) is known by what it says.
+ */
+function effectKey(change: Change): string {
+    const refs = (list: readonly AssertionRef[] | undefined) =>
+        (list ?? []).map(refKey).sort();
+    const add = refs(change.add);
+    const remove = refs(change.remove);
+    return add.length > 0 || remove.length > 0
+        ? JSON.stringify(['effect', add, remove])
+        : JSON.stringify(['note', change.action, change.message]);
+}
+
+/**
+ * Whether a scheme rule added this fact to the marking. A category's default
+ * and a value a part takes from its whole are not changes to what the author
+ * chose; they hold before the author chooses anything.
+ */
+function ruleAdded(assertion: Assertion): boolean {
+    return (
+        assertion.sourceRule !== undefined &&
+        derivedAssertion(assertion) &&
+        assertion.source !== 'default' &&
+        !takenFromWhole(assertion)
+    );
+}
+
+/**
+ * The changes a field's status mark explains for the value it holds: pass the
+ * result to {@link setStatusMarkFixes}.
+ *
+ * The engine names a fact a rule adds in `appliedFixes` only when the marking
+ * writes it. A fact the marking does not write (a group's members, when the
+ * group's name is written) arrives only as a derived assertion, so a field that
+ * shows its facts would show it changed with nothing said. Each such fact
+ * becomes one change here, in the engine's wording for an added concept. An
+ * applied change that added a concept the field no longer holds describes a
+ * value the field has moved on from, so it is left out.
+ *
+ * @param applied - The applied changes the field has recorded
+ * @param holds - The assertions the field holds now (every marking it holds,
+ *   for a field that holds several)
+ * @returns The applied changes still behind the value, then one change per
+ *   filled-in fact no applied change names
+ */
+export function explainedChanges(
+    applied: readonly Change[],
+    holds: readonly Assertion[],
+): Change[] {
+    const held = new Set(holds.map(refKey));
+    const current = applied.filter((change) =>
+        (change.add ?? []).every((ref) => held.has(refKey(ref))),
+    );
+    const explained = new Set(
+        current.flatMap((change) => (change.add ?? []).map(refKey)),
+    );
+    const filledIn: Change[] = [];
+    for (const assertion of holds) {
+        const key = refKey(assertion);
+        if (!ruleAdded(assertion) || explained.has(key)) continue;
+        explained.add(key);
+        const ref = {
+            conceptId: assertion.conceptId,
+            categoryId: assertion.categoryId,
+        };
+        filledIn.push({
+            ruleId: assertion.sourceRule!,
+            action: 'add',
+            add: [ref],
+            message: t('mark.ruleAdded')
+                .replace('{rule}', () => assertion.sourceRule!)
+                .replace('{concept}', () => ref.conceptId)
+                .replace('{category}', () => ref.categoryId),
+        });
+    }
+    return [...current, ...filledIn];
+}
 
 /**
  * A change's identity: its rule, what it did and to what, and what it says. One
@@ -101,29 +198,26 @@ type MarkState = 'quiet' | 'unseen' | 'seen' | 'error';
 /** The error each mark reports, when its field has one (see setStatusMarkError). */
 const markErrors = new WeakMap<HTMLElement, string>();
 
-/** Deduplicated applied fixes per mark element, keyed by change. */
+/** The changes each mark explains, one per effect (see effectKey). */
 const markFixes = new WeakMap<HTMLElement, Map<string, Change>>();
 
 /**
- * The fixes that have actually been shown to the user (tooltip presented, not
- * just hovered-through), as rule id to the message that was shown. A rule id
- * alone does not identify a fix: the same rule reading a different value says
- * something new, and that must not count as seen.
+ * The changes, by effect, that have actually been shown to the user (tooltip
+ * presented, not just hovered-through). The effect is the identity: a second
+ * rule making a change already shown says nothing new, and a change to another
+ * concept is new whichever rule made it.
  */
-const markAcknowledged = new WeakMap<HTMLElement, Map<string, string>>();
+const markAcknowledged = new WeakMap<HTMLElement, Set<string>>();
 
 /**
- * The fixes, rule id to message, that were actually behind the tooltip content
- * the last time it was built. The tooltip's own hover-intent delay means
- * content built at mouseenter can predate a mid-dwell reprocess; acknowledging
- * must credit only what this snapshot says was shown, never the live fix set,
- * or a fix that arrived after the hover started and was never rendered gets
+ * The changes, by effect, that were actually behind the tooltip content the
+ * last time it was built. The tooltip's own hover-intent delay means content
+ * built at mouseenter can predate a mid-dwell reprocess; acknowledging must
+ * credit only what this snapshot says was shown, never the live set, or a
+ * change that arrived after the hover started and was never rendered gets
  * marked seen anyway.
  */
-const markContentSnapshot = new WeakMap<
-    HTMLElement,
-    ReadonlyMap<string, string>
->();
+const markContentSnapshot = new WeakMap<HTMLElement, ReadonlySet<string>>();
 
 const ENHANCED_LABEL = 'Enhanced by EzClassify';
 
@@ -165,11 +259,6 @@ function prefersReducedMotion(): boolean {
     );
 }
 
-/** Each fix's message, keyed by its rule id. */
-function messagesOf(fixes: ReadonlyMap<string, Change>): Map<string, string> {
-    return new Map([...fixes].map(([id, fix]) => [id, fix.message]));
-}
-
 /** Derive the mark's current state from its fixes and acknowledgment set. */
 function deriveState(mark: HTMLElement): MarkState {
     if (markErrors.has(mark)) return 'error';
@@ -178,7 +267,7 @@ function deriveState(mark: HTMLElement): MarkState {
     const acknowledged = markAcknowledged.get(mark);
     const allSeen =
         !!acknowledged &&
-        [...fixes].every(([id, fix]) => acknowledged.get(id) === fix.message);
+        [...fixes.keys()].every((key) => acknowledged.has(key));
     return allSeen ? 'seen' : 'unseen';
 }
 
@@ -251,13 +340,37 @@ const markDismissers = new WeakMap<HTMLElement, () => void>();
 
 /** The field a mark belongs to: the library wrapper around it. */
 function fieldOf(mark: HTMLElement): HTMLElement {
+    // The suite frame (field-chrome.ts) is the box every control draws, the
+    // pickers and DecisionFlow included; the text fields' wraps hold theirs.
     return (
         mark.closest<HTMLElement>(
-            '.marking-field-wrap, .marked-input-wrap, .marked-textarea-wrap, .tag-input-wrap',
+            '.ez-field-frame, .marking-field-wrap, .marked-input-wrap, .marked-textarea-wrap, .tag-input-wrap',
         ) ??
         mark.parentElement ??
         mark
     );
+}
+
+/** The field's visible error lists: inside it, or right after it. */
+function errorListsOf(field: HTMLElement): HTMLElement[] {
+    return [
+        ...(field.parentElement?.querySelectorAll<HTMLElement>(
+            '.ez-validation-errors',
+        ) ?? []),
+    ].filter(
+        (list) =>
+            !list.hidden &&
+            (field.contains(list) || list.previousElementSibling === field),
+    );
+}
+
+/**
+ * Where the mark's popover may sit: outside the field and its error list, so it
+ * never covers what it explains (see TooltipPlacement.clearOf).
+ */
+function popoverPlacement(mark: HTMLElement): TooltipPlacement {
+    const field = fieldOf(mark);
+    return { clearOf: [field, ...errorListsOf(field)] };
 }
 
 /**
@@ -306,37 +419,25 @@ function popoverOpen(mark: HTMLElement): boolean {
 }
 
 /**
- * The popover just opened on `mark`: keep it off the field's error list (it
- * moves above the mark, or closes when there is no room), and close it when
- * focus or a press goes anywhere outside the field.
+ * The popover just opened on `mark`, placed clear of the field and its error
+ * list (see popoverPlacement). Where no room outside them was found it closes
+ * rather than cover the errors, and it closes when focus or a press goes
+ * anywhere outside the field.
  */
 function guardPopover(mark: HTMLElement): void {
     const tipId = mark.getAttribute('aria-describedby');
     const tip = tipId ? document.getElementById(tipId) : null;
     if (!tip) return;
     const field = fieldOf(mark);
-    const errors = [
-        ...(field.parentElement?.querySelectorAll<HTMLElement>(
-            '.ez-validation-errors',
-        ) ?? []),
-    ].filter(
-        (list) =>
-            !list.hidden &&
-            (field.contains(list) || list.previousElementSibling === field),
-    );
-    for (const list of errors) {
-        const a = tip.getBoundingClientRect();
+    const a = tip.getBoundingClientRect();
+    for (const list of errorListsOf(field)) {
         const b = list.getBoundingClientRect();
         const overlaps =
             a.left < b.right &&
             b.left < a.right &&
             a.top < b.bottom &&
             b.top < a.bottom;
-        if (!overlaps) continue;
-        const above = mark.getBoundingClientRect().top - a.height - 6;
-        if (above >= 8) {
-            tip.style.top = `${above}px`;
-        } else {
+        if (overlaps) {
             dismissStatusMarkPopover(mark);
             return;
         }
@@ -371,14 +472,11 @@ function acknowledgeMark(mark: HTMLElement): void {
     const shown = markContentSnapshot.get(mark);
     let acknowledged = markAcknowledged.get(mark);
     if (!acknowledged) {
-        acknowledged = new Map();
+        acknowledged = new Set();
         markAcknowledged.set(mark, acknowledged);
     }
-    const toAcknowledge = shown ?? messagesOf(fixes);
-    for (const [key, message] of toAcknowledge) {
-        if (fixes.get(key)?.message === message) {
-            acknowledged.set(key, message);
-        }
+    for (const key of shown ?? fixes.keys()) {
+        if (fixes.has(key)) acknowledged.add(key);
     }
     applyVisualState(mark, deriveState(mark));
 }
@@ -416,7 +514,7 @@ export function ensureStatusMark(
     dot.setAttribute('aria-hidden', 'true');
     mark.appendChild(dot);
     markFixes.set(mark, new Map());
-    markAcknowledged.set(mark, new Map());
+    markAcknowledged.set(mark, new Set());
 
     const content = (): string | undefined => {
         const error = markErrors.get(mark);
@@ -426,7 +524,7 @@ export function ensureStatusMark(
         // Snapshot exactly which fixes are behind this content build so
         // acknowledgeMark can credit only what actually got shown, not
         // whatever the fix set grows to before the tooltip fires.
-        markContentSnapshot.set(mark, messagesOf(fixes));
+        markContentSnapshot.set(mark, new Set(fixes.keys()));
         const lines = [...fixes.values()].map((f) => '• ' + f.message);
         return [
             ...(error !== undefined ? [error, ''] : []),
@@ -461,7 +559,9 @@ export function ensureStatusMark(
         }
         const text = mayShow() ? content() : undefined;
         if (!text) return;
-        showTooltip(mark, text, opts.root, undefined, () => collapse(mark));
+        showTooltip(mark, text, opts.root, popoverPlacement(mark), () =>
+            collapse(mark),
+        );
         expand(mark);
         shown();
     });
@@ -484,7 +584,7 @@ export function ensureStatusMark(
         // delay already filters that out before this fires.
         shown,
         undefined,
-        undefined,
+        () => popoverPlacement(mark),
         () => markPinned.has(mark) && popoverOpen(mark),
     );
     markRoot.set(mark, opts.root);
@@ -494,16 +594,20 @@ export function ensureStatusMark(
 }
 
 /**
- * Update the wrap's status mark to reflect the fixes EzClassify has applied to
- * the field's current value. An empty list returns the mark to quiet and
- * forgets what was previously shown, so a later fix starts unseen again. A
- * non-empty list that includes any fix not yet shown to the user (re)arms
- * unseen; if every current fix has already been shown, the mark reads seen.
- * Each change appears once, however many readings made it. Only fixes the
- * engine actually APPLIED belong here; proposed fixes must never be passed.
+ * Update the wrap's status mark to reflect the changes EzClassify made to the
+ * field's current value. An empty set returns the mark to quiet and forgets
+ * what was previously shown, so a later change starts unseen again. A set that
+ * includes any change not yet shown to the user (re)arms unseen; if every
+ * current change has already been shown, the mark reads seen.
+ *
+ * Each change to the marking appears once, however many readings or rules made
+ * it: two rules that add the same concept are one line, in the words of the
+ * first change listed. A field passes what {@link explainedChanges} gives for
+ * its applied fixes and what it holds, so the facts a rule filled in are
+ * explained too. Proposed fixes must never be passed.
  *
  * @param wrap - The wrapper the mark was mounted on via {@link ensureStatusMark}
- * @param fixes - Applied fixes behind the field's current value
+ * @param fixes - The changes behind the field's current value
  */
 export function setStatusMarkFixes(
     wrap: HTMLElement,
@@ -515,19 +619,20 @@ export function setStatusMarkFixes(
     // it had is out of date.
     dismissStatusMarkPopover(mark);
 
-    const deduped = new Map<string, Change>();
-    recordAppliedFixes(deduped, fixes);
-    markFixes.set(mark, deduped);
+    const changes = new Map<string, Change>();
+    for (const change of fixes) {
+        const key = effectKey(change);
+        if (!changes.has(key)) changes.set(key, change);
+    }
+    markFixes.set(mark, changes);
     // Prune acknowledgment for any change that is no longer shown, not only
     // when the set goes fully empty, so a change that drops out and comes
     // back later is unseen again. This also covers the clean-reprocess case
     // (every change drops out, so acknowledged empties).
     const acknowledged = markAcknowledged.get(mark);
     if (acknowledged) {
-        for (const [key, message] of acknowledged) {
-            if (deduped.get(key)?.message !== message) {
-                acknowledged.delete(key);
-            }
+        for (const key of acknowledged) {
+            if (!changes.has(key)) acknowledged.delete(key);
         }
     }
 

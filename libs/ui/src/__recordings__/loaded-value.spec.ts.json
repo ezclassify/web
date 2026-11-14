@@ -403,6 +403,110 @@
             "method": "POST",
             "statusCode": 200
         },
+        "1409033981ee5583d2d8bd8bc646e6e6369308ace1b319c9349fa9fe771a7e54": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "loaded-values",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "loaded-values",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "A",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "level",
+                            "conceptId": "B",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "tag",
+                            "conceptId": "X",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [
+                            {
+                                "assertions": [
+                                    { "categoryId": "level", "conceptId": "A" },
+                                    { "categoryId": "level", "conceptId": "B" }
+                                ],
+                                "field": "level"
+                            }
+                        ],
+                        "emitted": [
+                            { "categoryId": "level", "conceptId": "A" },
+                            { "categoryId": "level", "conceptId": "B" },
+                            { "categoryId": "tag", "conceptId": "X" }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [
+                        {
+                            "affectedConcepts": ["A", "B"],
+                            "constraintId": "single-category:level",
+                            "message": "Level allows one value; LEVEL A and LEVEL B were given."
+                        }
+                    ],
+                    "inputWasValid": false,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "LEVEL A/LEVEL B//TAG-X",
+                    "renders": {},
+                    "suggestionsFor": {
+                        "level": {
+                            "suggestions": [
+                                {
+                                    "categoryId": "level",
+                                    "conceptId": "A",
+                                    "description": "Level A",
+                                    "group": "Level",
+                                    "label": "LEVEL A",
+                                    "name": "Level A",
+                                    "order": 0,
+                                    "selected": false,
+                                    "views": { "default": "LEVEL A" }
+                                },
+                                {
+                                    "categoryId": "level",
+                                    "conceptId": "B",
+                                    "description": "Level B",
+                                    "group": "Level",
+                                    "label": "LEVEL B",
+                                    "name": "Level B",
+                                    "order": 0,
+                                    "selected": false,
+                                    "views": { "default": "LEVEL B" }
+                                }
+                            ],
+                            "warnings": []
+                        }
+                    },
+                    "valid": false,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
         "16e359182ddc8e88d3e6d7fecd89fd7cab9b016d2c56cc12c09e4b04d0fb0bbd": {
             "body": {
                 "resolution": {
@@ -2425,6 +2529,80 @@
             "method": "POST",
             "statusCode": 200
         },
+        "6ccf1c7f820478a2ff645f50b5269c0ff9f1163e560efab223d253fb9ac885b6": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "loaded-values",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "loaded-values",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "tag",
+                            "conceptId": "X",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [{ "categoryId": "tag", "conceptId": "X" }],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "TAG-X",
+                    "renders": {},
+                    "suggestionsFor": {
+                        "level": {
+                            "suggestions": [
+                                {
+                                    "categoryId": "level",
+                                    "conceptId": "A",
+                                    "description": "Level A",
+                                    "group": "Level",
+                                    "label": "LEVEL A",
+                                    "name": "Level A",
+                                    "order": 0,
+                                    "selected": false,
+                                    "views": { "default": "LEVEL A" }
+                                },
+                                {
+                                    "categoryId": "level",
+                                    "conceptId": "B",
+                                    "description": "Level B",
+                                    "group": "Level",
+                                    "label": "LEVEL B",
+                                    "name": "Level B",
+                                    "order": 0,
+                                    "selected": false,
+                                    "views": { "default": "LEVEL B" }
+                                }
+                            ],
+                            "warnings": []
+                        }
+                    },
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
         "6d262e673118ee7a9b79e68f1857f138e51bccdd0cdcdb659eeb42c112aa98cd": {
             "body": {
                 "resolution": {
@@ -4388,6 +4566,89 @@
             "method": "GET",
             "statusCode": 200
         },
+        "e0e0c4b7eebf443900c305ff3dd3c86f6927fb72e86197bb8690bd0ead9aa402": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "loaded-values",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "loaded-values",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "A",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "tag",
+                            "conceptId": "X",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            { "categoryId": "level", "conceptId": "A" },
+                            { "categoryId": "tag", "conceptId": "X" }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "LEVEL A//TAG-X",
+                    "renders": {},
+                    "suggestionsFor": {
+                        "level": {
+                            "suggestions": [
+                                {
+                                    "categoryId": "level",
+                                    "conceptId": "A",
+                                    "description": "Level A",
+                                    "group": "Level",
+                                    "label": "LEVEL A",
+                                    "name": "Level A",
+                                    "order": 0,
+                                    "selected": false,
+                                    "views": { "default": "LEVEL A" }
+                                },
+                                {
+                                    "categoryId": "level",
+                                    "conceptId": "B",
+                                    "description": "Level B",
+                                    "group": "Level",
+                                    "label": "LEVEL B",
+                                    "name": "Level B",
+                                    "order": 0,
+                                    "selected": false,
+                                    "views": { "default": "LEVEL B" }
+                                }
+                            ],
+                            "warnings": []
+                        }
+                    },
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
         "e1fb87771fc57a07ac97de12c02cba685379649128097d2d551a0543fc9ec68a": {
             "body": {
                 "resolution": {
@@ -4606,6 +4867,89 @@
                     "rendered": "TAG-X//BOGUS-TOKEN",
                     "renders": {},
                     "valid": false,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "ee1650fa25ae6fb7a7d77fb653de798f408b00fb05b2dd9b1ec10c2d5b2a8664": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "loaded-values",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "loaded-values",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "B",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "tag",
+                            "conceptId": "X",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            { "categoryId": "level", "conceptId": "B" },
+                            { "categoryId": "tag", "conceptId": "X" }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "LEVEL B//TAG-X",
+                    "renders": {},
+                    "suggestionsFor": {
+                        "level": {
+                            "suggestions": [
+                                {
+                                    "categoryId": "level",
+                                    "conceptId": "A",
+                                    "description": "Level A",
+                                    "group": "Level",
+                                    "label": "LEVEL A",
+                                    "name": "Level A",
+                                    "order": 0,
+                                    "selected": false,
+                                    "views": { "default": "LEVEL A" }
+                                },
+                                {
+                                    "categoryId": "level",
+                                    "conceptId": "B",
+                                    "description": "Level B",
+                                    "group": "Level",
+                                    "label": "LEVEL B",
+                                    "name": "Level B",
+                                    "order": 0,
+                                    "selected": false,
+                                    "views": { "default": "LEVEL B" }
+                                }
+                            ],
+                            "warnings": []
+                        }
+                    },
+                    "valid": true,
                     "warnings": []
                 }
             },

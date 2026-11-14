@@ -242,6 +242,14 @@ describe('CategorySelector', () => {
                     confidence: 'certain' as const,
                     source: 'user' as const,
                 },
+                // What the fix added is in the marking.
+                {
+                    conceptId: 'x',
+                    categoryId,
+                    confidence: 'inferred' as const,
+                    source: 'infer' as const,
+                    sourceRule: `adds-${categoryId}`,
+                },
             ],
             appliedFixes: [
                 {

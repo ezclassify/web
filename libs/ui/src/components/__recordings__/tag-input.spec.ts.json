@@ -2,6 +2,89 @@
     "engineVersion": "1.0.0-dev.30",
     "openapiVersion": "1.0.0-dev.30",
     "responses": {
+        "01231344a0279f95b466f9bd781627f07d50912f7720a25dae637d8151225589": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "ti-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "ti-test",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "U",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "caveat",
+                            "conceptId": "NF",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            { "categoryId": "level", "conceptId": "U" },
+                            { "categoryId": "caveat", "conceptId": "NF" }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "UNCLASSIFIED//NOFORN",
+                    "renders": {},
+                    "suggestionsFor": {
+                        "level": {
+                            "suggestions": [
+                                {
+                                    "categoryId": "level",
+                                    "conceptId": "U",
+                                    "description": "Unclassified",
+                                    "group": "Level",
+                                    "label": "UNCLASSIFIED",
+                                    "name": "Unclassified",
+                                    "order": 1,
+                                    "selected": false,
+                                    "views": { "default": "UNCLASSIFIED" }
+                                },
+                                {
+                                    "categoryId": "level",
+                                    "conceptId": "S",
+                                    "description": "Secret",
+                                    "group": "Level",
+                                    "label": "SECRET",
+                                    "name": "Secret",
+                                    "order": 2,
+                                    "selected": false,
+                                    "views": { "default": "SECRET" }
+                                }
+                            ],
+                            "warnings": []
+                        }
+                    },
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
         "0178fc61719d378d4093e6a814d570281dd6c8308ba338b724a7be4e55d73689": {
             "body": {
                 "resolution": {
@@ -120,6 +203,161 @@
                             "views": { "default": "REL" }
                         }
                     ],
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "0a3cb4a087a576f24cd549143bb3a1d90b4104e537dbe19cd6894dce1bf094e3": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "ti-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "ti-test",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "S",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "caveat",
+                            "conceptId": "NF",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            { "categoryId": "level", "conceptId": "S" },
+                            { "categoryId": "caveat", "conceptId": "NF" }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "SECRET//NOFORN",
+                    "renders": {},
+                    "suggestionsFor": {
+                        "level": {
+                            "suggestions": [
+                                {
+                                    "categoryId": "level",
+                                    "conceptId": "U",
+                                    "description": "Unclassified",
+                                    "group": "Level",
+                                    "label": "UNCLASSIFIED",
+                                    "name": "Unclassified",
+                                    "order": 1,
+                                    "selected": false,
+                                    "views": { "default": "UNCLASSIFIED" }
+                                },
+                                {
+                                    "categoryId": "level",
+                                    "conceptId": "S",
+                                    "description": "Secret",
+                                    "group": "Level",
+                                    "label": "SECRET",
+                                    "name": "Secret",
+                                    "order": 2,
+                                    "selected": false,
+                                    "views": { "default": "SECRET" }
+                                }
+                            ],
+                            "warnings": []
+                        }
+                    },
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "0e383f6fbbab8fb88b790c39c403062d281b45f0a92cc6317d3bdba6f2597483": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "ti-fav-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "ti-fav-test",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "S",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "caveat",
+                            "conceptId": "NF",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            { "categoryId": "level", "conceptId": "S" },
+                            { "categoryId": "caveat", "conceptId": "NF" }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "SECRET//NOFORN",
+                    "renders": {},
+                    "suggestionsFor": {
+                        "level": {
+                            "suggestions": [
+                                {
+                                    "categoryId": "level",
+                                    "conceptId": "S",
+                                    "description": "Secret",
+                                    "group": "Level",
+                                    "label": "SECRET",
+                                    "name": "Secret",
+                                    "order": 1,
+                                    "selected": false,
+                                    "views": { "default": "SECRET" }
+                                }
+                            ],
+                            "warnings": []
+                        }
+                    },
+                    "valid": true,
                     "warnings": []
                 }
             },
@@ -555,6 +793,109 @@
                     },
                     "rendered": "SECRET",
                     "renders": {},
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "28789ac7c1091ca28da2f0d1b9a45202c72c1d2a582cc76685c496722015db85": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "ti-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "ti-test",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "S",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "caveat",
+                            "conceptId": "REL",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "rel_countries",
+                            "conceptId": "USA",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "rel_countries",
+                            "conceptId": "GBR",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            { "categoryId": "level", "conceptId": "S" },
+                            { "categoryId": "caveat", "conceptId": "REL" },
+                            {
+                                "categoryId": "rel_countries",
+                                "conceptId": "USA"
+                            },
+                            {
+                                "categoryId": "rel_countries",
+                                "conceptId": "GBR"
+                            }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "SECRET//REL//USA/GBR",
+                    "renders": {},
+                    "suggestionsFor": {
+                        "level": {
+                            "suggestions": [
+                                {
+                                    "categoryId": "level",
+                                    "conceptId": "U",
+                                    "description": "Unclassified",
+                                    "group": "Level",
+                                    "label": "UNCLASSIFIED",
+                                    "name": "Unclassified",
+                                    "order": 1,
+                                    "selected": false,
+                                    "views": { "default": "UNCLASSIFIED" }
+                                },
+                                {
+                                    "categoryId": "level",
+                                    "conceptId": "S",
+                                    "description": "Secret",
+                                    "group": "Level",
+                                    "label": "SECRET",
+                                    "name": "Secret",
+                                    "order": 2,
+                                    "selected": false,
+                                    "views": { "default": "SECRET" }
+                                }
+                            ],
+                            "warnings": []
+                        }
+                    },
                     "valid": true,
                     "warnings": []
                 }
@@ -1526,6 +1867,71 @@
             "method": "POST",
             "statusCode": 200
         },
+        "89571260222857ead1f64c43fe2c3734326f7495f5a0cb0799e71bcc9edbd0da": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "ti-fav-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "ti-fav-test",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "S",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            { "categoryId": "level", "conceptId": "S" }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "SECRET",
+                    "renders": {},
+                    "suggestionsFor": {
+                        "level": {
+                            "suggestions": [
+                                {
+                                    "categoryId": "level",
+                                    "conceptId": "S",
+                                    "description": "Secret",
+                                    "group": "Level",
+                                    "label": "SECRET",
+                                    "name": "Secret",
+                                    "order": 1,
+                                    "selected": false,
+                                    "views": { "default": "SECRET" }
+                                }
+                            ],
+                            "warnings": []
+                        }
+                    },
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
         "8e4321ceab83fd28b993db71036b3495720a64eebb3c40ef9d0b545a2c959079": {
             "body": {
                 "resolution": {
@@ -1829,6 +2235,96 @@
             "method": "POST",
             "statusCode": 200
         },
+        "a0815b789d4526273afdd6ff592402a17ff1fa7cfc52a5f3347c593773656bae": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "ti-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "ti-test",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "S",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "caveat",
+                            "conceptId": "NF",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "caveat",
+                            "conceptId": "ORCON",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            { "categoryId": "level", "conceptId": "S" },
+                            { "categoryId": "caveat", "conceptId": "NF" },
+                            { "categoryId": "caveat", "conceptId": "ORCON" }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "SECRET//NOFORN/ORCON",
+                    "renders": {},
+                    "suggestionsFor": {
+                        "level": {
+                            "suggestions": [
+                                {
+                                    "categoryId": "level",
+                                    "conceptId": "U",
+                                    "description": "Unclassified",
+                                    "group": "Level",
+                                    "label": "UNCLASSIFIED",
+                                    "name": "Unclassified",
+                                    "order": 1,
+                                    "selected": false,
+                                    "views": { "default": "UNCLASSIFIED" }
+                                },
+                                {
+                                    "categoryId": "level",
+                                    "conceptId": "S",
+                                    "description": "Secret",
+                                    "group": "Level",
+                                    "label": "SECRET",
+                                    "name": "Secret",
+                                    "order": 2,
+                                    "selected": false,
+                                    "views": { "default": "SECRET" }
+                                }
+                            ],
+                            "warnings": []
+                        }
+                    },
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
         "a0bc814191873db0084a0c5467ede78421dd2f9035a544f45029a795a2f87558": {
             "body": {
                 "resolution": {
@@ -1928,6 +2424,158 @@
                             "views": { "default": "REL" }
                         }
                     ],
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "a3e22cae7fa399664e7004d3c9971b56052a7b986c45f673eb12933b6409c53b": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "ti-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "ti-test",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "S",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            { "categoryId": "level", "conceptId": "S" }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "SECRET",
+                    "renders": {},
+                    "suggestionsFor": {
+                        "level": {
+                            "suggestions": [
+                                {
+                                    "categoryId": "level",
+                                    "conceptId": "U",
+                                    "description": "Unclassified",
+                                    "group": "Level",
+                                    "label": "UNCLASSIFIED",
+                                    "name": "Unclassified",
+                                    "order": 1,
+                                    "selected": false,
+                                    "views": { "default": "UNCLASSIFIED" }
+                                },
+                                {
+                                    "categoryId": "level",
+                                    "conceptId": "S",
+                                    "description": "Secret",
+                                    "group": "Level",
+                                    "label": "SECRET",
+                                    "name": "Secret",
+                                    "order": 2,
+                                    "selected": false,
+                                    "views": { "default": "SECRET" }
+                                }
+                            ],
+                            "warnings": []
+                        }
+                    },
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "a43cd73b5083a82e10dad3093066a3b61caaa58de7435f841939c872b011f13b": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "ti-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "ti-test",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "S",
+                            "confidence": "certain",
+                            "source": "user"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            { "categoryId": "level", "conceptId": "S" }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "SECRET",
+                    "renders": {},
+                    "suggestionsFor": {
+                        "level": {
+                            "suggestions": [
+                                {
+                                    "categoryId": "level",
+                                    "conceptId": "U",
+                                    "description": "Unclassified",
+                                    "group": "Level",
+                                    "label": "UNCLASSIFIED",
+                                    "name": "Unclassified",
+                                    "order": 1,
+                                    "selected": false,
+                                    "views": { "default": "UNCLASSIFIED" }
+                                },
+                                {
+                                    "categoryId": "level",
+                                    "conceptId": "S",
+                                    "description": "Secret",
+                                    "group": "Level",
+                                    "label": "SECRET",
+                                    "name": "Secret",
+                                    "order": 2,
+                                    "selected": false,
+                                    "views": { "default": "SECRET" }
+                                }
+                            ],
+                            "warnings": []
+                        }
+                    },
+                    "valid": true,
                     "warnings": []
                 }
             },

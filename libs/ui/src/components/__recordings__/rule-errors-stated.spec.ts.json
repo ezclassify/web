@@ -1347,6 +1347,89 @@
             "method": "GET",
             "statusCode": 200
         },
+        "97567e475f189728b43894bb2f730a24f9573328369c125e236d908e57e23e11": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "stated-fix-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "stated-fix-test",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "LOW",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "caveat",
+                            "conceptId": "A",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            { "categoryId": "level", "conceptId": "LOW" },
+                            { "categoryId": "caveat", "conceptId": "A" }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "LOW//A",
+                    "renders": {},
+                    "suggestionsFor": {
+                        "level": {
+                            "suggestions": [
+                                {
+                                    "categoryId": "level",
+                                    "conceptId": "LOW",
+                                    "description": "",
+                                    "group": "Level",
+                                    "label": "LOW",
+                                    "name": "LOW",
+                                    "order": 1,
+                                    "selected": false,
+                                    "views": { "default": "LOW" }
+                                },
+                                {
+                                    "categoryId": "level",
+                                    "conceptId": "HIGH",
+                                    "description": "",
+                                    "group": "Level",
+                                    "label": "HIGH",
+                                    "name": "HIGH",
+                                    "order": 2,
+                                    "selected": false,
+                                    "views": { "default": "HIGH" }
+                                }
+                            ],
+                            "warnings": []
+                        }
+                    },
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
         "9a5aff49b50c604f1e628a9cca65d45f1c496b31e9f89c00af8ce93178ce6813": {
             "body": {
                 "resolution": {
@@ -1678,6 +1761,129 @@
             "method": "POST",
             "statusCode": 200
         },
+        "b4080b7f7ede60a7f77cae955075b3e94e512f87e9f6c13ea92a7f09fed53649": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "stated-fix-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "stated-fix-test",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "LOW",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "caveat",
+                            "conceptId": "A",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "caveat",
+                            "conceptId": "C",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            { "categoryId": "level", "conceptId": "LOW" },
+                            { "categoryId": "caveat", "conceptId": "A" },
+                            { "categoryId": "caveat", "conceptId": "C" }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [
+                        {
+                            "affectedConcepts": ["HIGH"],
+                            "constraintId": "c-requires-high",
+                            "message": "C requires HIGH."
+                        }
+                    ],
+                    "inputWasValid": false,
+                    "notices": [],
+                    "proposedFixes": [
+                        {
+                            "adds": [
+                                { "categoryId": "level", "conceptId": "HIGH" }
+                            ],
+                            "keeps": [
+                                { "categoryId": "caveat", "conceptId": "A" },
+                                { "categoryId": "caveat", "conceptId": "C" }
+                            ],
+                            "message": "Replace LOW with HIGH.",
+                            "removes": [
+                                { "categoryId": "level", "conceptId": "LOW" }
+                            ],
+                            "rendered": "HIGH//A/C"
+                        },
+                        {
+                            "adds": [],
+                            "keeps": [
+                                { "categoryId": "level", "conceptId": "LOW" },
+                                { "categoryId": "caveat", "conceptId": "A" }
+                            ],
+                            "message": "Remove C.",
+                            "removes": [
+                                { "categoryId": "caveat", "conceptId": "C" }
+                            ],
+                            "rendered": "LOW//A"
+                        }
+                    ],
+                    "rendered": "LOW//A/C",
+                    "renders": {},
+                    "suggestionsFor": {
+                        "level": {
+                            "suggestions": [
+                                {
+                                    "categoryId": "level",
+                                    "conceptId": "LOW",
+                                    "description": "",
+                                    "group": "Level",
+                                    "label": "LOW",
+                                    "name": "LOW",
+                                    "order": 1,
+                                    "selected": false,
+                                    "views": { "default": "LOW" }
+                                },
+                                {
+                                    "categoryId": "level",
+                                    "conceptId": "HIGH",
+                                    "description": "",
+                                    "group": "Level",
+                                    "label": "HIGH",
+                                    "name": "HIGH",
+                                    "order": 2,
+                                    "selected": false,
+                                    "views": { "default": "HIGH" }
+                                }
+                            ],
+                            "warnings": []
+                        }
+                    },
+                    "valid": false,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
         "b5a4e0209d0124c42adfd3fcb318705bf689f26bf16a6a5edca8ec5835351b1d": {
             "body": {
                 "resolution": {
@@ -1947,6 +2153,130 @@
                 "status": "ok"
             },
             "method": "GET",
+            "statusCode": 200
+        },
+        "f15cf77a08c8282d0fb16f5f5f051b4d292d1695e24e98dc0a90d2a2caf9f047": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "stated-fix-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "stated-fix-test",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "LOW",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "caveat",
+                            "conceptId": "A",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "caveat",
+                            "conceptId": "B",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "caveat",
+                            "conceptId": "C",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            { "categoryId": "level", "conceptId": "LOW" },
+                            { "categoryId": "caveat", "conceptId": "A" },
+                            { "categoryId": "caveat", "conceptId": "B" },
+                            { "categoryId": "caveat", "conceptId": "C" }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [
+                        {
+                            "affectedConcepts": ["A", "B"],
+                            "constraintId": "a-over-b",
+                            "message": "A and B cannot appear together."
+                        },
+                        {
+                            "affectedConcepts": ["HIGH"],
+                            "constraintId": "c-requires-high",
+                            "message": "C requires HIGH."
+                        }
+                    ],
+                    "inputWasValid": false,
+                    "notices": [],
+                    "proposedFixes": [
+                        {
+                            "adds": [
+                                { "categoryId": "level", "conceptId": "HIGH" }
+                            ],
+                            "keeps": [
+                                { "categoryId": "caveat", "conceptId": "B" },
+                                { "categoryId": "caveat", "conceptId": "C" }
+                            ],
+                            "message": "Replace LOW with HIGH and remove A.",
+                            "removes": [
+                                { "categoryId": "level", "conceptId": "LOW" },
+                                { "categoryId": "caveat", "conceptId": "A" }
+                            ],
+                            "rendered": "HIGH//B/C"
+                        }
+                    ],
+                    "rendered": "LOW//A/B/C",
+                    "renders": {},
+                    "suggestionsFor": {
+                        "level": {
+                            "suggestions": [
+                                {
+                                    "categoryId": "level",
+                                    "conceptId": "LOW",
+                                    "description": "",
+                                    "group": "Level",
+                                    "label": "LOW",
+                                    "name": "LOW",
+                                    "order": 1,
+                                    "selected": false,
+                                    "views": { "default": "LOW" }
+                                },
+                                {
+                                    "categoryId": "level",
+                                    "conceptId": "HIGH",
+                                    "description": "",
+                                    "group": "Level",
+                                    "label": "HIGH",
+                                    "name": "HIGH",
+                                    "order": 2,
+                                    "selected": false,
+                                    "views": { "default": "HIGH" }
+                                }
+                            ],
+                            "warnings": []
+                        }
+                    },
+                    "valid": false,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
             "statusCode": 200
         },
         "f6118b64de33947b6a81cbb7e098ea8c2476eab27d728fe8ccc214c3b16c2a28": {

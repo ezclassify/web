@@ -102,69 +102,6 @@
             "method": "POST",
             "statusCode": 200
         },
-        "0c93510ef8881de65f0563cbcc13c011f4c489dd4ffffd096ce42cd2b2f29a3e": {
-            "body": {
-                "resolution": {
-                    "artifacts": [
-                        {
-                            "id": "surfaces",
-                            "kind": "scheme",
-                            "version": "1.0.0"
-                        }
-                    ],
-                    "contextId": "surfaces",
-                    "requestedVersion": "0.0.0",
-                    "resolvedVersion": "1.0.0"
-                },
-                "result": {
-                    "suggestions": [
-                        {
-                            "categoryId": "level",
-                            "conceptId": "INTERNAL",
-                            "description": "Internal",
-                            "group": "Level",
-                            "label": "INTERNAL",
-                            "name": "Internal",
-                            "order": 1,
-                            "selected": false,
-                            "views": {
-                                "abbreviated": "INT",
-                                "default": "INTERNAL"
-                            }
-                        },
-                        {
-                            "categoryId": "level",
-                            "conceptId": "CONFIDENTIAL",
-                            "description": "Confidential",
-                            "group": "Level",
-                            "label": "CONFIDENTIAL",
-                            "name": "Confidential",
-                            "order": 2,
-                            "selected": false,
-                            "views": {
-                                "abbreviated": "CONF",
-                                "default": "CONFIDENTIAL"
-                            }
-                        },
-                        {
-                            "categoryId": "sharing",
-                            "conceptId": "PARTNERS",
-                            "description": "Shared with partners",
-                            "group": "Sharing",
-                            "label": "PARTNERS",
-                            "name": "Shared with partners",
-                            "order": 3,
-                            "selected": true,
-                            "views": { "default": "PARTNERS" }
-                        }
-                    ],
-                    "warnings": []
-                }
-            },
-            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
-            "method": "POST",
-            "statusCode": 200
-        },
         "169b1edb99b976c059bb30d4479dd12bba9d85b49731085ddf4385dd8188ca60": {
             "body": {
                 "resolution": {
@@ -501,6 +438,123 @@
             "method": "GET",
             "statusCode": 200
         },
+        "2399d58bf68b1a84837095363ac7249235675dd9e590669c4e53aeb8709fd425": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "surfaces",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "surfaces",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "CONFIDENTIAL",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "sharing",
+                            "conceptId": "PARTNERS",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "keep",
+                            "conceptId": "KEEP_7Y",
+                            "confidence": "certain",
+                            "source": "user"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            {
+                                "categoryId": "level",
+                                "conceptId": "CONFIDENTIAL"
+                            },
+                            { "categoryId": "sharing", "conceptId": "PARTNERS" }
+                        ],
+                        "omitted": [
+                            { "categoryId": "keep", "conceptId": "KEEP_7Y" }
+                        ],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "CONFIDENTIAL // PARTNERS",
+                    "renders": {},
+                    "suggestionsFor": {
+                        "keep": { "suggestions": [], "warnings": [] },
+                        "level": {
+                            "suggestions": [
+                                {
+                                    "categoryId": "level",
+                                    "conceptId": "INTERNAL",
+                                    "description": "Internal",
+                                    "group": "Level",
+                                    "label": "INTERNAL",
+                                    "name": "Internal",
+                                    "order": 1,
+                                    "selected": false,
+                                    "views": {
+                                        "abbreviated": "INT",
+                                        "default": "INTERNAL"
+                                    }
+                                },
+                                {
+                                    "categoryId": "level",
+                                    "conceptId": "CONFIDENTIAL",
+                                    "description": "Confidential",
+                                    "group": "Level",
+                                    "label": "CONFIDENTIAL",
+                                    "name": "Confidential",
+                                    "order": 2,
+                                    "selected": false,
+                                    "views": {
+                                        "abbreviated": "CONF",
+                                        "default": "CONFIDENTIAL"
+                                    }
+                                }
+                            ],
+                            "warnings": []
+                        },
+                        "sharing": {
+                            "suggestions": [
+                                {
+                                    "categoryId": "sharing",
+                                    "conceptId": "PARTNERS",
+                                    "description": "Shared with partners",
+                                    "group": "Sharing",
+                                    "label": "PARTNERS",
+                                    "name": "Shared with partners",
+                                    "order": 3,
+                                    "selected": false,
+                                    "views": { "default": "PARTNERS" }
+                                }
+                            ],
+                            "warnings": []
+                        }
+                    },
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
         "27129248682e0e7e59d43030c12f03b3dcab1d69f6824a972d63babdf75c9638": {
             "body": {
                 "resolution": {
@@ -614,55 +668,6 @@
                         }
                     },
                     "valid": true,
-                    "warnings": []
-                }
-            },
-            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
-            "method": "POST",
-            "statusCode": 200
-        },
-        "2a63fbd231ccc2f8f47ffdc9b6a4e5898b0ef5a09005d61aef1ea2f87703d6de": {
-            "body": {
-                "resolution": {
-                    "artifacts": [
-                        {
-                            "id": "surfaces",
-                            "kind": "scheme",
-                            "version": "1.0.0"
-                        }
-                    ],
-                    "contextId": "surfaces",
-                    "requestedVersion": "0.0.0",
-                    "resolvedVersion": "1.0.0"
-                },
-                "result": {
-                    "suggestions": [
-                        {
-                            "categoryId": "level",
-                            "conceptId": "CONFIDENTIAL",
-                            "description": "Confidential",
-                            "group": "Level",
-                            "label": "CONFIDENTIAL",
-                            "name": "Confidential",
-                            "order": 2,
-                            "selected": true,
-                            "views": {
-                                "abbreviated": "CONF",
-                                "default": "CONFIDENTIAL"
-                            }
-                        },
-                        {
-                            "categoryId": "sharing",
-                            "conceptId": "PARTNERS",
-                            "description": "Shared with partners",
-                            "group": "Sharing",
-                            "label": "PARTNERS",
-                            "name": "Shared with partners",
-                            "order": 3,
-                            "selected": true,
-                            "views": { "default": "PARTNERS" }
-                        }
-                    ],
                     "warnings": []
                 }
             },
@@ -1091,6 +1096,110 @@
                     "rendered": "",
                     "renders": {},
                     "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "68804b896bdbfb8e2658983fd5c75d4e37d6e8ed8fa8ed715d1303ba95b633af": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "surfaces",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "surfaces",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "sharing",
+                            "conceptId": "PARTNERS",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            { "categoryId": "sharing", "conceptId": "PARTNERS" }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [
+                        {
+                            "constraintId": "required-category:level",
+                            "message": "Level is required: the marking asserts no concept in this category"
+                        }
+                    ],
+                    "inputWasValid": false,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "PARTNERS",
+                    "renders": {},
+                    "suggestionsFor": {
+                        "keep": { "suggestions": [], "warnings": [] },
+                        "level": {
+                            "suggestions": [
+                                {
+                                    "categoryId": "level",
+                                    "conceptId": "INTERNAL",
+                                    "description": "Internal",
+                                    "group": "Level",
+                                    "label": "INTERNAL",
+                                    "name": "Internal",
+                                    "order": 1,
+                                    "selected": false,
+                                    "views": {
+                                        "abbreviated": "INT",
+                                        "default": "INTERNAL"
+                                    }
+                                },
+                                {
+                                    "categoryId": "level",
+                                    "conceptId": "CONFIDENTIAL",
+                                    "description": "Confidential",
+                                    "group": "Level",
+                                    "label": "CONFIDENTIAL",
+                                    "name": "Confidential",
+                                    "order": 2,
+                                    "selected": false,
+                                    "views": {
+                                        "abbreviated": "CONF",
+                                        "default": "CONFIDENTIAL"
+                                    }
+                                }
+                            ],
+                            "warnings": []
+                        },
+                        "sharing": {
+                            "suggestions": [
+                                {
+                                    "categoryId": "sharing",
+                                    "conceptId": "PARTNERS",
+                                    "description": "Shared with partners",
+                                    "group": "Sharing",
+                                    "label": "PARTNERS",
+                                    "name": "Shared with partners",
+                                    "order": 3,
+                                    "selected": false,
+                                    "views": { "default": "PARTNERS" }
+                                }
+                            ],
+                            "warnings": []
+                        }
+                    },
+                    "valid": false,
                     "warnings": []
                 }
             },

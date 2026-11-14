@@ -17,6 +17,8 @@ export const defaultLocale = {
     'mark.warningLabel': 'Marking has a warning: {messages} Activate to edit.',
     'mark.scanIncomplete':
         'The scan did not read the whole text, so some markings were not checked.',
+    'mark.ruleAdded':
+        'Rule "{rule}": added "{concept}" to category "{category}"',
     'rollup.incomplete':
         'Some markings were not read, so this marking may be incomplete.',
     'banner.noMarking': 'No marking',

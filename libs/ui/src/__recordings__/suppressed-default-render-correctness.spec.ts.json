@@ -181,6 +181,323 @@
             "method": "GET",
             "statusCode": 200
         },
+        "2dc93878ff497f1bfabcabee084009931ab0d1f1d03e53c0c8989864fc38b2eb": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "multi-scope-regression",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "multi-scope-regression",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "STATE_ASSESSMENT_STAFF",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "from_school",
+                            "conceptId": "OUR_SCHOOL",
+                            "confidence": "certain",
+                            "source": "default"
+                        },
+                        {
+                            "categoryId": "filing_status",
+                            "conceptId": "FILED",
+                            "confidence": "certain",
+                            "source": "default"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            {
+                                "categoryId": "level",
+                                "conceptId": "STATE_ASSESSMENT_STAFF"
+                            }
+                        ],
+                        "omitted": [
+                            {
+                                "categoryId": "from_school",
+                                "conceptId": "OUR_SCHOOL"
+                            },
+                            {
+                                "categoryId": "filing_status",
+                                "conceptId": "FILED"
+                            }
+                        ],
+                        "unrepresentable": []
+                    },
+                    "displayColor": {
+                        "background": "#ff8c00",
+                        "text": "#000000"
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [
+                        {
+                            "conceptId": "STATE_ASSESSMENT_STAFF",
+                            "conceptName": "State Assessment Staff",
+                            "required": true,
+                            "text": "Record access according to the state assessment program’s procedures.",
+                            "type": "admonition"
+                        }
+                    ],
+                    "proposedFixes": [],
+                    "rendered": "STATE ASSESSMENT STAFF",
+                    "renders": {},
+                    "suggestionsFor": {
+                        "comes_from": { "suggestions": [], "warnings": [] },
+                        "filing_status": {
+                            "suggestions": [
+                                {
+                                    "categoryId": "filing_status",
+                                    "conceptId": "FILED",
+                                    "description": "Filed",
+                                    "group": "Filing",
+                                    "label": "FILED",
+                                    "name": "Filed",
+                                    "order": 0,
+                                    "selected": false,
+                                    "views": {
+                                        "default": "FILED",
+                                        "short": "FILED"
+                                    }
+                                },
+                                {
+                                    "categoryId": "filing_status",
+                                    "conceptId": "NOT_FILED",
+                                    "description": "Not Filed",
+                                    "group": "Filing",
+                                    "label": "NOT FILED",
+                                    "name": "Not Filed",
+                                    "order": 0,
+                                    "selected": false,
+                                    "views": {
+                                        "default": "NOT FILED",
+                                        "short": "NOT FILED"
+                                    }
+                                }
+                            ],
+                            "warnings": []
+                        },
+                        "from_school": {
+                            "suggestions": [
+                                {
+                                    "categoryId": "from_school",
+                                    "conceptId": "HILLTOP",
+                                    "description": "Hilltop",
+                                    "group": "From School",
+                                    "label": "HILLTOP",
+                                    "name": "Hilltop",
+                                    "order": 0,
+                                    "selected": false,
+                                    "views": {
+                                        "default": "HILLTOP",
+                                        "long": "HILLTOP",
+                                        "short": "HILL"
+                                    }
+                                },
+                                {
+                                    "categoryId": "from_school",
+                                    "conceptId": "LINCOLN",
+                                    "description": "Lincoln",
+                                    "group": "From School",
+                                    "label": "LINCOLN",
+                                    "name": "Lincoln",
+                                    "order": 0,
+                                    "selected": false,
+                                    "views": {
+                                        "default": "LINCOLN",
+                                        "long": "LINCOLN",
+                                        "short": "LIN"
+                                    }
+                                },
+                                {
+                                    "categoryId": "from_school",
+                                    "conceptId": "OAKWOOD",
+                                    "description": "Oakwood",
+                                    "group": "From School",
+                                    "label": "OAKWOOD",
+                                    "name": "Oakwood",
+                                    "order": 0,
+                                    "selected": false,
+                                    "views": {
+                                        "default": "OAKWOOD",
+                                        "long": "OAKWOOD",
+                                        "short": "OAK"
+                                    }
+                                },
+                                {
+                                    "categoryId": "from_school",
+                                    "conceptId": "OUR_SCHOOL",
+                                    "description": "Our School",
+                                    "group": "From School",
+                                    "label": "OUR SCHOOL",
+                                    "name": "Our School",
+                                    "order": 0,
+                                    "selected": false,
+                                    "views": {
+                                        "default": "OUR SCHOOL",
+                                        "long": "OUR SCHOOL",
+                                        "short": "OURS"
+                                    }
+                                },
+                                {
+                                    "categoryId": "from_school",
+                                    "conceptId": "RIVERSIDE",
+                                    "description": "Riverside",
+                                    "group": "From School",
+                                    "label": "RIVERSIDE",
+                                    "name": "Riverside",
+                                    "order": 0,
+                                    "selected": false,
+                                    "views": {
+                                        "default": "RIVERSIDE",
+                                        "long": "RIVERSIDE",
+                                        "short": "RIV"
+                                    }
+                                }
+                            ],
+                            "warnings": []
+                        },
+                        "level": {
+                            "suggestions": [
+                                {
+                                    "categoryId": "level",
+                                    "conceptId": "STUDENTS",
+                                    "description": "Students",
+                                    "group": "Minimum audience level",
+                                    "label": "STUDENTS",
+                                    "name": "Students",
+                                    "order": 0,
+                                    "selected": false,
+                                    "views": {
+                                        "default": "STUDENTS",
+                                        "long": "STUDENTS",
+                                        "short": "ST"
+                                    }
+                                },
+                                {
+                                    "categoryId": "level",
+                                    "conceptId": "SCHOOL_STAFF",
+                                    "description": "School Staff",
+                                    "group": "Minimum audience level",
+                                    "label": "SCHOOL STAFF",
+                                    "name": "School Staff",
+                                    "order": 0,
+                                    "selected": false,
+                                    "views": {
+                                        "default": "SCHOOL STAFF",
+                                        "long": "SCHOOL STAFF",
+                                        "short": "SS"
+                                    }
+                                },
+                                {
+                                    "categoryId": "level",
+                                    "conceptId": "DISTRICT_COORDINATORS",
+                                    "description": "District Coordinators",
+                                    "group": "Minimum audience level",
+                                    "label": "DISTRICT COORDINATORS",
+                                    "name": "District Coordinators",
+                                    "order": 0,
+                                    "selected": false,
+                                    "views": {
+                                        "default": "DISTRICT COORDINATORS",
+                                        "long": "DISTRICT COORDINATORS",
+                                        "short": "DC"
+                                    }
+                                },
+                                {
+                                    "categoryId": "level",
+                                    "conceptId": "STATE_ASSESSMENT_STAFF",
+                                    "description": "State Assessment Staff",
+                                    "group": "Minimum audience level",
+                                    "label": "STATE ASSESSMENT STAFF",
+                                    "name": "State Assessment Staff",
+                                    "order": 0,
+                                    "selected": false,
+                                    "views": {
+                                        "default": "STATE ASSESSMENT STAFF",
+                                        "long": "STATE ASSESSMENT STAFF",
+                                        "short": "SA"
+                                    }
+                                }
+                            ],
+                            "warnings": []
+                        },
+                        "marked_by": { "suggestions": [], "warnings": [] },
+                        "open_up": { "suggestions": [], "warnings": [] },
+                        "status": {
+                            "suggestions": [
+                                {
+                                    "categoryId": "status",
+                                    "conceptId": "FINAL",
+                                    "description": "Final",
+                                    "group": "Release Status",
+                                    "label": "FINAL",
+                                    "name": "Final",
+                                    "order": 0,
+                                    "selected": false,
+                                    "views": {
+                                        "default": "FINAL",
+                                        "long": "FINAL",
+                                        "short": "FINAL"
+                                    }
+                                },
+                                {
+                                    "categoryId": "status",
+                                    "conceptId": "DRAFT",
+                                    "description": "Draft",
+                                    "group": "Release Status",
+                                    "label": "DRAFT",
+                                    "name": "Draft",
+                                    "order": 0,
+                                    "selected": false,
+                                    "views": {
+                                        "default": "DRAFT",
+                                        "long": "DRAFT",
+                                        "short": "DRAFT"
+                                    }
+                                },
+                                {
+                                    "categoryId": "status",
+                                    "conceptId": "PRE_RELEASE",
+                                    "description": "Pre-release",
+                                    "group": "Release Status",
+                                    "label": "PRE-RELEASE",
+                                    "name": "Pre-release",
+                                    "order": 0,
+                                    "selected": false,
+                                    "views": {
+                                        "default": "PRE-RELEASE",
+                                        "long": "PRE-RELEASE",
+                                        "short": "PRE"
+                                    }
+                                }
+                            ],
+                            "warnings": []
+                        },
+                        "then_do": { "suggestions": [], "warnings": [] }
+                    },
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
         "3d5e7c04c90a4c630e959e269ac5ddb32387af08803270b4f9551127095878a1": {
             "body": {
                 "resolution": {
@@ -1979,7 +2296,7 @@
             "method": "GET",
             "statusCode": 200
         },
-        "fc1526848fe18f47b1393e1b07ccf842c063b8e75ba72375d5e2c6b80bf81d7b": {
+        "ea3a78734a965735803a4f6f34fbceda85e77d7cdc8fa8b6f6aafa938ea1137b": {
             "body": {
                 "resolution": {
                     "artifacts": [
@@ -2168,7 +2485,7 @@
                             "label": "OUR SCHOOL",
                             "name": "Our School",
                             "order": 0,
-                            "selected": false,
+                            "selected": true,
                             "views": {
                                 "default": "OUR SCHOOL",
                                 "long": "OUR SCHOOL",
@@ -2354,7 +2671,7 @@
                             "label": "FILED",
                             "name": "Filed",
                             "order": 0,
-                            "selected": false,
+                            "selected": true,
                             "views": { "default": "FILED", "short": "FILED" }
                         },
                         {

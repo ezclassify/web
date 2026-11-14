@@ -2719,6 +2719,196 @@
             "method": "POST",
             "statusCode": 200
         },
+        "6a46a58692dc0c2c9378bd2102d6d0e8ce5ea15a5fd228442d2c1859e04b16ae": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "cedar-valley",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "cedar-valley-guide",
+                            "kind": "guide",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "cedar-valley-access",
+                            "kind": "access",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "cedar-valley",
+                            "kind": "context",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "cedar-valley",
+                    "requestedVersion": "latest",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "PUBLIC",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "sensitive_content",
+                            "conceptId": "FINANCIAL_INFORMATION",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            { "categoryId": "level", "conceptId": "PUBLIC" },
+                            {
+                                "categoryId": "sensitive_content",
+                                "conceptId": "FINANCIAL_INFORMATION"
+                            }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "displayColor": {
+                        "background": "#2e7d32",
+                        "text": "#ffffff"
+                    },
+                    "errors": [
+                        {
+                            "affectedConcepts": ["FINANCIAL_INFORMATION"],
+                            "categoryId": "sensitive_content",
+                            "constraintId": "public-has-no-sensitive-content",
+                            "message": "PUBLIC cannot carry sensitive-content tags."
+                        },
+                        {
+                            "affectedConcepts": ["CONFIDENTIAL", "RESTRICTED"],
+                            "categoryId": "level",
+                            "constraintId": "financial-information-is-confidential",
+                            "message": "Financial information is confidential at minimum."
+                        }
+                    ],
+                    "inputWasValid": false,
+                    "notices": [],
+                    "proposedFixes": [
+                        {
+                            "adds": [
+                                {
+                                    "categoryId": "level",
+                                    "conceptId": "CONFIDENTIAL"
+                                }
+                            ],
+                            "keeps": [
+                                {
+                                    "categoryId": "sensitive_content",
+                                    "conceptId": "FINANCIAL_INFORMATION"
+                                }
+                            ],
+                            "message": "Replace PUBLIC with CONFIDENTIAL.",
+                            "removes": [
+                                { "categoryId": "level", "conceptId": "PUBLIC" }
+                            ],
+                            "rendered": "CONFIDENTIAL//FINANCIAL INFORMATION"
+                        },
+                        {
+                            "adds": [],
+                            "keeps": [
+                                { "categoryId": "level", "conceptId": "PUBLIC" }
+                            ],
+                            "message": "Remove FINANCIAL INFORMATION.",
+                            "removes": [
+                                {
+                                    "categoryId": "sensitive_content",
+                                    "conceptId": "FINANCIAL_INFORMATION"
+                                }
+                            ],
+                            "rendered": "PUBLIC"
+                        }
+                    ],
+                    "rendered": "PUBLIC//FINANCIAL INFORMATION",
+                    "renders": {},
+                    "suggestionsFor": {
+                        "level": {
+                            "suggestions": [
+                                {
+                                    "categoryId": "level",
+                                    "conceptId": "PUBLIC",
+                                    "description": "Public",
+                                    "group": "Protection",
+                                    "label": "PUBLIC",
+                                    "name": "Public",
+                                    "order": 0,
+                                    "selected": false,
+                                    "views": {
+                                        "default": "PUBLIC",
+                                        "long": "PUBLIC",
+                                        "short": "P"
+                                    }
+                                },
+                                {
+                                    "categoryId": "level",
+                                    "conceptId": "INTERNAL",
+                                    "description": "Internal",
+                                    "group": "Protection",
+                                    "label": "INTERNAL",
+                                    "name": "Internal",
+                                    "order": 0,
+                                    "selected": false,
+                                    "views": {
+                                        "default": "INTERNAL",
+                                        "long": "INTERNAL",
+                                        "short": "I"
+                                    }
+                                },
+                                {
+                                    "categoryId": "level",
+                                    "conceptId": "CONFIDENTIAL",
+                                    "description": "Confidential",
+                                    "group": "Protection",
+                                    "label": "CONFIDENTIAL",
+                                    "name": "Confidential",
+                                    "order": 0,
+                                    "selected": false,
+                                    "views": {
+                                        "default": "CONFIDENTIAL",
+                                        "long": "CONFIDENTIAL",
+                                        "short": "C"
+                                    }
+                                },
+                                {
+                                    "categoryId": "level",
+                                    "conceptId": "RESTRICTED",
+                                    "description": "Restricted",
+                                    "group": "Protection",
+                                    "label": "RESTRICTED",
+                                    "name": "Restricted",
+                                    "order": 0,
+                                    "selected": false,
+                                    "views": {
+                                        "default": "RESTRICTED",
+                                        "long": "RESTRICTED",
+                                        "short": "R"
+                                    }
+                                }
+                            ],
+                            "warnings": []
+                        }
+                    },
+                    "valid": false,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
         "74ce9fc4818cf798f1f86f9d412abe85ec3b232a61b3089d356312bd8bf0ca50": {
             "body": {
                 "resolution": {
@@ -6423,6 +6613,244 @@
                         }
                     ],
                     "unread": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "d396b68587f0e43dc3f2e52632897228cde093c40a72d6dc4d8be1e191ed4830": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "cedar-valley",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "cedar-valley-guide",
+                            "kind": "guide",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "cedar-valley-access",
+                            "kind": "access",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "cedar-valley",
+                            "kind": "context",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "cedar-valley",
+                    "requestedVersion": "latest",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "PUBLIC",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "sensitive_content",
+                            "conceptId": "FINANCIAL_INFORMATION",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "permitted_schools",
+                            "conceptId": "OAKWOOD",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "handling",
+                            "conceptId": "DO_NOT_FORWARD",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            { "categoryId": "level", "conceptId": "PUBLIC" },
+                            {
+                                "categoryId": "sensitive_content",
+                                "conceptId": "FINANCIAL_INFORMATION"
+                            },
+                            {
+                                "categoryId": "permitted_schools",
+                                "conceptId": "OAKWOOD"
+                            },
+                            {
+                                "categoryId": "handling",
+                                "conceptId": "DO_NOT_FORWARD"
+                            }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "displayColor": {
+                        "background": "#2e7d32",
+                        "text": "#ffffff"
+                    },
+                    "errors": [
+                        {
+                            "affectedConcepts": ["DO_NOT_FORWARD"],
+                            "categoryId": "handling",
+                            "constraintId": "public-has-no-handling",
+                            "message": "PUBLIC is an approved public version and cannot carry handling instructions."
+                        },
+                        {
+                            "affectedConcepts": ["FINANCIAL_INFORMATION"],
+                            "categoryId": "sensitive_content",
+                            "constraintId": "public-has-no-sensitive-content",
+                            "message": "PUBLIC cannot carry sensitive-content tags."
+                        },
+                        {
+                            "affectedConcepts": ["OAKWOOD"],
+                            "categoryId": "permitted_schools",
+                            "constraintId": "public-has-no-school-limit",
+                            "message": "PUBLIC cannot be limited to selected schools."
+                        },
+                        {
+                            "affectedConcepts": ["CONFIDENTIAL", "RESTRICTED"],
+                            "categoryId": "level",
+                            "constraintId": "financial-information-is-confidential",
+                            "message": "Financial information is confidential at minimum."
+                        }
+                    ],
+                    "inputWasValid": false,
+                    "notices": [],
+                    "proposedFixes": [
+                        {
+                            "adds": [
+                                {
+                                    "categoryId": "level",
+                                    "conceptId": "CONFIDENTIAL"
+                                }
+                            ],
+                            "keeps": [
+                                {
+                                    "categoryId": "sensitive_content",
+                                    "conceptId": "FINANCIAL_INFORMATION"
+                                },
+                                {
+                                    "categoryId": "permitted_schools",
+                                    "conceptId": "OAKWOOD"
+                                },
+                                {
+                                    "categoryId": "handling",
+                                    "conceptId": "DO_NOT_FORWARD"
+                                }
+                            ],
+                            "message": "Replace PUBLIC with CONFIDENTIAL.",
+                            "removes": [
+                                { "categoryId": "level", "conceptId": "PUBLIC" }
+                            ],
+                            "rendered": "CONFIDENTIAL//FINANCIAL INFORMATION//OAKWOOD//DO NOT FORWARD"
+                        },
+                        {
+                            "adds": [],
+                            "keeps": [
+                                { "categoryId": "level", "conceptId": "PUBLIC" }
+                            ],
+                            "message": "Remove FINANCIAL INFORMATION, OAKWOOD and DO NOT FORWARD.",
+                            "removes": [
+                                {
+                                    "categoryId": "sensitive_content",
+                                    "conceptId": "FINANCIAL_INFORMATION"
+                                },
+                                {
+                                    "categoryId": "permitted_schools",
+                                    "conceptId": "OAKWOOD"
+                                },
+                                {
+                                    "categoryId": "handling",
+                                    "conceptId": "DO_NOT_FORWARD"
+                                }
+                            ],
+                            "rendered": "PUBLIC"
+                        }
+                    ],
+                    "rendered": "PUBLIC//FINANCIAL INFORMATION//OAKWOOD//DO NOT FORWARD",
+                    "renders": {},
+                    "suggestionsFor": {
+                        "level": {
+                            "suggestions": [
+                                {
+                                    "categoryId": "level",
+                                    "conceptId": "PUBLIC",
+                                    "description": "Public",
+                                    "group": "Protection",
+                                    "label": "PUBLIC",
+                                    "name": "Public",
+                                    "order": 0,
+                                    "selected": false,
+                                    "views": {
+                                        "default": "PUBLIC",
+                                        "long": "PUBLIC",
+                                        "short": "P"
+                                    }
+                                },
+                                {
+                                    "categoryId": "level",
+                                    "conceptId": "INTERNAL",
+                                    "description": "Internal",
+                                    "group": "Protection",
+                                    "label": "INTERNAL",
+                                    "name": "Internal",
+                                    "order": 0,
+                                    "selected": false,
+                                    "views": {
+                                        "default": "INTERNAL",
+                                        "long": "INTERNAL",
+                                        "short": "I"
+                                    }
+                                },
+                                {
+                                    "categoryId": "level",
+                                    "conceptId": "CONFIDENTIAL",
+                                    "description": "Confidential",
+                                    "group": "Protection",
+                                    "label": "CONFIDENTIAL",
+                                    "name": "Confidential",
+                                    "order": 0,
+                                    "selected": false,
+                                    "views": {
+                                        "default": "CONFIDENTIAL",
+                                        "long": "CONFIDENTIAL",
+                                        "short": "C"
+                                    }
+                                },
+                                {
+                                    "categoryId": "level",
+                                    "conceptId": "RESTRICTED",
+                                    "description": "Restricted",
+                                    "group": "Protection",
+                                    "label": "RESTRICTED",
+                                    "name": "Restricted",
+                                    "order": 0,
+                                    "selected": false,
+                                    "views": {
+                                        "default": "RESTRICTED",
+                                        "long": "RESTRICTED",
+                                        "short": "R"
+                                    }
+                                }
+                            ],
+                            "warnings": []
+                        }
+                    },
+                    "valid": false,
+                    "warnings": []
                 }
             },
             "headers": { "x-ezclassify-resolved-version": "1.0.0" },

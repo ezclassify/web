@@ -70,12 +70,138 @@ export function cleanupTooltipForRoot(root: HTMLElement): void {
 /** Where a tooltip may sit. */
 export interface TooltipPlacement {
     /**
-     * A box the tooltip must not cover, such as the text field the target sits
-     * in: the tooltip goes below it, or above it when there is no room below,
-     * still lined up with the target. Without it (or when neither side fits)
-     * the tooltip goes below the target, or above it.
+     * What the tooltip must not cover, such as the field the target belongs to,
+     * or that field and its error list (the box around them all). The tooltip
+     * goes below that box, or above it, lined up with the target; when neither
+     * has room it goes beside the box, right or left. Room is judged first
+     * inside every ancestor that clips the box's overflow, so the tooltip stays
+     * by what the reader can see, then inside the viewport alone. Without it,
+     * or when no side has room, the tooltip goes below the target, or above
+     * it.
      */
-    readonly clearOf?: HTMLElement | null;
+    readonly clearOf?: HTMLElement | readonly HTMLElement[] | null;
+}
+
+/** A rectangle in viewport coordinates. */
+interface Box {
+    left: number;
+    top: number;
+    right: number;
+    bottom: number;
+}
+
+/** The space between a tooltip and what it keeps clear of. */
+const GAP = 6;
+/** How far a tooltip stays from the viewport's edges. */
+const VIEWPORT_MARGIN = 8;
+
+/** The box around the connected elements in `clearOf`, or null for none. */
+function clearBox(clearOf: TooltipPlacement['clearOf']): {
+    box: Box;
+    anchor: HTMLElement;
+} | null {
+    const elements = (
+        clearOf ? (Array.isArray(clearOf) ? clearOf : [clearOf]) : []
+    ).filter((el): el is HTMLElement => !!el?.isConnected);
+    if (elements.length === 0) return null;
+    const rects = elements.map((el) => el.getBoundingClientRect());
+    return {
+        anchor: elements[0],
+        box: {
+            left: Math.min(...rects.map((r) => r.left)),
+            top: Math.min(...rects.map((r) => r.top)),
+            right: Math.max(...rects.map((r) => r.right)),
+            bottom: Math.max(...rects.map((r) => r.bottom)),
+        },
+    };
+}
+
+/** The viewport, less its margin. */
+function viewportBox(): Box {
+    return {
+        left: VIEWPORT_MARGIN,
+        top: VIEWPORT_MARGIN,
+        right: window.innerWidth - VIEWPORT_MARGIN,
+        bottom: window.innerHeight - VIEWPORT_MARGIN,
+    };
+}
+
+/** An element's parent, crossing out of a shadow root to its host. */
+function parentOf(el: Element): Element | null {
+    if (el.parentElement) return el.parentElement;
+    const root = el.getRootNode();
+    return root instanceof ShadowRoot ? root.host : null;
+}
+
+/**
+ * The part of the viewport where `el` can be seen: the viewport, cut down on
+ * each axis by every ancestor that clips its overflow on that axis.
+ */
+function visibleBox(el: HTMLElement): Box {
+    const box = viewportBox();
+    const clips = (overflow: string) =>
+        /hidden|auto|scroll|clip/.test(overflow);
+    for (
+        let node = parentOf(el);
+        node && node !== document.body && node !== document.documentElement;
+        node = parentOf(node)
+    ) {
+        const style = window.getComputedStyle(node);
+        // Some DOM implementations leave the longhands empty when only the
+        // shorthand was set; a browser always computes both.
+        const x = clips(style.overflowX || style.overflow);
+        const y = clips(style.overflowY || style.overflow);
+        if (!x && !y) continue;
+        const r = node.getBoundingClientRect();
+        if (x) {
+            box.left = Math.max(box.left, r.left);
+            box.right = Math.min(box.right, r.right);
+        }
+        if (y) {
+            box.top = Math.max(box.top, r.top);
+            box.bottom = Math.min(box.bottom, r.bottom);
+        }
+    }
+    return box;
+}
+
+/** `value` held inside [min, max], or `min` when the range is empty. */
+function clamp(value: number, min: number, max: number): number {
+    return Math.max(min, Math.min(value, max));
+}
+
+/**
+ * Where a tooltip of `size` sits clear of `clear`: below, above, right of or
+ * left of it, the first that fits inside `area`, lined up with `target`. Null
+ * when none fits.
+ */
+function placeClearOf(
+    clear: Box,
+    target: Box,
+    size: { width: number; height: number },
+    area: Box,
+): { left: number; top: number } | null {
+    const { width, height } = size;
+    const centered = clamp(
+        (target.left + target.right) / 2 - width / 2,
+        area.left,
+        area.right - width,
+    );
+    if (clear.bottom + GAP + height <= area.bottom) {
+        return { left: centered, top: clear.bottom + GAP };
+    }
+    if (clear.top - GAP - height >= area.top) {
+        return { left: centered, top: clear.top - GAP - height };
+    }
+    if (height > area.bottom - area.top) return null;
+    const top = clamp(target.top, area.top, area.bottom - height);
+    if (clear.right + GAP + width <= area.right) {
+        return { left: clear.right + GAP, top };
+    }
+    if (clear.left - GAP - width >= area.left) {
+        return { left: clear.left - GAP - width, top };
+    }
+    return null;
 }
 
 /**
@@ -191,36 +317,31 @@ export function showTooltip(
     tip.style.top = '0';
     const tipRect = tip.getBoundingClientRect();
 
-    const margin = 8;
+    const margin = VIEWPORT_MARGIN;
 
-    // Vertical positioning: prefer below, flip above if needed. A box to keep
-    // clear of moves both edges out to that box when the tooltip fits there.
-    const fitsBelow = (edge: number) =>
-        edge + 6 + tipRect.height <= window.innerHeight - margin;
-    const fitsAbove = (edge: number) => edge - 6 - tipRect.height >= margin;
-    const clear = placement?.clearOf?.isConnected
-        ? placement.clearOf.getBoundingClientRect()
+    // Clear of a box: below, above or beside it, inside what clips it if
+    // possible, else anywhere in the viewport (the tooltip itself lives in
+    // the document body, so no ancestor actually clips it).
+    const clear = clearBox(placement?.clearOf);
+    const placed = clear
+        ? (placeClearOf(clear.box, rect, tipRect, visibleBox(clear.anchor)) ??
+          placeClearOf(clear.box, rect, tipRect, viewportBox()))
         : null;
-    let top = rect.bottom + 6;
-    if (clear && fitsBelow(clear.bottom)) {
-        top = clear.bottom + 6;
-    } else if (clear && fitsAbove(clear.top)) {
-        top = clear.top - tipRect.height - 6;
-    } else if (!fitsBelow(rect.bottom) && fitsAbove(rect.top)) {
-        top = rect.top - tipRect.height - 6;
-    }
-    // Clamp vertically so tooltip stays on screen
-    top = Math.max(
-        margin,
-        Math.min(top, window.innerHeight - tipRect.height - margin),
-    );
 
-    // Horizontal positioning: prefer centered below target, clamp to viewport
+    // Otherwise by the target: prefer below, flip above if needed.
+    let top = rect.bottom + GAP;
     let left = rect.left + rect.width / 2 - tipRect.width / 2;
-    left = Math.max(
-        margin,
-        Math.min(left, window.innerWidth - tipRect.width - margin),
-    );
+    if (placed) {
+        ({ top, left } = placed);
+    } else if (
+        rect.bottom + GAP + tipRect.height > window.innerHeight - margin &&
+        rect.top - GAP - tipRect.height >= margin
+    ) {
+        top = rect.top - tipRect.height - GAP;
+    }
+    // Keep it on screen.
+    top = clamp(top, margin, window.innerHeight - tipRect.height - margin);
+    left = clamp(left, margin, window.innerWidth - tipRect.width - margin);
 
     tip.style.left = left + 'px';
     tip.style.top = top + 'px';

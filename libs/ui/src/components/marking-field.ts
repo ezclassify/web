@@ -29,7 +29,11 @@ import { getMountHost } from '../mount-host-registry';
 import { resolveMarkingColor } from '../color-resolver';
 import { COMPONENT_CSS } from './component-utils';
 import { heightAtLeastFloor } from './dom-helpers';
-import { ensureStatusMark, setStatusMarkFixes } from './status-mark';
+import {
+    ensureStatusMark,
+    explainedChanges,
+    setStatusMarkFixes,
+} from './status-mark';
 import { mountFieldChrome, type FieldChrome } from './field-chrome';
 import {
     ensureFavoritesButton,
@@ -259,7 +263,10 @@ export class MarkingField extends ComponentBase {
             shouldShowTooltip: () => this.options.tooltips !== false,
         });
         // The value read at init may already carry fixes the engine applied.
-        setStatusMarkFixes(this.chrome.status, this.getAppliedFixes());
+        setStatusMarkFixes(
+            this.chrome.status,
+            explainedChanges(this.getAppliedFixes(), this.assertions),
+        );
         if (
             this.options.favorites ||
             schemeOffersPresets(this.scheme, this.options.scope)
@@ -507,7 +514,10 @@ export class MarkingField extends ComponentBase {
             this.paintTokens();
         }
         if (this.chrome)
-            setStatusMarkFixes(this.chrome.status, this.getAppliedFixes());
+            setStatusMarkFixes(
+                this.chrome.status,
+                explainedChanges(this.getAppliedFixes(), this.assertions),
+            );
         if (this.favoritesPanel) {
             this.favoritesPanel.updateHost(
                 this.favoritesHost(this.options.favorites),

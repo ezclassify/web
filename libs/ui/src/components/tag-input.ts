@@ -35,7 +35,11 @@ import {
     type ChipKeyboardContext,
 } from './tag-input-keyboard';
 import { renderTagChips } from './tag-input-renderer';
-import { ensureStatusMark, setStatusMarkFixes } from './status-mark';
+import {
+    ensureStatusMark,
+    explainedChanges,
+    setStatusMarkFixes,
+} from './status-mark';
 import {
     applyFieldFrame,
     mirrorHostFrame,
@@ -347,7 +351,10 @@ export class TagInput extends ComponentBase {
             root: this.options.root,
             shouldShowTooltip: () => this.shouldShowTooltip(),
         });
-        setStatusMarkFixes(this.chrome.status, this.getAppliedFixes());
+        setStatusMarkFixes(
+            this.chrome.status,
+            explainedChanges(this.getAppliedFixes(), this.assertions),
+        );
         // The ★ mounts on host favorites wiring OR scheme-declared presets
         // (ensureFavoritesButton owns the OR); favoritesHost tolerates an
         // undefined config, running the panel read-only in that case.

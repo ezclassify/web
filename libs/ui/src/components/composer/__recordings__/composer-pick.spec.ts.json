@@ -126,6 +126,128 @@
             "method": "POST",
             "statusCode": 200
         },
+        "02bd0f08ba0dbeba72186e2fdbe57d57a7e3cde6d71888ecf206b02e15fa6b49": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "composer-pick",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "composer-pick",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [
+                        {
+                            "action": "add",
+                            "add": [
+                                { "categoryId": "rel", "conceptId": "USA" }
+                            ],
+                            "message": "Rule \"rel-starts-with-usa\": added \"USA\" to category \"rel\"",
+                            "ruleId": "rel-starts-with-usa",
+                            "triggerConceptIds": ["REL"]
+                        }
+                    ],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "S",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "control",
+                            "conceptId": "SI",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "control",
+                            "conceptId": "TK",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "dissem",
+                            "conceptId": "REL",
+                            "confidence": "certain",
+                            "source": "user"
+                        },
+                        {
+                            "categoryId": "rel",
+                            "conceptId": "USA",
+                            "confidence": "inferred",
+                            "source": "infer",
+                            "sourceRule": "rel-starts-with-usa"
+                        },
+                        {
+                            "categoryId": "rel",
+                            "conceptId": "AUS",
+                            "confidence": "certain",
+                            "source": "user"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            { "categoryId": "level", "conceptId": "S" },
+                            { "categoryId": "control", "conceptId": "SI" },
+                            { "categoryId": "control", "conceptId": "TK" },
+                            { "categoryId": "dissem", "conceptId": "REL" },
+                            { "categoryId": "rel", "conceptId": "USA" },
+                            { "categoryId": "rel", "conceptId": "AUS" }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": false,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "SECRET//SI/TK//REL TO USA, AUS",
+                    "renders": {},
+                    "suggestionsFor": {
+                        "level": {
+                            "suggestions": [
+                                {
+                                    "categoryId": "level",
+                                    "conceptId": "U",
+                                    "description": "Unclassified",
+                                    "group": "Level",
+                                    "label": "UNCLASSIFIED",
+                                    "name": "Unclassified",
+                                    "order": 1,
+                                    "selected": false,
+                                    "views": { "default": "UNCLASSIFIED" }
+                                },
+                                {
+                                    "categoryId": "level",
+                                    "conceptId": "S",
+                                    "description": "Secret",
+                                    "group": "Level",
+                                    "label": "SECRET",
+                                    "name": "Secret",
+                                    "order": 2,
+                                    "selected": false,
+                                    "views": { "default": "SECRET" }
+                                }
+                            ],
+                            "warnings": []
+                        }
+                    },
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
         "0860a0d7a94849fe5ddc470e656c25047511b38c09755d9bed4efdf3d7071caf": {
             "body": [
                 {
@@ -281,7 +403,97 @@
             "method": "POST",
             "statusCode": 200
         },
-        "24871d87fe457e23f59b926a1c604efa6ae0d0038951e3d620a5ee4e630f8832": {
+        "103cda30ea3b5253a59186a1696d5db05ff7c3aeaeec2eb2f7f9083e4016c2dc": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "composer-pick",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "composer-pick",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "S",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "control",
+                            "conceptId": "SI",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "control",
+                            "conceptId": "TK",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            { "categoryId": "level", "conceptId": "S" },
+                            { "categoryId": "control", "conceptId": "SI" },
+                            { "categoryId": "control", "conceptId": "TK" }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "SECRET//SI/TK",
+                    "renders": {},
+                    "suggestionsFor": {
+                        "level": {
+                            "suggestions": [
+                                {
+                                    "categoryId": "level",
+                                    "conceptId": "U",
+                                    "description": "Unclassified",
+                                    "group": "Level",
+                                    "label": "UNCLASSIFIED",
+                                    "name": "Unclassified",
+                                    "order": 1,
+                                    "selected": false,
+                                    "views": { "default": "UNCLASSIFIED" }
+                                },
+                                {
+                                    "categoryId": "level",
+                                    "conceptId": "S",
+                                    "description": "Secret",
+                                    "group": "Level",
+                                    "label": "SECRET",
+                                    "name": "Secret",
+                                    "order": 2,
+                                    "selected": false,
+                                    "views": { "default": "SECRET" }
+                                }
+                            ],
+                            "warnings": []
+                        }
+                    },
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "191e9110c06ff5f9a2bf49a26abb4cd9caad02ad23d20d249ffb7048f84d16a6": {
             "body": {
                 "resolution": {
                     "artifacts": [
@@ -371,7 +583,130 @@
                             "label": "USA",
                             "name": "Usa",
                             "order": 0,
+                            "selected": true,
+                            "views": { "default": "USA" }
+                        },
+                        {
+                            "categoryId": "rel",
+                            "conceptId": "AUS",
+                            "description": "Aus",
+                            "group": "Releasable To",
+                            "label": "AUS",
+                            "name": "Aus",
+                            "order": 1,
+                            "selected": true,
+                            "views": { "default": "AUS" }
+                        },
+                        {
+                            "categoryId": "rel",
+                            "conceptId": "CAN",
+                            "description": "Can",
+                            "group": "Releasable To",
+                            "label": "CAN",
+                            "name": "Can",
+                            "order": 2,
                             "selected": false,
+                            "views": { "default": "CAN" }
+                        }
+                    ],
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "21345fb59c62acd60036396feaa83f2472db0c807ca7e3de19644d641862decb": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "composer-pick",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "composer-pick",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "suggestions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "S",
+                            "description": "Secret",
+                            "group": "Level",
+                            "label": "SECRET",
+                            "name": "Secret",
+                            "order": 2,
+                            "selected": true,
+                            "views": { "default": "SECRET" }
+                        },
+                        {
+                            "categoryId": "control",
+                            "conceptId": "SI",
+                            "description": "Si",
+                            "group": "Control system",
+                            "label": "SI",
+                            "name": "Si",
+                            "order": 1,
+                            "selected": true,
+                            "views": { "default": "SI" }
+                        },
+                        {
+                            "categoryId": "control",
+                            "conceptId": "TK",
+                            "description": "Tk",
+                            "group": "Control system",
+                            "label": "TK",
+                            "name": "Tk",
+                            "order": 2,
+                            "selected": true,
+                            "views": { "default": "TK" }
+                        },
+                        {
+                            "categoryId": "dissem",
+                            "conceptId": "NF",
+                            "description": "Noforn",
+                            "group": "Dissemination",
+                            "label": "NOFORN",
+                            "name": "Noforn",
+                            "order": 1,
+                            "selected": false,
+                            "views": { "default": "NOFORN" }
+                        },
+                        {
+                            "categoryId": "dissem",
+                            "conceptId": "REL",
+                            "description": "Rel to",
+                            "group": "Dissemination",
+                            "label": "REL TO",
+                            "name": "Rel to",
+                            "order": 2,
+                            "selected": true,
+                            "views": { "default": "REL TO" }
+                        },
+                        {
+                            "categoryId": "dissem",
+                            "conceptId": "DO",
+                            "description": "Display only",
+                            "group": "Dissemination",
+                            "label": "DISPLAY ONLY",
+                            "name": "Display only",
+                            "order": 3,
+                            "selected": false,
+                            "views": { "default": "DISPLAY ONLY" }
+                        },
+                        {
+                            "categoryId": "rel",
+                            "conceptId": "USA",
+                            "description": "Usa",
+                            "group": "Releasable To",
+                            "label": "USA",
+                            "name": "Usa",
+                            "order": 0,
+                            "selected": true,
                             "views": { "default": "USA" }
                         },
                         {
@@ -1071,6 +1406,268 @@
             "method": "POST",
             "statusCode": 200
         },
+        "562ee160d37cd4bf96c7aa6f2822af29839f3b361d9dc57e5548d14e72eddfab": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "composer-pick",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "composer-pick",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "suggestions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "S",
+                            "description": "Secret",
+                            "group": "Level",
+                            "label": "SECRET",
+                            "name": "Secret",
+                            "order": 2,
+                            "selected": true,
+                            "views": { "default": "SECRET" }
+                        },
+                        {
+                            "categoryId": "control",
+                            "conceptId": "SI",
+                            "description": "Si",
+                            "group": "Control system",
+                            "label": "SI",
+                            "name": "Si",
+                            "order": 1,
+                            "selected": true,
+                            "views": { "default": "SI" }
+                        },
+                        {
+                            "categoryId": "control",
+                            "conceptId": "TK",
+                            "description": "Tk",
+                            "group": "Control system",
+                            "label": "TK",
+                            "name": "Tk",
+                            "order": 2,
+                            "selected": true,
+                            "views": { "default": "TK" }
+                        },
+                        {
+                            "categoryId": "dissem",
+                            "conceptId": "NF",
+                            "description": "Noforn",
+                            "group": "Dissemination",
+                            "label": "NOFORN",
+                            "name": "Noforn",
+                            "order": 1,
+                            "selected": false,
+                            "views": { "default": "NOFORN" }
+                        },
+                        {
+                            "categoryId": "dissem",
+                            "conceptId": "REL",
+                            "description": "Rel to",
+                            "group": "Dissemination",
+                            "label": "REL TO",
+                            "name": "Rel to",
+                            "order": 2,
+                            "selected": true,
+                            "views": { "default": "REL TO" }
+                        },
+                        {
+                            "categoryId": "dissem",
+                            "conceptId": "DO",
+                            "description": "Display only",
+                            "group": "Dissemination",
+                            "label": "DISPLAY ONLY",
+                            "name": "Display only",
+                            "order": 3,
+                            "selected": false,
+                            "views": { "default": "DISPLAY ONLY" }
+                        },
+                        {
+                            "categoryId": "rel",
+                            "conceptId": "USA",
+                            "description": "Usa",
+                            "group": "Releasable To",
+                            "label": "USA",
+                            "name": "Usa",
+                            "order": 0,
+                            "selected": true,
+                            "views": { "default": "USA" }
+                        },
+                        {
+                            "categoryId": "rel",
+                            "conceptId": "AUS",
+                            "description": "Aus",
+                            "group": "Releasable To",
+                            "label": "AUS",
+                            "name": "Aus",
+                            "order": 1,
+                            "selected": true,
+                            "views": { "default": "AUS" }
+                        },
+                        {
+                            "categoryId": "rel",
+                            "conceptId": "CAN",
+                            "description": "Can",
+                            "group": "Releasable To",
+                            "label": "CAN",
+                            "name": "Can",
+                            "order": 2,
+                            "selected": false,
+                            "views": { "default": "CAN" }
+                        }
+                    ],
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "60956cb35e096de879f9b617ae681724695d037e4258ac488d81af1b5c8c3ea8": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "composer-pick",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "composer-pick",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "S",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "control",
+                            "conceptId": "SI",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "control",
+                            "conceptId": "TK",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "dissem",
+                            "conceptId": "NF",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "dissem",
+                            "conceptId": "DO",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            { "categoryId": "level", "conceptId": "S" },
+                            { "categoryId": "control", "conceptId": "SI" },
+                            { "categoryId": "control", "conceptId": "TK" },
+                            { "categoryId": "dissem", "conceptId": "NF" },
+                            { "categoryId": "dissem", "conceptId": "DO" }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [
+                        {
+                            "affectedConcepts": ["NF", "DO"],
+                            "constraintId": "nf-excludes-do",
+                            "message": "NOFORN cannot be combined with DISPLAY ONLY."
+                        }
+                    ],
+                    "inputWasValid": false,
+                    "notices": [],
+                    "proposedFixes": [
+                        {
+                            "adds": [],
+                            "keeps": [
+                                { "categoryId": "level", "conceptId": "S" },
+                                { "categoryId": "control", "conceptId": "SI" },
+                                { "categoryId": "control", "conceptId": "TK" },
+                                { "categoryId": "dissem", "conceptId": "DO" }
+                            ],
+                            "message": "Remove NOFORN.",
+                            "removes": [
+                                { "categoryId": "dissem", "conceptId": "NF" }
+                            ],
+                            "rendered": "SECRET//SI/TK//DISPLAY ONLY"
+                        },
+                        {
+                            "adds": [],
+                            "keeps": [
+                                { "categoryId": "level", "conceptId": "S" },
+                                { "categoryId": "control", "conceptId": "SI" },
+                                { "categoryId": "control", "conceptId": "TK" },
+                                { "categoryId": "dissem", "conceptId": "NF" }
+                            ],
+                            "message": "Remove DISPLAY ONLY.",
+                            "removes": [
+                                { "categoryId": "dissem", "conceptId": "DO" }
+                            ],
+                            "rendered": "SECRET//SI/TK//NOFORN"
+                        }
+                    ],
+                    "rendered": "SECRET//SI/TK//NOFORN/DISPLAY ONLY",
+                    "renders": {},
+                    "suggestionsFor": {
+                        "level": {
+                            "suggestions": [
+                                {
+                                    "categoryId": "level",
+                                    "conceptId": "U",
+                                    "description": "Unclassified",
+                                    "group": "Level",
+                                    "label": "UNCLASSIFIED",
+                                    "name": "Unclassified",
+                                    "order": 1,
+                                    "selected": false,
+                                    "views": { "default": "UNCLASSIFIED" }
+                                },
+                                {
+                                    "categoryId": "level",
+                                    "conceptId": "S",
+                                    "description": "Secret",
+                                    "group": "Level",
+                                    "label": "SECRET",
+                                    "name": "Secret",
+                                    "order": 2,
+                                    "selected": false,
+                                    "views": { "default": "SECRET" }
+                                }
+                            ],
+                            "warnings": []
+                        }
+                    },
+                    "valid": false,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
         "62ba8f7e8332cb7567f044e62b66094eba41c80b2f43a37c9c436545cf225b2d": {
             "body": {
                 "resolution": {
@@ -1146,75 +1743,7 @@
             "method": "POST",
             "statusCode": 200
         },
-        "66d584c5a0eaa10c78da1dc85af476bd97f1053e251bddb7be3a97331bec79d8": {
-            "body": {
-                "resolution": {
-                    "artifacts": [
-                        {
-                            "id": "composer-pick",
-                            "kind": "scheme",
-                            "version": "1.0.0"
-                        }
-                    ],
-                    "contextId": "composer-pick",
-                    "requestedVersion": "0.0.0",
-                    "resolvedVersion": "1.0.0"
-                },
-                "result": {
-                    "appliedFixes": [],
-                    "assertions": [
-                        {
-                            "categoryId": "level",
-                            "conceptId": "S",
-                            "confidence": "certain",
-                            "source": "parse"
-                        },
-                        {
-                            "categoryId": "control",
-                            "conceptId": "SI",
-                            "confidence": "certain",
-                            "source": "parse"
-                        },
-                        {
-                            "categoryId": "control",
-                            "conceptId": "TK",
-                            "confidence": "certain",
-                            "source": "parse"
-                        },
-                        {
-                            "categoryId": "dissem",
-                            "conceptId": "NF",
-                            "confidence": "certain",
-                            "source": "parse"
-                        }
-                    ],
-                    "assessment": {
-                        "collapsed": [],
-                        "conflicts": [],
-                        "emitted": [
-                            { "categoryId": "level", "conceptId": "S" },
-                            { "categoryId": "control", "conceptId": "SI" },
-                            { "categoryId": "control", "conceptId": "TK" },
-                            { "categoryId": "dissem", "conceptId": "NF" }
-                        ],
-                        "omitted": [],
-                        "unrepresentable": []
-                    },
-                    "errors": [],
-                    "inputWasValid": true,
-                    "notices": [],
-                    "proposedFixes": [],
-                    "rendered": "SECRET//SI/TK//NOFORN",
-                    "renders": {},
-                    "valid": true,
-                    "warnings": []
-                }
-            },
-            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
-            "method": "POST",
-            "statusCode": 200
-        },
-        "6980f5b70b9894983fdc2c2e4eb96c761f5bf9d1e7b433a88e7d17abd8d2805c": {
+        "6506001b58d64e7cddc118c11f5acefcb43b536491c23a33478caa58beef4deb": {
             "body": {
                 "resolution": {
                     "artifacts": [
@@ -1293,7 +1822,7 @@
                             "label": "USA",
                             "name": "Usa",
                             "order": 0,
-                            "selected": false,
+                            "selected": true,
                             "views": { "default": "USA" }
                         },
                         {
@@ -1319,6 +1848,74 @@
                             "views": { "default": "CAN" }
                         }
                     ],
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "66d584c5a0eaa10c78da1dc85af476bd97f1053e251bddb7be3a97331bec79d8": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "composer-pick",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "composer-pick",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "S",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "control",
+                            "conceptId": "SI",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "control",
+                            "conceptId": "TK",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "dissem",
+                            "conceptId": "NF",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            { "categoryId": "level", "conceptId": "S" },
+                            { "categoryId": "control", "conceptId": "SI" },
+                            { "categoryId": "control", "conceptId": "TK" },
+                            { "categoryId": "dissem", "conceptId": "NF" }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "SECRET//SI/TK//NOFORN",
+                    "renders": {},
+                    "valid": true,
                     "warnings": []
                 }
             },
@@ -1578,6 +2175,129 @@
                     "rendered": "SECRET//SI/TK",
                     "renders": {},
                     "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "813f7e6b8ecbb2cf81947c1159ba0e0fb2650e22bc761849421b1df4896314ee": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "composer-pick",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "composer-pick",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "suggestions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "S",
+                            "description": "Secret",
+                            "group": "Level",
+                            "label": "SECRET",
+                            "name": "Secret",
+                            "order": 2,
+                            "selected": true,
+                            "views": { "default": "SECRET" }
+                        },
+                        {
+                            "categoryId": "control",
+                            "conceptId": "SI",
+                            "description": "Si",
+                            "group": "Control system",
+                            "label": "SI",
+                            "name": "Si",
+                            "order": 1,
+                            "selected": true,
+                            "views": { "default": "SI" }
+                        },
+                        {
+                            "categoryId": "control",
+                            "conceptId": "TK",
+                            "description": "Tk",
+                            "group": "Control system",
+                            "label": "TK",
+                            "name": "Tk",
+                            "order": 2,
+                            "selected": true,
+                            "views": { "default": "TK" }
+                        },
+                        {
+                            "categoryId": "dissem",
+                            "conceptId": "NF",
+                            "description": "Noforn",
+                            "group": "Dissemination",
+                            "label": "NOFORN",
+                            "name": "Noforn",
+                            "order": 1,
+                            "selected": false,
+                            "views": { "default": "NOFORN" }
+                        },
+                        {
+                            "categoryId": "dissem",
+                            "conceptId": "REL",
+                            "description": "Rel to",
+                            "group": "Dissemination",
+                            "label": "REL TO",
+                            "name": "Rel to",
+                            "order": 2,
+                            "selected": true,
+                            "views": { "default": "REL TO" }
+                        },
+                        {
+                            "categoryId": "dissem",
+                            "conceptId": "DO",
+                            "description": "Display only",
+                            "group": "Dissemination",
+                            "label": "DISPLAY ONLY",
+                            "name": "Display only",
+                            "order": 3,
+                            "selected": false,
+                            "views": { "default": "DISPLAY ONLY" }
+                        },
+                        {
+                            "categoryId": "rel",
+                            "conceptId": "USA",
+                            "description": "Usa",
+                            "group": "Releasable To",
+                            "label": "USA",
+                            "name": "Usa",
+                            "order": 0,
+                            "selected": true,
+                            "views": { "default": "USA" }
+                        },
+                        {
+                            "categoryId": "rel",
+                            "conceptId": "AUS",
+                            "description": "Aus",
+                            "group": "Releasable To",
+                            "label": "AUS",
+                            "name": "Aus",
+                            "order": 1,
+                            "selected": false,
+                            "views": { "default": "AUS" }
+                        },
+                        {
+                            "categoryId": "rel",
+                            "conceptId": "CAN",
+                            "description": "Can",
+                            "group": "Releasable To",
+                            "label": "CAN",
+                            "name": "Can",
+                            "order": 2,
+                            "selected": false,
+                            "views": { "default": "CAN" }
+                        }
+                    ],
                     "warnings": []
                 }
             },
@@ -2184,58 +2904,7 @@
             "method": "GET",
             "statusCode": 200
         },
-        "aea2c74e7fdd61f4f419b9f301066b614a15ddf36671b1be1c81905ef42ad668": {
-            "body": {
-                "resolution": {
-                    "artifacts": [
-                        {
-                            "id": "composer-pick",
-                            "kind": "scheme",
-                            "version": "1.0.0"
-                        }
-                    ],
-                    "contextId": "composer-pick",
-                    "requestedVersion": "0.0.0",
-                    "resolvedVersion": "1.0.0"
-                },
-                "result": {
-                    "appliedFixes": [],
-                    "assertions": [
-                        {
-                            "categoryId": "level",
-                            "conceptId": "U",
-                            "confidence": "certain",
-                            "source": "parse"
-                        }
-                    ],
-                    "assessment": {
-                        "collapsed": [],
-                        "conflicts": [],
-                        "emitted": [
-                            { "categoryId": "level", "conceptId": "U" }
-                        ],
-                        "omitted": [],
-                        "unrepresentable": []
-                    },
-                    "errors": [],
-                    "inputWasValid": true,
-                    "notices": [],
-                    "recognition": {
-                        "inputFormat": "default",
-                        "status": "complete",
-                        "surface": "marking",
-                        "unmatched": []
-                    },
-                    "rendered": "UNCLASSIFIED",
-                    "valid": true,
-                    "warnings": []
-                }
-            },
-            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
-            "method": "POST",
-            "statusCode": 200
-        },
-        "b77c29c577d6771936bd3f76bf25e3d813e9f1b61aa5cea13704a8f4ee1154c1": {
+        "9cf00de3ab842ed01fc575730b482bd11b2cc2e09a87424c40e50895a663fd86": {
             "body": {
                 "resolution": {
                     "artifacts": [
@@ -2292,7 +2961,7 @@
                             "label": "NOFORN",
                             "name": "Noforn",
                             "order": 1,
-                            "selected": false,
+                            "selected": true,
                             "views": { "default": "NOFORN" }
                         },
                         {
@@ -2307,17 +2976,6 @@
                             "views": { "default": "REL TO" }
                         },
                         {
-                            "categoryId": "dissem",
-                            "conceptId": "DO",
-                            "description": "Display only",
-                            "group": "Dissemination",
-                            "label": "DISPLAY ONLY",
-                            "name": "Display only",
-                            "order": 3,
-                            "selected": false,
-                            "views": { "default": "DISPLAY ONLY" }
-                        },
-                        {
                             "categoryId": "rel",
                             "conceptId": "USA",
                             "description": "Usa",
@@ -2325,7 +2983,7 @@
                             "label": "USA",
                             "name": "Usa",
                             "order": 0,
-                            "selected": false,
+                            "selected": true,
                             "views": { "default": "USA" }
                         },
                         {
@@ -2336,7 +2994,7 @@
                             "label": "AUS",
                             "name": "Aus",
                             "order": 1,
-                            "selected": true,
+                            "selected": false,
                             "views": { "default": "AUS" }
                         },
                         {
@@ -2358,10 +3016,753 @@
             "method": "POST",
             "statusCode": 200
         },
+        "a2957ded4ad851bab8edece1d5321fa4c529434a68b6fc38ed5cd6562959feb3": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "composer-pick",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "composer-pick",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "S",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "control",
+                            "conceptId": "SI",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "control",
+                            "conceptId": "TK",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "dissem",
+                            "conceptId": "NF",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            { "categoryId": "level", "conceptId": "S" },
+                            { "categoryId": "control", "conceptId": "SI" },
+                            { "categoryId": "control", "conceptId": "TK" },
+                            { "categoryId": "dissem", "conceptId": "NF" }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "SECRET//SI/TK//NOFORN",
+                    "renders": {},
+                    "suggestionsFor": {
+                        "level": {
+                            "suggestions": [
+                                {
+                                    "categoryId": "level",
+                                    "conceptId": "U",
+                                    "description": "Unclassified",
+                                    "group": "Level",
+                                    "label": "UNCLASSIFIED",
+                                    "name": "Unclassified",
+                                    "order": 1,
+                                    "selected": false,
+                                    "views": { "default": "UNCLASSIFIED" }
+                                },
+                                {
+                                    "categoryId": "level",
+                                    "conceptId": "S",
+                                    "description": "Secret",
+                                    "group": "Level",
+                                    "label": "SECRET",
+                                    "name": "Secret",
+                                    "order": 2,
+                                    "selected": false,
+                                    "views": { "default": "SECRET" }
+                                }
+                            ],
+                            "warnings": []
+                        }
+                    },
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "ad143c31038814cfe0aa59a84e41b4a7cb398569423c7fe327e761d12f8791e4": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "composer-pick",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "composer-pick",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [
+                        {
+                            "action": "add",
+                            "add": [
+                                { "categoryId": "rel", "conceptId": "USA" }
+                            ],
+                            "message": "Rule \"rel-starts-with-usa\": added \"USA\" to category \"rel\"",
+                            "ruleId": "rel-starts-with-usa",
+                            "triggerConceptIds": ["REL"]
+                        }
+                    ],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "S",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "control",
+                            "conceptId": "SI",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "control",
+                            "conceptId": "TK",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "dissem",
+                            "conceptId": "NF",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "dissem",
+                            "conceptId": "REL",
+                            "confidence": "certain",
+                            "source": "user"
+                        },
+                        {
+                            "categoryId": "rel",
+                            "conceptId": "USA",
+                            "confidence": "inferred",
+                            "source": "infer",
+                            "sourceRule": "rel-starts-with-usa"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            { "categoryId": "level", "conceptId": "S" },
+                            { "categoryId": "control", "conceptId": "SI" },
+                            { "categoryId": "control", "conceptId": "TK" },
+                            { "categoryId": "dissem", "conceptId": "NF" },
+                            { "categoryId": "dissem", "conceptId": "REL" },
+                            { "categoryId": "rel", "conceptId": "USA" }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": false,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "SECRET//SI/TK//NOFORN/REL TO USA",
+                    "renders": {},
+                    "suggestionsFor": {
+                        "level": {
+                            "suggestions": [
+                                {
+                                    "categoryId": "level",
+                                    "conceptId": "U",
+                                    "description": "Unclassified",
+                                    "group": "Level",
+                                    "label": "UNCLASSIFIED",
+                                    "name": "Unclassified",
+                                    "order": 1,
+                                    "selected": false,
+                                    "views": { "default": "UNCLASSIFIED" }
+                                },
+                                {
+                                    "categoryId": "level",
+                                    "conceptId": "S",
+                                    "description": "Secret",
+                                    "group": "Level",
+                                    "label": "SECRET",
+                                    "name": "Secret",
+                                    "order": 2,
+                                    "selected": false,
+                                    "views": { "default": "SECRET" }
+                                }
+                            ],
+                            "warnings": []
+                        }
+                    },
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "aea2c74e7fdd61f4f419b9f301066b614a15ddf36671b1be1c81905ef42ad668": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "composer-pick",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "composer-pick",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "U",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            { "categoryId": "level", "conceptId": "U" }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "recognition": {
+                        "inputFormat": "default",
+                        "status": "complete",
+                        "surface": "marking",
+                        "unmatched": []
+                    },
+                    "rendered": "UNCLASSIFIED",
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "b2524a959f959247943ecc321c245a44943f243c1093aef06746ac0aaec80963": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "composer-pick",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "composer-pick",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [
+                        {
+                            "action": "add",
+                            "add": [
+                                { "categoryId": "rel", "conceptId": "USA" }
+                            ],
+                            "message": "Rule \"rel-starts-with-usa\": added \"USA\" to category \"rel\"",
+                            "ruleId": "rel-starts-with-usa",
+                            "triggerConceptIds": ["REL"]
+                        }
+                    ],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "S",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "control",
+                            "conceptId": "SI",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "control",
+                            "conceptId": "TK",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "dissem",
+                            "conceptId": "REL",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "rel",
+                            "conceptId": "USA",
+                            "confidence": "inferred",
+                            "source": "infer",
+                            "sourceRule": "rel-starts-with-usa"
+                        },
+                        {
+                            "categoryId": "rel",
+                            "conceptId": "AUS",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            { "categoryId": "level", "conceptId": "S" },
+                            { "categoryId": "control", "conceptId": "SI" },
+                            { "categoryId": "control", "conceptId": "TK" },
+                            { "categoryId": "dissem", "conceptId": "REL" },
+                            { "categoryId": "rel", "conceptId": "USA" },
+                            { "categoryId": "rel", "conceptId": "AUS" }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": false,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "SECRET//SI/TK//REL TO USA, AUS",
+                    "renders": {},
+                    "suggestionsFor": {
+                        "level": {
+                            "suggestions": [
+                                {
+                                    "categoryId": "level",
+                                    "conceptId": "U",
+                                    "description": "Unclassified",
+                                    "group": "Level",
+                                    "label": "UNCLASSIFIED",
+                                    "name": "Unclassified",
+                                    "order": 1,
+                                    "selected": false,
+                                    "views": { "default": "UNCLASSIFIED" }
+                                },
+                                {
+                                    "categoryId": "level",
+                                    "conceptId": "S",
+                                    "description": "Secret",
+                                    "group": "Level",
+                                    "label": "SECRET",
+                                    "name": "Secret",
+                                    "order": 2,
+                                    "selected": false,
+                                    "views": { "default": "SECRET" }
+                                }
+                            ],
+                            "warnings": []
+                        }
+                    },
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "b53ce2895a7d6ab054bf738d942e0baa5286a51f1e9aa04921e02b608f47c7a0": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "composer-pick",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "composer-pick",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [
+                        {
+                            "action": "add",
+                            "add": [
+                                { "categoryId": "rel", "conceptId": "USA" }
+                            ],
+                            "message": "Rule \"rel-starts-with-usa\": added \"USA\" to category \"rel\"",
+                            "ruleId": "rel-starts-with-usa",
+                            "triggerConceptIds": ["REL"]
+                        }
+                    ],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "S",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "control",
+                            "conceptId": "SI",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "control",
+                            "conceptId": "TK",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "dissem",
+                            "conceptId": "REL",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "rel",
+                            "conceptId": "USA",
+                            "confidence": "inferred",
+                            "source": "infer",
+                            "sourceRule": "rel-starts-with-usa"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            { "categoryId": "level", "conceptId": "S" },
+                            { "categoryId": "control", "conceptId": "SI" },
+                            { "categoryId": "control", "conceptId": "TK" },
+                            { "categoryId": "dissem", "conceptId": "REL" },
+                            { "categoryId": "rel", "conceptId": "USA" }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": false,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "SECRET//SI/TK//REL TO USA",
+                    "renders": {},
+                    "suggestionsFor": {
+                        "level": {
+                            "suggestions": [
+                                {
+                                    "categoryId": "level",
+                                    "conceptId": "U",
+                                    "description": "Unclassified",
+                                    "group": "Level",
+                                    "label": "UNCLASSIFIED",
+                                    "name": "Unclassified",
+                                    "order": 1,
+                                    "selected": false,
+                                    "views": { "default": "UNCLASSIFIED" }
+                                },
+                                {
+                                    "categoryId": "level",
+                                    "conceptId": "S",
+                                    "description": "Secret",
+                                    "group": "Level",
+                                    "label": "SECRET",
+                                    "name": "Secret",
+                                    "order": 2,
+                                    "selected": false,
+                                    "views": { "default": "SECRET" }
+                                }
+                            ],
+                            "warnings": []
+                        }
+                    },
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "b69a7eeaaa1a74b2ca59ff76ead843c1d536224bd30697576f979ca3b9d2e255": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "composer-pick",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "composer-pick",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "S",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "control",
+                            "conceptId": "SI",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "control",
+                            "conceptId": "TK",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "dissem",
+                            "conceptId": "NF",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "dissem",
+                            "conceptId": "DO",
+                            "confidence": "certain",
+                            "source": "user"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            { "categoryId": "level", "conceptId": "S" },
+                            { "categoryId": "control", "conceptId": "SI" },
+                            { "categoryId": "control", "conceptId": "TK" },
+                            { "categoryId": "dissem", "conceptId": "NF" },
+                            { "categoryId": "dissem", "conceptId": "DO" }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [
+                        {
+                            "affectedConcepts": ["NF", "DO"],
+                            "constraintId": "nf-excludes-do",
+                            "message": "NOFORN cannot be combined with DISPLAY ONLY."
+                        }
+                    ],
+                    "inputWasValid": false,
+                    "notices": [],
+                    "proposedFixes": [
+                        {
+                            "adds": [],
+                            "keeps": [
+                                { "categoryId": "level", "conceptId": "S" },
+                                { "categoryId": "control", "conceptId": "SI" },
+                                { "categoryId": "control", "conceptId": "TK" },
+                                { "categoryId": "dissem", "conceptId": "DO" }
+                            ],
+                            "message": "Remove NOFORN.",
+                            "removes": [
+                                { "categoryId": "dissem", "conceptId": "NF" }
+                            ],
+                            "rendered": "SECRET//SI/TK//DISPLAY ONLY"
+                        },
+                        {
+                            "adds": [],
+                            "keeps": [
+                                { "categoryId": "level", "conceptId": "S" },
+                                { "categoryId": "control", "conceptId": "SI" },
+                                { "categoryId": "control", "conceptId": "TK" },
+                                { "categoryId": "dissem", "conceptId": "NF" }
+                            ],
+                            "message": "Remove DISPLAY ONLY.",
+                            "removes": [
+                                { "categoryId": "dissem", "conceptId": "DO" }
+                            ],
+                            "rendered": "SECRET//SI/TK//NOFORN"
+                        }
+                    ],
+                    "rendered": "SECRET//SI/TK//NOFORN/DISPLAY ONLY",
+                    "renders": {},
+                    "suggestionsFor": {
+                        "level": {
+                            "suggestions": [
+                                {
+                                    "categoryId": "level",
+                                    "conceptId": "U",
+                                    "description": "Unclassified",
+                                    "group": "Level",
+                                    "label": "UNCLASSIFIED",
+                                    "name": "Unclassified",
+                                    "order": 1,
+                                    "selected": false,
+                                    "views": { "default": "UNCLASSIFIED" }
+                                },
+                                {
+                                    "categoryId": "level",
+                                    "conceptId": "S",
+                                    "description": "Secret",
+                                    "group": "Level",
+                                    "label": "SECRET",
+                                    "name": "Secret",
+                                    "order": 2,
+                                    "selected": false,
+                                    "views": { "default": "SECRET" }
+                                }
+                            ],
+                            "warnings": []
+                        }
+                    },
+                    "valid": false,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
         "bd250057a278aeafe4a02404d7a4f6f81d6dd0d3f6befdc3c19600ca78ae4ceb": {
             "body": [],
             "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "GET",
+            "statusCode": 200
+        },
+        "bd77c0c3936cac9d07fda1ea9ea5eff23b380a4f5951f49fc5ca0856083837d2": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "composer-pick",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "composer-pick",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "U",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "control",
+                            "conceptId": "SI",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "control",
+                            "conceptId": "TK",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "dissem",
+                            "conceptId": "NF",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            { "categoryId": "level", "conceptId": "U" },
+                            { "categoryId": "control", "conceptId": "SI" },
+                            { "categoryId": "control", "conceptId": "TK" },
+                            { "categoryId": "dissem", "conceptId": "NF" }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "UNCLASSIFIED//SI/TK//NOFORN",
+                    "renders": {},
+                    "suggestionsFor": {
+                        "level": {
+                            "suggestions": [
+                                {
+                                    "categoryId": "level",
+                                    "conceptId": "U",
+                                    "description": "Unclassified",
+                                    "group": "Level",
+                                    "label": "UNCLASSIFIED",
+                                    "name": "Unclassified",
+                                    "order": 1,
+                                    "selected": false,
+                                    "views": { "default": "UNCLASSIFIED" }
+                                },
+                                {
+                                    "categoryId": "level",
+                                    "conceptId": "S",
+                                    "description": "Secret",
+                                    "group": "Level",
+                                    "label": "SECRET",
+                                    "name": "Secret",
+                                    "order": 2,
+                                    "selected": false,
+                                    "views": { "default": "SECRET" }
+                                }
+                            ],
+                            "warnings": []
+                        }
+                    },
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
             "statusCode": 200
         },
         "bea1976fee816b37dc909c652978c7b2cc3b4178ed89536297a8775185c2bd6f": {
@@ -2554,7 +3955,7 @@
             "method": "POST",
             "statusCode": 200
         },
-        "cf05850fbb7a7c7ab08f6c411e8c56f6f54eb8fdb119f69584fe642cb4ba5a9a": {
+        "c6404c779dff6d51fb407d62d91cb6e8a7f8a1431885154a26b75adf67f17252": {
             "body": {
                 "resolution": {
                     "artifacts": [
@@ -2569,107 +3970,106 @@
                     "resolvedVersion": "1.0.0"
                 },
                 "result": {
-                    "suggestions": [
+                    "appliedFixes": [
+                        {
+                            "action": "add",
+                            "add": [
+                                { "categoryId": "rel", "conceptId": "USA" }
+                            ],
+                            "message": "Rule \"rel-starts-with-usa\": added \"USA\" to category \"rel\"",
+                            "ruleId": "rel-starts-with-usa",
+                            "triggerConceptIds": ["REL"]
+                        }
+                    ],
+                    "assertions": [
                         {
                             "categoryId": "level",
                             "conceptId": "S",
-                            "description": "Secret",
-                            "group": "Level",
-                            "label": "SECRET",
-                            "name": "Secret",
-                            "order": 2,
-                            "selected": true,
-                            "views": { "default": "SECRET" }
+                            "confidence": "certain",
+                            "source": "parse"
                         },
                         {
                             "categoryId": "control",
                             "conceptId": "SI",
-                            "description": "Si",
-                            "group": "Control system",
-                            "label": "SI",
-                            "name": "Si",
-                            "order": 1,
-                            "selected": true,
-                            "views": { "default": "SI" }
+                            "confidence": "certain",
+                            "source": "parse"
                         },
                         {
                             "categoryId": "control",
                             "conceptId": "TK",
-                            "description": "Tk",
-                            "group": "Control system",
-                            "label": "TK",
-                            "name": "Tk",
-                            "order": 2,
-                            "selected": true,
-                            "views": { "default": "TK" }
+                            "confidence": "certain",
+                            "source": "parse"
                         },
                         {
                             "categoryId": "dissem",
                             "conceptId": "NF",
-                            "description": "Noforn",
-                            "group": "Dissemination",
-                            "label": "NOFORN",
-                            "name": "Noforn",
-                            "order": 1,
-                            "selected": false,
-                            "views": { "default": "NOFORN" }
+                            "confidence": "certain",
+                            "source": "parse"
                         },
                         {
                             "categoryId": "dissem",
                             "conceptId": "REL",
-                            "description": "Rel to",
-                            "group": "Dissemination",
-                            "label": "REL TO",
-                            "name": "Rel to",
-                            "order": 2,
-                            "selected": true,
-                            "views": { "default": "REL TO" }
-                        },
-                        {
-                            "categoryId": "dissem",
-                            "conceptId": "DO",
-                            "description": "Display only",
-                            "group": "Dissemination",
-                            "label": "DISPLAY ONLY",
-                            "name": "Display only",
-                            "order": 3,
-                            "selected": false,
-                            "views": { "default": "DISPLAY ONLY" }
+                            "confidence": "certain",
+                            "source": "parse"
                         },
                         {
                             "categoryId": "rel",
                             "conceptId": "USA",
-                            "description": "Usa",
-                            "group": "Releasable To",
-                            "label": "USA",
-                            "name": "Usa",
-                            "order": 0,
-                            "selected": false,
-                            "views": { "default": "USA" }
-                        },
-                        {
-                            "categoryId": "rel",
-                            "conceptId": "AUS",
-                            "description": "Aus",
-                            "group": "Releasable To",
-                            "label": "AUS",
-                            "name": "Aus",
-                            "order": 1,
-                            "selected": false,
-                            "views": { "default": "AUS" }
-                        },
-                        {
-                            "categoryId": "rel",
-                            "conceptId": "CAN",
-                            "description": "Can",
-                            "group": "Releasable To",
-                            "label": "CAN",
-                            "name": "Can",
-                            "order": 2,
-                            "selected": false,
-                            "views": { "default": "CAN" }
+                            "confidence": "inferred",
+                            "source": "infer",
+                            "sourceRule": "rel-starts-with-usa"
                         }
                     ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            { "categoryId": "level", "conceptId": "S" },
+                            { "categoryId": "control", "conceptId": "SI" },
+                            { "categoryId": "control", "conceptId": "TK" },
+                            { "categoryId": "dissem", "conceptId": "NF" },
+                            { "categoryId": "dissem", "conceptId": "REL" },
+                            { "categoryId": "rel", "conceptId": "USA" }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": false,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "SECRET//SI/TK//NOFORN/REL TO USA",
+                    "renders": {},
+                    "suggestionsFor": {
+                        "level": {
+                            "suggestions": [
+                                {
+                                    "categoryId": "level",
+                                    "conceptId": "U",
+                                    "description": "Unclassified",
+                                    "group": "Level",
+                                    "label": "UNCLASSIFIED",
+                                    "name": "Unclassified",
+                                    "order": 1,
+                                    "selected": false,
+                                    "views": { "default": "UNCLASSIFIED" }
+                                },
+                                {
+                                    "categoryId": "level",
+                                    "conceptId": "S",
+                                    "description": "Secret",
+                                    "group": "Level",
+                                    "label": "SECRET",
+                                    "name": "Secret",
+                                    "order": 2,
+                                    "selected": false,
+                                    "views": { "default": "SECRET" }
+                                }
+                            ],
+                            "warnings": []
+                        }
+                    },
+                    "valid": true,
                     "warnings": []
                 }
             },
@@ -2874,7 +4274,19 @@
             "method": "POST",
             "statusCode": 200
         },
-        "dd741ee3a7bd4cab5c8746039310e025cc8e156c731649f9dc6435ff41c890ae": {
+        "e070dec6e78862435e7c23c92a6e4a93a9667377aed0b78b533966687028c314": {
+            "body": {
+                "abiVersion": "v1",
+                "engineSha": "",
+                "engineVersion": "1.0.0-dev.30",
+                "gitTag": "",
+                "openapiVersion": "1.0.0-dev.30",
+                "status": "ok"
+            },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "e52e8171da39e081dc0cc2212d637f11ee32b4982bd1a6589710f871a502ef9d": {
             "body": {
                 "resolution": {
                     "artifacts": [
@@ -2889,113 +4301,104 @@
                     "resolvedVersion": "1.0.0"
                 },
                 "result": {
-                    "suggestions": [
+                    "appliedFixes": [
+                        {
+                            "action": "add",
+                            "add": [
+                                { "categoryId": "rel", "conceptId": "USA" }
+                            ],
+                            "message": "Rule \"rel-starts-with-usa\": added \"USA\" to category \"rel\"",
+                            "ruleId": "rel-starts-with-usa",
+                            "triggerConceptIds": ["REL"]
+                        }
+                    ],
+                    "assertions": [
                         {
                             "categoryId": "level",
                             "conceptId": "S",
-                            "description": "Secret",
-                            "group": "Level",
-                            "label": "SECRET",
-                            "name": "Secret",
-                            "order": 2,
-                            "selected": true,
-                            "views": { "default": "SECRET" }
+                            "confidence": "certain",
+                            "source": "parse"
                         },
                         {
                             "categoryId": "control",
                             "conceptId": "SI",
-                            "description": "Si",
-                            "group": "Control system",
-                            "label": "SI",
-                            "name": "Si",
-                            "order": 1,
-                            "selected": true,
-                            "views": { "default": "SI" }
+                            "confidence": "certain",
+                            "source": "parse"
                         },
                         {
                             "categoryId": "control",
                             "conceptId": "TK",
-                            "description": "Tk",
-                            "group": "Control system",
-                            "label": "TK",
-                            "name": "Tk",
-                            "order": 2,
-                            "selected": true,
-                            "views": { "default": "TK" }
-                        },
-                        {
-                            "categoryId": "dissem",
-                            "conceptId": "NF",
-                            "description": "Noforn",
-                            "group": "Dissemination",
-                            "label": "NOFORN",
-                            "name": "Noforn",
-                            "order": 1,
-                            "selected": true,
-                            "views": { "default": "NOFORN" }
+                            "confidence": "certain",
+                            "source": "parse"
                         },
                         {
                             "categoryId": "dissem",
                             "conceptId": "REL",
-                            "description": "Rel to",
-                            "group": "Dissemination",
-                            "label": "REL TO",
-                            "name": "Rel to",
-                            "order": 2,
-                            "selected": true,
-                            "views": { "default": "REL TO" }
+                            "confidence": "certain",
+                            "source": "user"
                         },
                         {
                             "categoryId": "rel",
                             "conceptId": "USA",
-                            "description": "Usa",
-                            "group": "Releasable To",
-                            "label": "USA",
-                            "name": "Usa",
-                            "order": 0,
-                            "selected": false,
-                            "views": { "default": "USA" }
-                        },
-                        {
-                            "categoryId": "rel",
-                            "conceptId": "AUS",
-                            "description": "Aus",
-                            "group": "Releasable To",
-                            "label": "AUS",
-                            "name": "Aus",
-                            "order": 1,
-                            "selected": false,
-                            "views": { "default": "AUS" }
-                        },
-                        {
-                            "categoryId": "rel",
-                            "conceptId": "CAN",
-                            "description": "Can",
-                            "group": "Releasable To",
-                            "label": "CAN",
-                            "name": "Can",
-                            "order": 2,
-                            "selected": false,
-                            "views": { "default": "CAN" }
+                            "confidence": "inferred",
+                            "source": "infer",
+                            "sourceRule": "rel-starts-with-usa"
                         }
                     ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            { "categoryId": "level", "conceptId": "S" },
+                            { "categoryId": "control", "conceptId": "SI" },
+                            { "categoryId": "control", "conceptId": "TK" },
+                            { "categoryId": "dissem", "conceptId": "REL" },
+                            { "categoryId": "rel", "conceptId": "USA" }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": false,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "SECRET//SI/TK//REL TO USA",
+                    "renders": {},
+                    "suggestionsFor": {
+                        "level": {
+                            "suggestions": [
+                                {
+                                    "categoryId": "level",
+                                    "conceptId": "U",
+                                    "description": "Unclassified",
+                                    "group": "Level",
+                                    "label": "UNCLASSIFIED",
+                                    "name": "Unclassified",
+                                    "order": 1,
+                                    "selected": false,
+                                    "views": { "default": "UNCLASSIFIED" }
+                                },
+                                {
+                                    "categoryId": "level",
+                                    "conceptId": "S",
+                                    "description": "Secret",
+                                    "group": "Level",
+                                    "label": "SECRET",
+                                    "name": "Secret",
+                                    "order": 2,
+                                    "selected": false,
+                                    "views": { "default": "SECRET" }
+                                }
+                            ],
+                            "warnings": []
+                        }
+                    },
+                    "valid": true,
                     "warnings": []
                 }
             },
             "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
-            "statusCode": 200
-        },
-        "e070dec6e78862435e7c23c92a6e4a93a9667377aed0b78b533966687028c314": {
-            "body": {
-                "abiVersion": "v1",
-                "engineSha": "",
-                "engineVersion": "1.0.0-dev.30",
-                "gitTag": "",
-                "openapiVersion": "1.0.0-dev.30",
-                "status": "ok"
-            },
-            "method": "GET",
             "statusCode": 200
         },
         "ecf942a3ad4145ab15963a529aed16f5b064ff956426ddf88d7024ccb9a93274": {
@@ -3084,129 +4487,6 @@
                     "rendered": "SECRET//SI/TK//NOFORN/REL TO USA",
                     "renders": {},
                     "valid": true,
-                    "warnings": []
-                }
-            },
-            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
-            "method": "POST",
-            "statusCode": 200
-        },
-        "f4c2caa6736373f3a8e1ac6147948ac181ac8652db01e0dc6df6131ea0cda49d": {
-            "body": {
-                "resolution": {
-                    "artifacts": [
-                        {
-                            "id": "composer-pick",
-                            "kind": "scheme",
-                            "version": "1.0.0"
-                        }
-                    ],
-                    "contextId": "composer-pick",
-                    "requestedVersion": "0.0.0",
-                    "resolvedVersion": "1.0.0"
-                },
-                "result": {
-                    "suggestions": [
-                        {
-                            "categoryId": "level",
-                            "conceptId": "S",
-                            "description": "Secret",
-                            "group": "Level",
-                            "label": "SECRET",
-                            "name": "Secret",
-                            "order": 2,
-                            "selected": true,
-                            "views": { "default": "SECRET" }
-                        },
-                        {
-                            "categoryId": "control",
-                            "conceptId": "SI",
-                            "description": "Si",
-                            "group": "Control system",
-                            "label": "SI",
-                            "name": "Si",
-                            "order": 1,
-                            "selected": true,
-                            "views": { "default": "SI" }
-                        },
-                        {
-                            "categoryId": "control",
-                            "conceptId": "TK",
-                            "description": "Tk",
-                            "group": "Control system",
-                            "label": "TK",
-                            "name": "Tk",
-                            "order": 2,
-                            "selected": true,
-                            "views": { "default": "TK" }
-                        },
-                        {
-                            "categoryId": "dissem",
-                            "conceptId": "NF",
-                            "description": "Noforn",
-                            "group": "Dissemination",
-                            "label": "NOFORN",
-                            "name": "Noforn",
-                            "order": 1,
-                            "selected": false,
-                            "views": { "default": "NOFORN" }
-                        },
-                        {
-                            "categoryId": "dissem",
-                            "conceptId": "REL",
-                            "description": "Rel to",
-                            "group": "Dissemination",
-                            "label": "REL TO",
-                            "name": "Rel to",
-                            "order": 2,
-                            "selected": true,
-                            "views": { "default": "REL TO" }
-                        },
-                        {
-                            "categoryId": "dissem",
-                            "conceptId": "DO",
-                            "description": "Display only",
-                            "group": "Dissemination",
-                            "label": "DISPLAY ONLY",
-                            "name": "Display only",
-                            "order": 3,
-                            "selected": false,
-                            "views": { "default": "DISPLAY ONLY" }
-                        },
-                        {
-                            "categoryId": "rel",
-                            "conceptId": "USA",
-                            "description": "Usa",
-                            "group": "Releasable To",
-                            "label": "USA",
-                            "name": "Usa",
-                            "order": 0,
-                            "selected": false,
-                            "views": { "default": "USA" }
-                        },
-                        {
-                            "categoryId": "rel",
-                            "conceptId": "AUS",
-                            "description": "Aus",
-                            "group": "Releasable To",
-                            "label": "AUS",
-                            "name": "Aus",
-                            "order": 1,
-                            "selected": true,
-                            "views": { "default": "AUS" }
-                        },
-                        {
-                            "categoryId": "rel",
-                            "conceptId": "CAN",
-                            "description": "Can",
-                            "group": "Releasable To",
-                            "label": "CAN",
-                            "name": "Can",
-                            "order": 2,
-                            "selected": false,
-                            "views": { "default": "CAN" }
-                        }
-                    ],
                     "warnings": []
                 }
             },

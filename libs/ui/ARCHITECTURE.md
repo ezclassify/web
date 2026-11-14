@@ -105,7 +105,9 @@ Every enhanced input and textarea, including a data-only field, has one EzClassi
   clears when its cause does. The tooltip opt-out never hides it.
 - A fix not yet shown re-arms unseen even if the field was previously seen. Clearing the fix set (a clean reprocess) returns to quiet and forgets what was shown, so the next fix starts unseen again. State is per-field, in-memory only.
 - A field always has one status mark. Multiple fixes never create a stack of icons.
-- Hovering (past hover-intent) or focusing an active mark explains every change the engine made: each `Change` once, as the change's own `message`. The field writes none of the words itself; a change says only what the engine's message says. One rule that removes three concepts made three changes and lists three lines; reading the same text again does not repeat a line.
+- Hovering (past hover-intent) or focusing an active mark explains every change EzClassify made to what the author chose, one line per change to the marking: what was added or removed, in which category. Two rules that add the same concept made one change and list one line, as the first recorded change's own `message`; one rule that removes three concepts made three changes and lists three lines; reading the same text again does not repeat a line. Seen and unseen follow the same identity, so a change already shown stays seen when another rule makes it again.
+- The engine names a fact a rule adds in `appliedFixes` only when the marking writes it. A fact the marking does not write (a group's members, when the group's name is written) arrives only as a derived assertion with its `sourceRule`, so the field passes what it holds to the mark, and the mark explains each such fact as one more change, worded the way the engine words an added concept (`mark.ruleAdded`). A category's default and a value a part takes from its whole are not changes. An applied addition the field no longer holds is left out.
+- The popover opens outside the field's box (the suite frame, or the text field's wrap) and its error list: below them, above them, or beside them when neither has room, judged inside any ancestor that clips the field before the viewport alone. It never covers the field it explains.
 
 The indicator communicates state; it is not a per-fix activity feed.
 
@@ -367,7 +369,8 @@ processing is a separate `Change` in `appliedFixes` (`ruleId`, `action`,
   box, so its list still follows the box.
 - The status mark's "EzClassify fixed this marking" popover closes when the
   field's value is rendered again or when focus or a press goes outside the
-  field, and it moves above the mark (or closes) rather than cover the list.
+  field. It opens clear of the field and the list together, and closes rather
+  than cover the list when no side has room.
 
 ### Whole-over-parts coverage has one source
 

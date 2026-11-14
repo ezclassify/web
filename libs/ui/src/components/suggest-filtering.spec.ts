@@ -389,6 +389,21 @@ describe('store-driven suggest filtering (facet subscription)', () => {
 
     // DecisionFlow requests its own options when the author enters a step.
     describe('DecisionFlow (from_school step): self-suggest path', () => {
+        /**
+         * Whether the school step offers a school: an option that can be
+         * chosen, read by its name, not one shown only as unavailable.
+         */
+        const offersSchool = () =>
+            Array.from(
+                container.querySelectorAll(
+                    '.ez-decision-flow__option:not([aria-disabled="true"])',
+                ),
+            ).some((el) =>
+                /OAKWOOD|RIVERSIDE|LINCOLN/.test(
+                    el.textContent?.toUpperCase() ?? '',
+                ),
+            );
+
         it('hides school choices on the school step without a level', async () => {
             const component = new DecisionFlow();
             await component.init(container, toCtx(engine), {
@@ -400,17 +415,7 @@ describe('store-driven suggest filtering (facet subscription)', () => {
                 ?.focus();
             await demoRuntimeSettled();
 
-            const optionNames = Array.from(
-                container.querySelectorAll('.ez-decision-flow__option'),
-            ).map((el) => el.textContent);
-            expect(
-                optionNames.some(
-                    (n) =>
-                        n?.includes('OAKWOOD') ||
-                        n?.includes('RIVERSIDE') ||
-                        n?.includes('LINCOLN'),
-                ),
-            ).toBe(false);
+            expect(offersSchool()).toBe(false);
         });
 
         it('shows school choices on the school step after level becomes STATE_ASSESSMENT_STAFF', async () => {
@@ -424,17 +429,7 @@ describe('store-driven suggest filtering (facet subscription)', () => {
                 ?.focus();
             await new Promise((resolve) => setTimeout(resolve, 0));
 
-            const optionNames = Array.from(
-                container.querySelectorAll('.ez-decision-flow__option'),
-            ).map((el) => el.textContent);
-            expect(
-                optionNames.some(
-                    (n) =>
-                        n?.includes('OAKWOOD') ||
-                        n?.includes('RIVERSIDE') ||
-                        n?.includes('LINCOLN'),
-                ),
-            ).toBe(true);
+            expect(offersSchool()).toBe(true);
         });
     });
 });
