@@ -83,15 +83,24 @@
 }
 /* At rest the header shows no step, so the dots show every scope's name in
    full. A field too narrow for them on one line moves a scope, name and dots
-   together, to the next line. */
+   together, to the next line; one too narrow for a scope's name beside its
+   dots puts the name above them. No name or dot is cut. */
 .ez-decision-flow:not([data-open]) .ez-decision-flow__progress {
     max-width: 100%;
     flex-wrap: wrap;
     row-gap: 0.25rem;
 }
-.ez-decision-flow:not([data-open]) .ez-decision-flow__dot-scope,
+.ez-decision-flow:not([data-open]) .ez-decision-flow__dot-scope {
+    max-width: 100%;
+    flex-wrap: wrap;
+}
+.ez-decision-flow:not([data-open]) .ez-decision-flow__dot-group {
+    flex-wrap: wrap;
+}
 .ez-decision-flow:not([data-open]) .ez-decision-flow__dot-group-label {
-    flex: 0 0 auto;
+    flex: 0 1 auto;
+    overflow: visible;
+    white-space: normal;
 }
 
 .ez-decision-flow__dot-group-label {
