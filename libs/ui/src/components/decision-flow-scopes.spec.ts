@@ -93,12 +93,21 @@ const dotFor = (host: HTMLElement, label: string) =>
     Array.from(
         host.querySelectorAll<HTMLElement>('.ez-decision-flow__step-dot'),
     ).find((dot) => dotCategory(dot) === label)!;
-/** Each scope line: its label and the full text it writes. */
+/**
+ * Each value: its scope's name, for a flow of several, and the full text it
+ * writes.
+ */
 const lines = (host: HTMLElement) =>
-    Array.from(host.querySelectorAll('.ez-decision-flow__row')).map((row) => [
-        row.querySelector('.ez-decision-flow__row-label')?.textContent ?? null,
-        row.querySelector<HTMLElement>('.ez-decision-flow__row-text')?.title,
-    ]);
+    Array.from(host.querySelectorAll('.ez-decision-flow__value')).map(
+        (value) => [
+            value
+                .closest('.ez-decision-flow__dot-scope')
+                ?.querySelector('.ez-decision-flow__dot-group-label')
+                ?.textContent ?? null,
+            value.querySelector<HTMLElement>('.ez-decision-flow__value-text')
+                ?.title,
+        ],
+    );
 const optionNames = (host: HTMLElement) =>
     Array.from(host.querySelectorAll('.ez-decision-flow__option')).map(
         (el) => el.textContent,
@@ -212,7 +221,7 @@ describe('DecisionFlow across scopes', () => {
         expect(question(host)).toBe('1 of 2 \u00b7 Decision Type');
         expect(scopeHeading(host)).toBeNull();
         expect(host.querySelector('.ez-decision-flow__dot-group')).toBeNull();
-        // One scope: one line, unlabeled.
+        // One scope: one value, with no scope name.
         expect(lines(host).map(([label]) => label)).toEqual([null]);
         flow!.destroy();
 

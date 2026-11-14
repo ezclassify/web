@@ -1,61 +1,44 @@
 /* DecisionFlow: a guided marking in one field-sized box. The box is the
-   suite's field frame (field-chrome.css). The header row is one line, the same
-   height at rest and open. At rest a flow of one scope is that line alone
-   (dots, its marking, chrome); a flow of several scopes adds one line per
-   scope. Focus or a press opens the current step under the header. */
+   suite's field frame (field-chrome.css). The header holds the dots and the
+   values, with the chrome at the trailing end of its first line: for one
+   scope the dots and then the value, which goes under them when it does not
+   fit; for several, one stacked block per scope (name, dots, value). Focus or
+   a press opens the current step under the header, and opening moves nothing
+   above it. */
 
 .ez-decision-flow {
-    /* A dot's target width; the dots row is sized from it (see
-       .ez-decision-flow__progress). */
+    /* A dot's target width. */
     --ez-decision-flow-dot-width: 1.125rem;
     display: flex;
     flex-direction: column;
     gap: 0.25rem;
 }
 
-/* ── Header row: dots, then the step header or the rest line, chrome ── */
-/* One line that never wraps: the chrome holds the trailing end, the dots keep
-   their size, and the words between them give up room with an ellipsis. The
-   dots and their scope names take the same room at rest and open, so a dot
-   stays under the pointer that opened the flow: the step header or the rest
-   line gives up its room first, and the dots and their names take no more
-   than about two thirds of the line, which leaves the step header room to
-   show. The dots themselves never give up room: on a field too narrow for
-   them and the chrome, the line clips at its end rather than run under the
-   chrome. */
+/* ── Header: the dots and values, the chrome on the first line ── */
 .ez-decision-flow__header {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     gap: 0.5rem;
     min-height: 1.5rem;
 }
 .ez-decision-flow__header-main {
     flex: 1 1 auto;
     min-width: 0;
-    overflow: hidden;
     display: flex;
-    flex-wrap: nowrap;
-    align-items: center;
-    gap: 0.75rem;
+    flex-wrap: wrap;
+    align-items: baseline;
+    column-gap: 0.75rem;
     min-height: 1.5rem;
 }
 
-/* The component sets the counts the row's fixed part is sized from:
-   --ez-decision-flow-dots (dots), --ez-decision-flow-breaks (breaks between
-   scope groups, 1rem each) and --ez-decision-flow-names (scope names, each
-   with its 0.25rem space before its dots). */
+/* One scope: the dots on one line, never giving up room. */
 .ez-decision-flow__progress {
-    --ez-decision-flow-dots-width: calc(
-        var(--ez-decision-flow-dots, 0) * var(--ez-decision-flow-dot-width) +
-            var(--ez-decision-flow-breaks, 0) * 1rem +
-            var(--ez-decision-flow-names, 0) * 0.25rem
-    );
-    flex: 0 1 auto;
-    min-width: var(--ez-decision-flow-dots-width);
-    max-width: max(65%, var(--ez-decision-flow-dots-width));
+    flex: 0 0 auto;
+    max-width: 100%;
     display: flex;
-    flex-wrap: nowrap;
+    flex-wrap: wrap;
     align-items: center;
+    align-self: center;
     gap: 0;
 }
 
@@ -67,23 +50,21 @@
     align-items: center;
     gap: 0;
 }
-/* A flow of several scopes: each scope's name over its dots, the scopes side
-   by side, and a scope that does not fit moves, name and dots, to the next
-   line. The layout is the same at rest and open, so no dot moves when the flow
-   opens, and no name or dot is cut. */
+/* Several scopes: one block per scope, stacked, the same at rest and open:
+   the scope's name, which wraps rather than shorten, its dots, and its value
+   at the block's full width. */
 .ez-decision-flow__progress[data-scoped] {
-    min-width: 0;
-    max-width: 100%;
-    flex-wrap: wrap;
-    align-items: flex-end;
-    gap: 0.25rem 1rem;
+    flex: 1 1 100%;
+    flex-direction: column;
+    flex-wrap: nowrap;
+    align-items: stretch;
+    gap: 0.375rem;
 }
 .ez-decision-flow__dot-scope {
-    flex: 0 1 auto;
-    max-width: 100%;
-    display: inline-flex;
+    display: flex;
     flex-direction: column;
     align-items: flex-start;
+    min-width: 0;
 }
 .ez-decision-flow__dot-group-label {
     font-size: 0.6875rem;
@@ -92,6 +73,10 @@
 }
 .ez-decision-flow__dot-scope > .ez-decision-flow__dot-group {
     flex-wrap: wrap;
+}
+.ez-decision-flow__scope-value {
+    align-self: stretch;
+    min-width: 0;
 }
 
 /* A dot is a button: a small visible disc in a larger target. */
@@ -155,36 +140,19 @@
     outline-offset: 2px;
 }
 
-/* The step header names the open step, so it shows while the step is open;
-   at rest the flow is the dots and its scope lines. It stays on the header's
-   one line and shortens with an ellipsis. */
-.ez-decision-flow:not([data-open]) .ez-decision-flow__question-label {
-    display: none;
-}
-/* A flow of several scopes heads its open step with the title, on lines of
-   its own. */
-.ez-decision-flow__question > .ez-decision-flow__question-label {
-    white-space: normal;
-    margin-block-end: 0.25rem;
-}
+/* The open step's title: the step's first line, whole, never shortened. */
 .ez-decision-flow__question-label {
-    flex: 0 1000 auto;
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    grid-column: 1 / -1;
     font-size: 0.8125rem;
     font-weight: 600;
     color: var(--ez-color-text, inherit);
 }
 
-/* A flow of one scope at rest: its line sits in the header after the dots. */
+/* One scope: its value after the dots, or under them when it does not fit
+   beside them; never shortened. */
 .ez-decision-flow__rest {
-    flex: 1 1000 auto;
+    flex: 1 1 auto;
     min-width: 0;
-    display: flex;
-    align-items: baseline;
-    gap: 0.5rem;
 }
 .ez-decision-flow__rest:empty {
     display: none;
@@ -214,23 +182,17 @@
 
 /* ── The open step: arrows at the inside edges, options between ── */
 .ez-decision-flow__step {
-    display: flex;
-    align-items: flex-start;
-    gap: 0.375rem;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: start;
+    gap: 0.25rem 0.375rem;
     padding-block: 0.25rem;
 }
 .ez-decision-flow__step[hidden] {
     display: none;
 }
 .ez-decision-flow__question {
-    flex: 1 1 auto;
     min-width: 0;
-}
-
-.ez-decision-flow__question-desc {
-    font-size: 0.75rem;
-    color: var(--ez-color-muted, #6b7280);
-    margin-bottom: 0.25rem;
 }
 
 .ez-decision-flow__options {
@@ -256,6 +218,11 @@
 }
 .ez-decision-flow__option:hover {
     border-color: var(--ez-color-primary, #fdb827);
+}
+/* A toggle of a multiple-choice step carries a check mark while chosen. */
+.ez-decision-flow__option[role='checkbox'][aria-checked='true']::before {
+    content: '\2713\FE0E';
+    margin-inline-end: 0.375rem;
 }
 .ez-decision-flow__option[aria-checked='true'] {
     background: var(--ez-color-primary, #fdb827);
@@ -336,70 +303,63 @@
     border-color: var(--ez-color-error-text, #b91c1c);
 }
 
-/* ── One line per scope: label, what it writes, its errors ── */
-/* The lines share columns, so every scope's label, marking and count line up.
-   A line's own box steps aside (display: contents) and its parts sit in the
-   columns: the marking in the next-to-last, the count in the last. */
-.ez-decision-flow__rows {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) max-content;
-    align-items: baseline;
-    gap: 0.125rem 0.5rem;
-    font-size: 0.875rem;
-}
-/* A scope's name takes its natural width, and wraps between words on a
-   narrow field rather than lose any of them; the marking beside it gives up
-   room with an ellipsis instead. */
-.ez-decision-flow__rows[data-labeled] {
-    grid-template-columns:
-        minmax(min-content, max-content) minmax(0, 1fr)
-        max-content;
-}
-.ez-decision-flow__rows[hidden] {
-    display: none;
-}
-.ez-decision-flow__rows > .ez-decision-flow__row {
-    display: contents;
-}
-.ez-decision-flow__rows .ez-decision-flow__row-label {
-    grid-column: 1;
-}
-.ez-decision-flow__rows .ez-decision-flow__row-text {
-    grid-column: -3 / -2;
-}
-.ez-decision-flow__rows .ez-decision-flow__row-errors {
-    grid-column: -2 / -1;
-}
-/* In the header at rest the one line is a plain row. */
-.ez-decision-flow__rest > .ez-decision-flow__row {
-    flex: 1 1 auto;
+/* ── Values ── */
+/* A value line: what the marking writes, then its error count. A scope's
+   line is one line and opens to its full value and messages. */
+.ez-decision-flow__value {
     display: flex;
     align-items: baseline;
     gap: 0.5rem;
+    width: 100%;
     min-width: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: var(--ez-color-text, inherit);
+    font: inherit;
     font-size: 0.875rem;
+    text-align: start;
 }
-.ez-decision-flow__row-label {
-    font-size: 0.75rem;
-    color: var(--ez-color-muted, #6b7280);
+button.ez-decision-flow__value {
+    cursor: pointer;
 }
-.ez-decision-flow__row-text {
+button.ez-decision-flow__value:focus-visible {
+    outline: 2px solid var(--ez-color-primary, #fdb827);
+    outline-offset: 2px;
+}
+.ez-decision-flow__value-text {
     flex: 1 1 auto;
     min-width: 0;
+    white-space: pre-line;
+    overflow-wrap: anywhere;
+}
+.ez-decision-flow__value[data-one-line] .ez-decision-flow__value-text {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    color: var(--ez-color-text, inherit);
 }
-.ez-decision-flow__row-text[data-empty] {
+.ez-decision-flow__value-text[data-empty] {
     color: var(--ez-color-muted, #6b7280);
 }
-.ez-decision-flow__row-errors {
+.ez-decision-flow__value-errors {
     flex: 0 0 auto;
     font-size: 0.75rem;
     color: var(--ez-color-error, #b91c1c);
     white-space: nowrap;
-    cursor: help;
+}
+.ez-decision-flow__value-detail {
+    margin-block-start: 0.25rem;
+    font-size: 0.8125rem;
+}
+.ez-decision-flow__value-full {
+    white-space: pre-line;
+    overflow-wrap: anywhere;
+}
+.ez-decision-flow__value-messages {
+    margin: 0.25rem 0 0;
+    padding-inline-start: 1.25rem;
+    color: var(--ez-color-error, #b91c1c);
 }
 
 @media (pointer: coarse) {

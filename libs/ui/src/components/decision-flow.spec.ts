@@ -635,14 +635,15 @@ describe('DecisionFlow', () => {
         );
         options[2].click();
         await settle();
-        const rows = container.querySelectorAll('.ez-decision-flow__row');
-        // One scope: one line, with no scope label.
-        expect(rows.length).toBe(1);
+        const values = container.querySelectorAll('.ez-decision-flow__value');
+        // One scope: one value, after the dots, with no scope name.
+        expect(values.length).toBe(1);
         expect(
-            rows[0].querySelector('.ez-decision-flow__row-label'),
+            container.querySelector('.ez-decision-flow__dot-group-label'),
         ).toBeNull();
         expect(
-            rows[0].querySelector('.ez-decision-flow__row-text')?.textContent,
+            values[0].querySelector('.ez-decision-flow__value-text')
+                ?.textContent,
         ).toBe('S:F');
     });
 
@@ -714,9 +715,13 @@ describe('DecisionFlow', () => {
         );
         expect(back.getAttribute('aria-label')).toBe('Previous step');
         expect(next.getAttribute('aria-label')).toBe('Next step');
-        // The arrows sit at the step's inside edges, around its options.
+        // The title heads the step; the arrows sit at its inside edges,
+        // around its options.
         const step = container.querySelector('.ez-decision-flow__step')!;
-        expect(step.firstElementChild).toBe(back);
+        expect(step.firstElementChild?.className).toBe(
+            'ez-decision-flow__question-label',
+        );
+        expect(step.children[1]).toBe(back);
         expect(step.lastElementChild).toBe(next);
         const arrows = [back, next].map((button) =>
             button.querySelector('[aria-hidden="true"]'),
@@ -730,7 +735,7 @@ describe('DecisionFlow', () => {
     it('shows an unset marking on its line as a word, not a dash', async () => {
         await component.init(container, toCtx(engine));
         await enterFlow(container);
-        const text = container.querySelector('.ez-decision-flow__row-text');
+        const text = container.querySelector('.ez-decision-flow__value-text');
         // A word, not a dash: a dash is silent to a screen reader.
         expect(text?.textContent).toBe('not set');
         expect(text?.hasAttribute('data-empty')).toBe(true);
@@ -780,13 +785,18 @@ describe('DecisionFlow', () => {
         ).toBe(true);
     });
 
-    it('heads the open step on one line beside the dots: "1 of 2 · Scope"', async () => {
+    it('heads the open step with its title: "1 of 2 · Scope"', async () => {
         await component.init(container, toCtx(engine));
         await enterFlow(container);
         const label = container.querySelector(
-            '.ez-decision-flow__header .ez-decision-flow__question-label',
+            '.ez-decision-flow__step > .ez-decision-flow__question-label',
         );
         expect(label?.textContent).toBe('1 of 2 \u00b7 Scope');
+        expect(
+            container.querySelector(
+                '.ez-decision-flow__header .ez-decision-flow__question-label',
+            ),
+        ).toBeNull();
     });
 
     it('options container aria-labelledby references the h3 label id', async () => {
@@ -2271,23 +2281,22 @@ describe('DecisionFlow: compact layout', () => {
         ]);
         const frame = container.querySelector('.ez-decision-flow')!;
         const header = frame.querySelector('.ez-decision-flow__header')!;
-        const rows = frame.querySelector<HTMLElement>(
-            '.ez-decision-flow__rows',
-        )!;
-        // The header holds the line, after the dots and before the chrome.
-        const line = header.querySelector(
-            '.ez-decision-flow__rest .ez-decision-flow__row',
+        // The header holds the value, after the dots and before the chrome.
+        const value = header.querySelector<HTMLElement>(
+            '.ez-decision-flow__rest .ez-decision-flow__value',
         )!;
         expect(
-            line.querySelector('.ez-decision-flow__row-text')?.textContent,
+            value.querySelector('.ez-decision-flow__value-text')?.textContent,
         ).not.toBe('not set');
         expect(
-            line.querySelector('.ez-decision-flow__row-errors')?.textContent,
+            value.querySelector('.ez-decision-flow__value-errors')?.textContent,
         ).toBe('1 error');
-        expect(line.querySelector('.ez-decision-flow__row-label')).toBeNull();
+        expect(
+            header.querySelector('.ez-decision-flow__dot-group-label'),
+        ).toBeNull();
         const order = [
             header.querySelector('.ez-decision-flow__progress')!,
-            line,
+            value,
             header.querySelector('.ez-status-mark')!,
         ];
         for (let i = 1; i < order.length; i++)
@@ -2295,56 +2304,65 @@ describe('DecisionFlow: compact layout', () => {
                 order[i - 1].compareDocumentPosition(order[i]) &
                     Node.DOCUMENT_POSITION_FOLLOWING,
             ).toBeTruthy();
-        // Nothing else shows: no step, no lines under the header, and the
-        // step header is the open flow's (it shows only under data-open).
         expect(step().hidden).toBe(true);
-        expect(rows.hidden).toBe(true);
-        expect(rows.children).toHaveLength(0);
         expect(frame.hasAttribute('data-open')).toBe(false);
+        const before = header.innerHTML;
 
-        // Open, the line moves under the step and the header names the step.
+        // Opening adds the step under the header and leaves the header as
+        // it was: the value stays where it was.
         dots()[0].focus();
         expect(frame.hasAttribute('data-open')).toBe(true);
         expect(title()).toMatch(/^\d of 2 · /);
         expect(
-            header.querySelector('.ez-decision-flow__rest')!.children,
-        ).toHaveLength(0);
-        expect(rows.hidden).toBe(false);
-        expect(
-            [...rows.querySelectorAll('.ez-decision-flow__row')].map(
-                (row) =>
-                    row.querySelector('.ez-decision-flow__row-label') === null,
+            header.querySelector(
+                '.ez-decision-flow__rest .ez-decision-flow__value',
             ),
-        ).toEqual([true]);
+        ).not.toBeNull();
+        expect(
+            header.querySelectorAll('.ez-decision-flow__value'),
+        ).toHaveLength(1);
+        const settled = (html: string) =>
+            html.replace(/ (tabindex="-?\d"|data-previewing="")/g, '');
+        // Focus moves the dots' tab stop and previews a dot; nothing else in
+        // the header changes.
+        expect(settled(header.innerHTML)).toBe(settled(before));
     });
 
-    it('says "not set" on its rest line when nothing is answered', async () => {
+    it('says "not set" on its value when nothing is answered', async () => {
         await flow.init(container, toCtx(createMockEngine()));
         const text = container.querySelector<HTMLElement>(
-            '.ez-decision-flow__rest .ez-decision-flow__row-text',
+            '.ez-decision-flow__rest .ez-decision-flow__value-text',
         )!;
         expect(text.textContent).toBe('not set');
         expect(text.hasAttribute('data-empty')).toBe(true);
     });
 
-    it('lists the engine errors under it only while open; at rest the count carries them', async () => {
-        const outside = document.createElement('button');
-        document.body.appendChild(outside);
+    it('carries its errors as a count that opens to the messages, never as a list under the flow', async () => {
         await flow.init(container, toCtx(createMockEngine()));
         flow.updateValidationErrors([
             { constraintId: 'required', message: 'Impact is required' },
         ]);
         const list = () =>
-            document.querySelector<HTMLElement>('.ez-validation-errors')!;
-        expect(list().hidden).toBe(true);
+            document.querySelector<HTMLElement>('.ez-validation-errors');
         dots()[0].focus();
-        expect(list().hidden).toBe(false);
-        expect(list().textContent).toContain('Impact is required');
-        outside.focus();
-        expect(list().hidden).toBe(true);
+        expect(list()?.hidden ?? true).toBe(true);
+        const value = container.querySelector<HTMLButtonElement>(
+            'button.ez-decision-flow__value',
+        )!;
+        expect(value.getAttribute('aria-expanded')).toBe('false');
+        value.click();
+        expect(
+            container
+                .querySelector('button.ez-decision-flow__value')
+                ?.getAttribute('aria-expanded'),
+        ).toBe('true');
+        expect(
+            container.querySelector('.ez-decision-flow__value-messages')
+                ?.textContent,
+        ).toContain('Impact is required');
     });
 
-    it('at rest across scopes is the header and one labeled line per scope', async () => {
+    it('at rest across scopes stacks a block per scope: its name, its dots, its value', async () => {
         const scoped = document.createElement('div');
         document.body.appendChild(scoped);
         await flow.init(scoped, toCtx(createScopedEngine()), {
@@ -2353,25 +2371,37 @@ describe('DecisionFlow: compact layout', () => {
         await settle();
         const frame = scoped.querySelector('.ez-decision-flow')!;
         const header = frame.querySelector('.ez-decision-flow__header')!;
-        // The header is the grouped dots and the chrome: no line in it.
-        expect(header.querySelector('.ez-decision-flow__row')).toBeNull();
-        expect(
-            [...header.querySelectorAll('.ez-decision-flow__dot-group')].map(
-                (group) => group.getAttribute('aria-label'),
+        const blocks = [
+            ...header.querySelectorAll<HTMLElement>(
+                '.ez-decision-flow__dot-scope',
             ),
-        ).toEqual(['Marking', 'Admin']);
-        expect(frame.hasAttribute('data-open')).toBe(false);
-        const rows = frame.querySelector<HTMLElement>(
-            '.ez-decision-flow__rows',
-        )!;
-        expect(rows.hidden).toBe(false);
+        ];
+        expect(blocks.map((block) => block.dataset.scope)).toEqual([
+            'marking',
+            'admin',
+        ]);
+        for (const block of blocks)
+            expect([...block.children].map((child) => child.className)).toEqual(
+                [
+                    'ez-decision-flow__dot-group-label',
+                    'ez-decision-flow__dot-group',
+                    'ez-decision-flow__scope-value',
+                ],
+            );
         expect(
-            [...rows.querySelectorAll('.ez-decision-flow__row')].map(
-                (row) =>
-                    row.querySelector('.ez-decision-flow__row-label')
+            blocks.map(
+                (block) =>
+                    block.querySelector('.ez-decision-flow__dot-group-label')
                         ?.textContent,
             ),
         ).toEqual(['Marking', 'Admin']);
+        // A scope's value is one line that opens to the full value.
+        const value = blocks[0].querySelector<HTMLButtonElement>(
+            'button.ez-decision-flow__value',
+        )!;
+        expect(value.hasAttribute('data-one-line')).toBe(true);
+        expect(frame.hasAttribute('data-open')).toBe(false);
+        expect(frame.querySelector('.ez-decision-flow__rows')).toBeNull();
     });
 
     it("names a dot's scope in its preview when the flow spans scopes", async () => {
@@ -2501,7 +2531,7 @@ describe('DecisionFlow: compact layout', () => {
         // An optional unset step is never missing.
         expect(dots()[0].dataset.state).toBe('optional');
         const count = container.querySelector<HTMLElement>(
-            '.ez-decision-flow__row-errors',
+            '.ez-decision-flow__value-errors',
         );
         expect(count?.textContent).toBe('1 error');
         expect(count?.title).toBe('Impact is required');
@@ -2542,7 +2572,7 @@ describe('DecisionFlow: compact layout', () => {
         expect(label()).toContain('Caveat');
     });
 
-    it('writes one line per scope, labeled, with the errors judged on that scope', async () => {
+    it('writes each scope its value, under its name, with the errors judged on that scope', async () => {
         const engine = createScopedEngine();
         (engine.process as any).mockImplementation(
             (
@@ -2579,17 +2609,19 @@ describe('DecisionFlow: compact layout', () => {
         await vi.waitFor(() =>
             expect(
                 scoped.querySelector(
-                    '.ez-decision-flow__row[data-scope="admin"] .ez-decision-flow__row-errors',
+                    '.ez-decision-flow__dot-scope[data-scope="admin"] .ez-decision-flow__value-errors',
                 )?.textContent,
             ).toBe('1 error'),
         );
         const rows = [
-            ...scoped.querySelectorAll<HTMLElement>('.ez-decision-flow__row'),
+            ...scoped.querySelectorAll<HTMLElement>(
+                '.ez-decision-flow__dot-scope',
+            ),
         ];
         expect(
             rows.map(
                 (row) =>
-                    row.querySelector('.ez-decision-flow__row-label')
+                    row.querySelector('.ez-decision-flow__dot-group-label')
                         ?.textContent,
             ),
         ).toEqual(['Marking', 'Admin']);
@@ -2599,7 +2631,7 @@ describe('DecisionFlow: compact layout', () => {
             rows.map(
                 (row) =>
                     row.querySelector<HTMLElement>(
-                        '.ez-decision-flow__row-errors',
+                        '.ez-decision-flow__value-errors',
                     )?.title,
             ),
         ).toEqual(['Shared rule broken', 'Admin needs a value']);

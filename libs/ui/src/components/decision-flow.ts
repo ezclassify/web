@@ -1,21 +1,22 @@
 /**
  * DecisionFlow: sequential decision-point stepper component.
  *
- * A field-sized control in the suite's frame. Its header row holds one dot per
- * step and, at its trailing end, the suite's status mark and clear. The header
- * is one line, the same height at rest and open.
+ * A field-sized control in the suite's frame. The status mark and clear sit at
+ * the trailing end of its first line.
  *
- * At rest the flow reads like a field. A flow of one scope is that one line:
- * the dots, then what the marking writes and how many errors it has. A flow of
- * several scopes is the header (its dots grouped by scope) and one line per
- * scope under it. Focusing or pressing the control opens it: the header names
- * the current step ("3 of 8 · Dissemination Control"), the step's options show
- * under it between the previous and next step arrows, and one line per scope
- * follows, an unlabeled one for a flow of one scope. The engine's full error
- * list shows under the flow only while it is open; at rest the error count
- * carries it. Each choice calls `reprocess()` so constraints and inference fire
- * as the author goes, and a choice in a single-choice step moves on to the next
- * step.
+ * A flow of one scope is one line at rest: the dots, then what the marking
+ * writes and how many errors it has. A value that does not fit beside the dots
+ * goes under them, whole. A flow of several scopes stacks one block per scope:
+ * the scope's name, its dots under the name, and its value under the dots, one
+ * line that opens to the full value and that scope's messages.
+ *
+ * Focusing or pressing the control opens it, and opening adds one thing, the
+ * step, at the bottom: its title ("3 of 8 · Dissemination Control") on a line
+ * of its own, then the step's options between the previous and next step
+ * arrows. Nothing above the step moves, hides or changes size when it opens or
+ * when the step changes. Each choice calls `reprocess()` so constraints and
+ * inference fire as the author goes; a choice in a single-choice step moves on
+ * to the next step, and a multiple-choice step's toggles do not.
  *
  * The dots are the navigation: each one jumps to its step, and says at a glance
  * whether the step is current, answered, missing an answer the engine asks for,
@@ -160,7 +161,8 @@ export class DecisionFlow extends ComponentBase {
     /** The open step: its options between the previous and next arrows. */
     private stepEl!: HTMLDivElement;
     /** One line per scope: what the marking writes there, and its errors. */
-    private rowsEl!: HTMLDivElement;
+    /** The scopes whose value line is open to its full value and messages. */
+    private readonly openValues = new Set<string>();
     /** The label a previewed dot shows, laid over the flow. */
     private previewEl!: HTMLDivElement;
     /** Whether the current step is open under the header. */
@@ -545,31 +547,27 @@ export class DecisionFlow extends ComponentBase {
         this.titleEl.className = 'ez-decision-flow__question-label';
         this.restEl = document.createElement('div');
         this.restEl.className = 'ez-decision-flow__rest';
-        // The dots, then the step header while open or a flow of one scope's
-        // line at rest, on one line; the chrome keeps the row's trailing end.
+        // The dots and the marking's value: for one scope, the value after
+        // the dots, under them when it does not fit beside them; for several,
+        // each scope's name, dots and value stacked. The chrome keeps the
+        // first line's trailing end. Opening the flow changes none of it.
         const headerMain = document.createElement('div');
         headerMain.className = 'ez-decision-flow__header-main';
-        headerMain.append(this.dotsEl, this.titleEl, this.restEl);
+        headerMain.append(this.dotsEl, this.restEl);
         this.headerMainEl = headerMain;
         this.headerEl.appendChild(headerMain);
         this.stepEl = document.createElement('div');
         this.stepEl.className = 'ez-decision-flow__step';
         this.stepEl.hidden = true;
-        this.rowsEl = document.createElement('div');
-        this.rowsEl.className = 'ez-decision-flow__rows';
         this.previewEl = document.createElement('div');
         this.previewEl.className = 'ez-decision-flow__dot-preview';
         this.previewEl.setAttribute('aria-hidden', 'true');
         this.previewEl.hidden = true;
-        this.flowEl.append(
-            this.headerEl,
-            this.stepEl,
-            this.rowsEl,
-            this.previewEl,
-        );
+        this.flowEl.append(this.headerEl, this.stepEl, this.previewEl);
         this.container.appendChild(this.flowEl);
         this.mountSuiteChrome(this.headerEl);
-        // At rest the error count on the flow's line carries the report.
+        // The error count on each value line carries the report, and the
+        // line opens to its messages, so the list under the flow stays aside.
         this.setReportInField(true);
 
         this.announcer = createAnnouncer();
@@ -773,7 +771,7 @@ export class DecisionFlow extends ComponentBase {
         else super.updateValidationErrors([...errors], proposedFixes, warnings);
         if (this.flowEl && !this.rendering) {
             this.renderProgress();
-            this.renderRows();
+            this.renderValues();
         }
     }
 
@@ -980,12 +978,12 @@ export class DecisionFlow extends ComponentBase {
 
             this.renderProgress();
             this.renderTitle();
-            this.stepEl.replaceChildren();
+            this.stepEl.replaceChildren(this.titleEl);
             this.renderNavigation('start');
             this.renderCurrentStep();
             this.renderNavigation('end');
             this.stepEl.hidden = !this.open;
-            this.renderRows();
+            this.renderValues();
             this.flowEl.toggleAttribute('data-ezclassify-locked', this.locked);
             // A rebuilt dot keeps its label showing.
             if (this.previewIndex !== null) this.setPreview(this.previewIndex);
@@ -1235,15 +1233,19 @@ export class DecisionFlow extends ComponentBase {
                 target.setAttribute('role', 'group');
                 target.setAttribute('aria-label', label);
                 target.dataset.scope = group.scope;
-                // The name sits over its group, outside it, so the group
-                // holds the dots alone; a name and its dots move as one.
+                // A scope is a block: its name, its dots under it, and its
+                // value under them. The group holds the dots alone.
                 const caption = document.createElement('span');
                 caption.className = 'ez-decision-flow__dot-group-label';
                 caption.setAttribute('aria-hidden', 'true');
                 caption.textContent = label;
-                const named = document.createElement('span');
+                const value = document.createElement('div');
+                value.className = 'ez-decision-flow__scope-value';
+                value.dataset.scope = group.scope;
+                const named = document.createElement('div');
                 named.className = 'ez-decision-flow__dot-scope';
-                named.append(caption, target);
+                named.dataset.scope = group.scope;
+                named.append(caption, target, value);
                 this.dotsEl.append(named);
             }
             for (const i of group.steps) target.appendChild(this.dot(i));
@@ -1357,18 +1359,22 @@ export class DecisionFlow extends ComponentBase {
         }
         this.previewIndex = index;
         dot.setAttribute('data-previewing', '');
-        // A scope's name may be shortened in the header; the label says it.
         this.previewEl.textContent =
             this.multiScope && step.scope
                 ? `${scopeLabel(step.scope, this.schemeMeta)} · ${this.dotLabel(step)}`
                 : this.dotLabel(step);
         this.previewEl.dataset.state = this.stepState(step);
         this.previewEl.hidden = false;
-        // Centered under the dot, then pulled back inside the viewport.
+        // Centered above the dot, so it never covers the step under the
+        // header, and under it only where above would leave the viewport or a
+        // clipping ancestor; then pulled back inside the viewport.
         const frame = this.flowEl.getBoundingClientRect();
         const at = dot.getBoundingClientRect();
-        this.previewEl.style.top = `${at.bottom - frame.top + 4}px`;
         this.previewEl.style.left = '0px';
+        const height = this.previewEl.getBoundingClientRect().height;
+        const above = at.top - height - 4;
+        const top = above >= visibleTop(this.flowEl) ? above : at.bottom + 4;
+        this.previewEl.style.top = `${top - frame.top}px`;
         const width = this.previewEl.getBoundingClientRect().width;
         const viewport =
             document.documentElement.clientWidth || window.innerWidth;
@@ -1380,20 +1386,17 @@ export class DecisionFlow extends ComponentBase {
     }
 
     /**
-     * Open or close the current step under the header. A flow of one scope
-     * moves its line between the header (at rest) and under the step (open),
-     * and the error list under the flow shows only while it is open.
+     * Open or close the current step under the header. Opening adds the step at
+     * the bottom and moves nothing above it.
      */
     private setOpen(open: boolean): void {
         if (this.open === open || !this.stepEl) return;
         this.open = open;
         this.stepEl.hidden = !open;
         this.flowEl.toggleAttribute('data-open', open);
-        this.setReportInField(!open);
-        this.renderRows();
     }
 
-    /** The step header beside the dots: "3 of 8 · Dissemination Control". */
+    /** The open step's first line: "3 of 8 · Dissemination Control". */
     private renderTitle(): void {
         const steps = this.steps;
         const step = steps[this.currentStep];
@@ -1409,17 +1412,11 @@ export class DecisionFlow extends ComponentBase {
 
         const q = document.createElement('div');
         q.className = 'ez-decision-flow__question';
-        // A flow of several scopes names each scope over its dots, which keep
-        // their places when it opens, so the step's title heads the step
-        // rather than sitting beside them. A flow of one scope keeps it in
-        // its header line.
-        if (this.multiScope) q.appendChild(this.titleEl);
-        else if (this.titleEl.parentElement !== this.headerMainEl)
-            this.headerMainEl.insertBefore(this.titleEl, this.restEl);
 
         if (!step.single && !this.isTextInputStep(step)) {
             const hint = document.createElement('div');
-            hint.className = 'ez-decision-flow__question-desc';
+            // Said to assistive technology; the toggles' check marks show it.
+            hint.className = 'ez-decision-flow__question-desc ez-sr-only';
             hint.textContent = 'Select all that apply.';
             q.appendChild(hint);
         }
@@ -1919,60 +1916,106 @@ export class DecisionFlow extends ComponentBase {
     }
 
     /**
-     * One line per scope: the scope's label when the flow spans several, what
-     * the marking writes in that scope's own output, and how many errors the
-     * engine reports there. The count's title holds the messages, which the
-     * error list under the open flow also shows in full. A flow of one scope at
-     * rest has its line in the header, after the dots.
+     * What the marking writes: for a flow of one scope, the value after the
+     * dots; for several, each scope's value in its own output under that
+     * scope's dots. Each ends with the number of errors the engine reports
+     * there. A scope's value is one line that opens, on a press or Enter, to
+     * the full value and that scope's messages; the value of a flow of one
+     * scope is shown whole, and opens to its messages when it has any.
      */
-    private renderRows(): void {
-        this.rowsEl.replaceChildren();
-        this.restEl.replaceChildren();
-        this.rowsEl.toggleAttribute('data-labeled', this.multiScope);
-        const scopes: (string | undefined)[] = this.multiScope
-            ? this.stepScopes
-            : [undefined];
-        const into = this.multiScope || this.open ? this.rowsEl : this.restEl;
-        this.rowsEl.hidden = into !== this.rowsEl;
+    private renderValues(): void {
         const key = this.factsKey();
         const texts =
             this.multiScope && this.result?.key === key
                 ? this.result.texts
                 : null;
-        for (const scope of scopes) {
-            const row = document.createElement('div');
-            row.className = 'ez-decision-flow__row';
-            if (scope) row.dataset.scope = scope;
-            if (scope) {
-                const label = document.createElement('span');
-                label.className = 'ez-decision-flow__row-label';
-                label.textContent = scopeLabel(scope, this.schemeMeta);
-                row.appendChild(label);
+        this.restEl.replaceChildren();
+        if (this.multiScope) {
+            for (const slot of this.dotsEl.querySelectorAll<HTMLElement>(
+                '.ez-decision-flow__scope-value',
+            )) {
+                const scope = slot.dataset.scope ?? '';
+                this.renderValue(slot, scope, texts?.get(scope) ?? '');
             }
-            const text = scope ? (texts?.get(scope) ?? '') : this._lastRendered;
-            const value = document.createElement('span');
-            value.className = 'ez-decision-flow__row-text';
-            // A block of several lines reads on one; the title keeps them.
-            value.textContent = text ? text.split(/\n+/).join(' · ') : NOT_SET;
-            if (!text) value.dataset.empty = '';
-            value.title = text;
-            row.appendChild(value);
-            const messages = this.errorsIn(scope);
-            if (messages.length > 0) {
-                row.dataset.invalid = '';
-                const count = document.createElement('span');
-                count.className = 'ez-decision-flow__row-errors';
-                count.textContent =
-                    messages.length === 1
-                        ? '1 error'
-                        : `${messages.length} errors`;
-                count.title = messages.join('\n');
-                row.appendChild(count);
-            }
-            into.appendChild(row);
+            if (!texts && this.resultWriting !== key)
+                void this.writeResult(key);
+        } else {
+            this.renderValue(this.restEl, undefined, this._lastRendered);
         }
-        if (this.multiScope && !texts && this.resultWriting !== key)
-            void this.writeResult(key);
+    }
+
+    /**
+     * One value line, and under it, while it is open, the full value and its
+     * messages.
+     */
+    private renderValue(
+        slot: HTMLElement,
+        scope: string | undefined,
+        text: string,
+    ): void {
+        slot.replaceChildren();
+        const messages = this.errorsIn(scope);
+        const oneLine = scope !== undefined;
+        const discloses = oneLine || messages.length > 0;
+        const openKey = scope ?? '';
+        const open = discloses && this.openValues.has(openKey);
+        const line = document.createElement(discloses ? 'button' : 'div');
+        line.className = 'ez-decision-flow__value';
+        if (oneLine) line.dataset.oneLine = '';
+        if (messages.length > 0) line.dataset.invalid = '';
+        const shown = document.createElement('span');
+        shown.className = 'ez-decision-flow__value-text';
+        // A block of several lines reads on one line; opening shows it whole.
+        shown.textContent = text
+            ? oneLine
+                ? text.split(/\n+/).join(' · ')
+                : text
+            : NOT_SET;
+        if (!text) shown.dataset.empty = '';
+        else shown.title = text;
+        line.appendChild(shown);
+        if (messages.length > 0) {
+            const count = document.createElement('span');
+            count.className = 'ez-decision-flow__value-errors';
+            count.textContent =
+                messages.length === 1 ? '1 error' : `${messages.length} errors`;
+            line.appendChild(count);
+            count.title = messages.join('\n');
+        }
+        slot.appendChild(line);
+        if (line instanceof HTMLButtonElement) {
+            line.type = 'button';
+            line.setAttribute('aria-expanded', String(open));
+            line.addEventListener('click', () => {
+                if (this.openValues.has(openKey))
+                    this.openValues.delete(openKey);
+                else this.openValues.add(openKey);
+                this.renderValues();
+                slot.querySelector<HTMLElement>(
+                    '.ez-decision-flow__value',
+                )?.focus();
+            });
+        }
+        if (!open) return;
+        const detail = document.createElement('div');
+        detail.className = 'ez-decision-flow__value-detail';
+        if (oneLine && text) {
+            const full = document.createElement('div');
+            full.className = 'ez-decision-flow__value-full';
+            full.textContent = text;
+            detail.appendChild(full);
+        }
+        if (messages.length > 0) {
+            const list = document.createElement('ul');
+            list.className = 'ez-decision-flow__value-messages';
+            for (const message of messages) {
+                const item = document.createElement('li');
+                item.textContent = message;
+                list.appendChild(item);
+            }
+            detail.appendChild(list);
+        }
+        slot.appendChild(detail);
     }
 
     /**
@@ -2029,7 +2072,7 @@ export class DecisionFlow extends ComponentBase {
             this.result = { key, texts: new Map() };
         }
         this.resultWriting = null;
-        this.renderRows();
+        this.renderValues();
     }
 
     /**
@@ -2107,4 +2150,22 @@ function parseCategoryList(value: string): string[] {
         return [];
     }
     return text.split(/[\s,]+/).filter(Boolean);
+}
+
+/**
+ * The top edge of what is visible of `el`: the viewport's, or the nearest
+ * ancestor's that clips its overflow, whichever is lower.
+ */
+function visibleTop(el: HTMLElement): number {
+    let top = 0;
+    for (
+        let node = el.parentElement;
+        node && node !== document.documentElement;
+        node = node.parentElement
+    ) {
+        const style = getComputedStyle(node);
+        if (/(hidden|clip|auto|scroll)/.test(style.overflowY))
+            top = Math.max(top, node.getBoundingClientRect().top);
+    }
+    return top;
 }
