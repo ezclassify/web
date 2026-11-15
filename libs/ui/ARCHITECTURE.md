@@ -105,7 +105,7 @@ Every enhanced input and textarea, including a data-only field, has one EzClassi
   clears when its cause does. The tooltip opt-out never hides it.
 - A fix not yet shown re-arms unseen even if the field was previously seen. Clearing the fix set (a clean reprocess) returns to quiet and forgets what was shown, so the next fix starts unseen again. State is per-field, in-memory only.
 - A field always has one status mark. Multiple fixes never create a stack of icons.
-- Hovering (past hover-intent) or focusing an active mark explains every change EzClassify made to what the author chose, one line per change to the marking: "Added {value} to {Category}.", "Removed {value} from {Category}." or "Replaced {old} with {new} in {Category}.", where a value is the name the composer gives its concept and a category is its label, with "Rule: {rule}" small and muted under it. A change that adds or removes nothing (a spelling or order the reading went through) keeps the engine's `message`, and an engine-owned id (one beginning with `_`) names no rule. Two rules that add the same concept made one change and list one line, under the first rule; one rule that removes three concepts made three changes and lists three lines; reading the same text again does not repeat a line. Seen and unseen follow the same identity, so a change already shown stays seen when another rule makes it again.
+- Hovering (past hover-intent) or focusing an active mark explains every change EzClassify made to what the author chose, one line per change to the marking: "Added {value} to {Category}.", "Removed {value} from {Category}." or "Replaced {old} with {new} in {Category}.", where a value is its concept as the field writes it (see "How a field names a concept") and a category is its label, with "Rule: {rule}" small and muted under it. A change that adds or removes nothing (a spelling or order the reading went through) keeps the engine's `message`, and an engine-owned id (one beginning with `_`) names no rule. Two rules that add the same concept made one change and list one line, under the first rule; one rule that removes three concepts made three changes and lists three lines; reading the same text again does not repeat a line. Seen and unseen follow the same identity, so a change already shown stays seen when another rule makes it again.
 - While the marking offers the undo of the author's last edit (see "Undo"), the list ends with one button, "Undo last edit", described as "Puts the marking back to what it was before your last edit." Tab from the pressed mark reaches it.
 - A value a rule added that the author has not reviewed yet is drawn in the family's inferred style wherever the field shows the marking as text: MarkingField's painted text and DecisionFlow's value line put it in italics over a dashed rule until the mark's list has been shown. TagInput's chips and DecisionFlow's options draw every derived fact that way for good (see "Marking state is a display of the engine result"); an option another choice includes is described "Included by {choice}".
 - The mark lists only what the field's scopes write or what it changed: a change to a category of a scope the field does not write is left out, and so is an applied change the value has moved on from, an addition the field no longer holds or a removal whose concept it holds again.
@@ -321,6 +321,25 @@ cache. A changed Context invalidates the cache for the next interaction.
 Store-backed facets still refresh availability when subscribers arrive and
 markings commit. That current path does not meet the lazy-suggestion requirement
 above; it does not authorize adding eager calls.
+
+### How a field names a concept
+
+A field names a concept the way its marking writes it, and one function,
+`writtenConcept` in `src/written-concept.ts`, decides that for DecisionFlow's
+options, its dots and every status mark's change list. The concept is written
+in the output the field writes for the concept's scope: the output the field
+names, when that output writes the scope, else the scheme's default output for
+the scope and the field's role (whole or part). That output writes the category
+in the view it names for it, and a concept with no spelling in that view in its
+`default` view, as the engine does. A concept that output gives no spelling
+reads as the scheme's default output for the scope writes it, and failing that
+as its name, so no option is ever empty. A value-taking concept's views are
+templates, so it reads as its name. Everything comes from the scheme: a short
+form for a concept whose spelling is a sentence is scheme data, not a UI rule.
+
+A DecisionFlow option carries the concept's name, when it differs from the
+label, and its definition as its tooltip and description. An option too long
+for its row takes a row of its own and wraps.
 
 ### A part's excess over its whole is the part's own result
 

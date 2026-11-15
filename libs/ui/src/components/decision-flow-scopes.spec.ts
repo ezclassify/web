@@ -198,7 +198,7 @@ describe('DecisionFlow across scopes', () => {
             ['Origin Block', ['Decision Type', 'Release']],
         ]);
         // A single choice moves the flow on to the next step.
-        await choose(host, 'High');
+        await choose(host, 'HIGH');
         expect(question(host)).toBe('2 of 3 \u00b7 Decision Type');
         expect(scopeHeading(host)).toBe('Origin Block');
     });
@@ -213,13 +213,12 @@ describe('DecisionFlow across scopes', () => {
             ([, options]) => (options as { surface?: string }).surface,
         );
         expect(new Set(surfaces)).toEqual(new Set(['label', 'origin']));
-        await choose(host, 'High');
+        await choose(host, 'HIGH');
         // The origin step has its options, so the required choice can be made.
-        expect(optionNames(host)).toEqual([
-            'Original Decision',
-            'Copied Decision',
-        ]);
-        await choose(host, 'Copied Decision');
+        // Each reads as the origin block writes it, its name in its tooltip.
+        expect(optionNames(host)).toEqual(['Original', 'Copied']);
+        expect(option(host, 'Original').title).toBe('Original Decision');
+        await choose(host, 'Copied');
         expect(dotFor(host, 'Decision Type').dataset.state).toBe('answered');
     });
 
@@ -251,7 +250,7 @@ describe('DecisionFlow across scopes', () => {
         const process = vi.spyOn(ctx.scheme, 'process');
         const { host } = await mountFlow({ scope: 'origin' }, ctx);
         await enter(host);
-        await choose(host, 'Original Decision');
+        await choose(host, 'Original');
         await stepTo(host, 'Release');
 
         // Until chosen, a value option looks like the others.
@@ -355,7 +354,7 @@ describe('DecisionFlow across scopes', () => {
         expect(question(host)).toBe('1 of 2 \u00b7 Decision Type');
 
         // The choice brings the copied path's steps, and moves on to them.
-        await choose(host, 'Copied Decision');
+        await choose(host, 'Copied');
         expect(question(host)).toMatch(/^2 of 4 \u00b7 /);
         await next(host);
         expect(question(host)).toBe('3 of 4 \u00b7 Source');
@@ -365,7 +364,7 @@ describe('DecisionFlow across scopes', () => {
         );
 
         await jump(host, 'Decision Type');
-        await choose(host, 'Original Decision');
+        await choose(host, 'Original');
         // The engine offers no source to an original decision, so the source
         // choice is cleared and its step goes; the reasons step comes.
         expect(
@@ -381,8 +380,8 @@ describe('DecisionFlow across scopes', () => {
         const process = vi.spyOn(ctx.scheme, 'process');
         const { host } = await mountFlow({ scope: 'label origin' }, ctx);
         await enter(host);
-        await choose(host, 'High');
-        await choose(host, 'Original Decision');
+        await choose(host, 'HIGH');
+        await choose(host, 'Original');
         await stepTo(host, 'Release');
         await choose(host, 'Exempt');
 
@@ -398,7 +397,7 @@ describe('DecisionFlow across scopes', () => {
         // Moving on paints the same report.
         expect(question(host)).toContain('Exemption Code');
         expect(errors(host)).toEqual(shown);
-        await choose(host, 'Exemption 1');
+        await choose(host, 'X1');
         expect(errors(host)).not.toContain(
             'An exemption names its exemption code.',
         );
@@ -407,8 +406,8 @@ describe('DecisionFlow across scopes', () => {
     it('shows each scope written in its own output on its line', async () => {
         const { host } = await mountFlow({ scope: 'label origin' });
         await enter(host);
-        await choose(host, 'High');
-        await choose(host, 'Copied Decision');
+        await choose(host, 'HIGH');
+        await choose(host, 'Copied');
         await type(
             host.querySelector<HTMLInputElement>(
                 '.ez-decision-flow__text-field',
@@ -461,8 +460,8 @@ describe('declarative views of a scope', () => {
             '[data-ezclassify-mount="decisionflow"]',
         )!;
         await enter(host);
-        await choose(host, 'High');
-        await choose(host, 'Copied Decision');
+        await choose(host, 'HIGH');
+        await choose(host, 'Copied');
         await stepTo(host, 'Release');
         await choose(host, 'Never');
         await demoRuntimeSettled();

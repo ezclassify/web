@@ -20,9 +20,11 @@
  * is a toggle: pressing a chosen one again un-chooses it and the flow stays on
  * the step, and a value step is cleared by emptying its box. There is no clear
  * for one step; the x clears the whole marking, every scope the flow writes. An
- * option reads as its concept's name. One the marking's current choices rule
- * out stays in its place, unavailable, and says why. A value-taking option,
- * once chosen, becomes the box its value is typed in.
+ * option reads as the flow writes its concept on the step's scope (see
+ * written-concept.ts), with the concept's name and definition in its tooltip
+ * and description. One the marking's current choices rule out stays in its
+ * place, unavailable, and says why. A value-taking option reads as its
+ * concept's name and, once chosen, becomes the box its value is typed in.
  *
  * The dots are the navigation: each one jumps to its step, and says at a glance
  * whether the step is answered, missing an answer the engine asks for, or
@@ -81,7 +83,11 @@ import decisionFlowCss from './decision-flow.css?inline';
 import { getPublicFormatLayout, viewForCategory } from '../format-layout';
 import { observeNativeLock } from './dom-helpers';
 import type { EzClassifyState } from '../store/ezclassify-store';
-import { viewOutputOf } from '../format-resolver';
+import {
+    fieldOutputFor,
+    fieldScopeOf,
+    writtenConcept,
+} from '../written-concept';
 import { renderViewRefused } from '../render-refusal';
 import { writtenValue } from '../value-spelling';
 import { t } from '../i18n';
@@ -94,7 +100,6 @@ import {
     inDeclarationOrder,
     parseScopeList,
     scopeLabel,
-    scopesOfCategory,
 } from '../scopes';
 
 /** Options a DecisionFlow reads beyond every component's own. */
@@ -110,13 +115,13 @@ export interface DecisionFlowOptions extends ComponentOptions {
 
 interface ConceptDef {
     id: string;
-    /** What the option says: the concept's name, as the composer names it. */
-    name: string;
     /**
-     * How a marking writes the concept, for its tooltip and description. Absent
-     * for a value-taking concept, whose view is a template.
+     * What the option says: the concept as the flow writes it on the step's
+     * scope (see written-concept.ts). A value-taking concept's name.
      */
-    view?: string;
+    label: string;
+    /** The concept's name, for its tooltip, description and value box. */
+    name: string;
     description: string;
     /**
      * Present when the concept accepts a user-typed value (e.g. "{value}"
@@ -543,9 +548,8 @@ export class DecisionFlow extends ComponentBase {
                     required: cat?.required !== false,
                     concepts: concepts.map((c) => ({
                         id: c.id,
-                        // Named the way the composer names a concept.
-                        name: c.name || c.views?.['default'] || c.id,
-                        view: c.textInput ? undefined : c.views?.['default'],
+                        label: this.writtenAs(catId, c.id),
+                        name: c.name || c.id,
                         description: c.definition ?? '',
                         textInput: c.textInput ?? undefined,
                     })),
@@ -893,13 +897,18 @@ export class DecisionFlow extends ComponentBase {
      * role. Without a scope, the flow's own format.
      */
     private outputFor(scope: string | undefined): string {
-        if (scope === undefined) return this.formatId;
-        const own = this.schemeMeta.formats?.find(
-            (f) => f.id === this.formatId,
-        )?.surface;
-        return scope === own
-            ? this.formatId
-            : viewOutputOf(this.schemeMeta, [scope], !!this.options.holdsPart);
+        return fieldOutputFor(this.schemeMeta, this.writingField(), scope);
+    }
+
+    /**
+     * How the flow writes a concept held in a category: what its options, its
+     * dots and its status mark name the concept by (see written-concept.ts).
+     */
+    private writtenAs(categoryId: string, conceptId: string): string {
+        const writing = this.conceptWriting();
+        return writing
+            ? writtenConcept(writing, { categoryId, conceptId })
+            : conceptId;
     }
 
     /**
@@ -1182,11 +1191,7 @@ export class DecisionFlow extends ComponentBase {
         category: { scopes?: readonly string[] },
         listed: readonly string[],
     ): string | undefined {
-        const own = inDeclarationOrder(
-            scopesOfCategory(category, this.schemeMeta),
-            this.schemeMeta,
-        );
-        return own.find((s) => listed.includes(s)) ?? own[0];
+        return fieldScopeOf(category, { scopes: listed }, this.schemeMeta);
     }
 
     /**
@@ -1264,7 +1269,7 @@ export class DecisionFlow extends ComponentBase {
                         concept.textInput.encoding,
                         view,
                     )}`;
-                return concept?.name ?? a.conceptId;
+                return concept?.label ?? a.conceptId;
             })
             .join(', ');
     }
@@ -1658,17 +1663,19 @@ export class DecisionFlow extends ComponentBase {
         const inferred = new Map<string, string | null>();
         for (const a of held) {
             if (stated.has(a.conceptId) || !derivedAssertion(a)) continue;
-            const includer = this.assertions
-                .map((other) =>
-                    this.scheme.concepts.find((c) => c.id === other.conceptId),
-                )
-                .find((c) => c?.members?.includes(a.conceptId));
+            const includer = this.assertions.find((other) =>
+                this.scheme.concepts
+                    .find((c) => c.id === other.conceptId)
+                    ?.members?.includes(a.conceptId),
+            );
             inferred.set(
                 a.conceptId,
                 includer
-                    ? t('flow.includedBy').replace(
-                          '{choice}',
-                          () => includer.name,
+                    ? t('flow.includedBy').replace('{choice}', () =>
+                          this.writtenAs(
+                              includer.categoryId,
+                              includer.conceptId,
+                          ),
                       )
                     : null,
             );
@@ -1715,7 +1722,7 @@ export class DecisionFlow extends ComponentBase {
                 concept.id === selected || (!selected && concept.id === first)
                     ? 0
                     : -1;
-            btn.textContent = concept.name;
+            btn.textContent = concept.label;
             btn.dataset.conceptId = concept.id;
             this.describeOption(
                 btn,
@@ -1755,8 +1762,8 @@ export class DecisionFlow extends ComponentBase {
                     announce(
                         this.announcer,
                         pressed
-                            ? `Deselected ${concept.name}`
-                            : `Selected ${concept.name}`,
+                            ? `Deselected ${concept.label}`
+                            : `Selected ${concept.label}`,
                     );
                 });
             });
@@ -1832,9 +1839,8 @@ export class DecisionFlow extends ComponentBase {
     }
 
     /**
-     * An option's tooltip and description: how a marking writes the concept,
-     * when that differs from its name and is not a value template, and what the
-     * concept means.
+     * An option's tooltip and description: the concept's name, when the option
+     * does not already read as it, and what the concept means.
      */
     private describeOption(
         btn: HTMLButtonElement,
@@ -1845,9 +1851,7 @@ export class DecisionFlow extends ComponentBase {
     ): void {
         const lines = [
             why ?? '',
-            concept.view && concept.view !== concept.name
-                ? `Appears as: ${concept.view}`
-                : '',
+            concept.name !== concept.label ? concept.name : '',
             concept.description,
         ].filter(Boolean);
         if (lines.length === 0) return;
@@ -1903,7 +1907,7 @@ export class DecisionFlow extends ComponentBase {
         const known = this.blockReasons.get(key);
         this.reasonEl.hidden = false;
         this.reasonEl.textContent = known
-            ? `${concept.name} is not available: ${known}`
+            ? `${concept.label} is not available: ${known}`
             : '';
         if (known) return;
         let reason: string;
@@ -1915,7 +1919,7 @@ export class DecisionFlow extends ComponentBase {
         if (this._destroyed || facts !== this.reasonsFacts) return;
         this.blockReasons.set(key, reason);
         if (this.reasonConcept === concept.id)
-            this.reasonEl.textContent = `${concept.name} is not available: ${reason}`;
+            this.reasonEl.textContent = `${concept.label} is not available: ${reason}`;
     }
 
     private hideBlockReason(): void {
@@ -2267,7 +2271,7 @@ export class DecisionFlow extends ComponentBase {
             btn.setAttribute('aria-checked', isChecked ? 'true' : 'false');
             // Checkboxes are independently focusable: no roving tabindex.
             btn.tabIndex = 0;
-            btn.textContent = concept.name;
+            btn.textContent = concept.label;
             btn.dataset.conceptId = concept.id;
             this.describeOption(
                 btn,
@@ -2303,8 +2307,8 @@ export class DecisionFlow extends ComponentBase {
                     announce(
                         this.announcer,
                         isChecked
-                            ? `Deselected ${concept.name}`
-                            : `Selected ${concept.name}`,
+                            ? `Deselected ${concept.label}`
+                            : `Selected ${concept.label}`,
                     );
                 });
             });

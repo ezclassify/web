@@ -303,12 +303,18 @@ describe('a DecisionFlow option the author did not choose', () => {
         expect(
             member.classList.contains('ez-decision-flow__option--inferred'),
         ).toBe(true);
-        expect(member.getAttribute('aria-label')).toBe('Member (inferred)');
-        expect(member.title.split('\n')[0]).toBe('Included by Group');
+        // Each named as the marking writes it, the name in the tooltip.
+        expect(member.getAttribute('aria-label')).toBe('MEMBER (inferred)');
+        expect(member.title.split('\n')).toEqual([
+            'Included by GROUP',
+            'Member',
+        ]);
         const description = document.getElementById(
             member.getAttribute('aria-describedby')!,
         );
-        expect(description?.textContent).toContain('Included by Group.');
+        expect(description?.textContent).toContain(
+            'Included by GROUP. Member.',
+        );
     });
 });
 
