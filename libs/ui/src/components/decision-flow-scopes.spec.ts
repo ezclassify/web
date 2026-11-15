@@ -4,9 +4,11 @@
  * The scheme (see `two-scope-flow-scheme.ts`) writes a level line and an origin
  * block. Its origin choices branch, some take a typed value, and two rules
  * judge the block, so these specs pin what a flow across scopes does with the
- * engine's own answers: which steps it walks and in what order, the surface
- * every step's engine call names, which steps show, how a value is taken, how
- * the marking is judged, and what the flow and the views show at the end.
+ * engine's own answers: which steps it walks and in what order (each scope's in
+ * the order its output writes them, the origin block's unwritten decision type
+ * last), the surface every step's engine call names, which steps show, how a
+ * value is taken, how the marking is judged, and what the flow and the views
+ * show at the end.
  */
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { Assertion } from '@ezclassify/types';
@@ -87,6 +89,11 @@ const dotGroups = (host: HTMLElement) =>
                 group.querySelectorAll('.ez-decision-flow__step-dot'),
             ).map(dotCategory),
         ],
+    );
+/** The category of every dot, in order. */
+const dots = (host: HTMLElement) =>
+    Array.from(host.querySelectorAll('.ez-decision-flow__step-dot')).map(
+        dotCategory,
     );
 /** The dot of the step for `label`, by its accessible name. */
 const dotFor = (host: HTMLElement, label: string) =>
@@ -186,20 +193,22 @@ describe('DecisionFlow across scopes', () => {
         ]);
     });
 
-    it('walks the listed scopes in declaration order, then category order', async () => {
+    it('walks the listed scopes in declaration order, each in the order its output writes it', async () => {
         // Listed out of order on purpose: the scheme declares label first.
         const { host } = await mountFlow({ scopes: ['origin', 'label'] });
         await enter(host);
 
         expect(question(host)).toBe('1 of 3 \u00b7 Level');
         expect(scopeHeading(host)).toBe('Label Line');
+        // The origin block writes the release and never the decision type,
+        // so the decision type comes after it.
         expect(dotGroups(host)).toEqual([
             ['Label Line', ['Level']],
-            ['Origin Block', ['Decision Type', 'Release']],
+            ['Origin Block', ['Release', 'Decision Type']],
         ]);
         // A single choice moves the flow on to the next step.
         await choose(host, 'HIGH');
-        expect(question(host)).toBe('2 of 3 \u00b7 Decision Type');
+        expect(question(host)).toBe('2 of 3 \u00b7 Release');
         expect(scopeHeading(host)).toBe('Origin Block');
     });
 
@@ -214,6 +223,7 @@ describe('DecisionFlow across scopes', () => {
         );
         expect(new Set(surfaces)).toEqual(new Set(['label', 'origin']));
         await choose(host, 'HIGH');
+        await jump(host, 'Decision Type');
         // The origin step has its options, so the required choice can be made.
         // Each reads as the origin block writes it, its name in its tooltip.
         expect(optionNames(host)).toEqual(['Original', 'Copied']);
@@ -226,7 +236,7 @@ describe('DecisionFlow across scopes', () => {
         const { host } = await mountFlow({ scope: 'origin' });
         await enter(host);
 
-        expect(question(host)).toBe('1 of 2 \u00b7 Decision Type');
+        expect(question(host)).toBe('1 of 2 \u00b7 Release');
         expect(scopeHeading(host)).toBeNull();
         expect(host.querySelector('.ez-decision-flow__dot-group')).toBeNull();
         // One scope: one value, with no scope name.
@@ -250,8 +260,9 @@ describe('DecisionFlow across scopes', () => {
         const process = vi.spyOn(ctx.scheme, 'process');
         const { host } = await mountFlow({ scope: 'origin' }, ctx);
         await enter(host);
+        await jump(host, 'Decision Type');
         await choose(host, 'Original');
-        await stepTo(host, 'Release');
+        await jump(host, 'Release');
 
         // Until chosen, a value option looks like the others.
         expect(optionNames(host)).toEqual(['On a Date', 'Never', 'Exempt']);
@@ -342,22 +353,35 @@ describe('DecisionFlow across scopes', () => {
         // The copied and original paths' steps are not on offer yet.
         expect(atRest).toEqual([
             ['Label Line', ['Level']],
-            ['Origin Block', ['Decision Type', 'Release']],
+            ['Origin Block', ['Release', 'Decision Type']],
         ]);
         await enter(host);
         expect(dotGroups(host)).toEqual(atRest);
     });
 
-    it('shows a step only while the engine offers it, and clears a path not taken', async () => {
+    it('shows at rest no step the engine does not offer, though the origin block writes it first', async () => {
+        const { host } = await mountFlow({ scope: 'origin' });
+        await demoRuntimeSettled();
+        expect(dots(host)).toEqual(['Release', 'Decision Type']);
+    });
+
+    it('shows a step only while the engine offers it, in its written place, and clears a path not taken', async () => {
         const { host } = await mountFlow({ scope: 'origin' });
         await enter(host);
-        expect(question(host)).toBe('1 of 2 \u00b7 Decision Type');
+        expect(question(host)).toBe('1 of 2 \u00b7 Release');
+        await jump(host, 'Decision Type');
 
-        // The choice brings the copied path's steps, and moves on to them.
+        // The choice brings the copied path's steps, each where the origin
+        // block writes it: before the release, ahead of the decision type.
         await choose(host, 'Copied');
-        expect(question(host)).toMatch(/^2 of 4 \u00b7 /);
-        await next(host);
-        expect(question(host)).toBe('3 of 4 \u00b7 Source');
+        expect(dots(host)).toEqual([
+            'Decided By',
+            'Source',
+            'Release',
+            'Decision Type',
+        ]);
+        await jump(host, 'Source');
+        expect(question(host)).toBe('2 of 4 \u00b7 Source');
         await choose(host, 'Many Sources');
         expect(held(flow!.getAssertions())).toContain(
             'source_type:MANY_SOURCES',
@@ -370,9 +394,12 @@ describe('DecisionFlow across scopes', () => {
         expect(
             flow!.getAssertions().some((a) => a.categoryId === 'source_type'),
         ).toBe(false);
-        expect(question(host)).toMatch(/^2 of 4 \u00b7 /);
-        await next(host);
-        expect(question(host)).toBe('3 of 4 \u00b7 Reason');
+        expect(dots(host)).toEqual([
+            'Decided By',
+            'Reason',
+            'Release',
+            'Decision Type',
+        ]);
     });
 
     it('judges the marking on each scope it walks, the same way every time', async () => {
@@ -381,8 +408,9 @@ describe('DecisionFlow across scopes', () => {
         const { host } = await mountFlow({ scope: 'label origin' }, ctx);
         await enter(host);
         await choose(host, 'HIGH');
+        await jump(host, 'Decision Type');
         await choose(host, 'Original');
-        await stepTo(host, 'Release');
+        await jump(host, 'Release');
         await choose(host, 'Exempt');
 
         const judged = new Set(
@@ -407,7 +435,9 @@ describe('DecisionFlow across scopes', () => {
         const { host } = await mountFlow({ scope: 'label origin' });
         await enter(host);
         await choose(host, 'HIGH');
+        await jump(host, 'Decision Type');
         await choose(host, 'Copied');
+        await jump(host, 'Decided By');
         await type(
             host.querySelector<HTMLInputElement>(
                 '.ez-decision-flow__text-field',
@@ -424,7 +454,8 @@ describe('DecisionFlow across scopes', () => {
         );
         await stepTo(host, 'Release');
         await choose(host, 'Never');
-        expect(question(host)).toBe('5 of 5 \u00b7 Release');
+        // The release moves on to the decision type, written nowhere.
+        expect(question(host)).toBe('5 of 5 \u00b7 Decision Type');
         await demoRuntimeSettled();
 
         // Each scope's line holds that scope written in its own output.
@@ -461,8 +492,9 @@ describe('declarative views of a scope', () => {
         )!;
         await enter(host);
         await choose(host, 'HIGH');
+        await jump(host, 'Decision Type');
         await choose(host, 'Copied');
-        await stepTo(host, 'Release');
+        await jump(host, 'Release');
         await choose(host, 'Never');
         await demoRuntimeSettled();
 

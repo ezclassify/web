@@ -3656,3 +3656,281 @@ describe('DecisionFlow option labels', () => {
         ).toMatch(/flex-wrap: wrap;/);
     });
 });
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Written order and where the flow opens
+// ──────────────────────────────────────────────────────────────────────────────
+
+/**
+ * A scheme that declares its categories in one order and writes them in
+ * another: the owner first, and a note it never writes at all. Sharing heads a
+ * recipients list. The owner can hold a default the author did not choose.
+ */
+function createWrittenOrderEngine(
+    categoryOrder: string[],
+    shortOrder?: string[],
+): SchemeEngineAdapter {
+    const concept = (id: string, view: string, category: string) =>
+        ({
+            id,
+            name: id,
+            views: { default: view },
+            categories: [category],
+            parents: [],
+            aliases: [],
+            position: 1,
+        }) as ConceptView;
+    const category = (
+        id: string,
+        label: string,
+        required: boolean,
+        single = true,
+    ) => ({ id, label, required, single }) as CategoryView;
+    const p = {
+        name: 'Written Order',
+        categories: [
+            category('level', 'Level', true),
+            category('sharing', 'Sharing', false),
+            category('recipients', 'Recipients', false, false),
+            category('owner', 'Owner', true),
+            category('note', 'Note', false),
+        ],
+        concepts: [
+            concept('LEVEL_A', 'A', 'level'),
+            concept('NO_SHARING', 'NONE', 'sharing'),
+            concept('SHARE_ALLOWED', 'SHARE', 'sharing'),
+            concept('GROUP_A', 'GA', 'recipients'),
+            concept('USA', 'USA', 'owner'),
+            concept('GBR', 'GBR', 'owner'),
+            concept('NOTE_X', 'X', 'note'),
+        ],
+        scopes: [],
+        defaultRenderFormat: 'default',
+    } as unknown as SchemePublicView;
+    const write = (assertions: Assertion[]) =>
+        assertions
+            .map(
+                (a) =>
+                    p.concepts.find((c) => c.id === a.conceptId)?.views?.[
+                        'default'
+                    ] ?? a.conceptId,
+            )
+            .join('//');
+    return withSuggestFor({
+        getScheme: () => p,
+        getSchemeMeta: () => ({
+            id: 'written-order',
+            version: '1.0',
+            name: 'Written Order',
+            defaultRenderFormat: 'default',
+            formats: [
+                mockRenderFormat({
+                    id: 'default',
+                    view: 'default',
+                    categorySeparator: '//',
+                    separator: '/',
+                    categoryOrder,
+                    headers: [
+                        {
+                            concept: 'SHARE_ALLOWED',
+                            headerCategory: 'sharing',
+                            category: 'recipients',
+                            position: 'prefix',
+                        },
+                    ],
+                }),
+                // A second output, for a field that names it.
+                mockRenderFormat({
+                    id: 'short',
+                    view: 'default',
+                    categorySeparator: '/',
+                    categoryOrder: shortOrder,
+                }),
+            ],
+            scopes: [],
+        }),
+        listCategories: () => p.categories,
+        getConceptsInCategory: (catId: string) =>
+            p.concepts.filter((c) => c.categories.includes(catId)),
+        render: vi.fn((assertions: Assertion[]) => ({
+            rendered: write(assertions),
+            assessment: {
+                emitted: [],
+                omitted: [],
+                collapsed: [],
+                conflicts: [],
+                unrepresentable: [],
+            },
+        })),
+        // The owner defaults to USA until the author states one.
+        process: vi.fn(
+            (_input: string, opts?: { assertions?: Assertion[] }) => {
+                const assertions = [...(opts?.assertions ?? [])];
+                if (!assertions.some((a) => a.categoryId === 'owner'))
+                    assertions.push({
+                        conceptId: 'USA',
+                        categoryId: 'owner',
+                        confidence: 'inferred',
+                        source: 'default',
+                    });
+                return { assertions, rendered: write(assertions), valid: true };
+            },
+        ),
+        suggest: vi.fn().mockReturnValue({
+            suggestions: p.concepts.map((c) => ({
+                conceptId: c.id,
+                categoryId: c.categories[0],
+                label: c.views?.default ?? c.name,
+                name: c.name,
+                group: c.categories[0],
+            })),
+        }),
+        describeConcept: (conceptId: string) => ({ lines: [conceptId] }),
+    } as unknown as SchemeEngineAdapter);
+}
+
+describe('DecisionFlow: steps in written order', () => {
+    let host: HTMLDivElement;
+    let flow: DecisionFlow;
+
+    /** The owner the scheme defaults to, which the author did not choose. */
+    const defaultOwner: Assertion = {
+        conceptId: 'USA',
+        categoryId: 'owner',
+        confidence: 'inferred',
+        source: 'default',
+    };
+
+    async function mount(
+        categoryOrder: string[],
+        assertions: Assertion[] = [],
+        short?: { order?: string[] },
+    ): Promise<void> {
+        host = document.createElement('div');
+        document.body.appendChild(host);
+        flow = new DecisionFlow();
+        await flow.init(
+            host,
+            toCtx(createWrittenOrderEngine(categoryOrder, short?.order)),
+            short ? { formatId: 'short' } : {},
+        );
+        if (assertions.length > 0) flow.setAssertions(assertions);
+        await settle();
+    }
+
+    afterEach(() => {
+        flow.destroy();
+        host.remove();
+    });
+
+    const dots = () =>
+        Array.from(
+            host.querySelectorAll<HTMLElement>('.ez-decision-flow__step-dot'),
+        );
+    const dotCategories = () => dots().map((dot) => dot.dataset.categoryId);
+    const dotFor = (categoryId: string) =>
+        dots().find((dot) => dot.dataset.categoryId === categoryId)!;
+    const title = () =>
+        host.querySelector('.ez-decision-flow__question-label')?.textContent;
+    /** Open the flow the way a press on its value does. */
+    async function open(): Promise<void> {
+        host.querySelector<HTMLElement>('.ez-decision-flow__values')!.click();
+        await settle();
+    }
+
+    it('walks its steps in the order its output writes the categories, not the order the scheme declares them', async () => {
+        await mount(['owner', 'level', 'sharing', 'recipients']);
+        expect(dotCategories()).toEqual(['owner', 'level', 'sharing', 'note']);
+    });
+
+    it('puts the categories its output never writes after the written ones, in declaration order', async () => {
+        await mount(['sharing', 'level']);
+        expect(dotCategories()).toEqual(['sharing', 'level', 'owner', 'note']);
+    });
+
+    it('shows a dependent step only once its heading is chosen, where the output writes it', async () => {
+        await mount(['owner', 'sharing', 'recipients', 'level']);
+        expect(dotCategories()).toEqual(['owner', 'sharing', 'level', 'note']);
+        flow.setAssertions([
+            {
+                conceptId: 'SHARE_ALLOWED',
+                categoryId: 'sharing',
+                confidence: 'certain',
+                source: 'user',
+            },
+        ]);
+        await settle();
+        expect(dotCategories()).toEqual([
+            'owner',
+            'sharing',
+            'recipients',
+            'level',
+            'note',
+        ]);
+    });
+
+    it('follows the output the field names, not the scheme default', async () => {
+        await mount(['owner', 'level', 'sharing', 'recipients'], [], {
+            order: ['note', 'level'],
+        });
+        expect(dotCategories()).toEqual(['note', 'level', 'sharing', 'owner']);
+    });
+
+    it("keeps the scheme's order when the field's output publishes no order", async () => {
+        // The scheme's default output has an order; the one the field
+        // writes has none, so the flow walks the categories as declared.
+        await mount(['owner', 'level', 'sharing', 'recipients'], [], {});
+        expect(dotCategories()).toEqual(['level', 'sharing', 'owner', 'note']);
+    });
+
+    it('opens on the first step with no value when the author has chosen nothing', async () => {
+        await mount(
+            ['owner', 'level', 'sharing', 'recipients'],
+            [defaultOwner],
+        );
+        await open();
+        expect(title()).toBe('2 of 4 · Level');
+        expect(dotFor('level').getAttribute('aria-current')).toBe('step');
+    });
+
+    it('opens where it was once the author has chosen something', async () => {
+        await mount(
+            ['owner', 'level', 'sharing', 'recipients'],
+            [
+                {
+                    conceptId: 'GBR',
+                    categoryId: 'owner',
+                    confidence: 'certain',
+                    source: 'user',
+                },
+            ],
+        );
+        await open();
+        // Level has no value, but the author chose an owner and is on it.
+        expect(title()).toBe('1 of 4 \u00b7 Owner');
+    });
+
+    it('passes over a step a default answers, shows it inferred, and still goes there from its dot', async () => {
+        await mount(
+            ['owner', 'level', 'sharing', 'recipients'],
+            [defaultOwner],
+        );
+        const owner = dotFor('owner');
+        expect(owner.dataset.state).toBe('answered');
+        expect(owner.hasAttribute('data-inferred')).toBe(true);
+        expect(owner.getAttribute('aria-label')).toBe(
+            'Step 1 of 4, Owner: USA (inferred)',
+        );
+        await open();
+        expect(title()).toBe('2 of 4 · Level');
+        dotFor('owner').click();
+        await settle();
+        expect(title()).toBe('1 of 4 · Owner');
+        // The option the default holds reads as inferred, not chosen.
+        const usa = host.querySelector<HTMLElement>(
+            '.ez-decision-flow__option[data-concept-id="USA"]',
+        )!;
+        expect(usa.classList).toContain('ez-decision-flow__option--inferred');
+        expect(usa.getAttribute('aria-pressed')).toBe('false');
+    });
+});

@@ -40,17 +40,29 @@
  *
  * - `data-ezclassify-decisionflow-categories`: JSON array (or comma or space
  *   list) of category IDs in step order. Absent, the flow walks every category
- *   of the scopes it names.
+ *   of the scopes it names, in the order the marking writes them.
  * - `data-ezclassify-scope`: the scope ids the flow walks, space-separated.
  *   Absent, the scheme's default scope.
  *
- * Scopes: a flow walks its scopes in the scheme's declaration order, then
- * category order. Each step belongs to the scope its category declares, and
- * every engine call made for a step (its options, the choices it accepts) is
- * made on that scope's surface. A flow whose steps span more than one scope
- * groups its dots by scope, judges the marking on each scope's surface, and
- * gives each scope a value of its own, written in that scope's own output with
- * what is wrong there. A flow of one scope has one unlabeled value.
+ * Order: a flow walks its scopes in the scheme's declaration order, and each
+ * scope's steps in the order the field's output for that scope writes their
+ * categories, so the steps read the way the marking does. The order is the
+ * output's own, as the scheme publishes it, never the current marking's, so the
+ * dots never reorder while the author answers. A category the output does not
+ * write comes after the written ones, in declaration order, and so does every
+ * category of an output the scheme publishes no order for. A dependent step
+ * shows only while the choice that heads it is made, in its written place.
+ *
+ * Opening a flow the author has chosen nothing in yet goes to the first step
+ * with no value at all. A step a default already answers is passed over, reads
+ * as inferred, and its dot still goes to it.
+ *
+ * Scopes: each step belongs to the scope its category declares, and every
+ * engine call made for a step (its options, the choices it accepts) is made on
+ * that scope's surface. A flow whose steps span more than one scope groups its
+ * dots by scope, judges the marking on each scope's surface, and gives each
+ * scope a value of its own, written in that scope's own output with what is
+ * wrong there. A flow of one scope has one unlabeled value.
  *
  * Which steps show is the engine's answer: a step shows while the engine offers
  * an option for it or it holds a choice. A choice that leaves a step with
@@ -86,6 +98,7 @@ import type { EzClassifyState } from '../store/ezclassify-store';
 import {
     fieldOutputFor,
     fieldScopeOf,
+    inWrittenOrder,
     writtenConcept,
 } from '../written-concept';
 import type { ShownForm } from '../written-facts';
@@ -234,8 +247,9 @@ export class DecisionFlow extends ComponentBase {
 
     /**
      * Subset of _allSteps that are currently visible: a step shows while the
-     * engine offers it an option or it holds a choice. The step the author is
-     * on stays while the engine answers.
+     * engine offers it an option or it holds a choice. While the flow is open,
+     * the step the author is on stays while the engine answers; at rest the
+     * author is on no step, so the dots are the engine's answer alone.
      */
     private get steps(): StepDef[] {
         const offered = this.offeredCategories;
@@ -252,7 +266,7 @@ export class DecisionFlow extends ComponentBase {
                 return false;
             if (!offered) return true;
             return (
-                step.categoryId === this._currentCategoryId ||
+                (this.open && step.categoryId === this._currentCategoryId) ||
                 offered.has(step.categoryId) ||
                 this.assertions.some((a) => a.categoryId === step.categoryId) ||
                 this.pendingText?.categoryId === step.categoryId
@@ -261,6 +275,11 @@ export class DecisionFlow extends ComponentBase {
     }
 
     private currentStep = 0;
+    /**
+     * Set when the flow opened before the engine said which steps it offers:
+     * the flow goes to the step the author is needed at once it has.
+     */
+    private placeOnOptions = false;
     /**
      * Category ID at the active step: the source of truth when step indices
      * shift.
@@ -431,6 +450,10 @@ export class DecisionFlow extends ComponentBase {
                     .map((s) => s.categoryId),
             ),
         );
+        if (this.placeOnOptions) {
+            this.placeOnOptions = false;
+            if (this.open && this.placeWhereNeeded() && !paint) this.render();
+        }
         if (!paint) return;
         if (this.clearIrrelevantSteps()) return;
         if (this.pointerActive) this.catalogChangedDuringPress = true;
@@ -565,8 +588,8 @@ export class DecisionFlow extends ComponentBase {
                     scope: cat ? this.stepScopeOf(cat, listed) : undefined,
                 };
             })
-            // Scopes in declaration order, then the categories' own order.
-            // Array.prototype.sort is stable, so one scope keeps its order.
+            // Scopes in declaration order, each keeping the order resolved
+            // above: Array.prototype.sort is stable.
             .sort(
                 (a, b) =>
                     (scopeOrder.get(a.scope ?? '') ?? Number.MAX_SAFE_INTEGER) -
@@ -735,12 +758,22 @@ export class DecisionFlow extends ComponentBase {
         scope: string,
         live?: readonly Assertion[],
     ): Promise<Suggestion[]> {
+        // Asked in the scheme's order, as a flow of one scope asks: the order
+        // the flow walks its steps in is its own, not part of the question.
+        const steps = new Map(
+            this._allSteps
+                .filter((s) => s.scope === scope)
+                .map((s) => [s.categoryId, s]),
+        );
         const suggestions = await this.offeredBeside(
             live ?? [],
             { outputFormat: this.outputFor(scope), surface: scope },
-            this._allSteps
-                .filter((s) => s.scope === scope)
-                .map((s) => ({ id: s.categoryId, single: s.single })),
+            this.scheme.categories.flatMap((c) => {
+                const step = steps.get(c.id);
+                return step
+                    ? [{ id: step.categoryId, single: step.single }]
+                    : [];
+            }),
         );
         return this.disambiguateSuggestions(
             suggestions.filter((s) => !s.conceptId.startsWith('preset:')),
@@ -1078,13 +1111,7 @@ export class DecisionFlow extends ComponentBase {
             };
 
             this.renderProgress();
-            this.renderTitle();
-            this.stepEl.replaceChildren(this.titleEl);
-            this.renderNavigation('start');
-            this.renderCurrentStep();
-            this.renderNavigation('end');
-            this.stepEl.hidden = !this.open;
-            this.fitFormats();
+            this.renderStep();
             this.renderValues();
             this.flowEl.toggleAttribute('data-ezclassify-locked', this.locked);
             // A rebuilt dot keeps its label showing.
@@ -1203,8 +1230,9 @@ export class DecisionFlow extends ComponentBase {
     }
 
     /**
-     * The categories to walk: the ones the options or the host list, else every
-     * category that belongs to a walked scope, scope by scope.
+     * The categories to walk: the ones the options or the host list, in the
+     * order they list them, else every category that belongs to a walked scope,
+     * scope by scope, each scope's in the order the flow writes them.
      */
     private resolveCategoryOrder(listed: readonly string[]): string[] {
         const opts = this.flowOptions;
@@ -1220,9 +1248,22 @@ export class DecisionFlow extends ComponentBase {
         if (attr !== null && attr !== undefined) return parseCategoryList(attr);
 
         const categories = this.scheme.categories;
-        if (listed.length === 0) return categories.map((c) => c.id);
+        const field = this.writingField();
+        if (listed.length === 0)
+            return inWrittenOrder(
+                this.schemeMeta,
+                field,
+                undefined,
+                categories.map((c) => c.id),
+            );
         return categoriesByScope(categories, listed, this.schemeMeta).flatMap(
-            (group) => group.categories.map((c) => c.id),
+            (group) =>
+                inWrittenOrder(
+                    this.schemeMeta,
+                    field,
+                    group.scope,
+                    group.categories.map((c) => c.id),
+                ),
         );
     }
 
@@ -1280,6 +1321,19 @@ export class DecisionFlow extends ComponentBase {
                 return concept?.label ?? a.conceptId;
             })
             .join(', ');
+    }
+
+    /**
+     * Whether a step holds something and all of it is derived (a default, a
+     * rule, another choice that includes it): the author chose none of it, so
+     * its dot reads as inferred.
+     */
+    private onlyDerived(step: StepDef): boolean {
+        if (this.pendingText?.categoryId === step.categoryId) return false;
+        const held = this.assertions.filter(
+            (a) => a.categoryId === step.categoryId,
+        );
+        return held.length > 0 && held.every((a) => derivedAssertion(a));
     }
 
     /** Whether everything a step holds is a typed value. */
@@ -1358,6 +1412,7 @@ export class DecisionFlow extends ComponentBase {
             const step = this.steps[index];
             if (!step) continue;
             dot.dataset.state = this.stepState(step);
+            dot.toggleAttribute('data-inferred', this.onlyDerived(step));
             this.markCurrent(dot, index);
             dot.setAttribute(
                 'aria-label',
@@ -1382,6 +1437,8 @@ export class DecisionFlow extends ComponentBase {
     private dotLabel(step: StepDef): string {
         const state = this.stepState(step);
         const held = this.selectionText(step);
+        if (state === 'answered' && held && this.onlyDerived(step))
+            return `${step.label}: ${held}${t('aria.inferredSuffix')}`;
         if (state === 'answered' && held && this.holdsOnlyValues(step))
             return held;
         const said =
@@ -1438,6 +1495,7 @@ export class DecisionFlow extends ComponentBase {
         dot.type = 'button';
         dot.className = 'ez-decision-flow__step-dot';
         dot.dataset.state = this.stepState(step);
+        dot.toggleAttribute('data-inferred', this.onlyDerived(step));
         dot.dataset.index = String(i);
         dot.dataset.categoryId = step.categoryId;
         this.markCurrent(dot, i);
@@ -1567,16 +1625,84 @@ export class DecisionFlow extends ComponentBase {
      */
     private setOpen(open: boolean): void {
         if (this.open === open || !this.stepEl) return;
+        const shown = this.shownCategories();
         this.open = open;
         this.stepEl.hidden = !open;
         this.flowEl.toggleAttribute('data-open', open);
         // Opening holds back what the author has not reached yet; at rest
         // everything missing shows. The open step's scope reads as current
         // on its caption.
-        if (open)
+        if (open) {
+            this.openWhereNeeded();
             this.furthestStep = Math.max(this.furthestStep, this.currentStep);
+        } else this.placeOnOptions = false;
+        // Going to rest lets go of a step shown only because the author was
+        // on it; the dots are drawn again only then, so a dot pressed to open
+        // the flow stays in place for its click.
+        if (this.shownCategories() !== shown) {
+            this.render();
+            return;
+        }
         this.refreshDots();
         this.renderValues();
+    }
+
+    /** The categories of the steps showing, as one key. */
+    private shownCategories(): string {
+        return this.steps.map((step) => step.categoryId).join(' ');
+    }
+
+    /**
+     * Opening a flow the author has chosen nothing in yet goes to the first
+     * step with no value at all, past any a default already answers. Only the
+     * step is drawn again here, so a dot pressed to open the flow is still
+     * there for its click. Opened before the engine has said which steps it
+     * offers, the flow goes there once it has, unless the author has moved by
+     * then.
+     */
+    private openWhereNeeded(): void {
+        if (this.offeredCategories === null) {
+            this.placeOnOptions = true;
+            return;
+        }
+        if (this.placeWhereNeeded()) this.renderStep();
+    }
+
+    /**
+     * Make the first offered step with no value current, when the author has
+     * chosen nothing yet.
+     *
+     * @returns Whether the current step changed
+     */
+    private placeWhereNeeded(): boolean {
+        if (
+            this.pendingText ||
+            this.assertions.some((a) => !derivedAssertion(a))
+        )
+            return false;
+        const offered = this.offeredCategories;
+        const target = this.steps.find(
+            (step) =>
+                this.chosenIn(step).size === 0 &&
+                (!offered || offered.has(step.categoryId)),
+        );
+        if (!target || target.categoryId === this._currentCategoryId)
+            return false;
+        this._currentCategoryId = target.categoryId;
+        // The step left may have shown only because the author was on it.
+        this.currentStep = this.steps.indexOf(target);
+        return true;
+    }
+
+    /** The step under the header: its title, its options and the arrows. */
+    private renderStep(): void {
+        this.renderTitle();
+        this.stepEl.replaceChildren(this.titleEl);
+        this.renderNavigation('start');
+        this.renderCurrentStep();
+        this.renderNavigation('end');
+        this.stepEl.hidden = !this.open;
+        this.fitFormats();
     }
 
     /** The open step's first line: "3 of 8 · Dissemination Control". */
@@ -2345,6 +2471,7 @@ export class DecisionFlow extends ComponentBase {
         const steps = this.steps;
         if (index < 0 || index >= steps.length) return;
         this.pendingText = null;
+        this.placeOnOptions = false;
         this.currentStep = index;
         this.furthestStep = Math.max(this.furthestStep, index);
         this._currentCategoryId = steps[index].categoryId;
