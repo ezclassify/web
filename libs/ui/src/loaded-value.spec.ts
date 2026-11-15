@@ -766,7 +766,8 @@ describe('a loaded marking takes what the engine fixed and says so', () => {
         expect(mark.classList.contains('ez-status-mark--unseen')).toBe(true);
         expect(await markLines(form)).toEqual([
             '1 change made by a marking rule',
-            'Added Name O to tag.',
+            // The value as the field writes it, not the concept's name.
+            'Added TAG-O to tag.',
         ]);
     });
 
@@ -885,7 +886,7 @@ describe('a loaded marking takes what the engine fixed and says so', () => {
         ]);
         for (const field of ['.mf', '.ti'])
             expect((await markLines(form.querySelector(field)!))[1]).toBe(
-                'Added Name O to tag.',
+                'Added TAG-O to tag.',
             );
         // The one difference: the chips hold HOME, which the marking leaves
         // out of print.

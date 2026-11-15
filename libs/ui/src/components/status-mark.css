@@ -1,13 +1,12 @@
 /* ── Enhancement status mark ─────────────────────────── */
-/* One brand-logo mark per enhanced field: 3 bars + a sparkle. Quiet: the
-   field has nothing to say, and the whole glyph sits muted. Any other state
-   means the field has a message for the user (a fix it applied, or an error),
-   and the whole mark turns strong: the theme's text color in a light theme,
-   gold in a dark one (--ez-status-mark-strong-color, styles.css). The sparkle
-   carries the kind of message. Unseen: the sparkle turns accent and the number
-   of changes stands beside the mark. Seen: the number goes, the sparkle stays
-   accent: the list already explained what changed. Error: the sparkle takes
-   the error color. */
+/* One brand-logo mark per enhanced field: 3 bars + a sparkle, always drawn in
+   one color like the logo itself; the sparkle is never colored on its own.
+   Quiet: the field has nothing to say, and the whole glyph sits muted. Any
+   other state means the field has a message for the user, and the whole mark
+   turns strong: the theme's text color in a light theme, gold in a dark one
+   (--ez-status-mark-strong-color, styles.css). Unseen: the number of changes
+   stands beside the mark. Seen: the number goes; the list already explained
+   what changed. Error: the whole mark takes the error color. */
 .ez-status-mark {
     position: absolute;
     width: 1.25rem;
@@ -40,14 +39,10 @@
     opacity: 1;
     cursor: help;
 }
-.ez-status-mark--unseen .ez-status-mark__sparkle,
-.ez-status-mark--seen .ez-status-mark__sparkle {
-    fill: var(--ez-color-primary, #fdb827);
-}
-/* Error: the field could not check all of its text. The sparkle takes the
+/* Error: the field could not check all of its text. The whole mark takes the
    error color; the popover and the label say why. */
-.ez-status-mark--error .ez-status-mark__sparkle {
-    fill: var(--ez-color-error, #b91c1c);
+.ez-status-mark--error {
+    color: var(--ez-color-error, #b91c1c);
 }
 .ez-status-mark:focus-visible {
     outline: 2px solid var(--ez-color-primary, #fdb827);
@@ -127,12 +122,12 @@
     .ez-status-mark {
         color: ButtonText;
     }
-    .ez-status-mark--unseen .ez-status-mark__sparkle,
-    .ez-status-mark--seen .ez-status-mark__sparkle {
-        fill: Highlight;
+    .ez-status-mark--unseen,
+    .ez-status-mark--seen {
+        color: Highlight;
     }
-    .ez-status-mark--error .ez-status-mark__sparkle {
-        fill: Mark;
+    .ez-status-mark--error {
+        color: Mark;
     }
 }
 

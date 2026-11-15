@@ -45,12 +45,7 @@
  * so re-renders can never stack indicators.
  */
 
-import type {
-    Assertion,
-    AssertionRef,
-    Change,
-    SchemePublicView,
-} from '@ezclassify/types';
+import type { Assertion, AssertionRef, Change } from '@ezclassify/types';
 import {
     attachTooltip,
     hideTooltip,
@@ -59,6 +54,7 @@ import {
 } from './tooltip-manager';
 import { derivedAssertion, takenFromWhole } from '../assertion-identity';
 import { t } from '../i18n';
+import { writtenConcept, type ConceptWriting } from '../written-concept';
 import { adoptStylesOnce } from '../styles/adopt';
 import statusMarkCss from './status-mark.css?inline';
 
@@ -234,33 +230,30 @@ function fill(template: string, values: Record<string, string>): string {
  * field that gives none has the ids said instead.
  */
 export interface ChangeWords {
-    /** A concept's label: the name the field's composer gives it. */
+    /** A concept, the way the field writes it (see written-concept.ts). */
     value(ref: Pick<AssertionRef, 'categoryId' | 'conceptId'>): string;
     /** A category's label. */
     category(categoryId: string): string;
 }
 
 /**
- * A scheme's words for the status mark: a value by the name the composer gives
- * its concept, a category by its label. Read when a list is built, so a field
- * can hand this over before its scheme has loaded.
+ * A field's words for the status mark: a value the way the field writes its
+ * concept, the same text its options and summaries name it by, and a category
+ * by its label. Read when a list is built, so a field can hand this over before
+ * its scheme has loaded; until then the ids stand in.
  *
- * @param scheme - The scheme the field marks in
+ * @param writing - The field and its scheme, once the scheme has loaded
  */
 export function schemeChangeWords(
-    scheme: () => SchemePublicView | undefined,
+    writing: () => ConceptWriting | undefined,
 ): ChangeWords {
     return {
         value: (ref) => {
-            const concept = scheme()?.concepts.find(
-                (c) => c.id === ref.conceptId,
-            );
-            return (
-                concept?.name || concept?.views?.['default'] || ref.conceptId
-            );
+            const known = writing();
+            return known ? writtenConcept(known, ref) : ref.conceptId;
         },
         category: (id) =>
-            scheme()?.categories.find((c) => c.id === id)?.label || id,
+            writing()?.scheme.categories.find((c) => c.id === id)?.label || id,
     };
 }
 

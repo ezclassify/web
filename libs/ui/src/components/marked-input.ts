@@ -31,7 +31,6 @@ import { revealClearOfPinned } from './composer/composer-placement';
 import { replacesStated } from './composer/composer-controller';
 import {
     ensureStatusMark,
-    schemeChangeWords,
     recordAppliedFixes,
     setStatusMarkFixes,
 } from './status-mark';
@@ -276,7 +275,7 @@ export class MarkedInput extends MarkedFieldBase<HTMLTextAreaElement> {
             shape: 'chrome',
             root: this.container,
             shouldShowTooltip: () => this.shouldShowTooltip(),
-            words: schemeChangeWords(() => this.scheme),
+            words: this.changeWords(),
         });
         // The ★ mounts on host favorites wiring OR scheme-declared presets
         // (ensureFavoritesButton owns the OR); an undefined `config` runs the

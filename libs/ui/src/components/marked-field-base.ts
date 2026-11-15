@@ -56,9 +56,14 @@ import {
 import {
     inDeclarationOrder,
     listedScopesOf,
+    scopeSetOf,
     writesCategoryOf,
 } from '../scopes';
-import { explainedChanges } from './status-mark';
+import {
+    explainedChanges,
+    schemeChangeWords,
+    type ChangeWords,
+} from './status-mark';
 import type { InlineMarkingEditor } from './inline-marking-editor';
 import { createClearButton, type ClearButton } from './clear-button';
 import { isUndoChord, MarkingUndo } from './marking-undo';
@@ -641,6 +646,27 @@ export abstract class MarkedFieldBase<
         } finally {
             this._selfDispatch = false;
         }
+    }
+
+    /**
+     * How the field's status mark names values and categories: a value the way
+     * this field writes its concept, in its scan format as a part, a category
+     * by its label.
+     */
+    protected changeWords(): ChangeWords {
+        return schemeChangeWords(() => {
+            if (!this.scheme || !this.engine) return undefined;
+            const meta = this.engine.getSchemeMeta();
+            return {
+                scheme: this.scheme,
+                meta,
+                field: {
+                    formatId: this.scanFormat,
+                    part: true,
+                    scopes: scopeSetOf(listedScopesOf(this.options), meta),
+                },
+            };
+        });
     }
 
     /**

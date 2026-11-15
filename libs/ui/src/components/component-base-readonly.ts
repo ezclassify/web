@@ -65,7 +65,8 @@ import { getMountHost } from '../mount-host-registry';
 import { schemeChangeWords, type ChangeWords } from './status-mark';
 import type { MarkingUndo } from './marking-undo';
 import { assertWritesScopes, viewOutputOf } from '../format-resolver';
-import { categoriesByScope, listedScopesOf } from '../scopes';
+import { categoriesByScope, listedScopesOf, scopeSetOf } from '../scopes';
+import type { ConceptWriting, WritingField } from '../written-concept';
 
 /**
  * Scheme operations a component marks with: a Context's scheme view.
@@ -1219,10 +1220,6 @@ export abstract class ReadOnlyComponentBase implements ComponentInstance {
     }
 
     /**
-     * How the status mark names values and categories: a value by the name the
-     * composer gives its concept, a category by its label.
-     */
-    /**
      * Whether the written marking prints a token's value: false for a value the
      * render assessment says it leaves out.
      */
@@ -1237,8 +1234,34 @@ export abstract class ReadOnlyComponentBase implements ComponentInstance {
         );
     }
 
+    /**
+     * What this field writes, for naming its concepts the way it writes them:
+     * its format, its role and the scopes it writes.
+     */
+    protected writingField(): WritingField {
+        return {
+            formatId: this.formatId,
+            part: !!this.options.holdsPart,
+            scopes: scopeSetOf(listedScopesOf(this.options), this.schemeMeta),
+        };
+    }
+
+    /** This field and its scheme, once the scheme has loaded. */
+    protected conceptWriting(): ConceptWriting | undefined {
+        if (!this.scheme || !this.schemeMeta) return undefined;
+        return {
+            scheme: this.scheme,
+            meta: this.schemeMeta,
+            field: this.writingField(),
+        };
+    }
+
+    /**
+     * How the status mark names values and categories: a value the way this
+     * field writes its concept, a category by its label.
+     */
     protected changeWords(): ChangeWords {
-        return schemeChangeWords(() => this.scheme);
+        return schemeChangeWords(() => this.conceptWriting());
     }
 
     /** Get the color for a category */

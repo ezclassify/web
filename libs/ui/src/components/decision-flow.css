@@ -177,9 +177,14 @@
     gap: 0.25rem;
 }
 
+/* An option reads as the marking writes it, which can be a sentence. One too
+   long for the row takes a row of its own, as wide as the step, and its text
+   wraps from the start edge. */
 .ez-decision-flow__option {
+    max-width: 100%;
     min-height: 2rem;
     padding: 0.25rem 0.625rem;
+    text-align: start;
     border: 1px solid var(--ez-color-border, #d1d5db);
     border-radius: var(--ez-border-radius, 0.25rem);
     background: var(--ez-color-background, #fff);

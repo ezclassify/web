@@ -13,11 +13,14 @@ import type { Assertion, Change } from '@ezclassify/types';
 import { hasAdoptedStyles } from '../styles/adopt';
 import statusMarkCss from './status-mark.css?inline';
 import {
+    changeLines,
     ensureStatusMark,
     explainedChanges,
+    schemeChangeWords,
     setStatusMarkError,
     setStatusMarkFixes,
 } from './status-mark';
+import type { ConceptWriting } from '../written-concept';
 import { cleanupTooltipForRoot, showTooltip } from './tooltip-manager';
 import { markTone } from '../../test-fixtures/field-chrome';
 
@@ -121,6 +124,59 @@ async function hoverPastIntent(mark: HTMLElement): Promise<void> {
     mark.dispatchEvent(new Event('mouseenter'));
     await new Promise((r) => setTimeout(r, 400));
 }
+
+describe("a field's words for its changes", () => {
+    const writing: ConceptWriting = {
+        scheme: {
+            concepts: [
+                {
+                    id: 'NOT_ABROAD',
+                    name: 'Not Releasable Abroad',
+                    views: { default: 'NA', banner: 'NOT ABROAD' },
+                    categories: ['release'],
+                },
+            ],
+            categories: [{ id: 'release', label: 'Release Control' }],
+        } as unknown as ConceptWriting['scheme'],
+        meta: {
+            formats: [
+                {
+                    id: 'banner',
+                    surface: 'line',
+                    mode: 'inline',
+                    view: 'banner',
+                    categoryOrder: ['release'],
+                },
+            ],
+            defaultRenderFormat: 'banner',
+        },
+        field: { formatId: 'banner', part: false, scopes: [] },
+    };
+    const added: Change = {
+        ruleId: 'r1',
+        action: 'add',
+        add: [{ conceptId: 'NOT_ABROAD', categoryId: 'release' }],
+        message: 'ignored',
+    };
+
+    it('names a value the way the field writes it and a category by its label', () => {
+        expect(
+            changeLines(
+                added,
+                schemeChangeWords(() => writing),
+            ),
+        ).toEqual(['Added NOT ABROAD to Release Control.']);
+    });
+
+    it('says the ids until the scheme has loaded', () => {
+        expect(
+            changeLines(
+                added,
+                schemeChangeWords(() => undefined),
+            ),
+        ).toEqual(['Added NOT_ABROAD to release.']);
+    });
+});
 
 describe('ensureStatusMark', () => {
     it('mounts exactly one mark and is idempotent', () => {
@@ -242,6 +298,22 @@ describe('the mark glyph and the plain input it sits on', () => {
         expect(wrapRule).toMatch(/display:\s*inline-flex/);
         expect(wrapRule).toMatch(/flex-direction:\s*column/);
         expect(wrapRule).toMatch(/align-items:\s*stretch/);
+    });
+
+    it('never colors the sparkle apart from the rest of the brand glyph', () => {
+        // The glyph is the logo: bars and sparkle always share one color, and
+        // a state changes the whole mark (and the count beside it), never the
+        // sparkle alone.
+        for (const file of ['status-mark.css', 'coverage-action.css']) {
+            const css = readFileSync(join(here, file), 'utf8');
+            const sparkleRules =
+                css.match(/[^{}]*__spark(?:le)?\b[^{}]*\{[^}]*\}/g) ?? [];
+            for (const rule of sparkleRules) {
+                expect(rule, `${file}: ${rule.trim()}`).not.toMatch(
+                    /\b(fill|color)\s*:(?!\s*(currentColor|inherit)\b)/,
+                );
+            }
+        }
     });
 
     it('hides the count while it is empty, so a reviewed mark is the glyph alone', () => {

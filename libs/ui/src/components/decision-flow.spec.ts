@@ -1140,7 +1140,7 @@ describe('DecisionFlow: multi-select steps', () => {
         expect(flow.getAssertions().length).toBe(1);
     });
 
-    it("a multi-select step's dot names every selected concept", async () => {
+    it("a multi-select step's dot names every selected concept as the marking writes it", async () => {
         container
             .querySelectorAll<HTMLButtonElement>('.ez-decision-flow__option')[0]
             .click();
@@ -1155,9 +1155,8 @@ describe('DecisionFlow: multi-select steps', () => {
             '.ez-decision-flow__step-dot[data-category-id="caveat"]',
         );
         expect(dot?.dataset.state).toBe('answered');
-        expect(dot?.getAttribute('aria-label')).toContain(
-            'Caveat: Caveat X, Caveat Z',
-        );
+        // Each as the marking writes it, the way its option reads.
+        expect(dot?.getAttribute('aria-label')).toContain('Caveat: CX, CZ');
     });
 
     it('hint text "Select all that apply." appears only for multi-select steps', async () => {
@@ -1661,7 +1660,7 @@ describe('DecisionFlow: headed-category reveal', () => {
             '.ez-decision-flow__option',
         );
         const shareOption = Array.from(options).find(
-            (b) => b.textContent === 'Share Allowed',
+            (b) => b.textContent === 'SHARE',
         );
         expect(shareOption).toBeDefined();
         shareOption!.click();
@@ -1687,7 +1686,7 @@ describe('DecisionFlow: headed-category reveal', () => {
                 '.ez-decision-flow__option',
             ),
         )
-            .find((b) => b.textContent === 'Share Allowed')!
+            .find((b) => b.textContent === 'SHARE')!
             .click();
 
         // Advance to recipients step and select GROUP_A
@@ -1713,7 +1712,7 @@ describe('DecisionFlow: headed-category reveal', () => {
             container.querySelectorAll<HTMLButtonElement>(
                 '.ez-decision-flow__option',
             ),
-        ).find((b) => b.textContent === 'No Sharing')!;
+        ).find((b) => b.textContent === 'NONE')!;
         noSharingOption.click();
 
         // Recipients step hidden again
@@ -1741,7 +1740,7 @@ describe('DecisionFlow: headed-category reveal', () => {
                 '.ez-decision-flow__option',
             ),
         )
-            .find((b) => b.textContent === 'Share Allowed')!
+            .find((b) => b.textContent === 'SHARE')!
             .click();
 
         // Advance to next step, must be recipients, not some other category
@@ -1766,7 +1765,7 @@ describe('DecisionFlow: headed-category reveal', () => {
                 '.ez-decision-flow__option',
             ),
         )
-            .find((b) => b.textContent === 'Share Allowed')!
+            .find((b) => b.textContent === 'SHARE')!
             .click();
         await settle();
 
@@ -2625,18 +2624,18 @@ describe('DecisionFlow: compact layout', () => {
         ).toBeNull();
     });
 
-    it('names each option by its concept, with how a marking writes it as its tooltip and description', async () => {
+    it("reads each option as the field writes it, with the concept's name as its tooltip and description", async () => {
         await flow.init(container, toCtx(createMockEngine()));
         await enterFlow(container);
         const partial = container.querySelector<HTMLButtonElement>(
             '.ez-decision-flow__option[data-concept-id="SCOPE_PARTIAL"]',
         )!;
-        expect(partial.textContent).toBe('Partial');
-        expect(partial.title).toBe('Appears as: S:P');
+        expect(partial.textContent).toBe('S:P');
+        expect(partial.title).toBe('Partial');
         expect(
             document.getElementById(partial.getAttribute('aria-describedby')!)
                 ?.textContent,
-        ).toBe('Appears as: S:P.');
+        ).toBe('Partial.');
     });
 
     it('shows an option the current choices rule out in its place, unavailable, with the reason, and never takes it', async () => {
@@ -2692,7 +2691,7 @@ describe('DecisionFlow: compact layout', () => {
         );
         await vi.waitFor(() =>
             expect(reason().textContent).toBe(
-                'Full is not available: Full scope needs a high impact.',
+                'S:F is not available: Full scope needs a high impact.',
             ),
         );
         expect(reason().hidden).toBe(false);
@@ -2839,7 +2838,7 @@ describe('DecisionFlow: compact layout', () => {
             '.ez-decision-flow__dot-preview',
         )!;
         expect(preview.hidden).toBe(false);
-        expect(preview.textContent).toBe('Scope: Partial');
+        expect(preview.textContent).toBe('Scope: S:P');
         expect(dots()[0].hasAttribute('data-previewing')).toBe(true);
         dots()[0].dispatchEvent(
             Object.assign(new Event('pointerleave'), { pointerType: 'mouse' }),
@@ -3376,4 +3375,284 @@ it("holds back the open step's required message while its chosen value is still 
         host.remove();
         outside.remove();
     }
+});
+
+/**
+ * A scheme whose line writes a control short on a whole marking and shorter on
+ * a part, and whose notice block writes its handling as a sentence, the way a
+ * banner, a portion mark and an authority block divide one marking.
+ */
+function createLabelProfile(): SchemePublicView {
+    const concepts = [
+        {
+            id: 'KEEP',
+            name: 'Keep Inside the Office',
+            definition: 'Stays in the office.',
+            views: {
+                default: 'KO',
+                short: 'KEEP',
+                tiny: 'K',
+                spelled: 'KEEP INSIDE THE OFFICE',
+            },
+            categories: ['control'],
+            parents: [],
+            aliases: [],
+            position: 1,
+        },
+        {
+            id: 'UNSPELLED',
+            name: 'Never Spelled',
+            views: {},
+            categories: ['control'],
+            parents: [],
+            aliases: [],
+            position: 2,
+        },
+        {
+            id: 'SHRED',
+            name: 'Shred',
+            views: { default: 'SHRED', block: 'Shred this copy after use.' },
+            categories: ['handling'],
+            parents: [],
+            aliases: [],
+            position: 1,
+        },
+        {
+            id: 'ON_DATE',
+            name: 'On a Date',
+            definition: 'Release on a date.',
+            views: { default: '{value}', block: 'On {value}' },
+            categories: ['handling'],
+            parents: [],
+            aliases: [],
+            position: 2,
+            textInput: { placeholder: 'YYYYMMDD' },
+        },
+    ] as unknown as ConceptView[];
+    return {
+        name: 'Label Profile',
+        categories: [
+            {
+                id: 'control',
+                label: 'Control',
+                single: false,
+                required: false,
+            } as CategoryView,
+            {
+                id: 'handling',
+                label: 'Handling',
+                single: true,
+                required: false,
+                scopes: ['notice'],
+            } as unknown as CategoryView,
+        ],
+        concepts,
+        formats: [],
+        scopes: [
+            { id: 'line', label: 'Line' },
+            { id: 'notice', label: 'Notice' },
+        ],
+        defaultScope: 'line',
+        defaultRenderFormat: 'line/short',
+    } as unknown as SchemePublicView;
+}
+
+function createLabelEngine(): SchemeEngineAdapter {
+    const p = createLabelProfile();
+    const output = (
+        id: string,
+        surface: string,
+        view: string,
+        defaultFor: string[],
+        categoryOrder: string[],
+    ) => ({
+        ...mockRenderFormat({ id, surface, view, categoryOrder }),
+        defaultFor,
+    });
+    return withSuggestFor({
+        getScheme: () => p,
+        getSchemeMeta: () => ({
+            id: 'labels',
+            version: '1.0',
+            name: 'Label Profile',
+            // As the engine projects a scheme with surfaces: the default
+            // output is the default scope's whole default.
+            defaultRenderFormat: 'line/short',
+            defaultWholeRenderFormat: 'line/short',
+            defaultPartRenderFormat: 'line/tiny',
+            defaultScope: 'line',
+            formats: [
+                output('line/short', 'line', 'short', ['whole'], ['control']),
+                output('line/tiny', 'line', 'tiny', ['part'], ['control']),
+                output('line/spelled', 'line', 'spelled', [], ['control']),
+                output(
+                    'notice/block',
+                    'notice',
+                    'block',
+                    ['whole', 'part'],
+                    ['handling'],
+                ),
+            ],
+            scopes: p.scopes,
+        }),
+        listCategories: () => p.categories,
+        getConceptsInCategory: (catId: string) =>
+            p.concepts.filter((c: any) => c.categories?.includes(catId)),
+        render: vi.fn((assertions: Assertion[]) => ({
+            rendered: assertions.map((a) => a.conceptId).join('/'),
+            assessment: {
+                emitted: [],
+                omitted: [],
+                collapsed: [],
+                conflicts: [],
+                unrepresentable: [],
+            },
+        })),
+        process: vi.fn(
+            (_input: string, opts?: { assertions?: Assertion[] }) => {
+                const assertions = opts?.assertions ?? [];
+                return {
+                    assertions: [...assertions],
+                    rendered: assertions.map((a) => a.conceptId).join('/'),
+                    valid: true,
+                };
+            },
+        ),
+        suggest: vi.fn().mockReturnValue({
+            suggestions: p.concepts.map((c) => ({
+                conceptId: c.id,
+                categoryId: c.categories[0],
+                label: c.name,
+                name: c.name,
+                group: c.categories[0],
+            })),
+        }),
+        describeConcept: (conceptId: string) => ({ lines: [conceptId] }),
+    } as unknown as SchemeEngineAdapter);
+}
+
+describe('DecisionFlow option labels', () => {
+    let container: HTMLDivElement;
+    let flow: DecisionFlow;
+
+    beforeEach(() => {
+        document.body.innerHTML = '';
+        container = document.createElement('div');
+        document.body.appendChild(container);
+        flow = new DecisionFlow();
+    });
+
+    const option = (conceptId: string) =>
+        container.querySelector<HTMLButtonElement>(
+            `.ez-decision-flow__option[data-concept-id="${conceptId}"]`,
+        )!;
+    const description = (btn: HTMLElement) =>
+        document.getElementById(btn.getAttribute('aria-describedby')!)
+            ?.textContent;
+    const open = async (options: Record<string, unknown> = {}) => {
+        await flow.init(container, toCtx(createLabelEngine()), {
+            scopes: ['line', 'notice'],
+            ...options,
+        } as never);
+        await enterFlow(container);
+        await settle();
+    };
+    const jumpTo = async (categoryId: string) => {
+        container
+            .querySelector<HTMLElement>(
+                `.ez-decision-flow__step-dot[data-category-id="${categoryId}"]`,
+            )!
+            .click();
+        await settle();
+    };
+
+    it("reads a whole marking's option in the scope's whole default, its name and definition in the tooltip and description", async () => {
+        await open();
+        const keep = option('KEEP');
+        expect(keep.textContent).toBe('KEEP');
+        expect(keep.title).toBe('Keep Inside the Office\nStays in the office.');
+        expect(description(keep)).toBe(
+            'Keep Inside the Office. Stays in the office.',
+        );
+    });
+
+    it("reads a part's option in the scope's part default", async () => {
+        await open({ holdsPart: true });
+        expect(option('KEEP').textContent).toBe('K');
+    });
+
+    it('reads an option in the output the field names for its scope', async () => {
+        await open({ formatId: 'line/spelled' });
+        expect(option('KEEP').textContent).toBe('KEEP INSIDE THE OFFICE');
+    });
+
+    it('reads an option the field writes nothing for by its name, never empty', async () => {
+        await open();
+        const unspelled = option('UNSPELLED');
+        expect(unspelled.textContent).toBe('Never Spelled');
+        // The name is the label, so the tooltip does not repeat it.
+        expect(unspelled.hasAttribute('title')).toBe(false);
+    });
+
+    it("reads another scope's option as that scope writes it, a sentence included, and a value option by its name", async () => {
+        await open();
+        await jumpTo('handling');
+        expect(option('SHRED').textContent).toBe('Shred this copy after use.');
+        expect(option('SHRED').title).toBe('Shred');
+        const onDate = option('ON_DATE');
+        expect(onDate.textContent).toBe('On a Date');
+        expect(onDate.title).toBe('Release on a date.');
+    });
+
+    it('names a choice on its dot and in the status mark the way its option reads', async () => {
+        await open();
+        option('KEEP').click();
+        await settle();
+        const dot = container.querySelector<HTMLElement>(
+            '.ez-decision-flow__step-dot[data-category-id="control"]',
+        )!;
+        expect(dot.getAttribute('aria-label')).toContain('Control: KEEP');
+
+        const mark = container.querySelector<HTMLElement>('.ez-status-mark')!;
+        setStatusMarkFixes(mark.parentElement!, [
+            {
+                ruleId: 'r1',
+                action: 'add',
+                add: [{ conceptId: 'SHRED', categoryId: 'handling' }],
+                message: 'Rule "r1": added "SHRED"',
+            },
+        ]);
+        mark.dispatchEvent(
+            Object.assign(new Event('pointerdown', { bubbles: true }), {
+                pointerType: 'touch',
+            }),
+        );
+        mark.click();
+        expect(
+            [
+                ...document.querySelectorAll(
+                    '.ez-tooltip:not([hidden]) .ez-status-list__text',
+                ),
+            ].map((line) => line.textContent),
+        ).toEqual(['Added Shred this copy after use. to Handling.']);
+    });
+
+    it('gives an option too long for its row a row of its own, wrapping from the start edge', () => {
+        // The stylesheet is read from disk: the `?inline` import is empty
+        // under test.
+        const css = readFileSync(
+            join(dirname(fileURLToPath(import.meta.url)), 'decision-flow.css'),
+            'utf8',
+        );
+        const at = css.indexOf('.ez-decision-flow__option {');
+        const body = css.slice(at, css.indexOf('}', at));
+        expect(body).toMatch(/max-width: 100%;/);
+        expect(body).toMatch(/text-align: start;/);
+        expect(
+            css.slice(
+                css.indexOf('.ez-decision-flow__options {'),
+                css.indexOf('}', css.indexOf('.ez-decision-flow__options {')),
+            ),
+        ).toMatch(/flex-wrap: wrap;/);
+    });
 });

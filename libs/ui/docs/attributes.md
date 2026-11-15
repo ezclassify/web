@@ -231,18 +231,19 @@ rest and while the field is focused; a text area pins it to its first line.
 The field's text keeps clear of it: the row publishes how far it reaches into
 the field as `--ez-field-chrome-inline-size` on the field's wrapper, and the
 text layers reserve that much trailing padding. The mark is the
-3-bar-plus-sparkle brand glyph and cycles through three
+3-bar-plus-sparkle brand glyph, always drawn in one color like the logo, and
+cycles through three
 states as fixes arrive and get noticed: `.ez-status-mark--quiet` (the
 default: nothing applied yet, whole glyph muted), `.ez-status-mark--unseen`
 (a marking rule changed the marking and the user hasn't been shown what yet:
-the whole mark turns strong, the sparkle turns accent-colored, and the number
+the whole mark turns strong and the number
 of changes stands beside it in `.ez-status-mark__count`), and
 `.ez-status-mark--seen` (the list has actually presented, past its
 hover-intent delay, or the mark was focused: the number goes but the strong
-mark and the accent sparkle stay). A fourth state,
+mark stays). A fourth state,
 `.ez-status-mark--error`, overrides the other three while the field could not
 check all of its text, as when a MarkedTextArea's scan stops before the end of
-the body: the sparkle takes the error color and the popover and label lead with
+the body: the whole mark takes the error color and the popover and label lead with
 the reason. Hovering or focusing an active (non-quiet) mark lists each change
 EzClassify made to the marking once, however many rules made it: "Added ... to
 ...", "Removed ... from ..." or "Replaced ... with ... in ...", naming the value
