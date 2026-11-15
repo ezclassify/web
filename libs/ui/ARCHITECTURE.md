@@ -660,18 +660,26 @@ store, goes through `loaded-value.ts`:
   flagged pill after the chips.
 
 The store holds the same accepted value. Fields publish and seed what they
-hold; nothing hands the store the author's original text in its place.
+hold; nothing hands the store the author's original text in its place. A field
+bound to a whole marking publishes its facts when the engine read its value in
+full, so who stated each fact reaches every other view: read back from its text,
+a value a rule added would read as the author's own and no view could explain
+it. A value with text the engine could not read is published as its text, the
+only place that text is kept.
 
 Render-suppressed assertions remain in structured state independently of the
 text shown in the field. TagInput reads what the written marking leaves out
 from the render assessment (`omitted`, `collapsed`), the engine's own
 declaration of it; it never decides that from a concept id. A fact the engine
 derived that the marking does not write, such as a member collapsed into its
-group's written name or a default no output prints, gets no chip. A fact the
-author stated that the marking leaves out is drawn faded. A chip the engine
-derived (`infer`, `default`, `context`, or `repair` with a `sourceRule`) is
-dashed and has no remove button, and the chip keys skip it; a solid chip is a
-fact the author stated.
+group's written name or a default no output prints, is drawn faded, and its
+tooltip and accessible name say why the marking holds it: "Included by
+{choice}" for a collapsed member, naming the value it is written under, and
+"Default {category}, not written in the marking" for a default. It is never a
+change on the status mark. A fact the author stated that the marking leaves
+out is drawn faded too. A chip the engine derived (`infer`, `default`,
+`context`, or `repair` with a `sourceRule`) is dashed and has no remove button,
+and the chip keys skip it; a solid chip is a fact the author stated.
 
 This does not authorize rewriting prose: MarkedInput and MarkedTextArea
 separately scan their embedded markings and manage their own body-text editors.

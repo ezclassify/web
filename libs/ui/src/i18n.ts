@@ -44,6 +44,8 @@ export const defaultLocale = {
     'aria.removeTag': 'Remove {name}',
     'aria.inferredSuffix': ' (inferred)',
     'flow.includedBy': 'Included by {choice}',
+    'tag.defaultUnwritten': 'Default {category}, not written in the marking',
+    'tag.unwritten': 'Not written in the marking',
     'aria.unprintedSuffix': ' (not shown in the marking)',
     'aria.unreadSuffix': ' (not recognized)',
     'aria.overallMarkingPrefix': 'Overall marking: ',

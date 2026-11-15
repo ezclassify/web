@@ -98,7 +98,9 @@ describe('a TagInput that lists no scope', () => {
         tags!.setAssertions(facts('LOW', 'ALICE'));
         await settle();
 
-        expect(chips(root)).toEqual(['LOW', 'STD']);
+        // HOME, the owner's default, is drawn too, faded: the line holds it
+        // and does not write it.
+        expect(chips(root)).toEqual(['HOME', 'LOW', 'STD']);
         expect(ids(tags!.getAssertions())).toEqual(['HOME', 'LOW', 'STD']);
     });
 
@@ -111,7 +113,7 @@ describe('a TagInput that lists no scope', () => {
         await settle();
 
         expect(store.get('m').valid).toBe(false);
-        expect(chips(root)).toEqual(['HIGH', 'STD']);
+        expect(chips(root)).toEqual(['DISTRICT', 'HIGH', 'HOME', 'STD']);
     });
 });
 
@@ -141,7 +143,7 @@ describe("a bound TagInput leaves the other scopes' facts in the shared marking"
         )!.click();
         await settle();
 
-        expect(chips(root)).toEqual(['HIGH', 'STD']);
+        expect(chips(root)).toEqual(['DISTRICT', 'HIGH', 'HOME', 'STD']);
         const held = ids(store.get('m').assertions);
         expect(held).not.toContain('GROUP');
         expect(held).toEqual(expect.arrayContaining(['BOB', 'HIGH']));
@@ -155,7 +157,9 @@ describe("a bound TagInput leaves the other scopes' facts in the shared marking"
         root.querySelector<HTMLButtonElement>('.ez-clear-button')!.click();
         await settle();
 
-        expect(chips(root)).toEqual([]);
+        // What the field stated is gone; the owner's default the marking
+        // still holds stays drawn, faded.
+        expect(chips(root)).toEqual(['HOME']);
         const held = ids(store.get('m').assertions);
         expect(held).not.toContain('HIGH');
         expect(held).toContain('BOB');

@@ -313,7 +313,7 @@ export class TagInput extends ComponentBase {
             colorFrom: this.colorFrom,
             colorCoding: this.options.colorCoding,
             unprinted: this.unprinted,
-            written: this.writtenFact(),
+            unwritten: this.unwrittenFact(),
             unread: this.unreadText,
             onRemoveAssertion: (c, f) => this.removeAssertion(c, f),
             onReprocess: () => {
@@ -329,8 +329,8 @@ export class TagInput extends ComponentBase {
                     }
                 }, 150);
             },
-            onChipCreated: (el, conceptId, categoryId) =>
-                this.attachConceptTooltip(el, conceptId, categoryId),
+            onChipCreated: (el, conceptId, categoryId, reason) =>
+                this.attachConceptTooltip(el, conceptId, categoryId, reason),
         });
 
         this.updateFilterPlaceholder();
