@@ -35,13 +35,9 @@
     overflow: visible;
 }
 
+/* The sparkle is part of the brand glyph and always shares its color. */
 .ez-coverage-action__spark {
     fill: currentColor;
-}
-
-.ez-coverage-action--unseen .ez-coverage-action__spark,
-.ez-coverage-action--seen .ez-coverage-action__spark {
-    fill: var(--ez-color-primary, #fdb827);
 }
 
 .ez-coverage-action__dot {

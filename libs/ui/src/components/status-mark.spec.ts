@@ -300,6 +300,22 @@ describe('the mark glyph and the plain input it sits on', () => {
         expect(wrapRule).toMatch(/align-items:\s*stretch/);
     });
 
+    it('never colors the sparkle apart from the rest of the brand glyph', () => {
+        // The glyph is the logo: bars and sparkle always share one color, and
+        // a state changes the whole mark (and the count beside it), never the
+        // sparkle alone.
+        for (const file of ['status-mark.css', 'coverage-action.css']) {
+            const css = readFileSync(join(here, file), 'utf8');
+            const sparkleRules =
+                css.match(/[^{}]*__spark(?:le)?\b[^{}]*\{[^}]*\}/g) ?? [];
+            for (const rule of sparkleRules) {
+                expect(rule, `${file}: ${rule.trim()}`).not.toMatch(
+                    /\b(fill|color)\s*:(?!\s*(currentColor|inherit)\b)/,
+                );
+            }
+        }
+    });
+
     it('hides the count while it is empty, so a reviewed mark is the glyph alone', () => {
         const css = readFileSync(join(here, 'status-mark.css'), 'utf8');
         expect(css).toMatch(

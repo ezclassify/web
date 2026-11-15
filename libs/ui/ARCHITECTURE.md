@@ -95,12 +95,13 @@ Configuration stays narrow. Subjective and optional helper surfaces, such as too
 Every enhanced input and textarea, including a data-only field, has one EzClassify status mark: the 3-bar-plus-sparkle brand glyph. MarkingField, TagInput, MarkedInput and MarkedTextArea put it in their inline chrome (`field-chrome.ts`): one row inside the field's trailing edge holding the mark, the ★ favorites button where it applies, and clear. The row sits in the same place at rest and while the field is focused, centered on a single-line field and pinned to the first line of a text area. It measures how far it reaches into the field and publishes that as `--ez-field-chrome-inline-size` on the field's wrap; the field's text layers reserve that much trailing padding, so text, wrapped lines and chips never run under it, and the reserve follows the row when its contents change. The one remaining absolutely-positioned placement (an input's right edge) belongs to the plain, chrome-less `<input>` binding path in `ezclassify-ui.ts`: a bare field with no chrome row of its own to fold the mark into.
 
 - **Quiet** is the default: the whole glyph sits muted (`--ez-status-mark-color`). It means the field is enhanced by EzClassify and nothing has been fixed. A proposed fix does not change the mark; only an applied fix does.
+- The glyph is the logo, so its bars and sparkle always share one color; a state never colors the sparkle on its own.
 - Every other state means the field has a message for the user, and the glyph turns strong (`--ez-status-mark-strong-color`): the field's text color on a light palette, gold on a dark one. The accessible label then carries the message too.
-- **Unseen**: a marking rule changed the marking and the user has not yet been shown what. The whole mark is strong, the sparkle accent-colored, and the number of changes stands beside it. Its label says so: "1 change made by a marking rule, not yet reviewed", or "{n} changes made by marking rules, not yet reviewed".
-- **Seen**: the list has actually presented, past its hover-intent delay, or the mark was focused. The number goes; the strong mark and the accent sparkle persist as "done and known", and the label drops ", not yet reviewed".
+- **Unseen**: a marking rule changed the marking and the user has not yet been shown what. The whole mark is strong and the number of changes stands beside it. Its label says so: "1 change made by a marking rule, not yet reviewed", or "{n} changes made by marking rules, not yet reviewed".
+- **Seen**: the list has actually presented, past its hover-intent delay, or the mark was focused. The number goes; the strong mark persists as "done and known", and the label drops ", not yet reviewed".
 - **Error**: the field could not check all of its text, as when a
-  MarkedTextArea's scan stops before the end of the body. The sparkle takes the
-  error color and the popover and accessible label lead with the reason, ahead
+  MarkedTextArea's scan stops before the end of the body. The whole mark takes
+  the error color and the popover and accessible label lead with the reason, ahead
   of any fixes. It overrides the fix states and needs no acknowledgment: it
   clears when its cause does. The tooltip opt-out never hides it.
 - A fix not yet shown re-arms unseen even if the field was previously seen. Clearing the fix set (a clean reprocess) returns to quiet and forgets what was shown, so the next fix starts unseen again. State is per-field, in-memory only.
