@@ -46,30 +46,45 @@ export interface WrittenFactSource extends ScopeSource {
 type FactRef = Pick<AssertionRef, 'categoryId' | 'conceptId'>;
 
 const keyOf = (ref: FactRef) => `${ref.categoryId}\u0000${ref.conceptId}`;
+const pick = (ref: FactRef): FactRef => ({
+    categoryId: ref.categoryId,
+    conceptId: ref.conceptId,
+});
 
 /**
- * A test of whether the marking a field shows writes a fact. A fact is
- * unwritten only when a form whose surface owns its category left it out or
- * collapsed it into another value, and no form the field shows wrote it. Every
- * other fact counts as written, including one no assessment mentions.
+ * Why the marking leaves out a fact it holds. A fact collapsed into another
+ * value says which: the value it is written under. A fact no form writes at all
+ * has none.
+ */
+export interface UnwrittenFact {
+    /** The written value the fact collapsed into, when it collapsed. */
+    into?: Pick<AssertionRef, 'categoryId' | 'conceptId'>;
+}
+
+/**
+ * The facts the marking a field shows holds but does not write, each with why.
+ * A fact is unwritten only when a form whose surface owns its category left it
+ * out or collapsed it into another value, and no form the field shows wrote it.
+ * Every other fact counts as written, including one no assessment mentions.
  *
  * @param forms - The forms the field shows its marking in
  * @param categories - The scheme's categories, with the scopes they declare
  * @param meta - The scheme's scope and output metadata
- * @returns A test of a fact by its category and concept
+ * @returns A lookup of a fact by its category and concept: why it is unwritten,
+ *   or undefined for a written fact
  */
-export function writtenFactTest(
+export function unwrittenFactLookup(
     forms: readonly ShownForm[],
     categories: ReadonlyArray<{ id: string; scopes?: readonly string[] }>,
     meta: WrittenFactSource,
-): (ref: FactRef) => boolean {
+): (ref: FactRef) => UnwrittenFact | undefined {
     const emitted = new Set<string>();
     for (const form of forms)
         for (const ref of form.assessment?.emitted ?? [])
             emitted.add(keyOf(ref));
     const byId = new Map(categories.map((c) => [c.id, c]));
     const declared = new Set((meta.scopes ?? []).map((scope) => scope.id));
-    const unwritten = new Set<string>();
+    const unwritten = new Map<string, UnwrittenFact>();
     for (const form of forms) {
         const assessment = form.assessment;
         if (!assessment) continue;
@@ -88,13 +103,43 @@ export function writtenFactTest(
                 scopesOfCategory(category, meta).includes(surface)
             );
         };
-        for (const ref of [
-            ...(assessment.omitted ?? []),
-            ...(assessment.collapsed ?? []).flat(),
-        ]) {
+        const note = (ref: FactRef, why: UnwrittenFact) => {
             const key = keyOf(ref);
-            if (!emitted.has(key) && owns(ref.categoryId)) unwritten.add(key);
+            if (emitted.has(key) || !owns(ref.categoryId)) return;
+            // A collapse names the value the fact is written under; that is
+            // the better answer when another form only left the fact out.
+            if (!unwritten.get(key)?.into) unwritten.set(key, why);
+        };
+        for (const ref of assessment.omitted ?? []) note(ref, {});
+        for (const group of assessment.collapsed ?? []) {
+            // The group's written equivalent is the value of it a form wrote.
+            const into = group.find((ref) => emitted.has(keyOf(ref)));
+            for (const ref of group)
+                note(
+                    ref,
+                    into && keyOf(into) !== keyOf(ref)
+                        ? { into: pick(into) }
+                        : {},
+                );
         }
     }
-    return (ref) => !unwritten.has(keyOf(ref));
+    return (ref) => unwritten.get(keyOf(ref));
+}
+
+/**
+ * A test of whether the marking a field shows writes a fact (see
+ * {@link unwrittenFactLookup}).
+ *
+ * @param forms - The forms the field shows its marking in
+ * @param categories - The scheme's categories, with the scopes they declare
+ * @param meta - The scheme's scope and output metadata
+ * @returns A test of a fact by its category and concept
+ */
+export function writtenFactTest(
+    forms: readonly ShownForm[],
+    categories: ReadonlyArray<{ id: string; scopes?: readonly string[] }>,
+    meta: WrittenFactSource,
+): (ref: FactRef) => boolean {
+    const unwritten = unwrittenFactLookup(forms, categories, meta);
+    return (ref) => unwritten(ref) === undefined;
 }

@@ -1,12 +1,12 @@
 /**
- * The author signs what the marking writes, so a field draws as values of the
- * marking, and lists as changes, only facts the marking writes. A member
- * collapsed into its group's written name and a default no output prints are
- * facts the marking holds, not values the author sees: no chip, no change, and
- * no undo for a result whose only changes were those. A value a rule added that
- * the marking does write is listed and counted, though the author did not write
- * it. A field that shows its marking in several forms counts a change that
- * alters any of them.
+ * The author signs what the marking writes, so a field lists as changes only
+ * facts the marking writes. A member collapsed into its group's written name
+ * and a default no output prints are facts the marking holds, not values the
+ * author sees: no change, and no undo for a result whose only changes were
+ * those. TagInput still draws them, faded, so the author sees what the marking
+ * holds. A value a rule added that the marking does write is listed and
+ * counted, though the author did not write it. A field that shows its marking
+ * in several forms counts a change that alters any of them.
  *
  * The engine is a stand-in (see `label-record-stand-in.ts`): each answer, with
  * the assessment of what each render wrote, is written out.
@@ -54,14 +54,18 @@ function openList(): string[] {
     return lines;
 }
 
-/** The chips a TagInput draws: each concept, and whether it is drawn inferred. */
+/**
+ * The chips a TagInput draws: each concept, whether it is drawn inferred, and
+ * whether it is drawn faded.
+ */
 const chips = () =>
     [...container.querySelectorAll<HTMLElement>('.proto-tag')].map(
         (chip) =>
             chip.dataset.conceptId +
             (chip.classList.contains('proto-tag--inferred')
                 ? ' (inferred)'
-                : ''),
+                : '') +
+            (chip.classList.contains('proto-tag--unprinted') ? ' (faded)' : ''),
     );
 
 async function mountTags(value: string): Promise<TagInput> {
@@ -76,14 +80,21 @@ async function mountTags(value: string): Promise<TagInput> {
 }
 
 describe('a TagInput', () => {
-    it("draws no chip for a group's collapsed member or an unprinted default, and lists no change for them", async () => {
+    it("fades a group's collapsed member and an unprinted default, and lists no change for them", async () => {
         await mountTags('GROUP');
 
         // GROUP takes in MEMBER, written as GROUP, and the owner HOME is a
         // default the line leaves out: the marking holds both.
         const held = mounted!.getAssertions().map((a) => a.conceptId);
         expect(held).toEqual(expect.arrayContaining(['MEMBER', 'HOME']));
-        expect(chips()).toEqual(['GROUP', 'ANCHOR (inferred)']);
+        // In the order the line writes their categories, the owner it does
+        // not write after them.
+        expect(chips()).toEqual([
+            'GROUP',
+            'MEMBER (inferred) (faded)',
+            'ANCHOR (inferred)',
+            'HOME (inferred) (faded)',
+        ]);
         // ANCHOR is a value a rule added that the line writes, beside GROUP:
         // listed and counted though the author did not write it.
         expect(openList()).toEqual([
@@ -109,7 +120,11 @@ describe('a TagInput', () => {
             '1 change made by a marking rule',
             'Added STD to Handling.',
         ]);
-        expect(chips()).toEqual(['LOW', 'STD (inferred)']);
+        expect(chips()).toEqual([
+            'LOW',
+            'STD (inferred)',
+            'HOME (inferred) (faded)',
+        ]);
     });
 
     it('offers no change and no undo for an edit whose only rule change the marking does not write', async () => {
@@ -126,7 +141,11 @@ describe('a TagInput', () => {
         expect(mounted!.getAssertions().map((a) => a.conceptId)).toContain(
             'DISTRICT',
         );
-        expect(chips()).toEqual(['HIGH']);
+        expect(chips()).toEqual([
+            'HIGH',
+            'HOME (inferred) (faded)',
+            'DISTRICT (inferred) (faded)',
+        ]);
         expect(openList()).toEqual([]);
         expect(
             container

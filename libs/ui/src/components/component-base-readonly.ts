@@ -67,7 +67,11 @@ import type { MarkingUndo } from './marking-undo';
 import { assertWritesScopes, viewOutputOf } from '../format-resolver';
 import { categoriesByScope, listedScopesOf, scopeSetOf } from '../scopes';
 import type { ConceptWriting, WritingField } from '../written-concept';
-import { writtenFactTest, type ShownForm } from '../written-facts';
+import {
+    unwrittenFactLookup,
+    type ShownForm,
+    type UnwrittenFact,
+} from '../written-facts';
 
 /**
  * Scheme operations a component marks with: a Context's scheme view.
@@ -153,6 +157,14 @@ export interface ComponentInstance {
     destroy(): void;
     /** Get the rendered marking string */
     getRendered(): string;
+    /**
+     * Whether the engine read the value this field holds in full, so its facts
+     * state all of it, with who stated each. A field holding text the engine
+     * could not read says no: only its text keeps that text.
+     *
+     * @internal
+     */
+    readsWhole?(): boolean;
     /**
      * Whether this component authors a whole marking of its own that its parts
      * are checked against. Defaults to true. A container that only aggregates
@@ -768,7 +780,19 @@ export abstract class ReadOnlyComponentBase implements ComponentInstance {
     protected writtenFact(): (
         ref: Pick<AssertionRef, 'categoryId' | 'conceptId'>,
     ) => boolean {
-        return writtenFactTest(
+        const unwritten = this.unwrittenFact();
+        return (ref) => unwritten(ref) === undefined;
+    }
+
+    /**
+     * Why the marking this field shows leaves out a fact it holds, by the same
+     * assessments as {@link writtenFact}: the value it collapsed into, when it
+     * collapsed. Undefined for a fact the marking writes.
+     */
+    protected unwrittenFact(): (
+        ref: Pick<AssertionRef, 'categoryId' | 'conceptId'>,
+    ) => UnwrittenFact | undefined {
+        return unwrittenFactLookup(
             this.shownForms(),
             this.scheme?.categories ?? [],
             this.schemeMeta ?? {},

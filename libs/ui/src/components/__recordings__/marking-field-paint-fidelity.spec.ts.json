@@ -206,7 +206,7 @@
             "method": "POST",
             "statusCode": 200
         },
-        "1f961ac7b258b483c8f21e32342007c5e059b8c7ec45c6c44e5d35ff994f86a5": {
+        "190ee2a14fb526826a2d4821033d3e4b953285979e0b3a410757fe46e69ae019": {
             "body": {
                 "resolution": {
                     "artifacts": [
@@ -227,31 +227,61 @@
                             "categoryId": "cui_designator",
                             "conceptId": "CUI",
                             "confidence": "certain",
-                            "source": "parse"
+                            "source": "test"
+                        },
+                        {
+                            "categoryId": "specified_category",
+                            "conceptId": "EXPT",
+                            "confidence": "certain",
+                            "source": "test"
+                        },
+                        {
+                            "categoryId": "basic_category",
+                            "conceptId": "PROPIN",
+                            "confidence": "certain",
+                            "source": "test"
                         },
                         {
                             "categoryId": "dissem",
                             "conceptId": "FED-ONLY",
                             "confidence": "certain",
-                            "source": "parse"
+                            "source": "test"
                         },
                         {
                             "categoryId": "dissem",
                             "conceptId": "NOFORN",
                             "confidence": "certain",
-                            "source": "parse"
-                        },
-                        {
-                            "categoryId": "dissem",
-                            "conceptId": "ONSITE",
-                            "confidence": "certain",
-                            "source": "parse"
+                            "source": "test"
                         }
                     ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            {
+                                "categoryId": "cui_designator",
+                                "conceptId": "CUI"
+                            },
+                            {
+                                "categoryId": "specified_category",
+                                "conceptId": "EXPT"
+                            },
+                            {
+                                "categoryId": "basic_category",
+                                "conceptId": "PROPIN"
+                            },
+                            { "categoryId": "dissem", "conceptId": "FED-ONLY" },
+                            { "categoryId": "dissem", "conceptId": "NOFORN" }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
                     "errors": [],
+                    "inputWasValid": true,
                     "notices": [],
                     "proposedFixes": [],
-                    "rendered": "CUI//FED ONLY/NOFORN/ON",
+                    "rendered": "CUI//SP-EXPT/PROPIN//FED ONLY/NOFORN",
+                    "renders": {},
                     "valid": true,
                     "warnings": []
                 }
@@ -386,6 +416,137 @@
             ],
             "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "GET",
+            "statusCode": 200
+        },
+        "42e36f93900a4ff3c48de4c0b4f526b34bd4f5b72727850cf0b5c2709e57fcef": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "mf-prefixed",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "mf-prefixed",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "cui_designator",
+                            "conceptId": "CUI",
+                            "confidence": "certain",
+                            "source": "test"
+                        },
+                        {
+                            "categoryId": "specified_category",
+                            "conceptId": "EXPT",
+                            "confidence": "certain",
+                            "source": "test"
+                        },
+                        {
+                            "categoryId": "basic_category",
+                            "conceptId": "PROPIN",
+                            "confidence": "certain",
+                            "source": "test"
+                        },
+                        {
+                            "categoryId": "dissem",
+                            "conceptId": "FED-ONLY",
+                            "confidence": "certain",
+                            "source": "test"
+                        },
+                        {
+                            "categoryId": "dissem",
+                            "conceptId": "NOFORN",
+                            "confidence": "certain",
+                            "source": "test"
+                        }
+                    ],
+                    "errors": [],
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "CUI//SP-EXPT/PROPIN//FED ONLY/NOFORN",
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "515ac6a32c6edc07d0efa6f53008a68cebf70c2acb6f79b3f712f052dc651247": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "mf-prefixed",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "mf-prefixed",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "cui_designator",
+                            "conceptId": "CUI",
+                            "confidence": "certain",
+                            "source": "test"
+                        },
+                        {
+                            "categoryId": "dissem",
+                            "conceptId": "FED-ONLY",
+                            "confidence": "certain",
+                            "source": "test"
+                        },
+                        {
+                            "categoryId": "dissem",
+                            "conceptId": "NOFORN",
+                            "confidence": "certain",
+                            "source": "test"
+                        },
+                        {
+                            "categoryId": "dissem",
+                            "conceptId": "ONSITE",
+                            "confidence": "certain",
+                            "source": "test"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            {
+                                "categoryId": "cui_designator",
+                                "conceptId": "CUI"
+                            },
+                            { "categoryId": "dissem", "conceptId": "FED-ONLY" },
+                            { "categoryId": "dissem", "conceptId": "NOFORN" },
+                            { "categoryId": "dissem", "conceptId": "ONSITE" }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "CUI//FED ONLY/NOFORN/ON",
+                    "renders": {},
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
             "statusCode": 200
         },
         "518251c7600901c1384a07aa33a2562ba9b8507c315f9c5a2042521a29343099": {
@@ -595,6 +756,60 @@
                     "proposedFixes": [],
                     "rendered": "SECRET//SI/TK//NOFORN",
                     "renders": {},
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "8237a3373cfc09b90a648584fafc64c7368010dbb240d3565a33620e4931d563": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "mf-tiered",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "mf-tiered",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "SECRET",
+                            "confidence": "certain",
+                            "source": "aggregate"
+                        },
+                        {
+                            "categoryId": "sci",
+                            "conceptId": "SI",
+                            "confidence": "certain",
+                            "source": "test"
+                        },
+                        {
+                            "categoryId": "sci",
+                            "conceptId": "TK",
+                            "confidence": "certain",
+                            "source": "test"
+                        },
+                        {
+                            "categoryId": "dissem",
+                            "conceptId": "NOFORN",
+                            "confidence": "certain",
+                            "source": "test"
+                        }
+                    ],
+                    "errors": [],
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "SECRET//SI/TK//NOFORN",
                     "valid": true,
                     "warnings": []
                 }
@@ -1111,60 +1326,6 @@
             "method": "GET",
             "statusCode": 200
         },
-        "c7b1195cc6cd7b1cf28768a75305298d24eecf5c18992d8684bade5cc9035828": {
-            "body": {
-                "resolution": {
-                    "artifacts": [
-                        {
-                            "id": "mf-tiered",
-                            "kind": "scheme",
-                            "version": "1.0.0"
-                        }
-                    ],
-                    "contextId": "mf-tiered",
-                    "requestedVersion": "0.0.0",
-                    "resolvedVersion": "1.0.0"
-                },
-                "result": {
-                    "appliedFixes": [],
-                    "assertions": [
-                        {
-                            "categoryId": "level",
-                            "conceptId": "SECRET",
-                            "confidence": "certain",
-                            "source": "aggregate"
-                        },
-                        {
-                            "categoryId": "sci",
-                            "conceptId": "SI",
-                            "confidence": "certain",
-                            "source": "parse"
-                        },
-                        {
-                            "categoryId": "sci",
-                            "conceptId": "TK",
-                            "confidence": "certain",
-                            "source": "parse"
-                        },
-                        {
-                            "categoryId": "dissem",
-                            "conceptId": "NOFORN",
-                            "confidence": "certain",
-                            "source": "parse"
-                        }
-                    ],
-                    "errors": [],
-                    "notices": [],
-                    "proposedFixes": [],
-                    "rendered": "SECRET//SI/TK//NOFORN",
-                    "valid": true,
-                    "warnings": []
-                }
-            },
-            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
-            "method": "POST",
-            "statusCode": 200
-        },
         "cf4045de094432a9512e48232d7e50dff196c4f6998020324707167b2a753d18": {
             "body": [],
             "headers": { "x-ezclassify-resolved-version": "1.0.0" },
@@ -1365,66 +1526,6 @@
             "method": "POST",
             "statusCode": 200
         },
-        "ef91eb990f1db1294f4b4a42f9b5be14d597b6e646761495bd3ac40a14830b10": {
-            "body": {
-                "resolution": {
-                    "artifacts": [
-                        {
-                            "id": "mf-prefixed",
-                            "kind": "scheme",
-                            "version": "1.0.0"
-                        }
-                    ],
-                    "contextId": "mf-prefixed",
-                    "requestedVersion": "0.0.0",
-                    "resolvedVersion": "1.0.0"
-                },
-                "result": {
-                    "appliedFixes": [],
-                    "assertions": [
-                        {
-                            "categoryId": "cui_designator",
-                            "conceptId": "CUI",
-                            "confidence": "certain",
-                            "source": "parse"
-                        },
-                        {
-                            "categoryId": "specified_category",
-                            "conceptId": "EXPT",
-                            "confidence": "certain",
-                            "source": "parse"
-                        },
-                        {
-                            "categoryId": "basic_category",
-                            "conceptId": "PROPIN",
-                            "confidence": "certain",
-                            "source": "parse"
-                        },
-                        {
-                            "categoryId": "dissem",
-                            "conceptId": "FED-ONLY",
-                            "confidence": "certain",
-                            "source": "parse"
-                        },
-                        {
-                            "categoryId": "dissem",
-                            "conceptId": "NOFORN",
-                            "confidence": "certain",
-                            "source": "parse"
-                        }
-                    ],
-                    "errors": [],
-                    "notices": [],
-                    "proposedFixes": [],
-                    "rendered": "CUI//SP-EXPT/PROPIN//FED ONLY/NOFORN",
-                    "valid": true,
-                    "warnings": []
-                }
-            },
-            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
-            "method": "POST",
-            "statusCode": 200
-        },
         "f270b700ebcd9201c7353a695083ed1d6b047bf96d2c136c82b6dfc22162e472": {
             "body": [
                 {
@@ -1608,6 +1709,60 @@
                     },
                     "rendered": "CUI//FED ONLY/NOFORN/ON",
                     "renders": {},
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "fb9e23cb0560084e42d6b4641c89530993a8286daa5a174b7adceda9fec89948": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "mf-prefixed",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "mf-prefixed",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "cui_designator",
+                            "conceptId": "CUI",
+                            "confidence": "certain",
+                            "source": "test"
+                        },
+                        {
+                            "categoryId": "dissem",
+                            "conceptId": "FED-ONLY",
+                            "confidence": "certain",
+                            "source": "test"
+                        },
+                        {
+                            "categoryId": "dissem",
+                            "conceptId": "NOFORN",
+                            "confidence": "certain",
+                            "source": "test"
+                        },
+                        {
+                            "categoryId": "dissem",
+                            "conceptId": "ONSITE",
+                            "confidence": "certain",
+                            "source": "test"
+                        }
+                    ],
+                    "errors": [],
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "CUI//FED ONLY/NOFORN/ON",
                     "valid": true,
                     "warnings": []
                 }

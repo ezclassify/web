@@ -888,13 +888,13 @@ describe('a loaded marking takes what the engine fixed and says so', () => {
             expect((await markLines(form.querySelector(field)!))[1]).toBe(
                 'Added TAG-O to tag.',
             );
-        // The chips are the values the marking writes: HOME, a default the
-        // marking leaves out of print, has none.
+        // The one difference: the chips also draw HOME, a default the
+        // marking holds and leaves out of print, faded.
         expect(
             [...form.querySelectorAll('.ti .proto-tag')].map(
                 (chip) => (chip as HTMLElement).dataset.conceptId,
             ),
-        ).toEqual(['A', 'G', 'O', 'STD']);
+        ).toEqual(['A', 'G', 'O', 'STD', 'HOME']);
     });
 });
 
@@ -985,9 +985,12 @@ describe('TagInput chip style follows who stated the fact', () => {
         });
     });
 
-    it('draws no chip for a derived fact the marking leaves out of print', async () => {
-        const drawn = await chips();
-        expect(drawn.has('HOME')).toBe(false);
-        expect([...drawn.keys()]).toEqual(['A', 'G', 'O', 'STD']);
+    it('fades a default the marking leaves out of print, and says why', async () => {
+        expect((await chips()).get('HOME')).toEqual({
+            dashed: true,
+            faded: true,
+            removable: false,
+            label: 'Name HOME (inferred), Default origin, not written in the marking',
+        });
     });
 });

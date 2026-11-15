@@ -126,6 +126,7 @@ import {
     parseScopeList,
     reachesPastScopes,
     scopeSetOf,
+    writesCategoryOf,
 } from './scopes';
 import { renderViewRefusalMessages, renderViewRefused } from './render-refusal';
 import {
@@ -2880,6 +2881,26 @@ export class EzClassifyUI {
     }
 
     /**
+     * The categories a view writes: those of the scopes it lists, the scheme's
+     * default scope when it lists none, every category when the scheme declares
+     * no scopes.
+     *
+     * @param el - The view's host
+     */
+    private categoriesWritten(el: HTMLElement): string[] {
+        const engine = schemeEngineOf(this.resolveContext(el), el);
+        const categories = engine.listCategories();
+        const writes = writesCategoryOf(
+            parseScopeList(el.getAttribute('data-ezclassify-scope')),
+            categories,
+            engine.getSchemeMeta(),
+        );
+        return categories
+            .map((category) => category.id)
+            .filter((id) => writes(id));
+    }
+
+    /**
      * Whether a view writes scopes other than the scheme's default scope alone,
      * so its text is not the marking's default-scope text.
      *
@@ -4018,6 +4039,34 @@ export class EzClassifyUI {
                     }
                     if (rendered === handle.lastSeenRendered) return;
                     handle.lastSeenRendered = rendered;
+                    // A value the engine read in full goes to the store as
+                    // its facts. Its text would be read again as stated
+                    // throughout, so a value a rule added would reach every
+                    // other view as the author's own, with no change to
+                    // explain. Text the engine could not read stays text, on
+                    // either side: a marking whose text the store could not
+                    // read takes no category edit (see publishAssertions), so
+                    // only a text replaces it.
+                    const view: ComponentInstance | undefined =
+                        this.mounted.get(el) ??
+                        this.autocompleters.get(el as HTMLInputElement);
+                    const held = this.store.get(markingId).recognition;
+                    if (
+                        assertions.length > 0 &&
+                        view?.readsWhole?.() &&
+                        (held === undefined || held.status === 'complete')
+                    ) {
+                        // The view states every category it writes, as its
+                        // text would: one it left empty is cleared, and one
+                        // equal to the committed value still replaces an edit
+                        // on the wire.
+                        this.store
+                            .publishAssertions(markingId, assertions, token, {
+                                categories: this.categoriesWritten(el),
+                            })
+                            .catch(() => {});
+                        return;
+                    }
                     this.store
                         .publishRendered(markingId, rendered, token)
                         .catch(() => {});

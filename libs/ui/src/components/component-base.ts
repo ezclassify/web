@@ -613,6 +613,11 @@ export abstract class ComponentBase extends ReadOnlyComponentBase {
         if (!refused && !state.assessment) this.assessHeldForm();
     }
 
+    /** See {@link ComponentInstance.readsWhole}. */
+    readsWhole(): boolean {
+        return this.failedRead === null && !this.sourceUnresolved;
+    }
+
     /**
      * Learn which of the held facts the field's form writes, for a state that
      * came with no assessment of a text: one composed from facts. Only a fact
@@ -1089,15 +1094,26 @@ export abstract class ComponentBase extends ReadOnlyComponentBase {
     /**
      * Attach a concept tooltip to a DOM element. Shows on hover/focus with full
      * concept description including rules.
+     *
+     * @param reason - A line about this element's value that leads the
+     *   description, such as why the marking holds it without writing it
      */
     protected attachConceptTooltip(
         el: HTMLElement,
         conceptId: string,
         categoryId: string,
+        reason?: string,
     ): void {
         attachTooltip(
             el,
-            () => this.resolveConceptDescription(conceptId, categoryId),
+            () => {
+                const description = this.resolveConceptDescription(
+                    conceptId,
+                    categoryId,
+                );
+                if (!reason) return description;
+                return description ? `${reason}\n${description}` : reason;
+            },
             this.options.root,
             () => this.shouldShowTooltip(),
         );

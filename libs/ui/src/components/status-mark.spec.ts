@@ -330,6 +330,31 @@ describe('the mark glyph and the plain input it sits on', () => {
     });
 });
 
+describe('the unseen count', () => {
+    const here = dirname(fileURLToPath(import.meta.url));
+    it('stands on the leading side of the icon, so the icon keeps its place when it goes', () => {
+        const mark = ensureStatusMark(wrap, { shape: 'chrome' });
+        setStatusMarkFixes(wrap, [makeFix('r1'), makeFix('r2')]);
+        const count = mark.querySelector('.ez-status-mark__count')!;
+        expect(count.textContent).toBe('2');
+        // The mark sits at the trailing end of its row: what comes before the
+        // icon is all that grows or shrinks with the count.
+        expect(mark.firstElementChild).toBe(count);
+        expect(count.nextElementSibling?.tagName.toLowerCase()).toBe('svg');
+        const css = readFileSync(join(here, 'status-mark.css'), 'utf8').replace(
+            /\/\*[\s\S]*?\*\//g,
+            '',
+        );
+        const rule = css.match(/\.ez-status-mark__count\s*\{([^}]*)\}/)?.[1];
+        expect(rule).toMatch(/margin-inline-end:/);
+        expect(rule).not.toMatch(/margin-inline-start:/);
+        // Nothing resizes the mark while it is hovered or focused.
+        expect(css).not.toMatch(
+            /\.ez-status-mark[^{]*:(hover|focus)[^{]*\{[^}]*(width|padding|margin|border-width)/,
+        );
+    });
+});
+
 describe('setStatusMarkFixes state machine', () => {
     it('goes quiet -> unseen the moment a fix is applied', () => {
         const mark = ensureStatusMark(wrap, { shape: 'input' });

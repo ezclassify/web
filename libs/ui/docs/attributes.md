@@ -238,7 +238,8 @@ states as fixes arrive and get noticed: `.ez-status-mark--quiet` (the
 default: nothing applied yet, whole glyph muted), `.ez-status-mark--unseen`
 (a marking rule changed the marking and the user hasn't been shown what yet:
 the whole mark turns strong and the number
-of changes stands beside it in `.ez-status-mark__count`), and
+of changes stands before the icon in `.ez-status-mark__count`, so the icon
+keeps its place when it goes), and
 `.ez-status-mark--seen` (the list has actually presented, past its
 hover-intent delay, or the mark was focused: the number goes but the strong
 mark stays). A fourth state,
@@ -251,7 +252,9 @@ EzClassify made to the marking once, however many rules made it: "Added ... to
 and its category by their labels, with the rule that made it under it. A change
 that adds or removes nothing keeps the engine's own words for it. While the
 marking can go back to what it was before the author's last edit, the list ends
-with an "Undo last edit" button. It lists only what the field's scopes write or
+with an "Undo last edit" button. A MarkedTextArea's list puts each marking's
+changes under the marking as its text writes it, when more than one has
+changes. It lists only what the field's scopes write or
 what it changed, and only changes to what the marking writes: a fact a rule
 derived that the marking does not write, such as a member collapsed into its
 group's written name or a default no output prints, is not a change, so a

@@ -52,6 +52,66 @@
             "method": "POST",
             "statusCode": 200
         },
+        "2552f707570223dda2e65fbb326e67a6ca4a225aeb6c8783bad24439db1ebc4b": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "bound-part-role",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "bound-part-role",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "LOW",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "handling",
+                            "conceptId": "HOLD",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            { "categoryId": "level", "conceptId": "LOW" },
+                            { "categoryId": "handling", "conceptId": "HOLD" }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "LOW//HOLD",
+                    "renders": {},
+                    "valid": true,
+                    "warnings": [
+                        {
+                            "kind": "notice",
+                            "message": "Unable to compare with whole: none given.",
+                            "ruleId": "_whole_unverified"
+                        }
+                    ]
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
         "33f556c45d9909883246fff8485b9f35fff42cc698113ec861cb93efeb378112": {
             "body": [
                 {
