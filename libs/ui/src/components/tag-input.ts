@@ -313,6 +313,7 @@ export class TagInput extends ComponentBase {
             colorFrom: this.colorFrom,
             colorCoding: this.options.colorCoding,
             unprinted: this.unprinted,
+            written: this.writtenFact(),
             unread: this.unreadText,
             onRemoveAssertion: (c, f) => this.removeAssertion(c, f),
             onReprocess: () => {

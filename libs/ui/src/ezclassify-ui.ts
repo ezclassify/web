@@ -120,6 +120,7 @@ import {
 } from './format-resolver';
 import {
     factsInScopes,
+    factsOfScopeSet,
     factsOutsideScopes,
     inDeclarationOrder,
     parseScopeList,
@@ -2870,14 +2871,12 @@ export class EzClassifyUI {
     ): EngineAssertion[] {
         if (assertions.length === 0) return [];
         const engine = schemeEngineOf(this.resolveContext(el), el);
-        const meta = engine.getSchemeMeta();
-        const scopes = scopeSetOf(
+        return factsOfScopeSet(
+            assertions,
             parseScopeList(el.getAttribute('data-ezclassify-scope')),
-            meta,
+            engine.listCategories(),
+            engine.getSchemeMeta(),
         );
-        return scopes.length === 0
-            ? [...assertions]
-            : factsInScopes(assertions, engine.listCategories(), scopes, meta);
     }
 
     /**

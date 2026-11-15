@@ -20,6 +20,7 @@ import type {
     ProcessResult,
     Change,
     ProcessingContext,
+    RenderAssessment,
     UnreadMark,
     ValidationError,
 } from '@ezclassify/types';
@@ -59,6 +60,7 @@ import {
 } from './marked-field-base';
 import markedCss from './marked-text-area.css?inline';
 import type { EzClassifyState } from '../store/ezclassify-store';
+import type { ShownForm } from '../written-facts';
 import {
     projectEntrySpans,
     reconcileEntryIds,
@@ -118,6 +120,11 @@ export interface MarkedSegment {
     assertions: Assertion[];
     /** Rendered marking (format matches scan output). */
     rendered: string;
+    /**
+     * What writing `rendered` did with the marking's facts, as the engine
+     * assessed it: which it wrote, left out or collapsed into another value.
+     */
+    assessment?: RenderAssessment;
     /** Body text from end of this marking to the start of the next (trimmed). */
     text: string;
     /** Whether this marking is valid according to the engine. */
@@ -874,6 +881,7 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
                         marking: projected.text.slice(span.start, span.end),
                         assertions: state.assertions.map((a) => ({ ...a })),
                         rendered: state.rendered,
+                        assessment: state.assessment,
                         text: previous?.text ?? '',
                         valid:
                             (read?.valid ?? state.valid) &&
@@ -1258,6 +1266,7 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
                 inner: r.inner,
                 assertions: res.assertions,
                 rendered: res.rendered,
+                assessment: res.assessment,
                 text: bodyText,
                 valid: errors.length === 0,
                 errors,
@@ -1432,6 +1441,14 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
                 .map((segment) => segment.assertions),
             holds,
         ];
+    }
+
+    /** Each marking in the field, in the format the field writes it in. */
+    protected override markForms(): ShownForm[] {
+        return this.segments.map((segment) => ({
+            formatId: this.scanFormat,
+            assessment: segment.assessment,
+        }));
     }
 
     /**
@@ -2396,6 +2413,8 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
                 marking: insert,
                 rendered,
                 assertions: this.picker.getAssertions(),
+                // Read again once the edit lands.
+                assessment: undefined,
             };
             // Shift all segments after this one by the same drift
             for (let i = segIdx + 1; i < this.segments.length; i++) {

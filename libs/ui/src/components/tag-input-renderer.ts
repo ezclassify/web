@@ -1,17 +1,18 @@
 /**
  * Chip rendering pipeline for TagInput.
  *
- * One pill per assertion, in the print order the engine returned, including
- * facts omitted from print. The UI does not reconstruct marking order from
- * category or header metadata.
+ * One pill per value of the marking, in the print order the engine returned.
+ * The UI does not reconstruct marking order from category or header metadata.
  *
  * A chip's style says who stated the fact. A solid chip is the author's; a fact
  * the engine derived (a default, an inference, a value taken from the whole) is
  * dashed and has no remove button, because removing it would only have the
- * engine derive it again. A fact the rendered marking leaves out, such as one
- * the scheme suppresses from print, is drawn faded: the field holds it, the
- * marking does not show it. Text the engine could not read follows the chips as
- * flagged pills of its own, so the chips hold everything the field does.
+ * engine derive it again. A derived fact the marking does not write, such as a
+ * member collapsed into its group's written name or a default no output prints,
+ * gets no chip: the marking holds it, but it is not a value the author sees or
+ * signs. A fact the author stated that the rendered marking leaves out is drawn
+ * faded: the field holds it, the marking does not show it. Text the engine
+ * could not read follows the chips as flagged pills of its own.
  */
 
 import type {
@@ -55,6 +56,11 @@ export interface TagChipRenderContext {
      * `omitted`).
      */
     unprinted?: readonly AssertionRef[];
+    /**
+     * Whether the marking writes a fact, by the engine's render assessments
+     * (see written-facts.ts). Every fact is written when omitted.
+     */
+    written?: (ref: Pick<AssertionRef, 'categoryId' | 'conceptId'>) => boolean;
     /** Author text the engine could not read, one entry per fragment. */
     unread?: readonly string[];
     onRemoveAssertion: (conceptId: string, categoryId: string) => void;
@@ -78,7 +84,11 @@ export interface TagChipRenderContext {
  * list of tag elements.
  */
 export function renderTagChips(ctx: TagChipRenderContext): HTMLElement[] {
-    const { scheme, assertions, inputWrap, filterInput } = ctx;
+    const { scheme, inputWrap, filterInput } = ctx;
+    const written = ctx.written ?? (() => true);
+    const assertions = ctx.assertions.filter(
+        (a) => !derivedAssertion(a) || written(a),
+    );
 
     if (!scheme.concepts || scheme.concepts.length === 0) {
         while (inputWrap.firstChild && inputWrap.firstChild !== filterInput) {

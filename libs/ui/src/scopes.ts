@@ -63,6 +63,29 @@ export function scopeSetOf(
 }
 
 /**
+ * The facts of a marking a component holds: those of its scope set (see
+ * {@link scopeSetOf}), whatever else the marking holds. The marking of a scheme
+ * that declares no scopes is one surface, held whole, and so is that of a
+ * scheme that declares no default scope to a component that lists none.
+ *
+ * @param assertions - The marking's facts
+ * @param listed - The scope ids the component lists
+ * @param categories - The scheme's categories, with the scopes they declare
+ * @param meta - The scheme's scope metadata
+ */
+export function factsOfScopeSet<T extends { categoryId: string }>(
+    assertions: readonly T[],
+    listed: readonly string[],
+    categories: ReadonlyArray<{ id: string; scopes?: readonly string[] }>,
+    meta: ScopeSource,
+): T[] {
+    const scopes = scopeSetOf(listed, meta);
+    return scopes.length === 0 || !meta.scopes?.length
+        ? [...assertions]
+        : factsInScopes(assertions, categories, scopes, meta);
+}
+
+/**
  * Whether a component writes a category's facts: those of a category that
  * belongs to a scope it writes (see {@link scopeSetOf}). A component that writes
  * no scope writes the whole marking, every category in it.

@@ -83,8 +83,9 @@ order, whatever order the attribute lists them in.
 
 A component writes and shows the facts of its scopes only. With no scope listed
 that is the scheme's default scope, with one it is that scope, and with several
-it is all of them together. A field never writes another scope's facts into its
-text.
+it is all of them together. A field never writes another scope's facts: a
+TagInput draws no chip for them, and removing a value or clearing a field leaves
+them in the shared marking for the controls that write them.
 
 | Component                                                                             | With one scope                 | With several                                                                                                                                                                                                                                                                                                                                                                                 |
 | ------------------------------------------------------------------------------------- | ------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -251,9 +252,11 @@ and its category by their labels, with the rule that made it under it. A change
 that adds or removes nothing keeps the engine's own words for it. While the
 marking can go back to what it was before the author's last edit, the list ends
 with an "Undo last edit" button. It lists only what the field's scopes write or
-what it changed. A field that shows each fact, such as TagInput or
-DecisionFlow, also lists the facts a rule filled in that the marking does not
-write, such as the members of a group; a text field does not. The list opens
+what it changed, and only changes to what the marking writes: a fact a rule
+derived that the marking does not write, such as a member collapsed into its
+group's written name or a default no output prints, is not a change, so a
+result whose only changes are such facts leaves the mark quiet. A value a rule
+added that the marking writes is listed, whether or not the author wrote it. The list opens
 above or below the field (beside it when neither has room), never over it. Style hooks:
 `--ez-status-mark-color` for the quiet, muted glyph,
 `--ez-status-mark-strong-color` for the glyph of a mark with a message (any

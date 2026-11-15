@@ -88,6 +88,7 @@ import {
     fieldScopeOf,
     writtenConcept,
 } from '../written-concept';
+import type { ShownForm } from '../written-facts';
 import { renderViewRefused } from '../render-refusal';
 import { writtenValue } from '../value-spelling';
 import { t } from '../i18n';
@@ -309,8 +310,15 @@ export class DecisionFlow extends ComponentBase {
     private pendingText: PendingText | null = null;
     /** True while a committed store state is being applied. */
     private applyingStoreState = false;
-    /** Each scope's writing, for a flow of several, keyed by the facts written. */
-    private result: { key: string; texts: Map<string, string> } | null = null;
+    /**
+     * Each scope's writing, for a flow of several, keyed by the facts written,
+     * with the form each was written in and what writing it did.
+     */
+    private result: {
+        key: string;
+        texts: Map<string, string>;
+        forms: ShownForm[];
+    } | null = null;
     private resultSequence = 0;
     /** The facts the result is being written for, while a write is in flight. */
     private resultWriting: string | null = null;
@@ -2587,7 +2595,7 @@ export class DecisionFlow extends ComponentBase {
         try {
             const written = await Promise.all(
                 this.stepScopes.map(
-                    async (scope): Promise<[string, string]> => {
+                    async (scope): Promise<[string, string, ShownForm?]> => {
                         const facts = factsInScopes(
                             this.assertions,
                             this.scheme.categories,
@@ -2595,26 +2603,50 @@ export class DecisionFlow extends ComponentBase {
                             meta,
                         );
                         if (facts.length === 0) return [scope, ''];
+                        const format = this.outputFor(scope);
                         const write = await Promise.resolve(
-                            this.callRender(facts, {
-                                format: this.outputFor(scope),
-                            }),
+                            this.callRender(facts, { format }),
                         );
-                        return [
-                            scope,
-                            renderViewRefused(write) ? '' : write.rendered,
-                        ];
+                        return renderViewRefused(write)
+                            ? [scope, '']
+                            : [
+                                  scope,
+                                  write.rendered,
+                                  {
+                                      formatId: format,
+                                      assessment: write.assessment,
+                                  },
+                              ];
                     },
                 ),
             );
             if (this._destroyed || sequence !== this.resultSequence) return;
-            this.result = { key, texts: new Map(written) };
+            this.result = {
+                key,
+                texts: new Map(
+                    written.map(([scope, text]) => [scope, text] as const),
+                ),
+                forms: written.flatMap(([, , form]) => (form ? [form] : [])),
+            };
         } catch {
             if (this._destroyed || sequence !== this.resultSequence) return;
-            this.result = { key, texts: new Map() };
+            this.result = { key, texts: new Map(), forms: [] };
         }
         this.resultWriting = null;
         this.renderValues();
+        // The mark explains changes to what the scope lines write.
+        this.updateSuiteStatusMark();
+    }
+
+    /**
+     * A flow of several scopes shows each scope's line, written in that scope's
+     * own output, once those writings land for the facts it holds.
+     */
+    protected override shownForms(): ShownForm[] {
+        return this.result?.key === this.factsKey() &&
+            this.result.forms.length > 0
+            ? this.result.forms
+            : super.shownForms();
     }
 
     /**
