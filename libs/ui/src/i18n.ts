@@ -77,6 +77,7 @@ export const defaultLocale = {
     'a11y.markingRestored': 'Marking restored.',
     'a11y.lastEditUndone': 'Last edit undone.',
     'aria.clearMarking': 'Clear marking',
+    'aria.clearWholeMarking': 'Clear the whole marking',
     'aria.undoClear': 'Undo clear',
     'aria.clearText': 'Clear text',
     'a11y.composer.notSaved': 'Not saved. {problem}',

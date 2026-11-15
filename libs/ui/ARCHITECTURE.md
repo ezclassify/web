@@ -500,6 +500,13 @@ opening neither the editor nor the on-screen keyboard. Keyboard activation puts
 focus in the field. Disabled and read-only hosts cannot be cleared. Empty controls retain the action's place and expose `aria-disabled`.
 Read-only displays and headless fields have no clear control.
 
+DecisionFlow's × is named and titled "Clear the whole marking": it clears
+every scope the flow writes, and the flow stays on its step. There is no clear
+for one step. Pressing a chosen option again un-chooses it, on a single-choice
+step too, whose options are toggle buttons with at most one pressed; a value
+step is cleared by emptying its box. Un-choosing a required step is allowed,
+and the step then shows under "Missing:".
+
 After a clear the × becomes the undo of that clear, in the same place and at
 the same size, named and titled "Undo clear". No toast, line or text in the
 field says so. A keyboard clear leaves focus in the field, not on the undo,

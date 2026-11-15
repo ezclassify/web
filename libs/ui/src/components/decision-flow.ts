@@ -16,10 +16,13 @@
  * arrows. Nothing above the step moves, hides or changes size when it opens or
  * when the step changes. Each choice calls `reprocess()` so constraints and
  * inference fire as the author goes; a choice in a single-choice step moves on
- * to the next step, and a multiple-choice step's toggles do not. An option
- * reads as its concept's name. One the marking's current choices rule out stays
- * in its place, unavailable, and says why. A value-taking option, once chosen,
- * becomes the box its value is typed in.
+ * to the next step, and a multiple-choice step's toggles do not. Every option
+ * is a toggle: pressing a chosen one again un-chooses it and the flow stays on
+ * the step, and a value step is cleared by emptying its box. There is no clear
+ * for one step; the x clears the whole marking, every scope the flow writes. An
+ * option reads as its concept's name. One the marking's current choices rule
+ * out stays in its place, unavailable, and says why. A value-taking option,
+ * once chosen, becomes the box its value is typed in.
  *
  * The dots are the navigation: each one jumps to its step, and says at a glance
  * whether the step is answered, missing an answer the engine asks for, or
@@ -126,7 +129,10 @@ interface StepDef {
     categoryId: string;
     label: string;
     description: string;
-    /** True = single-select (radio); false = multi-select (checkbox). */
+    /**
+     * True = single-select (one pressed toggle); false = multi-select
+     * (checkbox).
+     */
     single: boolean;
     /** Whether the scheme requires a choice in this category. */
     required: boolean;
@@ -161,6 +167,11 @@ interface PendingText {
 export class DecisionFlow extends ComponentBase {
     protected override clearButtonMount(): HTMLElement | null {
         return this.suiteChrome?.element ?? null;
+    }
+
+    /** The flow's x clears every scope it writes, not one step. */
+    protected override clearLabel(): string {
+        return t('aria.clearWholeMarking');
     }
     /** The header row: the dots, the step header and the suite's chrome. */
     private headerEl!: HTMLDivElement;
@@ -974,11 +985,13 @@ export class DecisionFlow extends ComponentBase {
         this.container.innerHTML = '';
     }
 
+    /**
+     * Drop a value-taking choice still waiting for its value. The flow stays on
+     * its step: a clear or an undo changes the marking, not where the author
+     * is.
+     */
     protected override discardDraft(): void {
         this.pendingText = null;
-        this.currentStep = this.options.startStep ?? 0;
-        this._currentCategoryId =
-            this.steps[this.currentStep]?.categoryId ?? '';
     }
 
     protected render(): void {
@@ -1079,11 +1092,18 @@ export class DecisionFlow extends ComponentBase {
                 } else if (step && this.isTextInputStep(step)) {
                     restoreTextFocus();
                 } else if (step?.single) {
-                    // Radio group: restore to the roving-tabindex owner (the selected option or first)
-                    const activeRadio = this.flowEl.querySelector<HTMLElement>(
-                        '[role="radio"][tabindex="0"]',
-                    );
-                    activeRadio?.focus();
+                    // Toggle group: restore to the last-interacted option, or
+                    // the roving-tabindex owner (the chosen option or first)
+                    const target =
+                        (this._lastFocusConceptId
+                            ? this.flowEl.querySelector<HTMLElement>(
+                                  `[aria-pressed][data-concept-id="${this._lastFocusConceptId}"]`,
+                              )
+                            : null) ??
+                        this.flowEl.querySelector<HTMLElement>(
+                            '[aria-pressed][tabindex="0"]',
+                        );
+                    target?.focus();
                 } else {
                     // Checkbox group: restore to the last-interacted option, or the first
                     const target = this._lastFocusConceptId
@@ -1112,10 +1132,10 @@ export class DecisionFlow extends ComponentBase {
                 } else if (prevConceptId) {
                     const restored =
                         this.flowEl.querySelector<HTMLElement>(
-                            `[role="radio"][data-concept-id="${prevConceptId}"], [role="checkbox"][data-concept-id="${prevConceptId}"]`,
+                            `[aria-pressed][data-concept-id="${prevConceptId}"], [role="checkbox"][data-concept-id="${prevConceptId}"]`,
                         ) ??
                         this.flowEl.querySelector<HTMLElement>(
-                            '[role="radio"][tabindex="0"]',
+                            '[aria-pressed][tabindex="0"]',
                         ) ??
                         this.flowEl.querySelector<HTMLElement>(
                             '[role="checkbox"]',
@@ -1582,8 +1602,8 @@ export class DecisionFlow extends ComponentBase {
             optionsEl.setAttribute('role', 'group');
             this.renderTextInputOptions(step, optionsEl);
         } else if (step.single) {
-            optionsEl.setAttribute('role', 'radiogroup');
-            this.renderRadioOptions(step, optionsEl);
+            optionsEl.setAttribute('role', 'group');
+            this.renderToggleOptions(step, optionsEl);
         } else {
             optionsEl.setAttribute('role', 'group');
             this.renderCheckboxOptions(step, optionsEl);
@@ -1659,14 +1679,22 @@ export class DecisionFlow extends ComponentBase {
     /** Draw an option the marking holds only by derivation (see inferredIn). */
     private markInferred(btn: HTMLButtonElement): void {
         btn.classList.add('ez-decision-flow__option--inferred');
-        btn.setAttribute('aria-checked', 'false');
+        btn.setAttribute(
+            btn.hasAttribute('aria-pressed') ? 'aria-pressed' : 'aria-checked',
+            'false',
+        );
         btn.setAttribute(
             'aria-label',
             `${btn.textContent ?? ''}${t('aria.inferredSuffix')}`,
         );
     }
 
-    private renderRadioOptions(step: StepDef, optionsEl: HTMLElement): void {
+    /**
+     * A single-choice step's options: toggle buttons, at most one pressed.
+     * Pressing an unpressed option chooses it in place of the step's other
+     * choice and moves on; pressing the pressed one un-chooses it and stays.
+     */
+    private renderToggleOptions(step: StepDef, optionsEl: HTMLElement): void {
         const chosen = this.chosenIn(step);
         const inferred = this.inferredIn(step);
         const selected = [...chosen][0];
@@ -1674,15 +1702,15 @@ export class DecisionFlow extends ComponentBase {
         const first = options.find((o) => !o.blocked)?.concept.id;
 
         for (const { concept, blocked } of options) {
+            // An option the marking holds only by derivation is not pressed:
+            // pressing it makes it the author's own choice.
+            const pressed =
+                concept.id === selected && !inferred.has(concept.id);
             const btn = document.createElement('button');
             btn.type = 'button';
             btn.disabled = this.locked;
             btn.className = 'ez-decision-flow__option';
-            btn.setAttribute('role', 'radio');
-            btn.setAttribute(
-                'aria-checked',
-                concept.id === selected ? 'true' : 'false',
-            );
+            btn.setAttribute('aria-pressed', pressed ? 'true' : 'false');
             btn.tabIndex =
                 concept.id === selected || (!selected && concept.id === first)
                     ? 0
@@ -1713,43 +1741,50 @@ export class DecisionFlow extends ComponentBase {
                 this._restoreFocusAfterRender = true;
                 this._lastFocusConceptId = concept.id;
                 this.pick(step, concept.id, () => {
-                    // A plain choice answers the step, so the flow moves on;
-                    // a value-taking one waits for its value.
                     if (concept.textInput)
                         this.chooseValueConcept(step, concept);
+                    else if (pressed)
+                        this.toggleConcept(step.categoryId, concept.id, true);
+                    // A plain choice answers the step, so the flow moves on;
+                    // a value-taking one waits for its value.
                     else
                         void this.selectConcept(
                             step.categoryId,
                             concept.id,
                         ).then(() => void this.advanceFrom(step.categoryId));
-                    announce(this.announcer, `Selected ${concept.name}`);
+                    announce(
+                        this.announcer,
+                        pressed
+                            ? `Deselected ${concept.name}`
+                            : `Selected ${concept.name}`,
+                    );
                 });
             });
 
             btn.addEventListener('keydown', (e: KeyboardEvent) => {
-                const radios = Array.from(
+                const toggles = Array.from(
                     optionsEl.querySelectorAll<HTMLButtonElement>(
-                        '[role="radio"]',
+                        '[aria-pressed]',
                     ),
                 );
-                const idx = radios.indexOf(btn);
+                const idx = toggles.indexOf(btn);
                 let next = -1;
 
                 if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
-                    next = (idx + 1) % radios.length;
+                    next = (idx + 1) % toggles.length;
                 } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
-                    next = (idx - 1 + radios.length) % radios.length;
+                    next = (idx - 1 + toggles.length) % toggles.length;
                 }
 
                 if (next >= 0) {
                     e.preventDefault();
                     // Arrow keys move focus only: no selection commit. The user presses
                     // Enter or Space (which triggers a click event on the focused button)
-                    // to confirm a choice.
-                    radios.forEach((o, j) => {
+                    // to choose or un-choose.
+                    toggles.forEach((o, j) => {
                         o.tabIndex = j === next ? 0 : -1;
                     });
-                    radios[next].focus();
+                    toggles[next].focus();
                 }
             });
 
@@ -2178,8 +2213,9 @@ export class DecisionFlow extends ComponentBase {
 
     /**
      * The author chose a value-taking concept from a step's options. It is
-     * pending, shown checked with its value field, until a value is typed. In a
-     * single-choice step it replaces the step's other choice.
+     * pending, shown chosen with its value field, until a value is typed. In a
+     * single-choice step it replaces the step's other choice. Pressing it again
+     * un-chooses it.
      */
     private chooseValueConcept(step: StepDef, concept: ConceptDef): void {
         const held = this.assertions.some(
@@ -2189,18 +2225,14 @@ export class DecisionFlow extends ComponentBase {
         const pendingHere =
             this.pendingText?.categoryId === step.categoryId &&
             this.pendingText.conceptId === concept.id;
-        if (!step.single && (held || pendingHere)) {
-            // A second press on a checkbox withdraws the choice.
+        if (held || pendingHere) {
+            // A second press withdraws the choice.
             if (pendingHere) this.pendingText = null;
             if (held) this.toggleConcept(step.categoryId, concept.id, true);
             else this.render();
             return;
         }
         this._focusValueField = true;
-        if (held) {
-            this.render();
-            return;
-        }
         this.pendingText = {
             categoryId: step.categoryId,
             conceptId: concept.id,

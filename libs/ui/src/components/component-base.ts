@@ -144,7 +144,7 @@ export abstract class ComponentBase extends ReadOnlyComponentBase {
         // Clear stays the last control of the chrome; the announcer sits
         // before it.
         this.clearControl = createClearButton({
-            label: t('aria.clearMarking'),
+            label: this.clearLabel(),
             host: this.enhancedInput ?? undefined,
             empty: () => !this.hasClearValue(),
             clear: async () => {
@@ -309,6 +309,11 @@ export abstract class ComponentBase extends ReadOnlyComponentBase {
     /** The value the field holds, as one comparable string. */
     private valueSignature(): string {
         return valueSignature(this._lastRendered, this.assertions);
+    }
+
+    /** The clear control's tooltip and accessible name. */
+    protected clearLabel(): string {
+        return t('aria.clearMarking');
     }
 
     /**
