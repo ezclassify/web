@@ -94,14 +94,15 @@
     transform: none;
 }
 
-/* The number of changes not yet reviewed, beside the mark: the mark grows
-   to hold it, so the chrome's reserve follows (field-chrome.ts). Gone once
-   the list has been shown. */
+/* The number of changes not yet reviewed, on the leading side of the icon:
+   the mark grows to hold it, so the chrome's reserve follows
+   (field-chrome.ts). Gone once the list has been shown. The mark sits at the
+   trailing end of its row, so the icon keeps its place when the count goes. */
 .ez-status-mark__count:empty {
     display: none;
 }
 .ez-status-mark__count {
-    margin-inline-start: 0.125rem;
+    margin-inline-end: 0.125rem;
     font-family: var(--ez-font-family, inherit);
     font-size: 0.75rem;
     font-weight: 700;

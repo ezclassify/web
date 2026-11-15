@@ -377,6 +377,12 @@ const markErrors = new WeakMap<HTMLElement, string>();
 const markFixes = new WeakMap<HTMLElement, Map<string, Change>>();
 
 /**
+ * For a mark whose field holds several markings, the marking each of its
+ * changes was made to, by the change's key in {@link markFixes}.
+ */
+const markGroups = new WeakMap<HTMLElement, Map<string, string>>();
+
+/**
  * The changes, by effect, that have actually been shown to the user (tooltip
  * presented, not just hovered-through). The effect is the identity: a second
  * rule making a change already shown says nothing new, and a change to another
@@ -488,15 +494,20 @@ const markOptions = new WeakMap<HTMLElement, StatusMarkOptions>();
  * The lines the mark's list shows, each once, with the rule that made it: two
  * changes that read the same are one line.
  */
-function linesOf(mark: HTMLElement): { text: string; rule: string }[] {
+function linesOf(
+    mark: HTMLElement,
+): { text: string; rule: string; group?: string }[] {
     const words = markOptions.get(mark)?.words;
+    const groups = markGroups.get(mark);
     const seen = new Set<string>();
-    const lines: { text: string; rule: string }[] = [];
-    for (const change of markFixes.get(mark)?.values() ?? []) {
+    const lines: { text: string; rule: string; group?: string }[] = [];
+    for (const [key, change] of markFixes.get(mark) ?? []) {
+        const group = groups?.get(key);
         for (const text of changeLines(change, words)) {
-            if (seen.has(text)) continue;
-            seen.add(text);
-            lines.push({ text, rule: change.ruleId });
+            const once = `${group ?? ''}\u0000${text}`;
+            if (seen.has(once)) continue;
+            seen.add(once);
+            lines.push({ text, rule: change.ruleId, group });
         }
     }
     return lines;
@@ -724,10 +735,13 @@ export function ensureStatusMark(
     mark.tabIndex = -1;
     mark.setAttribute('aria-label', ENHANCED_LABEL);
     mark.innerHTML = buildMarkSvg();
+    // The count leads the icon. The mark sits at the trailing end of its
+    // row, so the icon stays where it is when the count goes away on the
+    // first look at the list, rather than sliding out from under the pointer.
     const count = document.createElement('span');
     count.className = 'ez-status-mark__count';
     count.setAttribute('aria-hidden', 'true');
-    mark.appendChild(count);
+    mark.prepend(count);
     markFixes.set(mark, new Map());
     markAcknowledged.set(mark, new Set());
     markOptions.set(mark, opts);
@@ -839,18 +853,71 @@ export function setStatusMarkFixes(
     wrap: HTMLElement,
     fixes: readonly Change[],
 ): void {
+    setMarkChanges(wrap, [{ changes: fixes }]);
+}
+
+/** The changes made to one of the markings a field holds. */
+export interface StatusMarkGroup {
+    /** The marking as the field now writes it in its text. */
+    marking: string;
+    /** What {@link explainedChanges} gives for that marking. */
+    changes: readonly Change[];
+}
+
+/**
+ * {@link setStatusMarkFixes} for a field that holds several markings, such as a
+ * MarkedTextArea: the mark is still the field's one mark and counts every
+ * change, and its list puts each marking's changes under a small heading that
+ * names the marking, in the order given. A marking with no changes gets no
+ * heading, and a list with changes to one marking only needs none.
+ *
+ * @param wrap - The wrapper the mark was mounted on via {@link ensureStatusMark}
+ * @param groups - Each marking with its changes, in the order of the text
+ */
+export function setStatusMarkGroups(
+    wrap: HTMLElement,
+    groups: readonly StatusMarkGroup[],
+): void {
+    const changed = groups.filter((group) => group.changes.length > 0);
+    setMarkChanges(
+        wrap,
+        changed.length > 1
+            ? changed.map(({ marking, changes }) => ({
+                  label: marking,
+                  changes,
+              }))
+            : changed.map(({ changes }) => ({ changes })),
+    );
+}
+
+function setMarkChanges(
+    wrap: HTMLElement,
+    groups: readonly { label?: string; changes: readonly Change[] }[],
+): void {
     const mark = wrap.querySelector<HTMLElement>(':scope > .ez-status-mark');
     if (!mark) return;
     // The field's value was just rendered again: a popover about the value
     // it had is out of date.
     dismissStatusMarkPopover(mark);
 
+    // A change is known by what it did, within its marking: the same change
+    // made to two markings is two changes.
     const changes = new Map<string, Change>();
-    for (const change of fixes) {
-        const key = effectKey(change);
-        if (!changes.has(key)) changes.set(key, change);
+    const labels = new Map<string, string>();
+    for (const { label, changes: list } of groups) {
+        for (const change of list) {
+            const effect = effectKey(change);
+            const key =
+                label === undefined
+                    ? effect
+                    : JSON.stringify(['marking', label, effect]);
+            if (changes.has(key)) continue;
+            changes.set(key, change);
+            if (label !== undefined) labels.set(key, label);
+        }
     }
     markFixes.set(mark, changes);
+    markGroups.set(mark, labels);
     // Prune acknowledgment for any change that is no longer shown, not only
     // when the set goes fully empty, so a change that drops out and comes
     // back later is unseen again. This also covers the clean-reprocess case
@@ -889,9 +956,23 @@ function changeList(
     heading.className = 'ez-tooltip__header';
     heading.textContent = changesLabel(lines.length);
     list.appendChild(heading);
-    const items = document.createElement('ul');
-    items.className = 'ez-status-list__changes';
+    let items: HTMLUListElement | null = null;
+    let group: string | undefined;
     for (const line of lines) {
+        // A field of several markings lists each marking's changes under the
+        // marking, as its text now writes it.
+        if (!items || line.group !== group) {
+            group = line.group;
+            if (group !== undefined) {
+                const name = document.createElement('div');
+                name.className = 'ez-status-list__marking';
+                name.textContent = group;
+                list.appendChild(name);
+            }
+            items = document.createElement('ul');
+            items.className = 'ez-status-list__changes';
+            list.appendChild(items);
+        }
         const item = document.createElement('li');
         item.className = 'ez-status-list__change';
         const text = document.createElement('div');
@@ -908,7 +989,6 @@ function changeList(
         }
         items.appendChild(item);
     }
-    list.appendChild(items);
     if (undo) {
         const button = document.createElement('button');
         button.type = 'button';

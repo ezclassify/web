@@ -41,7 +41,8 @@ import {
     ensureStatusMark,
     recordAppliedFixes,
     setStatusMarkError,
-    setStatusMarkFixes,
+    setStatusMarkGroups,
+    type StatusMarkGroup,
 } from './status-mark';
 import {
     ensureFavoritesButton,
@@ -295,13 +296,17 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
     private _resizeObserver: ResizeObserver | null = null;
 
     /**
-     * Fixes the engine applied across the textarea's markings, deduplicated by
-     * rule. Drives the field's single status mark (per the Enhancement Status
+     * Fixes the engine applied to each of the textarea's markings, by the facts
+     * the marking held once they were applied, each deduplicated by rule.
+     * Drives the field's single status mark (per the Enhancement Status
      * Indicator contract there is one mark per field, never one star per
-     * repaired segment). Cleared when the textarea empties or a marking in it
-     * is replaced.
+     * repaired segment), whose list groups them by marking. Cleared when the
+     * textarea empties or a marking in it is replaced.
      */
-    private _appliedFixes = new Map<string, Change>();
+    private _appliedFixes = new Map<
+        string,
+        { holds: readonly Assertion[]; fixes: Map<string, Change> }
+    >();
     /**
      * What each marking held when {@link _appliedFixes} was last written, one
      * entry per marking, in no particular order.
@@ -1236,7 +1241,7 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
                   );
             const unappliedFixes = corrections.length > 0;
             if (isEdited)
-                recordAppliedFixes(this._appliedFixes, res.appliedFixes);
+                this.recordMarkFixes(res.assertions, res.appliedFixes);
             const errors = res.errors.map((e) => e.message);
             if (unappliedFixes) {
                 errors.push(
@@ -1428,6 +1433,25 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
     }
 
     /**
+     * Record the fixes the engine applied to one marking, under the facts that
+     * marking holds with them applied, so the status mark can say which marking
+     * each change was made to.
+     */
+    private recordMarkFixes(
+        holds: readonly Assertion[],
+        fixes: readonly Change[] | undefined,
+    ): void {
+        if (!fixes?.length) return;
+        const key = holds.map(assertionFactKey).sort().join('|');
+        let record = this._appliedFixes.get(key);
+        if (!record) {
+            record = { holds, fixes: new Map() };
+            this._appliedFixes.set(key, record);
+        }
+        recordAppliedFixes(record.fixes, fixes);
+    }
+
+    /**
      * What the field's markings hold once the marking that starts at `start`
      * holds `holds` instead (or in addition, for a marking not yet scanned).
      */
@@ -1456,17 +1480,50 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
      * text, on the field's single status mark.
      */
     private updateStatusMark(): void {
-        setStatusMarkFixes(
-            this.chrome.status,
-            this.textStatusChanges(
-                [...this._appliedFixes.values()],
-                this._fixesHeld.flat(),
-            ),
-        );
+        setStatusMarkGroups(this.chrome.status, this.markGroups());
         setStatusMarkError(
             this.chrome.status,
             this.scanComplete ? null : t('mark.scanIncomplete'),
         );
+    }
+
+    /**
+     * Each marking in the text, in order, with the changes the engine made to
+     * it. A record goes to the marking that holds exactly its facts, or else to
+     * the first that holds them all and more: a marking added to since its
+     * earlier fixes. A record no marking holds any more describes nothing in
+     * the text.
+     */
+    private markGroups(): StatusMarkGroup[] {
+        const segments = this.segments.filter(
+            (segment) => segment.assertions.length > 0,
+        );
+        const facts = segments.map(
+            (segment) => new Set(segment.assertions.map(assertionFactKey)),
+        );
+        const owned: Change[][] = segments.map(() => []);
+        const records = [...this._appliedFixes.values()];
+        const within = (holds: readonly Assertion[], index: number) =>
+            holds.every((a) => facts[index].has(assertionFactKey(a)));
+        const exact = records.map((record) =>
+            facts.findIndex(
+                (held, index) =>
+                    held.size ===
+                        new Set(record.holds.map(assertionFactKey)).size &&
+                    within(record.holds, index),
+            ),
+        );
+        records.forEach((record, at) => {
+            const index =
+                exact[at] >= 0
+                    ? exact[at]
+                    : facts.findIndex((_, i) => within(record.holds, i));
+            if (index >= 0) owned[index].push(...record.fixes.values());
+        });
+        return segments.map((segment, index) => ({
+            marking: segment.marking.trim(),
+            changes: this.textStatusChanges(owned[index], segment.assertions),
+        }));
     }
 
     /**
@@ -2462,8 +2519,8 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
                     this.picker.getAssertions(),
                 ),
             );
-            recordAppliedFixes(
-                this._appliedFixes,
+            this.recordMarkFixes(
+                this.picker.getAssertions(),
                 this.picker.getAppliedFixes(),
             );
             this.updateStatusMark();
@@ -2527,8 +2584,8 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
                 );
                 if (repaired.patched) {
                     this.setHostValue(repaired.value);
-                    recordAppliedFixes(
-                        this._appliedFixes,
+                    this.recordMarkFixes(
+                        this.picker.getAssertions(),
                         loadedSegment.pendingFixes,
                     );
                     this.updateStatusMark();
@@ -2647,7 +2704,7 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
             this.setHostValue(v.slice(0, start) + insert + v.slice(end));
             this.lastScannedText = '';
             this.recordMarksHeld(this.marksWith(start, result.assertions));
-            recordAppliedFixes(this._appliedFixes, result.appliedFixes);
+            this.recordMarkFixes(result.assertions, result.appliedFixes);
             this.updateStatusMark();
             // Tear the picker down WITHOUT its normal "write picker content
             // back" step (closePicker's non-skipRender path): the line above
@@ -2673,7 +2730,7 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
         this.setHostValue(v.slice(0, insertAt) + inserted + v.slice(insertAt));
         this.lastScannedText = '';
         this.recordMarksHeld(this.marksWith(-1, result.assertions));
-        recordAppliedFixes(this._appliedFixes, result.appliedFixes);
+        this.recordMarkFixes(result.assertions, result.appliedFixes);
         this.updateStatusMark();
         const caretAfter = insertAt + inserted.length;
         this.focusAt(caretAfter);
