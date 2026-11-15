@@ -35,6 +35,8 @@ import {
     type ChipKeyboardContext,
 } from './tag-input-keyboard';
 import { renderTagChips } from './tag-input-renderer';
+import { inWrittenOrder } from '../written-concept';
+import { scopesOfCategory } from '../scopes';
 import { ensureStatusMark, setStatusMarkFixes } from './status-mark';
 import {
     applyFieldFrame,
@@ -296,6 +298,34 @@ export class TagInput extends ComponentBase {
         this.renderField();
     }
 
+    /**
+     * The order the chips' categories go in: the order this field's output
+     * writes them on each scope it writes (see `inWrittenOrder`), the scopes in
+     * the order the field lists them, so a value sits where the marking writes
+     * it whether the marking writes it or holds it unwritten.
+     */
+    private chipCategoryOrder(): string[] {
+        const { scopes, ...field } = this.writingField();
+        const ids = this.scheme.categories.map((category) => category.id);
+        if (scopes.length === 0)
+            return inWrittenOrder(this.schemeMeta, field, undefined, ids);
+        const ordered = scopes.flatMap((scope) =>
+            inWrittenOrder(
+                this.schemeMeta,
+                field,
+                scope,
+                this.scheme.categories
+                    .filter((category) =>
+                        scopesOfCategory(category, this.schemeMeta).includes(
+                            scope,
+                        ),
+                    )
+                    .map((category) => category.id),
+            ),
+        );
+        return [...new Set([...ordered, ...ids])];
+    }
+
     private renderField(): void {
         const hadFocus =
             this.inputWrap?.contains(document.activeElement) ||
@@ -314,6 +344,7 @@ export class TagInput extends ComponentBase {
             colorCoding: this.options.colorCoding,
             unprinted: this.unprinted,
             unwritten: this.unwrittenFact(),
+            categoryOrder: this.chipCategoryOrder(),
             unread: this.unreadText,
             onRemoveAssertion: (c, f) => this.removeAssertion(c, f),
             onReprocess: () => {

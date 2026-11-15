@@ -87,11 +87,13 @@ describe('a TagInput', () => {
         // default the line leaves out: the marking holds both.
         const held = mounted!.getAssertions().map((a) => a.conceptId);
         expect(held).toEqual(expect.arrayContaining(['MEMBER', 'HOME']));
+        // In the order the line writes their categories, the owner it does
+        // not write after them.
         expect(chips()).toEqual([
             'GROUP',
-            'HOME (inferred) (faded)',
             'MEMBER (inferred) (faded)',
             'ANCHOR (inferred)',
+            'HOME (inferred) (faded)',
         ]);
         // ANCHOR is a value a rule added that the line writes, beside GROUP:
         // listed and counted though the author did not write it.
@@ -120,8 +122,8 @@ describe('a TagInput', () => {
         ]);
         expect(chips()).toEqual([
             'LOW',
-            'HOME (inferred) (faded)',
             'STD (inferred)',
+            'HOME (inferred) (faded)',
         ]);
     });
 

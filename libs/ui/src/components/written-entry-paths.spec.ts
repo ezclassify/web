@@ -167,9 +167,19 @@ async function expectWrittenAgreement(): Promise<void> {
         removable: false,
         name: 'District (inferred), Not written in the marking',
     });
-    // The member sits after the group it is written under.
-    const order = drawn.map((c) => c.id);
-    expect(order.indexOf('MEMBER')).toBeGreaterThan(order.indexOf('GROUP'));
+    // The chips go in the order the line writes their categories (level,
+    // then groups), the categories it does not write after them in the
+    // scheme's order (owner, then shared with). Within a category the
+    // engine's order stands, so the member follows the group it is written
+    // under, and the faded owner comes after the level, not first.
+    expect(drawn.map((c) => c.id)).toEqual([
+        'HIGH',
+        'GROUP',
+        'MEMBER',
+        'ANCHOR',
+        'HOME',
+        'DISTRICT',
+    ]);
     expect((await chipTooltip('MEMBER'))[0]).toBe('Included by GROUP');
     expect((await chipTooltip('HOME'))[0]).toBe(
         'Default Owner, not written in the marking',

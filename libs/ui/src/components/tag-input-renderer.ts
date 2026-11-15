@@ -1,8 +1,9 @@
 /**
  * Chip rendering pipeline for TagInput.
  *
- * One pill per value of the marking, in the print order the engine returned.
- * The UI does not reconstruct marking order from category or header metadata.
+ * One pill per value of the marking. The chips go in the order the field's
+ * output writes their categories (`categoryOrder` from the scheme metadata),
+ * and within a category in the order the engine returned them.
  *
  * A chip's style says who stated the fact. A solid chip is the author's; a fact
  * the engine derived (a default, an inference, a value taken from the whole) is
@@ -68,6 +69,12 @@ export interface TagChipRenderContext {
     unwritten?: (
         ref: Pick<AssertionRef, 'categoryId' | 'conceptId'>,
     ) => UnwrittenFact | undefined;
+    /**
+     * The order chips' categories go in, the order the field's output writes
+     * them in. A category not named goes after those named; within a category
+     * the chips keep the engine's order.
+     */
+    categoryOrder?: readonly string[];
     /** Author text the engine could not read, one entry per fragment. */
     unread?: readonly string[];
     onRemoveAssertion: (conceptId: string, categoryId: string) => void;
@@ -92,7 +99,21 @@ export interface TagChipRenderContext {
  * list of tag elements.
  */
 export function renderTagChips(ctx: TagChipRenderContext): HTMLElement[] {
-    const { scheme, inputWrap, filterInput, assertions } = ctx;
+    const { scheme, inputWrap, filterInput } = ctx;
+    const rank = new Map(
+        (ctx.categoryOrder ?? []).map((categoryId, i) => [categoryId, i]),
+    );
+    const last = rank.size;
+    // A stable sort: within a category the engine's order stands, so a
+    // collapsed member follows the group it is written under.
+    const assertions = ctx.assertions
+        .map((assertion, at) => ({ assertion, at }))
+        .sort(
+            (a, b) =>
+                (rank.get(a.assertion.categoryId) ?? last) -
+                    (rank.get(b.assertion.categoryId) ?? last) || a.at - b.at,
+        )
+        .map(({ assertion }) => assertion);
 
     if (!scheme.concepts || scheme.concepts.length === 0) {
         while (inputWrap.firstChild && inputWrap.firstChild !== filterInput) {

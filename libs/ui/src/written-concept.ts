@@ -1,7 +1,8 @@
 /**
  * How a field writes a concept, for every place the field names one to the
  * author: the options it offers, the dots that sum up a step, and the changes
- * its status mark lists.
+ * its status mark lists. Also the order the field writes a scope's categories
+ * in, which a stepper walks them in.
  *
  * A field names a concept the way its marking writes it, in the output the
  * field writes for the concept's scope. That is the output the field names when
@@ -100,6 +101,41 @@ export function fieldOutputFor(
     return scope === named
         ? field.formatId
         : viewOutputOf(meta, [scope], field.part);
+}
+
+/**
+ * Categories in the order a field writes them on one scope: the ones the
+ * field's output for that scope writes, in the order that output writes them,
+ * then the rest in the order given.
+ *
+ * The order is the output's own, as the scheme publishes it, not the order of
+ * any particular marking, so it is the same whatever the field holds. An output
+ * the scheme publishes no order for leaves the categories as given.
+ *
+ * @param meta - The scheme's outputs and scopes
+ * @param field - What the field writes
+ * @param scope - The scope id, if the scheme declares scopes
+ * @param categoryIds - The categories to order, in declaration order
+ * @returns The same categories, written ones first
+ */
+export function inWrittenOrder(
+    meta: WritingMeta,
+    field: Pick<WritingField, 'formatId' | 'part'>,
+    scope: string | undefined,
+    categoryIds: readonly string[],
+): string[] {
+    const written = getPublicFormatLayout(
+        meta,
+        fieldOutputFor(meta, field, scope),
+    ).categoryOrder;
+    const rank = new Map<string, number>();
+    written.forEach((id, i) => {
+        if (!rank.has(id)) rank.set(id, i);
+    });
+    const inOrder = categoryIds
+        .filter((id) => rank.has(id))
+        .sort((a, b) => (rank.get(a) ?? 0) - (rank.get(b) ?? 0));
+    return [...inOrder, ...categoryIds.filter((id) => !rank.has(id))];
 }
 
 /**
