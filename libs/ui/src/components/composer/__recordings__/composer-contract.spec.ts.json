@@ -457,6 +457,48 @@
             "method": "GET",
             "statusCode": 200
         },
+        "0db58bde6008745d08a1f78fdb20e7e37d970adbd3eeeae5934972e6d1fcdf56": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "composer-contract",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "composer-contract",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "S",
+                            "confidence": "certain",
+                            "source": "aggregate"
+                        },
+                        {
+                            "categoryId": "caveat",
+                            "conceptId": "OC",
+                            "confidence": "certain",
+                            "source": "user"
+                        }
+                    ],
+                    "errors": [],
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "SECRET//ORCON",
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
         "0f7fa4e4dc1c469013e2deed60e09c3b3d3bfae9237fe309009b36b95ca6a489": {
             "body": {
                 "resolution": {
@@ -2341,6 +2383,42 @@
             "method": "POST",
             "statusCode": 200
         },
+        "4290072c78c980b0c21cd8b959da3ab40fd9f1c13349c56e38500fadbd37cc35": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "composer-contract",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "composer-contract",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "caveat",
+                            "conceptId": "OC",
+                            "confidence": "certain",
+                            "source": "user"
+                        }
+                    ],
+                    "errors": [],
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "ORCON",
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
         "42a7a3037704a145a8a68047f77c3ef2e3a44548eaf74ae35c9d6cbb1b03e884": {
             "body": {
                 "resolution": {
@@ -4217,7 +4295,7 @@
             "method": "GET",
             "statusCode": 200
         },
-        "864603532ffc9eebab6909f2bd0c21cb3875447badfc4690229d2b97f886c022": {
+        "8379c5404ca0c165d648051dd9f107b4d7c319498cc149177c3141fa61bcdbe8": {
             "body": {
                 "resolution": {
                     "artifacts": [
@@ -4236,40 +4314,15 @@
                     "assertions": [
                         {
                             "categoryId": "level",
-                            "conceptId": "U",
+                            "conceptId": "S",
                             "confidence": "certain",
-                            "source": "parse"
-                        },
-                        {
-                            "categoryId": "caveat",
-                            "conceptId": "OC",
-                            "confidence": "certain",
-                            "source": "parse"
+                            "source": "aggregate"
                         }
                     ],
-                    "assessment": {
-                        "collapsed": [],
-                        "conflicts": [],
-                        "emitted": [
-                            { "categoryId": "level", "conceptId": "U" },
-                            { "categoryId": "caveat", "conceptId": "OC" }
-                        ],
-                        "omitted": [],
-                        "unrepresentable": []
-                    },
                     "errors": [],
-                    "inputWasValid": true,
                     "notices": [],
                     "proposedFixes": [],
-                    "recognition": {
-                        "corrections": [],
-                        "inputFormat": "default",
-                        "status": "complete",
-                        "surface": "marking",
-                        "unmatched": []
-                    },
-                    "rendered": "UNCLASSIFIED//ORCON",
-                    "renders": {},
+                    "rendered": "SECRET",
                     "valid": true,
                     "warnings": []
                 }
@@ -7779,6 +7832,48 @@
             },
             "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "GET",
+            "statusCode": 200
+        },
+        "f3ba3a3d3fd003e2c72c9e2a5f292b0aa4b28e1f3aa318f20809a2681a7a35dd": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "composer-contract",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "composer-contract",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "S",
+                            "confidence": "certain",
+                            "source": "aggregate"
+                        },
+                        {
+                            "categoryId": "caveat",
+                            "conceptId": "NF",
+                            "confidence": "certain",
+                            "source": "user"
+                        }
+                    ],
+                    "errors": [],
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "SECRET//NOFORN",
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
             "statusCode": 200
         },
         "f5b7686cca2309a491b4e8b9bacfc163479a57ebf8a54dcd0ff80166645021f7": {

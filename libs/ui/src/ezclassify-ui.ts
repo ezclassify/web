@@ -126,6 +126,7 @@ import {
     parseScopeList,
     reachesPastScopes,
     scopeSetOf,
+    writesCategoryOf,
 } from './scopes';
 import { renderViewRefusalMessages, renderViewRefused } from './render-refusal';
 import {
@@ -2880,6 +2881,26 @@ export class EzClassifyUI {
     }
 
     /**
+     * The categories a view writes: those of the scopes it lists, the scheme's
+     * default scope when it lists none, every category when the scheme declares
+     * no scopes.
+     *
+     * @param el - The view's host
+     */
+    private categoriesWritten(el: HTMLElement): string[] {
+        const engine = schemeEngineOf(this.resolveContext(el), el);
+        const categories = engine.listCategories();
+        const writes = writesCategoryOf(
+            parseScopeList(el.getAttribute('data-ezclassify-scope')),
+            categories,
+            engine.getSchemeMeta(),
+        );
+        return categories
+            .map((category) => category.id)
+            .filter((id) => writes(id));
+    }
+
+    /**
      * Whether a view writes scopes other than the scheme's default scope alone,
      * so its text is not the marking's default-scope text.
      *
@@ -4035,8 +4056,14 @@ export class EzClassifyUI {
                         view?.readsWhole?.() &&
                         (held === undefined || held.status === 'complete')
                     ) {
+                        // The view states every category it writes, as its
+                        // text would: one it left empty is cleared, and one
+                        // equal to the committed value still replaces an edit
+                        // on the wire.
                         this.store
-                            .publishAssertions(markingId, assertions, token)
+                            .publishAssertions(markingId, assertions, token, {
+                                categories: this.categoriesWritten(el),
+                            })
                             .catch(() => {});
                         return;
                     }

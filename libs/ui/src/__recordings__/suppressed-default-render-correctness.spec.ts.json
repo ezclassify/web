@@ -2,66 +2,6 @@
     "engineVersion": "1.0.0-dev.30",
     "openapiVersion": "1.0.0-dev.30",
     "responses": {
-        "175ff33bd806c3ccfb8b36ba61a13ce227f595fe7d882d519a41af4fe7a91c3f": {
-            "body": {
-                "resolution": {
-                    "artifacts": [
-                        {
-                            "id": "multi-scope-regression",
-                            "kind": "scheme",
-                            "version": "1.0.0"
-                        }
-                    ],
-                    "contextId": "multi-scope-regression",
-                    "requestedVersion": "0.0.0",
-                    "resolvedVersion": "1.0.0"
-                },
-                "result": {
-                    "appliedFixes": [],
-                    "assertions": [
-                        {
-                            "categoryId": "level",
-                            "conceptId": "STATE_ASSESSMENT_STAFF",
-                            "confidence": "certain",
-                            "source": "aggregate"
-                        },
-                        {
-                            "categoryId": "from_school",
-                            "conceptId": "OUR_SCHOOL",
-                            "confidence": "certain",
-                            "source": "default"
-                        },
-                        {
-                            "categoryId": "filing_status",
-                            "conceptId": "FILED",
-                            "confidence": "certain",
-                            "source": "default"
-                        }
-                    ],
-                    "displayColor": {
-                        "background": "#ff8c00",
-                        "text": "#000000"
-                    },
-                    "errors": [],
-                    "notices": [
-                        {
-                            "conceptId": "STATE_ASSESSMENT_STAFF",
-                            "conceptName": "State Assessment Staff",
-                            "required": true,
-                            "text": "Record access according to the state assessment program’s procedures.",
-                            "type": "admonition"
-                        }
-                    ],
-                    "proposedFixes": [],
-                    "rendered": "STATE ASSESSMENT STAFF",
-                    "valid": true,
-                    "warnings": []
-                }
-            },
-            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
-            "method": "POST",
-            "statusCode": 200
-        },
         "228b30eebb5126fb2a955ffb305bd74e4fb44b48f0df02a0da3c13c360f3b1b9": {
             "body": [
                 {
@@ -587,66 +527,6 @@
             "method": "POST",
             "statusCode": 200
         },
-        "4703e0482d8a397dd202f448d7b8d25685298225f3a621c64645d26e5d1b5df3": {
-            "body": {
-                "resolution": {
-                    "artifacts": [
-                        {
-                            "id": "multi-scope-regression",
-                            "kind": "scheme",
-                            "version": "1.0.0"
-                        }
-                    ],
-                    "contextId": "multi-scope-regression",
-                    "requestedVersion": "0.0.0",
-                    "resolvedVersion": "1.0.0"
-                },
-                "result": {
-                    "appliedFixes": [],
-                    "assertions": [
-                        {
-                            "categoryId": "from_school",
-                            "conceptId": "OAKWOOD",
-                            "confidence": "certain",
-                            "source": "parse"
-                        },
-                        {
-                            "categoryId": "level",
-                            "conceptId": "STATE_ASSESSMENT_STAFF",
-                            "confidence": "certain",
-                            "source": "aggregate"
-                        },
-                        {
-                            "categoryId": "filing_status",
-                            "conceptId": "FILED",
-                            "confidence": "certain",
-                            "source": "default"
-                        }
-                    ],
-                    "displayColor": {
-                        "background": "#ff8c00",
-                        "text": "#000000"
-                    },
-                    "errors": [],
-                    "notices": [
-                        {
-                            "conceptId": "STATE_ASSESSMENT_STAFF",
-                            "conceptName": "State Assessment Staff",
-                            "required": true,
-                            "text": "Record access according to the state assessment program’s procedures.",
-                            "type": "admonition"
-                        }
-                    ],
-                    "proposedFixes": [],
-                    "rendered": "//OAKWOOD STATE ASSESSMENT STAFF",
-                    "valid": true,
-                    "warnings": []
-                }
-            },
-            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
-            "method": "POST",
-            "statusCode": 200
-        },
         "4d32dc2d4e44b948042645256406bb5508ddbc97cf205228d61093e52dcf0934": {
             "body": [
                 { "id": "marking", "label": "Marking" },
@@ -683,178 +563,6 @@
             },
             "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "GET",
-            "statusCode": 200
-        },
-        "6d9ee3a9df34dba47f6f9446503d27d2cd9afdb8df19377fc0e14cf097c74de7": {
-            "body": {
-                "resolution": {
-                    "artifacts": [
-                        {
-                            "id": "multi-scope-regression",
-                            "kind": "scheme",
-                            "version": "1.0.0"
-                        }
-                    ],
-                    "contextId": "multi-scope-regression",
-                    "requestedVersion": "0.0.0",
-                    "resolvedVersion": "1.0.0"
-                },
-                "result": {
-                    "appliedFixes": [],
-                    "assertions": [
-                        {
-                            "categoryId": "level",
-                            "conceptId": "STATE_ASSESSMENT_STAFF",
-                            "confidence": "certain",
-                            "source": "parse"
-                        },
-                        {
-                            "categoryId": "from_school",
-                            "conceptId": "OUR_SCHOOL",
-                            "confidence": "certain",
-                            "source": "default"
-                        },
-                        {
-                            "categoryId": "filing_status",
-                            "conceptId": "FILED",
-                            "confidence": "certain",
-                            "source": "default"
-                        }
-                    ],
-                    "assessment": {
-                        "collapsed": [],
-                        "conflicts": [],
-                        "emitted": [
-                            {
-                                "categoryId": "level",
-                                "conceptId": "STATE_ASSESSMENT_STAFF"
-                            }
-                        ],
-                        "omitted": [
-                            {
-                                "categoryId": "from_school",
-                                "conceptId": "OUR_SCHOOL"
-                            },
-                            {
-                                "categoryId": "filing_status",
-                                "conceptId": "FILED"
-                            }
-                        ],
-                        "unrepresentable": []
-                    },
-                    "displayColor": {
-                        "background": "#ff8c00",
-                        "text": "#000000"
-                    },
-                    "errors": [],
-                    "inputWasValid": true,
-                    "notices": [
-                        {
-                            "conceptId": "STATE_ASSESSMENT_STAFF",
-                            "conceptName": "State Assessment Staff",
-                            "required": true,
-                            "text": "Record access according to the state assessment program’s procedures.",
-                            "type": "admonition"
-                        }
-                    ],
-                    "proposedFixes": [],
-                    "rendered": "STATE ASSESSMENT STAFF",
-                    "renders": {},
-                    "valid": true,
-                    "warnings": []
-                }
-            },
-            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
-            "method": "POST",
-            "statusCode": 200
-        },
-        "7220b2745a90d003be09f7152f7a04fb3a98dc8244e5783a0eeeb32e08263614": {
-            "body": {
-                "resolution": {
-                    "artifacts": [
-                        {
-                            "id": "multi-scope-regression",
-                            "kind": "scheme",
-                            "version": "1.0.0"
-                        }
-                    ],
-                    "contextId": "multi-scope-regression",
-                    "requestedVersion": "0.0.0",
-                    "resolvedVersion": "1.0.0"
-                },
-                "result": {
-                    "appliedFixes": [],
-                    "assertions": [
-                        {
-                            "categoryId": "level",
-                            "conceptId": "STATE_ASSESSMENT_STAFF",
-                            "confidence": "certain",
-                            "source": "parse"
-                        },
-                        {
-                            "categoryId": "from_school",
-                            "conceptId": "OUR_SCHOOL",
-                            "confidence": "certain",
-                            "source": "default"
-                        },
-                        {
-                            "categoryId": "filing_status",
-                            "conceptId": "FILED",
-                            "confidence": "certain",
-                            "source": "default"
-                        }
-                    ],
-                    "assessment": {
-                        "collapsed": [],
-                        "conflicts": [],
-                        "emitted": [
-                            {
-                                "categoryId": "level",
-                                "conceptId": "STATE_ASSESSMENT_STAFF"
-                            }
-                        ],
-                        "omitted": [
-                            {
-                                "categoryId": "from_school",
-                                "conceptId": "OUR_SCHOOL"
-                            },
-                            {
-                                "categoryId": "filing_status",
-                                "conceptId": "FILED"
-                            }
-                        ],
-                        "unrepresentable": []
-                    },
-                    "displayColor": {
-                        "background": "#ff8c00",
-                        "text": "#000000"
-                    },
-                    "errors": [],
-                    "inputWasValid": true,
-                    "notices": [
-                        {
-                            "conceptId": "STATE_ASSESSMENT_STAFF",
-                            "conceptName": "State Assessment Staff",
-                            "required": true,
-                            "text": "Record access according to the state assessment program’s procedures.",
-                            "type": "admonition"
-                        }
-                    ],
-                    "proposedFixes": [],
-                    "recognition": {
-                        "corrections": [],
-                        "status": "complete",
-                        "surface": "marking",
-                        "unmatched": []
-                    },
-                    "rendered": "STATE ASSESSMENT STAFF",
-                    "renders": {},
-                    "valid": true,
-                    "warnings": []
-                }
-            },
-            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
-            "method": "POST",
             "statusCode": 200
         },
         "7abd87a9a534444e20a13ff9111abe818c081c5e5abcad51a6ead078cc409de5": {
@@ -1453,6 +1161,89 @@
             "method": "GET",
             "statusCode": 200
         },
+        "8f3673955bc61f6b7939be8cf0fa7170a9b095326956d632764fce7dfc01c433": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "multi-scope-regression",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "multi-scope-regression",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "from_school",
+                            "conceptId": "OAKWOOD",
+                            "confidence": "certain",
+                            "source": "user"
+                        },
+                        {
+                            "categoryId": "level",
+                            "conceptId": "STATE_ASSESSMENT_STAFF",
+                            "confidence": "certain",
+                            "source": "user"
+                        },
+                        {
+                            "categoryId": "filing_status",
+                            "conceptId": "FILED",
+                            "confidence": "certain",
+                            "source": "default"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            {
+                                "categoryId": "from_school",
+                                "conceptId": "OAKWOOD"
+                            },
+                            {
+                                "categoryId": "level",
+                                "conceptId": "STATE_ASSESSMENT_STAFF"
+                            }
+                        ],
+                        "omitted": [
+                            {
+                                "categoryId": "filing_status",
+                                "conceptId": "FILED"
+                            }
+                        ],
+                        "unrepresentable": []
+                    },
+                    "displayColor": {
+                        "background": "#ff8c00",
+                        "text": "#000000"
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [
+                        {
+                            "conceptId": "STATE_ASSESSMENT_STAFF",
+                            "conceptName": "State Assessment Staff",
+                            "required": true,
+                            "text": "Record access according to the state assessment program’s procedures.",
+                            "type": "admonition"
+                        }
+                    ],
+                    "proposedFixes": [],
+                    "rendered": "//OAKWOOD STATE ASSESSMENT STAFF",
+                    "renders": {},
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
         "9988342e8042ffa7fc97d47eb6edd75e4e2f40abebe446f15aba9b75f1754590": {
             "body": [
                 {
@@ -1711,6 +1502,66 @@
             ],
             "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "GET",
+            "statusCode": 200
+        },
+        "9f26f35d37353e1f70cea36a3f1996429994e2265f8bb3b5902e2cb0ccfcd0bc": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "multi-scope-regression",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "multi-scope-regression",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "STATE_ASSESSMENT_STAFF",
+                            "confidence": "certain",
+                            "source": "aggregate"
+                        },
+                        {
+                            "categoryId": "from_school",
+                            "conceptId": "OUR_SCHOOL",
+                            "confidence": "certain",
+                            "source": "default"
+                        },
+                        {
+                            "categoryId": "filing_status",
+                            "conceptId": "FILED",
+                            "confidence": "certain",
+                            "source": "default"
+                        }
+                    ],
+                    "displayColor": {
+                        "background": "#ff8c00",
+                        "text": "#000000"
+                    },
+                    "errors": [],
+                    "notices": [
+                        {
+                            "conceptId": "STATE_ASSESSMENT_STAFF",
+                            "conceptName": "State Assessment Staff",
+                            "required": true,
+                            "text": "Record access according to the state assessment program’s procedures.",
+                            "type": "admonition"
+                        }
+                    ],
+                    "proposedFixes": [],
+                    "rendered": "STATE ASSESSMENT STAFF",
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
             "statusCode": 200
         },
         "a6dca2e5b50c7d937b4d0e6436b01816f5d8f38bd81395dbfcdde9b499b9721f": {
@@ -2008,6 +1859,66 @@
             "method": "POST",
             "statusCode": 200
         },
+        "a70e0e0eadd9a4589720cade6496e0a5577ea8bde88abda53b727698eb11d452": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "multi-scope-regression",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "multi-scope-regression",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "from_school",
+                            "conceptId": "OAKWOOD",
+                            "confidence": "certain",
+                            "source": "user"
+                        },
+                        {
+                            "categoryId": "level",
+                            "conceptId": "STATE_ASSESSMENT_STAFF",
+                            "confidence": "certain",
+                            "source": "aggregate"
+                        },
+                        {
+                            "categoryId": "filing_status",
+                            "conceptId": "FILED",
+                            "confidence": "certain",
+                            "source": "default"
+                        }
+                    ],
+                    "displayColor": {
+                        "background": "#ff8c00",
+                        "text": "#000000"
+                    },
+                    "errors": [],
+                    "notices": [
+                        {
+                            "conceptId": "STATE_ASSESSMENT_STAFF",
+                            "conceptName": "State Assessment Staff",
+                            "required": true,
+                            "text": "Record access according to the state assessment program’s procedures.",
+                            "type": "admonition"
+                        }
+                    ],
+                    "proposedFixes": [],
+                    "rendered": "//OAKWOOD STATE ASSESSMENT STAFF",
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
         "bb8370cf366a9fc0919ae01982d275cee2fd5d73cccb8ec50759f1694c7fdf48": {
             "body": {
                 "resolution": {
@@ -2174,7 +2085,7 @@
             "method": "POST",
             "statusCode": 200
         },
-        "c9f8437867290f5d8c030bae9873cee9019561059820aab9f37b06084cbc7cab": {
+        "cbe9c88488b14025097224c851408eb949fe0514db8e9acabbde471959ba10da": {
             "body": {
                 "resolution": {
                     "artifacts": [
@@ -2192,16 +2103,16 @@
                     "appliedFixes": [],
                     "assertions": [
                         {
-                            "categoryId": "from_school",
-                            "conceptId": "OAKWOOD",
-                            "confidence": "certain",
-                            "source": "parse"
-                        },
-                        {
                             "categoryId": "level",
                             "conceptId": "STATE_ASSESSMENT_STAFF",
                             "confidence": "certain",
-                            "source": "parse"
+                            "source": "user"
+                        },
+                        {
+                            "categoryId": "from_school",
+                            "conceptId": "OUR_SCHOOL",
+                            "confidence": "certain",
+                            "source": "default"
                         },
                         {
                             "categoryId": "filing_status",
@@ -2215,15 +2126,15 @@
                         "conflicts": [],
                         "emitted": [
                             {
-                                "categoryId": "from_school",
-                                "conceptId": "OAKWOOD"
-                            },
-                            {
                                 "categoryId": "level",
                                 "conceptId": "STATE_ASSESSMENT_STAFF"
                             }
                         ],
                         "omitted": [
+                            {
+                                "categoryId": "from_school",
+                                "conceptId": "OUR_SCHOOL"
+                            },
                             {
                                 "categoryId": "filing_status",
                                 "conceptId": "FILED"
@@ -2247,7 +2158,7 @@
                         }
                     ],
                     "proposedFixes": [],
-                    "rendered": "//OAKWOOD STATE ASSESSMENT STAFF",
+                    "rendered": "STATE ASSESSMENT STAFF",
                     "renders": {},
                     "valid": true,
                     "warnings": []
@@ -2689,96 +2600,6 @@
                             }
                         }
                     ],
-                    "warnings": []
-                }
-            },
-            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
-            "method": "POST",
-            "statusCode": 200
-        },
-        "fca555e269c6d6652f7a7260668e3d7932b2eb4e23562e8373eb14e66628d726": {
-            "body": {
-                "resolution": {
-                    "artifacts": [
-                        {
-                            "id": "multi-scope-regression",
-                            "kind": "scheme",
-                            "version": "1.0.0"
-                        }
-                    ],
-                    "contextId": "multi-scope-regression",
-                    "requestedVersion": "0.0.0",
-                    "resolvedVersion": "1.0.0"
-                },
-                "result": {
-                    "appliedFixes": [],
-                    "assertions": [
-                        {
-                            "categoryId": "from_school",
-                            "conceptId": "OAKWOOD",
-                            "confidence": "certain",
-                            "source": "parse"
-                        },
-                        {
-                            "categoryId": "level",
-                            "conceptId": "STATE_ASSESSMENT_STAFF",
-                            "confidence": "certain",
-                            "source": "parse"
-                        },
-                        {
-                            "categoryId": "filing_status",
-                            "conceptId": "FILED",
-                            "confidence": "certain",
-                            "source": "default"
-                        }
-                    ],
-                    "assessment": {
-                        "collapsed": [],
-                        "conflicts": [],
-                        "emitted": [
-                            {
-                                "categoryId": "from_school",
-                                "conceptId": "OAKWOOD"
-                            },
-                            {
-                                "categoryId": "level",
-                                "conceptId": "STATE_ASSESSMENT_STAFF"
-                            }
-                        ],
-                        "omitted": [
-                            {
-                                "categoryId": "filing_status",
-                                "conceptId": "FILED"
-                            }
-                        ],
-                        "unrepresentable": []
-                    },
-                    "displayColor": {
-                        "background": "#ff8c00",
-                        "text": "#000000"
-                    },
-                    "errors": [],
-                    "inputWasValid": true,
-                    "notices": [
-                        {
-                            "conceptId": "STATE_ASSESSMENT_STAFF",
-                            "conceptName": "State Assessment Staff",
-                            "required": true,
-                            "text": "Record access according to the state assessment program’s procedures.",
-                            "type": "admonition"
-                        }
-                    ],
-                    "proposedFixes": [],
-                    "recognition": {
-                        "corrections": [],
-                        "inputFormat": "long",
-                        "status": "complete",
-                        "surface": "marking",
-                        "unmatched": []
-                    },
-                    "rendered": "//OAKWOOD STATE ASSESSMENT STAFF",
-                    "renders": {},
-                    "valid": true,
                     "warnings": []
                 }
             },

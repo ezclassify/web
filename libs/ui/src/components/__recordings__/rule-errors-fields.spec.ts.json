@@ -314,6 +314,42 @@
             "method": "PUT",
             "statusCode": 200
         },
+        "2ca8fbe8e258a7252c87429e906627b700fc1ce553602438d39a2b33e864fb94": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "rule-errors-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "rule-errors-test",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "LOW",
+                            "confidence": "certain",
+                            "source": "aggregate"
+                        }
+                    ],
+                    "errors": [],
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "LOW",
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
         "3b4e45240dd7d6981b8645fc51b96eede963ce79d300da28070898147598febc": {
             "body": {
                 "resolution": {
@@ -453,6 +489,48 @@
             "method": "GET",
             "statusCode": 200
         },
+        "8cf09a8f0c02e8082a43f7980f00c7635127fe50114b08229bf7c6499327879a": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "rule-errors-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "rule-errors-test",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "HIGH",
+                            "confidence": "certain",
+                            "source": "aggregate"
+                        },
+                        {
+                            "categoryId": "caveat",
+                            "conceptId": "HOLD",
+                            "confidence": "certain",
+                            "source": "user"
+                        }
+                    ],
+                    "errors": [],
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "HIGH//HOLD",
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
         "95da99911994fb6c5464dca0ec140e78aca8ee5341a6eaf4562a6ca7fcbc67fe": {
             "body": {
                 "resolution": {
@@ -581,6 +659,60 @@
             ],
             "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "GET",
+            "statusCode": 200
+        },
+        "a840cbc08bfd53640a228d190411836214f9feed113efdeca7804b9f71b2201c": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "rule-errors-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "rule-errors-test",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "HIGH",
+                            "confidence": "certain",
+                            "source": "user"
+                        },
+                        {
+                            "categoryId": "caveat",
+                            "conceptId": "HOLD",
+                            "confidence": "certain",
+                            "source": "user"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            { "categoryId": "level", "conceptId": "HIGH" },
+                            { "categoryId": "caveat", "conceptId": "HOLD" }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "HIGH//HOLD",
+                    "renders": {},
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
             "statusCode": 200
         },
         "bb7a44ea89d974213aea4b514934282b751033ea5b240fa456614041cde0ec2d": {

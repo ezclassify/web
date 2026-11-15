@@ -2,6 +2,110 @@
     "engineVersion": "1.0.0-dev.30",
     "openapiVersion": "1.0.0-dev.30",
     "responses": {
+        "01fa472065ef03f398eba3dfae2d28f48b5f80a268a305012ebd1097c0362f7e": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "cedar-valley",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "cedar-valley-guide",
+                            "kind": "guide",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "cedar-valley-access",
+                            "kind": "access",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "cedar-valley",
+                            "kind": "context",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "cedar-valley",
+                    "requestedVersion": "latest",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [
+                        {
+                            "action": "add",
+                            "add": [
+                                {
+                                    "categoryId": "allow_sharing_with",
+                                    "conceptId": "CEDAR_VALLEY_DISTRICT"
+                                }
+                            ],
+                            "message": "Rule \"nonpublic-is-internal-by-default\": added \"CEDAR_VALLEY_DISTRICT\" to category \"allow_sharing_with\"",
+                            "ruleId": "nonpublic-is-internal-by-default",
+                            "triggerConceptIds": ["RESTRICTED"]
+                        }
+                    ],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "RESTRICTED",
+                            "confidence": "certain",
+                            "source": "user"
+                        },
+                        {
+                            "categoryId": "sensitive_content",
+                            "conceptId": "FINANCIAL_INFORMATION",
+                            "confidence": "certain",
+                            "source": "user"
+                        },
+                        {
+                            "categoryId": "allow_sharing_with",
+                            "conceptId": "CEDAR_VALLEY_DISTRICT",
+                            "confidence": "inferred",
+                            "source": "infer",
+                            "sourceRule": "nonpublic-is-internal-by-default"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            {
+                                "categoryId": "level",
+                                "conceptId": "RESTRICTED"
+                            },
+                            {
+                                "categoryId": "sensitive_content",
+                                "conceptId": "FINANCIAL_INFORMATION"
+                            }
+                        ],
+                        "omitted": [
+                            {
+                                "categoryId": "allow_sharing_with",
+                                "conceptId": "CEDAR_VALLEY_DISTRICT"
+                            }
+                        ],
+                        "unrepresentable": []
+                    },
+                    "displayColor": {
+                        "background": "#c62828",
+                        "text": "#ffffff"
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "RESTRICTED//FINANCIAL INFORMATION",
+                    "renders": {},
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
         "020beb891339076a66b47f07f582f75eb8167f1c1f4cf4d54e5407b4b0397290": {
             "body": {
                 "resolution": {
@@ -3651,6 +3755,73 @@
             "method": "POST",
             "statusCode": 200
         },
+        "3ff3f721fb885d9ae2583a4f48e3f368af2b59f9a5ce40c8de5edbb7c85fe18e": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "cedar-valley",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "cedar-valley-guide",
+                            "kind": "guide",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "cedar-valley-access",
+                            "kind": "access",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "cedar-valley",
+                            "kind": "context",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "cedar-valley",
+                    "requestedVersion": "latest",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "RESTRICTED",
+                            "confidence": "certain",
+                            "source": "aggregate"
+                        },
+                        {
+                            "categoryId": "sensitive_content",
+                            "conceptId": "FINANCIAL_INFORMATION",
+                            "confidence": "certain",
+                            "source": "user"
+                        },
+                        {
+                            "categoryId": "allow_sharing_with",
+                            "conceptId": "CEDAR_VALLEY_DISTRICT",
+                            "confidence": "inferred",
+                            "source": "aggregate"
+                        }
+                    ],
+                    "displayColor": {
+                        "background": "#c62828",
+                        "text": "#ffffff"
+                    },
+                    "errors": [],
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "RESTRICTED//FINANCIAL INFORMATION",
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
         "417b4282673b04be8cf6d20773b25dd24735d626f546cdf798de4fb03dd66464": {
             "body": {
                 "resolution": {
@@ -4635,161 +4806,6 @@
                     "proposedFixes": [],
                     "rendered": "INTERNAL//OAKWOOD/PINECREST",
                     "valid": true,
-                    "warnings": []
-                }
-            },
-            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
-            "method": "POST",
-            "statusCode": 200
-        },
-        "48a846fe5d2ae724c1c8bf8aa483c49a6a91a4023ae8970f3f44830c6566a966": {
-            "body": {
-                "resolution": {
-                    "artifacts": [
-                        {
-                            "id": "cedar-valley",
-                            "kind": "scheme",
-                            "version": "1.0.0"
-                        },
-                        {
-                            "id": "cedar-valley-guide",
-                            "kind": "guide",
-                            "version": "1.0.0"
-                        },
-                        {
-                            "id": "cedar-valley-access",
-                            "kind": "access",
-                            "version": "1.0.0"
-                        },
-                        {
-                            "id": "cedar-valley",
-                            "kind": "context",
-                            "version": "1.0.0"
-                        }
-                    ],
-                    "contextId": "cedar-valley",
-                    "requestedVersion": "latest",
-                    "resolvedVersion": "1.0.0"
-                },
-                "result": {
-                    "appliedFixes": [
-                        {
-                            "action": "add",
-                            "add": [
-                                {
-                                    "categoryId": "allow_sharing_with",
-                                    "conceptId": "CEDAR_VALLEY_DISTRICT"
-                                }
-                            ],
-                            "message": "Rule \"nonpublic-is-internal-by-default\": added \"CEDAR_VALLEY_DISTRICT\" to category \"allow_sharing_with\"",
-                            "ruleId": "nonpublic-is-internal-by-default",
-                            "triggerConceptIds": ["INTERNAL"]
-                        }
-                    ],
-                    "assertions": [
-                        {
-                            "categoryId": "level",
-                            "conceptId": "INTERNAL",
-                            "confidence": "certain",
-                            "source": "parse"
-                        },
-                        {
-                            "categoryId": "sensitive_content",
-                            "conceptId": "FINANCIAL_INFORMATION",
-                            "confidence": "certain",
-                            "source": "parse"
-                        },
-                        {
-                            "categoryId": "allow_sharing_with",
-                            "conceptId": "CEDAR_VALLEY_DISTRICT",
-                            "confidence": "inferred",
-                            "source": "infer",
-                            "sourceRule": "nonpublic-is-internal-by-default"
-                        }
-                    ],
-                    "assessment": {
-                        "collapsed": [],
-                        "conflicts": [],
-                        "emitted": [
-                            { "categoryId": "level", "conceptId": "INTERNAL" },
-                            {
-                                "categoryId": "sensitive_content",
-                                "conceptId": "FINANCIAL_INFORMATION"
-                            }
-                        ],
-                        "omitted": [
-                            {
-                                "categoryId": "allow_sharing_with",
-                                "conceptId": "CEDAR_VALLEY_DISTRICT"
-                            }
-                        ],
-                        "unrepresentable": []
-                    },
-                    "displayColor": {
-                        "background": "#1565c0",
-                        "text": "#ffffff"
-                    },
-                    "errors": [
-                        {
-                            "affectedConcepts": ["CONFIDENTIAL", "RESTRICTED"],
-                            "categoryId": "level",
-                            "constraintId": "financial-information-is-confidential",
-                            "message": "Financial information is confidential at minimum."
-                        }
-                    ],
-                    "inputWasValid": false,
-                    "notices": [],
-                    "proposedFixes": [
-                        {
-                            "adds": [
-                                {
-                                    "categoryId": "level",
-                                    "conceptId": "CONFIDENTIAL"
-                                }
-                            ],
-                            "keeps": [
-                                {
-                                    "categoryId": "sensitive_content",
-                                    "conceptId": "FINANCIAL_INFORMATION"
-                                }
-                            ],
-                            "message": "Replace INTERNAL with CONFIDENTIAL.",
-                            "removes": [
-                                {
-                                    "categoryId": "level",
-                                    "conceptId": "INTERNAL"
-                                }
-                            ],
-                            "rendered": "CONFIDENTIAL//FINANCIAL INFORMATION"
-                        },
-                        {
-                            "adds": [],
-                            "keeps": [
-                                {
-                                    "categoryId": "level",
-                                    "conceptId": "INTERNAL"
-                                }
-                            ],
-                            "message": "Remove FINANCIAL INFORMATION.",
-                            "removes": [
-                                {
-                                    "categoryId": "sensitive_content",
-                                    "conceptId": "FINANCIAL_INFORMATION"
-                                }
-                            ],
-                            "rendered": "INTERNAL"
-                        }
-                    ],
-                    "recognition": {
-                        "corrections": [],
-                        "inputFormat": "long",
-                        "status": "complete",
-                        "surface": "marking",
-                        "unmatched": []
-                    },
-                    "rendered": "INTERNAL//FINANCIAL INFORMATION",
-                    "renders": {},
-                    "valid": false,
                     "warnings": []
                 }
             },
@@ -5864,6 +5880,97 @@
                     "notices": [],
                     "proposedFixes": [],
                     "rendered": "RESTRICTED//OAKWOOD/PINECREST",
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "560122734e2ab38c2a7389103a369c8b72f76e38d4c228ad33c80eb28dfd0eba": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "cedar-valley",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "cedar-valley-guide",
+                            "kind": "guide",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "cedar-valley-access",
+                            "kind": "access",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "cedar-valley",
+                            "kind": "context",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "cedar-valley",
+                    "requestedVersion": "latest",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [
+                        {
+                            "action": "add",
+                            "add": [
+                                {
+                                    "categoryId": "allow_sharing_with",
+                                    "conceptId": "CEDAR_VALLEY_DISTRICT"
+                                }
+                            ],
+                            "message": "Rule \"nonpublic-is-internal-by-default\": added \"CEDAR_VALLEY_DISTRICT\" to category \"allow_sharing_with\"",
+                            "ruleId": "nonpublic-is-internal-by-default",
+                            "triggerConceptIds": ["INTERNAL"]
+                        }
+                    ],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "INTERNAL",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "allow_sharing_with",
+                            "conceptId": "CEDAR_VALLEY_DISTRICT",
+                            "confidence": "inferred",
+                            "source": "infer",
+                            "sourceRule": "nonpublic-is-internal-by-default"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            { "categoryId": "level", "conceptId": "INTERNAL" }
+                        ],
+                        "omitted": [
+                            {
+                                "categoryId": "allow_sharing_with",
+                                "conceptId": "CEDAR_VALLEY_DISTRICT"
+                            }
+                        ],
+                        "unrepresentable": []
+                    },
+                    "displayColor": {
+                        "background": "#1565c0",
+                        "text": "#ffffff"
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "INTERNAL",
+                    "renders": {},
                     "valid": true,
                     "warnings": []
                 }
@@ -8828,117 +8935,6 @@
             "method": "POST",
             "statusCode": 200
         },
-        "94c13aea6c7f2de7a19b1ef4d7969bc997f49fc4f046a10391b253f314fb5c1a": {
-            "body": {
-                "resolution": {
-                    "artifacts": [
-                        {
-                            "id": "cedar-valley",
-                            "kind": "scheme",
-                            "version": "1.0.0"
-                        },
-                        {
-                            "id": "cedar-valley-guide",
-                            "kind": "guide",
-                            "version": "1.0.0"
-                        },
-                        {
-                            "id": "cedar-valley-access",
-                            "kind": "access",
-                            "version": "1.0.0"
-                        },
-                        {
-                            "id": "cedar-valley",
-                            "kind": "context",
-                            "version": "1.0.0"
-                        }
-                    ],
-                    "contextId": "cedar-valley",
-                    "requestedVersion": "latest",
-                    "resolvedVersion": "1.0.0"
-                },
-                "result": {
-                    "appliedFixes": [
-                        {
-                            "action": "add",
-                            "add": [
-                                {
-                                    "categoryId": "allow_sharing_with",
-                                    "conceptId": "CEDAR_VALLEY_DISTRICT"
-                                }
-                            ],
-                            "message": "Rule \"nonpublic-is-internal-by-default\": added \"CEDAR_VALLEY_DISTRICT\" to category \"allow_sharing_with\"",
-                            "ruleId": "nonpublic-is-internal-by-default",
-                            "triggerConceptIds": ["RESTRICTED"]
-                        }
-                    ],
-                    "assertions": [
-                        {
-                            "categoryId": "level",
-                            "conceptId": "RESTRICTED",
-                            "confidence": "certain",
-                            "source": "parse"
-                        },
-                        {
-                            "categoryId": "sensitive_content",
-                            "conceptId": "FINANCIAL_INFORMATION",
-                            "confidence": "certain",
-                            "source": "parse"
-                        },
-                        {
-                            "categoryId": "allow_sharing_with",
-                            "conceptId": "CEDAR_VALLEY_DISTRICT",
-                            "confidence": "inferred",
-                            "source": "infer",
-                            "sourceRule": "nonpublic-is-internal-by-default"
-                        }
-                    ],
-                    "assessment": {
-                        "collapsed": [],
-                        "conflicts": [],
-                        "emitted": [
-                            {
-                                "categoryId": "level",
-                                "conceptId": "RESTRICTED"
-                            },
-                            {
-                                "categoryId": "sensitive_content",
-                                "conceptId": "FINANCIAL_INFORMATION"
-                            }
-                        ],
-                        "omitted": [
-                            {
-                                "categoryId": "allow_sharing_with",
-                                "conceptId": "CEDAR_VALLEY_DISTRICT"
-                            }
-                        ],
-                        "unrepresentable": []
-                    },
-                    "displayColor": {
-                        "background": "#c62828",
-                        "text": "#ffffff"
-                    },
-                    "errors": [],
-                    "inputWasValid": true,
-                    "notices": [],
-                    "proposedFixes": [],
-                    "recognition": {
-                        "corrections": [],
-                        "inputFormat": "long",
-                        "status": "complete",
-                        "surface": "marking",
-                        "unmatched": []
-                    },
-                    "rendered": "RESTRICTED//FINANCIAL INFORMATION",
-                    "renders": {},
-                    "valid": true,
-                    "warnings": []
-                }
-            },
-            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
-            "method": "POST",
-            "statusCode": 200
-        },
         "94e7cd676e32485ce8299179a6c5f36379e1174033aa1125ccdaa0e9a6b43ea3": {
             "body": {
                 "resolution": {
@@ -11880,7 +11876,7 @@
             "method": "POST",
             "statusCode": 200
         },
-        "d835748abad14e09448f5fa430ee029b2418ff2fb6bd46faf3163bfcbb12b93f": {
+        "de52b661b472136ec240272a5028fd21916d6dc57c3602b6e7d3ed29828fb7fe": {
             "body": {
                 "resolution": {
                     "artifacts": [
@@ -11910,13 +11906,26 @@
                     "resolvedVersion": "1.0.0"
                 },
                 "result": {
-                    "appliedFixes": [],
+                    "appliedFixes": [
+                        {
+                            "action": "add",
+                            "add": [
+                                {
+                                    "categoryId": "allow_sharing_with",
+                                    "conceptId": "CEDAR_VALLEY_DISTRICT"
+                                }
+                            ],
+                            "message": "Rule \"nonpublic-is-internal-by-default\": added \"CEDAR_VALLEY_DISTRICT\" to category \"allow_sharing_with\"",
+                            "ruleId": "nonpublic-is-internal-by-default",
+                            "triggerConceptIds": ["INTERNAL"]
+                        }
+                    ],
                     "assertions": [
                         {
                             "categoryId": "level",
-                            "conceptId": "RESTRICTED",
+                            "conceptId": "INTERNAL",
                             "confidence": "certain",
-                            "source": "aggregate"
+                            "source": "parse"
                         },
                         {
                             "categoryId": "sensitive_content",
@@ -11928,18 +11937,86 @@
                             "categoryId": "allow_sharing_with",
                             "conceptId": "CEDAR_VALLEY_DISTRICT",
                             "confidence": "inferred",
-                            "source": "aggregate"
+                            "source": "infer",
+                            "sourceRule": "nonpublic-is-internal-by-default"
                         }
                     ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            { "categoryId": "level", "conceptId": "INTERNAL" },
+                            {
+                                "categoryId": "sensitive_content",
+                                "conceptId": "FINANCIAL_INFORMATION"
+                            }
+                        ],
+                        "omitted": [
+                            {
+                                "categoryId": "allow_sharing_with",
+                                "conceptId": "CEDAR_VALLEY_DISTRICT"
+                            }
+                        ],
+                        "unrepresentable": []
+                    },
                     "displayColor": {
-                        "background": "#c62828",
+                        "background": "#1565c0",
                         "text": "#ffffff"
                     },
-                    "errors": [],
+                    "errors": [
+                        {
+                            "affectedConcepts": ["CONFIDENTIAL", "RESTRICTED"],
+                            "categoryId": "level",
+                            "constraintId": "financial-information-is-confidential",
+                            "message": "Financial information is confidential at minimum."
+                        }
+                    ],
+                    "inputWasValid": false,
                     "notices": [],
-                    "proposedFixes": [],
-                    "rendered": "RESTRICTED//FINANCIAL INFORMATION",
-                    "valid": true,
+                    "proposedFixes": [
+                        {
+                            "adds": [
+                                {
+                                    "categoryId": "level",
+                                    "conceptId": "CONFIDENTIAL"
+                                }
+                            ],
+                            "keeps": [
+                                {
+                                    "categoryId": "sensitive_content",
+                                    "conceptId": "FINANCIAL_INFORMATION"
+                                }
+                            ],
+                            "message": "Replace INTERNAL with CONFIDENTIAL.",
+                            "removes": [
+                                {
+                                    "categoryId": "level",
+                                    "conceptId": "INTERNAL"
+                                }
+                            ],
+                            "rendered": "CONFIDENTIAL//FINANCIAL INFORMATION"
+                        },
+                        {
+                            "adds": [],
+                            "keeps": [
+                                {
+                                    "categoryId": "level",
+                                    "conceptId": "INTERNAL"
+                                }
+                            ],
+                            "message": "Remove FINANCIAL INFORMATION.",
+                            "removes": [
+                                {
+                                    "categoryId": "sensitive_content",
+                                    "conceptId": "FINANCIAL_INFORMATION"
+                                }
+                            ],
+                            "rendered": "INTERNAL"
+                        }
+                    ],
+                    "rendered": "INTERNAL//FINANCIAL INFORMATION",
+                    "renders": {},
+                    "valid": false,
                     "warnings": []
                 }
             },

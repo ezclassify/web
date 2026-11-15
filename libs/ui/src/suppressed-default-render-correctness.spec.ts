@@ -12,10 +12,10 @@
  *
  * Every rendered surface (a native input's `.value`, a painted display's text,
  * a field's `getRendered()`) must derive from the engine's own process() output
- * and therefore honor that suppression. A TagInput's chips are the values the
- * marking writes, so it draws no chip for OUR_SCHOOL either. An option list is
- * a different contract: it represents the assertion set, not the rendered
- * string, and correctly shows OUR_SCHOOL as selected. Composing a "rendered"
+ * and therefore honor that suppression. A TagInput's chips and an option list
+ * are a different contract: they represent the assertion set, not the rendered
+ * string. The chips draw OUR_SCHOOL faded, as a default the marking holds and
+ * does not write, and the option list shows it selected. Composing a "rendered"
  * surface from raw assertions instead of the engine's actual rendered string is
  * what this guards against: it would show OUR_SCHOOL's label somewhere the
  * suppression rule says it must not appear.
@@ -149,16 +149,19 @@ describe('suppressed default-fill assertion never leaks into a rendered surface'
         expect(paintedDisplay.textContent).toBe(state.rendered);
         expect(paintedDisplay.textContent).not.toContain('OUR SCHOOL');
 
-        // The chips are the values the marking writes: none for OUR SCHOOL.
-        const chips = [
-            ...root.querySelectorAll(
-                '[data-ezclassify-mount="tags"] .proto-tag',
-            ),
-        ];
-        expect(chips.length).toBeGreaterThan(0);
-        expect(
-            chips.map((c) => (c as HTMLElement).dataset.conceptId),
-        ).not.toContain('OUR_SCHOOL');
+        // The chips draw OUR SCHOOL faded: a default the marking holds and
+        // does not write, so it is no value the author can remove.
+        const ourSchoolChip = root.querySelector<HTMLElement>(
+            '[data-ezclassify-mount="tags"] .proto-tag[data-concept-id="OUR_SCHOOL"]',
+        );
+        expect(ourSchoolChip).not.toBeNull();
+        expect(ourSchoolChip!.classList.contains('proto-tag--unprinted')).toBe(
+            true,
+        );
+        expect(ourSchoolChip!.querySelector('.proto-tag-remove')).toBeNull();
+        expect(ourSchoolChip!.getAttribute('aria-label')).toMatch(
+            /, Default .+, not written in the marking$/,
+        );
 
         // The option list shows the assertion set: OUR SCHOOL is selected.
 

@@ -151,6 +151,53 @@
             "method": "GET",
             "statusCode": 200
         },
+        "2fc2d7af069043126026a76197ea89861388850fec74b8b013ff19795db9aa8b": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "ref-scheme-1",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "ref-scheme-1",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "LOW",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            { "categoryId": "level", "conceptId": "LOW" }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "LOW",
+                    "renders": {},
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
         "4c375bdf772b51dc8e090285d9ceb972f731a0497ed6adc16a13a0aa53a1da7c": {
             "body": [{ "id": "banner", "label": "Banner" }],
             "headers": { "x-ezclassify-resolved-version": "1.0.0" },
