@@ -36,7 +36,7 @@
     "generation": {
         "contractVersion": "1.0.0-dev.30",
         "generator": "ezclassify-wire-corpus-recorder",
-        "generatorDigest": "sha256:dd0ea7156d7594e40209229845f53c02316f2dba163e5a1d875ffc6d7f0959c4"
+        "generatorDigest": "sha256:731aef3390217d515a1dd04a3a2c1899373dc85515e63e08d34b648d3a95c457"
     },
     "runtime": {
         "engineVersion": "1.0.0-dev.30"
