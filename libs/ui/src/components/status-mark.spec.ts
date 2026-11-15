@@ -125,6 +125,12 @@ async function hoverPastIntent(mark: HTMLElement): Promise<void> {
     await new Promise((r) => setTimeout(r, 400));
 }
 
+/** Move the pointer off a mark and wait out the tooltip's leave delay. */
+async function leavePastDelay(mark: HTMLElement): Promise<void> {
+    mark.dispatchEvent(new Event('mouseleave'));
+    await new Promise((r) => setTimeout(r, 400));
+}
+
 describe("a field's words for its changes", () => {
     const writing: ConceptWriting = {
         scheme: {
@@ -1004,10 +1010,12 @@ describe('the applied-changes popover does not outstay the value it described', 
             mark.dispatchEvent(new MouseEvent('click', { bubbles: true }));
             const shown = tip()!;
             expect(shown.hidden).toBe(false);
-            // No room below in jsdom's 768px viewport, so above the frame.
+            // Above the frame, right by the mark at its top, and ending where
+            // the mark ends: never down at the frame's far corner.
             const top = parseFloat(shown.style.top);
             expect(top + 120).toBeLessThanOrEqual(300);
             expect(top).toBe(174);
+            expect(parseFloat(shown.style.left) + 300).toBe(684);
         });
     });
 
@@ -1022,10 +1030,12 @@ describe('the applied-changes popover does not outstay the value it described', 
 
         await withTipSize(200, 50, async () => {
             await hoverPastIntent(mark);
-            // Below the field and its errors: 200 + 6.
+            // No room above the field, so beside the trailing edge of the
+            // field and its errors, level with the mark: 300 + 6.
             expect(tip()?.hidden).toBe(false);
-            expect(tip()?.style.top).toBe('206px');
-            mark.dispatchEvent(new Event('mouseleave'));
+            expect(tip()?.style.left).toBe('306px');
+            expect(tip()?.style.top).toBe('44px');
+            await leavePastDelay(mark);
         });
 
         // A tooltip as tall as the viewport fits nowhere outside them: it
@@ -1110,7 +1120,7 @@ describe('pressing the mark opens the applied-changes list', () => {
     it('a pressed list stays when the pointer leaves; a hovered one does not', async () => {
         const { mark } = fieldWithMark();
         await hoverPastIntent(mark);
-        mark.dispatchEvent(new Event('mouseleave'));
+        await leavePastDelay(mark);
         expect(tip()?.hidden).toBe(true);
 
         mark.dispatchEvent(new Event('mouseenter'));
@@ -1211,7 +1221,7 @@ describe('pressing the mark opens the applied-changes list', () => {
 
         await hoverPastIntent(mark);
         expect(tip()?.hidden).toBe(false);
-        mark.dispatchEvent(new Event('mouseleave'));
+        await leavePastDelay(mark);
         expect(tip()?.hidden).toBe(true);
     });
 
@@ -1225,7 +1235,7 @@ describe('pressing the mark opens the applied-changes list', () => {
         expect(mark.hasAttribute('aria-controls')).toBe(false);
 
         await hoverPastIntent(mark);
-        mark.dispatchEvent(new Event('mouseleave'));
+        await leavePastDelay(mark);
         expect(tip()?.hidden).toBe(true);
     });
 
@@ -1248,6 +1258,101 @@ describe('pressing the mark opens the applied-changes list', () => {
         mark.click();
         expect(tip()?.hidden ?? true).toBe(true);
         expect(mark.classList.contains('ez-status-mark--unseen')).toBe(true);
+    });
+});
+
+describe('the list can be reached from the mark', () => {
+    function fieldWithUndo() {
+        const field = document.createElement('div');
+        field.className = 'marking-field-wrap';
+        const input = document.createElement('textarea');
+        const chrome = document.createElement('div');
+        field.append(input, chrome);
+        document.body.appendChild(field);
+        let undone = 0;
+        const mark = ensureStatusMark(chrome, {
+            shape: 'chrome',
+            undoLastEdit: () => () => undone++,
+        });
+        setStatusMarkFixes(chrome, [makeFix('r1', 'Added NOFORN')]);
+        return { mark, undone: () => undone };
+    }
+    const tip = () => document.querySelector<HTMLElement>('.ez-tooltip');
+    const undoButton = () =>
+        tip()!.querySelector<HTMLButtonElement>('.ez-status-list__undo')!;
+
+    it('the pointer can move from the mark into the hovered list and press its undo', async () => {
+        const { mark, undone } = fieldWithUndo();
+        await hoverPastIntent(mark);
+        mark.dispatchEvent(new Event('mouseleave'));
+        await new Promise((r) => setTimeout(r, 100));
+        tip()!.dispatchEvent(new Event('mouseenter'));
+        await new Promise((r) => setTimeout(r, 500));
+        expect(tip()?.hidden).toBe(false);
+
+        undoButton().click();
+        expect(undone()).toBe(1);
+        expect(tip()?.hidden).toBe(true);
+    });
+
+    it('a hovered list closes once the pointer has left the mark and the list', async () => {
+        const { mark } = fieldWithUndo();
+        await hoverPastIntent(mark);
+        mark.dispatchEvent(new Event('mouseleave'));
+        tip()!.dispatchEvent(new Event('mouseenter'));
+        tip()!.dispatchEvent(new Event('mouseleave'));
+        expect(tip()?.hidden).toBe(false);
+        await new Promise((r) => setTimeout(r, 400));
+        expect(tip()?.hidden).toBe(true);
+    });
+
+    it('a pressed list stays while the pointer moves through it and away', async () => {
+        const { mark } = fieldWithUndo();
+        mark.click();
+        mark.dispatchEvent(new Event('mouseleave'));
+        tip()!.dispatchEvent(new Event('mouseenter'));
+        tip()!.dispatchEvent(new Event('mouseleave'));
+        await new Promise((r) => setTimeout(r, 400));
+        expect(tip()?.hidden).toBe(false);
+        expect(mark.getAttribute('aria-expanded')).toBe('true');
+    });
+
+    it('Tab from the mark reaches the undo with the list still open; Escape there closes it and returns to the mark', async () => {
+        const { mark } = fieldWithUndo();
+        mark.focus();
+        await new Promise((r) => setTimeout(r, 400));
+        expect(tip()?.hidden).toBe(false);
+        mark.dispatchEvent(
+            new KeyboardEvent('keydown', {
+                key: 'Tab',
+                bubbles: true,
+                cancelable: true,
+            }),
+        );
+        expect(document.activeElement).toBe(undoButton());
+        expect(tip()?.hidden).toBe(false);
+
+        undoButton().dispatchEvent(
+            new KeyboardEvent('keydown', {
+                key: 'Escape',
+                bubbles: true,
+                cancelable: true,
+            }),
+        );
+        expect(tip()?.hidden).toBe(true);
+        expect(document.activeElement).toBe(mark);
+        expect(mark.getAttribute('aria-expanded')).toBe('false');
+    });
+
+    it('Escape in a pressed list closes it and unpins the mark', () => {
+        const { mark } = fieldWithUndo();
+        mark.click();
+        expect(mark.getAttribute('aria-expanded')).toBe('true');
+        tip()!.dispatchEvent(
+            new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }),
+        );
+        expect(tip()?.hidden).toBe(true);
+        expect(mark.getAttribute('aria-expanded')).toBe('false');
     });
 });
 

@@ -963,7 +963,8 @@ describe('MarkedInput', () => {
         expect(tip!.hidden).toBe(false);
 
         chip.dispatchEvent(new Event('mouseleave'));
-        await wait();
+        // It stays a moment, so the pointer can reach it, then closes.
+        await wait(350);
         expect(tip!.hidden).toBe(true);
     });
 
