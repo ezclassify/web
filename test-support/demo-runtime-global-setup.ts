@@ -5,7 +5,7 @@
  * Record mode (`EZCLASSIFY_RECORD=1`) is the maintainer lane. It needs the
  * workspace checkouts beside this repository:
  *
- * - `engine`, whose `ezclassify-demo-runtime` is built the way the hosted demo
+ * - `runtime`, whose `ezclassify-demo-runtime` is built the way the hosted demo
  *   runtime image builds it: the `release` profile, `--locked`, with the
  *   `provide` feature that opens the draft door.
  * - `orchestration`, whose `assemble-demo-contexts.mjs` writes the website demo
@@ -15,8 +15,8 @@
  *   content checkouts the manifest names.
  *
  * The build runs `cargo build --release --locked -p ezclassify-demo-runtime
- * --features provide` with `CARGO_BUILD_JOBS=4`, on the engine source of the
- * commit in `engine.pin`, which it extracts from that checkout with `git
+ * --features provide` with `CARGO_BUILD_JOBS=4`, on the runtime source of the
+ * commit in `runtime.pin`, which it extracts from that checkout with `git
  * archive`; the checkout's own branch and edits do not matter. Each pin is
  * extracted and built in a directory of its own, with its own Cargo target
  * directory (see `demo-runtime-build.ts`), so a build never links crates of
@@ -28,7 +28,7 @@
  * set.
  *
  * Recordings have to be reproducible from this repository, so the checkouts
- * they are made from are pinned in `test-support/<checkout>.pin`: the engine
+ * they are made from are pinned in `test-support/<checkout>.pin`: the runtime
  * source as above; the `scheme-folder` of community-content and of
  * enterprise-content, which the demo set is assembled from; and in
  * orchestration the assembly script with every module it imports, its manifest,
@@ -71,8 +71,8 @@ const BUILD_TIMEOUT_MS = 45 * 60_000;
 
 /**
  * How the runtime is built: the hosted demo runtime image's own build
- * (`deploy/Dockerfile` in the engine, its `build-hosted` stage). Part of the
- * build key, so a binary built any other way is never reused.
+ * (`deploy/Dockerfile` in the runtime repository, its `build-hosted` stage).
+ * Part of the build key, so a binary built any other way is never reused.
  */
 const CARGO_BUILD_ARGS = [
     'build',
@@ -174,7 +174,7 @@ function requirePinned(name: string, dir: string, paths: string[]): void {
  * @returns The directory holding the pinned source tree
  */
 function pinnedEngineSource(engine: string, dir: string): string {
-    const commit = pin('engine');
+    const commit = pin('runtime');
     if (existsSync(path.join(dir, 'Cargo.toml'))) return dir;
     const staging = `${dir}.partial`;
     rmSync(staging, { recursive: true, force: true });
@@ -248,8 +248,8 @@ function treeDigest(dir: string): string {
  * Assemble the demo set and build the runtime from the pinned engine source.
  *
  * Every test project of a recording run calls this, and `npm run record` runs
- * each several times. A build whose engine pin, build settings and demo set are
- * unchanged is reused as it stands, so only the first call compiles.
+ * each several times. A build whose runtime pin, build settings and demo set
+ * are unchanged is reused as it stands, so only the first call compiles.
  *
  * @returns The binary's path and the Context ids of the set it embeds
  */
@@ -266,9 +266,9 @@ function buildRuntime(): { binary: string; contextIds: string[] } {
         'package.json',
         'package-lock.json',
     ]);
-    const engine = sibling('engine', 'apps/demo-runtime/Cargo.toml');
+    const engine = sibling('runtime', 'apps/demo-runtime/Cargo.toml');
     const builds = path.join(engine, 'target', 'web-recordings');
-    const layout = pinnedBuildLayout(builds, pin('engine'));
+    const layout = pinnedBuildLayout(builds, pin('runtime'));
     const source = pinnedEngineSource(engine, layout.source);
     const assembled = path.join(builds, `demo-contexts-${process.pid}`);
     rmSync(assembled, { recursive: true, force: true });
@@ -283,7 +283,7 @@ function buildRuntime(): { binary: string; contextIds: string[] } {
         },
     );
     const key = buildKey(
-        pin('engine'),
+        pin('runtime'),
         CARGO_BUILD_ARGS,
         treeDigest(assembled),
     );

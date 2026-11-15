@@ -205,8 +205,8 @@ Recordings have to be reproducible from this repository, so the checkouts they
 are made from are pinned in `test-support`, and the REST client the specs
 record through is pinned to an exact version in the root `package.json`:
 
-- [`engine.pin`](test-support/engine.pin): the engine commit the runtime is built from. The setup
-  extracts that commit's source from the engine checkout with `git archive`,
+- [`runtime.pin`](test-support/runtime.pin): the runtime commit the demo runtime is built from. The setup
+  extracts that commit's source from the runtime checkout with `git archive`,
   so the checkout's own branch and edits do not reach a recording.
 - [`community-content.pin`](test-support/community-content.pin) and [`enterprise-content.pin`](test-support/enterprise-content.pin): recording
   refuses a checkout whose `scheme-folder` differs from its pin, committed,

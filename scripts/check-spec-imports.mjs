@@ -8,7 +8,7 @@
 // a source that needs one fails for every outside contributor.
 //
 // Every source must also stay inside this repository: a relative import that
-// climbs out of it (`../../engine/...`) reads a sibling checkout an outside
+// climbs out of it (`../../runtime/...`) reads a sibling checkout an outside
 // contributor does not have. The roots below are scanned, and so is every
 // source file at the repository root, such as the Vitest configurations.
 //

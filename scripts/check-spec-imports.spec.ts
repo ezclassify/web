@@ -115,7 +115,7 @@ describe('check-spec-imports command', () => {
     it('fails on a relative import that climbs out of the repository', () => {
         const root = plant({
             'test-support/helper.ts':
-                "import { x } from '../../engine/packages/engine-js/src';\n",
+                "import { x } from '../../runtime/packages/engine-js/src';\n",
             'libs/ui/src/inside.spec.ts':
                 "import { y } from '../../../test-support/helper';\n",
             'vitest.integration.config.ts':
@@ -124,7 +124,7 @@ describe('check-spec-imports command', () => {
         const result = run(root);
         expect(result.status).toBe(1);
         expect(result.stderr).toContain(
-            `${path.join('test-support', 'helper.ts')}: ../../engine/packages/engine-js/src (outside the repository)`,
+            `${path.join('test-support', 'helper.ts')}: ../../runtime/packages/engine-js/src (outside the repository)`,
         );
         expect(result.stderr).toContain(
             'vitest.integration.config.ts: ../orchestration/scripts/lib/x.mjs (outside the repository)',

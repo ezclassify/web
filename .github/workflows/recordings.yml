@@ -64,7 +64,7 @@ jobs:
       - name: Read the pins the recordings are made from
         id: pin
         run: |
-          for name in community-content engine enterprise-content orchestration; do
+          for name in community-content enterprise-content orchestration runtime; do
             echo "${name//-/_}=$(tr -d '[:space:]' < "web/test-support/${name}.pin")" >> "$GITHUB_OUTPUT"
           done
 
@@ -77,9 +77,9 @@ jobs:
 
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
-          repository: ezclassify/engine
-          ref: ${{ steps.pin.outputs.engine }}
-          path: engine
+          repository: ezclassify/runtime
+          ref: ${{ steps.pin.outputs.runtime }}
+          path: runtime
           token: ${{ secrets.EZ_REPOS_READ_TOKEN }}
           persist-credentials: false
 
@@ -128,9 +128,9 @@ jobs:
           NODE_AUTH_TOKEN: ${{ secrets.EZ_GHPKG_TOKEN || github.token }}
         run: npm ci --omit=dev --ignore-scripts
 
-      - name: Install the engine's Rust toolchain
-        # rust-toolchain.toml in the engine checkout names it.
-        working-directory: engine
+      - name: Install the runtime checkout's Rust toolchain
+        # rust-toolchain.toml in the runtime checkout names it.
+        working-directory: runtime
         run: rustup toolchain install
 
       - name: Record from nothing and compare with the committed recordings
