@@ -48,10 +48,14 @@
  * scope's steps in the order the field's output for that scope writes their
  * categories, so the steps read the way the marking does. The order is the
  * output's own, as the scheme publishes it, never the current marking's, so the
- * dots never reorder while the author answers. A category the output does not
+ * dots never reorder while the author answers. A step never comes after a step
+ * that depends on it: a category whose choices decide another's (its concepts
+ * are their parents, or it holds their heading) comes just before the first
+ * category it decides, written or not. Any other category the output does not
  * write comes after the written ones, in declaration order, and so does every
  * category of an output the scheme publishes no order for. A dependent step
- * shows only while the choice that heads it is made, in its written place.
+ * shows only while the choice that heads it is made, in its place. The order is
+ * inWrittenOrder's (written-concept.ts).
  *
  * Opening a flow the author has chosen nothing in yet goes to the first step
  * with no value at all. A step a default already answers is passed over, reads
@@ -1248,19 +1252,17 @@ export class DecisionFlow extends ComponentBase {
         if (attr !== null && attr !== undefined) return parseCategoryList(attr);
 
         const categories = this.scheme.categories;
-        const field = this.writingField();
+        const writing = this.conceptWriting();
+        const order = (scope: string | undefined, ids: string[]) =>
+            writing ? inWrittenOrder(writing, scope, ids) : ids;
         if (listed.length === 0)
-            return inWrittenOrder(
-                this.schemeMeta,
-                field,
+            return order(
                 undefined,
                 categories.map((c) => c.id),
             );
         return categoriesByScope(categories, listed, this.schemeMeta).flatMap(
             (group) =>
-                inWrittenOrder(
-                    this.schemeMeta,
-                    field,
+                order(
                     group.scope,
                     group.categories.map((c) => c.id),
                 ),

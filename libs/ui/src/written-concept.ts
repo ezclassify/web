@@ -2,7 +2,7 @@
  * How a field writes a concept, for every place the field names one to the
  * author: the options it offers, the dots that sum up a step, and the changes
  * its status mark lists. Also the order the field writes a scope's categories
- * in, which a stepper walks them in.
+ * in (see {@link inWrittenOrder}).
  *
  * A field names a concept the way its marking writes it, in the output the
  * field writes for the concept's scope. That is the output the field names when
@@ -103,27 +103,66 @@ export function fieldOutputFor(
         : viewOutputOf(meta, [scope], field.part);
 }
 
+/** Gates per scheme, keyed by its concept list, which is stable per scheme. */
+const gatesByScheme = new WeakMap<object, Map<string, Set<string>>>();
+
+/**
+ * The categories each category gates, as the scheme declares it: a category
+ * whose concepts name a parent concept held in another is gated by that one,
+ * and so is a list a heading concept introduces in the scheme's default output.
+ * Keyed by the gated category, each with the categories gating it.
+ */
+function gatingOf(writing: ConceptWriting): Map<string, Set<string>> {
+    const key = writing.scheme.concepts;
+    const cached = gatesByScheme.get(key);
+    if (cached) return cached;
+    const gatedBy = new Map<string, Set<string>>();
+    const add = (gate: string, gated: string) => {
+        if (gate === gated) return;
+        const set = gatedBy.get(gated) ?? new Set<string>();
+        set.add(gate);
+        gatedBy.set(gated, set);
+    };
+    const categoriesOf = new Map(
+        writing.scheme.concepts.map((c) => [c.id, c.categories]),
+    );
+    for (const concept of writing.scheme.concepts)
+        for (const parent of concept.parents ?? [])
+            for (const gate of categoriesOf.get(parent) ?? [])
+                for (const gated of concept.categories) add(gate, gated);
+    for (const [gated, header] of getPublicFormatLayout(writing.meta)
+        .headerByCategory)
+        add(header.categoryId, gated);
+    gatesByScheme.set(key, gatedBy);
+    return gatedBy;
+}
+
 /**
  * Categories in the order a field writes them on one scope: the ones the
  * field's output for that scope writes, in the order that output writes them,
- * then the rest in the order given.
+ * then the rest in the order given. One thing overrides that order: a step
+ * never comes after a step that depends on it. A category that gates another
+ * (the gated category's concepts name a parent in it, or it holds the heading
+ * of the gated list) comes immediately before the first category it gates,
+ * whether the output writes it or not.
  *
  * The order is the output's own, as the scheme publishes it, not the order of
  * any particular marking, so it is the same whatever the field holds. An output
- * the scheme publishes no order for leaves the categories as given.
+ * the scheme publishes no order for leaves the categories as given, gates
+ * aside. Everything that lists a scope's categories in written order (a
+ * stepper's steps, the chips of a tag field) reads it here.
  *
- * @param meta - The scheme's outputs and scopes
- * @param field - What the field writes
+ * @param writing - The field and its scheme
  * @param scope - The scope id, if the scheme declares scopes
  * @param categoryIds - The categories to order, in declaration order
- * @returns The same categories, written ones first
+ * @returns The same categories, in the order the field writes them
  */
 export function inWrittenOrder(
-    meta: WritingMeta,
-    field: Pick<WritingField, 'formatId' | 'part'>,
+    writing: ConceptWriting,
     scope: string | undefined,
     categoryIds: readonly string[],
 ): string[] {
+    const { meta, field } = writing;
     const written = getPublicFormatLayout(
         meta,
         fieldOutputFor(meta, field, scope),
@@ -132,10 +171,32 @@ export function inWrittenOrder(
     written.forEach((id, i) => {
         if (!rank.has(id)) rank.set(id, i);
     });
-    const inOrder = categoryIds
-        .filter((id) => rank.has(id))
-        .sort((a, b) => (rank.get(a) ?? 0) - (rank.get(b) ?? 0));
-    return [...inOrder, ...categoryIds.filter((id) => !rank.has(id))];
+    const byOutput = [
+        ...categoryIds
+            .filter((id) => rank.has(id))
+            .sort((a, b) => (rank.get(a) ?? 0) - (rank.get(b) ?? 0)),
+        ...categoryIds.filter((id) => !rank.has(id)),
+    ];
+    // Each category goes in after the categories that gate it, those in the
+    // same order; a cycle of gates is broken where it closes.
+    const position = new Map(byOutput.map((id, i) => [id, i]));
+    const gatedBy = gatingOf(writing);
+    const placed = new Set<string>();
+    const placing = new Set<string>();
+    const ordered: string[] = [];
+    const place = (id: string): void => {
+        if (placed.has(id) || placing.has(id)) return;
+        placing.add(id);
+        const gates = [...(gatedBy.get(id) ?? [])]
+            .filter((gate) => position.has(gate))
+            .sort((a, b) => (position.get(a) ?? 0) - (position.get(b) ?? 0));
+        for (const gate of gates) place(gate);
+        placing.delete(id);
+        placed.add(id);
+        ordered.push(id);
+    };
+    for (const id of byOutput) place(id);
+    return ordered;
 }
 
 /**

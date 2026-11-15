@@ -3664,19 +3664,31 @@ describe('DecisionFlow option labels', () => {
 /**
  * A scheme that declares its categories in one order and writes them in
  * another: the owner first, and a note it never writes at all. Sharing heads a
- * recipients list. The owner can hold a default the author did not choose.
+ * recipients list. The owner can hold a default the author did not choose. With
+ * `gated`, a decider category's choice is the parent of the decided category's,
+ * so the decided step depends on the decider.
  */
 function createWrittenOrderEngine(
     categoryOrder: string[],
-    shortOrder?: string[],
+    options: {
+        shortOrder?: string[];
+        gated?: boolean;
+        unoffered?: string[];
+    } = {},
 ): SchemeEngineAdapter {
-    const concept = (id: string, view: string, category: string) =>
+    const { shortOrder, gated = false, unoffered = [] } = options;
+    const concept = (
+        id: string,
+        view: string,
+        category: string,
+        parents: string[] = [],
+    ) =>
         ({
             id,
             name: id,
             views: { default: view },
             categories: [category],
-            parents: [],
+            parents,
             aliases: [],
             position: 1,
         }) as ConceptView;
@@ -3694,6 +3706,12 @@ function createWrittenOrderEngine(
             category('recipients', 'Recipients', false, false),
             category('owner', 'Owner', true),
             category('note', 'Note', false),
+            ...(gated
+                ? [
+                      category('decided', 'Decided', false),
+                      category('decider', 'Decider', true),
+                  ]
+                : []),
         ],
         concepts: [
             concept('LEVEL_A', 'A', 'level'),
@@ -3703,6 +3721,12 @@ function createWrittenOrderEngine(
             concept('USA', 'USA', 'owner'),
             concept('GBR', 'GBR', 'owner'),
             concept('NOTE_X', 'X', 'note'),
+            ...(gated
+                ? [
+                      concept('DECIDER_A', 'DA', 'decider'),
+                      concept('DECIDED_A', 'DD', 'decided', ['DECIDER_A']),
+                  ]
+                : []),
         ],
         scopes: [],
         defaultRenderFormat: 'default',
@@ -3777,13 +3801,15 @@ function createWrittenOrderEngine(
             },
         ),
         suggest: vi.fn().mockReturnValue({
-            suggestions: p.concepts.map((c) => ({
-                conceptId: c.id,
-                categoryId: c.categories[0],
-                label: c.views?.default ?? c.name,
-                name: c.name,
-                group: c.categories[0],
-            })),
+            suggestions: p.concepts
+                .filter((c) => !unoffered.includes(c.categories[0]))
+                .map((c) => ({
+                    conceptId: c.id,
+                    categoryId: c.categories[0],
+                    label: c.views?.default ?? c.name,
+                    name: c.name,
+                    group: c.categories[0],
+                })),
         }),
         describeConcept: (conceptId: string) => ({ lines: [conceptId] }),
     } as unknown as SchemeEngineAdapter);
@@ -3805,13 +3831,19 @@ describe('DecisionFlow: steps in written order', () => {
         categoryOrder: string[],
         assertions: Assertion[] = [],
         short?: { order?: string[] },
+        scheme: { gated?: boolean; unoffered?: string[] } = {},
     ): Promise<void> {
         host = document.createElement('div');
         document.body.appendChild(host);
         flow = new DecisionFlow();
         await flow.init(
             host,
-            toCtx(createWrittenOrderEngine(categoryOrder, short?.order)),
+            toCtx(
+                createWrittenOrderEngine(categoryOrder, {
+                    shortOrder: short?.order,
+                    ...scheme,
+                }),
+            ),
             short ? { formatId: 'short' } : {},
         );
         if (assertions.length > 0) flow.setAssertions(assertions);
@@ -3843,7 +3875,69 @@ describe('DecisionFlow: steps in written order', () => {
         expect(dotCategories()).toEqual(['owner', 'level', 'sharing', 'note']);
     });
 
-    it('puts the categories its output never writes after the written ones, in declaration order', async () => {
+    it('puts a category its output never writes just before the first step that depends on it', async () => {
+        await mount(
+            ['owner', 'level', 'decided', 'sharing', 'recipients'],
+            [],
+            undefined,
+            { gated: true },
+        );
+        expect(dotCategories()).toEqual([
+            'owner',
+            'level',
+            'decider',
+            'decided',
+            'sharing',
+            'note',
+        ]);
+    });
+
+    it('puts a written category before a step that depends on it, though its output writes it later', async () => {
+        await mount(
+            ['owner', 'decided', 'level', 'decider', 'sharing', 'recipients'],
+            [],
+            undefined,
+            { gated: true },
+        );
+        expect(dotCategories()).toEqual([
+            'owner',
+            'decider',
+            'decided',
+            'level',
+            'sharing',
+            'note',
+        ]);
+    });
+
+    it('shows at rest no step the engine does not offer, though it comes first', async () => {
+        await mount(
+            ['note', 'level', 'sharing', 'recipients', 'owner'],
+            [],
+            undefined,
+            { unoffered: ['note'] },
+        );
+        expect(dotCategories()).toEqual(['level', 'sharing', 'owner']);
+    });
+
+    it('opened before the engine says which steps it offers, goes to the first one it offers', async () => {
+        host = document.createElement('div');
+        document.body.appendChild(host);
+        flow = new DecisionFlow();
+        await flow.init(
+            host,
+            toCtx(
+                createWrittenOrderEngine(
+                    ['note', 'level', 'sharing', 'recipients', 'owner'],
+                    { unoffered: ['note'] },
+                ),
+            ),
+        );
+        // Opened at once, before the options requested at mount land.
+        await open();
+        expect(title()).toBe('1 of 3 \u00b7 Level');
+    });
+
+    it('puts the categories its output never writes and no step depends on after the written ones, in declaration order', async () => {
         await mount(['sharing', 'level']);
         expect(dotCategories()).toEqual(['sharing', 'level', 'owner', 'note']);
     });
