@@ -472,6 +472,7 @@ export class CategoryChecklist extends ComponentBase {
 
     /** Select all currently-visible (allowed) concepts */
     private selectAll(): void {
+        this.beginUserEdit();
         const selectedIds = new Set(
             this.assertions
                 .filter((a) => a.categoryId === this.categoryId)
@@ -501,6 +502,7 @@ export class CategoryChecklist extends ComponentBase {
 
     /** Clear all selected concepts in this category */
     private clearAll(): void {
+        this.beginUserEdit();
         this.assertions = this.assertions.filter(
             (a) => a.categoryId !== this.categoryId,
         );

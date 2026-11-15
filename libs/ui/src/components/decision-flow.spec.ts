@@ -552,67 +552,79 @@ describe('DecisionFlow', () => {
         expect(label?.textContent).toContain('Scope');
     });
 
-    it('renders radio options for the current step', async () => {
+    it("renders a single-choice step's options as toggle buttons, not radios", async () => {
         await component.init(container, toCtx(engine));
         await enterFlow(container);
-        const options = container.querySelectorAll('[role="radio"]');
+        const options = container.querySelectorAll<HTMLButtonElement>(
+            '.ez-decision-flow__option',
+        );
         expect(options.length).toBe(3);
+        expect(
+            [...options].every(
+                (o) =>
+                    o.type === 'button' &&
+                    !o.hasAttribute('role') &&
+                    !o.hasAttribute('aria-checked'),
+            ),
+        ).toBe(true);
+        expect(container.querySelector('[role="radio"]')).toBeNull();
     });
 
-    describe('WCAG 4.1.2: radio option role and state', () => {
-        it('unselected radio buttons have aria-checked="false"', async () => {
+    describe('WCAG 4.1.2: single-choice option role and state', () => {
+        it('an option not chosen is not pressed', async () => {
             await component.init(container, toCtx(engine));
             await enterFlow(container);
             const options = Array.from(
-                container.querySelectorAll<HTMLButtonElement>('[role="radio"]'),
+                container.querySelectorAll<HTMLButtonElement>('[aria-pressed]'),
             );
+            expect(options).toHaveLength(3);
             expect(
                 options.every(
-                    (o) => o.getAttribute('aria-checked') === 'false',
+                    (o) => o.getAttribute('aria-pressed') === 'false',
                 ),
             ).toBe(true);
         });
 
-        it('selected radio button has aria-checked="true", others remain false', async () => {
+        it('the chosen option is pressed and the others are not', async () => {
             await component.init(container, toCtx(engine));
             await enterFlow(container);
             const options =
-                container.querySelectorAll<HTMLButtonElement>('[role="radio"]');
+                container.querySelectorAll<HTMLButtonElement>('[aria-pressed]');
             options[1].click();
             const after = Array.from(
-                container.querySelectorAll<HTMLButtonElement>('[role="radio"]'),
+                container.querySelectorAll<HTMLButtonElement>('[aria-pressed]'),
             );
-            expect(after[1].getAttribute('aria-checked')).toBe('true');
-            expect(after[0].getAttribute('aria-checked')).toBe('false');
-            expect(after[2].getAttribute('aria-checked')).toBe('false');
+            expect(after[1].getAttribute('aria-pressed')).toBe('true');
+            expect(after[0].getAttribute('aria-pressed')).toBe('false');
+            expect(after[2].getAttribute('aria-pressed')).toBe('false');
         });
 
-        it('radiogroup container has role="radiogroup"', async () => {
+        it('groups the toggles under the step title', async () => {
             await component.init(container, toCtx(engine));
             await enterFlow(container);
             const optionsEl = container.querySelector(
                 '.ez-decision-flow__options',
             );
-            expect(optionsEl?.getAttribute('role')).toBe('radiogroup');
+            expect(optionsEl?.getAttribute('role')).toBe('group');
         });
     });
 
     describe('WCAG 2.4.3: focus stays inside component after secondary renders', () => {
-        it('focus stays on the selected radio after a subsequent render call (simulated _refreshAllowed)', async () => {
+        it('focus stays on the chosen toggle after a subsequent render call (simulated _refreshAllowed)', async () => {
             await component.init(container, toCtx(engine));
             await enterFlow(container);
             const options =
-                container.querySelectorAll<HTMLButtonElement>('[role="radio"]');
+                container.querySelectorAll<HTMLButtonElement>('[aria-pressed]');
 
             // Simulate user selecting an option
             options[0].click();
 
-            // After the selection render, focus should be on the selected radio
-            const radioAfterSelect = container.querySelector<HTMLButtonElement>(
-                '[role="radio"][tabindex="0"]',
+            // After the selection render, focus should be on the chosen toggle
+            const chosen = container.querySelector<HTMLButtonElement>(
+                '[aria-pressed][tabindex="0"]',
             );
-            radioAfterSelect?.focus();
-            expect(document.activeElement).toBe(radioAfterSelect);
+            chosen?.focus();
+            expect(document.activeElement).toBe(chosen);
 
             // Simulate a secondary render (e.g. _refreshAllowed completing) by calling render directly
             (component as any).render();
@@ -849,15 +861,15 @@ describe('DecisionFlow', () => {
         expect(optionsEl?.getAttribute('aria-labelledby')).toBe(labelId);
     });
 
-    it('single-select step options container has role radiogroup', async () => {
+    it("a single-select step's options are a group, not a radiogroup", async () => {
         await component.init(container, toCtx(engine));
         await enterFlow(container);
         // The first step in the default profile is single-select.
         const optionsEl = container.querySelector('.ez-decision-flow__options');
-        expect(optionsEl?.getAttribute('role')).toBe('radiogroup');
+        expect(optionsEl?.getAttribute('role')).toBe('group');
     });
 
-    it('radiogroup aria-labelledby targets an element with the step question text', async () => {
+    it('the options group aria-labelledby targets an element with the step question text', async () => {
         await component.init(container, toCtx(engine));
         await enterFlow(container);
         const optionsEl = container.querySelector('.ez-decision-flow__options');
@@ -2169,7 +2181,7 @@ describe('DecisionFlow options at rest', () => {
 
 /** The options a step offers, leaving out those shown only as unavailable. */
 const available = (host: HTMLElement) =>
-    host.querySelectorAll('[role="radio"]:not([aria-disabled="true"])');
+    host.querySelectorAll('[aria-pressed]:not([aria-disabled="true"])');
 
 it.each(['pointerup', 'pointercancel'])(
     'settles deferred options after %s ends a press outside the flow',
@@ -2186,9 +2198,9 @@ it.each(['pointerup', 'pointercancel'])(
         );
         const flow = new DecisionFlow();
         await flow.init(host, toCtx(engine));
-        const radio = host.querySelector<HTMLButtonElement>('[role="radio"]')!;
-        radio.dispatchEvent(new Event('pointerdown', { bubbles: true }));
-        radio.focus();
+        const option = host.querySelector<HTMLButtonElement>('[aria-pressed]')!;
+        option.dispatchEvent(new Event('pointerdown', { bubbles: true }));
+        option.focus();
         resolve({
             suggestions: [
                 {
@@ -2205,7 +2217,7 @@ it.each(['pointerup', 'pointercancel'])(
         expect(available(host)).toHaveLength(3);
         outside.dispatchEvent(new Event(eventType, { bubbles: true }));
         outside.focus();
-        radio.focus();
+        option.focus();
         await new Promise((r) => setTimeout(r, 30));
         try {
             expect(available(host)).toHaveLength(1);
@@ -2875,6 +2887,158 @@ describe('DecisionFlow: compact layout', () => {
             .click();
         await settle();
         expect(title()).toBe('2 of 2 · Impact');
+    });
+
+    it('names its x for the whole marking, and clears every scope it walks from it without leaving the step', async () => {
+        const scoped = document.createElement('div');
+        document.body.appendChild(scoped);
+        await flow.init(scoped, toCtx(createScopedEngine()), {
+            scope: 'marking admin',
+        });
+        await enterFlow(scoped);
+        const options = () =>
+            scoped.querySelectorAll<HTMLButtonElement>(
+                '.ez-decision-flow__option',
+            );
+        const stepTitle = () =>
+            scoped.querySelector('.ez-decision-flow__question-label')
+                ?.textContent;
+        options()[0].click();
+        await settle();
+        options()[0].click();
+        await settle();
+        expect(stepTitle()).toMatch(/^2 of 2 /);
+        expect(
+            flow
+                .getAssertions()
+                .map((a) => a.categoryId)
+                .sort(),
+        ).toEqual(['admin_cat', 'level']);
+        const clear =
+            scoped.querySelector<HTMLButtonElement>('.ez-clear-button')!;
+        expect(clear.getAttribute('aria-label')).toBe(
+            'Clear the whole marking',
+        );
+        expect(clear.title).toBe('Clear the whole marking');
+
+        clear.click();
+        await vi.waitFor(() => expect(flow.getAssertions()).toEqual([]));
+        // Both scopes are empty, the x is the undo of that clear, and the
+        // flow is still on the step the author was on.
+        expect(
+            [
+                ...scoped.querySelectorAll(
+                    '.ez-decision-flow__scope .ez-decision-flow__value-text',
+                ),
+            ].map((value) => value.textContent),
+        ).toEqual(['not set', 'not set']);
+        expect(clear.getAttribute('aria-label')).toBe('Undo clear');
+        expect(stepTitle()).toMatch(/^2 of 2 /);
+
+        clear.click();
+        await vi.waitFor(() => expect(flow.getAssertions()).toHaveLength(2));
+        expect(stepTitle()).toMatch(/^2 of 2 /);
+        expect(clear.getAttribute('aria-label')).toBe(
+            'Clear the whole marking',
+        );
+    });
+
+    it("un-chooses a single choice pressed again, and stays on its step with the other steps' answers kept", async () => {
+        await flow.init(container, toCtx(createMockEngine()));
+        await enterFlow(container);
+        const option = (id: string) =>
+            container.querySelector<HTMLButtonElement>(
+                `.ez-decision-flow__option[data-concept-id="${id}"]`,
+            )!;
+        option('SCOPE_PARTIAL').click();
+        await settle();
+        option('IMPACT_LOW').click();
+        await settle();
+        dots()[0].click();
+        await settle();
+        expect(title()).toBe('1 of 2 · Scope');
+        expect(option('SCOPE_PARTIAL').getAttribute('aria-pressed')).toBe(
+            'true',
+        );
+
+        option('SCOPE_PARTIAL').click();
+        await settle();
+        expect(
+            flow.getAssertions().map((a) => [a.categoryId, a.conceptId]),
+        ).toEqual([['impact', 'IMPACT_LOW']]);
+        expect(
+            [
+                ...container.querySelectorAll<HTMLButtonElement>(
+                    '.ez-decision-flow__option',
+                ),
+            ].map((o) => o.getAttribute('aria-pressed')),
+        ).toEqual(['false', 'false', 'false']);
+        // It stays on the step, and says nothing more than the state.
+        expect(title()).toBe('1 of 2 · Scope');
+        expect(dots()[0].dataset.state).toBe('optional');
+        expect(dots()[1].dataset.state).toBe('answered');
+        expect(
+            container.querySelector('.ez-decision-flow__question-desc'),
+        ).toBeNull();
+        // No control clears one step.
+        expect(container.querySelectorAll('.ez-clear-button')).toHaveLength(1);
+    });
+
+    it("lets a required step's choice go, and then names the step under Missing", async () => {
+        const outside = document.createElement('button');
+        document.body.appendChild(outside);
+        const engine = createScopedEngine();
+        (engine.process as any).mockImplementation(
+            (_input: string, opts?: { assertions?: Assertion[] }) => {
+                const assertions = [...(opts?.assertions ?? [])];
+                const missing = !assertions.some(
+                    (a) => a.categoryId === 'level',
+                );
+                return {
+                    assertions,
+                    rendered: assertions.map((a) => a.conceptId).join('/'),
+                    valid: !missing,
+                    errors: missing
+                        ? [
+                              {
+                                  constraintId: 'required',
+                                  categoryId: 'level',
+                                  message: 'Level is required',
+                              },
+                          ]
+                        : [],
+                };
+            },
+        );
+        const host = document.createElement('div');
+        document.body.appendChild(host);
+        await flow.init(host, toCtx(engine), { scope: 'marking admin' });
+        await enterFlow(host);
+        const option = (id: string) =>
+            host.querySelector<HTMLButtonElement>(
+                `.ez-decision-flow__option[data-concept-id="${id}"]`,
+            )!;
+        const levelA = () => option('LEVEL_A');
+        levelA().click();
+        await settle();
+        option('ADM_X').click();
+        await settle();
+        host.querySelector<HTMLElement>(
+            '.ez-decision-flow__step-dot[data-category-id="level"]',
+        )!.click();
+        await settle();
+        expect(levelA().getAttribute('aria-pressed')).toBe('true');
+
+        levelA().click();
+        await settle();
+        expect(flow.getAssertions().map((a) => a.conceptId)).toEqual(['ADM_X']);
+        expect(levelA().getAttribute('aria-pressed')).toBe('false');
+        outside.focus();
+        await vi.waitFor(() =>
+            expect(
+                host.querySelector('.ez-decision-flow__problems')?.textContent,
+            ).toBe('Missing: Level'),
+        );
     });
 
     it('holds a required step back as required while open, and shows it missing once passed or at rest', async () => {

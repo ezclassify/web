@@ -184,9 +184,11 @@ async function markLines(root: Element): Promise<string[]> {
     const tip = document.querySelector<HTMLElement>('.ez-tooltip');
     const lines =
         tip && !tip.hidden
-            ? [...tip.querySelectorAll(':scope > div')].map(
-                  (row) => row.textContent ?? '',
-              )
+            ? [
+                  ...tip.querySelectorAll(
+                      '.ez-tooltip__header, .ez-status-list__text',
+                  ),
+              ].map((row) => row.textContent ?? '')
             : [];
     mark.dispatchEvent(new Event('mouseleave'));
     return lines;
@@ -228,8 +230,8 @@ describe('a field explains only what its scopes write or it changed', () => {
         await wait(800);
 
         expect(await markLines(container)).toEqual([
-            'EzClassify fixed this marking:',
-            '• Rule "adds-std": added "STD"',
+            '1 change made by a marking rule',
+            'Added STD to handling.',
         ]);
     });
 
@@ -241,8 +243,8 @@ describe('a field explains only what its scopes write or it changed', () => {
         await wait();
 
         expect(await markLines(container)).toEqual([
-            'EzClassify fixed this marking:',
-            '• Rule "adds-std": added "STD"',
+            '1 change made by a marking rule',
+            'Added STD to handling.',
         ]);
     });
 
@@ -254,8 +256,8 @@ describe('a field explains only what its scopes write or it changed', () => {
         await wait();
 
         expect(await markLines(container)).toEqual([
-            'EzClassify fixed this marking:',
-            '• Rule "adds-std": added "STD"',
+            '1 change made by a marking rule',
+            'Added STD to handling.',
         ]);
     });
 
@@ -267,9 +269,9 @@ describe('a field explains only what its scopes write or it changed', () => {
         await wait();
 
         expect(await markLines(container)).toEqual([
-            'EzClassify fixed this marking:',
-            '• Rule "adds-std": added "STD"',
-            '• Rule "expands-group": added "MEMBER" to category "group"',
+            '2 changes made by marking rules',
+            'Added STD to handling.',
+            'Added MEMBER to group.',
         ]);
     });
 });

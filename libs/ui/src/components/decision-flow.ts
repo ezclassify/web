@@ -16,10 +16,13 @@
  * arrows. Nothing above the step moves, hides or changes size when it opens or
  * when the step changes. Each choice calls `reprocess()` so constraints and
  * inference fire as the author goes; a choice in a single-choice step moves on
- * to the next step, and a multiple-choice step's toggles do not. An option
- * reads as its concept's name. One the marking's current choices rule out stays
- * in its place, unavailable, and says why. A value-taking option, once chosen,
- * becomes the box its value is typed in.
+ * to the next step, and a multiple-choice step's toggles do not. Every option
+ * is a toggle: pressing a chosen one again un-chooses it and the flow stays on
+ * the step, and a value step is cleared by emptying its box. There is no clear
+ * for one step; the x clears the whole marking, every scope the flow writes. An
+ * option reads as its concept's name. One the marking's current choices rule
+ * out stays in its place, unavailable, and says why. A value-taking option,
+ * once chosen, becomes the box its value is typed in.
  *
  * The dots are the navigation: each one jumps to its step, and says at a glance
  * whether the step is answered, missing an answer the engine asks for, or
@@ -82,6 +85,9 @@ import { viewOutputOf } from '../format-resolver';
 import { renderViewRefused } from '../render-refusal';
 import { writtenValue } from '../value-spelling';
 import { t } from '../i18n';
+import { derivedAssertion } from '../assertion-identity';
+import { unreviewedAdditions } from './status-mark';
+import { locateTokenSpans } from '../token-tree/token-tree';
 import {
     categoriesByScope,
     factsInScopes,
@@ -123,7 +129,10 @@ interface StepDef {
     categoryId: string;
     label: string;
     description: string;
-    /** True = single-select (radio); false = multi-select (checkbox). */
+    /**
+     * True = single-select (one pressed toggle); false = multi-select
+     * (checkbox).
+     */
     single: boolean;
     /** Whether the scheme requires a choice in this category. */
     required: boolean;
@@ -158,6 +167,11 @@ interface PendingText {
 export class DecisionFlow extends ComponentBase {
     protected override clearButtonMount(): HTMLElement | null {
         return this.suiteChrome?.element ?? null;
+    }
+
+    /** The flow's x clears every scope it writes, not one step. */
+    protected override clearLabel(): string {
+        return t('aria.clearWholeMarking');
     }
     /** The header row: the dots, the step header and the suite's chrome. */
     private headerEl!: HTMLDivElement;
@@ -444,6 +458,7 @@ export class DecisionFlow extends ComponentBase {
     }
 
     private pick(step: StepDef, conceptId: string, action: () => void): void {
+        this.beginUserEdit();
         const sequence = ++this.pickSequence;
         const apply = () => {
             if (
@@ -970,11 +985,13 @@ export class DecisionFlow extends ComponentBase {
         this.container.innerHTML = '';
     }
 
+    /**
+     * Drop a value-taking choice still waiting for its value. The flow stays on
+     * its step: a clear or an undo changes the marking, not where the author
+     * is.
+     */
     protected override discardDraft(): void {
         this.pendingText = null;
-        this.currentStep = this.options.startStep ?? 0;
-        this._currentCategoryId =
-            this.steps[this.currentStep]?.categoryId ?? '';
     }
 
     protected render(): void {
@@ -1075,11 +1092,18 @@ export class DecisionFlow extends ComponentBase {
                 } else if (step && this.isTextInputStep(step)) {
                     restoreTextFocus();
                 } else if (step?.single) {
-                    // Radio group: restore to the roving-tabindex owner (the selected option or first)
-                    const activeRadio = this.flowEl.querySelector<HTMLElement>(
-                        '[role="radio"][tabindex="0"]',
-                    );
-                    activeRadio?.focus();
+                    // Toggle group: restore to the last-interacted option, or
+                    // the roving-tabindex owner (the chosen option or first)
+                    const target =
+                        (this._lastFocusConceptId
+                            ? this.flowEl.querySelector<HTMLElement>(
+                                  `[aria-pressed][data-concept-id="${this._lastFocusConceptId}"]`,
+                              )
+                            : null) ??
+                        this.flowEl.querySelector<HTMLElement>(
+                            '[aria-pressed][tabindex="0"]',
+                        );
+                    target?.focus();
                 } else {
                     // Checkbox group: restore to the last-interacted option, or the first
                     const target = this._lastFocusConceptId
@@ -1108,10 +1132,10 @@ export class DecisionFlow extends ComponentBase {
                 } else if (prevConceptId) {
                     const restored =
                         this.flowEl.querySelector<HTMLElement>(
-                            `[role="radio"][data-concept-id="${prevConceptId}"], [role="checkbox"][data-concept-id="${prevConceptId}"]`,
+                            `[aria-pressed][data-concept-id="${prevConceptId}"], [role="checkbox"][data-concept-id="${prevConceptId}"]`,
                         ) ??
                         this.flowEl.querySelector<HTMLElement>(
-                            '[role="radio"][tabindex="0"]',
+                            '[aria-pressed][tabindex="0"]',
                         ) ??
                         this.flowEl.querySelector<HTMLElement>(
                             '[role="checkbox"]',
@@ -1578,8 +1602,8 @@ export class DecisionFlow extends ComponentBase {
             optionsEl.setAttribute('role', 'group');
             this.renderTextInputOptions(step, optionsEl);
         } else if (step.single) {
-            optionsEl.setAttribute('role', 'radiogroup');
-            this.renderRadioOptions(step, optionsEl);
+            optionsEl.setAttribute('role', 'group');
+            this.renderToggleOptions(step, optionsEl);
         } else {
             optionsEl.setAttribute('role', 'group');
             this.renderCheckboxOptions(step, optionsEl);
@@ -1618,29 +1642,89 @@ export class DecisionFlow extends ComponentBase {
         return chosen;
     }
 
-    private renderRadioOptions(step: StepDef, optionsEl: HTMLElement): void {
+    /**
+     * The options of a step the marking holds only because the engine derived
+     * them (a rule added it, another choice includes it, a default), each with
+     * what says why: "Included by" the held choice whose members it is, when
+     * one is. The author did not choose them, so they never look chosen.
+     */
+    private inferredIn(step: StepDef): Map<string, string | null> {
+        const held = this.assertions.filter(
+            (a) => a.categoryId === step.categoryId,
+        );
+        const stated = new Set(
+            held.filter((a) => !derivedAssertion(a)).map((a) => a.conceptId),
+        );
+        const inferred = new Map<string, string | null>();
+        for (const a of held) {
+            if (stated.has(a.conceptId) || !derivedAssertion(a)) continue;
+            const includer = this.assertions
+                .map((other) =>
+                    this.scheme.concepts.find((c) => c.id === other.conceptId),
+                )
+                .find((c) => c?.members?.includes(a.conceptId));
+            inferred.set(
+                a.conceptId,
+                includer
+                    ? t('flow.includedBy').replace(
+                          '{choice}',
+                          () => includer.name,
+                      )
+                    : null,
+            );
+        }
+        return inferred;
+    }
+
+    /** Draw an option the marking holds only by derivation (see inferredIn). */
+    private markInferred(btn: HTMLButtonElement): void {
+        btn.classList.add('ez-decision-flow__option--inferred');
+        btn.setAttribute(
+            btn.hasAttribute('aria-pressed') ? 'aria-pressed' : 'aria-checked',
+            'false',
+        );
+        btn.setAttribute(
+            'aria-label',
+            `${btn.textContent ?? ''}${t('aria.inferredSuffix')}`,
+        );
+    }
+
+    /**
+     * A single-choice step's options: toggle buttons, at most one pressed.
+     * Pressing an unpressed option chooses it in place of the step's other
+     * choice and moves on; pressing the pressed one un-chooses it and stays.
+     */
+    private renderToggleOptions(step: StepDef, optionsEl: HTMLElement): void {
         const chosen = this.chosenIn(step);
+        const inferred = this.inferredIn(step);
         const selected = [...chosen][0];
         const options = this.stepOptions(step);
         const first = options.find((o) => !o.blocked)?.concept.id;
 
         for (const { concept, blocked } of options) {
+            // An option the marking holds only by derivation is not pressed:
+            // pressing it makes it the author's own choice.
+            const pressed =
+                concept.id === selected && !inferred.has(concept.id);
             const btn = document.createElement('button');
             btn.type = 'button';
             btn.disabled = this.locked;
             btn.className = 'ez-decision-flow__option';
-            btn.setAttribute('role', 'radio');
-            btn.setAttribute(
-                'aria-checked',
-                concept.id === selected ? 'true' : 'false',
-            );
+            btn.setAttribute('aria-pressed', pressed ? 'true' : 'false');
             btn.tabIndex =
                 concept.id === selected || (!selected && concept.id === first)
                     ? 0
                     : -1;
             btn.textContent = concept.name;
             btn.dataset.conceptId = concept.id;
-            this.describeOption(btn, step, concept, optionsEl);
+            this.describeOption(
+                btn,
+                step,
+                concept,
+                optionsEl,
+                inferred.get(concept.id),
+            );
+            if (inferred.has(concept.id)) this.markInferred(btn);
             if (blocked) this.blockOption(btn, step, concept);
 
             btn.addEventListener('click', () => {
@@ -1657,43 +1741,50 @@ export class DecisionFlow extends ComponentBase {
                 this._restoreFocusAfterRender = true;
                 this._lastFocusConceptId = concept.id;
                 this.pick(step, concept.id, () => {
-                    // A plain choice answers the step, so the flow moves on;
-                    // a value-taking one waits for its value.
                     if (concept.textInput)
                         this.chooseValueConcept(step, concept);
+                    else if (pressed)
+                        this.toggleConcept(step.categoryId, concept.id, true);
+                    // A plain choice answers the step, so the flow moves on;
+                    // a value-taking one waits for its value.
                     else
                         void this.selectConcept(
                             step.categoryId,
                             concept.id,
                         ).then(() => void this.advanceFrom(step.categoryId));
-                    announce(this.announcer, `Selected ${concept.name}`);
+                    announce(
+                        this.announcer,
+                        pressed
+                            ? `Deselected ${concept.name}`
+                            : `Selected ${concept.name}`,
+                    );
                 });
             });
 
             btn.addEventListener('keydown', (e: KeyboardEvent) => {
-                const radios = Array.from(
+                const toggles = Array.from(
                     optionsEl.querySelectorAll<HTMLButtonElement>(
-                        '[role="radio"]',
+                        '[aria-pressed]',
                     ),
                 );
-                const idx = radios.indexOf(btn);
+                const idx = toggles.indexOf(btn);
                 let next = -1;
 
                 if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
-                    next = (idx + 1) % radios.length;
+                    next = (idx + 1) % toggles.length;
                 } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
-                    next = (idx - 1 + radios.length) % radios.length;
+                    next = (idx - 1 + toggles.length) % toggles.length;
                 }
 
                 if (next >= 0) {
                     e.preventDefault();
                     // Arrow keys move focus only: no selection commit. The user presses
                     // Enter or Space (which triggers a click event on the focused button)
-                    // to confirm a choice.
-                    radios.forEach((o, j) => {
+                    // to choose or un-choose.
+                    toggles.forEach((o, j) => {
                         o.tabIndex = j === next ? 0 : -1;
                     });
-                    radios[next].focus();
+                    toggles[next].focus();
                 }
             });
 
@@ -1750,8 +1841,10 @@ export class DecisionFlow extends ComponentBase {
         step: StepDef,
         concept: ConceptDef,
         optionsEl: HTMLElement,
+        why?: string | null,
     ): void {
         const lines = [
+            why ?? '',
             concept.view && concept.view !== concept.name
                 ? `Appears as: ${concept.view}`
                 : '',
@@ -2086,6 +2179,7 @@ export class DecisionFlow extends ComponentBase {
                 a.conceptId === concept.id && a.categoryId === step.categoryId,
         );
         if (!complete && index < 0) return;
+        this.beginUserEdit();
         this.editedCategory = step.categoryId;
         // Restore focus to this field after the DOM rebuild that follows reprocess().
         this._restoreFocusAfterRender = true;
@@ -2119,8 +2213,9 @@ export class DecisionFlow extends ComponentBase {
 
     /**
      * The author chose a value-taking concept from a step's options. It is
-     * pending, shown checked with its value field, until a value is typed. In a
-     * single-choice step it replaces the step's other choice.
+     * pending, shown chosen with its value field, until a value is typed. In a
+     * single-choice step it replaces the step's other choice. Pressing it again
+     * un-chooses it.
      */
     private chooseValueConcept(step: StepDef, concept: ConceptDef): void {
         const held = this.assertions.some(
@@ -2130,18 +2225,14 @@ export class DecisionFlow extends ComponentBase {
         const pendingHere =
             this.pendingText?.categoryId === step.categoryId &&
             this.pendingText.conceptId === concept.id;
-        if (!step.single && (held || pendingHere)) {
-            // A second press on a checkbox withdraws the choice.
+        if (held || pendingHere) {
+            // A second press withdraws the choice.
             if (pendingHere) this.pendingText = null;
             if (held) this.toggleConcept(step.categoryId, concept.id, true);
             else this.render();
             return;
         }
         this._focusValueField = true;
-        if (held) {
-            this.render();
-            return;
-        }
         this.pendingText = {
             categoryId: step.categoryId,
             conceptId: concept.id,
@@ -2161,9 +2252,13 @@ export class DecisionFlow extends ComponentBase {
 
     private renderCheckboxOptions(step: StepDef, optionsEl: HTMLElement): void {
         const selectedIds = this.chosenIn(step);
+        const inferred = this.inferredIn(step);
 
         for (const { concept, blocked } of this.stepOptions(step)) {
-            const isChecked = selectedIds.has(concept.id);
+            // An option the marking holds only by derivation is not checked:
+            // pressing it makes it the author's own choice.
+            const isChecked =
+                selectedIds.has(concept.id) && !inferred.has(concept.id);
             const btn = document.createElement('button');
             btn.type = 'button';
             btn.disabled = this.locked;
@@ -2174,7 +2269,14 @@ export class DecisionFlow extends ComponentBase {
             btn.tabIndex = 0;
             btn.textContent = concept.name;
             btn.dataset.conceptId = concept.id;
-            this.describeOption(btn, step, concept, optionsEl);
+            this.describeOption(
+                btn,
+                step,
+                concept,
+                optionsEl,
+                inferred.get(concept.id),
+            );
+            if (inferred.has(concept.id)) this.markInferred(btn);
             if (blocked) this.blockOption(btn, step, concept);
 
             btn.addEventListener('click', () => {
@@ -2356,7 +2458,7 @@ export class DecisionFlow extends ComponentBase {
         line.className = 'ez-decision-flow__value';
         const shown = document.createElement('span');
         shown.className = 'ez-decision-flow__value-text';
-        if (text) writeBreakable(shown, text);
+        if (text) writeBreakable(shown, text, this.unreviewedRuns(text));
         else {
             shown.textContent = NOT_SET;
             shown.dataset.empty = '';
@@ -2369,6 +2471,30 @@ export class DecisionFlow extends ComponentBase {
             wrap.appendChild(problems);
         }
         return wrap;
+    }
+
+    /**
+     * The runs of a value's text that are values a marking rule added and the
+     * author has not reviewed yet: drawn inferred until they are.
+     */
+    private unreviewedRuns(text: string): { start: number; end: number }[] {
+        if (!this.suiteChrome) return [];
+        const unreviewed = unreviewedAdditions(this.suiteChrome.status);
+        return locateTokenSpans(text, this.getTokenTree(), (node) =>
+            this.printsToken(node),
+        ).filter(
+            ({ token }) =>
+                !!token.conceptId &&
+                unreviewed({
+                    categoryId: token.categoryId,
+                    conceptId: token.conceptId,
+                }),
+        );
+    }
+
+    /** What the author has reviewed changed: draw the values again. */
+    protected override onStatusReviewChange(): void {
+        if (this.restEl) this.renderValues();
     }
 
     /**
@@ -2587,10 +2713,30 @@ function visibleTop(el: HTMLElement): number {
  * after a run of separator slashes, never inside a token: a marking wraps at
  * its "//" and "/", and a block keeps each of its lines.
  */
-function writeBreakable(el: HTMLElement, text: string): void {
+function writeBreakable(
+    el: HTMLElement,
+    text: string,
+    inferred: readonly { start: number; end: number }[] = [],
+): void {
+    let cursor = 0;
+    for (const run of [...inferred].sort((a, b) => a.start - b.start)) {
+        if (run.start < cursor) continue;
+        writeBreakableRun(el, text.slice(cursor, run.start));
+        const value = document.createElement('span');
+        value.className = 'ez-decision-flow__value-inferred';
+        writeBreakableRun(value, text.slice(run.start, run.end));
+        el.appendChild(value);
+        cursor = run.end;
+    }
+    writeBreakableRun(el, text.slice(cursor));
+}
+
+/** {@link writeBreakable} for one run of the text. */
+function writeBreakableRun(el: HTMLElement, text: string): void {
     text.split('\n').forEach((line, index) => {
         if (index > 0) el.appendChild(document.createElement('br'));
         for (const part of line.split(/(?<=\/)(?!\/)/)) {
+            if (part === '') continue;
             el.appendChild(document.createTextNode(part));
             if (part.endsWith('/'))
                 el.appendChild(document.createElement('wbr'));

@@ -160,7 +160,7 @@ describe('editable component clear controls', () => {
     }
 
     for (const field of fields) {
-        it(`${field.name} clears its native value and notifies the host`, async () => {
+        it(`${field.name} clears its native value, notifies the host, and puts it back on undo`, async () => {
             const root = document.createElement('div');
             document.body.appendChild(root);
             root.innerHTML =
@@ -214,8 +214,32 @@ describe('editable component clear controls', () => {
             expect(
                 changed.mock.calls.length + input.mock.calls.length,
             ).toBeGreaterThan(0);
-            expect(button.getAttribute('aria-disabled')).toBe('true');
             expect(root.querySelector('.ez-composer:not([hidden])')).toBeNull();
+            // The × is now the undo of that clear, in the same place.
+            expect(root.querySelectorAll('.ez-clear-button')).toHaveLength(1);
+            expect(button.getAttribute('aria-label')).toBe('Undo clear');
+            expect(button.title).toBe('Undo clear');
+            expect(button.getAttribute('aria-disabled')).toBe('false');
+
+            button.click();
+            const restored = field.body ? '(LOW) A note.' : 'LOW';
+            await vi.waitFor(() => expect(native.value).toBe(restored));
+            if (field.name === 'MarkedTextArea') {
+                await vi.waitFor(() =>
+                    expect(
+                        (mounted as MarkedTextArea).getSegments(),
+                    ).toHaveLength(1),
+                );
+            } else {
+                await vi.waitFor(() =>
+                    expect(mounted!.getAssertions()).not.toHaveLength(0),
+                );
+            }
+            // Undone, the offer is over: the slot is the × again.
+            await vi.waitFor(() =>
+                expect(button.getAttribute('aria-label')).toMatch(/^Clear /),
+            );
+            expect(button.getAttribute('aria-disabled')).toBe('false');
         });
     }
 });
@@ -261,7 +285,39 @@ it('clears an unfinished composer draft without committing or reopening it', asy
     expect(field.value).toBe('');
     expect(mounted.getAssertions()).toEqual([]);
     expect(openSurface()).toBeNull();
-    expect(document.activeElement).toBe(clear);
+    // A keyboard clear leaves focus in the field, not on the undo that took
+    // the ×'s place.
+    expect(document.activeElement).toBe(field);
+    expect(clear.getAttribute('aria-label')).toBe('Undo clear');
+
+    // The undo puts back the marking and the text as it was typed.
+    clear.click();
+    await vi.waitFor(() => expect(field.value).toBe('unrecognized'));
+    expect(mounted.getRendered()).toBe('LOW');
+    expect(document.activeElement).toBe(field);
+});
+
+it('says what a clear and its undo did, and a double click does not take the clear straight back', async () => {
+    const root = document.createElement('div');
+    document.body.appendChild(root);
+    root.innerHTML = '<input value="LOW">';
+    mounted = new MarkingField();
+    await mounted.init(root, await engine(), { initialValue: 'LOW' });
+    const clear = root.querySelector<HTMLButtonElement>('.ez-clear-button')!;
+    const said = () => clear.querySelector('[role="status"]')!.textContent;
+
+    clear.dispatchEvent(new MouseEvent('click', { bubbles: true, detail: 1 }));
+    // The second click of a double click lands on the undo in its place.
+    clear.dispatchEvent(new MouseEvent('click', { bubbles: true, detail: 2 }));
+    await vi.waitFor(() =>
+        expect(said()).toBe('Marking cleared. Undo is available.'),
+    );
+    expect(mounted.getRendered()).toBe('');
+    expect(clear.getAttribute('aria-label')).toBe('Undo clear');
+
+    clear.dispatchEvent(new MouseEvent('click', { bubbles: true, detail: 1 }));
+    await vi.waitFor(() => expect(said()).toBe('Marking restored.'));
+    expect(mounted.getRendered()).toBe('LOW');
 });
 
 it('clears both bound views through the normal store path', async () => {
@@ -286,6 +342,58 @@ it('clears both bound views through the normal store path', async () => {
             root.querySelector<HTMLTextAreaElement>('.marking-field-host')!
                 .value,
         ).toBe('');
+    } finally {
+        forms.destroy();
+    }
+});
+
+it('offers the undo of a clear in every view bound to the marking, until the marking next changes', async () => {
+    const root = document.createElement('div');
+    document.body.appendChild(root);
+    root.innerHTML =
+        '<input id="doc" value="LOW" data-ezclassify-marking><input data-ezclassify-controller="marking" data-ezclassify-bound-to="doc"><input data-ezclassify-controller="tags" data-ezclassify-bound-to="doc">';
+    const forms = new EzClassifyUI(asContext((await engine()) as never), {
+        root,
+    });
+    const labels = () =>
+        [...root.querySelectorAll('.ez-clear-button')].map((button) =>
+            button.getAttribute('aria-label'),
+        );
+    try {
+        await vi.waitFor(() => expect(labels()).toHaveLength(2));
+        await vi.waitFor(() =>
+            expect(forms.store.get('doc').rendered).toBe('LOW'),
+        );
+        const [fieldClear, tagsClear] = [
+            ...root.querySelectorAll<HTMLButtonElement>('.ez-clear-button'),
+        ];
+        fieldClear.click();
+        await vi.waitFor(() =>
+            expect(forms.store.get('doc').rendered).toBe(''),
+        );
+        // The offer belongs to the marking, so the other view shows it too.
+        expect(labels()).toEqual(['Undo clear', 'Undo clear']);
+
+        tagsClear.click();
+        await vi.waitFor(() =>
+            expect(forms.store.get('doc').rendered).toBe('LOW'),
+        );
+        expect(labels()).toEqual(['Clear marking', 'Clear marking']);
+
+        // Cleared again, then the marking changes from somewhere else once
+        // the author has moved on: the offer ends in every view.
+        fieldClear.click();
+        await vi.waitFor(() =>
+            expect(forms.store.get('doc').rendered).toBe(''),
+        );
+        expect(labels()).toEqual(['Undo clear', 'Undo clear']);
+        document.body.dispatchEvent(
+            new Event('pointerdown', { bubbles: true }),
+        );
+        await forms.store.publishRendered('doc', 'HIGH');
+        await vi.waitFor(() =>
+            expect(labels()).toEqual(['Clear marking', 'Clear marking']),
+        );
     } finally {
         forms.destroy();
     }

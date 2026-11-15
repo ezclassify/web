@@ -1118,7 +1118,7 @@ describe('MarkedInput', () => {
         const mark = wrap.querySelector('.ez-field-chrome .ez-status-mark')!;
         expect(markTone(mark)).toBe('strong');
         expect(mark.getAttribute('aria-label')).toContain(
-            '1 fix applied to this marking',
+            '1 change made by a marking rule, not yet reviewed',
         );
     });
 

@@ -67,6 +67,9 @@ export function cleanupTooltipForRoot(root: HTMLElement): void {
     tooltipByRoot.delete(root);
 }
 
+/** What a tooltip shows: lines of text, or content the caller built. */
+export type TooltipContent = string | Node;
+
 /** Where a tooltip may sit. */
 export interface TooltipPlacement {
     /**
@@ -209,7 +212,9 @@ function placeClearOf(
  * root, so showing it on a target releases whatever it described before.
  *
  * @param target - The element the tooltip describes (`aria-describedby`)
- * @param content - The tooltip's text, one line per row
+ * @param content - The tooltip's text, one line per row, or content a caller
+ *   built itself. Built content may hold a control (the status mark's undo), so
+ *   the tooltip then takes pointer presses.
  * @param root - The root whose tooltip to show; the document body by default
  * @param placement - Where the tooltip may sit
  * @param onRelease - Called once when the tooltip stops describing `target`: it
@@ -220,7 +225,7 @@ function placeClearOf(
  */
 export function showTooltip(
     target: HTMLElement,
-    content: string,
+    content: TooltipContent,
     root?: HTMLElement,
     placement?: TooltipPlacement,
     onRelease?: () => void,
@@ -240,9 +245,14 @@ export function showTooltip(
     // which mirrors the control's font; the tooltip reads its root's.
     copyOverlayTheme(target, tip, effectiveRoot);
 
-    // Build structured content from the lines
     tip.innerHTML = '';
-    const lines = content.split('\n');
+    const built = typeof content !== 'string';
+    tip.classList.toggle('ez-tooltip--built', built);
+    // A tooltip holds no controls; built content may, so it is a group.
+    tip.setAttribute('role', built ? 'group' : 'tooltip');
+    if (built) tip.appendChild(content);
+    // Build structured content from the lines
+    const lines = built ? [] : content.split('\n');
     let currentSection: HTMLDivElement | null = null;
 
     for (const line of lines) {
@@ -437,7 +447,7 @@ const LONG_PRESS_MOVE_CANCEL_PX = 10;
  */
 export function attachTooltip(
     target: HTMLElement,
-    getContent: () => string | undefined,
+    getContent: () => TooltipContent | undefined,
     root?: HTMLElement,
     shouldShow?: () => boolean,
     onShown?: () => void,

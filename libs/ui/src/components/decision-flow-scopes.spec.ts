@@ -283,7 +283,7 @@ describe('DecisionFlow across scopes', () => {
             '.ez-decision-flow__value-name',
         )!;
         expect(name.textContent).toBe('On a Date');
-        expect(name.getAttribute('aria-checked')).toBe('true');
+        expect(name.getAttribute('aria-pressed')).toBe('true');
         const field = valueInput();
         expect(field.getAttribute('aria-label')).toBe(
             'Release date (YYYYMMDD)',

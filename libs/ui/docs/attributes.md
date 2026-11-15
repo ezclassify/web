@@ -234,17 +234,22 @@ text layers reserve that much trailing padding. The mark is the
 3-bar-plus-sparkle brand glyph and cycles through three
 states as fixes arrive and get noticed: `.ez-status-mark--quiet` (the
 default: nothing applied yet, whole glyph muted), `.ez-status-mark--unseen`
-(EzClassify applied a fix the user hasn't been shown yet: the sparkle turns
-accent-colored, a corner notification dot appears, and the sparkle pulses on
-an interval), and `.ez-status-mark--seen` (the fix tooltip has actually
-presented, past its hover-intent delay, or the mark was focused: the dot
-clears but the accent sparkle stays). A fourth state,
+(a marking rule changed the marking and the user hasn't been shown what yet:
+the whole mark turns strong, the sparkle turns accent-colored, and the number
+of changes stands beside it in `.ez-status-mark__count`), and
+`.ez-status-mark--seen` (the list has actually presented, past its
+hover-intent delay, or the mark was focused: the number goes but the strong
+mark and the accent sparkle stay). A fourth state,
 `.ez-status-mark--error`, overrides the other three while the field could not
 check all of its text, as when a MarkedTextArea's scan stops before the end of
 the body: the sparkle takes the error color and the popover and label lead with
 the reason. Hovering or focusing an active (non-quiet) mark lists each change
-EzClassify made to the marking once, however many rules made it, in the
-engine's own words for it. It lists only what the field's scopes write or
+EzClassify made to the marking once, however many rules made it: "Added ... to
+...", "Removed ... from ..." or "Replaced ... with ... in ...", naming the value
+and its category by their labels, with the rule that made it under it. A change
+that adds or removes nothing keeps the engine's own words for it. While the
+marking can go back to what it was before the author's last edit, the list ends
+with an "Undo last edit" button. It lists only what the field's scopes write or
 what it changed. A field that shows each fact, such as TagInput or
 DecisionFlow, also lists the facts a rule filled in that the marking does not
 write, such as the members of a group; a text field does not. The list opens
@@ -253,10 +258,8 @@ above or below the field (beside it when neither has room), never over it. Style
 `--ez-status-mark-strong-color` for the glyph of a mark with a message (any
 state but quiet; the field's text color on a light palette, gold on a dark
 one), the shared
-`--ez-color-primary` for the accent sparkle and dot, the shared
-`--ez-color-error` for the error sparkle, and
-`--ez-status-mark-ring` for the color of the ring that stands the dot off the
-background it sits on (falls back to `--ez-color-background`). The
+`--ez-color-primary` for the accent sparkle, and the shared
+`--ez-color-error` for the error sparkle. The
 `data-ezclassify-no-tooltips` opt-out silences the mark's explanation like any
 other tooltip; the mark itself is state display and cannot be disabled.
 

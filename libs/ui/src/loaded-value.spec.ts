@@ -736,9 +736,11 @@ async function markLines(field: Element): Promise<string[]> {
     const tip = document.querySelector<HTMLElement>('.ez-tooltip');
     const lines =
         tip && !tip.hidden
-            ? [...tip.querySelectorAll(':scope > div')].map(
-                  (line) => line.textContent ?? '',
-              )
+            ? [
+                  ...tip.querySelectorAll(
+                      '.ez-tooltip__header, .ez-status-list__text',
+                  ),
+              ].map((line) => line.textContent ?? '')
             : [];
     mark.dispatchEvent(new Event('mouseleave'));
     return lines;
@@ -763,8 +765,8 @@ describe('a loaded marking takes what the engine fixed and says so', () => {
         const mark = form.querySelector('.ez-status-mark')!;
         expect(mark.classList.contains('ez-status-mark--unseen')).toBe(true);
         expect(await markLines(form)).toEqual([
-            'EzClassify fixed this marking:',
-            '• Rule "g-adds-o": added "O" to category "tag"',
+            '1 change made by a marking rule',
+            'Added Name O to tag.',
         ]);
     });
 
@@ -851,7 +853,7 @@ describe('a loaded marking takes what the engine fixed and says so', () => {
             expect(markTone(mark), field).toBe('strong');
             // The name says there is something to read, not just whose mark it is.
             expect(mark.getAttribute('aria-label')).toContain(
-                '1 fix applied to this marking',
+                '1 change made by a marking rule, not yet reviewed',
             );
         }
     });
@@ -883,7 +885,7 @@ describe('a loaded marking takes what the engine fixed and says so', () => {
         ]);
         for (const field of ['.mf', '.ti'])
             expect((await markLines(form.querySelector(field)!))[1]).toBe(
-                '• Rule "g-adds-o": added "O" to category "tag"',
+                'Added Name O to tag.',
             );
         // The one difference: the chips hold HOME, which the marking leaves
         // out of print.

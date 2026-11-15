@@ -21,8 +21,18 @@ import {
 import { cleanupTooltipForRoot, showTooltip } from './tooltip-manager';
 import { markTone } from '../../test-fixtures/field-chrome';
 
-/** The tooltip's lines, one per row it draws. */
+/**
+ * The tooltip's lines, one per row it draws: for the mark's list, what is
+ * wrong, its heading and each change.
+ */
 function lineTexts(tip: HTMLElement): string[] {
+    const list = tip.querySelector('.ez-status-list');
+    if (list)
+        return [
+            ...list.querySelectorAll(
+                '.ez-status-list__error, .ez-tooltip__header, .ez-status-list__text',
+            ),
+        ].map((row) => row.textContent ?? '');
     const rows = [...tip.querySelectorAll(':scope > div')];
     return (
         rows.length > 0
@@ -181,13 +191,10 @@ describe('ensureStatusMark', () => {
     });
 });
 
-describe('dot and sparkle occupy separate corners', () => {
+describe('the mark glyph and the plain input it sits on', () => {
     // Geometry can't be asserted from jsdom (the `?inline` CSS import is
     // stubbed to an empty string in the test transform, same as
-    // mobile-font-floor.spec.ts), so this pins the two structural facts that
-    // keep the dot and the sparkle apart: buildMarkSvg places the sparkle in
-    // the glyph's top-right, and the stylesheet anchors the dot bottom-left.
-    // This structural check does not measure actual browser overlap.
+    // mobile-font-floor.spec.ts), so these pin the stylesheet's structure.
     const here = dirname(fileURLToPath(import.meta.url));
 
     it('the sparkle sits in the glyph viewBox top-right corner', () => {
@@ -237,15 +244,11 @@ describe('dot and sparkle occupy separate corners', () => {
         expect(wrapRule).toMatch(/align-items:\s*stretch/);
     });
 
-    it('the corner dot anchors bottom-left in the stylesheet, not top-right', () => {
+    it('hides the count while it is empty, so a reviewed mark is the glyph alone', () => {
         const css = readFileSync(join(here, 'status-mark.css'), 'utf8');
-        const dotRule = css.match(/\.ez-status-mark__dot\s*\{[^}]*\}/);
-        expect(dotRule).not.toBeNull();
-        const body = dotRule![0];
-        expect(body).toContain('bottom:');
-        expect(body).toContain('left:');
-        expect(body).not.toMatch(/[{;]\s*top:\s*-?[\d.]+rem/);
-        expect(body).not.toMatch(/[{;]\s*right:\s*-?[\d.]+rem/);
+        expect(css).toMatch(
+            /\.ez-status-mark__count:empty\s*\{\s*display:\s*none;/,
+        );
     });
 });
 
@@ -257,7 +260,9 @@ describe('setStatusMarkFixes state machine', () => {
         expect(mark.classList.contains('ez-status-mark--unseen')).toBe(true);
         expect(mark.classList.contains('ez-status-mark--seen')).toBe(false);
         expect(mark.tabIndex).toBe(0);
-        expect(mark.getAttribute('aria-label')).toContain('1 fix applied');
+        expect(mark.getAttribute('aria-label')).toBe(
+            'Enhanced by EzClassify. 1 change made by a marking rule, not yet reviewed.',
+        );
     });
 
     it('mutates the same mark in place and never stacks a second one', () => {
@@ -266,7 +271,9 @@ describe('setStatusMarkFixes state machine', () => {
         setStatusMarkFixes(wrap, [makeFix('r1')]);
         setStatusMarkFixes(wrap, [makeFix('r1'), makeFix('r2')]);
         expect(wrap.querySelectorAll('.ez-status-mark')).toHaveLength(1);
-        expect(mark.getAttribute('aria-label')).toContain('2 fixes applied');
+        expect(mark.getAttribute('aria-label')).toContain(
+            '2 changes made by marking rules',
+        );
     });
 
     it('counts each change to the marking once, however many readings or rules made it', () => {
@@ -277,7 +284,9 @@ describe('setStatusMarkFixes state machine', () => {
             makeFix('r2', 'second message', 'USA'),
             makeFix('r3', 'third message', 'GBR'),
         ]);
-        expect(mark.getAttribute('aria-label')).toContain('2 fixes applied');
+        expect(mark.getAttribute('aria-label')).toContain(
+            '2 changes made by marking rules',
+        );
     });
 
     it('stays unseen across re-renders that repeat the same fix set (no premature seen)', () => {
@@ -315,10 +324,9 @@ describe('acknowledgment via the tooltip actually presenting', () => {
         expect(mark.classList.contains('ez-status-mark--seen')).toBe(false);
     });
 
-    it('hovering past the hover-intent delay acknowledges and clears the dot', async () => {
+    it('hovering past the hover-intent delay acknowledges it', async () => {
         const mark = ensureStatusMark(wrap, { shape: 'input' });
         setStatusMarkFixes(wrap, [makeFix('r1')]);
-        expect(mark.querySelector('.ez-status-mark__dot')).toBeTruthy();
 
         await hoverPastIntent(mark);
 
@@ -441,69 +449,45 @@ describe('acknowledgment via the tooltip actually presenting', () => {
     });
 });
 
-describe('corner notification dot', () => {
-    // The dot's visibility is a CSS rule keyed off the mark's state class
-    // (`.ez-status-mark--unseen .ez-status-mark__dot { display: block }`,
-    // hidden otherwise) rather than a class toggled on the dot itself, so the
-    // behavioral contract to test is the state-class transition: quiet and
-    // seen carry no --unseen class, only unseen does.
-    it('the dot node is present but its owning state is unseen-only', async () => {
+describe('the number beside the mark', () => {
+    // While a change is unreviewed the mark is strong as a whole and the number
+    // of changes stands beside it, in the mark's own box; once the list has
+    // been shown the number goes and the glyph stays strong.
+    it('counts the unreviewed changes, and goes once they have been shown', async () => {
         const mark = ensureStatusMark(wrap, { shape: 'input' });
-        expect(mark.querySelector('.ez-status-mark__dot')).toBeTruthy();
-        expect(mark.classList.contains('ez-status-mark--unseen')).toBe(false);
+        const count = () =>
+            mark.querySelector<HTMLElement>('.ez-status-mark__count')!;
+        expect(count().getAttribute('aria-hidden')).toBe('true');
+        expect(count().textContent).toBe('');
 
-        setStatusMarkFixes(wrap, [makeFix('r1')]);
+        setStatusMarkFixes(wrap, [
+            makeFix('r1', 'one', 'AUS'),
+            makeFix('r2', 'two', 'CAN'),
+            makeFix('r3', 'three', 'GBR'),
+        ]);
         expect(mark.classList.contains('ez-status-mark--unseen')).toBe(true);
+        expect(count().textContent).toBe('3');
 
         await hoverPastIntent(mark);
-        expect(mark.classList.contains('ez-status-mark--unseen')).toBe(false);
         expect(mark.classList.contains('ez-status-mark--seen')).toBe(true);
+        expect(count().textContent).toBe('');
     });
 });
 
 describe('accessible label distinguishes unseen and seen', () => {
-    // The dot and the pulse that carry unseen visually are both
-    // aria-hidden, so the label is the only accessible representation of
-    // the state; it must not be byte-identical between unseen and seen.
-    it('unseen and seen carry different aria-labels', async () => {
+    // The number beside the mark is aria-hidden, so the label carries both
+    // the count and whether it has been reviewed.
+    it('says the changes are not yet reviewed until the list has been shown', async () => {
         const mark = ensureStatusMark(wrap, { shape: 'input' });
-        setStatusMarkFixes(wrap, [makeFix('r1')]);
-        const unseenLabel = mark.getAttribute('aria-label');
-        expect(unseenLabel).toContain('not yet reviewed');
+        setStatusMarkFixes(wrap, [makeFix('r1'), makeFix('r2')]);
+        expect(mark.getAttribute('aria-label')).toBe(
+            'Enhanced by EzClassify. 2 changes made by marking rules, not yet reviewed.',
+        );
 
         await hoverPastIntent(mark);
-        const seenLabel = mark.getAttribute('aria-label');
-        expect(seenLabel).toContain('reviewed');
-        expect(seenLabel).not.toBe(unseenLabel);
-    });
-});
-
-describe('reduced motion', () => {
-    it('drops the pulse class under prefers-reduced-motion but keeps the dot state', () => {
-        stubMatchMedia(true);
-        const mark = ensureStatusMark(wrap, { shape: 'input' });
-        setStatusMarkFixes(wrap, [makeFix('r1')]);
-
-        expect(mark.classList.contains('ez-status-mark--unseen')).toBe(true);
-        expect(mark.classList.contains('ez-status-mark--pulse')).toBe(false);
-    });
-
-    it('pulses when motion is not reduced', () => {
-        stubMatchMedia(false);
-        const mark = ensureStatusMark(wrap, { shape: 'input' });
-        setStatusMarkFixes(wrap, [makeFix('r1')]);
-
-        expect(mark.classList.contains('ez-status-mark--pulse')).toBe(true);
-    });
-
-    it('never pulses in the seen state, regardless of motion preference', async () => {
-        stubMatchMedia(false);
-        const mark = ensureStatusMark(wrap, { shape: 'input' });
-        setStatusMarkFixes(wrap, [makeFix('r1')]);
-        await hoverPastIntent(mark);
-
-        expect(mark.classList.contains('ez-status-mark--seen')).toBe(true);
-        expect(mark.classList.contains('ez-status-mark--pulse')).toBe(false);
+        expect(mark.getAttribute('aria-label')).toBe(
+            'Enhanced by EzClassify. 2 changes made by marking rules.',
+        );
     });
 });
 
@@ -516,10 +500,9 @@ describe('the error state', () => {
         setStatusMarkError(wrap, ERROR);
         expect(mark.classList.contains('ez-status-mark--error')).toBe(true);
         expect(mark.classList.contains('ez-status-mark--unseen')).toBe(false);
-        expect(mark.classList.contains('ez-status-mark--pulse')).toBe(false);
         expect(mark.tabIndex).toBe(0);
         expect(mark.getAttribute('aria-label')).toBe(
-            `Enhanced by EzClassify. ${ERROR} 1 fix applied to this marking.`,
+            `Enhanced by EzClassify. ${ERROR} 1 change made by a marking rule.`,
         );
 
         setStatusMarkError(wrap, null);
@@ -552,7 +535,7 @@ describe('the error state', () => {
 });
 
 describe('tooltip content', () => {
-    it('carries the engine fix message once per change', async () => {
+    it('says each change once, with the rule that made it under it', async () => {
         const mark = ensureStatusMark(wrap, { shape: 'input' });
         setStatusMarkFixes(wrap, [
             makeFix('r1', 'rule one explains'),
@@ -563,9 +546,69 @@ describe('tooltip content', () => {
         const tip = document.querySelector('.ez-tooltip') as HTMLElement;
         expect(tip).toBeTruthy();
         expect(tip.hidden).toBe(false);
-        expect(lineTexts(tip).filter((l) => l.includes('rule one'))).toEqual([
-            '• rule one explains',
+        expect(lineTexts(tip)).toEqual([
+            '1 change made by a marking rule',
+            'Added X-r1 to cat.',
         ]);
+        expect(
+            [...tip.querySelectorAll('.ez-status-list__rule')].map(
+                (rule) => rule.textContent,
+            ),
+        ).toEqual(['Rule: r1']);
+    });
+
+    it("names values and categories in the field's own words", async () => {
+        const mark = ensureStatusMark(wrap, {
+            shape: 'input',
+            words: {
+                value: (ref) => `the ${ref.conceptId} value`,
+                category: (id) => `Category ${id}`,
+            },
+        });
+        setStatusMarkFixes(wrap, [
+            makeFix('adds', 'ignored', 'USA'),
+            {
+                ruleId: 'drops',
+                action: 'remove',
+                remove: [{ conceptId: 'OLD', categoryId: 'cat' }],
+                message: 'ignored',
+            },
+            {
+                ruleId: 'swaps',
+                action: 'replace',
+                remove: [{ conceptId: 'LOW', categoryId: 'level' }],
+                add: [{ conceptId: 'HIGH', categoryId: 'level' }],
+                message: 'ignored',
+            },
+        ]);
+
+        await hoverPastIntent(mark);
+        const tip = document.querySelector('.ez-tooltip') as HTMLElement;
+        expect(lineTexts(tip)).toEqual([
+            '3 changes made by marking rules',
+            'Added the USA value to Category cat.',
+            'Removed the OLD value from Category cat.',
+            'Replaced the LOW value with the HIGH value in Category level.',
+        ]);
+    });
+
+    it('names no rule for a change the engine made on its own', async () => {
+        const mark = ensureStatusMark(wrap, { shape: 'input' });
+        setStatusMarkFixes(wrap, [
+            {
+                ruleId: '_recognition_case',
+                action: 'reorder',
+                message: 'Read it.',
+            },
+        ]);
+
+        await hoverPastIntent(mark);
+        const tip = document.querySelector('.ez-tooltip') as HTMLElement;
+        expect(lineTexts(tip)).toEqual([
+            '1 change made by a marking rule',
+            'Read it.',
+        ]);
+        expect(tip.querySelector('.ez-status-list__rule')).toBeNull();
     });
 
     it('lists a change two rules made once, in the words of the first', async () => {
@@ -578,10 +621,15 @@ describe('tooltip content', () => {
         await hoverPastIntent(mark);
         const tip = document.querySelector('.ez-tooltip') as HTMLElement;
         expect(lineTexts(tip)).toEqual([
-            'EzClassify fixed this marking:',
-            '• Rule "requires": added "USA"',
+            '1 change made by a marking rule',
+            'Added USA to cat.',
         ]);
-        expect(mark.getAttribute('aria-label')).toContain('1 fix applied');
+        expect(tip.querySelector('.ez-status-list__rule')!.textContent).toBe(
+            'Rule: requires',
+        );
+        expect(mark.getAttribute('aria-label')).toContain(
+            '1 change made by a marking rule',
+        );
     });
 
     it('also lists each fact a rule filled in that no applied fix names', async () => {
@@ -618,10 +666,10 @@ describe('tooltip content', () => {
         await hoverPastIntent(mark);
         const tip = document.querySelector('.ez-tooltip') as HTMLElement;
         expect(lineTexts(tip)).toEqual([
-            'EzClassify fixed this marking:',
-            '• Rule "adds": added "USA"',
-            '• Rule "expand": added "AUS" to category "cat"',
-            '• Rule "expand": added "CAN" to category "cat"',
+            '3 changes made by marking rules',
+            'Added USA to cat.',
+            'Added AUS to cat.',
+            'Added CAN to cat.',
         ]);
     });
 
@@ -642,8 +690,8 @@ describe('tooltip content', () => {
         await hoverPastIntent(mark);
         const tip = document.querySelector('.ez-tooltip') as HTMLElement;
         expect(lineTexts(tip)).toEqual([
-            'EzClassify fixed this marking:',
-            '• Rule "kept": added "NEW"',
+            '1 change made by a marking rule',
+            'Added NEW to cat.',
         ]);
     });
 
@@ -681,10 +729,7 @@ describe('tooltip content', () => {
             explainedChanges(applied, holds, SHOWS_FACTS).map(
                 (change) => change.message,
             ),
-        ).toEqual([
-            'Rule "adds": added "USA"',
-            'Rule "expand": added "AUS" to category "cat"',
-        ]);
+        ).toEqual(['Rule "adds": added "USA"', 'Added AUS to cat.']);
     });
 
     it('lists only the changes to categories the field writes, and every note', () => {
@@ -723,14 +768,13 @@ describe('tooltip content', () => {
             'Rule "own": added "MINE"',
             'Rule "swap": NEW in place of OLD',
             'Moved it.',
-            'Rule "fills": added "FILLED" to category "cat"',
+            'Added FILLED to cat.',
         ]);
     });
 
-    it('lists every change once, in the engine’s own words for it', async () => {
+    it('lists every change once: what it added or removed, and a note in the engine’s words', async () => {
         const mark = ensureStatusMark(wrap, { shape: 'input' });
-        // One rule that removes two concepts made two changes; the field
-        // writes none of the words itself.
+        // One rule that removes two concepts made two changes.
         setStatusMarkFixes(wrap, [
             {
                 ruleId: 'adds',
@@ -756,13 +800,15 @@ describe('tooltip content', () => {
         await hoverPastIntent(mark);
         const tip = document.querySelector('.ez-tooltip') as HTMLElement;
         expect(lineTexts(tip)).toEqual([
-            'EzClassify fixed this marking:',
-            '• A is required.',
-            '• A excludes the rest.',
-            '• A excludes the rest.',
-            '• Moved it.',
+            '4 changes made by marking rules',
+            'Added A to c.',
+            'Removed B from c.',
+            'Removed C from c.',
+            'Moved it.',
         ]);
-        expect(mark.getAttribute('aria-label')).toContain('4 fixes applied');
+        expect(mark.getAttribute('aria-label')).toContain(
+            '4 changes made by marking rules',
+        );
     });
 
     it('no tooltip in the quiet state and none under the no-tooltips opt-out', async () => {
@@ -844,7 +890,10 @@ describe('the applied-changes popover does not outstay the value it described', 
             height: bottom - top,
         }) as DOMRect;
 
-    /** Run `body` with every tooltip measuring `width` x `height`. */
+    /**
+     * Run `body` with every tooltip measuring `width` x `height`, where its
+     * style placed it.
+     */
     async function withTipSize(
         width: number,
         height: number,
@@ -852,9 +901,11 @@ describe('the applied-changes popover does not outstay the value it described', 
     ): Promise<void> {
         const realRect = HTMLElement.prototype.getBoundingClientRect;
         HTMLElement.prototype.getBoundingClientRect = function () {
-            return this.classList.contains('ez-tooltip')
-                ? box(0, 0, width, height)
-                : realRect.call(this);
+            if (!this.classList.contains('ez-tooltip'))
+                return realRect.call(this);
+            const left = parseFloat(this.style.left) || 0;
+            const top = parseFloat(this.style.top) || 0;
+            return box(left, top, left + width, top + height);
         };
         try {
             await body();
@@ -912,6 +963,24 @@ describe('the applied-changes popover does not outstay the value it described', 
             expect(tip()?.hidden).toBe(true);
         });
     });
+
+    it('closes rather than cover the field it explains, an open step and its options included', async () => {
+        const frame = document.createElement('div');
+        frame.className = 'ez-field-frame';
+        const header = document.createElement('div');
+        frame.appendChild(header);
+        document.body.appendChild(frame);
+        const mark = ensureStatusMark(header, { shape: 'chrome' });
+        setStatusMarkFixes(header, [makeFix('r1')]);
+        // An open flow fills the viewport: no side of it has room.
+        frame.getBoundingClientRect = () => box(0, 0, 1024, 768);
+        mark.getBoundingClientRect = () => box(980, 8, 1004, 32);
+
+        await withTipSize(300, 120, async () => {
+            mark.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+            expect(tip()?.hidden).toBe(true);
+        });
+    });
 });
 
 describe('pressing the mark opens the applied-changes list', () => {
@@ -934,7 +1003,7 @@ describe('pressing the mark opens the applied-changes list', () => {
 
         mark.click();
         expect(tip()?.hidden).toBe(false);
-        expect(tip()?.textContent).toContain('Added NOFORN');
+        expect(tip()?.textContent).toContain('Added X-r1 to cat.');
         expect(mark.getAttribute('aria-describedby')).toBe(tip()?.id);
         expect(mark.getAttribute('aria-expanded')).toBe('true');
         expect(mark.classList.contains('ez-status-mark--seen')).toBe(true);
@@ -1130,7 +1199,7 @@ describe('status mark tone', () => {
         expect(markTone(mark)).toBe('muted');
         setStatusMarkFixes(wrap, [makeFix('r1', 'Added NOFORN')]);
         expect(markTone(mark)).toBe('strong');
-        expect(mark.getAttribute('aria-label')).toContain('1 fix applied');
+        expect(mark.getAttribute('aria-label')).toContain('1 change made');
         setStatusMarkFixes(wrap, []);
         expect(markTone(mark)).toBe('muted');
         setStatusMarkError(wrap, 'Part of the text was not checked.');

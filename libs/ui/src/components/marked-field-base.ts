@@ -61,6 +61,8 @@ import {
 import { explainedChanges } from './status-mark';
 import type { InlineMarkingEditor } from './inline-marking-editor';
 import { createClearButton, type ClearButton } from './clear-button';
+import { isUndoChord, MarkingUndo } from './marking-undo';
+import { announce, createAnnouncer } from './accessibility-helpers';
 import { mountFieldChrome, type FieldChrome } from './field-chrome';
 
 /**
@@ -149,6 +151,24 @@ export abstract class MarkedFieldBase<
      */
     protected readonly chromeAlign: 'center' | 'start' = 'center';
     private clearControl?: ClearButton;
+    /**
+     * The undo of a clear (see marking-undo.ts). The field's value is its text,
+     * so every change to the text after the clear ends the offer.
+     */
+    private readonly undo = new MarkingUndo();
+    private releaseUndo: (() => void) | null = null;
+    private readonly followText = () => this.undo.observe(this.host.value);
+    private readonly undoKey = (event: KeyboardEvent) => {
+        if (!isUndoChord(event) || !this.undo.offer) return;
+        event.preventDefault();
+        event.stopPropagation();
+        void this.undo.perform().then(() => {
+            this.host.focus({ preventScroll: true });
+            if (this.undoAnnouncer)
+                announce(this.undoAnnouncer, t('a11y.markingRestored'));
+        });
+    };
+    private undoAnnouncer: HTMLElement | null = null;
 
     protected embeddedStyle: EmbeddedMarkingStyle | null = null;
     /** Resolved from the scheme in bindEngine; empty until then. */
@@ -460,6 +480,13 @@ export abstract class MarkedFieldBase<
      * inline chrome and the theme observer installed by installThemeObserver.
      */
     protected disconnectThemeObserver(): void {
+        this.undo.end();
+        this.releaseUndo?.();
+        this.releaseUndo = null;
+        this.host?.removeEventListener('input', this.followText);
+        this.wrap?.removeEventListener('keydown', this.undoKey, true);
+        this.undoAnnouncer?.remove();
+        this.undoAnnouncer = null;
         this.clearControl?.destroy();
         this.clearControl = undefined;
         this.chrome?.destroy();
@@ -548,15 +575,39 @@ export abstract class MarkedFieldBase<
             host: this.host,
             empty: () => this.host.value.length === 0,
             clear: () => {
-                ++this.scanSeq;
-                this._editorAssertions = null;
-                this.finishClose();
-                this.setValue('');
-                // This is a user edit, so observers receive the same native event as typing.
-                this.host.dispatchEvent(new Event('input', { bubbles: true }));
+                const text = this.host.value;
+                this.undo.make('clear', this, () => this.replaceText(text));
+                this.replaceText('');
             },
+            undoOffer: () => this.undo.offer,
+            undo: () => this.undo.perform(),
+            focusField: () => this.host.focus({ preventScroll: true }),
         });
         this.chrome.element.appendChild(this.clearControl.button);
+        this.releaseUndo = this.undo.subscribe(() =>
+            this.clearControl?.update(),
+        );
+        this.host.addEventListener('input', this.followText);
+        this.wrap.addEventListener('keydown', this.undoKey, true);
+        // Beside clear, which stays the chrome's last control.
+        this.undoAnnouncer = createAnnouncer();
+        this.chrome.element.insertBefore(
+            this.undoAnnouncer,
+            this.clearControl.button,
+        );
+    }
+
+    /**
+     * Replace the field's whole text as the author's own edit: a clear, or the
+     * undo of one. Any open editor and scan are dropped.
+     */
+    private replaceText(text: string): void {
+        ++this.scanSeq;
+        this._editorAssertions = null;
+        this.finishClose();
+        this.setValue(text);
+        // This is a user edit, so observers receive the same native event as typing.
+        this.host.dispatchEvent(new Event('input', { bubbles: true }));
     }
 
     /**
