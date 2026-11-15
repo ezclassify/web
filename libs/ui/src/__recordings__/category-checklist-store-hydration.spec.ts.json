@@ -417,7 +417,7 @@
                         {
                             "categoryId": "level",
                             "constraintId": "_required-category:level",
-                            "message": "Minimum audience level is required: the marking asserts no concept in this category"
+                            "message": "Minimum audience level is required."
                         }
                     ],
                     "notices": [],
@@ -1641,7 +1641,7 @@
                         {
                             "categoryId": "level",
                             "constraintId": "_required-category:level",
-                            "message": "Minimum audience level is required: the marking asserts no concept in this category"
+                            "message": "Minimum audience level is required."
                         }
                     ],
                     "inputWasValid": false,

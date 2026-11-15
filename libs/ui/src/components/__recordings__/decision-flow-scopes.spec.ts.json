@@ -143,7 +143,7 @@
                         {
                             "categoryId": "release_type",
                             "constraintId": "_required-category:release_type",
-                            "message": "Release is required: the marking asserts no concept in this category"
+                            "message": "Release is required."
                         }
                     ],
                     "inputWasValid": false,
@@ -250,7 +250,7 @@
                         {
                             "categoryId": "release_type",
                             "constraintId": "_required-category:release_type",
-                            "message": "Release is required: the marking asserts no concept in this category"
+                            "message": "Release is required."
                         }
                     ],
                     "inputWasValid": false,
@@ -1236,12 +1236,12 @@
                         {
                             "categoryId": "origin_type",
                             "constraintId": "_required-category:origin_type",
-                            "message": "Decision Type is required: the marking asserts no concept in this category"
+                            "message": "Decision Type is required."
                         },
                         {
                             "categoryId": "release_type",
                             "constraintId": "_required-category:release_type",
-                            "message": "Release is required: the marking asserts no concept in this category"
+                            "message": "Release is required."
                         }
                     ],
                     "inputWasValid": false,
@@ -1500,7 +1500,7 @@
                         {
                             "categoryId": "release_type",
                             "constraintId": "_required-category:release_type",
-                            "message": "Release is required: the marking asserts no concept in this category"
+                            "message": "Release is required."
                         }
                     ],
                     "inputWasValid": false,
@@ -1672,7 +1672,7 @@
                         {
                             "categoryId": "release_type",
                             "constraintId": "_required-category:release_type",
-                            "message": "Release is required: the marking asserts no concept in this category"
+                            "message": "Release is required."
                         }
                     ],
                     "inputWasValid": false,
@@ -2837,7 +2837,7 @@
                         {
                             "categoryId": "release_type",
                             "constraintId": "_required-category:release_type",
-                            "message": "Release is required: the marking asserts no concept in this category"
+                            "message": "Release is required."
                         }
                     ],
                     "inputWasValid": false,
@@ -2983,7 +2983,7 @@
                         {
                             "categoryId": "release_type",
                             "constraintId": "_required-category:release_type",
-                            "message": "Release is required: the marking asserts no concept in this category"
+                            "message": "Release is required."
                         }
                     ],
                     "inputWasValid": false,
@@ -3373,7 +3373,7 @@
                         {
                             "categoryId": "release_type",
                             "constraintId": "_required-category:release_type",
-                            "message": "Release is required: the marking asserts no concept in this category"
+                            "message": "Release is required."
                         }
                     ],
                     "inputWasValid": false,
@@ -3547,7 +3547,7 @@
                         {
                             "categoryId": "release_type",
                             "constraintId": "_required-category:release_type",
-                            "message": "Release is required: the marking asserts no concept in this category"
+                            "message": "Release is required."
                         }
                     ],
                     "inputWasValid": false,
@@ -3753,7 +3753,7 @@
                         {
                             "categoryId": "release_type",
                             "constraintId": "_required-category:release_type",
-                            "message": "Release is required: the marking asserts no concept in this category"
+                            "message": "Release is required."
                         }
                     ],
                     "inputWasValid": false,
@@ -3951,7 +3951,7 @@
                         {
                             "categoryId": "release_type",
                             "constraintId": "_required-category:release_type",
-                            "message": "Release is required: the marking asserts no concept in this category"
+                            "message": "Release is required."
                         }
                     ],
                     "inputWasValid": false,
@@ -4785,7 +4785,7 @@
                         {
                             "categoryId": "release_type",
                             "constraintId": "_required-category:release_type",
-                            "message": "Release is required: the marking asserts no concept in this category"
+                            "message": "Release is required."
                         }
                     ],
                     "inputWasValid": false,
@@ -4962,7 +4962,7 @@
                         {
                             "categoryId": "release_type",
                             "constraintId": "_required-category:release_type",
-                            "message": "Release is required: the marking asserts no concept in this category"
+                            "message": "Release is required."
                         }
                     ],
                     "inputWasValid": false,
@@ -5025,7 +5025,7 @@
                         {
                             "categoryId": "release_type",
                             "constraintId": "_required-category:release_type",
-                            "message": "Release is required: the marking asserts no concept in this category"
+                            "message": "Release is required."
                         }
                     ],
                     "inputWasValid": false,
@@ -5188,12 +5188,12 @@
                         {
                             "categoryId": "origin_type",
                             "constraintId": "_required-category:origin_type",
-                            "message": "Decision Type is required: the marking asserts no concept in this category"
+                            "message": "Decision Type is required."
                         },
                         {
                             "categoryId": "release_type",
                             "constraintId": "_required-category:release_type",
-                            "message": "Release is required: the marking asserts no concept in this category"
+                            "message": "Release is required."
                         }
                     ],
                     "inputWasValid": false,
@@ -5614,7 +5614,7 @@
                         {
                             "categoryId": "release_type",
                             "constraintId": "_required-category:release_type",
-                            "message": "Release is required: the marking asserts no concept in this category"
+                            "message": "Release is required."
                         }
                     ],
                     "inputWasValid": false,
@@ -5788,7 +5788,7 @@
                         {
                             "categoryId": "release_type",
                             "constraintId": "_required-category:release_type",
-                            "message": "Release is required: the marking asserts no concept in this category"
+                            "message": "Release is required."
                         }
                     ],
                     "inputWasValid": false,
@@ -6251,7 +6251,7 @@
                         {
                             "categoryId": "release_type",
                             "constraintId": "_required-category:release_type",
-                            "message": "Release is required: the marking asserts no concept in this category"
+                            "message": "Release is required."
                         }
                     ],
                     "inputWasValid": false,
@@ -7632,7 +7632,7 @@
                         {
                             "categoryId": "release_type",
                             "constraintId": "_required-category:release_type",
-                            "message": "Release is required: the marking asserts no concept in this category"
+                            "message": "Release is required."
                         }
                     ],
                     "inputWasValid": false,
@@ -7758,7 +7758,7 @@
                         {
                             "categoryId": "origin_type",
                             "constraintId": "_required-category:origin_type",
-                            "message": "Decision Type is required: the marking asserts no concept in this category"
+                            "message": "Decision Type is required."
                         }
                     ],
                     "inputWasValid": false,

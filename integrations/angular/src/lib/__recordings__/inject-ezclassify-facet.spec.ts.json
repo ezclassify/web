@@ -929,7 +929,7 @@
                         {
                             "categoryId": "level",
                             "constraintId": "_required-category:level",
-                            "message": "Protection is required: the marking asserts no concept in this category"
+                            "message": "Protection is required."
                         }
                     ],
                     "notices": [],
@@ -2008,7 +2008,7 @@
                         {
                             "categoryId": "level",
                             "constraintId": "_required-category:level",
-                            "message": "Protection is required: the marking asserts no concept in this category"
+                            "message": "Protection is required."
                         },
                         {
                             "affectedConcepts": ["SECURE_ASSESSMENTS"],
@@ -2107,7 +2107,7 @@
                         {
                             "categoryId": "level",
                             "constraintId": "_required-category:level",
-                            "message": "Protection is required: the marking asserts no concept in this category"
+                            "message": "Protection is required."
                         },
                         {
                             "affectedConcepts": ["SECURE_ASSESSMENTS"],

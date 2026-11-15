@@ -2838,7 +2838,7 @@
                         {
                             "categoryId": "level",
                             "constraintId": "_required-category:level",
-                            "message": "Level is required: the marking asserts no concept in this category"
+                            "message": "Level is required."
                         }
                     ],
                     "notices": [],
@@ -5972,7 +5972,7 @@
                         {
                             "categoryId": "authority",
                             "constraintId": "_required-category:authority",
-                            "message": "Authority is required: the marking asserts no concept in this category"
+                            "message": "Authority is required."
                         }
                     ],
                     "notices": [],
@@ -7828,7 +7828,7 @@
                         {
                             "categoryId": "authority",
                             "constraintId": "_required-category:authority",
-                            "message": "Authority is required: the marking asserts no concept in this category"
+                            "message": "Authority is required."
                         }
                     ],
                     "inputWasValid": false,
@@ -8660,7 +8660,7 @@
                         {
                             "categoryId": "level",
                             "constraintId": "_required-category:level",
-                            "message": "Level is required: the marking asserts no concept in this category"
+                            "message": "Level is required."
                         }
                     ],
                     "inputWasValid": false,
@@ -9025,7 +9025,7 @@
                         {
                             "categoryId": "level",
                             "constraintId": "_required-category:level",
-                            "message": "Level is required: the marking asserts no concept in this category"
+                            "message": "Level is required."
                         }
                     ],
                     "inputWasValid": false,

@@ -108,7 +108,7 @@
                         {
                             "categoryId": "level",
                             "constraintId": "_required-category:level",
-                            "message": "Level is required: the marking asserts no concept in this category"
+                            "message": "Level is required."
                         }
                     ],
                     "inputWasValid": false,
@@ -2144,7 +2144,7 @@
                         {
                             "categoryId": "level",
                             "constraintId": "_required-category:level",
-                            "message": "Level is required: the marking asserts no concept in this category"
+                            "message": "Level is required."
                         }
                     ],
                     "inputWasValid": false,
