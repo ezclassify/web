@@ -305,14 +305,14 @@ export class TagInput extends ComponentBase {
      * it whether the marking writes it or holds it unwritten.
      */
     private chipCategoryOrder(): string[] {
-        const { scopes, ...field } = this.writingField();
         const ids = this.scheme.categories.map((category) => category.id);
-        if (scopes.length === 0)
-            return inWrittenOrder(this.schemeMeta, field, undefined, ids);
+        const writing = this.conceptWriting();
+        if (!writing) return ids;
+        const { scopes } = writing.field;
+        if (scopes.length === 0) return inWrittenOrder(writing, undefined, ids);
         const ordered = scopes.flatMap((scope) =>
             inWrittenOrder(
-                this.schemeMeta,
-                field,
+                writing,
                 scope,
                 this.scheme.categories
                     .filter((category) =>

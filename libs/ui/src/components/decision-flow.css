@@ -86,6 +86,12 @@
     border-color: var(--ez-color-primary, #fdb827);
     background: var(--ez-color-primary, #fdb827);
 }
+/* Answered only by derivation (a default, a rule): the family's inferred
+   style, a dashed accent edge, never the chosen fill. */
+.ez-decision-flow__step-dot[data-state='answered'][data-inferred]::before {
+    border-style: dashed;
+    background: transparent;
+}
 /* Missing an answer the engine asks for: the error color. */
 .ez-decision-flow__step-dot[data-state='missing']::before {
     border-color: var(--ez-color-error, #b91c1c);
@@ -505,6 +511,9 @@
     .ez-decision-flow__step-dot[data-state='answered']::before {
         background: Highlight;
         border-color: Highlight;
+    }
+    .ez-decision-flow__step-dot[data-state='answered'][data-inferred]::before {
+        background: transparent;
     }
     .ez-decision-flow__step-dot[data-state='missing']::before {
         background: Mark;

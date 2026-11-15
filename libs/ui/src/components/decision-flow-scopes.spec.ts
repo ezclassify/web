@@ -4,9 +4,11 @@
  * The scheme (see `two-scope-flow-scheme.ts`) writes a level line and an origin
  * block. Its origin choices branch, some take a typed value, and two rules
  * judge the block, so these specs pin what a flow across scopes does with the
- * engine's own answers: which steps it walks and in what order, the surface
- * every step's engine call names, which steps show, how a value is taken, how
- * the marking is judged, and what the flow and the views show at the end.
+ * engine's own answers: which steps it walks and in what order (the origin
+ * block never writes the decision type, but every other origin step depends on
+ * it, so it comes first), the surface every step's engine call names, which
+ * steps show, how a value is taken, how the marking is judged, and what the
+ * flow and the views show at the end.
  */
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { Assertion } from '@ezclassify/types';
@@ -186,7 +188,7 @@ describe('DecisionFlow across scopes', () => {
         ]);
     });
 
-    it('walks the listed scopes in declaration order, then category order', async () => {
+    it('walks the listed scopes in declaration order, each with the step others depend on first', async () => {
         // Listed out of order on purpose: the scheme declares label first.
         const { host } = await mountFlow({ scopes: ['origin', 'label'] });
         await enter(host);
