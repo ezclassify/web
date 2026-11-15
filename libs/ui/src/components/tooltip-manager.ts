@@ -52,8 +52,69 @@ function ensureTooltipForRoot(root: HTMLElement): HTMLDivElement {
     };
     root.addEventListener('keydown', handler);
 
+    // The tooltip lives in the document body, outside the root, so it hears
+    // its own pointer, focus and Escape, and passes them to whoever showed it
+    // on the target it describes now.
+    const described = () => tooltipByRoot.get(root)?.target;
+    const owner = () => {
+        const target = described();
+        return target ? hoverByTarget.get(target) : undefined;
+    };
+    el.addEventListener('mouseenter', () => owner()?.stay());
+    el.addEventListener('mouseleave', () => owner()?.leave());
+    el.addEventListener('focusout', (e) => {
+        const next = e.relatedTarget;
+        if (
+            next instanceof Node &&
+            (el.contains(next) || described()?.contains(next))
+        ) {
+            return;
+        }
+        owner()?.blur();
+    });
+    el.addEventListener('keydown', (e) => {
+        if (e.key !== 'Escape' || el.hidden) return;
+        // Escape closes the tooltip and goes no further; focus that was in
+        // it goes back to what it describes.
+        e.preventDefault();
+        e.stopPropagation();
+        const target = described();
+        const focused = el.contains(document.activeElement);
+        hideTooltip(root);
+        if (focused && target instanceof HTMLElement) target.focus();
+    });
+
     tooltipByRoot.set(root, { el, style, handler });
     return el;
+}
+
+/**
+ * What the pointer and focus on a tooltip mean to the attachment that showed it
+ * (see {@link attachTooltip}), by the target it describes.
+ */
+interface TooltipHover {
+    /** The pointer is on the tooltip: it stays. */
+    stay(): void;
+    /** The pointer left the tooltip: it closes after the leave delay. */
+    leave(): void;
+    /** Focus left the tooltip and its target: it closes. */
+    blur(): void;
+}
+
+/** The hover behavior of each target {@link attachTooltip} manages. */
+const hoverByTarget = new WeakMap<Element, TooltipHover>();
+
+/** Whether the root's tooltip is showing and describes `target`. */
+function describesTarget(target: Element, root?: HTMLElement): boolean {
+    const entry = tooltipByRoot.get(root ?? document.body);
+    return !!entry && !entry.el.hidden && entry.target === target;
+}
+
+/** The root's tooltip element when it is showing and describes `target`. */
+function tooltipOf(target: Element, root?: HTMLElement): HTMLElement | null {
+    return describesTarget(target, root)
+        ? tooltipByRoot.get(root ?? document.body)!.el
+        : null;
 }
 
 /** Remove tooltip DOM and listener for a root (called from destroy) */
@@ -75,12 +136,15 @@ export interface TooltipPlacement {
     /**
      * What the tooltip must not cover, such as the field the target belongs to,
      * or that field and its error list (the box around them all). The tooltip
-     * goes below that box, or above it, lined up with the target; when neither
-     * has room it goes beside the box, right or left. Room is judged first
-     * inside every ancestor that clips the box's overflow, so the tooltip stays
-     * by what the reader can see, then inside the viewport alone. Without it,
-     * or when no side has room, the tooltip goes below the target, or above
-     * it.
+     * sits next to the target, on a side of that box the target is toward: a
+     * target in the box's top half opens above it, one in the bottom half below
+     * it, and one at its trailing edge beside that edge. Above or below, its
+     * trailing edge lines up with the target's; beside, its top lines up with
+     * the target's top. It never crosses the box to the far side. Room is
+     * judged first inside every ancestor that clips the box's overflow, so the
+     * tooltip stays by what the reader can see, then inside the viewport alone.
+     * Without it, or when no side next to the target has room, the tooltip goes
+     * below the target, or above it.
      */
     readonly clearOf?: HTMLElement | readonly HTMLElement[] | null;
 }
@@ -174,37 +238,50 @@ function clamp(value: number, min: number, max: number): number {
 }
 
 /**
- * Where a tooltip of `size` sits clear of `clear`: below, above, right of or
- * left of it, the first that fits inside `area`, lined up with `target`. Null
- * when none fits.
+ * Where a tooltip of `size` sits clear of `clear`, next to `target`: on a side
+ * of `clear` the target is toward (see {@link TooltipPlacement.clearOf}), below
+ * or above first, then beside, the first that fits inside `area`. Null when
+ * none fits: a side across the box from the target would put the tooltip at its
+ * far corner, away from what it explains.
+ *
+ * @param rtl - Whether the target's trailing edge is its left one
  */
 function placeClearOf(
     clear: Box,
     target: Box,
     size: { width: number; height: number },
     area: Box,
+    rtl: boolean,
 ): { left: number; top: number } | null {
     const { width, height } = size;
-    const centered = clamp(
-        (target.left + target.right) / 2 - width / 2,
+    const middleX = (target.left + target.right) / 2;
+    const middleY = (target.top + target.bottom) / 2;
+    const boxMiddleX = (clear.left + clear.right) / 2;
+    const boxMiddleY = (clear.top + clear.bottom) / 2;
+    // Above or below, the tooltip ends where the target ends.
+    const trailing = clamp(
+        rtl ? target.left : target.right - width,
         area.left,
         area.right - width,
     );
-    if (clear.bottom + GAP + height <= area.bottom) {
-        return { left: centered, top: clear.bottom + GAP };
+    if (middleY >= boxMiddleY && clear.bottom + GAP + height <= area.bottom) {
+        return { left: trailing, top: clear.bottom + GAP };
     }
-    if (clear.top - GAP - height >= area.top) {
-        return { left: centered, top: clear.top - GAP - height };
+    if (middleY <= boxMiddleY && clear.top - GAP - height >= area.top) {
+        return { left: trailing, top: clear.top - GAP - height };
     }
     if (height > area.bottom - area.top) return null;
+    // Beside, the tooltip starts where the target starts.
     const top = clamp(target.top, area.top, area.bottom - height);
-    if (clear.right + GAP + width <= area.right) {
-        return { left: clear.right + GAP, top };
-    }
-    if (clear.left - GAP - width >= area.left) {
-        return { left: clear.left - GAP - width, top };
-    }
-    return null;
+    const right = { left: clear.right + GAP, top };
+    const left = { left: clear.left - GAP - width, top };
+    const fitsRight =
+        middleX >= boxMiddleX && clear.right + GAP + width <= area.right;
+    const fitsLeft =
+        middleX <= boxMiddleX && clear.left - GAP - width >= area.left;
+    // A target in the middle could go either way: its trailing side first.
+    if (rtl) return fitsLeft ? left : fitsRight ? right : null;
+    return fitsRight ? right : fitsLeft ? left : null;
 }
 
 /**
@@ -333,9 +410,17 @@ export function showTooltip(
     // possible, else anywhere in the viewport (the tooltip itself lives in
     // the document body, so no ancestor actually clips it).
     const clear = clearBox(placement?.clearOf);
+    const rtl = clear
+        ? window.getComputedStyle(target).direction === 'rtl'
+        : false;
     const placed = clear
-        ? (placeClearOf(clear.box, rect, tipRect, visibleBox(clear.anchor)) ??
-          placeClearOf(clear.box, rect, tipRect, viewportBox()))
+        ? (placeClearOf(
+              clear.box,
+              rect,
+              tipRect,
+              visibleBox(clear.anchor),
+              rtl,
+          ) ?? placeClearOf(clear.box, rect, tipRect, viewportBox(), rtl))
         : null;
 
     // Otherwise by the target: prefer below, flip above if needed.
@@ -420,10 +505,26 @@ function releaseTooltipTarget(el: Element, tipId: string): void {
  */
 const LONG_PRESS_MOVE_CANCEL_PX = 10;
 
+/** How long the pointer rests on a target before its tooltip shows. */
+const HOVER_INTENT_MS = 300;
+
+/**
+ * How long a tooltip stays once the pointer leaves its target or the tooltip
+ * itself: long enough for the pointer to cross the gap between them.
+ */
+const LEAVE_DELAY_MS = 300;
+
 /**
  * Attach tooltip behavior to an element. Shows on hover and focus, hides on
  * leave/blur/Escape. Waits for content to be available before showing
  * (async-safe for lazy-loaded descriptions).
+ *
+ * The tooltip can be hovered: once the pointer leaves the target it stays for a
+ * short delay, and while the pointer is on the tooltip it stays, so a control
+ * in it (the status mark's undo) can be reached with a mouse. It closes once
+ * the pointer has left both for the delay. Focus can move into it too: a blur
+ * of the target into the tooltip keeps it, and Escape there closes it and
+ * returns focus to the target.
  *
  * @param onShown - Optional callback fired the moment the tooltip actually
  *   presents (after the hover-intent delay resolves), not when hover/focus
@@ -442,8 +543,9 @@ const LONG_PRESS_MOVE_CANCEL_PX = 10;
  * @param placement - Where the tooltip may sit, read when it shows (see
  *   {@link TooltipPlacement})
  * @param pinned - Whether the user opened the tooltip deliberately (pressed the
- *   target). While it returns true, the pointer leaving the target does not
- *   hide it; whatever pinned it closes it. Hover-only tooltips omit it.
+ *   target). While it returns true, the pointer leaving the target or the
+ *   tooltip does not hide it; whatever pinned it closes it. Hover-only tooltips
+ *   omit it.
  */
 export function attachTooltip(
     target: HTMLElement,
@@ -456,30 +558,49 @@ export function attachTooltip(
     pinned?: () => boolean,
 ): () => void {
     let showTimer: ReturnType<typeof setTimeout> | null = null;
+    let leaveTimer: ReturnType<typeof setTimeout> | null = null;
     let active = false;
     let shown = false;
 
+    const cancelShow = () => {
+        if (showTimer) {
+            clearTimeout(showTimer);
+            showTimer = null;
+        }
+    };
+    const cancelLeave = () => {
+        if (leaveTimer) {
+            clearTimeout(leaveTimer);
+            leaveTimer = null;
+        }
+    };
+    // Shown already, by this hover or by a press: the dwell has nothing to do.
+    const present = (content: TooltipContent) => {
+        if (describesTarget(target, root)) return;
+        showTooltip(target, content, root, placement?.());
+        shown = true;
+        onShown?.();
+    };
+
     const show = () => {
         if (shouldShow && !shouldShow()) return;
+        cancelLeave();
+        // The pointer came back from the tooltip to the target: it is still
+        // showing, and stays as it is.
+        if (describesTarget(target, root)) return;
         // A target can receive mouseenter and then focus (or vice versa)
         // with no intervening leave/blur, e.g. a pointer-driven click that
         // also focuses the element. Without clearing here, the earlier
         // timer leaks and both eventually fire, showing the tooltip twice
         // and calling onShown twice for one dwell.
-        if (showTimer) {
-            clearTimeout(showTimer);
-            showTimer = null;
-        }
+        cancelShow();
         active = true;
         const content = getContent();
         if (content) {
             showTimer = setTimeout(() => {
-                if (active) {
-                    showTooltip(target, content, root, placement?.());
-                    shown = true;
-                    onShown?.();
-                }
-            }, 300);
+                showTimer = null;
+                if (active) present(content);
+            }, HOVER_INTENT_MS);
         } else {
             let attempts = 0;
             const poll = () => {
@@ -487,43 +608,57 @@ export function attachTooltip(
                 attempts++;
                 const c = getContent();
                 if (c) {
-                    showTooltip(target, c, root, placement?.());
-                    shown = true;
-                    onShown?.();
+                    present(c);
                 } else if (attempts < 10) {
                     setTimeout(poll, 200);
                 }
             };
-            setTimeout(poll, 300);
+            setTimeout(poll, HOVER_INTENT_MS);
         }
     };
     const hide = () => {
         active = false;
         shown = false;
-        if (showTimer) {
-            clearTimeout(showTimer);
-            showTimer = null;
-        }
+        cancelShow();
+        cancelLeave();
         hideTooltip(root);
     };
 
-    // A tooltip the user pressed open stays when the pointer moves on.
+    // The pointer left the target or the tooltip. A tooltip the user pressed
+    // open stays; otherwise it closes after the delay, unless the pointer
+    // reaches the target or the tooltip first.
     const leave = () => {
-        if (pinned?.()) {
-            active = false;
-            if (showTimer) {
-                clearTimeout(showTimer);
-                showTimer = null;
-            }
+        active = false;
+        cancelShow();
+        cancelLeave();
+        if (pinned?.() || !describesTarget(target, root)) return;
+        leaveTimer = setTimeout(() => {
+            leaveTimer = null;
+            // Another target may have taken the tooltip in the meantime.
+            if (!pinned?.() && describesTarget(target, root)) hide();
+        }, LEAVE_DELAY_MS);
+    };
+    // Focus that moves from the target into its tooltip (Tab to a control in
+    // it) keeps the tooltip.
+    const blur = (e: FocusEvent) => {
+        const next = e.relatedTarget;
+        if (next instanceof Node && tooltipOf(target, root)?.contains(next)) {
             return;
         }
         hide();
     };
+    hoverByTarget.set(target, {
+        stay: cancelLeave,
+        leave,
+        blur: () => {
+            if (!pinned?.()) hide();
+        },
+    });
 
     target.addEventListener('mouseenter', show);
     target.addEventListener('mouseleave', leave);
     target.addEventListener('focus', show);
-    target.addEventListener('blur', hide);
+    target.addEventListener('blur', blur);
 
     let touching = false;
     let touchStartX = 0;
@@ -578,7 +713,8 @@ export function attachTooltip(
         target.removeEventListener('mouseenter', show);
         target.removeEventListener('mouseleave', leave);
         target.removeEventListener('focus', show);
-        target.removeEventListener('blur', hide);
+        target.removeEventListener('blur', blur);
+        hoverByTarget.delete(target);
         if (enableLongPressTouch) {
             target.removeEventListener('touchstart', onTouchStart);
             target.removeEventListener('touchmove', onTouchMove);

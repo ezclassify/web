@@ -1717,7 +1717,8 @@ describe('MarkingField', () => {
         expect(tip!.hidden).toBe(false);
 
         token.dispatchEvent(new Event('mouseleave'));
-        await wait();
+        // It stays a moment, so the pointer can reach it, then closes.
+        await wait(350);
         expect(tip!.hidden).toBe(true);
     });
 

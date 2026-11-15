@@ -226,8 +226,14 @@ describe('tooltip-manager', () => {
             HTMLElement.prototype.getBoundingClientRect = realRect;
         });
 
-        /** A field holding a target near its top-right corner. */
-        function field(rect: DOMRect): {
+        /**
+         * A field holding a target by its trailing edge: near its top-right
+         * corner, or `offset` px further down.
+         */
+        function field(
+            rect: DOMRect,
+            offset = 4,
+        ): {
             field: HTMLElement;
             target: HTMLElement;
         } {
@@ -240,9 +246,9 @@ describe('tooltip-manager', () => {
                 target,
                 box(
                     rect.right - 30,
-                    rect.top + 4,
+                    rect.top + offset,
                     rect.right - 6,
-                    rect.top + 28,
+                    rect.top + offset + 24,
                 ),
             );
             return { field: el, target };
@@ -250,32 +256,76 @@ describe('tooltip-manager', () => {
         const shown = () =>
             document.querySelector<HTMLElement>('.ez-tooltip')!.style;
 
-        it('goes below the whole box when there is room', () => {
-            const { field: f, target } = field(box(300, 100, 700, 400));
-            showTooltip(target, 'Hi', root, { clearOf: f });
-            expect(shown().top).toBe('406px');
-        });
-
-        it('goes above the box when there is no room below', () => {
+        it('opens above the box next to a target in its top half, its trailing edge lined up with the target', () => {
             const { field: f, target } = field(box(300, 300, 700, 700));
             showTooltip(target, 'Hi', root, { clearOf: f });
+            // 300 - 6 - 100 above; 694 - 200 to end with the target.
             expect(shown().top).toBe('194px');
+            expect(shown().left).toBe('494px');
         });
 
-        it('goes beside the box, right or left, when neither above nor below has room', () => {
+        it("goes beside the box's trailing edge, lined up with the target's top, when there is no room above", () => {
             const { field: f, target } = field(box(100, 60, 700, 700));
             showTooltip(target, 'Hi', root, { clearOf: f });
             expect(shown().left).toBe('706px');
             expect(shown().top).toBe('64px');
+        });
+
+        it('never crosses the box to the side away from the target', () => {
+            // Room below and to the left, but both are across the field from
+            // a target in its top-right corner. No side next to it has room,
+            // so the tooltip falls back to the target itself, over the field
+            // (a caller that must not cover it closes the tooltip).
+            const { field: f, target } = field(box(300, 60, 1000, 400));
+            showTooltip(target, 'Hi', root, { clearOf: f });
+            expect(shown().top).toBe('94px');
+            expect(shown().top).not.toBe('406px');
+            expect(shown().left).not.toBe('94px');
+        });
+
+        it('opens below the box next to a target in its bottom half', () => {
+            const { field: f, target } = field(box(300, 100, 700, 400), 270);
+            showTooltip(target, 'Hi', root, { clearOf: f });
+            expect(shown().top).toBe('406px');
+            expect(shown().left).toBe('494px');
+        });
+
+        it('opens below or above a target in the middle of a one-line box', () => {
+            const { field: f, target } = field(box(300, 300, 700, 336), 6);
+            showTooltip(target, 'Hi', root, { clearOf: f });
+            expect(shown().top).toBe('342px');
 
             hideTooltip(root);
-            const other = field(box(400, 60, 1000, 700));
-            showTooltip(other.target, 'Hi', root, { clearOf: other.field });
-            expect(shown().left).toBe('194px');
+            const low = field(box(300, 690, 700, 726), 6);
+            showTooltip(low.target, 'Hi', root, { clearOf: low.field });
+            expect(shown().top).toBe('584px');
+        });
+
+        it('lines up with the trailing edge of a right-to-left target, on the left', () => {
+            const el = document.createElement('div');
+            el.dir = 'rtl';
+            const target = document.createElement('button');
+            // A browser computes the direction [dir] gives and the target
+            // inherits it; jsdom does neither, so the target states its own.
+            target.style.direction = 'rtl';
+            el.appendChild(target);
+            root.appendChild(el);
+            at(el, box(300, 300, 700, 700));
+            at(target, box(306, 304, 330, 328));
+            showTooltip(target, 'Hi', root, { clearOf: el });
+            expect(shown().top).toBe('194px');
+            expect(shown().left).toBe('306px');
+
+            hideTooltip(root);
+            at(el, box(300, 60, 700, 700));
+            at(target, box(306, 64, 330, 88));
+            showTooltip(target, 'Hi', root, { clearOf: el });
+            expect(shown().left).toBe('94px');
+            expect(shown().top).toBe('64px');
         });
 
         it('keeps clear of every element named, as one box', () => {
-            const { field: f, target } = field(box(300, 100, 700, 300));
+            const { field: f, target } = field(box(300, 100, 700, 300), 170);
             const errors = document.createElement('div');
             root.appendChild(errors);
             at(errors, box(300, 300, 700, 420));
@@ -287,23 +337,25 @@ describe('tooltip-manager', () => {
             const scroller = document.createElement('div');
             scroller.style.overflow = 'auto';
             root.appendChild(scroller);
-            at(scroller, box(0, 0, 1024, 500));
+            at(scroller, box(0, 200, 1024, 768));
             const { field: f, target } = field(box(300, 250, 700, 420));
             scroller.appendChild(f);
-            // The viewport has room below the field, the scroller does not.
+            // The viewport has room above the field, the scroller does not.
             showTooltip(target, 'Hi', root, { clearOf: f });
-            expect(shown().top).toBe('144px');
+            expect(shown().left).toBe('706px');
+            expect(shown().top).toBe('254px');
         });
 
         it('uses the viewport when the clipping ancestor has no room anywhere', () => {
             const clip = document.createElement('div');
             clip.style.overflow = 'hidden';
             root.appendChild(clip);
-            at(clip, box(300, 100, 700, 400));
-            const { field: f, target } = field(box(300, 100, 700, 400));
+            at(clip, box(300, 200, 700, 400));
+            const { field: f, target } = field(box(300, 200, 700, 400));
             clip.appendChild(f);
             showTooltip(target, 'Hi', root, { clearOf: f });
-            expect(shown().top).toBe('406px');
+            expect(shown().top).toBe('94px');
+            expect(shown().left).toBe('494px');
         });
     });
 
@@ -638,6 +690,7 @@ describe('tooltip-manager', () => {
             target.dispatchEvent(new Event('mouseenter'));
             await new Promise((r) => setTimeout(r, 350));
             target.dispatchEvent(new Event('mouseleave'));
+            await new Promise((r) => setTimeout(r, 350));
             expect(tip()?.hidden).toBe(true);
         });
 
@@ -659,6 +712,136 @@ describe('tooltip-manager', () => {
             target.dispatchEvent(new Event('mouseleave'));
             await new Promise((r) => setTimeout(r, 350));
             expect(onShown).not.toHaveBeenCalled();
+        });
+    });
+    describe('attachTooltip reachable by the pointer', () => {
+        beforeEach(() => {
+            vi.useFakeTimers();
+        });
+        afterEach(() => {
+            vi.useRealTimers();
+        });
+
+        /** A target with a tooltip holding a control, shown past its delay. */
+        function hovered(pinned?: () => boolean): {
+            target: HTMLElement;
+            tip: () => HTMLElement;
+            control: HTMLButtonElement;
+        } {
+            const target = document.createElement('button');
+            root.appendChild(target);
+            const control = document.createElement('button');
+            control.textContent = 'Act';
+            attachTooltip(
+                target,
+                () => control,
+                root,
+                undefined,
+                undefined,
+                undefined,
+                undefined,
+                pinned,
+            );
+            target.dispatchEvent(new Event('mouseenter'));
+            vi.advanceTimersByTime(300);
+            const tip = () =>
+                document.body.querySelector<HTMLElement>('.ez-tooltip')!;
+            expect(tip().hidden).toBe(false);
+            return { target, tip, control };
+        }
+
+        it('stays while the pointer crosses from the target into it', () => {
+            const { target, tip } = hovered();
+            target.dispatchEvent(new Event('mouseleave'));
+            vi.advanceTimersByTime(150);
+            tip().dispatchEvent(new Event('mouseenter'));
+            vi.advanceTimersByTime(1000);
+            expect(tip().hidden).toBe(false);
+        });
+
+        it('closes once the pointer has left the target and the tooltip for the delay', () => {
+            const { target, tip } = hovered();
+            target.dispatchEvent(new Event('mouseleave'));
+            vi.advanceTimersByTime(250);
+            expect(tip().hidden).toBe(false);
+            vi.advanceTimersByTime(100);
+            expect(tip().hidden).toBe(true);
+            expect(target.hasAttribute('aria-describedby')).toBe(false);
+
+            // Leaving the tooltip itself starts the same delay.
+            target.dispatchEvent(new Event('mouseenter'));
+            vi.advanceTimersByTime(300);
+            target.dispatchEvent(new Event('mouseleave'));
+            tip().dispatchEvent(new Event('mouseenter'));
+            tip().dispatchEvent(new Event('mouseleave'));
+            vi.advanceTimersByTime(250);
+            expect(tip().hidden).toBe(false);
+            vi.advanceTimersByTime(100);
+            expect(tip().hidden).toBe(true);
+        });
+
+        it('stays when the pointer comes back to the target, without being built again', () => {
+            const { target, tip, control } = hovered();
+            const builds = new MutationObserver(() => {});
+            builds.observe(tip(), { childList: true });
+            target.dispatchEvent(new Event('mouseleave'));
+            vi.advanceTimersByTime(200);
+            expect(tip().hidden).toBe(false);
+            target.dispatchEvent(new Event('mouseenter'));
+            vi.advanceTimersByTime(1000);
+            expect(tip().hidden).toBe(false);
+            expect(tip().contains(control)).toBe(true);
+            expect(builds.takeRecords()).toHaveLength(0);
+            builds.disconnect();
+        });
+
+        it('a pinned tooltip stays when the pointer leaves it', () => {
+            const { target, tip } = hovered(() => true);
+            target.dispatchEvent(new Event('mouseleave'));
+            tip().dispatchEvent(new Event('mouseenter'));
+            tip().dispatchEvent(new Event('mouseleave'));
+            vi.advanceTimersByTime(1000);
+            expect(tip().hidden).toBe(false);
+        });
+
+        it('a pending close leaves alone a tooltip another target has taken', () => {
+            const { target, tip } = hovered();
+            const other = document.createElement('span');
+            root.appendChild(other);
+            target.dispatchEvent(new Event('mouseleave'));
+            showTooltip(other, 'Other', root);
+            vi.advanceTimersByTime(1000);
+            expect(tip().hidden).toBe(false);
+            expect(other.getAttribute('aria-describedby')).toBe(tip().id);
+        });
+
+        it('keeps the tooltip when focus moves from the target into it', () => {
+            const { target, tip, control } = hovered();
+            target.focus();
+            control.focus();
+            vi.advanceTimersByTime(1000);
+            expect(tip().hidden).toBe(false);
+            expect(document.activeElement).toBe(control);
+
+            // Focus leaving the tooltip for elsewhere closes it.
+            const elsewhere = document.createElement('button');
+            root.appendChild(elsewhere);
+            elsewhere.focus();
+            expect(tip().hidden).toBe(true);
+        });
+
+        it('Escape in the tooltip closes it and returns focus to the target', () => {
+            const { target, tip, control } = hovered();
+            control.focus();
+            const escape = new KeyboardEvent('keydown', {
+                key: 'Escape',
+                bubbles: true,
+                cancelable: true,
+            });
+            control.dispatchEvent(escape);
+            expect(tip().hidden).toBe(true);
+            expect(escape.defaultPrevented).toBe(true);
+            expect(document.activeElement).toBe(target);
         });
     });
 });

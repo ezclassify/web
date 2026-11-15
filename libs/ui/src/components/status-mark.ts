@@ -36,9 +36,13 @@
  * that the marking does not write, such as the members a group stands for.
  * Pressing it (a tap, a click, Enter or Space) opens that list until a second
  * press, Escape, or a press or focus outside the field closes it; a phone has
- * no hover, so the press is its only way in. The list sits outside the field's
- * box, so it never covers what it explains. The indicator communicates state;
- * it is not a per-fix activity feed.
+ * no hover, so the press is its only way in. A hovered list can be reached: the
+ * pointer can move from the mark into it, and it closes a moment after the
+ * pointer has left both. Tab from the mark reaches its undo. The list sits
+ * outside the field's box, so it never covers what it explains, right next to
+ * the mark: on the side of the field the mark is toward, its trailing edge
+ * lined up with the mark's. The indicator communicates state; it is not a
+ * per-fix activity feed.
  *
  * The module owns the single-mark invariant: `ensureStatusMark` is idempotent
  * per wrap element and `setStatusMarkFixes` mutates the existing mark in place,
