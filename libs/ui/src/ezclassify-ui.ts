@@ -149,6 +149,7 @@ import {
 } from './store/base-ezclassify-store';
 import { clearWholeReadGate, setWholeReadGate } from './whole-read-gate';
 import { createEzClassifyFacetBinding } from './facet-binding';
+import { MarkingUndo, valueSignature } from './components/marking-undo';
 import {
     resolveAddedAttributes,
     restoreAddedAttributes,
@@ -386,6 +387,14 @@ export class EzClassifyUI {
     private storeUnsubscribers = new Map<HTMLElement, () => void>();
     /** Per whole field: the subscription that re-reads it when a part changes. */
     private partUnsubscribers = new Map<HTMLElement, () => void>();
+    /**
+     * Per store marking: the undo every field bound to it shares, fed the
+     * marking's commits, and how many fields hold it.
+     */
+    private readonly markingUndos = new Map<
+        string,
+        { undo: MarkingUndo; users: number; stop: () => void }
+    >();
     /** Per part field: the subscription that re-reads it when its whole changes. */
     private wholeUnsubscribers = new Map<HTMLElement, () => void>();
     /**
@@ -4179,11 +4188,48 @@ export class EzClassifyUI {
             );
         }
 
+        const releaseUndo = component.shareUndo
+            ? this.shareMarkingUndo(component, binding.markingId)
+            : undefined;
+
         this.storeUnsubscribers.set(binding.token.token as HTMLElement, () => {
             unsubState();
             unsubRefusal?.();
             unsubFacet?.();
+            releaseUndo?.();
         });
+    }
+
+    /**
+     * Give a field the undo of the store marking it is bound to: one per
+     * marking, so every field bound to it shows the same offer, and it hears
+     * every value the store commits for the marking, whichever field or host
+     * wrote it.
+     *
+     * @returns Releases the field's hold; the last release stops listening
+     */
+    private shareMarkingUndo(
+        component: ComponentInstance,
+        markingId: string,
+    ): () => void {
+        let entry = this.markingUndos.get(markingId);
+        if (!entry) {
+            const undo = new MarkingUndo();
+            const stop = this.store.subscribe(markingId, (state) =>
+                undo.observe(valueSignature(state.rendered, state.assertions)),
+            );
+            entry = { undo, users: 0, stop };
+            this.markingUndos.set(markingId, entry);
+        }
+        const held = entry;
+        held.users++;
+        component.shareUndo!(held.undo);
+        return () => {
+            if (--held.users > 0) return;
+            held.stop();
+            if (this.markingUndos.get(markingId) === held)
+                this.markingUndos.delete(markingId);
+        };
     }
 
     /**

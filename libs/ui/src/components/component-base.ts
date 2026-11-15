@@ -24,6 +24,13 @@ import {
     type ComponentOptions,
 } from './component-base-readonly';
 import { createClearButton, type ClearButton } from './clear-button';
+import { announce, createAnnouncer } from './accessibility-helpers';
+import {
+    isUndoChord,
+    MarkingUndo,
+    valueSignature,
+    type UndoKind,
+} from './marking-undo';
 import { t } from '../i18n';
 import {
     assertDescribesConcepts,
@@ -37,6 +44,7 @@ import {
     explainedChanges,
     recordAppliedFixes,
     setStatusMarkFixes,
+    type StatusMarkOptions,
 } from './status-mark';
 import { listedScopesOf, writesCategoryOf } from '../scopes';
 import {
@@ -88,6 +96,35 @@ export abstract class ComponentBase extends ReadOnlyComponentBase {
     private readonly updateClearButton = () => {
         queueMicrotask(() => this.clearControl?.update());
     };
+    /**
+     * The marking's undo (see marking-undo.ts). A field keeps one of its own
+     * until the runtime binds it to a store marking and shares that marking's
+     * (see {@link shareUndo}).
+     */
+    private undo = new MarkingUndo();
+    /**
+     * Whether the field tells its undo every value it settles on. A shared undo
+     * hears the store instead, which sees every field's values.
+     */
+    private feedsUndo = true;
+    private releaseUndo: (() => void) | null = null;
+    /** Puts back the value the field held when the edit in progress began. */
+    private editStart: (() => Promise<void>) | null = null;
+    /** The value the field last settled on, as {@link valueSignature}. */
+    private settledValue = '';
+    /** Says what an undo did. */
+    private undoAnnouncer: HTMLElement | null = null;
+    /** Where the undo chord is heard: the whole field (see fieldScope). */
+    private undoScope: HTMLElement | null = null;
+    private readonly undoKey = (event: KeyboardEvent) => {
+        if (!isUndoChord(event) || !this.undo.offer) return;
+        // Text typed and not yet committed is the author's last action, so
+        // the platform's own undo takes it back.
+        if (this.hasTypedDraft(event)) return;
+        event.preventDefault();
+        event.stopPropagation();
+        void this.performUndo();
+    };
 
     override async init(
         container: HTMLDivElement,
@@ -96,20 +133,182 @@ export abstract class ComponentBase extends ReadOnlyComponentBase {
     ): Promise<void> {
         await super.init(container, engine, options);
         if (this._destroyed) return;
+        this.settledValue = this.valueSignature();
+        this.watchUndo();
+        this.undoScope = this.fieldScope();
+        this.undoScope.addEventListener('keydown', this.undoKey, true);
         const mount = this.clearButtonMount();
+        this.undoAnnouncer = createAnnouncer();
+        (mount ?? this.container).appendChild(this.undoAnnouncer);
         if (!mount) return;
+        // Clear stays the last control of the chrome; the announcer sits
+        // before it.
         this.clearControl = createClearButton({
             label: t('aria.clearMarking'),
             host: this.enhancedInput ?? undefined,
             empty: () => !this.hasClearValue(),
             clear: async () => {
+                this.editStart = null;
+                this.undo.make('clear', this, this.captureValue(true));
                 this.discardDraft();
                 await this.setValue('');
                 this.discardDraft();
             },
+            undoOffer: () => this.undo.offer,
+            undo: () => this.undo.perform(),
+            focusField: () => this.focusField(),
         });
         mount.appendChild(this.clearControl.button);
+        mount.insertBefore(this.undoAnnouncer, this.clearControl.button);
         this.container.addEventListener('input', this.updateClearButton);
+    }
+
+    /**
+     * Use the undo of the store marking this field is bound to, which every
+     * field bound to it shares and the runtime feeds the marking's values. The
+     * runtime calls this once the field is wired to the store.
+     *
+     * @internal
+     */
+    shareUndo(undo: MarkingUndo): void {
+        if (undo === this.undo) return;
+        this.undo.end(this);
+        this.undo = undo;
+        this.feedsUndo = false;
+        this.watchUndo();
+    }
+
+    /** Follow the offer of the undo the field uses now. */
+    private watchUndo(): void {
+        this.releaseUndo?.();
+        this.releaseUndo = this.undo.subscribe(() => {
+            this.clearControl?.update();
+        });
+        this.clearControl?.update();
+    }
+
+    /**
+     * The edit the author is making starts now: keep what the field holds, so
+     * once the edit changes it, the marking can go back. Every path an author
+     * edits the value through calls this first; a value the field takes from
+     * its host or its store does not.
+     */
+    protected beginUserEdit(): void {
+        this.editStart ??= this.captureValue();
+    }
+
+    /**
+     * What the field holds now, and how to put it back. A value the engine read
+     * completely goes back as its facts, so what the rules derived from them is
+     * derived again and explained again; text the engine could not read all of
+     * goes back as that text.
+     *
+     * @param clearing - Whether a clear is about to take it, which also takes
+     *   whatever the field has in progress
+     */
+    protected captureValue(_clearing = false): () => Promise<void> {
+        const assertions = this.assertions.map((a) => ({ ...a }));
+        const rendered = this._lastRendered;
+        const asText = this.unreadSpans.length > 0;
+        return async () => {
+            if (this._destroyed) return;
+            this.discardDraft();
+            if (asText) {
+                await this.setValue(rendered);
+                return;
+            }
+            this.invalidateValueRead();
+            if (replacesStated(this.assertions, assertions))
+                this._appliedFixes.clear();
+            this.assertions = assertions;
+            await this.reprocessNow();
+        };
+    }
+
+    /**
+     * Undo the marking's last action, then return to the field and say so.
+     *
+     * @returns Whether there was anything to undo
+     */
+    protected async performUndo(): Promise<boolean> {
+        const kind: UndoKind | undefined = this.undo.offer?.kind;
+        if (!(await this.undo.perform())) return false;
+        if (this._destroyed) return true;
+        this.focusField();
+        if (this.undoAnnouncer)
+            announce(
+                this.undoAnnouncer,
+                t(
+                    kind === 'clear'
+                        ? 'a11y.markingRestored'
+                        : 'a11y.lastEditUndone',
+                ),
+            );
+        return true;
+    }
+
+    /**
+     * What the status mark needs to name the changes in the field's words and
+     * end its list with the undo of the author's last edit while the marking
+     * offers one.
+     */
+    protected statusMarkUndo(): Pick<
+        StatusMarkOptions,
+        'words' | 'undoLastEdit'
+    > {
+        return {
+            words: this.changeWords(),
+            undoLastEdit: () =>
+                this.undo.offer ? () => void this.performUndo() : null,
+        };
+    }
+
+    /**
+     * Whether the key press lands on text the author has typed and not yet
+     * committed: a box inside the field, other than the field's own input, that
+     * holds text.
+     */
+    protected hasTypedDraft(event: KeyboardEvent): boolean {
+        const target = event.target;
+        return (
+            (target instanceof HTMLInputElement ||
+                target instanceof HTMLTextAreaElement) &&
+            target !== this.enhancedInput &&
+            target.value !== ''
+        );
+    }
+
+    /**
+     * The element that holds everything of the field the author works in: its
+     * mount, unless the field draws itself around its host instead.
+     */
+    protected fieldScope(): HTMLElement {
+        return this.container;
+    }
+
+    /**
+     * Put focus in the field itself: after a keyboard clear, and after an undo.
+     * The first control in the field's frame that takes focus, outside its
+     * chrome.
+     */
+    protected focusField(): void {
+        const target = [
+            ...this.fieldScope().querySelectorAll<HTMLElement>(
+                'input:not([type="hidden"]), textarea, button, [tabindex]',
+            ),
+        ].find(
+            (el) =>
+                el.tabIndex >= 0 &&
+                !el.matches(':disabled') &&
+                !el.closest('.ez-field-chrome') &&
+                el.offsetParent !== null,
+        );
+        target?.focus({ preventScroll: true });
+    }
+
+    /** The value the field holds, as one comparable string. */
+    private valueSignature(): string {
+        return valueSignature(this._lastRendered, this.assertions);
     }
 
     /**
@@ -165,11 +364,20 @@ export abstract class ComponentBase extends ReadOnlyComponentBase {
             shape: 'chrome',
             root: this.styleRoot,
             shouldShowTooltip: () => this.shouldShowTooltip(),
+            ...this.statusMarkUndo(),
+            onReviewChange: () => this.onStatusReviewChange(),
         });
         this.suiteChrome = chrome;
         this.updateSuiteStatusMark();
         return chrome;
     }
+
+    /**
+     * What the author has not reviewed of the changes the suite's status mark
+     * lists changed. A control that draws rule-added values differently until
+     * they are reviewed draws them again.
+     */
+    protected onStatusReviewChange(): void {}
 
     /** Remove the suite's chrome; every component's destroy() calls this. */
     protected destroySuiteChrome(): void {
@@ -185,12 +393,30 @@ export abstract class ComponentBase extends ReadOnlyComponentBase {
 
     protected destroyClearButton(): void {
         this.container.removeEventListener('input', this.updateClearButton);
+        this.undoScope?.removeEventListener('keydown', this.undoKey, true);
+        this.undoScope = null;
+        // The snapshot goes with the field that took it.
+        this.undo.end(this);
+        this.releaseUndo?.();
+        this.releaseUndo = null;
+        this.undoAnnouncer?.remove();
+        this.undoAnnouncer = null;
         this.clearControl?.destroy();
         this.clearControl = undefined;
         this.destroySuiteChrome();
     }
 
     protected override onAssertionsChanged(): void {
+        const value = this.valueSignature();
+        if (value !== this.settledValue) {
+            this.settledValue = value;
+            // The author's edit changed the value: the marking can go back
+            // to what it held when the edit began. Offered before the field
+            // publishes, so the store's commit of it is heard as its result.
+            if (this.editStart) this.undo.make('edit', this, this.editStart);
+            this.editStart = null;
+            if (this.feedsUndo) this.undo.observe(value);
+        }
         super.onAssertionsChanged();
         this.clearControl?.update();
         // The mark says what EzClassify changed in the value the field holds.
@@ -301,6 +527,8 @@ export abstract class ComponentBase extends ReadOnlyComponentBase {
     }
 
     override setAssertions(assertions: Assertion[]): void {
+        // A value from the host or the store is nobody's edit here.
+        this.editStart = null;
         this.invalidateValueRead();
         // A marking that drops something the field stated replaces its value,
         // and the fixes behind the old value no longer explain it.
@@ -320,6 +548,7 @@ export abstract class ComponentBase extends ReadOnlyComponentBase {
      * keeps the field's own explanation of how that value came about.
      */
     applyStoreState(state: EzClassifyState): void {
+        this.editStart = null;
         this.invalidateValueRead();
         ++this._reprocessSeq;
         if (this._destroyed) return;
@@ -350,6 +579,7 @@ export abstract class ComponentBase extends ReadOnlyComponentBase {
         value?: string,
         insertIndex?: number,
     ): void {
+        this.beginUserEdit();
         // Single-select categories: remove existing concept before adding the new one
         const category = this.scheme.categories.find(
             (f) => f.id === categoryId,
@@ -402,6 +632,7 @@ export abstract class ComponentBase extends ReadOnlyComponentBase {
     protected override ruleFixHandler(): (fix: Fix) => void {
         return (fix) => {
             if (this._destroyed) return;
+            this.beginUserEdit();
             this.reprocessEdit(fixAssertions(fix));
         };
     }
@@ -415,6 +646,7 @@ export abstract class ComponentBase extends ReadOnlyComponentBase {
         categoryId: string;
         selected?: boolean;
     }): void {
+        this.beginUserEdit();
         if (s.selected) {
             const assertion = this.assertions.find(
                 (a) =>
@@ -700,6 +932,7 @@ export abstract class ComponentBase extends ReadOnlyComponentBase {
      * to apply cascades, inference, and defaults.
      */
     protected removeAssertion(conceptId: string, categoryId: string): void {
+        this.beginUserEdit();
         this.reprocessEdit(
             removeAssertionCascade(
                 this.assertions,
@@ -1114,6 +1347,7 @@ export abstract class ComponentBase extends ReadOnlyComponentBase {
         reading: ComposerReading,
         commit: ComposerCommit,
     ): Promise<void> {
+        this.beginUserEdit();
         this.assertions = statedAssertions(reading.assertions);
         this.recordAppliedFixes(reading.appliedFixes, commit.replaces);
         await this.reprocessNow();

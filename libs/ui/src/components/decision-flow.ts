@@ -82,6 +82,9 @@ import { viewOutputOf } from '../format-resolver';
 import { renderViewRefused } from '../render-refusal';
 import { writtenValue } from '../value-spelling';
 import { t } from '../i18n';
+import { derivedAssertion } from '../assertion-identity';
+import { unreviewedAdditions } from './status-mark';
+import { locateTokenSpans } from '../token-tree/token-tree';
 import {
     categoriesByScope,
     factsInScopes,
@@ -444,6 +447,7 @@ export class DecisionFlow extends ComponentBase {
     }
 
     private pick(step: StepDef, conceptId: string, action: () => void): void {
+        this.beginUserEdit();
         const sequence = ++this.pickSequence;
         const apply = () => {
             if (
@@ -1618,8 +1622,53 @@ export class DecisionFlow extends ComponentBase {
         return chosen;
     }
 
+    /**
+     * The options of a step the marking holds only because the engine derived
+     * them (a rule added it, another choice includes it, a default), each with
+     * what says why: "Included by" the held choice whose members it is, when
+     * one is. The author did not choose them, so they never look chosen.
+     */
+    private inferredIn(step: StepDef): Map<string, string | null> {
+        const held = this.assertions.filter(
+            (a) => a.categoryId === step.categoryId,
+        );
+        const stated = new Set(
+            held.filter((a) => !derivedAssertion(a)).map((a) => a.conceptId),
+        );
+        const inferred = new Map<string, string | null>();
+        for (const a of held) {
+            if (stated.has(a.conceptId) || !derivedAssertion(a)) continue;
+            const includer = this.assertions
+                .map((other) =>
+                    this.scheme.concepts.find((c) => c.id === other.conceptId),
+                )
+                .find((c) => c?.members?.includes(a.conceptId));
+            inferred.set(
+                a.conceptId,
+                includer
+                    ? t('flow.includedBy').replace(
+                          '{choice}',
+                          () => includer.name,
+                      )
+                    : null,
+            );
+        }
+        return inferred;
+    }
+
+    /** Draw an option the marking holds only by derivation (see inferredIn). */
+    private markInferred(btn: HTMLButtonElement): void {
+        btn.classList.add('ez-decision-flow__option--inferred');
+        btn.setAttribute('aria-checked', 'false');
+        btn.setAttribute(
+            'aria-label',
+            `${btn.textContent ?? ''}${t('aria.inferredSuffix')}`,
+        );
+    }
+
     private renderRadioOptions(step: StepDef, optionsEl: HTMLElement): void {
         const chosen = this.chosenIn(step);
+        const inferred = this.inferredIn(step);
         const selected = [...chosen][0];
         const options = this.stepOptions(step);
         const first = options.find((o) => !o.blocked)?.concept.id;
@@ -1640,7 +1689,14 @@ export class DecisionFlow extends ComponentBase {
                     : -1;
             btn.textContent = concept.name;
             btn.dataset.conceptId = concept.id;
-            this.describeOption(btn, step, concept, optionsEl);
+            this.describeOption(
+                btn,
+                step,
+                concept,
+                optionsEl,
+                inferred.get(concept.id),
+            );
+            if (inferred.has(concept.id)) this.markInferred(btn);
             if (blocked) this.blockOption(btn, step, concept);
 
             btn.addEventListener('click', () => {
@@ -1750,8 +1806,10 @@ export class DecisionFlow extends ComponentBase {
         step: StepDef,
         concept: ConceptDef,
         optionsEl: HTMLElement,
+        why?: string | null,
     ): void {
         const lines = [
+            why ?? '',
             concept.view && concept.view !== concept.name
                 ? `Appears as: ${concept.view}`
                 : '',
@@ -2086,6 +2144,7 @@ export class DecisionFlow extends ComponentBase {
                 a.conceptId === concept.id && a.categoryId === step.categoryId,
         );
         if (!complete && index < 0) return;
+        this.beginUserEdit();
         this.editedCategory = step.categoryId;
         // Restore focus to this field after the DOM rebuild that follows reprocess().
         this._restoreFocusAfterRender = true;
@@ -2161,9 +2220,13 @@ export class DecisionFlow extends ComponentBase {
 
     private renderCheckboxOptions(step: StepDef, optionsEl: HTMLElement): void {
         const selectedIds = this.chosenIn(step);
+        const inferred = this.inferredIn(step);
 
         for (const { concept, blocked } of this.stepOptions(step)) {
-            const isChecked = selectedIds.has(concept.id);
+            // An option the marking holds only by derivation is not checked:
+            // pressing it makes it the author's own choice.
+            const isChecked =
+                selectedIds.has(concept.id) && !inferred.has(concept.id);
             const btn = document.createElement('button');
             btn.type = 'button';
             btn.disabled = this.locked;
@@ -2174,7 +2237,14 @@ export class DecisionFlow extends ComponentBase {
             btn.tabIndex = 0;
             btn.textContent = concept.name;
             btn.dataset.conceptId = concept.id;
-            this.describeOption(btn, step, concept, optionsEl);
+            this.describeOption(
+                btn,
+                step,
+                concept,
+                optionsEl,
+                inferred.get(concept.id),
+            );
+            if (inferred.has(concept.id)) this.markInferred(btn);
             if (blocked) this.blockOption(btn, step, concept);
 
             btn.addEventListener('click', () => {
@@ -2356,7 +2426,7 @@ export class DecisionFlow extends ComponentBase {
         line.className = 'ez-decision-flow__value';
         const shown = document.createElement('span');
         shown.className = 'ez-decision-flow__value-text';
-        if (text) writeBreakable(shown, text);
+        if (text) writeBreakable(shown, text, this.unreviewedRuns(text));
         else {
             shown.textContent = NOT_SET;
             shown.dataset.empty = '';
@@ -2369,6 +2439,30 @@ export class DecisionFlow extends ComponentBase {
             wrap.appendChild(problems);
         }
         return wrap;
+    }
+
+    /**
+     * The runs of a value's text that are values a marking rule added and the
+     * author has not reviewed yet: drawn inferred until they are.
+     */
+    private unreviewedRuns(text: string): { start: number; end: number }[] {
+        if (!this.suiteChrome) return [];
+        const unreviewed = unreviewedAdditions(this.suiteChrome.status);
+        return locateTokenSpans(text, this.getTokenTree(), (node) =>
+            this.printsToken(node),
+        ).filter(
+            ({ token }) =>
+                !!token.conceptId &&
+                unreviewed({
+                    categoryId: token.categoryId,
+                    conceptId: token.conceptId,
+                }),
+        );
+    }
+
+    /** What the author has reviewed changed: draw the values again. */
+    protected override onStatusReviewChange(): void {
+        if (this.restEl) this.renderValues();
     }
 
     /**
@@ -2587,10 +2681,30 @@ function visibleTop(el: HTMLElement): number {
  * after a run of separator slashes, never inside a token: a marking wraps at
  * its "//" and "/", and a block keeps each of its lines.
  */
-function writeBreakable(el: HTMLElement, text: string): void {
+function writeBreakable(
+    el: HTMLElement,
+    text: string,
+    inferred: readonly { start: number; end: number }[] = [],
+): void {
+    let cursor = 0;
+    for (const run of [...inferred].sort((a, b) => a.start - b.start)) {
+        if (run.start < cursor) continue;
+        writeBreakableRun(el, text.slice(cursor, run.start));
+        const value = document.createElement('span');
+        value.className = 'ez-decision-flow__value-inferred';
+        writeBreakableRun(value, text.slice(run.start, run.end));
+        el.appendChild(value);
+        cursor = run.end;
+    }
+    writeBreakableRun(el, text.slice(cursor));
+}
+
+/** {@link writeBreakable} for one run of the text. */
+function writeBreakableRun(el: HTMLElement, text: string): void {
     text.split('\n').forEach((line, index) => {
         if (index > 0) el.appendChild(document.createElement('br'));
         for (const part of line.split(/(?<=\/)(?!\/)/)) {
+            if (part === '') continue;
             el.appendChild(document.createTextNode(part));
             if (part.endsWith('/'))
                 el.appendChild(document.createElement('wbr'));

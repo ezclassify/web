@@ -29,7 +29,11 @@ import { getMountHost } from '../mount-host-registry';
 import { resolveMarkingColor } from '../color-resolver';
 import { COMPONENT_CSS } from './component-utils';
 import { heightAtLeastFloor } from './dom-helpers';
-import { ensureStatusMark, setStatusMarkFixes } from './status-mark';
+import {
+    ensureStatusMark,
+    setStatusMarkFixes,
+    unreviewedAdditions,
+} from './status-mark';
 import { mountFieldChrome, type FieldChrome } from './field-chrome';
 import {
     ensureFavoritesButton,
@@ -40,7 +44,7 @@ import {
 } from './favorites-panel';
 import { t } from '../i18n';
 import { fixAssertions } from './rule-errors';
-import { flattenTree, type TokenNode } from '../token-tree/token-tree';
+import { locateTokenSpans, type TokenNode } from '../token-tree/token-tree';
 import {
     ComposerController,
     type CommitOutcome,
@@ -139,6 +143,36 @@ export class MarkingField extends ComponentBase {
 
     protected override discardDraft(): void {
         this.controller.discard();
+    }
+
+    /** What typing is in progress is the field's draft. */
+    protected override hasTypedDraft(): boolean {
+        return this.controller.isDirty();
+    }
+
+    /** The field draws itself around its host, outside its mount. */
+    protected override fieldScope(): HTMLElement {
+        return this.wrap;
+    }
+
+    protected override focusField(): void {
+        this.host.focus({ preventScroll: true });
+    }
+
+    /**
+     * Also keep a draft typed and not yet committed: a clear takes it too, so
+     * its undo puts it back, as typed, after the marking.
+     */
+    protected override captureValue(clearing = false): () => Promise<void> {
+        const restoreMarking = super.captureValue(clearing);
+        const draft =
+            clearing && this.controller.isDirty() ? this.host.value : null;
+        return async () => {
+            await restoreMarking();
+            if (draft === null || this._destroyed) return;
+            this.host.value = draft;
+            this.host.dispatchEvent(new Event('input', { bubbles: true }));
+        };
     }
 
     protected setup(): void {
@@ -255,6 +289,11 @@ export class MarkingField extends ComponentBase {
             shape: 'chrome',
             root: this.options.root,
             shouldShowTooltip: () => this.options.tooltips !== false,
+            ...this.statusMarkUndo(),
+            // Rule-added values are drawn inferred until reviewed.
+            onReviewChange: () => {
+                if (!this.hasFocus) this.paintTokens();
+            },
         });
         // The value read at init may already carry fixes the engine applied.
         setStatusMarkFixes(this.chrome.status, this.fieldStatusChanges());
@@ -551,7 +590,10 @@ export class MarkingField extends ComponentBase {
                     this.assertions.length > 0 &&
                     !this.container.hasAttribute('data-ezclassify-invalid'),
             }),
-            onApply: (marking) => void this.setValue(marking),
+            onApply: (marking) => {
+                this.beginUserEdit();
+                void this.setValue(marking);
+            },
             focusField: () => this.host.focus(),
         };
     }
@@ -750,6 +792,7 @@ export class MarkingField extends ComponentBase {
             await this.controller.commit();
             return;
         }
+        this.beginUserEdit();
         this.assertions = fixAssertions(fix);
         this.reprocess();
     }
@@ -959,7 +1002,13 @@ export class MarkingField extends ComponentBase {
         // claim is emitted verbatim as plain text, so the display's text can
         // only ever be this exact string.
         const text = this._lastRendered;
-        const tokens = this.resolveTokenSpans(text);
+        const tokens = locateTokenSpans(text, this.getTokenTree(), (node) =>
+            this.printsToken(node),
+        );
+        // A value a rule added is drawn inferred until it is reviewed.
+        const unreviewed = this.chrome
+            ? unreviewedAdditions(this.chrome.status)
+            : () => false;
         // Text the engine could not read is flagged where the engine's
         // recognition of the value places it.
         const unread = this.unreadSpans.filter(
@@ -978,7 +1027,16 @@ export class MarkingField extends ComponentBase {
                 );
             }
             const piece = text.slice(span.start, span.end);
-            if (span.token) this.paintToken(piece, span.token);
+            if (span.token)
+                this.paintToken(
+                    piece,
+                    span.token,
+                    !!span.token.conceptId &&
+                        unreviewed({
+                            categoryId: span.token.categoryId,
+                            conceptId: span.token.conceptId,
+                        }),
+                );
             else this.paintUnread(piece);
             cursor = span.end;
         }
@@ -989,92 +1047,6 @@ export class MarkingField extends ComponentBase {
         }
     }
 
-    /**
-     * Locate each token's label inside the rendered marking, left to right.
-     *
-     * The token tree is a SECOND derivation of the marking's structure, built
-     * from the assertions rather than from the engine's renderer, and the two
-     * do not agree character for character: the tree has no notion of a field's
-     * per-value affix (CUI's "SP-"), sorts a category by concept position where
-     * the format may sort alphabetically, and substitutes a space for a
-     * within-category separator it cannot derive from a level. So the tree is
-     * used for what it genuinely knows (which concept a run of characters
-     * belongs to) and never for the string itself. Everything outside a matched
-     * label (separators, prefixes, ordering gaps) is painted from the rendered
-     * string verbatim, which is what keeps the display's text identical to the
-     * value the field holds.
-     *
-     * Matching is a single left-to-right pass: at each offset the longest
-     * unclaimed label that starts there wins, and each token is claimed once,
-     * so a label repeated in two categories paints both occurrences. A match
-     * must not abut an alphanumeric character on either side: a short label
-     * ("SI", "G") must never paint a fragment of some longer word in a
-     * free-text value. A label the renderer spelled differently simply goes
-     * unmatched: it paints as plain text, uncolored, still present.
-     *
-     * The one piece of structure the tree does get to claim is a token's own
-     * per-value affix (`each`, CUI's "SP-" or a parenthesized value), because
-     * the format writes it around ONE value rather than between two: the
-     * parentheses of "(NOFORN)" belong to that value the way its letters do,
-     * and painting them outside the span leaves the underline starting after
-     * the parenthesis and the concept tooltip not covering it. The string stays
-     * the authority even so. The affix is claimed only where the rendered text
-     * literally carries it immediately against the matched label, and never
-     * back past a span already painted, so a runtime that suppressed the
-     * framing or a format that writes it elsewhere costs nothing but the
-     * decoration.
-     */
-    private resolveTokenSpans(
-        text: string,
-    ): { start: number; end: number; token: TokenNode }[] {
-        const unclaimed = flattenTree(this.getTokenTree())
-            .map((flat) => flat.node)
-            .filter((node) => node.label.length > 0);
-        const spans: { start: number; end: number; token: TokenNode }[] = [];
-        const isWordChar = (ch: string | undefined): boolean =>
-            ch !== undefined && /[A-Za-z0-9]/.test(ch);
-        let index = 0;
-        while (index < text.length) {
-            let best = -1;
-            for (let i = 0; i < unclaimed.length; i++) {
-                const label = unclaimed[i].label;
-                if (!text.startsWith(label, index)) continue;
-                if (isWordChar(text[index - 1])) continue;
-                if (isWordChar(text[index + label.length])) continue;
-                if (best < 0 || label.length > unclaimed[best].label.length) {
-                    best = i;
-                }
-            }
-            if (best < 0) {
-                index++;
-                continue;
-            }
-            const [token] = unclaimed.splice(best, 1);
-            let start = index;
-            let end = index + token.label.length;
-            const prefix = token.each?.prefix;
-            const suffix = token.each?.suffix;
-            if (
-                prefix !== undefined &&
-                prefix.length > 0 &&
-                start - prefix.length >= 0 &&
-                text.startsWith(prefix, start - prefix.length)
-            ) {
-                start -= prefix.length;
-            }
-            if (
-                suffix !== undefined &&
-                suffix.length > 0 &&
-                text.startsWith(suffix, end)
-            ) {
-                end += suffix.length;
-            }
-            spans.push({ start, end, token });
-            index = end;
-        }
-        return spans;
-    }
-
     /** Paint author text the engine could not read, flagged as such. */
     private paintUnread(text: string): void {
         const span = document.createElement('span');
@@ -1083,9 +1055,14 @@ export class MarkingField extends ComponentBase {
         this.display.appendChild(span);
     }
 
-    private paintToken(label: string, token: TokenNode): void {
+    private paintToken(
+        label: string,
+        token: TokenNode,
+        inferred: boolean,
+    ): void {
         const span = document.createElement('span');
         span.className = 'marking-field-token';
+        if (inferred) span.classList.add('marking-field-token--inferred');
         let underline = false;
         if (token.conceptId) {
             const concept = this.scheme.concepts.find(

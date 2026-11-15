@@ -96,8 +96,8 @@ Every enhanced input and textarea, including a data-only field, has one EzClassi
 
 - **Quiet** is the default: the whole glyph sits muted (`--ez-status-mark-color`). It means the field is enhanced by EzClassify and nothing has been fixed. A proposed fix does not change the mark; only an applied fix does.
 - Every other state means the field has a message for the user, and the glyph turns strong (`--ez-status-mark-strong-color`): the field's text color on a light palette, gold on a dark one. The accessible label then carries the message too.
-- **Unseen**: EzClassify applied a fix the user has not yet been shown. The sparkle turns accent-colored, a small corner dot appears, and the sparkle pulses on an interval (disabled under `prefers-reduced-motion`, where the dot alone carries the state).
-- **Seen**: the fix tooltip has actually presented, past its hover-intent delay, or the mark was focused. The dot clears and the pulse stops; the accent sparkle persists as "done and known."
+- **Unseen**: a marking rule changed the marking and the user has not yet been shown what. The whole mark is strong, the sparkle accent-colored, and the number of changes stands beside it. Its label says so: "1 change made by a marking rule, not yet reviewed", or "{n} changes made by marking rules, not yet reviewed".
+- **Seen**: the list has actually presented, past its hover-intent delay, or the mark was focused. The number goes; the strong mark and the accent sparkle persist as "done and known", and the label drops ", not yet reviewed".
 - **Error**: the field could not check all of its text, as when a
   MarkedTextArea's scan stops before the end of the body. The sparkle takes the
   error color and the popover and accessible label lead with the reason, ahead
@@ -105,10 +105,12 @@ Every enhanced input and textarea, including a data-only field, has one EzClassi
   clears when its cause does. The tooltip opt-out never hides it.
 - A fix not yet shown re-arms unseen even if the field was previously seen. Clearing the fix set (a clean reprocess) returns to quiet and forgets what was shown, so the next fix starts unseen again. State is per-field, in-memory only.
 - A field always has one status mark. Multiple fixes never create a stack of icons.
-- Hovering (past hover-intent) or focusing an active mark explains every change EzClassify made to what the author chose, one line per change to the marking: what was added or removed, in which category. Two rules that add the same concept made one change and list one line, as the first recorded change's own `message`; one rule that removes three concepts made three changes and lists three lines; reading the same text again does not repeat a line. Seen and unseen follow the same identity, so a change already shown stays seen when another rule makes it again.
+- Hovering (past hover-intent) or focusing an active mark explains every change EzClassify made to what the author chose, one line per change to the marking: "Added {value} to {Category}.", "Removed {value} from {Category}." or "Replaced {old} with {new} in {Category}.", where a value is the name the composer gives its concept and a category is its label, with "Rule: {rule}" small and muted under it. A change that adds or removes nothing (a spelling or order the reading went through) keeps the engine's `message`, and an engine-owned id (one beginning with `_`) names no rule. Two rules that add the same concept made one change and list one line, under the first rule; one rule that removes three concepts made three changes and lists three lines; reading the same text again does not repeat a line. Seen and unseen follow the same identity, so a change already shown stays seen when another rule makes it again.
+- While the marking offers the undo of the author's last edit (see "Undo"), the list ends with one button, "Undo last edit", described as "Puts the marking back to what it was before your last edit." Tab from the pressed mark reaches it.
+- A value a rule added that the author has not reviewed yet is drawn in the family's inferred style wherever the field shows the marking as text: MarkingField's painted text and DecisionFlow's value line put it in italics over a dashed rule until the mark's list has been shown. TagInput's chips and DecisionFlow's options draw every derived fact that way for good (see "Marking state is a display of the engine result"); an option another choice includes is described "Included by {choice}".
 - The mark lists only what the field's scopes write or what it changed: a change to a category of a scope the field does not write is left out, and so is an applied change the value has moved on from, an addition the field no longer holds or a removal whose concept it holds again.
-- The engine names a fact a rule adds in `appliedFixes` only when the marking writes it. A fact the marking does not write (a group's members, when the group's name is written) arrives only as a derived assertion with its `sourceRule`. A field that shows each fact (TagInput's chips, DecisionFlow's dots, a picker's rows) would show it changed with nothing said, so it passes what it holds to the mark, and the mark explains each such fact it shows as one more change, worded the way the engine words an added concept (`mark.ruleAdded`). A text field (MarkedInput, MarkedTextArea, MarkingField) shows only its text, so it lists only the engine's applied changes. A category's default and a value a part takes from its whole are not changes.
-- The popover opens outside the field's box (the suite frame, or the text field's wrap) and its error list: below them, above them, or beside them when neither has room, judged inside any ancestor that clips the field before the viewport alone. It never covers the field it explains.
+- The engine names a fact a rule adds in `appliedFixes` only when the marking writes it. A fact the marking does not write (a group's members, when the group's name is written) arrives only as a derived assertion with its `sourceRule`. A field that shows each fact (TagInput's chips, DecisionFlow's dots, a picker's rows) would show it changed with nothing said, so it passes what it holds to the mark, and the mark explains each such fact it shows as one more change, worded as an addition like any other. A text field (MarkedInput, MarkedTextArea, MarkingField) shows only its text, so it lists only the engine's applied changes. A category's default and a value a part takes from its whole are not changes.
+- The popover opens outside the field's box (the suite frame, or the text field's wrap) and its error list: below them, above them, or beside them when neither has room, judged inside any ancestor that clips the field before the viewport alone. It never covers the field it explains: where no side has room it closes instead. In DecisionFlow the open step and its options are part of the field.
 
 The indicator communicates state; it is not a per-fix activity feed.
 
@@ -368,7 +370,7 @@ processing is a separate `Change` in `appliedFixes` (`ruleId`, `action`,
   so Tab goes field, fixes, chrome. The chrome sits inside the field's trailing
   edge, so it never covers the list. TagInput keeps its chrome inside the chip
   box, so its list still follows the box.
-- The status mark's "EzClassify fixed this marking" popover closes when the
+- The status mark's list of changes closes when the
   field's value is rendered again or when focus or a press goes outside the
   field. In DecisionFlow, whose presses open steps without changing the value,
   a press anywhere but its chrome closes it too. It opens clear of the field and the list together, and closes rather
@@ -493,11 +495,47 @@ field in both focus states, independently of the status icon's helper tray.
 Marking controls clear their value through the ordinary host/store write path;
 a facet clears only its category. MarkedInput and MarkedTextArea clear their
 entire text, including embedded markings. Clearing discards any open draft,
-invalidates pending reads, and returns a click or tap to the resting state.
-Keyboard activation retains focus on the action. Neither opens the editor or
-the on-screen keyboard. Disabled and read-only hosts cannot be
-cleared. Empty controls retain the action's place and expose `aria-disabled`.
+invalidates pending reads, and returns a click or tap to the resting state,
+opening neither the editor nor the on-screen keyboard. Keyboard activation puts
+focus in the field. Disabled and read-only hosts cannot be cleared. Empty controls retain the action's place and expose `aria-disabled`.
 Read-only displays and headless fields have no clear control.
+
+After a clear the × becomes the undo of that clear, in the same place and at
+the same size, named and titled "Undo clear". No toast, line or text in the
+field says so. A keyboard clear leaves focus in the field, not on the undo,
+which is the next Tab stop; an undo returns focus to the field. The live region
+says "Marking cleared. Undo is available." and then "Marking restored." When
+the offer ends (see "Undo") the slot is the × again. A second click of a
+double click is not an undo.
+
+### Undo
+
+`components/marking-undo.ts` is one marking's one-level undo. "Undo" always
+means: put the marking back to what it was before the author's last action. A
+clear is one such action; every other edit (a pick, a removed chip, a commit,
+a pressed fix, a favorite applied) is another. Undoing one rule's change on its
+own is not offered.
+
+- The offer belongs to the marking. Every field the runtime binds to a store
+  marking shares that marking's `MarkingUndo` (`shareUndo`), so all of them show
+  it: the × of each turns to undo after a clear, and each status mark's list
+  ends with "Undo last edit". A field with no store marking keeps its own.
+- The field that acted keeps the snapshot, because only it knows what it took:
+  the facts it held (put back as facts, so the engine derives and explains the
+  same changes again), or the text when the engine could not read all of it,
+  and for a clear, a draft typed into it, which comes back as typed.
+- The offer lasts until the marking next changes, from that field or any
+  other bound to it, or until the field that made it is destroyed. There is no
+  timer and no expiry on blur. An action's own consequences (the engine's
+  answer, the store's commit, a step it made irrelevant) arrive before the
+  author does anything else, so the value is followed until the author next
+  presses a key or a pointer; after that any different value ends the offer.
+  A shared undo hears the store's commits; a field's own hears its values.
+  The next action replaces it.
+- Ctrl+Z or Cmd+Z anywhere in the field performs it while it is offered,
+  unless the author has typed text not yet committed, which the platform's own
+  undo takes. Otherwise the platform's undo is untouched. An undo of an edit
+  says "Last edit undone."
 
 ### No Cascading
 

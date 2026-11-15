@@ -62,6 +62,8 @@ import {
     renderViewRefused,
 } from '../render-refusal';
 import { getMountHost } from '../mount-host-registry';
+import { schemeChangeWords, type ChangeWords } from './status-mark';
+import type { MarkingUndo } from './marking-undo';
 import { assertWritesScopes, viewOutputOf } from '../format-resolver';
 import { categoriesByScope, listedScopesOf } from '../scopes';
 
@@ -96,6 +98,13 @@ export interface ComponentInstance {
     applyStoreState?(state: EzClassifyState): void;
     /** See {@link ReadOnlyComponentBase.refreshFacetRefusal}. */
     refreshFacetRefusal?(): void;
+    /**
+     * Use the undo of the store marking the field is bound to (see
+     * marking-undo.ts). The runtime calls it once the field is wired.
+     *
+     * @internal
+     */
+    shareUndo?(undo: MarkingUndo): void;
     /**
      * The parts this field's whole marking covers changed. A field that judges
      * its whole against its parts (see `ComponentOptions.resolveParts`) reads
@@ -1207,6 +1216,29 @@ export abstract class ReadOnlyComponentBase implements ComponentInstance {
                 new Event('input', { bubbles: true }),
             );
         }
+    }
+
+    /**
+     * How the status mark names values and categories: a value by the name the
+     * composer gives its concept, a category by its label.
+     */
+    /**
+     * Whether the written marking prints a token's value: false for a value the
+     * render assessment says it leaves out.
+     */
+    protected printsToken(node: {
+        categoryId: string;
+        conceptId?: string;
+    }): boolean {
+        return !this.unprinted.some(
+            (ref) =>
+                ref.categoryId === node.categoryId &&
+                ref.conceptId === node.conceptId,
+        );
+    }
+
+    protected changeWords(): ChangeWords {
+        return schemeChangeWords(() => this.scheme);
     }
 
     /** Get the color for a category */

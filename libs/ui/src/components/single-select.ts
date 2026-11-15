@@ -841,6 +841,7 @@ export class SingleSelect extends ComponentBase {
                         confidence: 'certain',
                     };
                     delete edited.sourceRule;
+                    this.beginUserEdit();
                     this.assertions = this.assertions.map((current) =>
                         current === assertion ? edited : current,
                     );

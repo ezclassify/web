@@ -2,12 +2,12 @@
 /* One brand-logo mark per enhanced field: 3 bars + a sparkle. Quiet: the
    field has nothing to say, and the whole glyph sits muted. Any other state
    means the field has a message for the user (a fix it applied, or an error),
-   and the bars turn strong: the theme's text color in a light theme, gold in a
-   dark one (--ez-status-mark-strong-color, styles.css). The sparkle carries
-   the kind of message. Unseen: sparkle turns accent, a corner dot appears, and
-   the sparkle pulses on an interval. Seen: dot clears, sparkle stays accent,
-   no pulse: the tooltip already explained what changed. Error: the sparkle
-   takes the error color. */
+   and the whole mark turns strong: the theme's text color in a light theme,
+   gold in a dark one (--ez-status-mark-strong-color, styles.css). The sparkle
+   carries the kind of message. Unseen: the sparkle turns accent and the number
+   of changes stands beside the mark. Seen: the number goes, the sparkle stays
+   accent: the list already explained what changed. Error: the sparkle takes
+   the error color. */
 .ez-status-mark {
     position: absolute;
     width: 1.25rem;
@@ -99,51 +99,28 @@
     transform: none;
 }
 
-/* Corner notification dot: unseen only. Sits bottom-left, diagonally opposite
-   the sparkle (translated to the glyph's top-right in buildMarkSvg): the dot
-   is a second, independent signal, and placing it on top of the sparkle would
-   paint over the one element that actually carries the accent color for this
-   state. A box-shadow ring stands the dot off the background it sits on
-   without growing its layout box; box-sizing keeps that ring from resizing
-   the box in the forced-colors override below, which uses a real border
-   instead (forced-colors strips box-shadow entirely). */
-.ez-status-mark__dot {
+/* The number of changes not yet reviewed, beside the mark: the mark grows
+   to hold it, so the chrome's reserve follows (field-chrome.ts). Gone once
+   the list has been shown. */
+.ez-status-mark__count:empty {
     display: none;
-    position: absolute;
-    bottom: -0.1875rem;
-    left: -0.1875rem;
-    width: 0.5625rem;
-    height: 0.5625rem;
-    box-sizing: border-box;
-    border-radius: 50%;
-    background: var(--ez-color-primary, #fdb827);
-    box-shadow: 0 0 0 0.125rem
-        var(--ez-status-mark-ring, var(--ez-color-background, #fff));
-    pointer-events: none;
 }
-.ez-status-mark--unseen .ez-status-mark__dot {
-    display: block;
+.ez-status-mark__count {
+    margin-inline-start: 0.125rem;
+    font-family: var(--ez-font-family, inherit);
+    font-size: 0.75rem;
+    font-weight: 700;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
 }
-
-/* One short twinkle burst near the start of each cycle, then stillness.
-   A nudge, not a distraction. */
-@keyframes ez-status-mark-pulse {
-    0%,
-    12.5%,
-    100% {
-        transform: scale(1) rotate(0deg);
-    }
-    6% {
-        transform: scale(1.6) rotate(10deg);
-    }
+.ez-status-mark--unseen {
+    width: auto;
+    min-width: 1.25rem;
 }
-.ez-status-mark--pulse .ez-status-mark__sparkle {
-    animation: ez-status-mark-pulse 4s ease-in-out infinite;
-}
-@media (prefers-reduced-motion: reduce) {
-    .ez-status-mark--pulse .ez-status-mark__sparkle {
-        animation: none;
-    }
+.ez-status-mark--unseen svg {
+    width: 1.25rem;
+    height: 1.25rem;
+    flex: 0 0 auto;
 }
 
 @media (forced-colors: active) {
@@ -156,10 +133,6 @@
     }
     .ez-status-mark--error .ez-status-mark__sparkle {
         fill: Mark;
-    }
-    .ez-status-mark__dot {
-        background: Highlight;
-        border: 0.125rem solid Canvas;
     }
 }
 

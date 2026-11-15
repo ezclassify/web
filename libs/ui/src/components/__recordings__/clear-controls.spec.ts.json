@@ -151,6 +151,82 @@
             "method": "POST",
             "statusCode": 200
         },
+        "165fc01c1717b8bc25041ccbdeb0361ed1454b85232f3f265f59648a4d019a3a": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "clear-fields",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "clear-fields",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "LOW",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            { "categoryId": "level", "conceptId": "LOW" }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "LOW",
+                    "renders": {},
+                    "suggestionsFor": {
+                        "level": {
+                            "suggestions": [
+                                {
+                                    "categoryId": "level",
+                                    "conceptId": "LOW",
+                                    "description": "",
+                                    "group": "Level",
+                                    "label": "LOW",
+                                    "name": "LOW",
+                                    "order": 0,
+                                    "selected": false,
+                                    "views": { "default": "LOW" }
+                                },
+                                {
+                                    "categoryId": "level",
+                                    "conceptId": "HIGH",
+                                    "description": "",
+                                    "group": "Level",
+                                    "label": "HIGH",
+                                    "name": "HIGH",
+                                    "order": 1,
+                                    "selected": false,
+                                    "views": { "default": "HIGH" }
+                                }
+                            ],
+                            "warnings": []
+                        }
+                    },
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
         "28483074172e59b644bea7dff5073007cafc3075363ab6e8c9fec2786e78971c": {
             "body": {
                 "contextId": "sbx-83128251879a1231829944ff53cee445f84530c92c7063e2a08fcf95bc46e3cd"
@@ -197,6 +273,42 @@
                     "proposedFixes": [],
                     "rendered": "LOW",
                     "renders": {},
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "3482f12e3405657a19cc418e79f2f0bdfea0f1b100ce6fb4077d2737c590e29b": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "clear-fields",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "clear-fields",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "HIGH",
+                            "confidence": "certain",
+                            "source": "aggregate"
+                        }
+                    ],
+                    "errors": [],
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "HIGH",
                     "valid": true,
                     "warnings": []
                 }
@@ -481,6 +593,107 @@
             "body": [],
             "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "GET",
+            "statusCode": 200
+        },
+        "aa2ca4f1d8e7965ee541ce48825355b445efb7140eff06334a2d2ba3fd5d4430": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "clear-fields",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "clear-fields",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "HIGH",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            { "categoryId": "level", "conceptId": "HIGH" }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "recognition": {
+                        "corrections": [],
+                        "inputFormat": "portion",
+                        "status": "complete",
+                        "surface": "marking",
+                        "unmatched": []
+                    },
+                    "rendered": "HIGH",
+                    "renders": {},
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "aa8e17485be913e8051ae8ad8c426d99410cb811fdaa13a3f55019716b80d8ee": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "clear-fields",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "clear-fields",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "HIGH",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            { "categoryId": "level", "conceptId": "HIGH" }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "HIGH",
+                    "renders": {},
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
             "statusCode": 200
         },
         "ab76abd9c91ec6e3cc7ce420843a318a823623aa89ae770f0f2a01a8edd93f70": {

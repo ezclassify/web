@@ -315,7 +315,10 @@ export class TagInput extends ComponentBase {
             unprinted: this.unprinted,
             unread: this.unreadText,
             onRemoveAssertion: (c, f) => this.removeAssertion(c, f),
-            onReprocess: () => this.reprocess(),
+            onReprocess: () => {
+                this.beginUserEdit();
+                this.reprocess();
+            },
             onChipClick: (_el, i) => this.focusChip(i),
             onChipKeydown: (e, el) => this.onChipKeydown(e, el),
             onChipBlur: () => {
@@ -346,6 +349,7 @@ export class TagInput extends ComponentBase {
             shape: 'chrome',
             root: this.options.root,
             shouldShowTooltip: () => this.shouldShowTooltip(),
+            ...this.statusMarkUndo(),
         });
         setStatusMarkFixes(this.chrome.status, this.fieldStatusChanges());
         // The ★ mounts on host favorites wiring OR scheme-declared presets
@@ -582,7 +586,10 @@ export class TagInput extends ComponentBase {
                     this.assertions.length > 0 &&
                     !this.container.hasAttribute('data-ezclassify-invalid'),
             }),
-            onApply: (marking) => void this.setValue(marking),
+            onApply: (marking) => {
+                this.beginUserEdit();
+                void this.setValue(marking);
+            },
             focusField: () => this.filterInput.focus(),
         };
     }

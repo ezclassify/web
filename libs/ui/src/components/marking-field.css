@@ -157,6 +157,15 @@
     text-underline-offset: 0.125rem;
     text-decoration-skip-ink: none;
 }
+/* A value a marking rule added that the author has not reviewed yet: the
+   family's inferred style, italic over a dashed rule, as an inferred chip. */
+.marking-field-token--inferred {
+    font-style: italic;
+}
+.marking-field-token--inferred .marking-field-token-run {
+    text-decoration-style: dashed;
+    text-decoration-thickness: 0.0625rem;
+}
 
 @media (pointer: coarse) {
     /* iOS Safari zooms the page when a focused field's effective font-size is

@@ -398,9 +398,11 @@ async function markedFixes(): Promise<string[]> {
     const shown =
         !!tip && !tip.hidden && !!mark.getAttribute('aria-describedby');
     const lines = shown
-        ? [...tip.querySelectorAll(':scope > div')].map(
-              (line) => line.textContent ?? '',
-          )
+        ? [
+              ...tip.querySelectorAll(
+                  '.ez-tooltip__header, .ez-status-list__text',
+              ),
+          ].map((line) => line.textContent ?? '')
         : [];
     mark.dispatchEvent(new Event('mouseleave'));
     await wait();
@@ -412,10 +414,10 @@ async function markedFixes(): Promise<string[]> {
  * once each, so the author sees where NOFORN went as well as where it left.
  */
 const NOFORN_SECRET_FIXES = [
-    'EzClassify fixed this marking:',
-    '• Moved `noforn/` out of this position (order).',
-    '• Read `secret` as `SECRET` (case).',
-    '• Moved `//NOFORN` into this position (order).',
+    '3 changes made by marking rules',
+    'Moved `noforn/` out of this position (order).',
+    'Read `secret` as `SECRET` (case).',
+    'Moved `//NOFORN` into this position (order).',
 ];
 
 describe.each(KINDS)('the fixes behind a typed marking in %s', (kind) => {
@@ -493,8 +495,8 @@ describe('replacing a whole marking in MarkingField', () => {
             await type(field, 'SECRET/NOFORN');
             await store(field);
             expect(await markedFixes()).toEqual([
-                'EzClassify fixed this marking:',
-                '• Read `/` as `//` (separator).',
+                '1 change made by a marking rule',
+                'Read `/` as `//` (separator).',
             ]);
 
             await selectAll(field);
@@ -519,8 +521,8 @@ describe('replacing a whole marking in MarkingField', () => {
         const mark = root.querySelector<HTMLElement>('.ez-status-mark')!;
         // Hovering past the delay shows the fix, which marks it seen.
         expect(await markedFixes()).toEqual([
-            'EzClassify fixed this marking:',
-            '• Read `Secret` as `SECRET` (case).',
+            '1 change made by a marking rule',
+            'Read `Secret` as `SECRET` (case).',
         ]);
         expect(mark.classList.contains('ez-status-mark--seen')).toBe(true);
 
@@ -532,8 +534,8 @@ describe('replacing a whole marking in MarkingField', () => {
         expect(field.stored()).toEqual(['U']);
         expect(mark.classList.contains('ez-status-mark--unseen')).toBe(true);
         expect(await markedFixes()).toEqual([
-            'EzClassify fixed this marking:',
-            '• Read `unclassified` as `UNCLASSIFIED` (case).',
+            '1 change made by a marking rule',
+            'Read `unclassified` as `UNCLASSIFIED` (case).',
         ]);
     });
 });
@@ -554,11 +556,11 @@ describe('which fixes a commit keeps', () => {
 
         expect(field.stored()).toEqual(['NF', 'OC', 'S']);
         expect(await markedFixes()).toEqual([
-            'EzClassify fixed this marking:',
-            '• Read `secret` as `SECRET` (case).',
-            '• Moved `orcon/` out of this position (order).',
-            '• Read `noforn` as `NOFORN` (case).',
-            '• Moved `/ORCON` into this position (order).',
+            '4 changes made by marking rules',
+            'Read `secret` as `SECRET` (case).',
+            'Moved `orcon/` out of this position (order).',
+            'Read `noforn` as `NOFORN` (case).',
+            'Moved `/ORCON` into this position (order).',
         ]);
     });
 
@@ -581,8 +583,8 @@ describe('which fixes a commit keeps', () => {
 
         expect(field.stored()).toEqual(['OC', 'U']);
         expect(await markedFixes()).toEqual([
-            'EzClassify fixed this marking:',
-            '• Read `/` as `//` (separator).',
+            '1 change made by a marking rule',
+            'Read `/` as `//` (separator).',
         ]);
     });
 
@@ -682,8 +684,8 @@ describe.each(['marked-input', 'marked-textarea'] as const)(
 
             expect(field.stored()).toEqual(['U']);
             expect(await markedFixes()).toEqual([
-                'EzClassify fixed this marking:',
-                '• Read `unclassified` as `UNCLASSIFIED` (case).',
+                '1 change made by a marking rule',
+                'Read `unclassified` as `UNCLASSIFIED` (case).',
             ]);
         });
 
