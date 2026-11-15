@@ -67,6 +67,7 @@ import type { MarkingUndo } from './marking-undo';
 import { assertWritesScopes, viewOutputOf } from '../format-resolver';
 import { categoriesByScope, listedScopesOf, scopeSetOf } from '../scopes';
 import type { ConceptWriting, WritingField } from '../written-concept';
+import { writtenFactTest, type ShownForm } from '../written-facts';
 
 /**
  * Scheme operations a component marks with: a Context's scheme view.
@@ -467,6 +468,11 @@ export abstract class ReadOnlyComponentBase implements ComponentInstance {
      * print still holds it.
      */
     protected unprinted: readonly AssertionRef[] = [];
+    /**
+     * The form the held value was last written in, and what writing it did,
+     * from the last reading. See {@link writtenFact}.
+     */
+    private heldForm: ShownForm = {};
     /** See {@link setReportInField}. */
     private reportInField = false;
 
@@ -622,7 +628,7 @@ export abstract class ReadOnlyComponentBase implements ComponentInstance {
                     initialValue = this.enhancedInput!.value;
                     continue;
                 }
-                this.assertions = initResult.assertions;
+                this.assertions = this.heldFacts(initResult.assertions);
                 this._lastRendered = acceptedValue(initialValue, initResult);
                 this.noteReading(initResult, initialValue);
                 this.recordAppliedFixes(initResult.appliedFixes ?? [], true);
@@ -666,6 +672,18 @@ export abstract class ReadOnlyComponentBase implements ComponentInstance {
         return [...this.assertions];
     }
 
+    /**
+     * The facts of a marking this field holds, whatever else the marking holds:
+     * every fact, for a view. A picker holds those of its scope set (see
+     * ComponentBase).
+     *
+     * @param assertions - The marking's facts, as the engine or a store gave
+     *   them
+     */
+    protected heldFacts(assertions: readonly Assertion[]): Assertion[] {
+        return [...assertions];
+    }
+
     setAssertions(assertions: Assertion[]): void {
         this.assertions = [...assertions];
         this.noteReading({});
@@ -699,13 +717,16 @@ export abstract class ReadOnlyComponentBase implements ComponentInstance {
      * @param source - The text read, for a text read. A text read without
      *   recognition proves nothing about that text, so it counts as unresolved;
      *   any other reading is resolved unless its recognition says otherwise.
+     * @param form - The form the reading wrote the value in: the field's own
+     *   output unless the reading came from elsewhere
      */
     protected noteReading(
         reading: {
             recognition?: Pick<RecognitionResult, 'status' | 'unmatched'>;
-            assessment?: { omitted: AssertionRef[] };
+            assessment?: ShownForm['assessment'];
         },
         source?: string,
+        form: Omit<ShownForm, 'assessment'> = { formatId: this.formatId },
     ): void {
         const status = reading.recognition?.status;
         this.sourceUnresolved =
@@ -718,6 +739,40 @@ export abstract class ReadOnlyComponentBase implements ComponentInstance {
             this._lastRendered.length,
         );
         this.unprinted = reading.assessment?.omitted ?? [];
+        this.heldForm = { ...form, assessment: reading.assessment };
+    }
+
+    /**
+     * Keep what writing the held value in `form` did, for a value whose reading
+     * did not say (see {@link writtenFact}).
+     */
+    protected noteHeldForm(form: ShownForm): void {
+        this.heldForm = form;
+    }
+
+    /**
+     * The forms this field shows its marking in, each with what writing it did.
+     * A field shows the one form its value is written in; one that writes its
+     * marking in several forms names each.
+     */
+    protected shownForms(): ShownForm[] {
+        return [this.heldForm];
+    }
+
+    /**
+     * Whether the marking this field shows writes a fact, by the engine's
+     * assessments of the forms it shows (see written-facts.ts). A fact the
+     * marking holds but writes nowhere, such as a member collapsed into its
+     * group's name, is not a value of the marking the author sees.
+     */
+    protected writtenFact(): (
+        ref: Pick<AssertionRef, 'categoryId' | 'conceptId'>,
+    ) => boolean {
+        return writtenFactTest(
+            this.shownForms(),
+            this.scheme?.categories ?? [],
+            this.schemeMeta ?? {},
+        );
     }
 
     /** Interactive subclasses retain fixes before rendering the processed value. */
@@ -765,7 +820,7 @@ export abstract class ReadOnlyComponentBase implements ComponentInstance {
         // Context it read through, may be gone already.
         if (seq !== this.valueReadSeq || this.abandoned) return;
         this.failedRead = null;
-        this.assertions = result.assertions;
+        this.assertions = this.heldFacts(result.assertions);
         this._lastRendered = acceptedValue(value, result);
         this.noteReading(result, value);
         this.displayColor = result.displayColor;

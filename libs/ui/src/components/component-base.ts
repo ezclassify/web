@@ -46,13 +46,17 @@ import {
     setStatusMarkFixes,
     type StatusMarkOptions,
 } from './status-mark';
-import { listedScopesOf, writesCategoryOf } from '../scopes';
+import { factsOfScopeSet, listedScopesOf, writesCategoryOf } from '../scopes';
 import {
     applyFieldFrame,
     mountFieldChrome,
     type FieldChrome,
 } from './field-chrome';
-import { assertionFactKey, takenFromWhole } from '../assertion-identity';
+import {
+    assertionFactKey,
+    derivedAssertion,
+    takenFromWhole,
+} from '../assertion-identity';
 import type { EzClassifyState } from '../store/ezclassify-store';
 import { createComposerPort } from './composer/composer-port';
 import { judgedAsHeld } from '../loaded-value';
@@ -429,12 +433,12 @@ export abstract class ComponentBase extends ReadOnlyComponentBase {
     }
 
     /**
-     * Show on the suite's status mark what EzClassify changed in the value the
-     * control holds: every change for a control that holds the whole marking;
-     * for a facet, those that changed its own category, the slice of the
-     * marking it holds.
+     * Show on the suite's status mark what EzClassify changed in what the
+     * control's marking writes: every such change for a control that holds the
+     * whole marking; for a facet, those that changed its own category, the
+     * slice of the marking it holds.
      */
-    private updateSuiteStatusMark(): void {
+    protected updateSuiteStatusMark(): void {
         if (!this.suiteChrome) return;
         const category = this.options.facetOf
             ? this.options.categoryId
@@ -443,6 +447,7 @@ export abstract class ComponentBase extends ReadOnlyComponentBase {
             this.suiteChrome.status,
             explainedChanges(this.getAppliedFixes(), this.assertions, {
                 writes: category ? (id) => id === category : undefined,
+                written: this.writtenFact(),
                 showsUnwritten: true,
             }),
         );
@@ -462,8 +467,9 @@ export abstract class ComponentBase extends ReadOnlyComponentBase {
 
     /**
      * The changes a text or chip field's status mark explains for the value it
-     * holds: those its scopes write or it changed, and for a field that shows
-     * each fact as a chip, the facts a rule filled in (see explainedChanges).
+     * holds: those to what its marking writes that its scopes write or it
+     * changed, and for a field that shows each fact as a chip, the written
+     * facts a rule filled in (see explainedChanges).
      */
     protected fieldStatusChanges(): Change[] {
         return explainedChanges(this.getAppliedFixes(), this.assertions, {
@@ -472,6 +478,7 @@ export abstract class ComponentBase extends ReadOnlyComponentBase {
                 this.scheme.categories,
                 this.schemeMeta,
             ),
+            written: this.writtenFact(),
             showsUnwritten: !this.writesScopesAsText(),
         });
     }
@@ -531,26 +538,54 @@ export abstract class ComponentBase extends ReadOnlyComponentBase {
         recordAppliedFixes(this._appliedFixes, fixes);
     }
 
+    /**
+     * A picker holds the facts of its scope set: the scopes its host lists, the
+     * scheme's default scope when it lists none. A fact of another scope
+     * belongs to the controls that write that scope, so the picker neither
+     * shows it nor states it back, and a value removed or cleared here leaves
+     * it where it is. A facet holds its own category, whatever scope that is
+     * in. A text field holds what its text reads as, which its format decides.
+     */
+    protected override heldFacts(
+        assertions: readonly Assertion[],
+    ): Assertion[] {
+        if (
+            !this.scheme ||
+            !this.schemeMeta ||
+            this.writesScopesAsText() ||
+            this.options.facetOf ||
+            this.options.resolveFacetSiblings
+        )
+            return [...assertions];
+        return factsOfScopeSet(
+            assertions,
+            listedScopesOf(this.options),
+            this.scheme.categories,
+            this.schemeMeta,
+        );
+    }
+
     override setAssertions(assertions: Assertion[]): void {
         // A value from the host or the store is nobody's edit here.
         this.editStart = null;
         this.invalidateValueRead();
         // A marking that drops something the field stated replaces its value,
         // and the fixes behind the old value no longer explain it.
-        if (replacesStated(this.assertions, assertions))
-            this._appliedFixes.clear();
-        this.assertions = [...assertions];
+        const held = this.heldFacts(assertions);
+        if (replacesStated(this.assertions, held)) this._appliedFixes.clear();
+        this.assertions = held;
         this.reprocess();
     }
 
     /**
      * Reflect an already evaluated marking, including unrecognized text and
-     * facts outside its rendered scope. Reprocessing only its assertions would
-     * erase the text and publish a different marking back to the store. The
-     * store's judgment of the marking comes with it, so every field bound to it
-     * shows the same errors and ways to fix. The fixes the store's reading
-     * applied are explained too; a state that echoes the value the field holds
-     * keeps the field's own explanation of how that value came about.
+     * facts its text leaves out, of those the field holds (see
+     * {@link heldFacts}). Reprocessing only its assertions would erase the text
+     * and publish a different marking back to the store. The store's judgment
+     * of the marking comes with it, so every field bound to it shows the same
+     * errors and ways to fix. The fixes the store's reading applied are
+     * explained too; a state that echoes the value the field holds keeps the
+     * field's own explanation of how that value came about.
      */
     applyStoreState(state: EzClassifyState): void {
         this.editStart = null;
@@ -561,17 +596,47 @@ export abstract class ComponentBase extends ReadOnlyComponentBase {
         // field keeps the value it holds and says why.
         const refused = renderViewRefused(state);
         const replacesValue = !refused && state.rendered !== this._lastRendered;
-        this.assertions = [...state.assertions];
+        this.assertions = this.heldFacts(state.assertions);
         this.failedRead = null;
         if (!refused) this._lastRendered = state.rendered;
         // A structured or computed state has no recognition: nothing was read.
-        this.noteReading(refused ? {} : state);
+        // A marking's text states its default scope.
+        this.noteReading(refused ? {} : state, undefined, {
+            surface: this.schemeMeta.defaultScope,
+        });
         this.displayColor = state.displayColor;
         this.recordAppliedFixes(state.appliedFixes ?? [], replacesValue);
         if (refused)
             this.showRenderRefusal(state, state.errors, state.proposedFixes);
         else this.updateValidationErrors(state.errors, state.proposedFixes);
         this.onAssertionsChanged();
+        if (!refused && !state.assessment) this.assessHeldForm();
+    }
+
+    /**
+     * Learn which of the held facts the field's form writes, for a state that
+     * came with no assessment of a text: one composed from facts. Only a fact
+     * the engine derived can go unwritten, so a value with none needs no
+     * answer. The field draws its facts and explains its changes again once the
+     * answer lands, unless a newer value has replaced the one it is for.
+     */
+    private assessHeldForm(): void {
+        if (this.writesScopesAsText()) return;
+        const held = [...this.assertions];
+        if (!held.some(derivedAssertion)) return;
+        const seq = this._reprocessSeq;
+        const formatId = this.formatId;
+        void Promise.resolve()
+            .then(() => this.callRender(held, { format: formatId }))
+            .then((written) => {
+                if (seq !== this._reprocessSeq || this._destroyed) return;
+                this.noteHeldForm({ formatId, assessment: written.assessment });
+                this.render();
+                this.updateSuiteStatusMark();
+            })
+            .catch(() => {
+                // Without an answer every held fact counts as written.
+            });
     }
 
     /**
@@ -835,7 +900,7 @@ export abstract class ComponentBase extends ReadOnlyComponentBase {
             assessment?: RenderAssessment;
         }) => {
             if (seq !== this._reprocessSeq || this._destroyed) return;
-            this.assertions = result.assertions
+            this.assertions = this.heldFacts(result.assertions)
                 .filter((assertion) =>
                     facetCategory
                         ? assertion.categoryId === facetCategory
@@ -1353,7 +1418,7 @@ export abstract class ComponentBase extends ReadOnlyComponentBase {
         commit: ComposerCommit,
     ): Promise<void> {
         this.beginUserEdit();
-        this.assertions = statedAssertions(reading.assertions);
+        this.assertions = statedAssertions(this.heldFacts(reading.assertions));
         this.recordAppliedFixes(reading.appliedFixes, commit.replaces);
         await this.reprocessNow();
     }

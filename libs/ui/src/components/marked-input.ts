@@ -58,6 +58,7 @@ import {
     type MarkedFieldClassNames,
 } from './marked-field-base';
 import markedInputCss from './marked-input.css?inline';
+import type { ShownForm } from '../written-facts';
 
 /** Caller-facing options for MarkedInput. */
 export interface MarkedInputOptions extends ComponentOptions {
@@ -143,6 +144,8 @@ export class MarkedInput extends MarkedFieldBase<HTMLTextAreaElement> {
     private _appliedFixes = new Map<string, Change>();
     /** What the mark held when {@link _appliedFixes} was last written. */
     private _fixesHeld: readonly Assertion[] = [];
+    /** What writing the mark did, from the read that recorded its fixes. */
+    private _fixesAssessment: RenderAssessment | undefined;
     private favoritesPanel: FavoritesPanel | null = null;
     /**
      * Bound `paste` handler: the owned editor is a `<textarea>`, and a paste
@@ -1080,7 +1083,11 @@ export class MarkedInput extends MarkedFieldBase<HTMLTextAreaElement> {
         const refused = renderViewRefused(result);
         this.assertions = result.assertions;
         if (!refused) this.rendered = result.rendered;
-        this.recordMarkFixes(result.assertions, result.appliedFixes);
+        this.recordMarkFixes(
+            result.assertions,
+            result.appliedFixes,
+            result.assessment,
+        );
 
         // Validity: surface part-level engine errors, and catch silent
         // token drops. The engine ignores tokens it cannot parse WITHOUT
@@ -1149,11 +1156,20 @@ export class MarkedInput extends MarkedFieldBase<HTMLTextAreaElement> {
     private recordMarkFixes(
         holds: readonly Assertion[],
         fixes: readonly Change[] | undefined,
+        assessment?: RenderAssessment,
     ): void {
         if (replacesStated(this._fixesHeld, holds)) this._appliedFixes.clear();
         this._fixesHeld = holds;
+        this._fixesAssessment = assessment;
         recordAppliedFixes(this._appliedFixes, fixes);
         this.updateStatusMark();
+    }
+
+    /** The mark, in the format the field writes it in. */
+    protected override markForms(): ShownForm[] {
+        return [
+            { formatId: this.scanFormat, assessment: this._fixesAssessment },
+        ];
     }
 
     /** Reflect the applied-fix record on the field's single status mark. */

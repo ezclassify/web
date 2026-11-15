@@ -110,7 +110,8 @@ Every enhanced input and textarea, including a data-only field, has one EzClassi
 - While the marking offers the undo of the author's last edit (see "Undo"), the list ends with one button, "Undo last edit", described as "Puts the marking back to what it was before your last edit." Tab from the pressed mark reaches it.
 - A value a rule added that the author has not reviewed yet is drawn in the family's inferred style wherever the field shows the marking as text: MarkingField's painted text and DecisionFlow's value line put it in italics over a dashed rule until the mark's list has been shown. TagInput's chips and DecisionFlow's options draw every derived fact that way for good (see "Marking state is a display of the engine result"); an option another choice includes is described "Included by {choice}".
 - The mark lists only what the field's scopes write or what it changed: a change to a category of a scope the field does not write is left out, and so is an applied change the value has moved on from, an addition the field no longer holds or a removal whose concept it holds again.
-- The engine names a fact a rule adds in `appliedFixes` only when the marking writes it. A fact the marking does not write (a group's members, when the group's name is written) arrives only as a derived assertion with its `sourceRule`. A field that shows each fact (TagInput's chips, DecisionFlow's dots, a picker's rows) would show it changed with nothing said, so it passes what it holds to the mark, and the mark explains each such fact it shows as one more change, worded as an addition like any other. A text field (MarkedInput, MarkedTextArea, MarkingField) shows only its text, so it lists only the engine's applied changes. A category's default and a value a part takes from its whole are not changes.
+- The author signs what the marking writes, so the mark lists only changes to what it writes. Which facts it writes is read from the engine's render assessments (`emitted`, `omitted`, `collapsed`; see `written-facts.ts`), never from concept ids: a fact a rule derived that the marking does not write (a member collapsed into its group's written name, a default no output prints) changed nothing the author sees and is not listed, even when `appliedFixes` names it. A result whose only changes are such facts leaves the mark quiet, so it offers no undo either. A value a rule added that the marking does write is listed and counted whether or not the author wrote it. A field that shows its marking in several forms (DecisionFlow writes each scope in that scope's own output) counts a change to any of them; a form speaks only for the categories of its own surface.
+- A field that shows each fact (TagInput's chips, DecisionFlow's dots, a picker's rows) also explains a written fact a rule filled in that no applied change names, as one more change worded as an addition like any other. A text field (MarkedInput, MarkedTextArea, MarkingField) shows only its text, so it lists only the engine's applied changes. A category's default and a value a part takes from its whole are not changes.
 - The popover opens outside the field's box (the suite frame, or the text field's wrap) and its error list: below them, above them, or beside them when neither has room, judged inside any ancestor that clips the field before the viewport alone. It never covers the field it explains: where no side has room it closes instead. In DecisionFlow the open step and its options are part of the field.
 
 The indicator communicates state; it is not a per-fix activity feed.
@@ -662,12 +663,15 @@ The store holds the same accepted value. Fields publish and seed what they
 hold; nothing hands the store the author's original text in its place.
 
 Render-suppressed assertions remain in structured state independently of the
-text shown in the field. TagInput shows them as chips drawn faded, from the
-reading's render assessment (`omitted`), which is the engine's own declaration
-of what the written marking leaves out; it never decides that from a concept
-id. A chip the engine derived (`infer`, `default`, `context`, or `repair` with
-a `sourceRule`) is dashed and has no remove button, and the chip keys skip it;
-a solid chip is a fact the author stated.
+text shown in the field. TagInput reads what the written marking leaves out
+from the render assessment (`omitted`, `collapsed`), the engine's own
+declaration of it; it never decides that from a concept id. A fact the engine
+derived that the marking does not write, such as a member collapsed into its
+group's written name or a default no output prints, gets no chip. A fact the
+author stated that the marking leaves out is drawn faded. A chip the engine
+derived (`infer`, `default`, `context`, or `repair` with a `sourceRule`) is
+dashed and has no remove button, and the chip keys skip it; a solid chip is a
+fact the author stated.
 
 This does not authorize rewriting prose: MarkedInput and MarkedTextArea
 separately scan their embedded markings and manage their own body-text editors.

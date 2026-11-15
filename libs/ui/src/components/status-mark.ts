@@ -31,18 +31,18 @@
  * the rule that did it under it. A change that adds or removes nothing keeps
  * the engine's own words for it (its `message`). While the marking can go back
  * to what it was before the author's last edit, the list ends with that undo.
- * It lists only what the field's scopes write or what it changed. A field that
- * shows each fact, not only its text, also lists the facts a rule filled in
- * that the marking does not write, such as the members a group stands for.
- * Pressing it (a tap, a click, Enter or Space) opens that list until a second
- * press, Escape, or a press or focus outside the field closes it; a phone has
- * no hover, so the press is its only way in. A hovered list can be reached: the
- * pointer can move from the mark into it, and it closes a moment after the
- * pointer has left both. Tab from the mark reaches its undo. The list sits
- * outside the field's box, so it never covers what it explains, right next to
- * the mark: on the side of the field the mark is toward, its trailing edge
- * lined up with the mark's. The indicator communicates state; it is not a
- * per-fix activity feed.
+ * It lists only what the field's scopes write or what it changed, and only
+ * changes to what the marking writes: a fact a rule derived that the marking
+ * does not write, such as a member collapsed into its group's name, is not a
+ * change the author signs. Pressing it (a tap, a click, Enter or Space) opens
+ * that list until a second press, Escape, or a press or focus outside the field
+ * closes it; a phone has no hover, so the press is its only way in. A hovered
+ * list can be reached: the pointer can move from the mark into it, and it
+ * closes a moment after the pointer has left both. Tab from the mark reaches
+ * its undo. The list sits outside the field's box, so it never covers what it
+ * explains, right next to the mark: on the side of the field the mark is
+ * toward, its trailing edge lined up with the mark's. The indicator
+ * communicates state; it is not a per-fix activity feed.
  *
  * The module owns the single-mark invariant: `ensureStatusMark` is idempotent
  * per wrap element and `setStatusMarkFixes` mutates the existing mark in place,
@@ -105,10 +105,16 @@ export interface ExplainedField {
      */
     writes?: (categoryId: string) => boolean;
     /**
-     * Whether the field shows facts its marking does not write, a chip or a dot
-     * or a row for each fact, so a fact a rule filled in would show up changed
-     * with nothing said. A field that shows only its text does not: the engine
-     * names every fact a rule adds that the text writes.
+     * Whether the marking the field shows writes a fact, by the engine's render
+     * assessments of the forms it shows (see written-facts.ts). Every fact when
+     * omitted.
+     */
+    written?: (ref: Pick<AssertionRef, 'categoryId' | 'conceptId'>) => boolean;
+    /**
+     * Whether the field shows each fact, a chip or a dot or a row for each, so
+     * a fact a rule filled in that no applied change names would show up
+     * changed with nothing said. A field that shows only its text does not: the
+     * engine names every fact a rule adds that the text writes.
      */
     showsUnwritten: boolean;
 }
@@ -117,12 +123,16 @@ export interface ExplainedField {
  * The changes a field's status mark explains for the value it holds: pass the
  * result to {@link setStatusMarkFixes}.
  *
- * The engine names a fact a rule adds in `appliedFixes` only when the marking
- * writes it. A fact the marking does not write (a group's members, when the
- * group's name is written) arrives only as a derived assertion, so a field that
- * shows its facts would show it changed with nothing said. For such a field
- * each such fact becomes one change here, in the engine's wording for an added
- * concept. A field that shows only its text lists none of them.
+ * The author signs what the marking writes, so a change is one to what the
+ * marking writes. A fact a rule derived that the marking does not write (a
+ * group's members, collapsed into the group's written name, or a default no
+ * output prints) changed nothing the author sees, so it is no change, and a
+ * change that touched only such facts is left out. A fact a rule added that the
+ * marking does write is a change whether or not the author wrote it.
+ *
+ * A field that shows each fact also lists the written facts a rule filled in
+ * that no applied change names, each as one change in the engine's wording for
+ * an added concept. A field that shows only its text lists none of them.
  *
  * An applied change describes a value the field has moved on from, and is left
  * out, when a concept it added is no longer held or a concept it removed is
@@ -134,8 +144,9 @@ export interface ExplainedField {
  * @param holds - The assertions the field holds now (every marking it holds,
  *   for a field that holds several)
  * @param field - What the field writes and shows
- * @returns The applied changes still behind the value, then one change per
- *   filled-in fact no applied change names
+ * @returns The applied changes still behind the value, narrowed to the facts
+ *   the marking writes, then one change per filled-in fact no applied change
+ *   names
  */
 export function explainedChanges(
     applied: readonly Change[],
@@ -143,18 +154,31 @@ export function explainedChanges(
     field: ExplainedField,
 ): Change[] {
     const writes = field.writes ?? (() => true);
+    const written = field.written ?? (() => true);
     const held = new Set(holds.map(refKey));
-    const current = applied.filter((change) => {
+    const current: Change[] = [];
+    for (const change of applied) {
         const added = change.add ?? [];
         const removed = change.remove ?? [];
-        const touched = [...added, ...removed];
-        return (
-            added.every((ref) => held.has(refKey(ref))) &&
-            !removed.some((ref) => held.has(refKey(ref))) &&
-            (touched.length === 0 ||
-                touched.some((ref) => writes(ref.categoryId)))
+        if (
+            !added.every((ref) => held.has(refKey(ref))) ||
+            removed.some((ref) => held.has(refKey(ref)))
+        )
+            continue;
+        if (added.length === 0 && removed.length === 0) {
+            current.push(change);
+            continue;
+        }
+        const add = added.filter(written);
+        const remove = removed.filter(written);
+        const touched = [...add, ...remove];
+        if (!touched.some((ref) => writes(ref.categoryId))) continue;
+        current.push(
+            add.length === added.length && remove.length === removed.length
+                ? change
+                : { ...change, add, remove },
         );
-    });
+    }
     if (!field.showsUnwritten) return current;
     const explained = new Set(
         current.flatMap((change) => (change.add ?? []).map(refKey)),
@@ -165,6 +189,7 @@ export function explainedChanges(
         if (
             !ruleAdded(assertion) ||
             !writes(assertion.categoryId) ||
+            !written(assertion) ||
             explained.has(key)
         )
             continue;

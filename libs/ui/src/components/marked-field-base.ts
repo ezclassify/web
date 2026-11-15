@@ -65,6 +65,7 @@ import {
     type ChangeWords,
 } from './status-mark';
 import type { InlineMarkingEditor } from './inline-marking-editor';
+import { writtenFactTest, type ShownForm } from '../written-facts';
 import { createClearButton, type ClearButton } from './clear-button';
 import { isUndoChord, MarkingUndo } from './marking-undo';
 import { announce, createAnnouncer } from './accessibility-helpers';
@@ -670,10 +671,10 @@ export abstract class MarkedFieldBase<
     }
 
     /**
-     * The changes the field's status mark explains for what it holds: those its
-     * scopes write or it changed. A text field shows only its text, so a fact a
-     * rule filled in that the text does not write is not one of them (see
-     * explainedChanges).
+     * The changes the field's status mark explains for what it holds: those to
+     * what its marks write that its scopes write or it changed. A text field
+     * shows only its text, so a fact a rule filled in that the text does not
+     * write is not one of them (see explainedChanges).
      *
      * @param applied - The applied changes the field has recorded
      * @param holds - What the field holds now, every mark of it
@@ -682,15 +683,28 @@ export abstract class MarkedFieldBase<
         applied: readonly Change[],
         holds: readonly Assertion[],
     ): Change[] {
+        const meta = this.engine.getSchemeMeta();
         return explainedChanges(applied, holds, {
             writes: writesCategoryOf(
                 listedScopesOf(this.options),
                 this.scheme.categories,
-                this.engine.getSchemeMeta(),
+                meta,
+            ),
+            written: writtenFactTest(
+                this.markForms(),
+                this.scheme.categories,
+                meta,
             ),
             showsUnwritten: false,
         });
     }
+
+    /**
+     * The forms the field's marks are written in, each with what writing it
+     * did, so its status mark explains changes to what the marks write (see
+     * written-facts.ts).
+     */
+    protected abstract markForms(): ShownForm[];
 
     /**
      * The scheme's declared render format for a part of a marking, if it names

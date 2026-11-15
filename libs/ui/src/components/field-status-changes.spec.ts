@@ -1,10 +1,9 @@
 /**
- * What a field's status mark explains: what the scopes it writes write, or what
- * it changed. A text field writes its marking as text, so a fact a rule filled
- * in that the text does not write (a group's members) is not on its list, and
- * neither is a change to a scope the field does not write. A field that draws
- * each fact as a chip lists the facts a rule filled in among its scopes, since
- * each one is a chip the author sees appear.
+ * What a field's status mark explains: changes to what its marking writes, in
+ * the scopes it writes, or what it changed. A fact a rule filled in that the
+ * marking does not write (a group's member, collapsed into the group's written
+ * name) is not on the list, and neither is a change the engine names for a fact
+ * the marking leaves out, nor a change to a scope the field does not write.
  *
  * The engine here is a stand-in: the cases are about what a field does with an
  * answer, so each answer is written out.
@@ -55,20 +54,38 @@ function added(rule: string, conceptId: string, categoryId: string): Change {
 /**
  * Reading `LOW` leaves the marking holding: LOW, as written; STD, which a rule
  * added and the text writes; MEMBER, which a rule filled in under the written
- * group and the text does not write; and SIGNED, which a rule added in the
- * record scope, a scope the fields here do not write.
+ * group and the text writes as the group's name; SHARED, which a rule added and
+ * the text leaves out; and SIGNED, which a rule added in the record scope, a
+ * scope the fields here do not write.
  */
 const HOLDS = [
     fact('LOW', 'level'),
     fact('GROUP', 'group'),
     fact('STD', 'handling', 'adds-std'),
     fact('MEMBER', 'group', 'expands-group'),
+    fact('SHARED', 'share', 'shares'),
     fact('SIGNED', 'signer', 'signs'),
 ];
 const APPLIED = [
     added('adds-std', 'STD', 'handling'),
+    added('shares', 'SHARED', 'share'),
     added('signs', 'SIGNED', 'signer'),
 ];
+const ref = (conceptId: string, categoryId: string) => ({
+    conceptId,
+    categoryId,
+});
+/** What writing `LOW//GROUP//STD` did with the facts it holds. */
+const WRITTEN = {
+    ...NO_LOSS,
+    emitted: [
+        ref('LOW', 'level'),
+        ref('GROUP', 'group'),
+        ref('STD', 'handling'),
+    ],
+    omitted: [ref('SHARED', 'share'), ref('SIGNED', 'signer')],
+    collapsed: [[ref('MEMBER', 'group'), ref('GROUP', 'group')]],
+};
 
 function engine() {
     const ids: Array<[string, string]> = [
@@ -76,6 +93,7 @@ function engine() {
         ['GROUP', 'group'],
         ['MEMBER', 'group'],
         ['STD', 'handling'],
+        ['SHARED', 'share'],
         ['SIGNED', 'signer'],
     ];
     const concepts = ids.map(([id, category], index) => ({
@@ -91,6 +109,7 @@ function engine() {
         { id: 'level', single: true },
         { id: 'group', single: false },
         { id: 'handling', single: false },
+        { id: 'share', single: false },
         { id: 'signer', single: true, scopes: ['record'] },
     ].map((category, index) => ({
         label: category.id,
@@ -131,7 +150,7 @@ function engine() {
         appliedFixes: APPLIED,
         proposedFixes: [],
         notices: [],
-        assessment: NO_LOSS,
+        assessment: WRITTEN,
     };
     return {
         getScheme: () => scheme,
@@ -215,7 +234,7 @@ afterEach(() => {
 const context = () => schemeOnlyContext(engine() as never);
 
 describe('a field explains only what its scopes write or it changed', () => {
-    it('MarkedTextArea lists the change its text writes, not a filled-in fact or another scope', async () => {
+    it('MarkedTextArea lists the change its text writes, not a filled-in fact, an unwritten one or another scope', async () => {
         const textarea = document.createElement('textarea');
         textarea.value = '(LOW) Paragraph.';
         container.appendChild(textarea);
@@ -261,7 +280,7 @@ describe('a field explains only what its scopes write or it changed', () => {
         ]);
     });
 
-    it('TagInput draws each fact as a chip, so it also lists the fact a rule filled in', async () => {
+    it('TagInput draws each fact as a chip and lists the same', async () => {
         container.innerHTML = '<input value="LOW">';
         const field = new TagInput();
         mounted = field;
@@ -269,9 +288,8 @@ describe('a field explains only what its scopes write or it changed', () => {
         await wait();
 
         expect(await markLines(container)).toEqual([
-            '2 changes made by marking rules',
+            '1 change made by a marking rule',
             'Added STD to handling.',
-            'Added MEMBER to group.',
         ]);
     });
 });

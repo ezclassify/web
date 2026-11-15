@@ -12,12 +12,13 @@
  *
  * Every rendered surface (a native input's `.value`, a painted display's text,
  * a field's `getRendered()`) must derive from the engine's own process() output
- * and therefore honor that suppression. STATE views (a chip, a dropdown's
- * checked row) are a different contract: they represent the assertion set, not
- * the rendered string, and correctly show OUR_SCHOOL as selected/inferred.
- * Composing a "rendered" surface from raw assertions instead of the engine's
- * actual rendered string is what this guards against: it would show
- * OUR_SCHOOL's label somewhere the suppression rule says it must not appear.
+ * and therefore honor that suppression. A TagInput's chips are the values the
+ * marking writes, so it draws no chip for OUR_SCHOOL either. An option list is
+ * a different contract: it represents the assertion set, not the rendered
+ * string, and correctly shows OUR_SCHOOL as selected. Composing a "rendered"
+ * surface from raw assertions instead of the engine's actual rendered string is
+ * what this guards against: it would show OUR_SCHOOL's label somewhere the
+ * suppression rule says it must not appear.
  *
  * TagInput and MarkingField are both covered here (bound to the same whole)
  * because they build their "rendered" surfaces two different ways (TagInput's
@@ -148,16 +149,18 @@ describe('suppressed default-fill assertion never leaks into a rendered surface'
         expect(paintedDisplay.textContent).toBe(state.rendered);
         expect(paintedDisplay.textContent).not.toContain('OUR SCHOOL');
 
-        // State surfaces: OUR SCHOOL correctly SHOWS as selected.
+        // The chips are the values the marking writes: none for OUR SCHOOL.
         const chips = [
             ...root.querySelectorAll(
                 '[data-ezclassify-mount="tags"] .proto-tag',
             ),
         ];
-        const ourSchoolChip = chips.find(
-            (c) => (c as HTMLElement).dataset.conceptId === 'OUR_SCHOOL',
-        );
-        expect(ourSchoolChip).toBeDefined();
+        expect(chips.length).toBeGreaterThan(0);
+        expect(
+            chips.map((c) => (c as HTMLElement).dataset.conceptId),
+        ).not.toContain('OUR_SCHOOL');
+
+        // The option list shows the assertion set: OUR SCHOOL is selected.
 
         // Focus alone never opens the picker; ArrowDown is the request.
         markingHost.focus();
