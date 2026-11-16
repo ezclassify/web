@@ -219,9 +219,9 @@ freshness check: recording from nothing against the pinned engine and content
 must reproduce the committed files byte for byte, so a changed answer, a new
 request or a request no spec sends any more all fail it.
 [`.github/workflows/recordings.yml`](.github/workflows/recordings.yml) runs it in the official repository on
-demand, every week, and on a pull request that changes a spec, a fixture, the
-UI code a spec drives, the harness, the test configuration, the root manifest,
-a recording or a pin; a fork has nothing to run there.
+demand, so run it after changing a spec, a fixture, the UI code a spec drives,
+the harness, the test configuration, the root manifest, a recording or a pin;
+a fork has nothing to run there.
 
 The [`libs/ui-tools/`](libs/ui-tools/) helper is outside the public workspace closure. Its
 record and replay core needs nothing it installs, so the harness imports that
@@ -300,6 +300,6 @@ the published contract from
 contract changes, the spec bot opens a pull request with updated [`vendor/spec/`](vendor/spec/)
 and [`vendor/SPEC.md`](vendor/SPEC.md).
 Never edit anything under [`vendor/`](vendor/) by hand: push your changes without touching
-it, and non-codegen pull requests do not require spec regeneration. The
-`vendor-readonly` workflow enforces this on both pull requests and direct
-pushes. See [`vendor/SPEC.md`](vendor/SPEC.md) for the current provenance record.
+it, and non-codegen pull requests do not require spec regeneration. CI checks
+that `vendor/spec/openapi.yaml` matches the hash in `vendor/spec/MANIFEST.json`,
+and the `vendor/spec/` owners rule asks the maintainers to review any change. See [`vendor/SPEC.md`](vendor/SPEC.md) for the current provenance record.

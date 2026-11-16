@@ -11,8 +11,8 @@
 **/fixtures/**
 
 # The vendored spec and its provenance record are written by the spec bot from
-# the contracts repository; any local reformatting would cause spec drift. The
-# vendor-readonly workflow gates their integrity.
+# the contracts repository; any local reformatting would cause spec drift, and
+# CI checks the bundle against the hash MANIFEST.json names.
 vendor/spec/
 vendor/SPEC.md
 

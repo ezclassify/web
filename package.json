@@ -58,7 +58,6 @@
         "lint": "npx eslint --max-warnings=0 libs/ui integrations tests e2e",
         "notices": "node scripts/generate-third-party-notices.mjs",
         "record": "node scripts/record-demo-runtime.mjs",
-        "sbom": "node scripts/generate-sbom.mjs",
         "test": "node scripts/run-test-projects.mjs",
         "test:angular": "vitest run --config vitest.angular.config.ts",
         "test:frameworks": "vitest run integrations --pool=forks",

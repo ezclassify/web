@@ -1,44 +1,39 @@
 name: CI
 
+# One required check: the `ci` job. It runs on every pull request to main and
+# on demand. A dispatch with `full` set also runs the `full` job, the release
+# evidence: Node 24 and the pack-and-consume proof on both Node versions.
 on:
-  push:
-    branches: [main]
   pull_request:
     branches: [main]
-    types:
-      - opened
-      - synchronize
-      - reopened
-      - ready_for_review
-  workflow_dispatch: null
+  workflow_dispatch:
+    inputs:
+      full:
+        description: Also run the release-only checks (Node 24, pack and consume)
+        type: boolean
+        default: false
 
 permissions:
   contents: read
   packages: read
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}-${{ github.event_name }}
+  group: ci-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  policy:
-    uses: ezclassify/.github/.github/workflows/ci-policy.yml@a42ece80f520858a2926723d12bba2af2dca0474
-    with:
-      primary-version: '22'
-      full-versions: '["22","24"]'
-  build-and-test:
-    if: ${{ needs.policy.result == 'success' && (github.event_name != 'schedule' || github.repository == 'ezclassify/web') }}
+  ci:
+    name: ci
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    strategy:
-      matrix:
-        node-version: ${{ fromJSON(needs.policy.outputs.versions) }}
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-
-      - uses: ezclassify/.github/actions/setup-node-npm@a42ece80f520858a2926723d12bba2af2dca0474
         with:
-          node-version: ${{ matrix.node-version }}
+          persist-credentials: false
+
+      - uses: ezclassify/.github/actions/setup-node-npm@da1e243029be7e724f808cca11e385e6d79eee8b
+        with:
+          node-version: '22'
           registry-url: 'https://npm.pkg.github.com'
           scope: '@ezclassify'
 
@@ -51,53 +46,40 @@ jobs:
           echo "NPM_CONFIG_USERCONFIG=$RUNNER_TEMP/ci-npmrc" >> "$GITHUB_ENV"
 
       - name: Test sources import no engine
-        # Cheapest gate, so it runs first. Reads source text only and needs no
-        # install: no spec, fixture or test helper may import the engine or
-        # its WebAssembly build, because a clean clone cannot install them.
-        # Engine behavior arrives as recordings.
+        # Reads source text only and needs no install: no spec, fixture or test
+        # helper may import the engine or its WebAssembly build, because a clean
+        # clone cannot install them. Engine behavior arrives as recordings.
         run: npm run check:spec-imports
 
       - name: Public dependency closure
-        # First gate, before anything is installed, because this is the one
-        # failure an outside contributor meets before every other check gets a
-        # turn. It reads the committed manifests and fails if the workspace
-        # declares a package that is not published publicly, which is how the
-        # engine would come back: quietly, as somebody's devDependency, breaking
+        # Reads the committed manifests and fails if the workspace declares a
+        # package that is not published publicly, which is how the engine would
+        # come back: quietly, as somebody's devDependency, breaking
         # `npm install` for every fork.
         run: npm run check:public-dependencies
+
+      - name: Verify spec hash
+        # The vendored bundle has to be the one MANIFEST.json names. This
+        # repository generates nothing from it, so the hash is the whole check.
+        run: |
+          EXPECTED=$(python3 -c "import json; print(json.load(open('vendor/spec/MANIFEST.json'))['openapiSha256'])")
+          ACTUAL=$(sha256sum vendor/spec/openapi.yaml | awk '{print $1}')
+          if [ "$EXPECTED" != "$ACTUAL" ]; then
+            echo "ERROR: vendor/spec/openapi.yaml SHA mismatch"
+            echo "  MANIFEST: $EXPECTED"
+            echo "  actual:   $ACTUAL"
+            exit 1
+          fi
 
       - name: Install dependencies
         # Generate a portable, date-bounded lock from empty state, then install
         # exactly those bytes.
         env:
           NODE_AUTH_TOKEN: ${{ secrets.EZ_GHPKG_TOKEN || github.token }}
-        uses: ezclassify/.github/actions/install-node-dependencies@a42ece80f520858a2926723d12bba2af2dca0474
+        uses: ezclassify/.github/actions/install-node-dependencies@da1e243029be7e724f808cca11e385e6d79eee8b
         with:
           mode: generated
           relock-installs: 'false'
-
-      # Spec integrity: the vendored bundle has to be the one MANIFEST.json
-      # names. This repository generates nothing from it, so there is no
-      # regenerate-and-diff step; the hash is the whole check.
-      - name: Read MANIFEST
-        id: manifest
-        run: |
-          python3 -c "
-          import json, os
-          m = json.load(open('vendor/spec/MANIFEST.json'))
-          with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
-              f.write('spec_sha256=' + m['openapiSha256'] + '\n')
-          "
-
-      - name: Verify spec hash
-        run: |
-          ACTUAL=$(sha256sum vendor/spec/openapi.yaml | awk '{print $1}')
-          if [ "${{ steps.manifest.outputs.spec_sha256 }}" != "$ACTUAL" ]; then
-            echo "ERROR: vendor/spec/openapi.yaml SHA mismatch"
-            echo "  MANIFEST: ${{ steps.manifest.outputs.spec_sha256 }}"
-            echo "  actual:   $ACTUAL"
-            exit 1
-          fi
 
       - name: Lint
         run: npm run lint
@@ -112,17 +94,15 @@ jobs:
 
       - name: Third-party notices are current
         # THIRD-PARTY-NOTICES.md is generated from the direct production
-        # dependencies of the publishable workspaces; regenerating and
-        # diffing here means a dependency change cannot land without the
-        # committed notices file following it.
+        # dependencies of the publishable workspaces, so a dependency change
+        # cannot land without the committed notices file following it.
         run: |
           npm run notices
           git diff --exit-code THIRD-PARTY-NOTICES.md
 
       - name: No dependency or import escapes the repo
-        # Static half of the PR-time independence proxy: no file:/link:/
-        # workspace: dependency protocols in publishable packages, and no
-        # relative import that resolves above the repo root.
+        # No file:/link:/workspace: dependency protocols in publishable
+        # packages, and no relative import that resolves above the repo root.
         run: npm run check:no-escape
 
       - name: Build UI
@@ -141,14 +121,25 @@ jobs:
         run: npm run build
         working-directory: integrations/angular
 
+      - name: Typecheck
+        # After the builds: the integrations and examples resolve the sibling
+        # packages through their built declarations.
+        run: npm run typecheck
+
       - name: Examples and hosts carry no engine
-        # The claim the examples exist to make, checked rather than asserted:
-        # no dependency field names the engine, no source or built file imports
-        # it, and the engine is outside the closure an outside consumer would
-        # install. The gate builds every application itself, so it needs
-        # no separate host-build step and cannot go quiet when their gitignored
+        # Checked rather than asserted: no dependency field names the engine,
+        # no source or built file imports it, and the engine is outside the
+        # closure an outside consumer would install. The gate builds every
+        # application itself, so it cannot go quiet when their gitignored
         # output is absent.
         run: npm run check:consumer-engine-free -- --verbose
+
+      - name: No published tarball carries proprietary content
+        # The publication-boundary gate, as an explicit step because .npmrc sets
+        # ignore-scripts=true and npm then skips the package's own
+        # prepublishOnly. After the builds, because pack reflects what is on
+        # disk.
+        run: npm run check:publish-content
 
       - name: Working tree is clean after build
         run: git diff --exit-code && test -z "$(git status --porcelain)"
@@ -156,84 +147,72 @@ jobs:
       - name: Run tests
         # Every spec, the integration tier included. Engine answers replay from
         # the committed demo runtime recordings, so nothing is started and
-        # nothing is skipped. A request with no recording fails its spec file,
-        # and a changed request or fixture is a new request, because the key
-        # is the request. Whether a recorded answer is still what the engine
+        # nothing is skipped. Whether a recorded answer is still what the engine
         # says is the maintainer lane's check, recordings.yml.
         run: npm test
 
-      - name: Typecheck
-        run: npm run typecheck
+  full:
+    name: full (${{ matrix.node-version }})
+    if: ${{ inputs.full }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: true
+      matrix:
+        # 22 is here too so the pack-and-consume proof covers both supported
+        # Node versions, as the release run always did.
+        node-version: ['22', '24']
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+
+      - uses: ezclassify/.github/actions/setup-node-npm@da1e243029be7e724f808cca11e385e6d79eee8b
+        with:
+          node-version: ${{ matrix.node-version }}
+          registry-url: 'https://npm.pkg.github.com'
+          scope: '@ezclassify'
+
+      - name: Configure package registry
+        run: |
+          cat > "$RUNNER_TEMP/ci-npmrc" << 'NPMRC'
+          @ezclassify:registry=https://npm.pkg.github.com
+          //npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}
+          NPMRC
+          echo "NPM_CONFIG_USERCONFIG=$RUNNER_TEMP/ci-npmrc" >> "$GITHUB_ENV"
+
+      - name: Install dependencies
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.EZ_GHPKG_TOKEN || github.token }}
+        uses: ezclassify/.github/actions/install-node-dependencies@da1e243029be7e724f808cca11e385e6d79eee8b
+        with:
+          mode: generated
+          relock-installs: 'false'
+
+      - name: Build UI
+        run: npm run build
+        working-directory: libs/ui
+
+      - name: Build React integration
+        run: npm run build
+        working-directory: integrations/react
+
+      - name: Build Vue integration
+        run: npm run build
+        working-directory: integrations/vue
+
+      - name: Build Angular integration
+        run: npm run build
+        working-directory: integrations/angular
+
+      - name: Run tests
+        run: npm test
 
       - name: Pack and consume publishable workspaces from tarballs
-        # Dynamic half: npm-pack every publishable workspace, install the
-        # tarballs jointly into a scratch project outside the repo (sibling
-        # @ezclassify/* deps must resolve from the tarballs, never a
-        # registry), then load every declared entry point the way a consumer
-        # would.
+        # npm-pack every publishable workspace, install the tarballs jointly
+        # into a scratch project outside the repo (sibling @ezclassify/* deps
+        # must resolve from the tarballs, never a registry), then load every
+        # declared entry point the way a consumer would.
         run: |
           npx playwright install --with-deps chromium
           npm run verify:pack-consume
-        if: ${{ needs.policy.outputs.full == 'true' }}
-      - name: No published tarball carries proprietary content
-        # The publication-boundary gate. It has to run here, as an explicit
-        # step, because .npmrc sets ignore-scripts=true: under that setting npm
-        # skips the publishing package's own prepublishOnly, so wiring the gate
-        # into that hook and stopping there leaves the repo with no automatic
-        # enforcement at all. Placed after the builds because pack reflects what
-        # is on disk, and a tree that was never built proves nothing.
-        run: npm run check:publish-content
-    needs:
-      - policy
-
-  qualified-artifacts:
-    needs:
-      - policy
-      - build-and-test
-    if: ${{ needs.policy.result == 'success' && needs.policy.outputs.full == 'true' && (always() && !cancelled()) }}
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    steps:
-      - name: Require the complete compatibility matrix
-        env:
-          VALIDATION_RESULT: ${{ needs.build-and-test.result }}
-        run: test "$VALIDATION_RESULT" = success
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
-        with:
-          node-version: '24'
-      # This native inventory reads committed manifests, not an installed tree.
-      - name: Generate SBOM
-        run: npm run sbom
-      - name: Upload SBOM artifact
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: sbom
-          path: dist/sbom.json
-          if-no-files-found: error
-  qualification:
-    needs:
-      - policy
-      - build-and-test
-      - qualified-artifacts
-    if: ${{ always() && !cancelled() && needs.policy.result == 'success' && needs.policy.outputs.full == 'true' }}
-    uses: ezclassify/.github/.github/workflows/ci-result.yml@a42ece80f520858a2926723d12bba2af2dca0474
-    with:
-      results: ${{ toJSON(needs) }}
-      full: ${{ needs.policy.outputs.full == 'true' }}
-      full-only: '[]'
-      optional: '[]'
-  ci:
-    needs:
-      - policy
-      - build-and-test
-      - qualified-artifacts
-      - qualification
-    if: ${{ always() && !cancelled() }}
-    uses: ezclassify/.github/.github/workflows/ci-result.yml@a42ece80f520858a2926723d12bba2af2dca0474
-    with:
-      results: ${{ toJSON(needs) }}
-      full: ${{ needs.policy.outputs.full == 'true' }}
-      full-only: '["qualified-artifacts","qualification"]'
-      optional: '[]'
-run-name: CI · ${{ github.event_name }} · ${{ github.ref_name }}
