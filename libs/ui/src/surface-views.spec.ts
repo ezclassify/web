@@ -5,25 +5,30 @@
  * name the view it is for.
  */
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { Context } from '@ezclassify/engine';
+import { openContext } from '../test-fixtures/context-doubles';
 import { SURFACES_SCHEME } from '../test-fixtures/surfaces-scheme';
 import { EzClassifyUI } from './ezclassify-ui';
 import { VanillaEzClassifyStore } from './store/ezclassify-store';
+import type { MarkingField } from './components/marking-field';
 import {
     openSurface,
     press,
     typeText,
 } from './components/composer/composer-harness';
+import { asContext } from '../test-fixtures/as-context';
+import { connectDemoContext } from '../../../test-support/demo-runtime';
 
 const wait = (ms = 150) => new Promise((r) => setTimeout(r, ms));
 
-function createEngine() {
-    return Context.fromComponents({ scheme: SURFACES_SCHEME }).scheme;
+async function createEngine() {
+    return openContext(
+        await connectDemoContext({ draft: { scheme: SURFACES_SCHEME } }),
+    ).scheme;
 }
 
 describe('a store over a scheme that writes each role in its own view', () => {
     it('writes a whole marking in the whole default, whatever role its text reads as', async () => {
-        const store = new VanillaEzClassifyStore(createEngine());
+        const store = new VanillaEzClassifyStore(await createEngine());
 
         await store.publishRendered('doc', 'CONF // PARTNERS');
 
@@ -33,7 +38,7 @@ describe('a store over a scheme that writes each role in its own view', () => {
     });
 
     it('writes a part in the part default', async () => {
-        const store = new VanillaEzClassifyStore(createEngine());
+        const store = new VanillaEzClassifyStore(await createEngine());
         await store.publishRendered('doc', 'CONFIDENTIAL // PARTNERS');
         store.setPartOf('para', 'doc');
 
@@ -44,7 +49,7 @@ describe('a store over a scheme that writes each role in its own view', () => {
     });
 
     it('writes a held output beside rendered, and refuses one the scheme does not declare', async () => {
-        const store = new VanillaEzClassifyStore(createEngine());
+        const store = new VanillaEzClassifyStore(await createEngine());
         store.requestOutput('doc', 'sensitivity/short');
         // A bare view id is a valid outputFormat, but a publish names an
         // output by its address.
@@ -77,15 +82,15 @@ describe('plain inputs bound to a marking on that scheme', () => {
     async function mount(shortFormat = 'sensitivity/short') {
         const root = document.createElement('div');
         root.innerHTML = `
-            <input type="hidden" id="doc" data-ezclassify-rendered />
-            <input id="full" data-ezclassify-bind data-ezclassify-bound-to="doc"
+            <input type="hidden" id="doc" data-ezclassify-marking />
+            <input id="full" data-ezclassify-bound-to="doc"
                    data-ezclassify-format="sensitivity/full" />
-            <input id="short" data-ezclassify-bind data-ezclassify-bound-to="doc"
+            <input id="short" data-ezclassify-bound-to="doc"
                    data-ezclassify-format="${shortFormat}" />
-            <input id="plain" data-ezclassify-bind data-ezclassify-bound-to="doc" />`;
+            <input id="plain" data-ezclassify-bound-to="doc" />`;
         document.body.appendChild(root);
-        const engine = createEngine();
-        forms = new EzClassifyUI(engine as never, { root });
+        const engine = await createEngine();
+        forms = new EzClassifyUI(asContext(engine as never), { root });
         await wait();
         return {
             engine,
@@ -186,7 +191,7 @@ describe('a marked field that names a bare view on that scheme', () => {
     });
 
     it('reads and writes its mark in that view on the default surface', async () => {
-        const engine = createEngine();
+        const engine = await createEngine();
         const process = vi.spyOn(engine, 'process');
         const root = document.createElement('div');
         root.innerHTML = `
@@ -194,7 +199,7 @@ describe('a marked field that names a bare view on that scheme', () => {
                       data-ezclassify-format="full" value="(CONF // PARTNERS) Report">`;
         document.body.appendChild(root);
 
-        forms = new EzClassifyUI(engine as never, { root });
+        forms = new EzClassifyUI(asContext(engine as never), { root });
         await wait();
 
         // The scheme marks its default surface on its scope list and names no
@@ -206,6 +211,105 @@ describe('a marked field that names a bare view on that scheme', () => {
                 outputFormat: 'sensitivity/full',
             });
         }
+    });
+});
+
+describe('a marking field that names a bare view on that scheme', () => {
+    let forms: EzClassifyUI | null = null;
+
+    afterEach(() => {
+        forms?.destroy();
+        forms = null;
+        document.body.innerHTML = '';
+        vi.restoreAllMocks();
+    });
+
+    it('reads a draft with the committed value its view does not write chosen beside it', async () => {
+        Element.prototype.scrollIntoView = vi.fn();
+        const engine = await createEngine();
+        const root = document.createElement('div');
+        root.innerHTML = `
+            <textarea id="overall" data-ezclassify-controller="marking"
+                      data-ezclassify-format="full"></textarea>`;
+        document.body.appendChild(root);
+        forms = new EzClassifyUI(asContext(engine as never), { root });
+        await wait();
+        const host = root.querySelector<HTMLTextAreaElement>('#overall')!;
+        const field = forms.components.get(host) as MarkingField;
+        // The full view writes the level and the sharing, never the keep.
+        field.setAssertions([
+            {
+                conceptId: 'CONFIDENTIAL',
+                categoryId: 'level',
+                confidence: 'certain',
+                source: 'user',
+            },
+            {
+                conceptId: 'KEEP_7Y',
+                categoryId: 'keep',
+                confidence: 'certain',
+                source: 'user',
+            },
+        ]);
+        await wait();
+        const process = vi.spyOn(engine, 'process');
+
+        host.focus();
+        typeText(host, 'CONFIDENTIAL // PARTNERS');
+        await wait(300);
+
+        // Coverage is reported for the output the bare view id names, so the
+        // draft is read and the keep it cannot write rides along with it.
+        const draft = process.mock.calls.find(
+            ([text]) => text === 'CONFIDENTIAL // PARTNERS',
+        );
+        expect(draft?.at(-1)).toMatchObject({
+            assertions: [expect.objectContaining({ conceptId: 'KEEP_7Y' })],
+        });
+    });
+    it('keeps in the store the fact of another scope its text does not write', async () => {
+        Element.prototype.scrollIntoView = vi.fn();
+        const engine = await createEngine();
+        const root = document.createElement('div');
+        root.innerHTML = `
+            <textarea id="overall" data-ezclassify-controller="marking"
+                      data-ezclassify-format="full"></textarea>`;
+        document.body.appendChild(root);
+        forms = new EzClassifyUI(asContext(engine as never), { root });
+        await wait();
+        const host = root.querySelector<HTMLTextAreaElement>('#overall')!;
+        const field = forms.components.get(host) as MarkingField;
+        const held = () =>
+            forms!.store.get('overall').assertions.map((a) => a.conceptId);
+
+        field.setAssertions([
+            {
+                conceptId: 'CONFIDENTIAL',
+                categoryId: 'level',
+                confidence: 'certain',
+                source: 'user',
+            },
+            {
+                conceptId: 'KEEP_7Y',
+                categoryId: 'keep',
+                confidence: 'certain',
+                source: 'user',
+            },
+        ]);
+        await wait();
+        expect(held()).toEqual(
+            expect.arrayContaining(['CONFIDENTIAL', 'KEEP_7Y']),
+        );
+
+        host.focus();
+        typeText(host, 'CONFIDENTIAL // PARTNERS');
+        await wait(300);
+        press(host, 'Enter');
+        await wait(300);
+
+        expect(held()).toEqual(
+            expect.arrayContaining(['CONFIDENTIAL', 'PARTNERS', 'KEEP_7Y']),
+        );
     });
 });
 
@@ -222,13 +326,13 @@ describe('fields that show a part on that scheme and name no format', () => {
     async function mount(fields: string) {
         const root = document.createElement('div');
         root.innerHTML = `
-            <input type="hidden" id="doc" data-ezclassify-rendered />
-            <input type="hidden" id="para" data-ezclassify-rendered
+            <input type="hidden" id="doc" data-ezclassify-marking />
+            <input type="hidden" id="para" data-ezclassify-marking
                    data-ezclassify-part-of="doc" />
             ${fields}`;
         document.body.appendChild(root);
-        const engine = createEngine();
-        forms = new EzClassifyUI(engine as never, { root });
+        const engine = await createEngine();
+        forms = new EzClassifyUI(asContext(engine as never), { root });
         await wait();
         return {
             engine,
@@ -251,7 +355,7 @@ describe('fields that show a part on that scheme and name no format', () => {
 
     it('show a part bound to a plain input as the store holds it, asking for no output', async () => {
         const { input } = await mount(`
-            <input id="plain" data-ezclassify-bind data-ezclassify-bound-to="para" />`);
+            <input id="plain" data-ezclassify-bound-to="para" />`);
         const requestOutput = vi.spyOn(forms!.store, 'requestOutput');
 
         await forms!.store.publishRendered('para', 'CONFIDENTIAL // PARTNERS');
@@ -263,7 +367,7 @@ describe('fields that show a part on that scheme and name no format', () => {
 
     it('write the text typed into a part field in the part default', async () => {
         const { engine, input } = await mount(`
-            <input id="portion" data-ezclassify-bind data-ezclassify-part-of="doc" />`);
+            <input id="portion" data-ezclassify-marking data-ezclassify-part-of="doc" />`);
         const process = vi.spyOn(engine, 'process');
 
         const portion = input('portion');
@@ -294,11 +398,12 @@ describe('the needed strip of a field that writes one surface', () => {
     });
 
     /** The surfaces scheme with a category the retention surface requires. */
-    function retentionRequired() {
+    async function retentionRequired() {
         const doc = structuredClone(SURFACES_SCHEME);
         const keep = doc.scheme.data.categories.find((c) => c.id === 'keep')!;
         (keep as { required?: boolean }).required = true;
-        return Context.fromComponents({ scheme: doc }).scheme;
+        return openContext(await connectDemoContext({ draft: { scheme: doc } }))
+            .scheme;
     }
 
     it("names what the field's own surface lacks and nothing another surface requires", async () => {
@@ -308,7 +413,12 @@ describe('the needed strip of a field that writes one surface', () => {
             <label for="overall">Overall</label>
             <textarea id="overall" data-ezclassify-controller="marking"></textarea>`;
         document.body.appendChild(root);
-        forms = new EzClassifyUI(retentionRequired() as never, { root });
+        forms = new EzClassifyUI(
+            asContext((await retentionRequired()) as never),
+            {
+                root,
+            },
+        );
         await wait();
         const host = root.querySelector<HTMLTextAreaElement>('#overall')!;
 

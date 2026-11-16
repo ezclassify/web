@@ -7,10 +7,11 @@
  *
  * Driven through MarkingField over a real engine.
  */
+import { asContext } from '../../../test-fixtures/as-context';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
-import { Context } from '@ezclassify/engine';
 import { EzClassifyUI } from '../../ezclassify-ui';
 import { openSurface, press, rowLabels, wait } from './composer-harness';
+import { connectDemoContext } from '../../../../../test-support/demo-runtime';
 
 const concept = (
     id: string,
@@ -30,58 +31,58 @@ const concept = (
 });
 
 /** A level, and controls of which SI-G belongs to SI. */
-function createContext() {
-    return Context.fromComponents({
-        scheme: {
+async function createContext() {
+    return await connectDemoContext({
+        draft: {
             scheme: {
-                id: 'composer-contextual',
-                version: '1.0.0',
-                name: 'Composer Contextual',
-                data: {
-                    concepts: {
-                        inline: [
+                scheme: {
+                    id: 'composer-contextual',
+                    version: '1.0.0',
+                    name: 'Composer Contextual',
+                    description: 'Composer Contextual test fixture.',
+                    data: {
+                        concepts: [
                             concept('U', 'UNCLASSIFIED', 'level', 1),
                             concept('S', 'SECRET', 'level', 2),
                             concept('SI', 'SI', 'control', 1),
                             concept('SIG', 'SI-G', 'control', 2, ['SI']),
                             concept('TK', 'TK', 'control', 3),
                         ],
+                        categories: [
+                            {
+                                id: 'level',
+                                label: 'Level',
+                                required: false,
+                                single: true,
+                                rollup: 'max',
+                                position: 1,
+                            },
+                            {
+                                id: 'control',
+                                label: 'Control',
+                                required: false,
+                                single: false,
+                                rollup: 'union',
+                                position: 2,
+                            },
+                        ],
                     },
-                    categories: [
-                        {
-                            id: 'level',
-                            label: 'Level',
-                            required: false,
-                            single: true,
-                            rollup: 'max',
-                            position: 1,
-                        },
-                        {
-                            id: 'control',
-                            label: 'Control',
-                            required: false,
-                            single: false,
-                            rollup: 'union',
-                            position: 2,
-                        },
-                    ],
-                },
-                rules: [],
-                parse: { case_sensitive: false, strip_whitespace: true },
-                render: {
-                    default: 'default',
-                    formats: [
-                        {
-                            id: 'default',
-                            surface: 'marking',
-                            mode: 'inline',
-                            separator: '//',
-                            fields: [
-                                { category: 'level', separator: '/' },
-                                { category: 'control', separator: '/' },
-                            ],
-                        },
-                    ],
+                    rules: [],
+                    render: {
+                        default: 'default',
+                        formats: [
+                            {
+                                id: 'default',
+                                surface: 'marking',
+                                mode: 'inline',
+                                separator: '//',
+                                fields: [
+                                    { category: 'level', separator: '/' },
+                                    { category: 'control', separator: '/' },
+                                ],
+                            },
+                        ],
+                    },
                 },
             },
         },
@@ -105,8 +106,10 @@ afterEach(() => {
 
 it('lists a concept its parent calls for once the parent is in the draft, in a category the catalog already lists', async () => {
     root.innerHTML =
-        '<input type="hidden" id="doc" data-ezclassify-rendered /><label for="f">Marking</label><textarea id="f" data-ezclassify-controller="marking" data-ezclassify-bound-to="doc"></textarea>';
-    forms = new EzClassifyUI(createContext() as never, { root });
+        '<input type="hidden" id="doc" data-ezclassify-marking /><label for="f">Marking</label><textarea id="f" data-ezclassify-controller="marking" data-ezclassify-bound-to="doc"></textarea>';
+    forms = new EzClassifyUI(asContext((await createContext()) as never), {
+        root,
+    });
     await wait();
     await forms.store.publishRendered('doc', 'SECRET//SI');
     await wait();

@@ -174,9 +174,7 @@ describe('useEzClassify hook', () => {
         const origErr = console.error;
         console.error = () => {};
         try {
-            expect(() => render(<NoProvider />)).toThrow(
-                /EzClassifyStoreProvider/,
-            );
+            expect(() => render(<NoProvider />)).toThrow(/inside <EzClassify>/);
         } finally {
             console.error = origErr;
         }

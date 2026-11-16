@@ -229,6 +229,77 @@
                 "credential": "context-token",
                 "deployment": "open"
             },
+            "id": "ctx-describe.marked",
+            "operationId": "ctxDescribe",
+            "request": {
+                "headers": {},
+                "method": "GET",
+                "path": "/v1/ctx/ez-marked/1.0.0",
+                "pathTemplate": "/v1/ctx/{ctxId}/{version}"
+            },
+            "response": {
+                "body": {
+                    "access": {
+                        "id": "ez-marked",
+                        "resolvedVersion": "1.0.0",
+                        "version": "latest"
+                    },
+                    "crosswalks": [
+                        {
+                            "id": "ez-gated-to-ez-test",
+                            "resolvedVersion": "1.0.0",
+                            "version": "latest"
+                        }
+                    ],
+                    "description": "The self-marked gated scheme with a marked guide, a marked access policy and a marked crosswalk with a selection, so the corpus records each document's own marking and a candidate that lost.",
+                    "guides": [
+                        {
+                            "id": "ez-marked",
+                            "resolvedVersion": "1.0.0",
+                            "version": "latest"
+                        }
+                    ],
+                    "id": "ez-marked",
+                    "scheme": {
+                        "id": "ez-gated",
+                        "resolvedVersion": "1.0.0",
+                        "version": "latest"
+                    },
+                    "schemes": [
+                        {
+                            "id": "ez-gated",
+                            "roles": [
+                                "primary",
+                                "crosswalk-source"
+                            ],
+                            "selector": "ez-gated",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "ez-test",
+                            "roles": [
+                                "crosswalk-target"
+                            ],
+                            "selector": "ez-test",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "version": "1.0.0"
+                },
+                "headers": {
+                    "content-type": "application/json",
+                    "x-ezclassify-resolved-version": "1.0.0"
+                },
+                "status": 200,
+                "statusDeclaredInContract": true
+            },
+            "summary": "What the marked context is composed of. Recorded because a client describes a Context before it reads the marked scheme, guide, access policy and crosswalk below."
+        },
+        {
+            "auth": {
+                "credential": "context-token",
+                "deployment": "open"
+            },
             "id": "ctx-document-audit.ok",
             "neverCache": "A document operation carries an access decision, and every access decision is an audit event on the runtime. No SDK serves it from cache, and the access-decision opt-in does not reach it.",
             "operationId": "ctxDocumentAudit",
@@ -246,7 +317,6 @@
             },
             "response": {
                 "body": {
-                    "operationLimitations": [],
                     "resolution": {
                         "artifacts": [
                             {
@@ -272,14 +342,10 @@
                         ],
                         "contextId": "ez-full",
                         "requestedVersion": "1.0.0",
-                        "resolvedVersion": "1.0.0",
-                        "sources": []
+                        "resolvedVersion": "1.0.0"
                     },
                     "responseProjection": {
                         "counts": {
-                            "accessRuleResults": 0,
-                            "contentRequirements": 0,
-                            "contextRequirements": 0,
                             "evidenceSpans": 0,
                             "guideUnits": 1,
                             "nominations": 0
@@ -419,348 +485,6 @@
                 "credential": "context-token",
                 "deployment": "open"
             },
-            "id": "ctx-document-assess-access.ok",
-            "neverCache": "A document operation carries an access decision, and every access decision is an audit event on the runtime. No SDK serves it from cache, and the access-decision opt-in does not reach it.",
-            "operationId": "ctxDocumentAssessAccess",
-            "request": {
-                "body": {
-                    "context": {
-                        "audit": {
-                            "resourceId": "comparison-resource",
-                            "userId": "comparison-user"
-                        }
-                    },
-                    "responseProfile": "standard",
-                    "text": "OPEN\nThis document is releasable.",
-                    "userAttributes": {
-                        "clearance": "OPEN"
-                    }
-                },
-                "headers": {
-                    "content-type": "application/json"
-                },
-                "method": "POST",
-                "path": "/v1/ctx/ez-full/1.0.0/document/assess-access",
-                "pathTemplate": "/v1/ctx/{ctxId}/{version}/document/assess-access"
-            },
-            "response": {
-                "body": {
-                    "operationLimitations": [],
-                    "resolution": {
-                        "artifacts": [
-                            {
-                                "id": "ez-test",
-                                "kind": "scheme",
-                                "version": "1.0.0"
-                            },
-                            {
-                                "id": "ez-test",
-                                "kind": "guide",
-                                "version": "1.0.0"
-                            },
-                            {
-                                "id": "ez-test",
-                                "kind": "access",
-                                "version": "1.0.0"
-                            },
-                            {
-                                "id": "ez-full",
-                                "kind": "context",
-                                "version": "1.0.0"
-                            }
-                        ],
-                        "contextId": "ez-full",
-                        "requestedVersion": "1.0.0",
-                        "resolvedVersion": "1.0.0",
-                        "sources": []
-                    },
-                    "responseProjection": {
-                        "counts": {
-                            "accessRuleResults": 2,
-                            "contentRequirements": 0,
-                            "contextRequirements": 0,
-                            "evidenceSpans": 0,
-                            "guideUnits": 1,
-                            "nominations": 0
-                        },
-                        "detailsComplete": false,
-                        "omittedFields": [
-                            "/result/audit/guideAssessment/determinedRequiredWhole/detail",
-                            "/result/audit/guideAssessment/evaluation/manualSelections/*/evidence/*/matched",
-                            "/result/audit/guideAssessment/evaluation/nominations/*/evidence/*/matched",
-                            "/result/audit/guideAssessment/evaluation/supportCatalog/*/evidence/*/matched",
-                            "/result/audit/guideAssessment/evaluation/units/*/determined/detail",
-                            "/result/audit/guideAssessment/evaluation/units/*/projected/detail",
-                            "/result/audit/guideAssessment/projectedRequiredWhole/detail",
-                            "/result/audit/parts/*/text",
-                            "/result/audit/unmarkedSpans/*/text",
-                            "/result/authored/contextRequirements/*/acceptableValues",
-                            "/result/authored/decision/rules/*/comparisons/*/left/value",
-                            "/result/authored/decision/rules/*/comparisons/*/missing",
-                            "/result/authored/decision/rules/*/comparisons/*/right/value",
-                            "/result/authoritative/contextRequirements/*/acceptableValues",
-                            "/result/authoritative/decision/rules/*/comparisons/*/left/value",
-                            "/result/authoritative/decision/rules/*/comparisons/*/missing",
-                            "/result/authoritative/decision/rules/*/comparisons/*/right/value"
-                        ],
-                        "profile": "standard"
-                    },
-                    "result": {
-                        "audit": {
-                            "documentDigest": "sha256:1e2bf535a323e1113be6ff134b11ad5b3a42e1793a5c16f3142a1a4c02839fea",
-                            "guideAssessment": {
-                                "acceptedCount": 0,
-                                "determinedRequiredWhole": null,
-                                "determinedWholeCoverage": null,
-                                "evaluation": {
-                                    "acceptedFindingIds": [],
-                                    "determinations": [],
-                                    "documentDigest": "sha256:1e2bf535a323e1113be6ff134b11ad5b3a42e1793a5c16f3142a1a4c02839fea",
-                                    "limitations": [],
-                                    "manualSelections": [],
-                                    "nominations": [],
-                                    "rejectedFindingIds": [],
-                                    "supportCatalog": [],
-                                    "units": [
-                                        {
-                                            "determined": null,
-                                            "end": 33,
-                                            "findingIds": [],
-                                            "offsetEncoding": "utf-8-bytes",
-                                            "projected": null,
-                                            "scopeId": "document",
-                                            "start": 0
-                                        }
-                                    ],
-                                    "unresolvedFindingIds": []
-                                },
-                                "evidenceSpanCount": 0,
-                                "nominationCount": 0,
-                                "projectedRequiredWhole": null,
-                                "projectedWholeCoverage": null,
-                                "rejectedCount": 0,
-                                "status": "no-findings",
-                                "unitCoverage": [
-                                    {
-                                        "determinedCoverage": null,
-                                        "projectedCoverage": null,
-                                        "scopeId": "document"
-                                    }
-                                ],
-                                "unresolvedCount": 0
-                            },
-                            "limitations": [],
-                            "markingRequirements": {
-                                "part": true,
-                                "whole": false
-                            },
-                            "overallVerdict": "procedural-gap",
-                            "parts": [],
-                            "proceduralFlags": [
-                                "unmarked-text-present"
-                            ],
-                            "unmarkedSpans": [
-                                {
-                                    "end": 33,
-                                    "offsetEncoding": "utf-8-bytes",
-                                    "start": 4
-                                }
-                            ],
-                            "vocabulary": null,
-                            "whole": "OPEN",
-                            "wholeCoversParts": null,
-                            "wholeValidation": {
-                                "appliedFixes": [],
-                                "assertions": [
-                                    {
-                                        "categoryId": "level",
-                                        "conceptId": "OPEN",
-                                        "confidence": "certain",
-                                        "source": "parse"
-                                    }
-                                ],
-                                "errors": [],
-                                "inputWasValid": true,
-                                "proposedFixes": [],
-                                "recognition": {
-                                    "inputFormat": "default",
-                                    "status": "complete",
-                                    "surface": "banner",
-                                    "unmatched": []
-                                },
-                                "rendered": "OPEN",
-                                "valid": true
-                            },
-                            "wholes": [
-                                {
-                                    "end": 4,
-                                    "marking": "OPEN",
-                                    "offsetEncoding": "utf-8-bytes",
-                                    "start": 0
-                                }
-                            ]
-                        },
-                        "authored": {
-                            "advisory": false,
-                            "basis": "authored",
-                            "contentRequirements": [],
-                            "contextRequirements": [],
-                            "decision": {
-                                "granted": true,
-                                "rules": [
-                                    {
-                                        "activation": {
-                                            "assertions": [
-                                                {
-                                                    "categoryId": "level",
-                                                    "conceptId": "OPEN"
-                                                }
-                                            ],
-                                            "contextPaths": [],
-                                            "matched": true
-                                        },
-                                        "comparisons": [
-                                            {
-                                                "left": {
-                                                    "path": "clearance",
-                                                    "source": "subject"
-                                                },
-                                                "matched": true,
-                                                "operator": "gte",
-                                                "right": {
-                                                    "assertions": [
-                                                        {
-                                                            "categoryId": "level",
-                                                            "conceptId": "OPEN"
-                                                        }
-                                                    ],
-                                                    "categoryId": "level",
-                                                    "source": "assertion"
-                                                }
-                                            }
-                                        ],
-                                        "granted": true,
-                                        "name": "Level Access",
-                                        "rule": {
-                                            "artifact": {
-                                                "id": "ez-test",
-                                                "kind": "access",
-                                                "version": "1.0.0"
-                                            },
-                                            "ruleDigest": "sha256:927e90a423517c78d4690c0b5f35c1dcd095ea32f76c3c90b1cbfa1bee493f62",
-                                            "ruleId": "level-rule"
-                                        },
-                                        "ruleIndex": 0,
-                                        "skipped": false
-                                    }
-                                ]
-                            },
-                            "limitations": [],
-                            "status": "granted",
-                            "target": {
-                                "assertions": [
-                                    {
-                                        "categoryId": "level",
-                                        "conceptId": "OPEN",
-                                        "confidence": "certain",
-                                        "source": "aggregate"
-                                    }
-                                ],
-                                "authoredParts": [],
-                                "authoredWhole": "OPEN",
-                                "basis": "authored",
-                                "marking": "OPEN"
-                            }
-                        },
-                        "authoritative": {
-                            "advisory": false,
-                            "basis": "authoritative",
-                            "contentRequirements": [],
-                            "contextRequirements": [],
-                            "decision": {
-                                "granted": true,
-                                "rules": [
-                                    {
-                                        "activation": {
-                                            "assertions": [
-                                                {
-                                                    "categoryId": "level",
-                                                    "conceptId": "OPEN"
-                                                }
-                                            ],
-                                            "contextPaths": [],
-                                            "matched": true
-                                        },
-                                        "comparisons": [
-                                            {
-                                                "left": {
-                                                    "path": "clearance",
-                                                    "source": "subject"
-                                                },
-                                                "matched": true,
-                                                "operator": "gte",
-                                                "right": {
-                                                    "assertions": [
-                                                        {
-                                                            "categoryId": "level",
-                                                            "conceptId": "OPEN"
-                                                        }
-                                                    ],
-                                                    "categoryId": "level",
-                                                    "source": "assertion"
-                                                }
-                                            }
-                                        ],
-                                        "granted": true,
-                                        "name": "Level Access",
-                                        "rule": {
-                                            "artifact": {
-                                                "id": "ez-test",
-                                                "kind": "access",
-                                                "version": "1.0.0"
-                                            },
-                                            "ruleDigest": "sha256:927e90a423517c78d4690c0b5f35c1dcd095ea32f76c3c90b1cbfa1bee493f62",
-                                            "ruleId": "level-rule"
-                                        },
-                                        "ruleIndex": 0,
-                                        "skipped": false
-                                    }
-                                ]
-                            },
-                            "limitations": [],
-                            "status": "granted",
-                            "target": {
-                                "assertions": [
-                                    {
-                                        "categoryId": "level",
-                                        "conceptId": "OPEN",
-                                        "confidence": "certain",
-                                        "source": "aggregate"
-                                    }
-                                ],
-                                "authoredParts": [],
-                                "authoredWhole": "OPEN",
-                                "basis": "authoritative",
-                                "marking": "OPEN"
-                            }
-                        },
-                        "projected": null
-                    }
-                },
-                "headers": {
-                    "content-type": "application/json",
-                    "x-ezclassify-resolved-version": "1.0.0"
-                },
-                "status": 200,
-                "statusDeclaredInContract": true
-            },
-            "summary": "Assess a subject against a document. The subject attributes never appear in the response."
-        },
-        {
-            "auth": {
-                "credential": "context-token",
-                "deployment": "open"
-            },
             "id": "ctx-describe.presets",
             "operationId": "ctxDescribe",
             "request": {
@@ -823,6 +547,7 @@
                         "plural": "Handbooks",
                         "singular": "Handbook"
                     },
+                    "roleAware": false,
                     "version": "1.0.0"
                 },
                 "headers": {
@@ -909,6 +634,7 @@
                     {
                         "id": "level",
                         "label": "Level",
+                        "position": 0,
                         "required": true,
                         "rollup": "max",
                         "scopes": [
@@ -950,6 +676,7 @@
                         "plural": "Handbooks",
                         "singular": "Handbook"
                     },
+                    "roleAware": false,
                     "version": "1.0.0"
                 },
                 "headers": {
@@ -1046,6 +773,7 @@
                     {
                         "id": "level",
                         "label": "Level",
+                        "position": 0,
                         "required": true,
                         "rollup": "max",
                         "single": true
@@ -1053,6 +781,7 @@
                     {
                         "id": "caveats",
                         "label": "Caveats",
+                        "position": 1,
                         "required": false,
                         "rollup": "union",
                         "single": false
@@ -1117,33 +846,6 @@
                 "statusDeclaredInContract": true
             },
             "summary": "Render formats, including the block-mode fields. A remote adapter that only sees the inline fields renders a block format as one line."
-        },
-        {
-            "auth": {
-                "credential": "context-token",
-                "deployment": "open"
-            },
-            "id": "ctx-scheme-grammar.ok",
-            "operationId": "ctxSchemeGrammar",
-            "request": {
-                "headers": {},
-                "method": "GET",
-                "path": "/v1/ctx/ez-presets/1.0.0/scheme/grammar",
-                "pathTemplate": "/v1/ctx/{ctxId}/{version}/scheme/grammar"
-            },
-            "response": {
-                "body": {
-                    "caseSensitive": false,
-                    "stripWhitespace": true
-                },
-                "headers": {
-                    "content-type": "application/json",
-                    "x-ezclassify-resolved-version": "1.0.0"
-                },
-                "status": 200,
-                "statusDeclaredInContract": true
-            },
-            "summary": "Parse grammar of the context's composed scheme."
         },
         {
             "auth": {
@@ -1249,7 +951,6 @@
             },
             "response": {
                 "body": {
-                    "operationLimitations": [],
                     "resolution": {
                         "artifacts": [
                             {
@@ -1265,8 +966,7 @@
                         ],
                         "contextId": "ez-presets",
                         "requestedVersion": "1.0.0",
-                        "resolvedVersion": "1.0.0",
-                        "sources": []
+                        "resolvedVersion": "1.0.0"
                     },
                     "result": {
                         "appliedFixes": [],
@@ -1367,6 +1067,7 @@
                         "plural": "Handbooks",
                         "singular": "Handbook"
                     },
+                    "roleAware": false,
                     "version": "1.0.0"
                 },
                 "headers": {
@@ -1450,6 +1151,7 @@
                     {
                         "id": "level",
                         "label": "Level",
+                        "position": 0,
                         "required": true,
                         "rollup": "max",
                         "single": true
@@ -1501,33 +1203,6 @@
                 "statusDeclaredInContract": true
             },
             "summary": "Render formats a scheme that declares none still answers with."
-        },
-        {
-            "auth": {
-                "credential": "context-token",
-                "deployment": "open"
-            },
-            "id": "ctx-scheme-grammar.full",
-            "operationId": "ctxSchemeGrammar",
-            "request": {
-                "headers": {},
-                "method": "GET",
-                "path": "/v1/ctx/ez-full/1.0.0/scheme/grammar",
-                "pathTemplate": "/v1/ctx/{ctxId}/{version}/scheme/grammar"
-            },
-            "response": {
-                "body": {
-                    "caseSensitive": false,
-                    "stripWhitespace": true
-                },
-                "headers": {
-                    "content-type": "application/json",
-                    "x-ezclassify-resolved-version": "1.0.0"
-                },
-                "status": 200,
-                "statusDeclaredInContract": true
-            },
-            "summary": "Parse grammar of the composition the browser consumer fixtures bind to."
         },
         {
             "auth": {
@@ -1602,7 +1277,6 @@
             },
             "response": {
                 "body": {
-                    "operationLimitations": [],
                     "resolution": {
                         "artifacts": [
                             {
@@ -1628,8 +1302,7 @@
                         ],
                         "contextId": "ez-full",
                         "requestedVersion": "1.0.0",
-                        "resolvedVersion": "1.0.0",
-                        "sources": []
+                        "resolvedVersion": "1.0.0"
                     },
                     "result": {
                         "appliedFixes": [],
@@ -1700,7 +1373,6 @@
             },
             "response": {
                 "body": {
-                    "operationLimitations": [],
                     "resolution": {
                         "artifacts": [
                             {
@@ -1726,8 +1398,7 @@
                         ],
                         "contextId": "ez-full",
                         "requestedVersion": "1.0.0",
-                        "resolvedVersion": "1.0.0",
-                        "sources": []
+                        "resolvedVersion": "1.0.0"
                     },
                     "result": {
                         "appliedFixes": [],
@@ -1789,7 +1460,6 @@
             },
             "response": {
                 "body": {
-                    "operationLimitations": [],
                     "resolution": {
                         "artifacts": [
                             {
@@ -1815,8 +1485,7 @@
                         ],
                         "contextId": "ez-full",
                         "requestedVersion": "1.0.0",
-                        "resolvedVersion": "1.0.0",
-                        "sources": []
+                        "resolvedVersion": "1.0.0"
                     },
                     "result": {
                         "appliedFixes": [],
@@ -1935,7 +1604,6 @@
             },
             "response": {
                 "body": {
-                    "operationLimitations": [],
                     "resolution": {
                         "artifacts": [
                             {
@@ -1961,8 +1629,7 @@
                         ],
                         "contextId": "ez-full",
                         "requestedVersion": "1.0.0",
-                        "resolvedVersion": "1.0.0",
-                        "sources": []
+                        "resolvedVersion": "1.0.0"
                     },
                     "result": {
                         "appliedFixes": [],
@@ -2036,7 +1703,6 @@
             },
             "response": {
                 "body": {
-                    "operationLimitations": [],
                     "resolution": {
                         "artifacts": [
                             {
@@ -2062,8 +1728,7 @@
                         ],
                         "contextId": "ez-full",
                         "requestedVersion": "1.0.0",
-                        "resolvedVersion": "1.0.0",
-                        "sources": []
+                        "resolvedVersion": "1.0.0"
                     },
                     "result": {
                         "appliedFixes": [],
@@ -2268,7 +1933,6 @@
             },
             "response": {
                 "body": {
-                    "operationLimitations": [],
                     "resolution": {
                         "artifacts": [
                             {
@@ -2294,8 +1958,7 @@
                         ],
                         "contextId": "ez-full",
                         "requestedVersion": "1.0.0",
-                        "resolvedVersion": "1.0.0",
-                        "sources": []
+                        "resolvedVersion": "1.0.0"
                     },
                     "result": {
                         "entries": [
@@ -2306,7 +1969,7 @@
                             },
                             {
                                 "action": "recognize",
-                                "detail": "Recognition: complete as `default`; 6 transitions, 1 lookups",
+                                "detail": "Recognition: complete as `default`; 20 transitions, 2 lookups",
                                 "stage": "parse"
                             },
                             {
@@ -2355,68 +2018,6 @@
                 "credential": "context-token",
                 "deployment": "open"
             },
-            "id": "ctx-scheme-normalize.ok",
-            "operationId": "ctxSchemeNormalize",
-            "request": {
-                "body": {
-                    "input": "open"
-                },
-                "headers": {
-                    "content-type": "application/json"
-                },
-                "method": "POST",
-                "path": "/v1/ctx/ez-full/1.0.0/scheme/normalize",
-                "pathTemplate": "/v1/ctx/{ctxId}/{version}/scheme/normalize"
-            },
-            "response": {
-                "body": {
-                    "operationLimitations": [],
-                    "resolution": {
-                        "artifacts": [
-                            {
-                                "id": "ez-test",
-                                "kind": "scheme",
-                                "version": "1.0.0"
-                            },
-                            {
-                                "id": "ez-test",
-                                "kind": "guide",
-                                "version": "1.0.0"
-                            },
-                            {
-                                "id": "ez-test",
-                                "kind": "access",
-                                "version": "1.0.0"
-                            },
-                            {
-                                "id": "ez-full",
-                                "kind": "context",
-                                "version": "1.0.0"
-                            }
-                        ],
-                        "contextId": "ez-full",
-                        "requestedVersion": "1.0.0",
-                        "resolvedVersion": "1.0.0",
-                        "sources": []
-                    },
-                    "result": {
-                        "result": "OPEN"
-                    }
-                },
-                "headers": {
-                    "content-type": "application/json",
-                    "x-ezclassify-resolved-version": "1.0.0"
-                },
-                "status": 200,
-                "statusDeclaredInContract": true
-            },
-            "summary": "Normalize under the context envelope."
-        },
-        {
-            "auth": {
-                "credential": "context-token",
-                "deployment": "open"
-            },
             "id": "ctx-scheme-render.ok",
             "operationId": "ctxSchemeRender",
             "request": {
@@ -2439,7 +2040,6 @@
             },
             "response": {
                 "body": {
-                    "operationLimitations": [],
                     "resolution": {
                         "artifacts": [
                             {
@@ -2465,8 +2065,7 @@
                         ],
                         "contextId": "ez-full",
                         "requestedVersion": "1.0.0",
-                        "resolvedVersion": "1.0.0",
-                        "sources": []
+                        "resolvedVersion": "1.0.0"
                     },
                     "result": {
                         "assessment": {
@@ -2514,7 +2113,6 @@
             },
             "response": {
                 "body": {
-                    "operationLimitations": [],
                     "resolution": {
                         "artifacts": [
                             {
@@ -2540,8 +2138,7 @@
                         ],
                         "contextId": "ez-full",
                         "requestedVersion": "1.0.0",
-                        "resolvedVersion": "1.0.0",
-                        "sources": []
+                        "resolvedVersion": "1.0.0"
                     },
                     "result": {
                         "assessment": {
@@ -2584,7 +2181,6 @@
             },
             "response": {
                 "body": {
-                    "operationLimitations": [],
                     "resolution": {
                         "artifacts": [
                             {
@@ -2610,8 +2206,7 @@
                         ],
                         "contextId": "ez-full",
                         "requestedVersion": "1.0.0",
-                        "resolvedVersion": "1.0.0",
-                        "sources": []
+                        "resolvedVersion": "1.0.0"
                     },
                     "result": {
                         "added": [
@@ -2660,7 +2255,6 @@
             },
             "response": {
                 "body": {
-                    "operationLimitations": [],
                     "resolution": {
                         "artifacts": [
                             {
@@ -2686,8 +2280,7 @@
                         ],
                         "contextId": "ez-full",
                         "requestedVersion": "1.0.0",
-                        "resolvedVersion": "1.0.0",
-                        "sources": []
+                        "resolvedVersion": "1.0.0"
                     },
                     "result": {
                         "categories": [
@@ -2699,12 +2292,12 @@
                                         "categories": [
                                             "level"
                                         ],
+                                        "citation": "Example source section 3",
                                         "id": "OPEN",
                                         "name": "Open",
                                         "parents": [],
                                         "position": 0,
                                         "rank": -100,
-                                        "rulesReferencing": [],
                                         "views": {
                                             "default": "OPEN"
                                         }
@@ -2719,7 +2312,6 @@
                                         "parents": [],
                                         "position": 0,
                                         "rank": 100,
-                                        "rulesReferencing": [],
                                         "views": {
                                             "default": "SENSITIVE"
                                         }
@@ -2748,6 +2340,139 @@
                 "credential": "context-token",
                 "deployment": "open"
             },
+            "id": "ctx-scheme-view.marked",
+            "operationId": "ctxSchemeView",
+            "request": {
+                "body": {},
+                "headers": {
+                    "content-type": "application/json"
+                },
+                "method": "POST",
+                "path": "/v1/ctx/ez-marked/1.0.0/scheme/view",
+                "pathTemplate": "/v1/ctx/{ctxId}/{version}/scheme/view"
+            },
+            "response": {
+                "body": {
+                    "resolution": {
+                        "artifacts": [
+                            {
+                                "id": "ez-gated",
+                                "kind": "scheme",
+                                "version": "1.0.0"
+                            },
+                            {
+                                "id": "ez-test",
+                                "kind": "scheme",
+                                "version": "1.0.0"
+                            },
+                            {
+                                "id": "ez-marked",
+                                "kind": "guide",
+                                "version": "1.0.0"
+                            },
+                            {
+                                "id": "ez-marked",
+                                "kind": "access",
+                                "version": "1.0.0"
+                            },
+                            {
+                                "id": "ez-gated-to-ez-test",
+                                "kind": "crosswalk",
+                                "version": "1.0.0"
+                            },
+                            {
+                                "id": "ez-marked",
+                                "kind": "context",
+                                "version": "1.0.0"
+                            }
+                        ],
+                        "contextId": "ez-marked",
+                        "requestedVersion": "1.0.0",
+                        "resolvedVersion": "1.0.0"
+                    },
+                    "result": {
+                        "categories": [
+                            {
+                                "id": "level",
+                                "items": [
+                                    {
+                                        "aliases": [],
+                                        "categories": [
+                                            "level"
+                                        ],
+                                        "id": "OPEN",
+                                        "name": "Open",
+                                        "parents": [],
+                                        "position": 0,
+                                        "rank": -100,
+                                        "views": {
+                                            "default": "OPEN"
+                                        }
+                                    },
+                                    {
+                                        "aliases": [],
+                                        "categories": [
+                                            "level"
+                                        ],
+                                        "id": "SENSITIVE",
+                                        "name": "Sensitive",
+                                        "parents": [],
+                                        "position": 1,
+                                        "rank": 100,
+                                        "rulesReferencing": [
+                                            "export-requires-sensitive: Requires Sensitive"
+                                        ],
+                                        "views": {
+                                            "default": "SENSITIVE"
+                                        }
+                                    }
+                                ],
+                                "label": "Level"
+                            },
+                            {
+                                "id": "handling",
+                                "items": [
+                                    {
+                                        "aliases": [],
+                                        "categories": [
+                                            "handling"
+                                        ],
+                                        "id": "EXPORT",
+                                        "name": "Export Controlled",
+                                        "parents": [],
+                                        "position": 0,
+                                        "rulesReferencing": [
+                                            "export-requires-sensitive: Requires Sensitive"
+                                        ],
+                                        "views": {
+                                            "default": "EXPORT"
+                                        }
+                                    }
+                                ],
+                                "label": "Handling"
+                            }
+                        ],
+                        "description": "Taxonomy with a suggest-scoped prerequisite, so one concept is only offered once its unlock is present. Exists for the includeGated option. It marks itself, so the corpus records a scheme view that carries the document's whole marking.",
+                        "id": "ez-gated",
+                        "marking": "OPEN",
+                        "name": "EzGated",
+                        "uncategorized": []
+                    }
+                },
+                "headers": {
+                    "content-type": "application/json",
+                    "x-ezclassify-resolved-version": "1.0.0"
+                },
+                "status": 200,
+                "statusDeclaredInContract": true
+            },
+            "summary": "A scheme that marks itself: the structural view reports the document's whole marking."
+        },
+        {
+            "auth": {
+                "credential": "context-token",
+                "deployment": "open"
+            },
             "id": "ctx-scheme-notices.ok",
             "operationId": "ctxSchemeNotices",
             "request": {
@@ -2770,7 +2495,6 @@
             },
             "response": {
                 "body": {
-                    "operationLimitations": [],
                     "resolution": {
                         "artifacts": [
                             {
@@ -2796,8 +2520,7 @@
                         ],
                         "contextId": "ez-full",
                         "requestedVersion": "1.0.0",
-                        "resolvedVersion": "1.0.0",
-                        "sources": []
+                        "resolvedVersion": "1.0.0"
                     },
                     "result": []
                 },
@@ -2809,152 +2532,6 @@
                 "statusDeclaredInContract": true
             },
             "summary": "Notices under the context envelope: the envelope wraps an array result."
-        },
-        {
-            "auth": {
-                "credential": "context-token",
-                "deployment": "open"
-            },
-            "id": "ctx-scheme-filter-concepts.ok",
-            "operationId": "ctxSchemeFilterConcepts",
-            "request": {
-                "body": {
-                    "query": "open"
-                },
-                "headers": {
-                    "content-type": "application/json"
-                },
-                "method": "POST",
-                "path": "/v1/ctx/ez-full/1.0.0/scheme/filter-concepts",
-                "pathTemplate": "/v1/ctx/{ctxId}/{version}/scheme/filter-concepts"
-            },
-            "response": {
-                "body": {
-                    "operationLimitations": [],
-                    "resolution": {
-                        "artifacts": [
-                            {
-                                "id": "ez-test",
-                                "kind": "scheme",
-                                "version": "1.0.0"
-                            },
-                            {
-                                "id": "ez-test",
-                                "kind": "guide",
-                                "version": "1.0.0"
-                            },
-                            {
-                                "id": "ez-test",
-                                "kind": "access",
-                                "version": "1.0.0"
-                            },
-                            {
-                                "id": "ez-full",
-                                "kind": "context",
-                                "version": "1.0.0"
-                            }
-                        ],
-                        "contextId": "ez-full",
-                        "requestedVersion": "1.0.0",
-                        "resolvedVersion": "1.0.0",
-                        "sources": []
-                    },
-                    "result": {
-                        "categoryCounts": {
-                            "level": {
-                                "total": 2,
-                                "visible": 1
-                            }
-                        },
-                        "total": {
-                            "total": 2,
-                            "visible": 1
-                        },
-                        "visibleIds": [
-                            "OPEN"
-                        ]
-                    }
-                },
-                "headers": {
-                    "content-type": "application/json",
-                    "x-ezclassify-resolved-version": "1.0.0"
-                },
-                "status": 200,
-                "statusDeclaredInContract": true
-            },
-            "summary": "Filter concepts under the context envelope."
-        },
-        {
-            "auth": {
-                "credential": "context-token",
-                "deployment": "open"
-            },
-            "id": "ctx-scheme-filter-concepts.no-match",
-            "operationId": "ctxSchemeFilterConcepts",
-            "request": {
-                "body": {
-                    "query": "zzznomatch"
-                },
-                "headers": {
-                    "content-type": "application/json"
-                },
-                "method": "POST",
-                "path": "/v1/ctx/ez-full/1.0.0/scheme/filter-concepts",
-                "pathTemplate": "/v1/ctx/{ctxId}/{version}/scheme/filter-concepts"
-            },
-            "response": {
-                "body": {
-                    "operationLimitations": [],
-                    "resolution": {
-                        "artifacts": [
-                            {
-                                "id": "ez-test",
-                                "kind": "scheme",
-                                "version": "1.0.0"
-                            },
-                            {
-                                "id": "ez-test",
-                                "kind": "guide",
-                                "version": "1.0.0"
-                            },
-                            {
-                                "id": "ez-test",
-                                "kind": "access",
-                                "version": "1.0.0"
-                            },
-                            {
-                                "id": "ez-full",
-                                "kind": "context",
-                                "version": "1.0.0"
-                            }
-                        ],
-                        "contextId": "ez-full",
-                        "requestedVersion": "1.0.0",
-                        "resolvedVersion": "1.0.0",
-                        "sources": []
-                    },
-                    "result": {
-                        "categoryCounts": {
-                            "level": {
-                                "total": 2,
-                                "visible": 0
-                            }
-                        },
-                        "total": {
-                            "total": 2,
-                            "visible": 0
-                        },
-                        "visibleIds": []
-                    }
-                },
-                "headers": {
-                    "content-type": "application/json",
-                    "x-ezclassify-resolved-version": "1.0.0"
-                },
-                "status": 200,
-                "statusDeclaredInContract": true
-            },
-            "summary": "A query matching nothing is a 200 with an empty list, not a 404."
         },
         {
             "auth": {
@@ -2976,7 +2553,6 @@
             },
             "response": {
                 "body": {
-                    "operationLimitations": [],
                     "resolution": {
                         "artifacts": [
                             {
@@ -3002,15 +2578,15 @@
                         ],
                         "contextId": "ez-full",
                         "requestedVersion": "1.0.0",
-                        "resolvedVersion": "1.0.0",
-                        "sources": []
+                        "resolvedVersion": "1.0.0"
                     },
                     "result": {
                         "limits": {
                             "regionsFound": 1,
                             "status": "complete"
                         },
-                        "results": []
+                        "results": [],
+                        "unread": []
                     }
                 },
                 "headers": {
@@ -3045,7 +2621,6 @@
             },
             "response": {
                 "body": {
-                    "operationLimitations": [],
                     "resolution": {
                         "artifacts": [
                             {
@@ -3071,8 +2646,7 @@
                         ],
                         "contextId": "ez-full",
                         "requestedVersion": "1.0.0",
-                        "resolvedVersion": "1.0.0",
-                        "sources": []
+                        "resolvedVersion": "1.0.0"
                     },
                     "result": {
                         "appliedFixes": [],
@@ -3138,7 +2712,6 @@
             },
             "response": {
                 "body": {
-                    "operationLimitations": [],
                     "resolution": {
                         "artifacts": [
                             {
@@ -3164,8 +2737,7 @@
                         ],
                         "contextId": "ez-full",
                         "requestedVersion": "1.0.0",
-                        "resolvedVersion": "1.0.0",
-                        "sources": []
+                        "resolvedVersion": "1.0.0"
                     },
                     "result": {
                         "appliedFixes": [],
@@ -3214,7 +2786,6 @@
             },
             "response": {
                 "body": {
-                    "operationLimitations": [],
                     "resolution": {
                         "artifacts": [
                             {
@@ -3240,8 +2811,7 @@
                         ],
                         "contextId": "ez-full",
                         "requestedVersion": "1.0.0",
-                        "resolvedVersion": "1.0.0",
-                        "sources": []
+                        "resolvedVersion": "1.0.0"
                     },
                     "result": {
                         "suggestions": [
@@ -3305,7 +2875,6 @@
             },
             "response": {
                 "body": {
-                    "operationLimitations": [],
                     "resolution": {
                         "artifacts": [
                             {
@@ -3321,8 +2890,7 @@
                         ],
                         "contextId": "ez-gated",
                         "requestedVersion": "1.0.0",
-                        "resolvedVersion": "1.0.0",
-                        "sources": []
+                        "resolvedVersion": "1.0.0"
                     },
                     "result": {
                         "suggestions": [],
@@ -3360,7 +2928,6 @@
             },
             "response": {
                 "body": {
-                    "operationLimitations": [],
                     "resolution": {
                         "artifacts": [
                             {
@@ -3376,8 +2943,7 @@
                         ],
                         "contextId": "ez-gated",
                         "requestedVersion": "1.0.0",
-                        "resolvedVersion": "1.0.0",
-                        "sources": []
+                        "resolvedVersion": "1.0.0"
                     },
                     "result": {
                         "suggestions": [
@@ -3441,7 +3007,6 @@
             },
             "response": {
                 "body": {
-                    "operationLimitations": [],
                     "resolution": {
                         "artifacts": [
                             {
@@ -3467,8 +3032,7 @@
                         ],
                         "contextId": "ez-full",
                         "requestedVersion": "1.0.0",
-                        "resolvedVersion": "1.0.0",
-                        "sources": []
+                        "resolvedVersion": "1.0.0"
                     },
                     "result": {
                         "suggestions": [
@@ -3636,7 +3200,6 @@
             },
             "response": {
                 "body": {
-                    "operationLimitations": [],
                     "resolution": {
                         "artifacts": [
                             {
@@ -3662,8 +3225,7 @@
                         ],
                         "contextId": "ez-full",
                         "requestedVersion": "1.0.0",
-                        "resolvedVersion": "1.0.0",
-                        "sources": []
+                        "resolvedVersion": "1.0.0"
                     },
                     "result": {
                         "level": {
@@ -3731,7 +3293,6 @@
             },
             "response": {
                 "body": {
-                    "operationLimitations": [],
                     "resolution": {
                         "artifacts": [
                             {
@@ -3757,8 +3318,7 @@
                         ],
                         "contextId": "ez-full",
                         "requestedVersion": "1.0.0",
-                        "resolvedVersion": "1.0.0",
-                        "sources": []
+                        "resolvedVersion": "1.0.0"
                     },
                     "result": {
                         "level": {
@@ -3826,7 +3386,6 @@
             },
             "response": {
                 "body": {
-                    "operationLimitations": [],
                     "resolution": {
                         "artifacts": [
                             {
@@ -3852,8 +3411,7 @@
                         ],
                         "contextId": "ez-full",
                         "requestedVersion": "1.0.0",
-                        "resolvedVersion": "1.0.0",
-                        "sources": []
+                        "resolvedVersion": "1.0.0"
                     },
                     "result": {
                         "covered": true,
@@ -3897,7 +3455,6 @@
             },
             "response": {
                 "body": {
-                    "operationLimitations": [],
                     "resolution": {
                         "artifacts": [
                             {
@@ -3913,8 +3470,7 @@
                         ],
                         "contextId": "ez-share",
                         "requestedVersion": "1.0.0",
-                        "resolvedVersion": "1.0.0",
-                        "sources": []
+                        "resolvedVersion": "1.0.0"
                     },
                     "result": {
                         "covered": false,
@@ -3973,7 +3529,6 @@
             },
             "response": {
                 "body": {
-                    "operationLimitations": [],
                     "resolution": {
                         "artifacts": [
                             {
@@ -3989,8 +3544,7 @@
                         ],
                         "contextId": "ez-release",
                         "requestedVersion": "1.0.0",
-                        "resolvedVersion": "1.0.0",
-                        "sources": []
+                        "resolvedVersion": "1.0.0"
                     },
                     "result": {
                         "covered": false,
@@ -4065,7 +3619,6 @@
             },
             "response": {
                 "body": {
-                    "operationLimitations": [],
                     "resolution": {
                         "artifacts": [
                             {
@@ -4081,8 +3634,7 @@
                         ],
                         "contextId": "ez-controls",
                         "requestedVersion": "1.0.0",
-                        "resolvedVersion": "1.0.0",
-                        "sources": []
+                        "resolvedVersion": "1.0.0"
                     },
                     "result": {
                         "covered": false,
@@ -4168,7 +3720,6 @@
             },
             "response": {
                 "body": {
-                    "operationLimitations": [],
                     "resolution": {
                         "artifacts": [
                             {
@@ -4194,8 +3745,7 @@
                         ],
                         "contextId": "ez-full",
                         "requestedVersion": "1.0.0",
-                        "resolvedVersion": "1.0.0",
-                        "sources": []
+                        "resolvedVersion": "1.0.0"
                     },
                     "result": {
                         "categoryId": "level",
@@ -4245,7 +3795,6 @@
             },
             "response": {
                 "body": {
-                    "operationLimitations": [],
                     "resolution": {
                         "artifacts": [
                             {
@@ -4271,8 +3820,7 @@
                         ],
                         "contextId": "ez-full",
                         "requestedVersion": "1.0.0",
-                        "resolvedVersion": "1.0.0",
-                        "sources": []
+                        "resolvedVersion": "1.0.0"
                     },
                     "result": {
                         "granted": true,
@@ -4317,13 +3865,14 @@
                                         "kind": "access",
                                         "version": "1.0.0"
                                     },
-                                    "ruleDigest": "sha256:927e90a423517c78d4690c0b5f35c1dcd095ea32f76c3c90b1cbfa1bee493f62",
+                                    "ruleDigest": "sha256:8df6d71e8cbf82347e379eb84fb59eda241f1d3134ee0ce265ffa8bfd0ef28c2",
                                     "ruleId": "level-rule"
                                 },
                                 "ruleIndex": 0,
                                 "skipped": false
                             }
-                        ]
+                        ],
+                        "warnings": []
                     }
                 },
                 "headers": {
@@ -4372,7 +3921,6 @@
             },
             "response": {
                 "body": {
-                    "operationLimitations": [],
                     "resolution": {
                         "artifacts": [
                             {
@@ -4398,8 +3946,7 @@
                         ],
                         "contextId": "ez-full",
                         "requestedVersion": "1.0.0",
-                        "resolvedVersion": "1.0.0",
-                        "sources": []
+                        "resolvedVersion": "1.0.0"
                     },
                     "result": {
                         "granted": true,
@@ -4444,13 +3991,14 @@
                                         "kind": "access",
                                         "version": "1.0.0"
                                     },
-                                    "ruleDigest": "sha256:927e90a423517c78d4690c0b5f35c1dcd095ea32f76c3c90b1cbfa1bee493f62",
+                                    "ruleDigest": "sha256:8df6d71e8cbf82347e379eb84fb59eda241f1d3134ee0ce265ffa8bfd0ef28c2",
                                     "ruleId": "level-rule"
                                 },
                                 "ruleIndex": 0,
                                 "skipped": false
                             }
-                        ]
+                        ],
+                        "warnings": []
                     }
                 },
                 "headers": {
@@ -4493,7 +4041,6 @@
             },
             "response": {
                 "body": {
-                    "operationLimitations": [],
                     "resolution": {
                         "artifacts": [
                             {
@@ -4519,8 +4066,7 @@
                         ],
                         "contextId": "ez-full",
                         "requestedVersion": "1.0.0",
-                        "resolvedVersion": "1.0.0",
-                        "sources": []
+                        "resolvedVersion": "1.0.0"
                     },
                     "result": {
                         "granted": true,
@@ -4565,13 +4111,14 @@
                                         "kind": "access",
                                         "version": "1.0.0"
                                     },
-                                    "ruleDigest": "sha256:927e90a423517c78d4690c0b5f35c1dcd095ea32f76c3c90b1cbfa1bee493f62",
+                                    "ruleDigest": "sha256:8df6d71e8cbf82347e379eb84fb59eda241f1d3134ee0ce265ffa8bfd0ef28c2",
                                     "ruleId": "level-rule"
                                 },
                                 "ruleIndex": 0,
                                 "skipped": false
                             }
-                        ]
+                        ],
+                        "warnings": []
                     }
                 },
                 "headers": {
@@ -4582,100 +4129,6 @@
                 "statusDeclaredInContract": true
             },
             "summary": "A subject described by two attributes. The attribute map has no order on the wire, so a client keys it the same however the caller built it."
-        },
-        {
-            "auth": {
-                "credential": "context-token",
-                "deployment": "open"
-            },
-            "id": "ctx-access-describe-rule.ok",
-            "operationId": "ctxAccessDescribeRule",
-            "request": {
-                "body": {
-                    "ruleId": "level-rule"
-                },
-                "headers": {
-                    "content-type": "application/json"
-                },
-                "method": "POST",
-                "path": "/v1/ctx/ez-full/1.0.0/access/describe-rule",
-                "pathTemplate": "/v1/ctx/{ctxId}/{version}/access/describe-rule"
-            },
-            "response": {
-                "body": {
-                    "operationLimitations": [],
-                    "resolution": {
-                        "artifacts": [
-                            {
-                                "id": "ez-test",
-                                "kind": "scheme",
-                                "version": "1.0.0"
-                            },
-                            {
-                                "id": "ez-test",
-                                "kind": "guide",
-                                "version": "1.0.0"
-                            },
-                            {
-                                "id": "ez-test",
-                                "kind": "access",
-                                "version": "1.0.0"
-                            },
-                            {
-                                "id": "ez-full",
-                                "kind": "context",
-                                "version": "1.0.0"
-                            }
-                        ],
-                        "contextId": "ez-full",
-                        "requestedVersion": "1.0.0",
-                        "resolvedVersion": "1.0.0",
-                        "sources": []
-                    },
-                    "result": {
-                        "access": {
-                            "id": "ez-test",
-                            "kind": "access",
-                            "version": "1.0.0"
-                        },
-                        "attributesNeeded": [
-                            "clearance"
-                        ],
-                        "dependsOn": [],
-                        "lines": [
-                            "Level Access",
-                            "",
-                            "Requirement: clearance >= data.level",
-                            "",
-                            "Attributes needed: clearance"
-                        ],
-                        "name": "Level Access",
-                        "overrides": [],
-                        "requirementText": "clearance >= data.level",
-                        "rule": {
-                            "artifact": {
-                                "id": "ez-test",
-                                "kind": "access",
-                                "version": "1.0.0"
-                            },
-                            "ruleDigest": "sha256:927e90a423517c78d4690c0b5f35c1dcd095ea32f76c3c90b1cbfa1bee493f62",
-                            "ruleId": "level-rule"
-                        },
-                        "scheme": {
-                            "id": "ez-test",
-                            "kind": "scheme",
-                            "version": "1.0.0"
-                        }
-                    }
-                },
-                "headers": {
-                    "content-type": "application/json",
-                    "x-ezclassify-resolved-version": "1.0.0"
-                },
-                "status": 200,
-                "statusDeclaredInContract": true
-            },
-            "summary": "Describe one access rule."
         },
         {
             "auth": {
@@ -4698,7 +4151,6 @@
             },
             "response": {
                 "body": {
-                    "operationLimitations": [],
                     "resolution": {
                         "artifacts": [
                             {
@@ -4724,8 +4176,7 @@
                         ],
                         "contextId": "ez-full",
                         "requestedVersion": "1.0.0",
-                        "resolvedVersion": "1.0.0",
-                        "sources": []
+                        "resolvedVersion": "1.0.0"
                     },
                     "result": {
                         "access": {
@@ -4740,7 +4191,7 @@
                                     "kind": "access",
                                     "version": "1.0.0"
                                 },
-                                "ruleDigest": "sha256:927e90a423517c78d4690c0b5f35c1dcd095ea32f76c3c90b1cbfa1bee493f62",
+                                "ruleDigest": "sha256:8df6d71e8cbf82347e379eb84fb59eda241f1d3134ee0ce265ffa8bfd0ef28c2",
                                 "ruleId": "level-rule"
                             }
                         ],
@@ -4759,13 +4210,6 @@
                             "clearance"
                         ],
                         "combinedRequirementText": "(clearance >= data.level)",
-                        "lines": [
-                            "Access requirements for: OPEN",
-                            "",
-                            "• Level Access: clearance >= data.level",
-                            "",
-                            "Attributes needed: clearance"
-                        ],
                         "marking": "OPEN",
                         "rules": [
                             {
@@ -4778,13 +4222,6 @@
                                     "clearance"
                                 ],
                                 "dependsOn": [],
-                                "lines": [
-                                    "Level Access",
-                                    "",
-                                    "Requirement: clearance >= data.level",
-                                    "",
-                                    "Attributes needed: clearance"
-                                ],
                                 "name": "Level Access",
                                 "overrides": [],
                                 "requirementText": "clearance >= data.level",
@@ -4794,7 +4231,7 @@
                                         "kind": "access",
                                         "version": "1.0.0"
                                     },
-                                    "ruleDigest": "sha256:927e90a423517c78d4690c0b5f35c1dcd095ea32f76c3c90b1cbfa1bee493f62",
+                                    "ruleDigest": "sha256:8df6d71e8cbf82347e379eb84fb59eda241f1d3134ee0ce265ffa8bfd0ef28c2",
                                     "ruleId": "level-rule"
                                 },
                                 "scheme": {
@@ -4846,13 +4283,6 @@
                                 "clearance"
                             ],
                             "dependsOn": [],
-                            "lines": [
-                                "Level Access",
-                                "",
-                                "Requirement: clearance >= data.level",
-                                "",
-                                "Attributes needed: clearance"
-                            ],
                             "name": "Level Access",
                             "overrides": [],
                             "requirementText": "clearance >= data.level",
@@ -4862,7 +4292,7 @@
                                     "kind": "access",
                                     "version": "1.0.0"
                                 },
-                                "ruleDigest": "sha256:927e90a423517c78d4690c0b5f35c1dcd095ea32f76c3c90b1cbfa1bee493f62",
+                                "ruleDigest": "sha256:8df6d71e8cbf82347e379eb84fb59eda241f1d3134ee0ce265ffa8bfd0ef28c2",
                                 "ruleId": "level-rule"
                             },
                             "scheme": {
@@ -4880,7 +4310,63 @@
                 "status": 200,
                 "statusDeclaredInContract": true
             },
-            "summary": "Every rule in the access policy. A flat list, not an envelope: the one context route that is not wrapped."
+            "summary": "Every rule in the access policy. A flat list, not an envelope, like the crosswalk inventory."
+        },
+        {
+            "auth": {
+                "credential": "context-token",
+                "deployment": "open"
+            },
+            "id": "ctx-access-rules.marked",
+            "operationId": "ctxAccessRules",
+            "request": {
+                "headers": {},
+                "method": "GET",
+                "path": "/v1/ctx/ez-marked/1.0.0/access/rules",
+                "pathTemplate": "/v1/ctx/{ctxId}/{version}/access/rules"
+            },
+            "response": {
+                "body": {
+                    "marking": "SENSITIVE",
+                    "rules": [
+                        {
+                            "access": {
+                                "id": "ez-marked",
+                                "kind": "access",
+                                "version": "1.0.0"
+                            },
+                            "attributesNeeded": [
+                                "clearance"
+                            ],
+                            "dependsOn": [],
+                            "name": "Level Access",
+                            "overrides": [],
+                            "requirementText": "clearance >= data.level",
+                            "rule": {
+                                "artifact": {
+                                    "id": "ez-marked",
+                                    "kind": "access",
+                                    "version": "1.0.0"
+                                },
+                                "ruleDigest": "sha256:8df6d71e8cbf82347e379eb84fb59eda241f1d3134ee0ce265ffa8bfd0ef28c2",
+                                "ruleId": "level-rule"
+                            },
+                            "scheme": {
+                                "id": "ez-gated",
+                                "kind": "scheme",
+                                "version": "1.0.0"
+                            }
+                        }
+                    ]
+                },
+                "headers": {
+                    "content-type": "application/json",
+                    "x-ezclassify-resolved-version": "1.0.0"
+                },
+                "status": 200,
+                "statusDeclaredInContract": true
+            },
+            "summary": "A marked access policy: the rules body reports the policy's whole marking and no rule's part."
         },
         {
             "auth": {
@@ -4928,7 +4414,6 @@
             },
             "response": {
                 "body": {
-                    "operationLimitations": [],
                     "resolution": {
                         "artifacts": [
                             {
@@ -4954,8 +4439,7 @@
                         ],
                         "contextId": "ez-full",
                         "requestedVersion": "1.0.0",
-                        "resolvedVersion": "1.0.0",
-                        "sources": []
+                        "resolvedVersion": "1.0.0"
                     },
                     "result": [
                         {
@@ -5016,7 +4500,6 @@
             },
             "response": {
                 "body": {
-                    "operationLimitations": [],
                     "resolution": {
                         "artifacts": [
                             {
@@ -5042,8 +4525,7 @@
                         ],
                         "contextId": "ez-full",
                         "requestedVersion": "1.0.0",
-                        "resolvedVersion": "1.0.0",
-                        "sources": []
+                        "resolvedVersion": "1.0.0"
                     },
                     "result": {
                         "activeComputedRules": [],
@@ -5117,13 +4599,15 @@
                 "credential": "context-token",
                 "deployment": "open"
             },
-            "id": "ctx-guide-evaluate.all-guides",
+            "id": "ctx-guide-evaluate.selections",
             "operationId": "ctxGuideEvaluate",
             "request": {
                 "body": {
-                    "allGuides": true,
-                    "selectedRuleIds": [
-                        "rule-sensitive"
+                    "selections": [
+                        {
+                            "guideId": "ez-test",
+                            "ruleId": "rule-sensitive"
+                        }
                     ]
                 },
                 "headers": {
@@ -5135,7 +4619,6 @@
             },
             "response": {
                 "body": {
-                    "operationLimitations": [],
                     "resolution": {
                         "artifacts": [
                             {
@@ -5161,8 +4644,7 @@
                         ],
                         "contextId": "ez-full",
                         "requestedVersion": "1.0.0",
-                        "resolvedVersion": "1.0.0",
-                        "sources": []
+                        "resolvedVersion": "1.0.0"
                     },
                     "result": {
                         "activeComputedRules": [],
@@ -5228,124 +4710,7 @@
                 "status": 200,
                 "statusDeclaredInContract": true
             },
-            "summary": "Combine selected rules across the context guides in the engine."
-        },
-        {
-            "auth": {
-                "credential": "context-token",
-                "deployment": "open"
-            },
-            "id": "ctx-guide-describe-rule.ok",
-            "operationId": "ctxGuideDescribeRule",
-            "request": {
-                "body": {
-                    "ruleId": "rule-sensitive"
-                },
-                "headers": {
-                    "content-type": "application/json"
-                },
-                "method": "POST",
-                "path": "/v1/ctx/ez-full/1.0.0/guide/describe-rule",
-                "pathTemplate": "/v1/ctx/{ctxId}/{version}/guide/describe-rule"
-            },
-            "response": {
-                "body": {
-                    "operationLimitations": [],
-                    "resolution": {
-                        "artifacts": [
-                            {
-                                "id": "ez-test",
-                                "kind": "scheme",
-                                "version": "1.0.0"
-                            },
-                            {
-                                "id": "ez-test",
-                                "kind": "guide",
-                                "version": "1.0.0"
-                            },
-                            {
-                                "id": "ez-test",
-                                "kind": "access",
-                                "version": "1.0.0"
-                            },
-                            {
-                                "id": "ez-full",
-                                "kind": "context",
-                                "version": "1.0.0"
-                            }
-                        ],
-                        "contextId": "ez-full",
-                        "requestedVersion": "1.0.0",
-                        "resolvedVersion": "1.0.0",
-                        "sources": []
-                    },
-                    "result": {
-                        "dependsOn": [],
-                        "guide": {
-                            "id": "ez-test",
-                            "kind": "guide",
-                            "version": "1.0.0"
-                        },
-                        "isComputed": false,
-                        "lines": [
-                            "Sensitive Content",
-                            "",
-                            "Outcome: SENSITIVE"
-                        ],
-                        "name": "Sensitive Content",
-                        "outcomeText": "SENSITIVE",
-                        "overrides": [],
-                        "rule": {
-                            "artifact": {
-                                "id": "ez-test",
-                                "kind": "guide",
-                                "version": "1.0.0"
-                            },
-                            "ruleDigest": "sha256:1f7f730b71fc7e8dbac9b19428396e100c1555987efc6b2f09acc1e1d8e03b49",
-                            "ruleId": "rule-sensitive"
-                        }
-                    }
-                },
-                "headers": {
-                    "content-type": "application/json",
-                    "x-ezclassify-resolved-version": "1.0.0"
-                },
-                "status": 200,
-                "statusDeclaredInContract": true
-            },
-            "summary": "Describe one guide rule."
-        },
-        {
-            "auth": {
-                "credential": "context-token",
-                "deployment": "open"
-            },
-            "id": "ctx-guide-describe-rule.unknown-guide",
-            "operationId": "ctxGuideDescribeRule",
-            "request": {
-                "body": {
-                    "guideId": "no-such-guide",
-                    "ruleId": "rule-sensitive"
-                },
-                "headers": {
-                    "content-type": "application/json"
-                },
-                "method": "POST",
-                "path": "/v1/ctx/ez-full/1.0.0/guide/describe-rule",
-                "pathTemplate": "/v1/ctx/{ctxId}/{version}/guide/describe-rule"
-            },
-            "response": {
-                "body": {
-                    "error": "Guide 'no-such-guide' not found in context"
-                },
-                "headers": {
-                    "content-type": "application/json",
-                    "x-ezclassify-resolved-version": "1.0.0"
-                },
-                "status": 404,
-                "statusDeclaredInContract": true
-            },
-            "summary": "A guide id that does not exist in this context: a resource-level 404 with a message and no code."
+            "summary": "Roll up a selection that names each rule with its guide, the form a selection across guides takes."
         },
         {
             "auth": {
@@ -5367,7 +4732,6 @@
             },
             "response": {
                 "body": {
-                    "operationLimitations": [],
                     "resolution": {
                         "artifacts": [
                             {
@@ -5393,8 +4757,7 @@
                         ],
                         "contextId": "ez-full",
                         "requestedVersion": "1.0.0",
-                        "resolvedVersion": "1.0.0",
-                        "sources": []
+                        "resolvedVersion": "1.0.0"
                     },
                     "result": {
                         "categories": [],
@@ -5434,80 +4797,6 @@
                 "credential": "context-token",
                 "deployment": "open"
             },
-            "id": "ctx-guide-filter-rules.ok",
-            "operationId": "ctxGuideFilterRules",
-            "request": {
-                "body": {
-                    "query": "sensitive"
-                },
-                "headers": {
-                    "content-type": "application/json"
-                },
-                "method": "POST",
-                "path": "/v1/ctx/ez-full/1.0.0/guide/filter-rules",
-                "pathTemplate": "/v1/ctx/{ctxId}/{version}/guide/filter-rules"
-            },
-            "response": {
-                "body": {
-                    "operationLimitations": [],
-                    "resolution": {
-                        "artifacts": [
-                            {
-                                "id": "ez-test",
-                                "kind": "scheme",
-                                "version": "1.0.0"
-                            },
-                            {
-                                "id": "ez-test",
-                                "kind": "guide",
-                                "version": "1.0.0"
-                            },
-                            {
-                                "id": "ez-test",
-                                "kind": "access",
-                                "version": "1.0.0"
-                            },
-                            {
-                                "id": "ez-full",
-                                "kind": "context",
-                                "version": "1.0.0"
-                            }
-                        ],
-                        "contextId": "ez-full",
-                        "requestedVersion": "1.0.0",
-                        "resolvedVersion": "1.0.0",
-                        "sources": []
-                    },
-                    "result": {
-                        "categoryCounts": {
-                            "_uncategorized": {
-                                "total": 1,
-                                "visible": 1
-                            }
-                        },
-                        "total": {
-                            "total": 1,
-                            "visible": 1
-                        },
-                        "visibleIds": [
-                            "rule-sensitive"
-                        ]
-                    }
-                },
-                "headers": {
-                    "content-type": "application/json",
-                    "x-ezclassify-resolved-version": "1.0.0"
-                },
-                "status": 200,
-                "statusDeclaredInContract": true
-            },
-            "summary": "Guide rules matching a query."
-        },
-        {
-            "auth": {
-                "credential": "context-token",
-                "deployment": "open"
-            },
             "id": "ctx-guide-view.ok",
             "operationId": "ctxGuideView",
             "request": {
@@ -5521,7 +4810,6 @@
             },
             "response": {
                 "body": {
-                    "operationLimitations": [],
                     "resolution": {
                         "artifacts": [
                             {
@@ -5547,8 +4835,7 @@
                         ],
                         "contextId": "ez-full",
                         "requestedVersion": "1.0.0",
-                        "resolvedVersion": "1.0.0",
-                        "sources": []
+                        "resolvedVersion": "1.0.0"
                     },
                     "result": {
                         "categories": [],
@@ -5588,6 +4875,459 @@
                 "credential": "context-token",
                 "deployment": "open"
             },
+            "id": "ctx-guide-view.marked",
+            "operationId": "ctxGuideView",
+            "request": {
+                "body": {},
+                "headers": {
+                    "content-type": "application/json"
+                },
+                "method": "POST",
+                "path": "/v1/ctx/ez-marked/1.0.0/guide/view",
+                "pathTemplate": "/v1/ctx/{ctxId}/{version}/guide/view"
+            },
+            "response": {
+                "body": {
+                    "resolution": {
+                        "artifacts": [
+                            {
+                                "id": "ez-gated",
+                                "kind": "scheme",
+                                "version": "1.0.0"
+                            },
+                            {
+                                "id": "ez-test",
+                                "kind": "scheme",
+                                "version": "1.0.0"
+                            },
+                            {
+                                "id": "ez-marked",
+                                "kind": "guide",
+                                "version": "1.0.0"
+                            },
+                            {
+                                "id": "ez-marked",
+                                "kind": "access",
+                                "version": "1.0.0"
+                            },
+                            {
+                                "id": "ez-gated-to-ez-test",
+                                "kind": "crosswalk",
+                                "version": "1.0.0"
+                            },
+                            {
+                                "id": "ez-marked",
+                                "kind": "context",
+                                "version": "1.0.0"
+                            }
+                        ],
+                        "contextId": "ez-marked",
+                        "requestedVersion": "1.0.0",
+                        "resolvedVersion": "1.0.0"
+                    },
+                    "result": {
+                        "categories": [],
+                        "description": "A guide marked in the gated scheme: a whole marking on the guide and a part on its rule. The view reports the whole as the guide's marking and leaves the part in the document.",
+                        "id": "ez-marked",
+                        "marking": "SENSITIVE",
+                        "name": "EzMarked Guide",
+                        "uncategorized": [
+                            {
+                                "dependsOn": [],
+                                "dependsOnNames": [],
+                                "id": "rule-sensitive",
+                                "isComputed": false,
+                                "keywords": [
+                                    "sensitive"
+                                ],
+                                "matcherLabels": [],
+                                "name": "Sensitive Content",
+                                "outcomeText": "SENSITIVE",
+                                "overrideNames": [],
+                                "overrides": []
+                            }
+                        ]
+                    }
+                },
+                "headers": {
+                    "content-type": "application/json",
+                    "x-ezclassify-resolved-version": "1.0.0"
+                },
+                "status": 200,
+                "statusDeclaredInContract": true
+            },
+            "summary": "A marked guide: the view reports the guide's whole marking and no rule's part."
+        },
+        {
+            "auth": {
+                "credential": "context-token",
+                "deployment": "open"
+            },
+            "id": "ctx-crosswalk-describe.ok",
+            "operationId": "ctxCrosswalkDescribe",
+            "request": {
+                "headers": {},
+                "method": "GET",
+                "path": "/v1/ctx/ez-crosswalk/1.0.0/crosswalk/describe",
+                "pathTemplate": "/v1/ctx/{ctxId}/{version}/crosswalk/describe"
+            },
+            "response": {
+                "body": {
+                    "crosswalks": [
+                        {
+                            "id": "ez-test-to-ez-gated",
+                            "mappings": [
+                                {
+                                    "disposition": "carry",
+                                    "id": "open",
+                                    "reason": "Open material is open in both schemes.",
+                                    "source": {
+                                        "categoryId": "level",
+                                        "conceptId": "OPEN"
+                                    },
+                                    "targets": [
+                                        {
+                                            "categoryId": "level",
+                                            "conceptId": "OPEN"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "disposition": "forbid",
+                                    "id": "sensitive",
+                                    "reason": "Sensitive material is not translated into the gated scheme.",
+                                    "source": {
+                                        "categoryId": "level",
+                                        "conceptId": "SENSITIVE"
+                                    }
+                                }
+                            ],
+                            "name": "EzTest to EzGated",
+                            "selections": [],
+                            "source": "ez-test",
+                            "target": "ez-gated",
+                            "version": "1.0.0"
+                        }
+                    ]
+                },
+                "headers": {
+                    "content-type": "application/json",
+                    "x-ezclassify-resolved-version": "1.0.0"
+                },
+                "status": 200,
+                "statusDeclaredInContract": true
+            },
+            "summary": "Every crosswalk the context holds, with its source and target as scheme selectors and the reviewed mappings. A flat inventory, not an envelope."
+        },
+        {
+            "auth": {
+                "credential": "context-token",
+                "deployment": "open"
+            },
+            "id": "ctx-crosswalk-describe.marked",
+            "operationId": "ctxCrosswalkDescribe",
+            "request": {
+                "headers": {},
+                "method": "GET",
+                "path": "/v1/ctx/ez-marked/1.0.0/crosswalk/describe",
+                "pathTemplate": "/v1/ctx/{ctxId}/{version}/crosswalk/describe"
+            },
+            "response": {
+                "body": {
+                    "crosswalks": [
+                        {
+                            "id": "ez-gated-to-ez-test",
+                            "mappings": [
+                                {
+                                    "disposition": "carry",
+                                    "id": "open",
+                                    "reason": "Open material is open in both schemes.",
+                                    "source": {
+                                        "categoryId": "level",
+                                        "conceptId": "OPEN"
+                                    },
+                                    "targets": [
+                                        {
+                                            "categoryId": "level",
+                                            "conceptId": "OPEN"
+                                        }
+                                    ]
+                                }
+                            ],
+                            "marking": "OPEN",
+                            "name": "EzGated to EzTest",
+                            "selections": [
+                                {
+                                    "candidates": [
+                                        {
+                                            "disposition": "carry",
+                                            "id": "open-export",
+                                            "reason": "Export handling on open material stays open.",
+                                            "sources": [
+                                                {
+                                                    "categoryId": "handling",
+                                                    "conceptId": "EXPORT"
+                                                }
+                                            ],
+                                            "targets": [
+                                                {
+                                                    "categoryId": "level",
+                                                    "conceptId": "OPEN"
+                                                }
+                                            ],
+                                            "when": {
+                                                "all": [
+                                                    {
+                                                        "categoryId": "level",
+                                                        "conceptId": "OPEN"
+                                                    }
+                                                ]
+                                            }
+                                        },
+                                        {
+                                            "disposition": "carry",
+                                            "id": "otherwise",
+                                            "mappings": [
+                                                {
+                                                    "disposition": "carry",
+                                                    "id": "sensitive",
+                                                    "reason": "Sensitive is sensitive in both schemes.",
+                                                    "source": {
+                                                        "categoryId": "level",
+                                                        "conceptId": "SENSITIVE"
+                                                    },
+                                                    "targets": [
+                                                        {
+                                                            "categoryId": "level",
+                                                            "conceptId": "SENSITIVE"
+                                                        }
+                                                    ]
+                                                }
+                                            ],
+                                            "reason": "Anything else carries its level alone."
+                                        }
+                                    ],
+                                    "id": "handling",
+                                    "strategy": "first-match"
+                                }
+                            ],
+                            "source": "ez-gated",
+                            "target": "ez-test",
+                            "version": "1.0.0"
+                        }
+                    ]
+                },
+                "headers": {
+                    "content-type": "application/json",
+                    "x-ezclassify-resolved-version": "1.0.0"
+                },
+                "status": 200,
+                "statusDeclaredInContract": true
+            },
+            "summary": "A crosswalk that marks itself: the descriptor reports the document's whole marking and no mapping's part."
+        },
+        {
+            "auth": {
+                "credential": "context-token",
+                "deployment": "open"
+            },
+            "id": "ctx-crosswalk-translate.not-selected",
+            "neverCache": "A composed Context operation. It answers under the resolved Context envelope and reaches the runtime on every call; no SDK serves it from cache.",
+            "operationId": "ctxCrosswalkTranslate",
+            "request": {
+                "body": {
+                    "crosswalkId": "ez-gated-to-ez-test",
+                    "marking": "SENSITIVE / EXPORT"
+                },
+                "headers": {
+                    "content-type": "application/json"
+                },
+                "method": "POST",
+                "path": "/v1/ctx/ez-marked/1.0.0/crosswalk/translate",
+                "pathTemplate": "/v1/ctx/{ctxId}/{version}/crosswalk/translate"
+            },
+            "response": {
+                "body": {
+                    "resolution": {
+                        "artifacts": [
+                            {
+                                "id": "ez-gated",
+                                "kind": "scheme",
+                                "version": "1.0.0"
+                            },
+                            {
+                                "id": "ez-test",
+                                "kind": "scheme",
+                                "version": "1.0.0"
+                            },
+                            {
+                                "id": "ez-marked",
+                                "kind": "guide",
+                                "version": "1.0.0"
+                            },
+                            {
+                                "id": "ez-marked",
+                                "kind": "access",
+                                "version": "1.0.0"
+                            },
+                            {
+                                "id": "ez-gated-to-ez-test",
+                                "kind": "crosswalk",
+                                "version": "1.0.0"
+                            },
+                            {
+                                "id": "ez-marked",
+                                "kind": "context",
+                                "version": "1.0.0"
+                            }
+                        ],
+                        "contextId": "ez-marked",
+                        "requestedVersion": "1.0.0",
+                        "resolvedVersion": "1.0.0"
+                    },
+                    "result": {
+                        "crosswalk": {
+                            "id": "ez-gated-to-ez-test",
+                            "kind": "crosswalk",
+                            "version": "1.0.0"
+                        },
+                        "outcomes": [
+                            {
+                                "disposition": "carry",
+                                "mappingId": "sensitive",
+                                "reason": "Sensitive is sensitive in both schemes.",
+                                "source": {
+                                    "categoryId": "level",
+                                    "conceptId": "SENSITIVE"
+                                },
+                                "targets": [
+                                    {
+                                        "categoryId": "level",
+                                        "conceptId": "SENSITIVE"
+                                    }
+                                ]
+                            },
+                            {
+                                "disposition": "not-selected",
+                                "mappingId": "handling:open-export",
+                                "reason": "Not emitted because handling selected a different candidate.",
+                                "source": {
+                                    "categoryId": "handling",
+                                    "conceptId": "EXPORT"
+                                },
+                                "targets": []
+                            }
+                        ],
+                        "selections": [
+                            {
+                                "candidateId": "otherwise",
+                                "disposition": "carry",
+                                "reason": "Anything else carries its level alone.",
+                                "selectionId": "handling",
+                                "targets": []
+                            }
+                        ],
+                        "source": {
+                            "appliedFixes": [],
+                            "assertions": [
+                                {
+                                    "categoryId": "level",
+                                    "conceptId": "SENSITIVE",
+                                    "confidence": "certain",
+                                    "source": "parse"
+                                },
+                                {
+                                    "categoryId": "handling",
+                                    "conceptId": "EXPORT",
+                                    "confidence": "certain",
+                                    "source": "parse"
+                                }
+                            ],
+                            "assessment": {
+                                "collapsed": [],
+                                "conflicts": [],
+                                "emitted": [
+                                    {
+                                        "categoryId": "level",
+                                        "conceptId": "SENSITIVE"
+                                    },
+                                    {
+                                        "categoryId": "handling",
+                                        "conceptId": "EXPORT"
+                                    }
+                                ],
+                                "omitted": [],
+                                "unrepresentable": []
+                            },
+                            "errors": [],
+                            "inputWasValid": true,
+                            "notices": [],
+                            "recognition": {
+                                "inputFormat": "default",
+                                "status": "complete",
+                                "surface": "default",
+                                "unmatched": []
+                            },
+                            "rendered": "SENSITIVE / EXPORT",
+                            "valid": true,
+                            "warnings": []
+                        },
+                        "sourceScheme": {
+                            "id": "ez-gated",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        "status": "complete",
+                        "target": {
+                            "appliedFixes": [],
+                            "assertions": [
+                                {
+                                    "categoryId": "level",
+                                    "conceptId": "SENSITIVE",
+                                    "confidence": "inferred",
+                                    "source": "crosswalk:ez-gated-to-ez-test"
+                                }
+                            ],
+                            "assessment": {
+                                "collapsed": [],
+                                "conflicts": [],
+                                "emitted": [
+                                    {
+                                        "categoryId": "level",
+                                        "conceptId": "SENSITIVE"
+                                    }
+                                ],
+                                "omitted": [],
+                                "unrepresentable": []
+                            },
+                            "errors": [],
+                            "inputWasValid": true,
+                            "notices": [],
+                            "rendered": "SENSITIVE",
+                            "valid": true,
+                            "warnings": []
+                        },
+                        "targetScheme": {
+                            "id": "ez-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    }
+                },
+                "headers": {
+                    "content-type": "application/json",
+                    "x-ezclassify-resolved-version": "1.0.0"
+                },
+                "status": 200,
+                "statusDeclaredInContract": true
+            },
+            "summary": "A selection falls through to its fallback: the assertion only the losing candidate covers is reported not-selected, and the translation stays complete."
+        },
+        {
+            "auth": {
+                "credential": "context-token",
+                "deployment": "open"
+            },
             "id": "ctx-crosswalk-translate.translated",
             "neverCache": "A composed Context operation. It answers under the resolved Context envelope and reaches the runtime on every call; no SDK serves it from cache.",
             "operationId": "ctxCrosswalkTranslate",
@@ -5605,7 +5345,6 @@
             },
             "response": {
                 "body": {
-                    "operationLimitations": [],
                     "resolution": {
                         "artifacts": [
                             {
@@ -5631,8 +5370,7 @@
                         ],
                         "contextId": "ez-crosswalk",
                         "requestedVersion": "1.0.0",
-                        "resolvedVersion": "1.0.0",
-                        "sources": []
+                        "resolvedVersion": "1.0.0"
                     },
                     "result": {
                         "crosswalk": {
@@ -5706,8 +5444,7 @@
                                     "categoryId": "level",
                                     "conceptId": "OPEN",
                                     "confidence": "inferred",
-                                    "source": "crosswalk:ez-test-to-ez-gated",
-                                    "sourceRule": "open"
+                                    "source": "crosswalk:ez-test-to-ez-gated"
                                 }
                             ],
                             "assessment": {
@@ -5767,7 +5504,6 @@
             },
             "response": {
                 "body": {
-                    "operationLimitations": [],
                     "resolution": {
                         "artifacts": [
                             {
@@ -5793,8 +5529,7 @@
                         ],
                         "contextId": "ez-crosswalk",
                         "requestedVersion": "1.0.0",
-                        "resolvedVersion": "1.0.0",
-                        "sources": []
+                        "resolvedVersion": "1.0.0"
                     },
                     "result": {
                         "crosswalk": {
@@ -6030,440 +5765,322 @@
                 "credential": "context-token",
                 "deployment": "open"
             },
-            "id": "ctx-scheme-process.undeclared-request-field-fix",
+            "id": "ctx-scheme-process.selected-scheme",
             "operationId": "ctxSchemeProcess",
             "request": {
                 "body": {
-                    "fix": true,
+                    "input": "SENSITIVE / EXPORT"
+                },
+                "headers": {
+                    "content-type": "application/json"
+                },
+                "method": "POST",
+                "path": "/v1/ctx/ez-crosswalk/1.0.0/scheme/process?scheme=ez-gated",
+                "pathTemplate": "/v1/ctx/{ctxId}/{version}/scheme/process"
+            },
+            "response": {
+                "body": {
+                    "resolution": {
+                        "artifacts": [
+                            {
+                                "id": "ez-test",
+                                "kind": "scheme",
+                                "version": "1.0.0"
+                            },
+                            {
+                                "id": "ez-gated",
+                                "kind": "scheme",
+                                "version": "1.0.0"
+                            },
+                            {
+                                "id": "ez-test-to-ez-gated",
+                                "kind": "crosswalk",
+                                "version": "1.0.0"
+                            },
+                            {
+                                "id": "ez-crosswalk",
+                                "kind": "context",
+                                "version": "1.0.0"
+                            }
+                        ],
+                        "contextId": "ez-crosswalk",
+                        "requestedVersion": "1.0.0",
+                        "resolvedVersion": "1.0.0"
+                    },
+                    "result": {
+                        "appliedFixes": [],
+                        "assertions": [
+                            {
+                                "categoryId": "level",
+                                "conceptId": "SENSITIVE",
+                                "confidence": "certain",
+                                "source": "parse"
+                            },
+                            {
+                                "categoryId": "handling",
+                                "conceptId": "EXPORT",
+                                "confidence": "certain",
+                                "source": "parse"
+                            }
+                        ],
+                        "assessment": {
+                            "collapsed": [],
+                            "conflicts": [],
+                            "emitted": [
+                                {
+                                    "categoryId": "level",
+                                    "conceptId": "SENSITIVE"
+                                },
+                                {
+                                    "categoryId": "handling",
+                                    "conceptId": "EXPORT"
+                                }
+                            ],
+                            "omitted": [],
+                            "unrepresentable": []
+                        },
+                        "errors": [],
+                        "inputWasValid": true,
+                        "notices": [],
+                        "proposedFixes": [],
+                        "recognition": {
+                            "corrections": [],
+                            "inputFormat": "default",
+                            "status": "complete",
+                            "surface": "default",
+                            "unmatched": []
+                        },
+                        "rendered": "SENSITIVE / EXPORT",
+                        "renders": {},
+                        "valid": true,
+                        "warnings": []
+                    }
+                },
+                "headers": {
+                    "content-type": "application/json",
+                    "x-ezclassify-resolved-version": "1.0.0"
+                },
+                "status": 200,
+                "statusDeclaredInContract": true
+            },
+            "summary": "Process in the Context's second scheme, named by ?scheme: a marking only that scheme declares."
+        },
+        {
+            "auth": {
+                "credential": "context-token",
+                "deployment": "open"
+            },
+            "id": "ctx-scheme-validate.selected-scheme",
+            "operationId": "ctxSchemeValidate",
+            "request": {
+                "body": {
+                    "input": "SENSITIVE / EXPORT"
+                },
+                "headers": {
+                    "content-type": "application/json"
+                },
+                "method": "POST",
+                "path": "/v1/ctx/ez-crosswalk/1.0.0/scheme/validate?scheme=ez-gated",
+                "pathTemplate": "/v1/ctx/{ctxId}/{version}/scheme/validate"
+            },
+            "response": {
+                "body": {
+                    "resolution": {
+                        "artifacts": [
+                            {
+                                "id": "ez-test",
+                                "kind": "scheme",
+                                "version": "1.0.0"
+                            },
+                            {
+                                "id": "ez-gated",
+                                "kind": "scheme",
+                                "version": "1.0.0"
+                            },
+                            {
+                                "id": "ez-test-to-ez-gated",
+                                "kind": "crosswalk",
+                                "version": "1.0.0"
+                            },
+                            {
+                                "id": "ez-crosswalk",
+                                "kind": "context",
+                                "version": "1.0.0"
+                            }
+                        ],
+                        "contextId": "ez-crosswalk",
+                        "requestedVersion": "1.0.0",
+                        "resolvedVersion": "1.0.0"
+                    },
+                    "result": {
+                        "appliedFixes": [],
+                        "assertions": [
+                            {
+                                "categoryId": "level",
+                                "conceptId": "SENSITIVE",
+                                "confidence": "certain",
+                                "source": "parse"
+                            },
+                            {
+                                "categoryId": "handling",
+                                "conceptId": "EXPORT",
+                                "confidence": "certain",
+                                "source": "parse"
+                            }
+                        ],
+                        "assessment": {
+                            "collapsed": [],
+                            "conflicts": [],
+                            "emitted": [
+                                {
+                                    "categoryId": "level",
+                                    "conceptId": "SENSITIVE"
+                                },
+                                {
+                                    "categoryId": "handling",
+                                    "conceptId": "EXPORT"
+                                }
+                            ],
+                            "omitted": [],
+                            "unrepresentable": []
+                        },
+                        "errors": [],
+                        "inputWasValid": true,
+                        "notices": [],
+                        "recognition": {
+                            "inputFormat": "default",
+                            "status": "complete",
+                            "surface": "default",
+                            "unmatched": []
+                        },
+                        "rendered": "SENSITIVE / EXPORT",
+                        "valid": true,
+                        "warnings": []
+                    }
+                },
+                "headers": {
+                    "content-type": "application/json",
+                    "x-ezclassify-resolved-version": "1.0.0"
+                },
+                "status": 200,
+                "statusDeclaredInContract": true
+            },
+            "summary": "Validate in the Context's second scheme, named by ?scheme: a marking only that scheme declares is valid there."
+        },
+        {
+            "auth": {
+                "credential": "context-token",
+                "deployment": "open"
+            },
+            "id": "ctx-scheme-aggregate.selected-scheme",
+            "operationId": "ctxSchemeAggregate",
+            "request": {
+                "body": {
+                    "inputs": [
+                        "OPEN / EXPORT",
+                        "SENSITIVE"
+                    ]
+                },
+                "headers": {
+                    "content-type": "application/json"
+                },
+                "method": "POST",
+                "path": "/v1/ctx/ez-crosswalk/1.0.0/scheme/aggregate?scheme=ez-gated",
+                "pathTemplate": "/v1/ctx/{ctxId}/{version}/scheme/aggregate"
+            },
+            "response": {
+                "body": {
+                    "resolution": {
+                        "artifacts": [
+                            {
+                                "id": "ez-test",
+                                "kind": "scheme",
+                                "version": "1.0.0"
+                            },
+                            {
+                                "id": "ez-gated",
+                                "kind": "scheme",
+                                "version": "1.0.0"
+                            },
+                            {
+                                "id": "ez-test-to-ez-gated",
+                                "kind": "crosswalk",
+                                "version": "1.0.0"
+                            },
+                            {
+                                "id": "ez-crosswalk",
+                                "kind": "context",
+                                "version": "1.0.0"
+                            }
+                        ],
+                        "contextId": "ez-crosswalk",
+                        "requestedVersion": "1.0.0",
+                        "resolvedVersion": "1.0.0"
+                    },
+                    "result": {
+                        "appliedFixes": [],
+                        "assertions": [
+                            {
+                                "categoryId": "level",
+                                "conceptId": "SENSITIVE",
+                                "confidence": "certain",
+                                "source": "aggregate"
+                            },
+                            {
+                                "categoryId": "handling",
+                                "conceptId": "EXPORT",
+                                "confidence": "certain",
+                                "source": "parse"
+                            }
+                        ],
+                        "errors": [],
+                        "notices": [],
+                        "proposedFixes": [],
+                        "rendered": "SENSITIVE / EXPORT",
+                        "valid": true,
+                        "warnings": []
+                    }
+                },
+                "headers": {
+                    "content-type": "application/json",
+                    "x-ezclassify-resolved-version": "1.0.0"
+                },
+                "status": 200,
+                "statusDeclaredInContract": true
+            },
+            "summary": "Aggregate in the Context's second scheme, named by ?scheme: the parts roll up by that scheme's rules."
+        },
+        {
+            "auth": {
+                "credential": "context-token",
+                "deployment": "open"
+            },
+            "id": "ctx-scheme-process.unknown-scheme",
+            "operationId": "ctxSchemeProcess",
+            "request": {
+                "body": {
                     "input": "OPEN"
                 },
                 "headers": {
                     "content-type": "application/json"
                 },
                 "method": "POST",
-                "path": "/v1/ctx/ez-full/1.0.0/scheme/process",
-                "pathTemplate": "/v1/ctx/{ctxId}/{version}/scheme/process",
-                "schemaValidation": {
-                    "valid": false,
-                    "violations": [
-                        {
-                            "instancePath": "",
-                            "keyword": "additionalProperties",
-                            "property": "fix"
-                        }
-                    ]
-                }
+                "path": "/v1/ctx/ez-crosswalk/1.0.0/scheme/process?scheme=no-such-scheme",
+                "pathTemplate": "/v1/ctx/{ctxId}/{version}/scheme/process"
             },
             "response": {
                 "body": {
-                    "code": "INVALID_INPUT",
-                    "detail": "body: fix",
-                    "error": "invalid_input"
+                    "code": "scheme_not_found",
+                    "error": "Scheme not found in context: no-such-scheme"
                 },
                 "headers": {
                     "content-type": "application/json",
                     "x-ezclassify-resolved-version": "1.0.0"
                 },
-                "status": 400,
+                "status": 404,
                 "statusDeclaredInContract": true
             },
-            "summary": "Process refuses the undeclared request field fix."
-        },
-        {
-            "auth": {
-                "credential": "context-token",
-                "deployment": "open"
-            },
-            "id": "ctx-scheme-process.undeclared-request-field-preserveDeprecated",
-            "operationId": "ctxSchemeProcess",
-            "request": {
-                "body": {
-                    "input": "OPEN",
-                    "preserveDeprecated": true
-                },
-                "headers": {
-                    "content-type": "application/json"
-                },
-                "method": "POST",
-                "path": "/v1/ctx/ez-full/1.0.0/scheme/process",
-                "pathTemplate": "/v1/ctx/{ctxId}/{version}/scheme/process",
-                "schemaValidation": {
-                    "valid": false,
-                    "violations": [
-                        {
-                            "instancePath": "",
-                            "keyword": "additionalProperties",
-                            "property": "preserveDeprecated"
-                        }
-                    ]
-                }
-            },
-            "response": {
-                "body": {
-                    "code": "INVALID_INPUT",
-                    "detail": "body: preserveDeprecated",
-                    "error": "invalid_input"
-                },
-                "headers": {
-                    "content-type": "application/json",
-                    "x-ezclassify-resolved-version": "1.0.0"
-                },
-                "status": 400,
-                "statusDeclaredInContract": true
-            },
-            "summary": "Process refuses the undeclared request field preserveDeprecated."
-        },
-        {
-            "auth": {
-                "credential": "context-token",
-                "deployment": "open"
-            },
-            "id": "ctx-scheme-process.undeclared-request-field-normalization",
-            "operationId": "ctxSchemeProcess",
-            "request": {
-                "body": {
-                    "input": "OPEN",
-                    "normalization": "strict"
-                },
-                "headers": {
-                    "content-type": "application/json"
-                },
-                "method": "POST",
-                "path": "/v1/ctx/ez-full/1.0.0/scheme/process",
-                "pathTemplate": "/v1/ctx/{ctxId}/{version}/scheme/process",
-                "schemaValidation": {
-                    "valid": false,
-                    "violations": [
-                        {
-                            "instancePath": "",
-                            "keyword": "additionalProperties",
-                            "property": "normalization"
-                        }
-                    ]
-                }
-            },
-            "response": {
-                "body": {
-                    "code": "INVALID_INPUT",
-                    "detail": "body: normalization",
-                    "error": "invalid_input"
-                },
-                "headers": {
-                    "content-type": "application/json",
-                    "x-ezclassify-resolved-version": "1.0.0"
-                },
-                "status": 400,
-                "statusDeclaredInContract": true
-            },
-            "summary": "Process refuses the undeclared request field normalization."
-        },
-        {
-            "auth": {
-                "credential": "context-token",
-                "deployment": "open"
-            },
-            "id": "ctx-scheme-process.undeclared-request-field-skipRepair",
-            "operationId": "ctxSchemeProcess",
-            "request": {
-                "body": {
-                    "input": "OPEN",
-                    "skipRepair": true
-                },
-                "headers": {
-                    "content-type": "application/json"
-                },
-                "method": "POST",
-                "path": "/v1/ctx/ez-full/1.0.0/scheme/process",
-                "pathTemplate": "/v1/ctx/{ctxId}/{version}/scheme/process",
-                "schemaValidation": {
-                    "valid": false,
-                    "violations": [
-                        {
-                            "instancePath": "",
-                            "keyword": "additionalProperties",
-                            "property": "skipRepair"
-                        }
-                    ]
-                }
-            },
-            "response": {
-                "body": {
-                    "code": "INVALID_INPUT",
-                    "detail": "body: skipRepair",
-                    "error": "invalid_input"
-                },
-                "headers": {
-                    "content-type": "application/json",
-                    "x-ezclassify-resolved-version": "1.0.0"
-                },
-                "status": 400,
-                "statusDeclaredInContract": true
-            },
-            "summary": "Process refuses the undeclared request field skipRepair."
-        },
-        {
-            "auth": {
-                "credential": "context-token",
-                "deployment": "open"
-            },
-            "id": "ctx-scheme-process.undeclared-request-field-skipInference",
-            "operationId": "ctxSchemeProcess",
-            "request": {
-                "body": {
-                    "input": "OPEN",
-                    "skipInference": true
-                },
-                "headers": {
-                    "content-type": "application/json"
-                },
-                "method": "POST",
-                "path": "/v1/ctx/ez-full/1.0.0/scheme/process",
-                "pathTemplate": "/v1/ctx/{ctxId}/{version}/scheme/process",
-                "schemaValidation": {
-                    "valid": false,
-                    "violations": [
-                        {
-                            "instancePath": "",
-                            "keyword": "additionalProperties",
-                            "property": "skipInference"
-                        }
-                    ]
-                }
-            },
-            "response": {
-                "body": {
-                    "code": "INVALID_INPUT",
-                    "detail": "body: skipInference",
-                    "error": "invalid_input"
-                },
-                "headers": {
-                    "content-type": "application/json",
-                    "x-ezclassify-resolved-version": "1.0.0"
-                },
-                "status": 400,
-                "statusDeclaredInContract": true
-            },
-            "summary": "Process refuses the undeclared request field skipInference."
-        },
-        {
-            "auth": {
-                "credential": "context-token",
-                "deployment": "open"
-            },
-            "id": "ctx-scheme-process.undeclared-request-field-tolerant",
-            "operationId": "ctxSchemeProcess",
-            "request": {
-                "body": {
-                    "input": "OPEN",
-                    "tolerant": true
-                },
-                "headers": {
-                    "content-type": "application/json"
-                },
-                "method": "POST",
-                "path": "/v1/ctx/ez-full/1.0.0/scheme/process",
-                "pathTemplate": "/v1/ctx/{ctxId}/{version}/scheme/process",
-                "schemaValidation": {
-                    "valid": false,
-                    "violations": [
-                        {
-                            "instancePath": "",
-                            "keyword": "additionalProperties",
-                            "property": "tolerant"
-                        }
-                    ]
-                }
-            },
-            "response": {
-                "body": {
-                    "code": "INVALID_INPUT",
-                    "detail": "body: tolerant",
-                    "error": "invalid_input"
-                },
-                "headers": {
-                    "content-type": "application/json",
-                    "x-ezclassify-resolved-version": "1.0.0"
-                },
-                "status": 400,
-                "statusDeclaredInContract": true
-            },
-            "summary": "Process refuses the undeclared request field tolerant."
-        },
-        {
-            "auth": {
-                "credential": "context-token",
-                "deployment": "open"
-            },
-            "id": "ctx-scheme-process.undeclared-request-field-validateOnly",
-            "operationId": "ctxSchemeProcess",
-            "request": {
-                "body": {
-                    "input": "OPEN",
-                    "validateOnly": true
-                },
-                "headers": {
-                    "content-type": "application/json"
-                },
-                "method": "POST",
-                "path": "/v1/ctx/ez-full/1.0.0/scheme/process",
-                "pathTemplate": "/v1/ctx/{ctxId}/{version}/scheme/process",
-                "schemaValidation": {
-                    "valid": false,
-                    "violations": [
-                        {
-                            "instancePath": "",
-                            "keyword": "additionalProperties",
-                            "property": "validateOnly"
-                        }
-                    ]
-                }
-            },
-            "response": {
-                "body": {
-                    "code": "INVALID_INPUT",
-                    "detail": "body: validateOnly",
-                    "error": "invalid_input"
-                },
-                "headers": {
-                    "content-type": "application/json",
-                    "x-ezclassify-resolved-version": "1.0.0"
-                },
-                "status": 400,
-                "statusDeclaredInContract": true
-            },
-            "summary": "Process refuses the undeclared request field validateOnly."
-        },
-        {
-            "auth": {
-                "credential": "context-token",
-                "deployment": "open"
-            },
-            "id": "ctx-scheme-process.undeclared-request-field-scope",
-            "operationId": "ctxSchemeProcess",
-            "request": {
-                "body": {
-                    "input": "OPEN",
-                    "scope": "banner"
-                },
-                "headers": {
-                    "content-type": "application/json"
-                },
-                "method": "POST",
-                "path": "/v1/ctx/ez-full/1.0.0/scheme/process",
-                "pathTemplate": "/v1/ctx/{ctxId}/{version}/scheme/process",
-                "schemaValidation": {
-                    "valid": false,
-                    "violations": [
-                        {
-                            "instancePath": "",
-                            "keyword": "additionalProperties",
-                            "property": "scope"
-                        }
-                    ]
-                }
-            },
-            "response": {
-                "body": {
-                    "code": "INVALID_INPUT",
-                    "detail": "body: scope",
-                    "error": "invalid_input"
-                },
-                "headers": {
-                    "content-type": "application/json",
-                    "x-ezclassify-resolved-version": "1.0.0"
-                },
-                "status": 400,
-                "statusDeclaredInContract": true
-            },
-            "summary": "Process refuses the undeclared request field scope."
-        },
-        {
-            "auth": {
-                "credential": "context-token",
-                "deployment": "open"
-            },
-            "id": "ctx-scheme-process.undeclared-request-field-format",
-            "operationId": "ctxSchemeProcess",
-            "request": {
-                "body": {
-                    "format": "default",
-                    "input": "OPEN"
-                },
-                "headers": {
-                    "content-type": "application/json"
-                },
-                "method": "POST",
-                "path": "/v1/ctx/ez-full/1.0.0/scheme/process",
-                "pathTemplate": "/v1/ctx/{ctxId}/{version}/scheme/process",
-                "schemaValidation": {
-                    "valid": false,
-                    "violations": [
-                        {
-                            "instancePath": "",
-                            "keyword": "additionalProperties",
-                            "property": "format"
-                        }
-                    ]
-                }
-            },
-            "response": {
-                "body": {
-                    "code": "INVALID_INPUT",
-                    "detail": "body: format",
-                    "error": "invalid_input"
-                },
-                "headers": {
-                    "content-type": "application/json",
-                    "x-ezclassify-resolved-version": "1.0.0"
-                },
-                "status": 400,
-                "statusDeclaredInContract": true
-            },
-            "summary": "Process refuses the undeclared request field format."
-        },
-        {
-            "auth": {
-                "credential": "context-token",
-                "deployment": "open"
-            },
-            "id": "ctx-scheme-process.undeclared-request-field-repairStrategy",
-            "operationId": "ctxSchemeProcess",
-            "request": {
-                "body": {
-                    "input": "OPEN",
-                    "repairStrategy": "first"
-                },
-                "headers": {
-                    "content-type": "application/json"
-                },
-                "method": "POST",
-                "path": "/v1/ctx/ez-full/1.0.0/scheme/process",
-                "pathTemplate": "/v1/ctx/{ctxId}/{version}/scheme/process",
-                "schemaValidation": {
-                    "valid": false,
-                    "violations": [
-                        {
-                            "instancePath": "",
-                            "keyword": "additionalProperties",
-                            "property": "repairStrategy"
-                        }
-                    ]
-                }
-            },
-            "response": {
-                "body": {
-                    "code": "INVALID_INPUT",
-                    "detail": "body: repairStrategy",
-                    "error": "invalid_input"
-                },
-                "headers": {
-                    "content-type": "application/json",
-                    "x-ezclassify-resolved-version": "1.0.0"
-                },
-                "status": 400,
-                "statusDeclaredInContract": true
-            },
-            "summary": "Process refuses the undeclared request field repairStrategy."
+            "summary": "A ?scheme key the Context does not hold: a resource-level 404, and the marking is not processed in the primary."
         },
         {
             "auth": {
@@ -6596,50 +6213,6 @@
                 "statusDeclaredInContract": true
             },
             "summary": "explain refuses an undeclared request field."
-        },
-        {
-            "auth": {
-                "credential": "context-token",
-                "deployment": "open"
-            },
-            "id": "ctx-scheme-normalize.undeclared-field",
-            "operationId": "ctxSchemeNormalize",
-            "request": {
-                "body": {
-                    "input": "OPEN",
-                    "unknownField": true
-                },
-                "headers": {
-                    "content-type": "application/json"
-                },
-                "method": "POST",
-                "path": "/v1/ctx/ez-full/1.0.0/scheme/normalize",
-                "pathTemplate": "/v1/ctx/{ctxId}/{version}/scheme/normalize",
-                "schemaValidation": {
-                    "valid": false,
-                    "violations": [
-                        {
-                            "instancePath": "",
-                            "keyword": "additionalProperties",
-                            "property": "unknownField"
-                        }
-                    ]
-                }
-            },
-            "response": {
-                "body": {
-                    "code": "INVALID_INPUT",
-                    "detail": "body: unknownField",
-                    "error": "invalid_input"
-                },
-                "headers": {
-                    "content-type": "application/json",
-                    "x-ezclassify-resolved-version": "1.0.0"
-                },
-                "status": 400,
-                "statusDeclaredInContract": true
-            },
-            "summary": "normalize refuses an undeclared request field."
         },
         {
             "auth": {
@@ -6970,13 +6543,13 @@
             "request": {
                 "headers": {},
                 "method": "GET",
-                "path": "/v1/ctx/ez-presets/1.0.0/scheme/label-presets?scheme=ez-presets",
+                "path": "/v1/ctx/ez-presets/1.0.0/scheme/label-presets?layers=ez-layer",
                 "pathTemplate": "/v1/ctx/{ctxId}/{version}/scheme/label-presets"
             },
             "response": {
                 "body": {
                     "code": "INVALID_INPUT",
-                    "detail": "query: scheme",
+                    "detail": "query: layers",
                     "error": "invalid_input"
                 },
                 "headers": {
@@ -6985,7 +6558,7 @@
                 "status": 400,
                 "statusDeclaredInContract": true
             },
-            "summary": "Label presets take no scheme selector: they are the primary scheme's, the scheme apply-preset expands them in, so ?scheme is refused."
+            "summary": "Scheme routes take no layer selector: the layers are the Context's, signed into its manifest, so ?layers is refused."
         },
         {
             "auth": {

@@ -1,0 +1,126 @@
+{
+    "engineVersion": "1.0.0-dev.30",
+    "openapiVersion": "1.0.0-dev.30",
+    "responses": {
+        "0145a258a9d9a453eda94cf324bc16c4b784ae9496a7f0a8777d38ee378a6126": {
+            "body": {
+                "defaultRenderFormat": "default",
+                "defaultScope": "marking",
+                "description": "",
+                "id": "test",
+                "name": "Test",
+                "referenceSurfaceLabel": {
+                    "plural": "Handbooks",
+                    "singular": "Handbook"
+                },
+                "roleAware": false,
+                "version": "1.0.0"
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "07ecfa800cf5e88e2d6922c3678f4a557023bbc3f2102a01643d3f0e2753d9c4": {
+            "body": [
+                {
+                    "categoryOrder": ["level"],
+                    "categorySeparators": { "level": "/" },
+                    "categoryViews": { "level": "default" },
+                    "id": "default",
+                    "mode": "inline",
+                    "separator": "//",
+                    "surface": "marking"
+                }
+            ],
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "0c271dfde9ae0961225214b4b4d8bb9f3f85d10b21784331b259b4bfad3f9a6b": {
+            "body": [],
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "41088b1b106f3d2a7c834ff753b67f6df9bb764022bb1af232371bd35b5d3349": {
+            "body": [
+                {
+                    "aliases": [],
+                    "categories": ["level"],
+                    "id": "HIGH",
+                    "name": "High",
+                    "parents": [],
+                    "position": 0,
+                    "rank": 0,
+                    "views": { "default": "HIGH" }
+                }
+            ],
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "4ffc5c2e9c9e21a183ceedffc0b5c9c5285df6d8b95631e2325d2ffcb8a6fd40": {
+            "body": [
+                {
+                    "hierarchyRoot": true,
+                    "id": "level",
+                    "label": "Level",
+                    "position": 0,
+                    "required": true,
+                    "rollup": "max",
+                    "single": true
+                }
+            ],
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "ce677b56dd6d765d697d7c849cff5239444aa0fbad012c3a6a3fd7601ad9aa4c": {
+            "body": {
+                "id": "test",
+                "scheme": {
+                    "id": "test",
+                    "resolvedVersion": "1.0.0",
+                    "version": "1.0.0"
+                },
+                "schemes": [
+                    {
+                        "id": "test",
+                        "roles": ["primary"],
+                        "selector": "test",
+                        "version": "1.0.0"
+                    }
+                ],
+                "version": "1.0.0"
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "db4d9aae89913f54e72c02298ee870206e1bbf13a64c6d6d13b4eb33b7d1804f": {
+            "body": [{ "id": "marking", "label": "Marking" }],
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "e070dec6e78862435e7c23c92a6e4a93a9667377aed0b78b533966687028c314": {
+            "body": {
+                "abiVersion": "v1",
+                "engineSha": "",
+                "engineVersion": "1.0.0-dev.30",
+                "gitTag": "",
+                "openapiVersion": "1.0.0-dev.30",
+                "status": "ok"
+            },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "fe976909ff8366359f826b2fe6a40318790d8f0129c2d99b21281faa161235e6": {
+            "body": {
+                "contextId": "sbx-1018dd39097d1b40814319cf01fac8d68eda99151bbf51af2723233ee7671e44"
+            },
+            "method": "PUT",
+            "statusCode": 200
+        }
+    }
+}

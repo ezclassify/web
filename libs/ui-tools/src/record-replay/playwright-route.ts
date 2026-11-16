@@ -5,8 +5,8 @@
  * so a spec can assert coverage.
  */
 import type { Page, Route } from '@playwright/test';
-import { lookup } from '@ezclassify/testing-utils/record-replay';
-import type { ReplayerRecording } from '@ezclassify/testing-utils/record-replay';
+import { lookup, type ReplayerRecording } from './replayer';
+import { routeRequest } from './route-request';
 
 /** Options for {@link installReplayer}. */
 export interface PlaywrightReplayerOptions {
@@ -38,19 +38,20 @@ export function installReplayer(
     for (const pattern of patterns) {
         page.route(pattern, async (route: Route) => {
             const request = route.request();
-            const path = new URL(request.url()).pathname;
-            let body: unknown;
-            try {
-                const raw = request.postData();
-                body = raw !== null ? JSON.parse(raw) : null;
-            } catch {
-                body = null;
-            }
-            const result = lookup(recordings, { path, body });
+            const { path, body } = routeRequest(
+                request.url(),
+                request.postData(),
+            );
+            const result = lookup(recordings, {
+                method: request.method(),
+                path,
+                body,
+            });
             if (result.kind === 'hit') {
                 tracker.hits.add(path);
                 await route.fulfill({
                     status: result.statusCode,
+                    headers: result.headers,
                     contentType: 'application/json',
                     body: JSON.stringify(result.body),
                 });

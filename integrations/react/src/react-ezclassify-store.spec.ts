@@ -4,9 +4,10 @@ import {
     runEzClassifyStoreConformance,
     runEzClassifyStoreBudgetConformance,
     runEzClassifyStoreSeedConformance,
-} from '@ezclassify/testing-utils';
+} from '../../../test-support/store-conformance';
 import {
     EMPTY_EZCLASSIFY_STATE,
+    SOLE_BUCKET,
     type EzClassifyStoreEngine,
     type FacetState,
 } from '@ezclassify/ui';
@@ -359,8 +360,8 @@ describe('ReactEzClassifyStore: aggregate and wholeRollup computation', () => {
     it('subscribeAggregate fires with aggregated state', async () => {
         const store = new ReactEzClassifyStore(passThrough());
         const received: string[] = [];
-        const unsub = store.subscribeAggregate((s) =>
-            received.push(s.rendered),
+        const unsub = store.subscribeAggregate((aggregate) =>
+            received.push(aggregate.byBucket.get(SOLE_BUCKET)?.rendered ?? ''),
         );
         await store.publishRendered('doc', 'tier:secret');
         await flush();
@@ -384,9 +385,9 @@ describe('ReactEzClassifyStore: aggregate and wholeRollup computation', () => {
         await store.publishRendered('doc1', 'tier:secret');
         await store.publishRendered('doc2', 'ctrl:alpha');
         await flush();
-        const agg = store.getAggregate();
-        expect(agg.rendered).toContain('tier:secret');
-        expect(agg.rendered).toContain('ctrl:alpha');
+        const page = store.getAggregate().byBucket.get(SOLE_BUCKET);
+        expect(page?.rendered).toContain('tier:secret');
+        expect(page?.rendered).toContain('ctrl:alpha');
     });
 
     it('commit notifies subscriber without source even when published with a source token', async () => {

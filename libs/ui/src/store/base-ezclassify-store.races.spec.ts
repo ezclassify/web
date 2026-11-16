@@ -21,6 +21,7 @@ import type { EzClassifyState, FacetState } from './ezclassify-store';
 import { createLatencyEngineHarness } from './latency-engine-harness';
 import { publishFacetSelection } from '../facet-binding';
 import type { Assertion, Suggestion } from '@ezclassify/types';
+import { levelState, onLevelState } from './page-rollup-harness';
 
 class TestStore extends BaseEzClassifyStore {
     protected createCell<T>(initial: T): ReactiveCell<T> {
@@ -443,7 +444,7 @@ describe('BaseEzClassifyStore aggregate ordering', () => {
         const harness = createLatencyEngineHarness();
         const store = new TestStore(harness.engine);
         const seen: EzClassifyState[] = [];
-        store.subscribeAggregate((state) => seen.push(state));
+        onLevelState(store, (state) => seen.push(state));
 
         const first = store.publishAssertions('doc', [
             assertion('classification', 'SECRET'),
@@ -478,7 +479,7 @@ describe('BaseEzClassifyStore aggregate ordering', () => {
         for (const call of staleRollup) call.resolve();
         await harness.settleAll();
 
-        expect(conceptIdsOf(store.getAggregate())).toEqual([
+        expect(conceptIdsOf(levelState(store))).toEqual([
             'classification:SECRET',
             'sci:HCS',
         ]);
@@ -494,7 +495,7 @@ describe('BaseEzClassifyStore aggregate availability', () => {
         const harness = createLatencyEngineHarness();
         const store = new TestStore(harness.engine);
         const seen: EzClassifyState[] = [];
-        store.subscribeAggregate((state) => seen.push(state));
+        onLevelState(store, (state) => seen.push(state));
 
         const first = store.publishAssertions('doc', [
             assertion('classification', 'SECRET'),
@@ -504,7 +505,7 @@ describe('BaseEzClassifyStore aggregate availability', () => {
         await first;
         await harness.settleAll();
 
-        const good = store.getAggregate();
+        const good = levelState(store);
         expect(conceptIdsOf(good)).toEqual(['classification:SECRET']);
         expect(good.stale).toBeUndefined();
 
@@ -519,7 +520,7 @@ describe('BaseEzClassifyStore aggregate availability', () => {
             call.reject(new Error('network down'));
         await harness.settleAll();
 
-        const held = store.getAggregate();
+        const held = levelState(store);
         expect(held.stale).toBe(true);
         expect(conceptIdsOf(held)).toEqual(['classification:SECRET']);
         expect(seen[seen.length - 1]).toBe(held);
@@ -539,7 +540,7 @@ describe('BaseEzClassifyStore aggregate availability', () => {
         for (const call of harness.pending('aggregateAssertions'))
             call.reject(new Error('network down'));
         await harness.settleAll();
-        expect(store.getAggregate().stale).toBe(true);
+        expect(levelState(store).stale).toBe(true);
 
         const second = store.publishAssertions('doc', [
             assertion('classification', 'TOP_SECRET'),
@@ -549,8 +550,8 @@ describe('BaseEzClassifyStore aggregate availability', () => {
         await second;
         await harness.settleAll();
 
-        expect(store.getAggregate().stale).toBeUndefined();
-        expect(conceptIdsOf(store.getAggregate())).toEqual([
+        expect(levelState(store).stale).toBeUndefined();
+        expect(conceptIdsOf(levelState(store))).toEqual([
             'classification:TOP_SECRET',
         ]);
     });
@@ -701,6 +702,6 @@ describe('BaseEzClassifyStore teardown under latency', () => {
 
         inFlight.resolve();
         await publish;
-        expect(store.getAggregate().assertions).toEqual([]);
+        expect(levelState(store).assertions).toEqual([]);
     });
 });

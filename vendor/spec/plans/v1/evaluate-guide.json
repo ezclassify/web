@@ -137,7 +137,7 @@
             "name": "guideScan-span-position-first-hit"
         },
         {
-            "args": [["rule-high"]],
+            "args": [[{ "guideId": "ref-guide-1", "ruleId": "rule-high" }]],
             "expect": {
                 "aggregatedMarking": "HIGH",
                 "selectedRules": [
@@ -152,7 +152,7 @@
             "name": "evaluateMany-single-guide-rule-high"
         },
         {
-            "args": [["rule-high", "rule-low"]],
+            "args": [[{ "guideId": "ref-guide-1", "ruleId": "rule-high" }, { "guideId": "ref-guide-1", "ruleId": "rule-low" }]],
             "expect": {
                 "aggregatedMarking": "HIGH",
                 "selectedRules": [
@@ -168,6 +168,21 @@
             "guideFixture": "ref-guide-1",
             "method": "evaluateMany",
             "name": "evaluateMany-single-guide-two-rules-aggregate"
+        },
+        {
+            "args": [["rule-high"]],
+            "expect": {
+                "aggregatedMarking": "HIGH",
+                "selectedRules": [
+                    {
+                        "id": "rule-high"
+                    }
+                ]
+            },
+            "fixture": "ref-scheme-1",
+            "guideFixture": "ref-marked-guide-1",
+            "method": "evaluateGuide",
+            "name": "evaluate-guide-marked-guide-answers-as-unmarked"
         }
     ],
     "slice": "engine"

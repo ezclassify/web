@@ -4,14 +4,13 @@
  * Provides engine binding, assertion storage, category colors, progressive
  * enhancement of native inputs, and style injection, but no reprocessing,
  * suggestion fetching, or interactive editing methods. Read-only components
- * like AssertionCard and StatusBanner extend this instead of the full
- * ComponentBase, keeping their dependency surface minimal.
+ * like StatusBanner extend this instead of the full ComponentBase, keeping
+ * their dependency surface minimal.
  */
 
 import {
     type ContextAdapter,
-    type RemoteContextSchemeEngineAdapter,
-    type SchemeEngineAdapter,
+    type ContextSchemeEngineAdapter,
     type Assertion,
     type ConceptColor,
     type SchemePublicView,
@@ -24,6 +23,7 @@ import {
     type Fix,
     type ProcessResult,
     type RecognitionResult,
+    type RenderAssessment,
     type ValidateResult,
     type Warning,
 } from '@ezclassify/types';
@@ -40,7 +40,6 @@ import { COMPONENT_CSS } from './component-utils';
 import { revealClearOfPinned } from './composer/composer-placement';
 import { injectDefaultStyles } from '../styles';
 import { adoptStylesOnce } from '../styles/adopt';
-import { findContext } from '../context-binding';
 import type { FavoritesConfig } from './favorites-panel';
 import type { EzClassifyState } from '../store/ezclassify-store';
 import {
@@ -58,50 +57,36 @@ import {
     unreadRuns,
     type UnreadRun,
 } from '../loaded-value';
+import {
+    renderViewRefusalMessages,
+    renderViewRefused,
+} from '../render-refusal';
 import { getMountHost } from '../mount-host-registry';
+import { schemeChangeWords, type ChangeWords } from './status-mark';
+import type { MarkingUndo } from './marking-undo';
+import { assertWritesScopes, viewOutputOf } from '../format-resolver';
+import { categoriesByScope, listedScopesOf, scopeSetOf } from '../scopes';
+import type { ConceptWriting, WritingField } from '../written-concept';
+import {
+    unwrittenFactLookup,
+    type ShownForm,
+    type UnwrittenFact,
+} from '../written-facts';
 
 /**
- * Engine binding accepted by every UI component.
+ * Scheme operations a component marks with: a Context's scheme view.
  *
- * A {@link ContextAdapter} funnels scheme, guide, and access through one handle;
- * a bare {@link SchemeEngineAdapter} is the marking surface alone. Components
- * take either, and take it from whoever mounts them: the host injects a
- * concrete adapter, and nothing in this package knows or asks whether that
- * adapter runs in process or over HTTP.
+ * The view is bound to one Context and its primary scheme, so no operation
+ * takes a scheme selector. Nothing in this package knows or asks whether the
+ * view runs in process or over HTTP.
  */
-/** Scheme operations available to a component from either supported host mode. */
-export type ComponentSchemeEngine =
-    SchemeEngineAdapter | RemoteContextSchemeEngineAdapter;
+export type ComponentSchemeEngine = ContextSchemeEngineAdapter;
 
+/**
+ * What a component is mounted with: a Context, which also brings its guides and
+ * access policy, or a Context's scheme view alone.
+ */
 export type ComponentEngineSource = ComponentSchemeEngine | ContextAdapter;
-
-/**
- * The scheme an engine has marked as its default, when it has one.
- *
- * Only an adapter that manages a scheme registry has a default. A Context-bound
- * adapter has exactly one scheme, named by `getScheme()`, so it answers
- * `undefined` here and callers fall back to that.
- */
-export function defaultSchemeOf(
-    engine: ComponentSchemeEngine,
-): { id: string } | null | undefined {
-    return 'getDefaultScheme' in engine
-        ? engine.getDefaultScheme?.()
-        : undefined;
-}
-
-/**
- * Whether a scheme surface accepts an explicit scheme selector.
- *
- * Context-bound remote adapters deliberately omit composition lifecycle. That
- * omission is the capability boundary; `listSchemes` is only introspection and
- * must not be used as a proxy for addressed operations.
- */
-export function isAddressableSchemeEngine(
-    engine: ComponentSchemeEngine,
-): engine is SchemeEngineAdapter {
-    return 'loadScheme' in engine && typeof engine.loadScheme === 'function';
-}
 
 /** Narrow a component source to the composed Context surface. */
 export function isComponentContextAdapter(
@@ -117,6 +102,15 @@ export interface ComponentInstance {
      * assertion identity.
      */
     applyStoreState?(state: EzClassifyState): void;
+    /** See {@link ReadOnlyComponentBase.refreshFacetRefusal}. */
+    refreshFacetRefusal?(): void;
+    /**
+     * Use the undo of the store marking the field is bound to (see
+     * marking-undo.ts). The runtime calls it once the field is wired.
+     *
+     * @internal
+     */
+    shareUndo?(undo: MarkingUndo): void;
     /**
      * The parts this field's whole marking covers changed. A field that judges
      * its whole against its parts (see `ComponentOptions.resolveParts`) reads
@@ -139,9 +133,14 @@ export interface ComponentInstance {
      */
     pendingDraft?(): string | null;
     /**
-     * Render the UI into the container. Accepts a Context adapter or scheme
-     * adapter. When the Context is omitted, the component looks for a
-     * `[data-ezclassify-context]` ancestor on `container`.
+     * The output a field that owns its marking writes it in, for a field that
+     * writes its own marking text (MarkedInput). The store writes the marking's
+     * `rendered` in the same output, so views read what the field shows.
+     */
+    writtenOutput?(): string;
+    /**
+     * Render the UI into the container, marking with the Context (or the
+     * Context's scheme view) it is given. There is no other way to find one.
      */
     init(
         container: HTMLDivElement,
@@ -158,6 +157,14 @@ export interface ComponentInstance {
     destroy(): void;
     /** Get the rendered marking string */
     getRendered(): string;
+    /**
+     * Whether the engine read the value this field holds in full, so its facts
+     * state all of it, with who stated each. A field holding text the engine
+     * could not read says no: only its text keeps that text.
+     *
+     * @internal
+     */
+    readsWhole?(): boolean;
     /**
      * Whether this component authors a whole marking of its own that its parts
      * are checked against. Defaults to true. A container that only aggregates
@@ -213,13 +220,19 @@ export interface ComponentOptions {
      */
     holdsPart?: boolean;
     categoryId?: string;
+    /**
+     * The one scope the field authors, as its surface: set only when
+     * {@link scopes} names exactly one.
+     */
     scope?: string;
     /**
-     * Which loaded scheme id this component targets. Resolution order:
-     * `data-ezclassify-scheme` attribute on container → this option → engine's
-     * default-scheme slot → throw.
+     * The scope ids `data-ezclassify-scope` lists, in the order written. A
+     * picker offers the categories of every listed scope, in the scheme's
+     * declaration order. A text field writes them as one string when its format
+     * writes them all, and refuses them at init when it does not. A field that
+     * lists several is judged as the whole marking.
      */
-    schemeId?: string;
+    scopes?: readonly string[];
     onChange?: (assertions: Assertion[], rendered: string) => void;
     /**
      * Id of the parent field that holds the complete marking this component is
@@ -229,6 +242,13 @@ export interface ComponentOptions {
      * `data-ezclassify-facet-of` attribute on the host element.
      */
     facetOf?: string;
+    /**
+     * For a facet of a marking no field shows (a hidden host with only facets):
+     * why that marking could not be written, when it could not. Nothing else on
+     * the page can say so. Empty for a marking a field shows, which says so
+     * itself, and for every facet but the first of its marking.
+     */
+    resolveFacetRefusal?: () => readonly string[];
     /** Show the rendered string preview bar (default: false) */
     showPreview?: boolean;
     /**
@@ -330,11 +350,6 @@ export interface ComponentOptions {
      */
     root?: HTMLElement;
     /**
-     * Groups with more items than this start collapsed in the dropdown (default
-     * 50)
-     */
-    collapseThreshold?: number;
-    /**
      * When false, tag-input chips are not category-colored: text and underline
      * use the field's own color. Declarative:
      * data-ezclassify-tags-color-coding. Defaults to true.
@@ -409,10 +424,7 @@ export abstract class ReadOnlyComponentBase implements ComponentInstance {
      * layout helpers rather than re-asking the adapter per render.
      */
     protected schemeMeta!: SchemeMetaView;
-    /**
-     * Resolved scheme id for this component instance. Threaded into every
-     * engine call.
-     */
+    /** Id of the scheme this component marks in: its Context's primary. */
     protected schemeId!: string;
     protected container!: HTMLDivElement;
     protected options: ComponentOptions = {};
@@ -468,27 +480,16 @@ export abstract class ReadOnlyComponentBase implements ComponentInstance {
      * print still holds it.
      */
     protected unprinted: readonly AssertionRef[] = [];
-    /** See {@link setEditorOpen}. */
-    private editorOpen = false;
-
     /**
-     * Whether a validation error surface is currently visible below the
-     * component. Field chrome that hangs off the bottom edge (the star drawer)
-     * consults this to vacate the edge: a hint bar must never sit on top of an
-     * error the user needs to read.
+     * The form the held value was last written in, and what writing it did,
+     * from the last reading. See {@link writtenFact}.
      */
-    protected hasVisibleValidationErrors(): boolean {
-        return (
-            this.ruleErrorList !== null && !this.ruleErrorList.element.hidden
-        );
-    }
+    private heldForm: ShownForm = {};
+    /** See {@link setReportInField}. */
+    private reportInField = false;
+
     /** The original <input> element being progressively enhanced (if any) */
     protected enhancedInput: HTMLInputElement | null = null;
-
-    /** Whether calls from this component may include an explicit scheme id. */
-    protected get schemeAddressing(): boolean {
-        return this.context === null && isAddressableSchemeEngine(this.engine);
-    }
 
     /**
      * Refuse an engine missing a capability this component needs, once, where
@@ -504,29 +505,14 @@ export abstract class ReadOnlyComponentBase implements ComponentInstance {
         options?: ComponentOptions,
     ): Promise<void> {
         const componentLabel = this.constructor?.name ?? 'EzClassifyComponent';
-        this.engine = resolveSchemeEngine(
-            container,
-            engineOrContext,
-            componentLabel,
-        );
+        this.engine = resolveSchemeEngine(engineOrContext, componentLabel);
         this.assertEngineCapabilities(componentLabel);
-        this.context = resolveContextSource(container, engineOrContext);
+        this.context = resolveContextSource(engineOrContext);
         this.container = container;
         this.options = options ?? {};
-        this.schemeId = resolveProfile(
-            container,
-            this.engine,
-            options,
-            this.schemeAddressing,
-        );
-        const addressScheme =
-            this.context === null && isAddressableSchemeEngine(this.engine);
-        this.scheme = addressScheme
-            ? this.engine.getScheme(this.schemeId)
-            : this.engine.getScheme();
-        const schemeMeta = addressScheme
-            ? this.engine.getSchemeMeta(this.schemeId)
-            : this.engine.getSchemeMeta();
+        this.schemeId = resolveProfile(this.engine);
+        this.scheme = this.engine.getScheme();
+        const schemeMeta = this.engine.getSchemeMeta();
         this.schemeMeta = schemeMeta;
         this.formatId =
             options?.formatId ??
@@ -534,6 +520,26 @@ export abstract class ReadOnlyComponentBase implements ComponentInstance {
                 ? schemeMeta.defaultPartRenderFormat
                 : undefined) ??
             this.resolveDefaultFormatId(schemeMeta);
+        // A text field writes the scopes it lists: in the format it names,
+        // else the default output of the first of them, and several of them
+        // only when that format writes every one of them in one string.
+        // A lone `scope` is a list of one.
+        const listed = listedScopesOf(options);
+        if (this.writesScopesAsText() && listed.length > 0) {
+            if (!options?.formatId)
+                this.formatId = viewOutputOf(
+                    schemeMeta,
+                    listed,
+                    !!options?.holdsPart,
+                );
+            assertWritesScopes(
+                this.engine,
+                this.scheme.categories,
+                this.formatId,
+                listed,
+                componentLabel,
+            );
+        }
         this.colorFrom = schemeMeta.colorFrom;
         this._resolveContext = options?.resolveContext;
         this._resolveParts = options?.resolveParts;
@@ -634,7 +640,7 @@ export abstract class ReadOnlyComponentBase implements ComponentInstance {
                     initialValue = this.enhancedInput!.value;
                     continue;
                 }
-                this.assertions = initResult.assertions;
+                this.assertions = this.heldFacts(initResult.assertions);
                 this._lastRendered = acceptedValue(initialValue, initResult);
                 this.noteReading(initResult, initialValue);
                 this.recordAppliedFixes(initResult.appliedFixes ?? [], true);
@@ -658,6 +664,10 @@ export abstract class ReadOnlyComponentBase implements ComponentInstance {
             break;
         }
 
+        // A host can tear the field down while that read is in flight, as React's
+        // StrictMode does on every mount. Building it now would leave a second
+        // editor beside the one the next runtime makes.
+        if (this.abandoned) return;
         this.setup();
         // Errors from the initial value arrived before setup() built the
         // field's own wrapper, so the list could only follow the mount then.
@@ -674,6 +684,18 @@ export abstract class ReadOnlyComponentBase implements ComponentInstance {
         return [...this.assertions];
     }
 
+    /**
+     * The facts of a marking this field holds, whatever else the marking holds:
+     * every fact, for a view. A picker holds those of its scope set (see
+     * ComponentBase).
+     *
+     * @param assertions - The marking's facts, as the engine or a store gave
+     *   them
+     */
+    protected heldFacts(assertions: readonly Assertion[]): Assertion[] {
+        return [...assertions];
+    }
+
     setAssertions(assertions: Assertion[]): void {
         this.assertions = [...assertions];
         this.noteReading({});
@@ -681,15 +703,20 @@ export abstract class ReadOnlyComponentBase implements ComponentInstance {
         const result = this.callRender(this.assertions, {
             format: this.formatId,
         });
-        if ('rendered' in result) {
-            this._lastRendered = result.rendered;
+        // A refused write is the engine's marker, never the field's value. A
+        // display has no way to say why, so it shows no marking rather than
+        // the last one.
+        const paint = (written: {
+            rendered: string;
+            assessment?: RenderAssessment;
+        }) => {
+            this._lastRendered = renderViewRefused(written)
+                ? ''
+                : written.rendered;
             this.onAssertionsChanged();
-        } else {
-            result.then(({ rendered }) => {
-                this._lastRendered = rendered;
-                this.onAssertionsChanged();
-            });
-        }
+        };
+        if ('rendered' in result) paint(result);
+        else void result.then(paint);
     }
 
     /**
@@ -702,13 +729,16 @@ export abstract class ReadOnlyComponentBase implements ComponentInstance {
      * @param source - The text read, for a text read. A text read without
      *   recognition proves nothing about that text, so it counts as unresolved;
      *   any other reading is resolved unless its recognition says otherwise.
+     * @param form - The form the reading wrote the value in: the field's own
+     *   output unless the reading came from elsewhere
      */
     protected noteReading(
         reading: {
             recognition?: Pick<RecognitionResult, 'status' | 'unmatched'>;
-            assessment?: { omitted: AssertionRef[] };
+            assessment?: ShownForm['assessment'];
         },
         source?: string,
+        form: Omit<ShownForm, 'assessment'> = { formatId: this.formatId },
     ): void {
         const status = reading.recognition?.status;
         this.sourceUnresolved =
@@ -721,6 +751,52 @@ export abstract class ReadOnlyComponentBase implements ComponentInstance {
             this._lastRendered.length,
         );
         this.unprinted = reading.assessment?.omitted ?? [];
+        this.heldForm = { ...form, assessment: reading.assessment };
+    }
+
+    /**
+     * Keep what writing the held value in `form` did, for a value whose reading
+     * did not say (see {@link writtenFact}).
+     */
+    protected noteHeldForm(form: ShownForm): void {
+        this.heldForm = form;
+    }
+
+    /**
+     * The forms this field shows its marking in, each with what writing it did.
+     * A field shows the one form its value is written in; one that writes its
+     * marking in several forms names each.
+     */
+    protected shownForms(): ShownForm[] {
+        return [this.heldForm];
+    }
+
+    /**
+     * Whether the marking this field shows writes a fact, by the engine's
+     * assessments of the forms it shows (see written-facts.ts). A fact the
+     * marking holds but writes nowhere, such as a member collapsed into its
+     * group's name, is not a value of the marking the author sees.
+     */
+    protected writtenFact(): (
+        ref: Pick<AssertionRef, 'categoryId' | 'conceptId'>,
+    ) => boolean {
+        const unwritten = this.unwrittenFact();
+        return (ref) => unwritten(ref) === undefined;
+    }
+
+    /**
+     * Why the marking this field shows leaves out a fact it holds, by the same
+     * assessments as {@link writtenFact}: the value it collapsed into, when it
+     * collapsed. Undefined for a fact the marking writes.
+     */
+    protected unwrittenFact(): (
+        ref: Pick<AssertionRef, 'categoryId' | 'conceptId'>,
+    ) => UnwrittenFact | undefined {
+        return unwrittenFactLookup(
+            this.shownForms(),
+            this.scheme?.categories ?? [],
+            this.schemeMeta ?? {},
+        );
     }
 
     /** Interactive subclasses retain fixes before rendering the processed value. */
@@ -756,16 +832,19 @@ export abstract class ReadOnlyComponentBase implements ComponentInstance {
         try {
             result = await this.readHeld(value);
         } catch (error) {
-            if (seq !== this.valueReadSeq) return;
+            // A field torn down while its value was read has nothing to show.
+            if (seq !== this.valueReadSeq || this.abandoned) return;
             // Nothing was read, so the marking the field holds stays as it
             // was and nothing is published; the field says why instead.
             this.failedRead = value;
             this.showReadFailure(error);
             return;
         }
-        if (seq !== this.valueReadSeq) return;
+        // Nor does it publish what the read found: its runtime, and the
+        // Context it read through, may be gone already.
+        if (seq !== this.valueReadSeq || this.abandoned) return;
         this.failedRead = null;
-        this.assertions = result.assertions;
+        this.assertions = this.heldFacts(result.assertions);
         this._lastRendered = acceptedValue(value, result);
         this.noteReading(result, value);
         this.displayColor = result.displayColor;
@@ -794,10 +873,9 @@ export abstract class ReadOnlyComponentBase implements ComponentInstance {
     }
 
     /**
-     * Engine.process shim. Threads `this.schemeId` when the adapter exposes
-     * multi-profile introspection (`listSchemes`); falls back to the 2-arg form
-     * so adapters predating multi-scheme support keep working without
-     * modification.
+     * Engine.process with what every call from this field carries: its scope as
+     * the surface, the parts a whole must cover, and only the facts the field
+     * states (facts taken from a whole go back through the whole).
      */
     protected callProcess(
         input: string | Assertion[],
@@ -814,9 +892,6 @@ export abstract class ReadOnlyComponentBase implements ComponentInstance {
         );
         const read =
             typeof input === 'string' ? input : withoutTakenFromWhole(input);
-        if (this.schemeAddressing && isAddressableSchemeEngine(this.engine)) {
-            return this.engine.process(read, this.schemeId, withParts);
-        }
         return this.engine.process(read, withParts);
     }
 
@@ -832,9 +907,6 @@ export abstract class ReadOnlyComponentBase implements ComponentInstance {
                 ? { ...options, surface: this.options.scope }
                 : options,
         );
-        if (this.schemeAddressing && isAddressableSchemeEngine(this.engine)) {
-            return this.engine.validate(input, this.schemeId, withParts);
-        }
         return this.engine.validate(input, withParts);
     }
 
@@ -882,37 +954,27 @@ export abstract class ReadOnlyComponentBase implements ComponentInstance {
         return (this._resolveParts?.() ?? []).some((part) => part.trim());
     }
 
-    /** Engine.render shim: see callProcess for the rationale. */
+    /** Engine.render in the given format. */
     protected callRender(
         assertions: Assertion[],
         options?: { format?: string },
     ) {
-        const format = options?.format;
-        if (this.schemeAddressing && isAddressableSchemeEngine(this.engine)) {
-            return this.engine.render(assertions, format, this.schemeId);
-        }
-        return this.engine.render(assertions, format);
+        return this.engine.render(assertions, options?.format);
     }
 
-    /** Engine.suggest shim: see callProcess for the rationale. */
+    /** Engine.suggest, with only the facts the field states. */
     protected callSuggest(
         input: string | Assertion[],
         options?: SuggestOptions,
     ) {
         const read =
             typeof input === 'string' ? input : withoutTakenFromWhole(input);
-        if (this.schemeAddressing && isAddressableSchemeEngine(this.engine)) {
-            return this.engine.suggest(read, this.schemeId, options);
-        }
         return this.engine.suggest(read, options);
     }
 
-    /** Engine.applyPreset shim: see callProcess for the rationale. */
+    /** Engine.applyPreset, in the given output format. */
     protected callApplyPreset(presetId: string, outputFormat?: string) {
         const options = outputFormat ? { outputFormat } : undefined;
-        if (this.schemeAddressing && isAddressableSchemeEngine(this.engine)) {
-            return this.engine.applyPreset(presetId, this.schemeId, options);
-        }
         return this.engine.applyPreset(presetId, options);
     }
 
@@ -942,11 +1004,11 @@ export abstract class ReadOnlyComponentBase implements ComponentInstance {
         warnings: readonly Warning[] = [],
     ): void {
         // Facet-of: this component renders one category slice of a larger
-        // marking. The host renders validation once at the parent field; a
-        // facet view never carries a validation surface.
+        // marking. The host renders validation once at the parent field, so a
+        // facet says nothing about the marking's rules.
         this.showRuleErrors(
             this.options.facetOf
-                ? NO_RULE_ERRORS
+                ? this.facetReport()
                 : ruleErrorsFrom(errors, proposedFixes, warnings),
         );
     }
@@ -957,8 +1019,61 @@ export abstract class ReadOnlyComponentBase implements ComponentInstance {
      */
     protected showReadFailure(error: unknown): void {
         this.showRuleErrors(
-            this.options.facetOf ? NO_RULE_ERRORS : readFailureReport(error),
+            this.options.facetOf
+                ? this.facetReport()
+                : readFailureReport(error),
         );
+    }
+
+    /**
+     * Show why the field's marking could not be written, after the engine's
+     * errors for it. A refused write is the engine's opaque marker, so the
+     * field keeps the value it holds and says why here (see
+     * render-refusal.ts).
+     *
+     * @param write - The refused write
+     * @param errors - The engine's errors from the same result
+     * @param proposedFixes - The ways to fix from the same result
+     * @param warnings - The warnings from the same result
+     */
+    protected showRenderRefusal(
+        write: { assessment?: RenderAssessment },
+        errors: readonly ValidationError[] = [],
+        proposedFixes: readonly Fix[] = [],
+        warnings: readonly Warning[] = [],
+    ): void {
+        if (this.options.facetOf) {
+            this.showRuleErrors(this.facetReport());
+            return;
+        }
+        const report = ruleErrorsFrom(errors, proposedFixes, warnings);
+        this.showRuleErrors({
+            ...report,
+            messages: [
+                ...report.messages,
+                ...renderViewRefusalMessages(this.formatId, write),
+            ],
+        });
+    }
+
+    /**
+     * The store committed the marking this facet is a slice of. Whether that
+     * marking could be written is not in the facet's slice, so the facet asks
+     * again.
+     */
+    refreshFacetRefusal(): void {
+        if (this.options.facetOf) this.showRuleErrors(this.facetReport());
+    }
+
+    /**
+     * What a facet shows: nothing, unless it is where its marking's refusal is
+     * said (see {@link ComponentOptions.resolveFacetRefusal}).
+     */
+    private facetReport(): RuleErrorReport {
+        const messages = this.options.resolveFacetRefusal?.() ?? [];
+        return messages.length > 0
+            ? { ...NO_RULE_ERRORS, messages: [...messages] }
+            : NO_RULE_ERRORS;
     }
 
     private showRuleErrors(report: RuleErrorReport): void {
@@ -980,7 +1095,7 @@ export abstract class ReadOnlyComponentBase implements ComponentInstance {
                     this.container.ownerDocument,
                     (pointerType) => this.focusAfterFix(pointerType),
                 );
-                this.ruleErrorList.setSuppressed(this.editorOpen);
+                this.ruleErrorList.setSuppressed(this.reportInField);
             }
             this.placeRuleErrors();
             this.ruleErrorList.update(report, this.ruleFixHandler());
@@ -989,14 +1104,14 @@ export abstract class ReadOnlyComponentBase implements ComponentInstance {
     }
 
     /**
-     * The field's editor opened or closed. While it is open its list carries
-     * the field's report, so the list under the field steps aside and the field
-     * shows one list.
+     * Whether the field carries its report itself: an open editor's own list,
+     * or a compact control's error count at rest. While it does, the list under
+     * the field steps aside, so the field shows the report once.
      */
-    protected setEditorOpen(open: boolean): void {
-        if (this.editorOpen === open) return;
-        this.editorOpen = open;
-        this.ruleErrorList?.setSuppressed(open);
+    protected setReportInField(inField: boolean): void {
+        if (this.reportInField === inField) return;
+        this.reportInField = inField;
+        this.ruleErrorList?.setSuppressed(inField);
         this.onRuleErrorsChanged();
     }
 
@@ -1055,6 +1170,14 @@ export abstract class ReadOnlyComponentBase implements ComponentInstance {
     }
 
     abstract destroy(): void;
+
+    /**
+     * Whether the component has been destroyed; a field with live state says
+     * so.
+     */
+    protected get abandoned(): boolean {
+        return false;
+    }
     protected abstract setup(): void;
     protected abstract render(): void;
 
@@ -1087,24 +1210,33 @@ export abstract class ReadOnlyComponentBase implements ComponentInstance {
 
     /**
      * Resolve a category by explicit ID, or find the first single-select
-     * category in scope
+     * category in scope. The categories of the listed scopes are searched scope
+     * by scope in the scheme's declaration order; a category that declares no
+     * scope belongs to the default scope. A lone `scope` is a list of one, so a
+     * host gets the same category whether it names its scope as a list or not.
+     *
+     * @param explicitId - The category the host names, if any
+     * @param scope - The one scope the host names, when it gives no list
+     * @param scopes - The scopes the host lists
+     * @returns The category, or undefined when none is in the named scopes
      */
     protected resolveCategory(
         explicitId?: string,
         scope?: string,
+        scopes?: readonly string[],
     ): CategoryView | undefined {
         if (explicitId) {
             return this.scheme.categories.find((f) => f.id === explicitId);
         }
-        let categories = this.scheme.categories;
-        if (scope) {
-            categories = categories.filter(
-                (f) =>
-                    !f.scopes ||
-                    f.scopes.length === 0 ||
-                    f.scopes.includes(scope),
-            );
-        }
+        const listed = scopes?.length ? scopes : scope ? [scope] : [];
+        const categories =
+            listed.length > 0
+                ? categoriesByScope(
+                      this.scheme.categories,
+                      listed,
+                      this.schemeMeta,
+                  ).flatMap((group) => group.categories)
+                : this.scheme.categories;
         const single = categories.find((f) => f.single);
         return single || categories[0];
     }
@@ -1138,6 +1270,17 @@ export abstract class ReadOnlyComponentBase implements ComponentInstance {
         return meta.defaultRenderFormat ?? '';
     }
 
+    /**
+     * Whether the component shows its marking as one string, as a text field or
+     * a banner does. Such a component writes every scope it lists in that one
+     * string, so it is refused when its format cannot (see
+     * `assertWritesScopes`). A picker offers each listed scope's categories
+     * instead and answers false.
+     */
+    protected writesScopesAsText(): boolean {
+        return false;
+    }
+
     protected onAssertionsChanged(): void {
         this.render();
         // When onChange is set, the caller handles writing to the correct native element.
@@ -1155,6 +1298,51 @@ export abstract class ReadOnlyComponentBase implements ComponentInstance {
         }
     }
 
+    /**
+     * Whether the written marking prints a token's value: false for a value the
+     * render assessment says it leaves out.
+     */
+    protected printsToken(node: {
+        categoryId: string;
+        conceptId?: string;
+    }): boolean {
+        return !this.unprinted.some(
+            (ref) =>
+                ref.categoryId === node.categoryId &&
+                ref.conceptId === node.conceptId,
+        );
+    }
+
+    /**
+     * What this field writes, for naming its concepts the way it writes them:
+     * its format, its role and the scopes it writes.
+     */
+    protected writingField(): WritingField {
+        return {
+            formatId: this.formatId,
+            part: !!this.options.holdsPart,
+            scopes: scopeSetOf(listedScopesOf(this.options), this.schemeMeta),
+        };
+    }
+
+    /** This field and its scheme, once the scheme has loaded. */
+    protected conceptWriting(): ConceptWriting | undefined {
+        if (!this.scheme || !this.schemeMeta) return undefined;
+        return {
+            scheme: this.scheme,
+            meta: this.schemeMeta,
+            field: this.writingField(),
+        };
+    }
+
+    /**
+     * How the status mark names values and categories: a value the way this
+     * field writes its concept, a category by its label.
+     */
+    protected changeWords(): ChangeWords {
+        return schemeChangeWords(() => this.conceptWriting());
+    }
+
     /** Get the color for a category */
     protected getCategoryColor(categoryId: string): string {
         return this.categoryColorMap.get(categoryId) ?? '#666';
@@ -1167,121 +1355,55 @@ export abstract class ReadOnlyComponentBase implements ComponentInstance {
 }
 
 /**
- * Resolve which loaded scheme a component instance targets.
+ * The id of the scheme a component marks in: its scheme view's, which is the
+ * Context's primary scheme.
  *
- * Resolution order:
+ * Which Context and which of its schemes an element marks with is markup the
+ * runtime reads (`data-ezclassify-context`, `data-ezclassify-scheme`; see
+ * `context-binding.ts`) before it mounts the component. A component mounted
+ * directly is handed its Context by the host and reads neither attribute.
  *
- * 1. `data-ezclassify-scheme` attribute on the container (or its closest ancestor)
- * 2. `options.schemeId`
- * 3. The engine's default-scheme slot (`getDefaultScheme()?.id`)
- *
- * Throws with a useful message when no scheme is loaded, or when the engine has
- * multiple schemes loaded with no default set and no attribute/option
- * provided.
- *
- * When optional multi-scheme introspection is absent, the required `getScheme`
- * method names the adapter's bound scheme.
+ * @param engine - The component's scheme view
+ * @throws Error when the view cannot name its scheme
  */
-export function resolveProfile(
-    container: HTMLElement,
-    engine: ComponentSchemeEngine,
-    options?: { schemeId?: string },
-    schemeAddressing = isAddressableSchemeEngine(engine),
-): string {
-    const attr =
-        container.getAttribute('data-ezclassify-scheme') ??
-        container
-            .closest('[data-ezclassify-scheme]')
-            ?.getAttribute('data-ezclassify-scheme');
-    const requested = attr ?? options?.schemeId;
-    if (typeof engine.getScheme !== 'function') {
-        throw new Error('Scheme adapter must implement getScheme().');
+export function resolveProfile(engine: ComponentSchemeEngine): string {
+    if (typeof engine?.getScheme !== 'function') {
+        throw new Error('A Context scheme view must implement getScheme().');
     }
-    if (!schemeAddressing) {
-        const primary = engine.getScheme();
-        if (requested && requested !== primary.id) {
-            throw new Error(
-                `Context-bound scheme operations target '${primary.id}'; '${requested}' cannot be selected from this adapter.`,
-            );
-        }
-        return primary.id;
-    }
-    if (requested) return requested;
-
-    const def = defaultSchemeOf(engine);
-    if (def) return def.id;
-
-    // The contract permits a bound adapter without listing methods.
-    if (!('listSchemes' in engine) || !engine.listSchemes) {
-        return engine.getScheme().id;
-    }
-
-    const loaded = engine.listSchemes();
-    if (loaded.length === 0) {
-        throw new Error(
-            'Engine has no schemes loaded. Call engine.loadScheme(data) before mounting components.',
-        );
-    }
-    if (loaded.length === 1) {
-        return loaded[0].id;
-    }
-    throw new Error(
-        `Engine has multiple schemes loaded (${loaded.map((p) => p.id).join(', ')}) with no default set; ` +
-            `specify data-ezclassify-scheme attribute, options.schemeId, or call engine.setDefaultScheme(id).`,
-    );
+    return engine.getScheme().id;
 }
 
 /**
- * Discover the engine adapter that backs a component instance.
+ * The scheme view behind what a component was mounted with: a Context's
+ * `scheme`, or the view itself.
  *
- * Resolution order:
- *
- * 1. Direct argument: a composed context contributes `ctx.scheme`, a bare scheme
- *    adapter is itself the answer.
- * 2. No argument: walk up `container` to find a `[data-ezclassify-context]`
- *    provider and pull `ctx.scheme` from the registered context.
- *
- * Throws when neither produces an engine.
+ * @param source - What the host or runtime mounted the component with
+ * @param componentLabel - Names the component in the error
+ * @throws Error when nothing was supplied
  */
 export function resolveSchemeEngine(
-    container: HTMLElement,
     source: ComponentEngineSource | null | undefined,
     componentLabel: string,
 ): ComponentSchemeEngine {
     if (source) {
         return isComponentContextAdapter(source) ? source.scheme : source;
     }
-    const ctx = findContext(container);
-    if (ctx) {
-        return ctx.scheme;
-    }
     throw new Error(
-        `[@ezclassify/ui] ${componentLabel}: no engine available. Pass an engine or context to init(), or wrap the container in an [data-ezclassify-context] provider.`,
+        `[@ezclassify/ui] ${componentLabel}: no Context available. Mount it through EzClassifyUI, or pass a Context to init().`,
     );
 }
 
 /**
- * Return the composed context the component was mounted with: directly via the
- * source argument or via an ancestor `[data-ezclassify-context]` provider.
- * Returns `null` when the source was a bare scheme adapter and no provider
- * exists; subclasses that need `ctx.guide` / `ctx.access` should handle that
- * case (typically: empty state).
+ * The Context a component was mounted with, or `null` when it was given a
+ * scheme view alone. Components that need `guide` or `access` show their empty
+ * state then.
  *
- * A directly injected bare scheme adapter is only paired with a discovered
- * context composed around that same adapter. Any other registered context would
- * give the component a guide and access surface belonging to a different
- * composition than the engine it renders from, and the mismatch would show as
- * wrong content rather than as an error.
+ * @param source - What the host or runtime mounted the component with
  */
 export function resolveContextSource(
-    container: HTMLElement,
     source: ComponentEngineSource | null | undefined,
 ): ContextAdapter | null {
-    if (source && isComponentContextAdapter(source)) return source;
-    const discovered = findContext(container);
-    if (!discovered) return null;
-    if (source && discovered.scheme !== source) return null;
-    return discovered;
+    return source && isComponentContextAdapter(source) ? source : null;
 }
 
 /**

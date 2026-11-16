@@ -42,27 +42,6 @@ describe('resolveConceptDescription', () => {
         expect(describeConcept).toHaveBeenCalledWith('S', 'level', undefined);
     });
 
-    it('uses the addressed call shape only when the engine supports composition lifecycle', () => {
-        const describeConcept = vi.fn(() => desc('SECRET'));
-        const result = resolveConceptDescription('S', 'level', {
-            engine: fakeEngine({
-                describeConcept,
-                listSchemes: () => [],
-                loadScheme: vi.fn(),
-            }),
-            schemeId: 'us-gov-capco',
-            schemeAddressing: true,
-            cache: new Map(),
-        });
-        expect(result).toBe('SECRET');
-        expect(describeConcept).toHaveBeenCalledWith(
-            'S',
-            'level',
-            'us-gov-capco',
-            undefined,
-        );
-    });
-
     it('passes tooltipConceptProperty through as the view option', () => {
         const describeConcept = vi.fn(() => desc('SECRET'));
         resolveConceptDescription('S', 'level', {

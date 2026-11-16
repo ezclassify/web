@@ -1,113 +1,109 @@
 /**
  * @vitest-environment jsdom
  *
- * Per-profile rollup output.
- *
- * Verifies that updateRollup emits `data-rendered-<schemeId>` per contributing
- * profile and clears stale entries when a profile stops contributing.
+ * Rollup outputs on a page with several buckets: several Contexts, or one
+ * Context holding several schemes. Buckets never merge, and an output holds
+ * exactly one of them.
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { updateRollup } from './rollup';
-import type { SchemeEngineAdapter } from '@ezclassify/types';
-import type { FormsContext } from './types';
-import type { ComponentInstance } from '../components/component-base';
-import { mockRenderFormat } from '../render-format-layout-mock';
+import type { CoverageReport, ProcessResult } from '@ezclassify/types';
+import { updateRollup, type RollupEventDetail } from './rollup';
+import type { BucketAggregate, BucketScheme, FormsContext } from './types';
+import { bucketKey, bucketParts, type BucketKey } from '../store/store-shared';
 
 vi.mock('./dom', () => ({ showCopiedIndicator: vi.fn() }));
 
-function createMultiProfileEngine() {
-    return {
-        loadScheme: vi.fn(),
-        listSchemes: () => [
-            { id: 'alpha', name: 'alpha', version: '1.0.0', isDefault: true },
-            { id: 'beta', name: 'beta', version: '1.0.0', isDefault: false },
-        ],
-        getDefaultScheme: () => ({
-            id: 'alpha',
-            name: 'alpha',
-            version: '1.0.0',
-            isDefault: true,
-        }),
-        getScheme: (_id?: string) => ({
-            id: _id ?? 'alpha',
-            concepts: [],
-            categories: [],
-            formats: [
-                {
-                    id: 'default',
-                    categoryOrder: [],
-                    separator: ' ',
-                    categorySeparator: '//',
-                    view: 'default',
-                },
-            ],
-            vocabulary: {
-                whole: { singular: 'banner', plural: 'banners' },
-                part: { singular: 'portion', plural: 'portions' },
-            },
-        }),
-        getSchemeMeta: (_id?: string) => ({
-            id: _id ?? 'alpha',
-            version: '1.0.0',
-            name: _id ?? 'alpha',
-            defaultRenderFormat: 'default',
-            formats: [
-                mockRenderFormat({
-                    id: 'default',
-                    view: 'default',
-                    categorySeparator: '//',
-                    separator: ' ',
-                    categoryOrder: [],
-                }),
-            ],
-            scopes: [],
-            vocabulary: {
-                whole: { singular: 'banner', plural: 'banners' },
-                part: { singular: 'portion', plural: 'portions' },
-            },
-        }),
-        listCategories: (_id?: string) => [],
-        getConceptsInCategory: (_catId: string, _id?: string) => [],
-        process: vi.fn((input: string, _schemeIdOrOpts?: string | unknown) => ({
-            assertions: [],
-            rendered: input,
-            valid: true,
-        })),
-        suggest: vi.fn(() => ({ suggestions: [] })),
-        render: vi.fn((assertions: any[]) =>
-            assertions.map((a: any) => a.conceptId).join(','),
-        ),
-        aggregate: vi.fn((values: string[], a?: string | unknown) => ({
-            assertions: [],
-            // Tag the rendered output with whichever profile id was passed so tests
-            // can assert per-profile routing.
-            rendered:
-                typeof a === 'string'
-                    ? `${a}:${values.join('+')}`
-                    : values.join('+'),
-            valid: true,
-        })),
-        checkCoverage: vi.fn(async () => ({
-            covered: true,
-            missing: [],
-            missingLabels: [],
-            excess: [],
-            excessLabels: [],
-            rendered: '',
-        })),
-        uncoveredAssertions: vi.fn(() => []),
-    } as unknown as SchemeEngineAdapter;
+const CAPCO = bucketKey('capco', '');
+const CUI = bucketKey('cui', '');
+const TIER_PRIMARY = bucketKey('corporate', '');
+const TIER_SECOND = bucketKey('corporate', 'tier');
+
+function state(rendered: string): BucketAggregate {
+    return { rendered, assertions: [] };
 }
 
-function createMockCtx(overrides: Partial<FormsContext> = {}): FormsContext {
+/** One answering engine per bucket, so a test can see which one was asked. */
+function engineFor(bucket: BucketKey) {
     return {
-        engine: createMultiProfileEngine(),
-        schemeAddressing: true,
+        bucket,
+        process: vi.fn(
+            (input: string, _options?: unknown) =>
+                ({
+                    valid: true,
+                    rendered: input,
+                    assertions: [],
+                    errors: [],
+                    warnings: [],
+                }) as unknown as ProcessResult,
+        ),
+        checkCoverage: vi.fn(
+            (_children: string[], _parent: string) =>
+                ({
+                    covered: true,
+                    missing: [],
+                    missingLabels: [],
+                    excess: [],
+                    excessLabels: [],
+                    rendered: '',
+                }) as unknown as CoverageReport,
+        ),
+    };
+}
+
+/** The selector a Context's primary scheme is named by in markup. */
+const PRIMARY_NAMES: Record<string, string> = { corporate: 'policy' };
+
+function createCtx(
+    space: BucketKey[],
+    page: Map<BucketKey, BucketAggregate>,
+    overrides: Partial<FormsContext> = {},
+): FormsContext & { engines: Map<BucketKey, ReturnType<typeof engineFor>> } {
+    const engines = new Map(space.map((b) => [b, engineFor(b)]));
+    // A field reads in the bucket its nearest context/scheme attributes name.
+    const schemeOf = (el: HTMLElement): BucketScheme => {
+        const contextKey =
+            el
+                .closest('[data-ezclassify-context]')
+                ?.getAttribute('data-ezclassify-context') ?? '';
+        const selector =
+            el
+                .closest('[data-ezclassify-scheme]')
+                ?.getAttribute('data-ezclassify-scheme') ?? '';
+        const bucket = bucketKey(contextKey, selector);
+        const engine = engines.get(bucket);
+        if (!engine) throw new Error(`no bucket ${contextKey}/${selector}`);
+        return {
+            bucket,
+            adapter: engine,
+            process: (input, options) => engine.process(input, options),
+            validate: (input) => engine.process(input) as never,
+            checkCoverage: (children, parent) =>
+                engine.checkCoverage(children, parent),
+            getSchemeMeta: () =>
+                ({ id: 's', version: '1', name: 's' }) as never,
+        };
+    };
+    return {
+        engines,
+        engine: {} as FormsContext['engine'],
+        schemeOf,
+        bucketsNamed: (contextKey: string | null, scheme: string | null) =>
+            space.filter((key) => {
+                const parts = bucketParts(key);
+                const named =
+                    scheme === PRIMARY_NAMES[parts.contextKey] ? '' : scheme;
+                return (
+                    (contextKey === null || parts.contextKey === contextKey) &&
+                    (named === null || parts.schemeSelector === named)
+                );
+            }),
+        aggregateOf: (id: string | null) => (id === null ? page : new Map()),
+        destroyed: false,
         root: document.body,
         fields: [],
-        rollupField: null,
         defaultFormat: 'default',
+        defaultPartFormat: 'default',
         domObserver: null,
         autocompleters: new Map(),
         lastValidated: new Map(),
@@ -115,161 +111,235 @@ function createMockCtx(overrides: Partial<FormsContext> = {}): FormsContext {
         tooltipEl: null,
         settingValue: false,
         colorMap: {},
-        selectorAttr: 'ezclassify',
+        initializing: false,
+        mountInstanceId: 'instance',
         mounted: new Map(),
         partOfMap: new Map(),
-        targetMap: new Map(),
-        initializing: false,
+        aggregates: new Map(),
         ...overrides,
-    } as FormsContext;
-}
-
-function createComponent(
-    rendered: string,
-    schemeId?: string,
-): ComponentInstance {
-    const comp: any = {
-        init: vi.fn(),
-        getAssertions: vi.fn(() => []),
-        setAssertions: vi.fn(),
-        destroy: vi.fn(),
-        getRendered: vi.fn(() => rendered),
+    } as FormsContext & {
+        engines: Map<BucketKey, ReturnType<typeof engineFor>>;
     };
-    if (schemeId) comp.schemeId = schemeId;
-    return comp;
 }
 
-describe('forms/rollup: per-profile output', () => {
+function sink(
+    attrs: Record<string, string> = {},
+    parent: HTMLElement = document.body,
+): HTMLInputElement {
+    const el = document.createElement('input');
+    el.type = 'hidden';
+    el.setAttribute('data-ezclassify-aggregate', '');
+    for (const [name, value] of Object.entries(attrs))
+        el.setAttribute(`data-ezclassify-${name}`, value);
+    parent.appendChild(el);
+    return el;
+}
+
+describe('forms/rollup: outputs on a page with several buckets', () => {
     beforeEach(() => {
         document.body.innerHTML = '';
     });
 
-    it('single-profile rollup emits one data-rendered-<schemeId>', async () => {
-        const rollupField = document.createElement('input');
-        document.body.appendChild(rollupField);
-        const ctx = createMockCtx({ rollupField });
-
-        const el = document.createElement('div');
-        document.body.appendChild(el);
-        ctx.mounted.set(el, createComponent('A', 'alpha'));
+    it("fills each sink that names its Context with that Context's rollup", async () => {
+        const capco = sink({ context: 'capco' });
+        const cui = sink({ context: 'cui' });
+        const ctx = createCtx(
+            [CAPCO, CUI],
+            new Map([
+                [CAPCO, state('SECRET')],
+                [CUI, state('CUI')],
+            ]),
+        );
 
         await updateRollup(ctx);
-        await new Promise((r) => setTimeout(r, 50));
 
-        expect(rollupField.getAttribute('data-rendered-alpha')).toBe('alpha:A');
-        expect(rollupField.getAttribute('data-rendered-beta')).toBeNull();
-        expect(rollupField.value).toBe('alpha:A');
+        expect(capco.value).toBe('SECRET');
+        expect(cui.value).toBe('CUI');
     });
 
-    it('multi-profile rollup emits two data-rendered-* attrs, contents per profile', async () => {
-        const rollupField = document.createElement('input');
-        document.body.appendChild(rollupField);
-        const ctx = createMockCtx({ rollupField });
-
-        const elA = document.createElement('div');
-        document.body.appendChild(elA);
-        ctx.mounted.set(elA, createComponent('A', 'alpha'));
-
-        const elB = document.createElement('div');
-        document.body.appendChild(elB);
-        ctx.mounted.set(elB, createComponent('B', 'beta'));
+    it('refuses a bare sink when several Contexts could fill it', async () => {
+        const bare = sink();
+        bare.value = 'SECRET';
+        const reportHostError = vi.fn();
+        const ctx = createCtx(
+            [CAPCO, CUI],
+            new Map([
+                [CAPCO, state('SECRET')],
+                [CUI, state('CUI')],
+            ]),
+            { reportHostError },
+        );
 
         await updateRollup(ctx);
-        await new Promise((r) => setTimeout(r, 50));
 
-        expect(rollupField.getAttribute('data-rendered-alpha')).toBe('alpha:A');
-        expect(rollupField.getAttribute('data-rendered-beta')).toBe('beta:B');
-        // value falls back to the engine's default profile (alpha) when more than
-        // one profile contributes.
-        expect(rollupField.value).toBe('alpha:A');
+        expect(bare.value).toBe('');
+        expect(bare.getAttribute('aria-invalid')).toBe('true');
+        expect(reportHostError).toHaveBeenCalledWith(
+            expect.objectContaining({
+                code: 'aggregate-bucket-ambiguous',
+                element: bare,
+            }),
+        );
     });
 
-    it('removing a contributing profile clears its stale data-rendered-* attribute', async () => {
-        const rollupField = document.createElement('input');
-        document.body.appendChild(rollupField);
-        const ctx = createMockCtx({ rollupField });
-
-        const elA = document.createElement('div');
-        document.body.appendChild(elA);
-        const compA = createComponent('A', 'alpha');
-        ctx.mounted.set(elA, compA);
-
-        const elB = document.createElement('div');
-        document.body.appendChild(elB);
-        ctx.mounted.set(elB, createComponent('B', 'beta'));
+    it("reads only the sink's own Context attribute, never an inherited default", async () => {
+        const section = document.createElement('section');
+        section.setAttribute('data-ezclassify-context', 'capco');
+        document.body.appendChild(section);
+        const inside = sink({}, section);
+        const reportHostError = vi.fn();
+        const ctx = createCtx(
+            [CAPCO, CUI],
+            new Map([
+                [CAPCO, state('SECRET')],
+                [CUI, state('CUI')],
+            ]),
+            { reportHostError },
+        );
 
         await updateRollup(ctx);
-        await new Promise((r) => setTimeout(r, 50));
-        expect(rollupField.getAttribute('data-rendered-beta')).toBe('beta:B');
 
-        // Drop the beta component and re-run.
-        ctx.mounted.delete(elB);
-        await updateRollup(ctx);
-        await new Promise((r) => setTimeout(r, 50));
-
-        expect(rollupField.getAttribute('data-rendered-alpha')).toBe('alpha:A');
-        expect(rollupField.getAttribute('data-rendered-beta')).toBeNull();
+        expect(inside.value).toBe('');
+        expect(reportHostError.mock.calls[0][0].code).toBe(
+            'aggregate-bucket-ambiguous',
+        );
     });
 
-    it('falls back to ezclassify-scheme attribute on bare input fields', async () => {
-        const rollupField = document.createElement('input');
-        document.body.appendChild(rollupField);
-        const fieldA = document.createElement('input');
-        fieldA.setAttribute('data-ezclassify-scheme', 'alpha');
-        fieldA.value = 'A';
-        const fieldB = document.createElement('input');
-        fieldB.setAttribute('data-ezclassify-scheme', 'beta');
-        fieldB.value = 'B';
-        document.body.append(fieldA, fieldB);
-
-        const ctx = createMockCtx({ rollupField, fields: [fieldA, fieldB] });
-
-        await updateRollup(ctx);
-        await new Promise((r) => setTimeout(r, 50));
-
-        expect(rollupField.getAttribute('data-rendered-alpha')).toBe('alpha:A');
-        expect(rollupField.getAttribute('data-rendered-beta')).toBe('beta:B');
-    });
-
-    it('does not assign a bare field to an arbitrary scheme without a default', async () => {
-        const rollupField = document.createElement('input');
-        const field = document.createElement('input');
-        field.value = 'A';
-        document.body.append(rollupField, field);
-        const engine = createMultiProfileEngine();
-        engine.getDefaultScheme = () => null;
-        const ctx = createMockCtx({ engine, rollupField, fields: [field] });
+    it('needs the scheme selector too when the named Context holds several schemes', async () => {
+        const contextOnly = sink({ context: 'corporate' });
+        const primary = sink({ context: 'corporate', scheme: 'policy' });
+        const second = sink({ context: 'corporate', scheme: 'tier' });
+        const schemeOnly = sink({ scheme: 'tier' });
+        const ctx = createCtx(
+            [TIER_PRIMARY, TIER_SECOND],
+            new Map([
+                [TIER_PRIMARY, state('INTERNAL')],
+                [TIER_SECOND, state('TIER 2')],
+            ]),
+        );
 
         await updateRollup(ctx);
 
-        expect(rollupField.hasAttribute('data-rendered-alpha')).toBe(false);
-        expect(rollupField.value).toBe('');
+        expect(contextOnly.value).toBe('');
+        expect(contextOnly.getAttribute('aria-invalid')).toBe('true');
+        expect(primary.value).toBe('INTERNAL');
+        expect(second.value).toBe('TIER 2');
+        expect(schemeOnly.value).toBe('TIER 2');
     });
 
-    it('emits ezclassify:rollup event with byScheme detail', async () => {
-        const rollupField = document.createElement('input');
-        document.body.appendChild(rollupField);
-        const ctx = createMockCtx({ rollupField });
+    it('refuses a sink naming a Context the page does not hold', async () => {
+        const unknown = sink({ context: 'nato' });
+        const reportHostError = vi.fn();
+        const ctx = createCtx(
+            [CAPCO, CUI],
+            new Map([[CAPCO, state('SECRET')]]),
+            { reportHostError },
+        );
 
-        const elA = document.createElement('div');
-        document.body.appendChild(elA);
-        ctx.mounted.set(elA, createComponent('A', 'alpha'));
-        const elB = document.createElement('div');
-        document.body.appendChild(elB);
-        ctx.mounted.set(elB, createComponent('B', 'beta'));
+        await updateRollup(ctx);
 
-        let detail: {
-            rendered?: string;
-            byScheme?: Record<string, string>;
-        } | null = null;
-        rollupField.addEventListener('ezclassify:rollup', (e) => {
-            detail = (e as CustomEvent).detail;
+        expect(unknown.value).toBe('');
+        expect(reportHostError.mock.calls[0][0].code).toBe(
+            'aggregate-bucket-unknown',
+        );
+    });
+
+    it('fills a sink once its markup names its bucket', async () => {
+        const out = sink();
+        const reportHostError = vi.fn();
+        const ctx = createCtx(
+            [CAPCO, CUI],
+            new Map([
+                [CAPCO, state('SECRET')],
+                [CUI, state('CUI')],
+            ]),
+            { reportHostError },
+        );
+        await updateRollup(ctx);
+        expect(out.getAttribute('aria-invalid')).toBe('true');
+
+        out.setAttribute('data-ezclassify-context', 'cui');
+        await updateRollup(ctx);
+
+        expect(out.value).toBe('CUI');
+        expect(out.hasAttribute('aria-invalid')).toBe(false);
+        expect(reportHostError).toHaveBeenCalledTimes(1);
+    });
+
+    it('announces every bucket of a level, keeping one scheme under two Contexts apart', async () => {
+        const capcoA = bucketKey('agency', '');
+        const capcoB = bucketKey('program', '');
+        const ctx = createCtx(
+            [capcoA, capcoB],
+            new Map([
+                [capcoA, state('SECRET')],
+                [capcoB, state('SECRET//NOFORN')],
+            ]),
+        );
+        const events: RollupEventDetail[] = [];
+        document.body.addEventListener('ezclassify:rollup', (e) =>
+            events.push((e as CustomEvent<RollupEventDetail>).detail),
+        );
+
+        await updateRollup(ctx);
+
+        expect(
+            events[0].buckets.map(({ context, scheme, rendered }) => ({
+                context,
+                scheme,
+                rendered,
+            })),
+        ).toEqual([
+            { context: 'agency', scheme: null, rendered: 'SECRET' },
+            { context: 'program', scheme: null, rendered: 'SECRET//NOFORN' },
+        ]);
+    });
+});
+
+describe('forms/rollup: a whole and its parts read in one bucket', () => {
+    beforeEach(() => {
+        document.body.innerHTML = '';
+    });
+
+    it('checks a whole only against parts read in its bucket, by its own Context', async () => {
+        const capcoSection = document.createElement('section');
+        capcoSection.setAttribute('data-ezclassify-context', 'capco');
+        const cuiSection = document.createElement('section');
+        cuiSection.setAttribute('data-ezclassify-context', 'cui');
+        document.body.append(capcoSection, cuiSection);
+
+        const whole = document.createElement('input');
+        whole.id = 'memo';
+        whole.value = 'SECRET';
+        capcoSection.appendChild(whole);
+        const samePart = document.createElement('input');
+        samePart.value = 'CONFIDENTIAL';
+        capcoSection.appendChild(samePart);
+        const otherPart = document.createElement('input');
+        otherPart.value = 'CUI';
+        cuiSection.appendChild(otherPart);
+
+        const ctx = createCtx([CAPCO, CUI], new Map(), {
+            fields: [whole, samePart, otherPart],
+            partOfMap: new Map([
+                [samePart, 'memo'],
+                [otherPart, 'memo'],
+            ]),
         });
 
         await updateRollup(ctx);
-        await new Promise((r) => setTimeout(r, 50));
 
-        expect(detail).not.toBeNull();
-        expect(detail!.byScheme).toEqual({ alpha: 'alpha:A', beta: 'beta:B' });
+        const capco = ctx.engines.get(CAPCO)!;
+        const cui = ctx.engines.get(CUI)!;
+        expect(capco.checkCoverage).toHaveBeenCalledWith(
+            ['CONFIDENTIAL'],
+            'SECRET',
+        );
+        expect(capco.process).not.toHaveBeenCalledWith(
+            'CUI',
+            expect.anything(),
+        );
+        expect(cui.process).not.toHaveBeenCalled();
+        expect(cui.checkCoverage).not.toHaveBeenCalled();
     });
 });

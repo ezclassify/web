@@ -92,7 +92,7 @@ describe('Angular example browser configuration', () => {
     it('starts the replay and the dev server the way the example README does', () => {
         const config = angularExamplePlaywrightConfig();
         expect(config).toContain(
-            'npx @ezclassify/conformance-server --scenario cedar-valley --port 4010 --cors-origin http://localhost:4200',
+            'npx @ezclassify/conformance-server --scenario cedar-valley --port 3000 --cors-origin http://localhost:4200',
         );
         expect(config).toContain('"command": "npm start"');
         expect(config).toContain('"baseURL": "http://localhost:4200"');

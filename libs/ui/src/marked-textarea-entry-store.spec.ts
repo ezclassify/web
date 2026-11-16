@@ -3,6 +3,8 @@ import { EzClassifyUI } from './ezclassify-ui';
 import { loadMultiScopeRegression } from '../test-fixtures/load-multi-scope-regression';
 import type { MarkedTextArea } from './components/marked-text-area';
 import type { Assertion } from '@ezclassify/types';
+import { asContext } from '../test-fixtures/as-context';
+import { demoRuntimeSettled } from '../../../test-support/demo-runtime';
 
 let ui: EzClassifyUI | undefined;
 afterEach(() => {
@@ -10,20 +12,22 @@ afterEach(() => {
     document.body.innerHTML = '';
 });
 async function flush() {
-    for (let i = 0; i < 20; i++) await Promise.resolve();
+    await demoRuntimeSettled();
     await new Promise((resolve) => setTimeout(resolve, 30));
 }
 async function mount(
     text = '(SA) First body.\n(DC) Second body.  ',
-    configure?: (engine: ReturnType<typeof loadMultiScopeRegression>) => void,
+    configure?: (
+        engine: Awaited<ReturnType<typeof loadMultiScopeRegression>>,
+    ) => void,
 ) {
     document.body.innerHTML =
-        '<div id="root"><input id="document" type="hidden" data-ezclassify-rendered><textarea id="body" data-ezclassify-controller="marked-textarea" data-ezclassify-bound-to="document"></textarea></div>';
+        '<div id="root"><input id="document" type="hidden" data-ezclassify-marking><textarea id="body" data-ezclassify-controller="marked-textarea" data-ezclassify-bound-to="document"></textarea></div>';
     const textarea = document.querySelector('textarea')!;
     textarea.value = text;
-    const engine = loadMultiScopeRegression();
+    const engine = await loadMultiScopeRegression();
     configure?.(engine);
-    ui = new EzClassifyUI(engine, {
+    ui = new EzClassifyUI(asContext(engine), {
         root: document.querySelector<HTMLElement>('#root')!,
     });
     await flush();
@@ -41,6 +45,41 @@ const student: Assertion = {
 };
 
 describe('MarkedTextArea two-way entry bindings', () => {
+    it('keeps the marking an entry holds when the engine cannot write its new facts', async () => {
+        const { textarea, store } = await mount(undefined, (engine) => {
+            const render = engine.render.bind(engine);
+            engine.render = ((assertions: Assertion[], ...rest: unknown[]) =>
+                assertions.some((a) => a.conceptId === 'STUDENTS')
+                    ? {
+                          rendered:
+                              '[unrepresentable:ambiguous-representation]',
+                          assessment: {
+                              emitted: [],
+                              omitted: [],
+                              collapsed: [],
+                              conflicts: [],
+                              unrepresentable: [
+                                  {
+                                      output: 'portion',
+                                      reason: 'ambiguous-representation',
+                                  },
+                              ],
+                          },
+                      }
+                    : Reflect.apply(render, engine, [
+                          assertions,
+                          ...rest,
+                      ])) as typeof engine.render;
+        });
+        const held = textarea.value;
+        const ids = store.getEntryIds!('document')!;
+
+        await store.publishAssertions(ids[1]!, [student]);
+        await flush();
+
+        expect(textarea.value).toBe(held);
+    });
+
     it('edits one stable store entry without replacing either body', async () => {
         const { textarea, component, store } = await mount();
         const ids = store.getEntryIds!('document')!;
@@ -207,10 +246,10 @@ describe('MarkedTextArea two-way entry bindings', () => {
             '(SA) Raw body.\n(DC) Known body.',
             (engine) => {
                 const original = engine.process.bind(engine);
-                vi.spyOn(engine, 'process').mockImplementation(((
+                vi.spyOn(engine, 'process').mockImplementation((async (
                     ...args: Parameters<typeof original>
                 ) => {
-                    const result = original(...args);
+                    const result = await original(...args);
                     if (typeof args[0] === 'string' && args[0].includes('SA'))
                         return {
                             ...result,
@@ -318,13 +357,16 @@ describe('MarkedTextArea portions of a whole over an asynchronous engine', () =>
     async function settle() {
         for (let i = 0; i < 10; i++) await flush();
     }
-    function render(
+    async function render(
         root: HTMLElement,
         refuse?: (method: string, args: unknown[]) => boolean,
     ) {
-        ui = new EzClassifyUI(overTheWire(loadMultiScopeRegression(), refuse), {
-            root,
-        });
+        ui = new EzClassifyUI(
+            asContext(overTheWire(await loadMultiScopeRegression(), refuse)),
+            {
+                root,
+            },
+        );
     }
     function textareaPartOfDocument(): HTMLTextAreaElement {
         const textarea = document.createElement('textarea');
@@ -341,7 +383,7 @@ describe('MarkedTextArea portions of a whole over an asynchronous engine', () =>
         const root = document.querySelector<HTMLElement>('#root')!;
         const textarea = textareaPartOfDocument();
         root.appendChild(textarea);
-        render(root);
+        await render(root);
         await settle();
         expect(textarea.value).toBe(body);
         const ids = ui!.store.getEntryIds!('body')!;
@@ -356,7 +398,7 @@ describe('MarkedTextArea portions of a whole over an asynchronous engine', () =>
         document.body.innerHTML =
             '<div id="root"><input id="document" value="SA" data-ezclassify-controller="marking"></div>';
         const root = document.querySelector<HTMLElement>('#root')!;
-        render(root);
+        await render(root);
         await settle();
         const textarea = textareaPartOfDocument();
         root.appendChild(textarea);
@@ -378,7 +420,7 @@ describe('MarkedTextArea portions of a whole over an asynchronous engine', () =>
         root.appendChild(textarea);
         // Every store read of the second portion fails.
         let refused = false;
-        render(root, (method, args) => {
+        await render(root, (method, args) => {
             const [input, options] = args as [
                 unknown,
                 { context?: unknown } | undefined,

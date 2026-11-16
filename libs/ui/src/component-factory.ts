@@ -9,6 +9,7 @@
 
 import type { ControllerName } from './element-scanner';
 import { resolveFormatAttr } from './format-resolver';
+import { parseScopeList } from './scopes';
 import { setMountHost } from './mount-host-registry';
 import type {
     ComponentInstance,
@@ -18,12 +19,11 @@ import { TagInput } from './components/tag-input';
 import { SingleSelect } from './components/single-select';
 import { CategoryChecklist } from './components/category-checklist';
 import { CategorySelector } from './components/category-selector';
-import { AssertionCard } from './components/assertion-card';
 import { StatusBanner } from './components/status-banner';
-import { DualPane } from './components/dual-pane';
 import { Handbook } from './components/handbook';
 import { Guidebook } from './components/guidebook';
 import { AccessHandbook } from './components/access-handbook';
+import { CrosswalkHandbook } from './components/crosswalk-handbook';
 import { ContextReference } from './components/context-reference';
 import { GuideChecklist } from './components/guide-helper';
 import { DecisionFlow } from './components/decision-flow';
@@ -33,6 +33,7 @@ import { MarkedInput } from './components/marked-input';
 import { MarkingField } from './components/marking-field';
 import { EzClassifyText } from './components/ezclassify-text';
 import { EquivalencyMap } from './components/equivalency-map';
+import { TranslatedView, isTranslatedView } from './components/translated-view';
 
 /**
  * Translate a harvested options bag (`data-ezclassify-<controller>-*`) into the
@@ -40,25 +41,16 @@ import { EquivalencyMap } from './components/equivalency-map';
  * through verbatim so per-controller extensions don't need to update this
  * function.
  *
- * The element is also consulted for shared host-level attributes
- * (`data-ezclassify-scope`, `data-ezclassify-scheme`,
- * `data-ezclassify-category`, `data-ezclassify-format`) so they can be set once
- * at the host element rather than repeated under the controller prefix. A
- * controller-prefixed option always wins over the host attribute.
+ * The host-level attributes `data-ezclassify-scope`, `data-ezclassify-category`
+ * and `data-ezclassify-format` are read off the element itself; they have no
+ * controller-prefixed form. The Context and scheme an element marks with are
+ * the runtime's to resolve, not an option.
  */
 export function parseComponentOptions(
     el: HTMLElement,
     raw: Record<string, string>,
 ): Record<string, unknown> {
     const opts: Record<string, unknown> = { ...raw };
-    if (typeof opts['format'] === 'string') {
-        opts.formatId = opts['format'];
-        delete opts['format'];
-    }
-    if (typeof opts['category'] === 'string') {
-        opts.categoryId = opts['category'];
-        delete opts['category'];
-    }
     if (typeof opts['primary-category'] === 'string') {
         opts.primaryCategoryId = opts['primary-category'];
         delete opts['primary-category'];
@@ -113,29 +105,21 @@ export function parseComponentOptions(
     if (el.closest('[data-ezclassify-no-hints]')) opts.hints = false;
 
     // Shared binding attributes (live on the host element, not under the controller prefix).
-    const scope = el.getAttribute('data-ezclassify-scope');
-    if (scope) opts.scope = scope;
-    const scheme =
-        el.getAttribute('data-ezclassify-scheme') ??
-        el
-            .closest('[data-ezclassify-scheme]')
-            ?.getAttribute('data-ezclassify-scheme');
-    if (scheme) opts.schemeId = scheme;
-    // Allow category to live as a top-level binding too, when not specified on the controller prefix.
-    if (!opts.categoryId) {
-        const category = el.getAttribute('data-ezclassify-category');
-        if (category) opts.categoryId = category;
-    }
-    // Same rule for the render format. `data-ezclassify-format` is a host-level
-    // attribute in the documented grammar and the forms layer has always read
-    // it off a plain enhanced input; a controller host is still a field, so the
-    // attribute has to mean the same thing there. Read from the host element
-    // only, not the closest ancestor: format is a per-field choice, and
-    // inheriting it would retag every controller under a wrapper that set one.
-    if (!opts.formatId) {
-        const format = resolveFormatAttr(el);
-        if (format) opts.formatId = format;
-    }
+    // `data-ezclassify-scope` lists scope ids the way `class` lists class
+    // names. `scopes` carries the list; `scope` is the one surface a field
+    // reads as, so it is set only when the list names exactly one.
+    const scopes = parseScopeList(el.getAttribute('data-ezclassify-scope'));
+    if (scopes.length > 0) opts.scopes = scopes;
+    if (scopes.length === 1) opts.scope = scopes[0];
+    // The category a facet picker selects in is a host attribute, never a
+    // controller-prefixed option.
+    const category = el.getAttribute('data-ezclassify-category');
+    if (category) opts.categoryId = category;
+    // The render format, read from the host element only, not the closest
+    // ancestor: format is a per-field choice, and inheriting it would retag
+    // every controller under a wrapper that set one.
+    const format = resolveFormatAttr(el);
+    if (format) opts.formatId = format;
     return opts;
 }
 
@@ -167,16 +151,21 @@ export function resolveNativeInput(
  */
 export function createMountContainer(
     el: HTMLElement,
-    controller: ControllerName,
+    controller: ControllerName | null,
 ): HTMLDivElement {
+    // A translated view replaces the host's content with the translation, so
+    // its host is its own container, whatever else it carries.
+    if (controller === null || isTranslatedView(el)) {
+        setMountHost(el, el);
+        return el as HTMLDivElement;
+    }
     // 'text' renders no UI of its own; the host element IS the marking surface.
     // 'equivalency' mounts its table in-place inside the host div.
     // 'context-reference' mounts in place because its host-authored custom-tab
     // children live inside the host element; a sibling mount would hide them
     // behind a display:none host and the drawer would never see them.
-    // Same in-place treatment as 'card' / 'banner'.
+    // 'banner' also renders in place.
     const isInteractive =
-        controller !== 'card' &&
         controller !== 'banner' &&
         controller !== 'text' &&
         controller !== 'equivalency' &&
@@ -234,9 +223,7 @@ const COMPONENT_REGISTRY: ReadonlyMap<string, ComponentRegistration> = new Map([
         'selector',
         { name: 'CategorySelector', create: () => new CategorySelector() },
     ],
-    ['card', { name: 'AssertionCard', create: () => new AssertionCard() }],
     ['banner', { name: 'StatusBanner', create: () => new StatusBanner() }],
-    ['dualpane', { name: 'DualPane', create: () => new DualPane() }],
     ['handbook', { name: 'Handbook', create: () => new Handbook() }],
     ['guidebook', { name: 'Guidebook', create: () => new Guidebook() }],
     [
@@ -244,12 +231,12 @@ const COMPONENT_REGISTRY: ReadonlyMap<string, ComponentRegistration> = new Map([
         { name: 'AccessHandbook', create: () => new AccessHandbook() },
     ],
     [
-        'context-reference',
-        { name: 'ContextReference', create: () => new ContextReference() },
+        'crosswalk-handbook',
+        { name: 'CrosswalkHandbook', create: () => new CrosswalkHandbook() },
     ],
     [
-        'guide-helper',
-        { name: 'GuideChecklist', create: () => new GuideChecklist() },
+        'context-reference',
+        { name: 'ContextReference', create: () => new ContextReference() },
     ],
     [
         'guide-checklist',
@@ -288,6 +275,36 @@ export function createComponent(
     controller: ControllerName,
 ): ComponentInstance | null {
     return COMPONENT_REGISTRY.get(controller)?.create() ?? null;
+}
+
+/** The public component class a translated view mounts. */
+const TRANSLATED_VIEW: ComponentRegistration = {
+    name: 'TranslatedView',
+    create: () => new TranslatedView(),
+};
+
+/**
+ * The component a host mounts. A host carrying `data-ezclassify-translate` is a
+ * translated view and mounts {@link TranslatedView} whatever controller it names
+ * (the view refuses a controller as a host error when it initializes); any
+ * other host mounts its controller's component, and a host with neither mounts
+ * nothing.
+ */
+export function createHostComponent(
+    el: HTMLElement,
+    controller: ControllerName | null,
+): ComponentInstance | null {
+    if (isTranslatedView(el)) return TRANSLATED_VIEW.create();
+    return controller ? createComponent(controller) : null;
+}
+
+/** The public component class name a host mounts; see createHostComponent. */
+export function componentNameForHost(
+    el: HTMLElement,
+    controller: ControllerName | null,
+): string | null {
+    if (isTranslatedView(el)) return TRANSLATED_VIEW.name;
+    return controller ? componentNameForController(controller) : null;
 }
 
 /**

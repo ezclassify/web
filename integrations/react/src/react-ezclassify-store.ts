@@ -5,6 +5,10 @@
  * is no `useState`/`useReducer` mirror; the store IS the external source, and
  * React reads snapshots from it.
  *
+ * It is constructed exactly as the shared store is; an `<EzClassify>` root
+ * builds one from its provider's Context source when the application passes
+ * none.
+ *
  * All engine-facing logic (commit + cycle protection, aggregate / whole-rollup
  * recompute, per-category facet refresh) lives in `BaseEzClassifyStore`; this
  * adapter supplies only the plain-field reactive cell and React-friendly
@@ -19,15 +23,15 @@
 
 import {
     BaseEzClassifyStore,
-    type EzClassifyStoreEngine,
     type FacetState,
     type PublishSource,
     type ReactiveCell,
 } from '@ezclassify/ui';
 
-export interface ReactEzClassifyStoreOptions {
-    format?: string;
-}
+/** Options a React store is constructed with; the same as any store's. */
+export type ReactEzClassifyStoreOptions = NonNullable<
+    ConstructorParameters<typeof BaseEzClassifyStore>[1]
+>;
 
 /** Plain-field reactive cell: React reads snapshots via `useSyncExternalStore`. */
 class PlainCell<T> implements ReactiveCell<T> {
@@ -44,13 +48,6 @@ class PlainCell<T> implements ReactiveCell<T> {
 }
 
 export class ReactEzClassifyStore extends BaseEzClassifyStore {
-    constructor(
-        engine: EzClassifyStoreEngine,
-        options?: ReactEzClassifyStoreOptions,
-    ) {
-        super(engine, options);
-    }
-
     protected createCell<T>(initial: T): ReactiveCell<T> {
         return new PlainCell<T>(initial);
     }

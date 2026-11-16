@@ -1,0 +1,160 @@
+import { describe, expect, it } from 'vitest';
+import {
+    categoriesByScope,
+    factsInScopes,
+    inDeclarationOrder,
+    listedScopesOf,
+    parseScopeList,
+    reachesPastScopes,
+    scopeLabel,
+    scopeSetOf,
+    scopesOfCategory,
+    writesCategoryOf,
+} from './scopes';
+
+const meta = {
+    scopes: [
+        { id: 'marking', label: 'Marking' },
+        { id: 'record', label: 'Record Block' },
+    ],
+    defaultScope: 'marking',
+};
+
+describe('scope lists', () => {
+    it('reads a space-separated list of scope ids, each once', () => {
+        expect(parseScopeList('  record\tmarking record ')).toEqual([
+            'record',
+            'marking',
+        ]);
+        expect(parseScopeList('')).toEqual([]);
+        expect(parseScopeList(null)).toEqual([]);
+    });
+
+    it('orders scope ids the way the scheme declares them', () => {
+        expect(
+            inDeclarationOrder(['record', 'other', 'marking'], meta),
+        ).toEqual(['marking', 'record', 'other']);
+    });
+
+    it("names a scope by the scheme's label", () => {
+        expect(scopeLabel('record', meta)).toBe('Record Block');
+        expect(scopeLabel('other', meta)).toBe('other');
+    });
+});
+
+describe('scope membership', () => {
+    const categories = [{ id: 'level' }, { id: 'signer', scopes: ['record'] }];
+
+    it('places a category that declares no scope in the default scope', () => {
+        expect(scopesOfCategory(categories[0], meta)).toEqual(['marking']);
+        expect(scopesOfCategory(categories[1], meta)).toEqual(['record']);
+        expect(scopesOfCategory(categories[0], {})).toEqual([]);
+    });
+
+    it('keeps the facts of the named scopes only', () => {
+        const facts = [
+            { categoryId: 'level', conceptId: 'HIGH' },
+            { categoryId: 'signer', conceptId: 'SIGNED' },
+            { categoryId: 'unknown', conceptId: 'X' },
+        ];
+        expect(factsInScopes(facts, categories, ['record'], meta)).toEqual([
+            facts[1],
+        ]);
+        expect(
+            factsInScopes(facts, categories, ['marking', 'record'], meta),
+        ).toEqual([facts[0], facts[1]]);
+    });
+    it('writes the default scope when a host lists none, and the listed ones otherwise', () => {
+        expect(scopeSetOf([], meta)).toEqual(['marking']);
+        expect(scopeSetOf(['record'], meta)).toEqual(['record']);
+        expect(scopeSetOf(['record', 'marking'], meta)).toEqual([
+            'record',
+            'marking',
+        ]);
+        expect(scopeSetOf([], {})).toEqual([]);
+    });
+
+    it("reads a component's scopes from its list, else its lone scope", () => {
+        expect(listedScopesOf({ scopes: ['record', 'marking'] })).toEqual([
+            'record',
+            'marking',
+        ]);
+        expect(listedScopesOf({ scope: 'record', scopes: [] })).toEqual([
+            'record',
+        ]);
+        expect(listedScopesOf({})).toEqual([]);
+        expect(listedScopesOf(undefined)).toEqual([]);
+    });
+
+    it('writes the categories of the scopes a component writes', () => {
+        const shared = [
+            ...categories,
+            { id: 'kept', scopes: ['marking', 'record'] },
+        ];
+        const record = writesCategoryOf(['record'], shared, meta);
+        expect(['level', 'signer', 'kept', 'unknown'].filter(record)).toEqual([
+            'signer',
+            'kept',
+        ]);
+        // A component that lists none writes the default scope.
+        const unlisted = writesCategoryOf([], shared, meta);
+        expect(['level', 'signer', 'kept'].filter(unlisted)).toEqual([
+            'level',
+            'kept',
+        ]);
+        // A scheme with no default scope is written whole.
+        expect(writesCategoryOf([], shared, {})('anything')).toBe(true);
+    });
+
+    it('says when a fact reaches a scope the component does not write', () => {
+        const shared = [
+            ...categories,
+            { id: 'kept', scopes: ['marking', 'record'] },
+        ];
+        const level = { categoryId: 'level' };
+        const signer = { categoryId: 'signer' };
+        const kept = { categoryId: 'kept' };
+        expect(reachesPastScopes([level], shared, ['marking'], meta)).toBe(
+            false,
+        );
+        expect(
+            reachesPastScopes([level, signer], shared, ['marking'], meta),
+        ).toBe(true);
+        // A fact of two scopes reaches both, so writing one leaves it out of
+        // the other's surface.
+        expect(reachesPastScopes([kept], shared, ['marking'], meta)).toBe(true);
+        expect(
+            reachesPastScopes([kept], shared, ['marking', 'record'], meta),
+        ).toBe(false);
+    });
+});
+
+describe('the categories of listed scopes', () => {
+    const categories = [
+        { id: 'signer', scopes: ['record'] },
+        { id: 'level' },
+        { id: 'stamp', scopes: ['record', 'marking'] },
+        { id: 'note', scopes: ['record'] },
+    ];
+
+    it('lists them scope by scope in declaration order, then category order, each once', () => {
+        // Listed out of order on purpose: the scheme declares marking first.
+        expect(
+            categoriesByScope(categories, ['record', 'marking'], meta).map(
+                (group) => [group.scope, group.categories.map((c) => c.id)],
+            ),
+        ).toEqual([
+            ['marking', ['level', 'stamp']],
+            ['record', ['signer', 'note']],
+        ]);
+    });
+
+    it('lists only the scopes named, and none the scheme gives no category', () => {
+        expect(
+            categoriesByScope(categories, ['record', 'other'], meta).map(
+                (group) => [group.scope, group.categories.map((c) => c.id)],
+            ),
+        ).toEqual([['record', ['signer', 'stamp', 'note']]]);
+        expect(categoriesByScope(categories, [], meta)).toEqual([]);
+    });
+});

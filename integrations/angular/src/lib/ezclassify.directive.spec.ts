@@ -1,10 +1,14 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { TestBed } from '@angular/core/testing';
-import { Component, SimpleChange } from '@angular/core';
-import { Context } from '@ezclassify/engine';
-import type { SchemeEngineAdapter } from '@ezclassify/types';
-import type { SchemeEngine } from '@ezclassify/engine';
-import { EzClassifyDirective } from './ezclassify.directive';
+import { TestBed, type ComponentFixture } from '@angular/core/testing';
+import { Component, ErrorHandler } from '@angular/core';
+import type { EzClassifyClient } from '@ezclassify/rest-client';
+import {
+    EzClassifyDirective,
+    injectEzClassifyUI,
+} from './ezclassify.directive';
+import { provideEzClassify } from './provide-ezclassify';
+import { AngularSignalStore } from './angular-signal-store';
+import { connectDemoContext } from '../../../../test-support/demo-runtime';
 
 const MINIMAL_SCHEME = {
     scheme: {
@@ -26,26 +30,20 @@ const MINIMAL_SCHEME = {
                     hierarchy_root: true,
                 },
             ],
-            concepts: {
-                inline: [
-                    {
-                        id: 'HIGH',
-                        name: 'High',
-                        views: { default: 'HIGH' },
-                        categories: ['level'],
-                        parents: [],
-                        aliases: [],
-                        position: 0,
-                        rank: 0,
-                    },
-                ],
-            },
+            concepts: [
+                {
+                    id: 'HIGH',
+                    name: 'High',
+                    views: { default: 'HIGH' },
+                    categories: ['level'],
+                    parents: [],
+                    aliases: [],
+                    position: 0,
+                    rank: 0,
+                },
+            ],
         },
         rules: [],
-        parse: {
-            case_sensitive: false,
-            strip_whitespace: true,
-        },
         render: {
             default: 'default',
             formats: [
@@ -61,249 +59,232 @@ const MINIMAL_SCHEME = {
     },
 };
 
-function makeChange(
-    cur: unknown,
-    prev: unknown = null,
-    first = false,
-): SimpleChange {
-    return {
-        currentValue: cur,
-        previousValue: prev,
-        firstChange: first,
-        isFirstChange: () => first,
-    } as SimpleChange;
-}
-
 @Component({
-    selector: 'test-simple-host',
+    selector: 'test-bare-root',
     standalone: true,
     imports: [EzClassifyDirective],
-    template: `<div [ezClassify]="engine"></div>`,
+    template: `<form ezClassify></form>`,
 })
-class SimpleDirectiveHostComponent {
-    engine?: SchemeEngine | SchemeEngineAdapter | Context | null;
-}
+class BareRootComponent {}
 
 @Component({
-    selector: 'test-context-host',
+    selector: 'test-options-root',
     standalone: true,
     imports: [EzClassifyDirective],
-    template: `<div [ezClassify]="ctx"></div>`,
+    template: `<form [ezClassifyOptions]="options" ezClassify></form>`,
 })
-class ContextHostComponent {
-    ctx!: Context;
+class OptionsRootComponent {
+    options: { format?: string } = {};
 }
 
-describe('EzClassifyDirective: store lifecycle', () => {
-    let engine: SchemeEngine;
+function rootDirective(
+    fixture: ComponentFixture<unknown>,
+): EzClassifyDirective {
+    return fixture.debugElement.children[0].injector.get(EzClassifyDirective);
+}
+
+describe('EzClassifyDirective: a bare root', () => {
+    let context: EzClassifyClient;
 
     beforeEach(async () => {
-        engine = Context.fromComponents({ scheme: MINIMAL_SCHEME })
-            .scheme as SchemeEngine;
+        context = await connectDemoContext({
+            draft: { scheme: MINIMAL_SCHEME },
+        });
         await TestBed.configureTestingModule({
-            imports: [SimpleDirectiveHostComponent, ContextHostComponent],
+            imports: [BareRootComponent, OptionsRootComponent],
+            providers: [provideEzClassify({ context })],
         }).compileComponents();
     });
 
-    it('getStore returns null before engine input is applied', () => {
-        const fixture = TestBed.createComponent(SimpleDirectiveHostComponent);
-        fixture.detectChanges(false);
-        const directive =
-            fixture.debugElement.children[0].injector.get(EzClassifyDirective);
-        expect(directive.getStore()).toBeNull();
+    it('has no store before its first change detection', () => {
+        const fixture = TestBed.createComponent(BareRootComponent);
+        expect(rootDirective(fixture).getStore()).toBeNull();
     });
 
-    it('getStore returns the store after engine input is applied', () => {
-        const fixture = TestBed.createComponent(SimpleDirectiveHostComponent);
-        fixture.componentInstance.engine = engine;
+    it('builds its own store from the provided Context with nothing bound', () => {
+        const fixture = TestBed.createComponent(BareRootComponent);
         fixture.detectChanges(false);
-        const directive =
-            fixture.debugElement.children[0].injector.get(EzClassifyDirective);
+        const directive = rootDirective(fixture);
+        expect(directive.getContext()).toBe(context);
         expect(directive.getStore()).not.toBeNull();
     });
 
-    it('getEngine returns null before engine is set', () => {
-        const fixture = TestBed.createComponent(SimpleDirectiveHostComponent);
+    it('mounts the UI runtime on the host element', async () => {
+        const fixture = TestBed.createComponent(BareRootComponent);
         fixture.detectChanges(false);
-        const directive =
-            fixture.debugElement.children[0].injector.get(EzClassifyDirective);
-        expect(directive.getEngine()).toBeNull();
+        const form: HTMLElement = fixture.nativeElement.querySelector('form');
+        expect(form.hasAttribute('data-ezclassify-mount-root')).toBe(false);
+        await Promise.resolve();
+        expect(form.hasAttribute('data-ezclassify-mount-root')).toBe(true);
     });
 
-    it('getEngine returns the engine adapter for a bare SchemeEngine input', () => {
-        const fixture = TestBed.createComponent(SimpleDirectiveHostComponent);
-        fixture.componentInstance.engine = engine;
+    it('gives two roots two stores', async () => {
+        @Component({
+            selector: 'test-two-roots',
+            standalone: true,
+            imports: [EzClassifyDirective],
+            template: `<form ezClassify></form>
+                <form ezClassify></form>`,
+        })
+        class TwoRootsComponent {}
+
+        const fixture = TestBed.createComponent(TwoRootsComponent);
         fixture.detectChanges(false);
-        const directive =
-            fixture.debugElement.children[0].injector.get(EzClassifyDirective);
-        expect(directive.getEngine()).toBe(engine);
+        const [first, second] = fixture.debugElement.children.map((child) =>
+            child.injector.get(EzClassifyDirective).getStore(),
+        );
+        expect(first).not.toBeNull();
+        expect(second).not.toBeNull();
+        expect(first).not.toBe(second);
     });
 
-    it('getEngine unwraps a Context input to its scheme adapter', () => {
-        const ctx = Context.fromComponents({ scheme: MINIMAL_SCHEME });
-        const fixture = TestBed.createComponent(ContextHostComponent);
-        fixture.componentInstance.ctx = ctx;
+    it('destroys the store it built when the root is destroyed', () => {
+        const fixture = TestBed.createComponent(BareRootComponent);
         fixture.detectChanges(false);
-        const directive =
-            fixture.debugElement.children[0].injector.get(EzClassifyDirective);
-        expect(directive.getEngine()).toBe(ctx.scheme);
-    });
-
-    it('getEngine unwraps any composition, whoever built it', () => {
-        // The check is structural, not branded: a host's own composition, or one
-        // built by a second copy of the engine package, unwraps on the strength
-        // of the surface it exposes. That is the whole point of typing against
-        // the adapter contract instead of an engine class.
-        const ctx = Context.fromComponents({ scheme: MINIMAL_SCHEME });
-        const foreignContext = {
-            scheme: ctx.scheme,
-            audit: () => ({}),
-        };
-        const fixture = TestBed.createComponent(SimpleDirectiveHostComponent);
-        fixture.detectChanges(false);
-        const directive =
-            fixture.debugElement.children[0].injector.get(EzClassifyDirective);
-        directive.engine = foreignContext as unknown as Context;
-
-        expect(directive.getEngine()).toBe(ctx.scheme);
-    });
-
-    it('ngOnDestroy destroys the store so subscribe calls throw', () => {
-        const fixture = TestBed.createComponent(SimpleDirectiveHostComponent);
-        fixture.componentInstance.engine = engine;
-        fixture.detectChanges(false);
-        const directive =
-            fixture.debugElement.children[0].injector.get(EzClassifyDirective);
-        const store = directive.getStore();
+        const store = rootDirective(fixture).getStore();
         fixture.destroy();
         expect(() => store?.subscribe('doc', () => {})).toThrow(/destroyed/);
     });
 
-    it('ngOnChanges called directly with engine change creates store', () => {
-        const fixture = TestBed.createComponent(SimpleDirectiveHostComponent);
+    it('replaces and destroys its store on an options change', () => {
+        const fixture = TestBed.createComponent(OptionsRootComponent);
         fixture.detectChanges(false);
-        const directive =
-            fixture.debugElement.children[0].injector.get(EzClassifyDirective);
-        directive.engine = engine;
-        directive.ngOnChanges({ engine: makeChange(engine) });
-        expect(directive.getStore()).not.toBeNull();
-    });
-
-    it('ngOnChanges called directly with null engine skips store creation', () => {
-        const fixture = TestBed.createComponent(SimpleDirectiveHostComponent);
-        fixture.detectChanges(false);
-        const directive =
-            fixture.debugElement.children[0].injector.get(EzClassifyDirective);
-        directive.ngOnChanges({ engine: makeChange(null) });
-        expect(directive.getStore()).toBeNull();
-    });
-
-    it('ngOnChanges called with ezClassifyOptions re-triggers init', () => {
-        const fixture = TestBed.createComponent(SimpleDirectiveHostComponent);
-        fixture.detectChanges(false);
-        const directive =
-            fixture.debugElement.children[0].injector.get(EzClassifyDirective);
-        directive.engine = engine;
-        directive.ngOnChanges({ engine: makeChange(engine) });
+        const directive = rootDirective(fixture);
         const firstStore = directive.getStore();
-        // options-only change with no engine set clears the store
-        directive.engine = undefined!;
-        directive.ngOnChanges({
-            ezClassifyOptions: makeChange({ format: 'default' }),
+
+        fixture.componentInstance.options = { format: 'default' };
+        fixture.detectChanges(false);
+
+        const nextStore = directive.getStore();
+        expect(nextStore).not.toBeNull();
+        expect(nextStore).not.toBe(firstStore);
+        expect(() => firstStore?.subscribe('doc', () => {})).toThrow(
+            /destroyed/,
+        );
+        expect(() => nextStore?.subscribe('doc', () => {})).not.toThrow();
+    });
+});
+
+@Component({
+    selector: 'test-runtime-reader',
+    standalone: true,
+    template: `<input id="title" value="HIGH" />`,
+})
+class RuntimeReaderComponent {
+    readonly ui = injectEzClassifyUI();
+}
+
+@Component({
+    selector: 'test-runtime-root',
+    standalone: true,
+    imports: [EzClassifyDirective, RuntimeReaderComponent],
+    template: `<form ezClassify><test-runtime-reader /></form>`,
+})
+class RuntimeRootComponent {}
+
+@Component({
+    selector: 'test-runtime-outside',
+    standalone: true,
+    imports: [RuntimeReaderComponent],
+    template: `<test-runtime-reader />`,
+})
+class RuntimeOutsideComponent {}
+
+describe('injectEzClassifyUI', () => {
+    beforeEach(async () => {
+        await TestBed.configureTestingModule({
+            imports: [RuntimeRootComponent, RuntimeOutsideComponent],
+            providers: [
+                provideEzClassify({
+                    context: await connectDemoContext({
+                        draft: { scheme: MINIMAL_SCHEME },
+                    }),
+                }),
+            ],
+        }).compileComponents();
+    });
+
+    it("gives a descendant its root's runtime, which marks up an element the page did not", async () => {
+        const fixture = TestBed.createComponent(RuntimeRootComponent);
+        fixture.detectChanges(false);
+        const reader = fixture.debugElement.query(
+            (node) => node.componentInstance instanceof RuntimeReaderComponent,
+        ).componentInstance as RuntimeReaderComponent;
+        expect(reader.ui()).toBeNull();
+        await Promise.resolve();
+        const ui = reader.ui()!;
+        expect(ui.root).toBe(fixture.nativeElement.querySelector('form'));
+
+        const title: HTMLInputElement =
+            fixture.nativeElement.querySelector('#title');
+        ui.add(title, 'marking');
+        expect(ui.components.has(title)).toBe(true);
+        await expect.poll(() => ui.store.get('title').rendered).toBe('HIGH');
+
+        fixture.destroy();
+        expect(reader.ui()).toBeNull();
+        expect(title.hasAttribute('data-ezclassify-controller')).toBe(false);
+    });
+
+    it('refuses a caller outside any root', () => {
+        expect(() => TestBed.createComponent(RuntimeOutsideComponent)).toThrow(
+            /inside an ezClassify root/,
+        );
+    });
+});
+
+describe('EzClassifyDirective: no Context', () => {
+    it('fails with the fix named when nothing provides a Context', async () => {
+        await TestBed.configureTestingModule({
+            imports: [BareRootComponent],
+        }).compileComponents();
+
+        const fixture = TestBed.createComponent(BareRootComponent);
+        expect(() => fixture.detectChanges(false)).toThrow(
+            /found no Context.*provideEzClassify\(\{ context \}\)/,
+        );
+    });
+});
+
+@Component({
+    selector: 'test-destroyed-store-root',
+    standalone: true,
+    imports: [EzClassifyDirective],
+    template: `<form [ezClassifyStore]="store" ezClassify></form>`,
+})
+class DestroyedStoreRootComponent {
+    /** Set by the test before the component is created. */
+    static store: AngularSignalStore;
+    readonly store = DestroyedStoreRootComponent.store;
+}
+
+describe('EzClassifyDirective: a runtime that cannot start', () => {
+    it("reports it to the application's ErrorHandler", async () => {
+        const handled: unknown[] = [];
+        const context = await connectDemoContext({
+            draft: { scheme: MINIMAL_SCHEME },
         });
-        expect(directive.getStore()).not.toBe(firstStore);
-    });
+        DestroyedStoreRootComponent.store = new AngularSignalStore(
+            context.scheme,
+        );
+        DestroyedStoreRootComponent.store.destroy();
+        await TestBed.configureTestingModule({
+            imports: [DestroyedStoreRootComponent],
+            providers: [
+                provideEzClassify({ context }),
+                {
+                    provide: ErrorHandler,
+                    useValue: { handleError: (e: unknown) => handled.push(e) },
+                },
+            ],
+        }).compileComponents();
 
-    it('changing engine via direct ngOnChanges replaces the store', () => {
-        const fixture = TestBed.createComponent(SimpleDirectiveHostComponent);
+        const fixture = TestBed.createComponent(DestroyedStoreRootComponent);
         fixture.detectChanges(false);
-        const directive =
-            fixture.debugElement.children[0].injector.get(EzClassifyDirective);
-
-        directive.engine = engine;
-        directive.ngOnChanges({ engine: makeChange(engine) });
-        const firstStore = directive.getStore();
-
-        const engine2 = Context.fromComponents({ scheme: MINIMAL_SCHEME })
-            .scheme as SchemeEngine;
-        directive.engine = engine2;
-        directive.ngOnChanges({ engine: makeChange(engine2, engine) });
-        const secondStore = directive.getStore();
-
-        expect(secondStore).not.toBe(firstStore);
-        expect(secondStore).not.toBeNull();
-    });
-
-    it('new Context wrapper around the same components is a no-op (no teardown/rebuild)', () => {
-        const fixture = TestBed.createComponent(SimpleDirectiveHostComponent);
-        fixture.detectChanges(false);
-        const directive =
-            fixture.debugElement.children[0].injector.get(EzClassifyDirective);
-
-        // Two distinct Context wrappers around the SAME scheme engine instance.
-        // contextSignature keys on the components (scheme/guide/access), not the
-        // wrapper identity, so the second change must NOT rebuild.
-        const ctx1 = Context.fromSchemeEngine(engine);
-        const ctx2 = Context.fromSchemeEngine(engine);
-        expect(ctx2).not.toBe(ctx1);
-
-        directive.engine = ctx1;
-        directive.ngOnChanges({ engine: makeChange(ctx1) });
-        const firstStore = directive.getStore();
-        expect(firstStore).not.toBeNull();
-
-        directive.engine = ctx2;
-        directive.ngOnChanges({ engine: makeChange(ctx2, ctx1) });
-
-        expect(directive.getStore()).toBe(firstStore);
-    });
-
-    it('an options change still rebuilds even when the engine signature is unchanged', () => {
-        const fixture = TestBed.createComponent(SimpleDirectiveHostComponent);
-        fixture.detectChanges(false);
-        const directive =
-            fixture.debugElement.children[0].injector.get(EzClassifyDirective);
-
-        const ctx1 = Context.fromSchemeEngine(engine);
-        const ctx2 = Context.fromSchemeEngine(engine);
-
-        directive.engine = ctx1;
-        directive.ngOnChanges({ engine: makeChange(ctx1) });
-        const firstStore = directive.getStore();
-
-        directive.engine = ctx2;
-        directive.ezClassifyOptions = { format: 'default' };
-        directive.ngOnChanges({
-            engine: makeChange(ctx2, ctx1),
-            ezClassifyOptions: makeChange({ format: 'default' }),
-        });
-
-        expect(directive.getStore()).not.toBe(firstStore);
-        expect(directive.getStore()).not.toBeNull();
-    });
-
-    it('rapid engine changes: only the final store is live after both deferreds run', async () => {
-        const fixture = TestBed.createComponent(SimpleDirectiveHostComponent);
-        fixture.detectChanges(false);
-        const directive =
-            fixture.debugElement.children[0].injector.get(EzClassifyDirective);
-
-        directive.engine = engine;
-        directive.ngOnChanges({ engine: makeChange(engine) });
-        const firstStore = directive.getStore();
-
-        const engine2 = Context.fromComponents({ scheme: MINIMAL_SCHEME })
-            .scheme as SchemeEngine;
-        directive.engine = engine2;
-        directive.ngOnChanges({ engine: makeChange(engine2, engine) });
-
-        // Flush both deferred Promise.resolve() callbacks
         await Promise.resolve();
         await Promise.resolve();
-
-        // The live store is the second one; the stale first-deferred was skipped by token check
-        const finalStore = directive.getStore();
-        expect(finalStore).not.toBe(firstStore);
-        expect(finalStore).not.toBeNull();
+        expect(handled).toHaveLength(1);
+        expect(String(handled[0])).toMatch(/store has been destroyed/);
+        expect(rootDirective(fixture).getStore()).not.toBeNull();
     });
 });

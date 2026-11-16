@@ -9,14 +9,15 @@
  * through what `ProcessResult.proposedFixes` carries and this scheme's rule
  * proposes none of its own.
  */
+import { asContext } from '../../test-fixtures/as-context';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import type {
     Fix,
-    LocalSchemeEngineAdapter,
+    RemoteContextSchemeEngineAdapter,
     ProcessResult,
 } from '@ezclassify/types';
-import { Context } from '@ezclassify/engine';
 import { EzClassifyUI } from '../ezclassify-ui';
+import { connectDemoContext } from '../../../../test-support/demo-runtime';
 
 function wait(ms = 60): Promise<void> {
     return new Promise((r) => setTimeout(r, ms));
@@ -24,7 +25,7 @@ function wait(ms = 60): Promise<void> {
 
 const RULE = 'caveat-needs-high';
 
-function createEngine(): LocalSchemeEngineAdapter {
+async function createEngine(): Promise<RemoteContextSchemeEngineAdapter> {
     const concept = (
         id: string,
         label: string,
@@ -40,71 +41,76 @@ function createEngine(): LocalSchemeEngineAdapter {
         position,
         rank: position,
     });
-    const engine = Context.fromComponents({
-        scheme: {
-            scheme: {
-                id: 'rule-errors-test',
-                version: '1.0.0',
-                name: 'Rule Errors Test',
-                data: {
-                    concepts: {
-                        inline: [
-                            concept('LOW', 'LOW', 'level', 1),
-                            concept('HIGH', 'HIGH', 'level', 2),
-                            concept('HOLD', 'HOLD', 'caveat', 1),
-                        ],
-                    },
-                    categories: [
-                        {
-                            id: 'level',
-                            label: 'Level',
-                            required: false,
-                            single: true,
-                            rollup: 'max',
-                            position: 1,
-                        },
-                        {
-                            id: 'caveat',
-                            label: 'Caveat',
-                            required: false,
-                            single: false,
-                            rollup: 'union',
-                            position: 2,
-                        },
-                    ],
-                },
-                rules: [
-                    {
-                        id: RULE,
-                        when: 'HOLD',
-                        action: 'require_any',
-                        target: ['HIGH'],
-                        phases: ['validate'],
-                        message: 'HOLD requires HIGH.',
-                    },
-                ],
-                parse: { case_sensitive: false, strip_whitespace: true },
-                embedded_marking: [
-                    { pattern: '\\(([^)]+)\\)', template: '({marking}) ' },
-                ],
-                render: {
-                    default: 'default',
-                    formats: [
-                        {
-                            id: 'default',
-                            surface: 'marking',
-                            mode: 'inline',
-                            separator: '//',
-                            fields: [
-                                { category: 'level', separator: '/' },
-                                { category: 'caveat', separator: '/' },
+    const engine = (
+        await connectDemoContext({
+            draft: {
+                scheme: {
+                    scheme: {
+                        id: 'rule-errors-test',
+                        version: '1.0.0',
+                        name: 'Rule Errors Test',
+                        description: 'Rule Errors Test test fixture.',
+                        data: {
+                            concepts: [
+                                concept('LOW', 'LOW', 'level', 1),
+                                concept('HIGH', 'HIGH', 'level', 2),
+                                concept('HOLD', 'HOLD', 'caveat', 1),
+                            ],
+                            categories: [
+                                {
+                                    id: 'level',
+                                    label: 'Level',
+                                    required: false,
+                                    single: true,
+                                    rollup: 'max',
+                                    position: 1,
+                                },
+                                {
+                                    id: 'caveat',
+                                    label: 'Caveat',
+                                    required: false,
+                                    single: false,
+                                    rollup: 'union',
+                                    position: 2,
+                                },
                             ],
                         },
-                    ],
+                        rules: [
+                            {
+                                id: RULE,
+                                when: 'HOLD',
+                                action: 'require_any',
+                                target: ['HIGH'],
+                                phases: ['validate'],
+                                message: 'HOLD requires HIGH.',
+                            },
+                        ],
+                        embedded_marking: [
+                            {
+                                pattern: '\\(([^)]+)\\)',
+                                template: '({marking}) ',
+                            },
+                        ],
+                        render: {
+                            default: 'default',
+                            formats: [
+                                {
+                                    id: 'default',
+                                    surface: 'marking',
+                                    mode: 'inline',
+                                    separator: '//',
+                                    fields: [
+                                        { category: 'level', separator: '/' },
+                                        { category: 'caveat', separator: '/' },
+                                    ],
+                                },
+                            ],
+                        },
+                    },
                 },
             },
-        },
-    }).scheme as LocalSchemeEngineAdapter;
+        })
+    ).scheme as RemoteContextSchemeEngineAdapter;
 
     // The two ways the scheme's rule can be met, each the whole marking it
     // leaves, the shape the engine proposes them in.
@@ -133,12 +139,15 @@ function createEngine(): LocalSchemeEngineAdapter {
             const value = Reflect.get(target, prop, receiver);
             if (typeof value !== 'function') return value;
             if (prop !== 'process') return value.bind(target);
-            return (...args: unknown[]) => {
-                const result = value.apply(target, args) as ProcessResult;
+            return async (...args: unknown[]) => {
+                const result = (await value.apply(
+                    target,
+                    args,
+                )) as ProcessResult;
                 return { ...result, proposedFixes: fixesFor(result) };
             };
         },
-    }) as LocalSchemeEngineAdapter;
+    }) as RemoteContextSchemeEngineAdapter;
 }
 
 let root: HTMLDivElement;
@@ -159,7 +168,9 @@ afterEach(() => {
 
 async function mount(markup: string): Promise<void> {
     root.innerHTML = '<label for="f">Customer marking</label>' + markup;
-    forms = new EzClassifyUI(createEngine() as never, { root });
+    forms = new EzClassifyUI(asContext((await createEngine()) as never), {
+        root,
+    });
     await wait(120);
 }
 
@@ -261,7 +272,7 @@ describe.each(FIELDS)('$name rule errors', (field) => {
         expect(visual.contains(root.querySelector('label'))).toBe(false);
         if (field.inside) {
             const chrome = visual.querySelector(
-                ':scope > .ez-field-drawer, :scope > .marked-input-footer',
+                ':scope > .ez-field-chrome, :scope > .marked-input-footer',
             );
             expect(list.nextElementSibling).toBe(chrome);
         } else {

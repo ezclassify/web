@@ -8,8 +8,8 @@
  * Enter, Tab, blur, a row press or Escape fails here, next to the other three
  * that did not.
  */
+import { asContext } from '../../../test-fixtures/as-context';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { Context } from '@ezclassify/engine';
 import type { Assertion } from '@ezclassify/types';
 import { EzClassifyUI } from '../../ezclassify-ui';
 import type { MarkedTextArea } from '../marked-text-area';
@@ -24,8 +24,9 @@ import {
     typeText,
     wait,
 } from './composer-harness';
+import { connectDemoContext } from '../../../../../test-support/demo-runtime';
 
-function createContext() {
+async function createContext() {
     const concept = (
         id: string,
         label: string,
@@ -41,59 +42,59 @@ function createContext() {
         position,
         rank: position,
     });
-    return Context.fromComponents({
-        scheme: {
+    return await connectDemoContext({
+        draft: {
             scheme: {
-                id: 'composer-contract',
-                version: '1.0.0',
-                name: 'Composer Contract',
-                data: {
-                    concepts: {
-                        inline: [
+                scheme: {
+                    id: 'composer-contract',
+                    version: '1.0.0',
+                    name: 'Composer Contract',
+                    description: 'Composer Contract test fixture.',
+                    data: {
+                        concepts: [
                             concept('U', 'UNCLASSIFIED', 'level', 1),
                             concept('S', 'SECRET', 'level', 2),
                             concept('NF', 'NOFORN', 'caveat', 1),
                             concept('OC', 'ORCON', 'caveat', 2),
                         ],
+                        categories: [
+                            {
+                                id: 'level',
+                                label: 'Level',
+                                required: false,
+                                single: true,
+                                rollup: 'max',
+                                position: 1,
+                            },
+                            {
+                                id: 'caveat',
+                                label: 'Caveat',
+                                required: false,
+                                single: false,
+                                rollup: 'union',
+                                position: 2,
+                            },
+                        ],
                     },
-                    categories: [
-                        {
-                            id: 'level',
-                            label: 'Level',
-                            required: false,
-                            single: true,
-                            rollup: 'max',
-                            position: 1,
-                        },
-                        {
-                            id: 'caveat',
-                            label: 'Caveat',
-                            required: false,
-                            single: false,
-                            rollup: 'union',
-                            position: 2,
-                        },
+                    rules: [],
+                    embedded_marking: [
+                        { pattern: '\\(([^)]+)\\)', template: '({marking}) ' },
                     ],
-                },
-                rules: [],
-                embedded_marking: [
-                    { pattern: '\\(([^)]+)\\)', template: '({marking}) ' },
-                ],
-                parse: { case_sensitive: false, strip_whitespace: true },
-                render: {
-                    default: 'default',
-                    formats: [
-                        {
-                            id: 'default',
-                            surface: 'marking',
-                            mode: 'inline',
-                            separator: '//',
-                            fields: [
-                                { category: 'level', separator: '/' },
-                                { category: 'caveat', separator: '/' },
-                            ],
-                        },
-                    ],
+                    render: {
+                        default: 'default',
+                        formats: [
+                            {
+                                id: 'default',
+                                surface: 'marking',
+                                mode: 'inline',
+                                separator: '//',
+                                fields: [
+                                    { category: 'level', separator: '/' },
+                                    { category: 'caveat', separator: '/' },
+                                ],
+                            },
+                        ],
+                    },
                 },
             },
         },
@@ -130,7 +131,9 @@ function ids(assertions: readonly Assertion[]): string[] {
 async function mountField(kind: Kind): Promise<Field> {
     const tag = kind === 'marked-textarea' ? 'textarea' : 'input';
     root.innerHTML = `<label for="f">Marking</label><${tag} id="f" data-ezclassify-controller="${kind}"></${tag}>`;
-    forms = new EzClassifyUI(createContext() as never, { root });
+    forms = new EzClassifyUI(asContext((await createContext()) as never), {
+        root,
+    });
     await wait();
     const host = document.getElementById('f') as
         HTMLInputElement | HTMLTextAreaElement;
@@ -395,9 +398,11 @@ async function markedFixes(): Promise<string[]> {
     const shown =
         !!tip && !tip.hidden && !!mark.getAttribute('aria-describedby');
     const lines = shown
-        ? [...tip.querySelectorAll(':scope > div')].map(
-              (line) => line.textContent ?? '',
-          )
+        ? [
+              ...tip.querySelectorAll(
+                  '.ez-tooltip__header, .ez-status-list__text',
+              ),
+          ].map((line) => line.textContent ?? '')
         : [];
     mark.dispatchEvent(new Event('mouseleave'));
     await wait();
@@ -409,10 +414,10 @@ async function markedFixes(): Promise<string[]> {
  * once each, so the author sees where NOFORN went as well as where it left.
  */
 const NOFORN_SECRET_FIXES = [
-    'EzClassify fixed this marking:',
-    '• Moved `noforn/` out of this position (order).',
-    '• Read `secret` as `SECRET` (case).',
-    '• Moved `//NOFORN` into this position (order).',
+    '3 changes made by marking rules',
+    'Moved `noforn/` out of this position (order).',
+    'Read `secret` as `SECRET` (case).',
+    'Moved `//NOFORN` into this position (order).',
 ];
 
 describe.each(KINDS)('the fixes behind a typed marking in %s', (kind) => {
@@ -490,8 +495,8 @@ describe('replacing a whole marking in MarkingField', () => {
             await type(field, 'SECRET/NOFORN');
             await store(field);
             expect(await markedFixes()).toEqual([
-                'EzClassify fixed this marking:',
-                '• Read `/` as `//` (separator).',
+                '1 change made by a marking rule',
+                'Read `/` as `//` (separator).',
             ]);
 
             await selectAll(field);
@@ -516,8 +521,8 @@ describe('replacing a whole marking in MarkingField', () => {
         const mark = root.querySelector<HTMLElement>('.ez-status-mark')!;
         // Hovering past the delay shows the fix, which marks it seen.
         expect(await markedFixes()).toEqual([
-            'EzClassify fixed this marking:',
-            '• Read `Secret` as `SECRET` (case).',
+            '1 change made by a marking rule',
+            'Read `Secret` as `SECRET` (case).',
         ]);
         expect(mark.classList.contains('ez-status-mark--seen')).toBe(true);
 
@@ -529,8 +534,8 @@ describe('replacing a whole marking in MarkingField', () => {
         expect(field.stored()).toEqual(['U']);
         expect(mark.classList.contains('ez-status-mark--unseen')).toBe(true);
         expect(await markedFixes()).toEqual([
-            'EzClassify fixed this marking:',
-            '• Read `unclassified` as `UNCLASSIFIED` (case).',
+            '1 change made by a marking rule',
+            'Read `unclassified` as `UNCLASSIFIED` (case).',
         ]);
     });
 });
@@ -551,11 +556,11 @@ describe('which fixes a commit keeps', () => {
 
         expect(field.stored()).toEqual(['NF', 'OC', 'S']);
         expect(await markedFixes()).toEqual([
-            'EzClassify fixed this marking:',
-            '• Read `secret` as `SECRET` (case).',
-            '• Moved `orcon/` out of this position (order).',
-            '• Read `noforn` as `NOFORN` (case).',
-            '• Moved `/ORCON` into this position (order).',
+            '4 changes made by marking rules',
+            'Read `secret` as `SECRET` (case).',
+            'Moved `orcon/` out of this position (order).',
+            'Read `noforn` as `NOFORN` (case).',
+            'Moved `/ORCON` into this position (order).',
         ]);
     });
 
@@ -578,8 +583,8 @@ describe('which fixes a commit keeps', () => {
 
         expect(field.stored()).toEqual(['OC', 'U']);
         expect(await markedFixes()).toEqual([
-            'EzClassify fixed this marking:',
-            '• Read `/` as `//` (separator).',
+            '1 change made by a marking rule',
+            'Read `/` as `//` (separator).',
         ]);
     });
 
@@ -679,8 +684,8 @@ describe.each(['marked-input', 'marked-textarea'] as const)(
 
             expect(field.stored()).toEqual(['U']);
             expect(await markedFixes()).toEqual([
-                'EzClassify fixed this marking:',
-                '• Read `unclassified` as `UNCLASSIFIED` (case).',
+                '1 change made by a marking rule',
+                'Read `unclassified` as `UNCLASSIFIED` (case).',
             ]);
         });
 

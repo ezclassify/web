@@ -33,6 +33,7 @@ import {
     BaseEzClassifyStore,
     type ReactiveCell,
 } from './base-ezclassify-store';
+import type { BucketKey } from './store-shared';
 
 /**
  * Minimal subset of the engine surface a `EzClassifyStore` needs. Defined
@@ -302,8 +303,6 @@ export interface EzClassifyStoreProcessResult {
     appliedFixes?: Change[];
     /** The ways to make the result valid, each a whole marking. */
     proposedFixes?: Fix[];
-    /** What was read before repair, present when repair changed it. */
-    assertionsBeforeRepair?: Assertion[];
     /** Portable scheme-derived default; host/component overrides are not stored. */
     displayColor?: ConceptColor;
 }
@@ -358,11 +357,12 @@ export interface EzClassifyState {
     /** Present only when this state came from `aggregateAssertions`. */
     aggregate?: true;
     /**
-     * `true` when a rolled-up state is held rather than fresh: the last rollup
-     * the store attempted for it failed, so the previous value is still on
-     * display and no longer reflects the current contributors.
+     * `true` when a rolled-up state is held or incomplete rather than fresh:
+     * the last rollup the store attempted for it failed, so the previous value
+     * is still on display, or a contributor below it failed its first read or
+     * read only part of its source.
      *
-     * Only the two rolled-up surfaces carry this: the page aggregate
+     * Only the rolled-up surfaces carry this: each bucket of a level
      * (`getAggregate`/`subscribeAggregate`) and a whole rollup
      * (`getWholeRollup`/`subscribeWholeRollup`). A per-marking state from
      * `get`/`subscribe` is the direct result of a publish, which either commits
@@ -378,6 +378,47 @@ export interface EzClassifyState {
      * next rollup that succeeds.
      */
     stale?: boolean;
+}
+
+/**
+ * The rollup of one level (the page, a collection, or a whole's parts), one
+ * state per bucket it holds a contributor in. Buckets never merge: a level
+ * holding markings of two Contexts, or of two schemes of one Context, has one
+ * state for each.
+ *
+ * A bucket appears once something in it contributes facts, or once something in
+ * it is missing (a contributor whose read failed, or that read only part of its
+ * source). Its state is then flagged {@link EzClassifyState.stale}, even when
+ * nothing else in the bucket contributes, so a missing contributor never reads
+ * as an empty level.
+ */
+export interface EzClassifyAggregate {
+    readonly byBucket: ReadonlyMap<BucketKey, EzClassifyState>;
+}
+
+/**
+ * The engines of a store whose markings are read in more than one bucket.
+ *
+ * Passed to a store as `{ buckets }` in place of a single engine. A store over
+ * one engine holds the single bucket {@link SOLE_BUCKET}.
+ */
+export interface EzClassifyStoreBuckets {
+    /**
+     * The bucket of a marking {@link EzClassifyStore.setBucket} has not placed.
+     * Absent when the instance has several Contexts and no default: a marking
+     * nobody placed is then refused rather than read by whichever rules come
+     * first.
+     */
+    readonly defaultBucket?: BucketKey;
+    /**
+     * The engine one bucket's markings are read by, and the format its whole
+     * markings are written in. Called once per bucket the store meets; the
+     * store keeps the answer. Throws for a bucket the instance does not hold.
+     */
+    resolve(bucket: BucketKey): {
+        engine: EzClassifyStoreEngine;
+        format?: string;
+    };
 }
 
 /**
@@ -402,10 +443,10 @@ export interface MarkingEntriesStore {
      * Immutable current membership; undefined means no membership has been
      * committed.
      */
-    getEntryIds(collectionId: string): readonly string[] | undefined;
-    /** Commit unique nonempty entry IDs; the collection cannot contain itself. */
+    getEntryIds(editorId: string): readonly string[] | undefined;
+    /** Commit unique nonempty entry IDs; the editor cannot list itself. */
     setEntryIds(
-        collectionId: string,
+        editorId: string,
         entryIds: readonly string[],
         source?: PublishSource,
     ): void;
@@ -414,7 +455,7 @@ export interface MarkingEntriesStore {
      * hydration.
      */
     subscribeEntries(
-        collectionId: string,
+        editorId: string,
         listener: (entryIds: readonly string[]) => void,
         source?: PublishSource,
     ): () => void;
@@ -430,26 +471,38 @@ export interface MarkingEntriesStore {
  * canonicalized or repaired result is delivered to the source as well as the
  * other views.
  *
- * Aggregate axes the store exposes:
+ * The store holds a tree of levels. It reads no DOM; the runtime states the
+ * tree through these methods:
  *
- * - **Page aggregate**; combination of every marking in the store. One per page.
- *   Subscribed via `subscribeAggregate`.
- * - **Whole rollup**; combination of only the markings that have been associated
- *   with a whole id through `setPartOf(child, whole)`. One per whole.
- *   Subscribed via `subscribeWholeRollup(wholeId)`.
+ * - **Part**: a marking `setPartOf` placed in a whole. It contributes only to its
+ *   whole's rollup, and is read against its whole.
+ * - **Whole**: every other marking, and every id a part names as its whole. Its
+ *   **whole rollup** combines its parts only (`subscribeWholeRollup`).
+ * - **Collection**: a level `registerCollection` declared, inside its parent
+ *   collection or the page. Its members are the wholes `setMembership` placed
+ *   in it and its child collections.
+ * - **Page**: the root level. Every whole and collection no collection holds is
+ *   its member.
  *
- * The runtime calls `setPartOf` whenever it registers a marking that carries
- * `data-ezclassify-part-of`. The store itself doesn't read DOM; it tracks the
- * relationship through this method and recomputes the whole-rollups when their
- * contributors commit.
+ * A level's rollup (`getAggregate`) reads its members as wholes, with no
+ * context: each whole contributes its stated value and its whole rollup as two
+ * contributors, and each child collection contributes its own rollup. Parts
+ * never contribute to a level directly. Facts move between levels, never text,
+ * and contributors go to the engine in document order (see
+ * {@link EzClassifyStore.setDocumentOrder}). Each bucket rolls up on its own.
  *
  * A rollup combines settled contributors only: it is computed once the store
  * has nothing pending for any contributor, so what it sends the engine follows
  * from the markings and not from the order their reads were answered in. A
  * contributor is settled when no read of it is on the wire and the read it was
- * asked for has committed or failed. One nobody has seeded or published was
- * never asked for: it is settled and contributes nothing until it is. The
- * answer that settles the last contributor computes the rollup.
+ * asked for has committed or failed; a whole rollup or child level is settled
+ * once it holds the rollup of its own settled contributors. One nobody has
+ * seeded or published was never asked for: it is settled and contributes
+ * nothing until it is. The answer that settles the last contributor computes
+ * the rollup.
+ *
+ * A level that misses a contributor is flagged {@link EzClassifyState.stale} in
+ * that contributor's bucket, and so is every level above it.
  */
 export interface EzClassifyStore extends Partial<MarkingEntriesStore> {
     /**
@@ -558,34 +611,131 @@ export interface EzClassifyStore extends Partial<MarkingEntriesStore> {
     /**
      * Release a marking whose host has left the page. Its baseline and its
      * edits are dropped and the empty marking is committed, so it leaves the
-     * page aggregate and the next seed under the same id starts from its own
-     * served value. That is not an edit. A destroyed store has nothing to
-     * release.
+     * rollups and the next seed under the same id starts from its own served
+     * value. That is not an edit. A destroyed store has nothing to release.
      */
     releaseSeed(id: string): void;
 
-    /** Get the current page-aggregate state. */
-    getAggregate(): EzClassifyState;
+    /**
+     * The current rollup of a level, one state per bucket.
+     *
+     * @param nodeId - A collection, or a whole for its parts rollup (the same
+     *   state as {@link getWholeRollup}, under the whole's bucket). Omitted for
+     *   the page. An id that is neither has no contributors.
+     * @returns The same object until the level's rollup changes.
+     */
+    getAggregate(nodeId?: string): EzClassifyAggregate;
 
-    /** Subscribe to aggregate state changes. */
-    subscribeAggregate(listener: (state: EzClassifyState) => void): () => void;
+    /**
+     * Subscribe to a level's rollup: the page when `nodeId` is omitted. Fires
+     * when the rollup changes, not on a recompute that gives the same result.
+     */
+    subscribeAggregate(
+        listener: (aggregate: EzClassifyAggregate) => void,
+        nodeId?: string,
+    ): () => void;
 
     /**
      * Associate a marking with a whole (parent) for whole-rollup computation.
      * Pass `null` for `wholeId` to clear the relationship: used when a part
      * field is torn down or when a part-of attribute is removed. Idempotent:
      * calling with the same pair twice is a no-op.
+     *
+     * A part and its whole are read in one bucket. A part placed in another
+     * bucket than its whole is left out of the whole's rollup, which is then
+     * flagged {@link EzClassifyState.stale}.
      */
     setPartOf(markingId: string, wholeId: string | null): void;
 
     /**
+     * Hold a marking as a part whose whole is not on the page, or stop. The
+     * marking is read in the part role and written in the part format like any
+     * other part, so views can read it through {@link get}. It has no whole to
+     * roll up into and no level holds it, so it feeds no rollup. A marking
+     * {@link setPartOf} placed in a whole is that whole's part whatever this
+     * says. Idempotent.
+     */
+    setStandalonePart(markingId: string, standalone: boolean): void;
+
+    /**
+     * Write a marking's `rendered` in `output`: the one the field that owns the
+     * marking writes, so a view reading `rendered` sees what that field shows.
+     * `null` returns it to its role's default (the part format for a part, the
+     * whole format otherwise). A marking holding a value is written again in
+     * the new output. Idempotent.
+     *
+     * @throws When the marking's scheme declares no such output.
+     */
+    setRenderedOutput(markingId: string, output: string | null): void;
+
+    /**
+     * Place a marking in a bucket: the Context and scheme it is read in. A
+     * marking nobody placed is in the store's default bucket; with no default,
+     * a seed or publish to it is refused.
+     *
+     * Moving a marking that already holds a value reads it again under the new
+     * bucket's rules.
+     *
+     * @throws When the store holds no such bucket.
+     */
+    setBucket(markingId: string, bucket: BucketKey): void;
+
+    /**
+     * Declare a collection inside `parentId`, or inside the page when it is
+     * `null`. Declaring it again with another parent moves it.
+     *
+     * @throws When the id is empty, or the parent is the collection itself or
+     *   one of its descendants.
+     */
+    registerCollection(collectionId: string, parentId: string | null): void;
+
+    /**
+     * Remove a collection. Its members and child collections roll up into the
+     * page until the runtime places them again, so nothing they hold leaves the
+     * page rollup.
+     */
+    unregisterCollection(collectionId: string): void;
+
+    /**
+     * Place a whole in a collection, or in the page when `collectionId` is
+     * `null`. A whole placed in a collection not (or no longer) declared rolls
+     * up into the page. Placing a part has no effect while it is a part: a
+     * part's whole is the member.
+     */
+    setMembership(markingId: string, collectionId: string | null): void;
+
+    /**
+     * Keep a marking out of every level rollup: a live control, such as a
+     * filter picker, that holds a marking but is not content. Only a whole with
+     * no parts can be kept out. On a part, or on a whole with parts, it would
+     * drop content from the rollup, so the marking still contributes and its
+     * level is flagged {@link EzClassifyState.stale}.
+     */
+    setNoRollup(markingId: string, noRollup: boolean): void;
+
+    /**
+     * The order contributors go to the engine in: document order, which a
+     * rollup that keeps the first or last value depends on. `compare` orders
+     * two node ids (markings and collections) as they stand in the document;
+     * `null` orders them by id. Calling it again, with the same comparison or
+     * another, computes every rollup again in the order it now gives, so the
+     * runtime calls it after nodes move.
+     */
+    setDocumentOrder(
+        compare: ((left: string, right: string) => number) | null,
+    ): void;
+
+    /**
      * Record whether a contributor read only part of its source: a marked text
      * area whose scan stopped before the end of its text. The rollups it feeds
-     * (the page aggregate and, with `wholeId`, that whole's rollup) are then
-     * computed from what it did read and flagged {@link EzClassifyState.stale},
-     * the way a contributor whose read failed flags them, until it is cleared.
+     * (its level and, with `wholeId`, that whole's rollup and its level) are
+     * then computed from what it did read and flagged
+     * {@link EzClassifyState.stale}, the way a contributor whose read failed
+     * flags them, until it is cleared.
      *
-     * @param contributorId - Identifies the source; one record per id
+     * @param contributorId - Identifies the source; one record per id. With
+     *   `wholeId` null, its level and bucket are those of the marking with this
+     *   id, the page and the default bucket when there is none.
      * @param wholeId - The whole its markings roll up into, or `null`
      * @param incomplete - `true` to record it, `false` to clear it
      * @internal
@@ -675,9 +825,14 @@ export interface EzClassifyStore extends Partial<MarkingEntriesStore> {
 // acyclic. Re-exported here (and from the package root) as the helpers'
 // public home.
 export {
+    EMPTY_EZCLASSIFY_AGGREGATE,
     EMPTY_EZCLASSIFY_STATE,
     EMPTY_FACET_STATE,
+    SOLE_BUCKET,
+    bucketKey,
+    bucketParts,
     facetStateEqual,
+    type BucketKey,
 } from './store-shared';
 
 /**
@@ -692,12 +847,10 @@ export {
  * {@link ReactiveCell}. That is the same "cell factory is the only framework
  * seam" shape the React/Vue/Angular adapters use, with no framework at all.
  *
- * Aggregate semantics: the store maintains a list of contributor ids; the
- * aggregate state is the engine-rendered combination of every contributor's
- * structured assertions, recomputed through `aggregateAssertions` once a
- * contributor commit leaves every contributor settled. Until contributors are
- * registered or a marking is published, the aggregate is
- * `EMPTY_EZCLASSIFY_STATE`.
+ * Rollup semantics are those of {@link EzClassifyStore}: each level rolls up its
+ * members' structured assertions through `aggregateAssertions`, per bucket,
+ * once a contributor commit leaves every contributor settled. Until a marking
+ * is published, every level is `EMPTY_EZCLASSIFY_AGGREGATE`.
  *
  * Cycle protection: when a listener registers with a `PublishSource.token`, an
  * unchanged publish whose `source.token` matches that listener's token is not

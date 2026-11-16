@@ -1,0 +1,2171 @@
+{
+    "engineVersion": "1.0.0-dev.30",
+    "openapiVersion": "1.0.0-dev.30",
+    "responses": {
+        "02eac41406d1543a53f484861471375242ef0d3096ceb0429c6b13dbe6cdbe13": {
+            "body": [
+                { "id": "sensitivity", "label": "Sensitivity" },
+                { "id": "retention", "label": "Retention" }
+            ],
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "07b18724d252372ab935f7d9f6c4881b743f7f4c94040fbb43fa0751b7fd5a6d": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "surfaces",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "surfaces",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "recognition": {
+                        "corrections": [],
+                        "status": "complete",
+                        "unmatched": []
+                    },
+                    "rendered": "",
+                    "renders": {},
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "093a4f52483dae04bdec3cdab28e163b1e5d464c582e1361585476936e2eb6bf": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "surfaces",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "surfaces",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "CONFIDENTIAL",
+                            "confidence": "certain",
+                            "source": "aggregate"
+                        },
+                        {
+                            "categoryId": "sharing",
+                            "conceptId": "PARTNERS",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "keep",
+                            "conceptId": "KEEP_7Y",
+                            "confidence": "certain",
+                            "source": "aggregate"
+                        }
+                    ],
+                    "errors": [],
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "CONFIDENTIAL // PARTNERS\nKEEP 7 YEARS",
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "169b1edb99b976c059bb30d4479dd12bba9d85b49731085ddf4385dd8188ca60": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "surfaces",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "surfaces",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "CONFIDENTIAL",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "sharing",
+                            "conceptId": "PARTNERS",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            {
+                                "categoryId": "level",
+                                "conceptId": "CONFIDENTIAL"
+                            },
+                            { "categoryId": "sharing", "conceptId": "PARTNERS" }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "recognition": {
+                        "corrections": [],
+                        "inputFormat": "sensitivity/full",
+                        "role": "whole",
+                        "status": "complete",
+                        "surface": "sensitivity",
+                        "unmatched": []
+                    },
+                    "rendered": "CONFIDENTIAL // PARTNERS",
+                    "renders": {},
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "176e108f66c9df32794dcba92e0d9b5dad65e38932889f22a34b8db08fae4192": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "surfaces",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "surfaces",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "CONFIDENTIAL",
+                            "confidence": "certain",
+                            "source": "aggregate"
+                        },
+                        {
+                            "categoryId": "sharing",
+                            "conceptId": "PARTNERS",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "errors": [],
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "CONFIDENTIAL // PARTNERS",
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "17d057dfc139c78c29e1c65adea173c101a82b9ebb19274925cf3e2ff7380a4b": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "surfaces",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "surfaces",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "CONFIDENTIAL",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "sharing",
+                            "conceptId": "PARTNERS",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "keep",
+                            "conceptId": "KEEP_7Y",
+                            "confidence": "certain",
+                            "source": "user"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            {
+                                "categoryId": "level",
+                                "conceptId": "CONFIDENTIAL"
+                            },
+                            { "categoryId": "sharing", "conceptId": "PARTNERS" }
+                        ],
+                        "omitted": [
+                            { "categoryId": "keep", "conceptId": "KEEP_7Y" }
+                        ],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "CONFIDENTIAL // PARTNERS",
+                    "renders": {},
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "1ac117ad3ac7d8398823c8b789689326b48ce382628913db5eab7d594cbe54d8": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "surfaces",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "surfaces",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "CONFIDENTIAL",
+                            "confidence": "certain",
+                            "source": "aggregate"
+                        },
+                        {
+                            "categoryId": "sharing",
+                            "conceptId": "PARTNERS",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "errors": [],
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "CONFIDENTIAL // PARTNERS",
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "1ce09c48ef1bc460982bf018d30cd7762bda2b8f55de796fcc66d7e90c845bde": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "surfaces",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "surfaces",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "CONFIDENTIAL",
+                            "confidence": "certain",
+                            "source": "user"
+                        },
+                        {
+                            "categoryId": "keep",
+                            "conceptId": "KEEP_7Y",
+                            "confidence": "certain",
+                            "source": "user"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            {
+                                "categoryId": "level",
+                                "conceptId": "CONFIDENTIAL"
+                            }
+                        ],
+                        "omitted": [
+                            { "categoryId": "keep", "conceptId": "KEEP_7Y" }
+                        ],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "CONFIDENTIAL",
+                    "renders": {},
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "1df1516bd4b370e28ca0dfc24c38b5c9f1204fd78b3017e08305a289fc294fde": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "surfaces",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "surfaces",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "sharing",
+                            "conceptId": "PARTNERS",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            { "categoryId": "sharing", "conceptId": "PARTNERS" }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [
+                        {
+                            "categoryId": "level",
+                            "constraintId": "_required-category:level",
+                            "message": "Level is required."
+                        }
+                    ],
+                    "inputWasValid": false,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "recognition": {
+                        "corrections": [],
+                        "status": "complete",
+                        "surface": "sensitivity",
+                        "unmatched": []
+                    },
+                    "rendered": "PARTNERS",
+                    "renders": {},
+                    "valid": false,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "1fa14de25a08b2726dd9013c23bbc7c6ee8dd9c9e6907fa5687acea963760084": {
+            "body": [],
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "2399d58bf68b1a84837095363ac7249235675dd9e590669c4e53aeb8709fd425": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "surfaces",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "surfaces",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "CONFIDENTIAL",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "sharing",
+                            "conceptId": "PARTNERS",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "keep",
+                            "conceptId": "KEEP_7Y",
+                            "confidence": "certain",
+                            "source": "user"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            {
+                                "categoryId": "level",
+                                "conceptId": "CONFIDENTIAL"
+                            },
+                            { "categoryId": "sharing", "conceptId": "PARTNERS" }
+                        ],
+                        "omitted": [
+                            { "categoryId": "keep", "conceptId": "KEEP_7Y" }
+                        ],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "CONFIDENTIAL // PARTNERS",
+                    "renders": {},
+                    "suggestionsFor": {
+                        "keep": { "suggestions": [], "warnings": [] },
+                        "level": {
+                            "suggestions": [
+                                {
+                                    "categoryId": "level",
+                                    "conceptId": "INTERNAL",
+                                    "description": "Internal",
+                                    "group": "Level",
+                                    "label": "INTERNAL",
+                                    "name": "Internal",
+                                    "order": 1,
+                                    "selected": false,
+                                    "views": {
+                                        "abbreviated": "INT",
+                                        "default": "INTERNAL"
+                                    }
+                                },
+                                {
+                                    "categoryId": "level",
+                                    "conceptId": "CONFIDENTIAL",
+                                    "description": "Confidential",
+                                    "group": "Level",
+                                    "label": "CONFIDENTIAL",
+                                    "name": "Confidential",
+                                    "order": 2,
+                                    "selected": false,
+                                    "views": {
+                                        "abbreviated": "CONF",
+                                        "default": "CONFIDENTIAL"
+                                    }
+                                }
+                            ],
+                            "warnings": []
+                        },
+                        "sharing": {
+                            "suggestions": [
+                                {
+                                    "categoryId": "sharing",
+                                    "conceptId": "PARTNERS",
+                                    "description": "Shared with partners",
+                                    "group": "Sharing",
+                                    "label": "PARTNERS",
+                                    "name": "Shared with partners",
+                                    "order": 3,
+                                    "selected": false,
+                                    "views": { "default": "PARTNERS" }
+                                }
+                            ],
+                            "warnings": []
+                        }
+                    },
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "27129248682e0e7e59d43030c12f03b3dcab1d69f6824a972d63babdf75c9638": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "surfaces",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "surfaces",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "suggestions": [
+                        {
+                            "categoryId": "sharing",
+                            "conceptId": "PARTNERS",
+                            "description": "Shared with partners",
+                            "group": "Sharing",
+                            "label": "PARTNERS",
+                            "name": "Shared with partners",
+                            "order": 3,
+                            "selected": true,
+                            "views": { "default": "PARTNERS" }
+                        }
+                    ],
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "27f697a43904a029d9f4f78457670509435a69a7e05167a013e9d20a400d01f9": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "surfaces",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "surfaces",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "CONFIDENTIAL",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "sharing",
+                            "conceptId": "PARTNERS",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            {
+                                "categoryId": "level",
+                                "conceptId": "CONFIDENTIAL"
+                            },
+                            { "categoryId": "sharing", "conceptId": "PARTNERS" }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "recognition": {
+                        "corrections": [],
+                        "inputFormat": "sensitivity/short",
+                        "role": "part",
+                        "status": "complete",
+                        "surface": "sensitivity",
+                        "unmatched": []
+                    },
+                    "rendered": "CONFIDENTIAL // PARTNERS",
+                    "renders": {
+                        "sensitivity/short": {
+                            "assessment": {
+                                "collapsed": [],
+                                "conflicts": [],
+                                "emitted": [
+                                    {
+                                        "categoryId": "level",
+                                        "conceptId": "CONFIDENTIAL"
+                                    },
+                                    {
+                                        "categoryId": "sharing",
+                                        "conceptId": "PARTNERS"
+                                    }
+                                ],
+                                "omitted": [],
+                                "unrepresentable": []
+                            },
+                            "rendered": "CONF // PARTNERS"
+                        }
+                    },
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "2f43767348bc14c20598b238a987c9b9273acccd5d26100596e0311de04ada90": {
+            "body": {
+                "contextFormats": {
+                    "part": ["short_line", "short_shared_line"],
+                    "whole": ["full_line", "full_line_2019"]
+                },
+                "defaultPartRenderFormat": "sensitivity/short",
+                "defaultRenderFormat": "sensitivity/full",
+                "defaultScope": "sensitivity",
+                "defaultWholeRenderFormat": "sensitivity/full",
+                "description": "Surfaces test fixture.",
+                "embeddedMarking": [
+                    { "pattern": "\\((.+)\\)", "template": "({marking}) " }
+                ],
+                "id": "surfaces",
+                "name": "Surfaces",
+                "referenceSurfaceLabel": {
+                    "plural": "Handbooks",
+                    "singular": "Handbook"
+                },
+                "roleAware": false,
+                "version": "1.0.0"
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "3a06a2136b512f55d6fc12e178b4b9df9c1feb36972bac755a4955ef34685424": {
+            "body": [
+                {
+                    "id": "level",
+                    "label": "Level",
+                    "required": true,
+                    "rollup": "max",
+                    "single": true
+                },
+                {
+                    "id": "sharing",
+                    "label": "Sharing",
+                    "required": false,
+                    "rollup": "first",
+                    "single": true
+                },
+                {
+                    "id": "keep",
+                    "label": "Keep for",
+                    "required": false,
+                    "rollup": "max",
+                    "scopes": ["retention"],
+                    "single": true
+                }
+            ],
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "3ab5dbe176b168ff674b1c2fc966e0cdc4c42bdb57acd700679806e1c36ec51d": {
+            "body": [
+                {
+                    "categoryOrder": ["level"],
+                    "defaultFor": ["part"],
+                    "id": "sensitivity/short",
+                    "mode": "inline",
+                    "outputView": "short",
+                    "role": "part",
+                    "surface": "sensitivity",
+                    "view": "abbreviated"
+                },
+                {
+                    "categoryOrder": ["level", "sharing"],
+                    "categoryViews": {
+                        "level": "default",
+                        "sharing": "default"
+                    },
+                    "defaultFor": ["whole"],
+                    "id": "sensitivity/full",
+                    "mode": "inline",
+                    "outputView": "full",
+                    "role": "whole",
+                    "separator": " // ",
+                    "separatorBefore": { "sharing": " // " },
+                    "surface": "sensitivity"
+                },
+                {
+                    "categoryOrder": ["level", "sharing"],
+                    "categoryViews": {
+                        "level": "default",
+                        "sharing": "default"
+                    },
+                    "defaultFor": [],
+                    "id": "sensitivity/xml",
+                    "mode": "block",
+                    "outputView": "xml",
+                    "surface": "sensitivity",
+                    "syntax": { "type": "xml-attributes" }
+                },
+                {
+                    "categoryOrder": ["keep"],
+                    "categoryViews": { "keep": "default" },
+                    "defaultFor": ["whole", "part"],
+                    "id": "retention/block",
+                    "mode": "block",
+                    "outputView": "block",
+                    "surface": "retention"
+                }
+            ],
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "3e498511a36e05e642371857ee21c13cfcdbe9e99e9bad078cbb002495d23b1c": {
+            "body": {
+                "contextId": "sbx-fcc5e3711e9b70a7bc70acf3de7afadc4c7bfe9962e686d571c974b02dc58d3a"
+            },
+            "method": "PUT",
+            "statusCode": 200
+        },
+        "3f0d07b673d2de815892c1d660b432435397d72dd0e873716b2727281752e100": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "surfaces",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "surfaces",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "CONFIDENTIAL",
+                            "confidence": "certain",
+                            "source": "aggregate"
+                        },
+                        {
+                            "categoryId": "keep",
+                            "conceptId": "KEEP_7Y",
+                            "confidence": "certain",
+                            "source": "aggregate"
+                        }
+                    ],
+                    "errors": [],
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "CONFIDENTIAL\nKEEP 7 YEARS",
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "449c3a9d1903c58a9dfef19763cb36d4568892c3f0f373c826c78bef559caa08": {
+            "body": [
+                {
+                    "aliases": [],
+                    "categories": ["level"],
+                    "id": "INTERNAL",
+                    "name": "Internal",
+                    "parents": [],
+                    "position": 1,
+                    "rank": 1,
+                    "views": { "abbreviated": "INT", "default": "INTERNAL" }
+                },
+                {
+                    "aliases": [],
+                    "categories": ["level"],
+                    "id": "CONFIDENTIAL",
+                    "name": "Confidential",
+                    "parents": [],
+                    "position": 2,
+                    "rank": 2,
+                    "views": {
+                        "abbreviated": "CONF",
+                        "default": "CONFIDENTIAL"
+                    }
+                },
+                {
+                    "aliases": [],
+                    "categories": ["sharing"],
+                    "id": "PARTNERS",
+                    "name": "Shared with partners",
+                    "parents": [],
+                    "position": 3,
+                    "rank": 3,
+                    "views": { "default": "PARTNERS" }
+                },
+                {
+                    "aliases": [],
+                    "categories": ["keep"],
+                    "id": "KEEP_7Y",
+                    "name": "Seven years",
+                    "parents": [],
+                    "position": 4,
+                    "rank": 4,
+                    "views": { "default": "KEEP 7 YEARS" }
+                }
+            ],
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "46eb2c762d444bfac39bd795d9b8f3a6eba5a0739059aa99dab3b0d7a8668ca5": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "surfaces",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "surfaces",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "CONFIDENTIAL",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "sharing",
+                            "conceptId": "PARTNERS",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            {
+                                "categoryId": "level",
+                                "conceptId": "CONFIDENTIAL"
+                            },
+                            { "categoryId": "sharing", "conceptId": "PARTNERS" }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "recognition": {
+                        "corrections": [],
+                        "inputFormat": "sensitivity/short",
+                        "role": "part",
+                        "status": "complete",
+                        "surface": "sensitivity",
+                        "unmatched": []
+                    },
+                    "rendered": "CONFIDENTIAL // PARTNERS",
+                    "renders": {},
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "478cfa84cfef322450980693daf5d8d4d4a57d51d7bb32783086f4ec28e84094": {
+            "body": [],
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "55d9836e95c2c9e6b663c921ce42589c275b8a0c79c2853dcca5ce5060d15c35": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "surfaces",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "surfaces",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "suggestions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "INTERNAL",
+                            "description": "Internal",
+                            "group": "Level",
+                            "label": "INTERNAL",
+                            "name": "Internal",
+                            "order": 1,
+                            "selected": false,
+                            "views": {
+                                "abbreviated": "INT",
+                                "default": "INTERNAL"
+                            }
+                        },
+                        {
+                            "categoryId": "level",
+                            "conceptId": "CONFIDENTIAL",
+                            "description": "Confidential",
+                            "group": "Level",
+                            "label": "CONFIDENTIAL",
+                            "name": "Confidential",
+                            "order": 2,
+                            "selected": false,
+                            "views": {
+                                "abbreviated": "CONF",
+                                "default": "CONFIDENTIAL"
+                            }
+                        },
+                        {
+                            "categoryId": "sharing",
+                            "conceptId": "PARTNERS",
+                            "description": "Shared with partners",
+                            "group": "Sharing",
+                            "label": "PARTNERS",
+                            "name": "Shared with partners",
+                            "order": 3,
+                            "selected": false,
+                            "views": { "default": "PARTNERS" }
+                        }
+                    ],
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "5f396625204d7e68fb910a30b481feccf5c7f1b4a6feb67f6f64816f52575c2c": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "surfaces",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "surfaces",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "CONFIDENTIAL",
+                            "confidence": "certain",
+                            "source": "aggregate"
+                        },
+                        {
+                            "categoryId": "sharing",
+                            "conceptId": "PARTNERS",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "errors": [],
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "CONFIDENTIAL // PARTNERS",
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "676b74e0022755fd9882828df3549a9e88cc05630c39b627a889ae55f07bb30d": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "surfaces",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "surfaces",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "recognition": {
+                        "corrections": [],
+                        "status": "complete",
+                        "unmatched": []
+                    },
+                    "rendered": "",
+                    "renders": {},
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "68804b896bdbfb8e2658983fd5c75d4e37d6e8ed8fa8ed715d1303ba95b633af": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "surfaces",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "surfaces",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "sharing",
+                            "conceptId": "PARTNERS",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            { "categoryId": "sharing", "conceptId": "PARTNERS" }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [
+                        {
+                            "categoryId": "level",
+                            "constraintId": "_required-category:level",
+                            "message": "Level is required."
+                        }
+                    ],
+                    "inputWasValid": false,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "PARTNERS",
+                    "renders": {},
+                    "suggestionsFor": {
+                        "keep": { "suggestions": [], "warnings": [] },
+                        "level": {
+                            "suggestions": [
+                                {
+                                    "categoryId": "level",
+                                    "conceptId": "INTERNAL",
+                                    "description": "Internal",
+                                    "group": "Level",
+                                    "label": "INTERNAL",
+                                    "name": "Internal",
+                                    "order": 1,
+                                    "selected": false,
+                                    "views": {
+                                        "abbreviated": "INT",
+                                        "default": "INTERNAL"
+                                    }
+                                },
+                                {
+                                    "categoryId": "level",
+                                    "conceptId": "CONFIDENTIAL",
+                                    "description": "Confidential",
+                                    "group": "Level",
+                                    "label": "CONFIDENTIAL",
+                                    "name": "Confidential",
+                                    "order": 2,
+                                    "selected": false,
+                                    "views": {
+                                        "abbreviated": "CONF",
+                                        "default": "CONFIDENTIAL"
+                                    }
+                                }
+                            ],
+                            "warnings": []
+                        },
+                        "sharing": {
+                            "suggestions": [
+                                {
+                                    "categoryId": "sharing",
+                                    "conceptId": "PARTNERS",
+                                    "description": "Shared with partners",
+                                    "group": "Sharing",
+                                    "label": "PARTNERS",
+                                    "name": "Shared with partners",
+                                    "order": 3,
+                                    "selected": false,
+                                    "views": { "default": "PARTNERS" }
+                                }
+                            ],
+                            "warnings": []
+                        }
+                    },
+                    "valid": false,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "6cdd7dc96875a0f82f4c98e4553efbb1bbc23f9effd5572652f2215584134366": {
+            "body": {
+                "contextFormats": {
+                    "part": ["short_line", "short_shared_line"],
+                    "whole": ["full_line", "full_line_2019"]
+                },
+                "defaultPartRenderFormat": "sensitivity/short",
+                "defaultRenderFormat": "sensitivity/full",
+                "defaultScope": "sensitivity",
+                "defaultWholeRenderFormat": "sensitivity/full",
+                "description": "Surfaces test fixture.",
+                "embeddedMarking": [
+                    { "pattern": "\\((.+)\\)", "template": "({marking}) " }
+                ],
+                "id": "surfaces",
+                "name": "Surfaces",
+                "referenceSurfaceLabel": {
+                    "plural": "Handbooks",
+                    "singular": "Handbook"
+                },
+                "roleAware": false,
+                "version": "1.0.0"
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "6da83dded785e4b7e395c44ec0a93213fe42a7b0b5195c0f342e1505561ce7b5": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "surfaces",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "surfaces",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [
+                        {
+                            "action": "reorder",
+                            "message": "Read as `sensitivity/full`, a view of the whole role, where the request names the part role.",
+                            "ruleId": "_recognition_role"
+                        }
+                    ],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "CONFIDENTIAL",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "sharing",
+                            "conceptId": "PARTNERS",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            {
+                                "categoryId": "level",
+                                "conceptId": "CONFIDENTIAL"
+                            },
+                            { "categoryId": "sharing", "conceptId": "PARTNERS" }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": false,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "recognition": {
+                        "corrections": [],
+                        "inputFormat": "sensitivity/full",
+                        "role": "whole",
+                        "status": "complete",
+                        "surface": "sensitivity",
+                        "unmatched": []
+                    },
+                    "rendered": "CONF // PARTNERS",
+                    "renders": {},
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "71cfdcf9c12698bb0c27590ca599e2d35403e6304918914fff634580a0b8b7b5": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "surfaces",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "surfaces",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "suggestions": [
+                        {
+                            "categoryId": "sharing",
+                            "conceptId": "PARTNERS",
+                            "description": "Shared with partners",
+                            "group": "Sharing",
+                            "label": "PARTNERS",
+                            "name": "Shared with partners",
+                            "order": 3,
+                            "selected": true,
+                            "views": { "default": "PARTNERS" }
+                        }
+                    ],
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "8481c5547b2ee7bee640fd9f75f03f45d6e9d968354e9e23298be2ea066fd115": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "surfaces",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "surfaces",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "suggestions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "INTERNAL",
+                            "description": "Internal",
+                            "group": "Level",
+                            "label": "INTERNAL",
+                            "name": "Internal",
+                            "order": 1,
+                            "selected": false,
+                            "views": {
+                                "abbreviated": "INT",
+                                "default": "INTERNAL"
+                            }
+                        },
+                        {
+                            "categoryId": "level",
+                            "conceptId": "CONFIDENTIAL",
+                            "description": "Confidential",
+                            "group": "Level",
+                            "label": "CONFIDENTIAL",
+                            "name": "Confidential",
+                            "order": 2,
+                            "selected": false,
+                            "views": {
+                                "abbreviated": "CONF",
+                                "default": "CONFIDENTIAL"
+                            }
+                        },
+                        {
+                            "categoryId": "sharing",
+                            "conceptId": "PARTNERS",
+                            "description": "Shared with partners",
+                            "group": "Sharing",
+                            "label": "PARTNERS",
+                            "name": "Shared with partners",
+                            "order": 3,
+                            "selected": false,
+                            "views": { "default": "PARTNERS" }
+                        }
+                    ],
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "85df44a85d2aac1c3915c3e279296709ff801ba95f6b34f8291be73a0f50ecb9": {
+            "body": {
+                "id": "surfaces",
+                "scheme": {
+                    "id": "surfaces",
+                    "resolvedVersion": "1.0.0",
+                    "version": "1.0.0"
+                },
+                "schemes": [
+                    {
+                        "id": "surfaces",
+                        "roles": ["primary"],
+                        "selector": "surfaces",
+                        "version": "1.0.0"
+                    }
+                ],
+                "version": "1.0.0"
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "8fcc14088f99886ff8c4c36c885cf738a2d659fd2d733025110a4521ca7c8a41": {
+            "body": [
+                { "id": "sensitivity", "label": "Sensitivity" },
+                { "id": "retention", "label": "Retention" }
+            ],
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "96ce101ac2f068adddb69c81acf30c7689285144122683746d4dd09ae2e0371c": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "surfaces",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "surfaces",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "CONFIDENTIAL",
+                            "confidence": "certain",
+                            "source": "aggregate"
+                        },
+                        {
+                            "categoryId": "sharing",
+                            "conceptId": "PARTNERS",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "errors": [],
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "CONFIDENTIAL // PARTNERS",
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "9d48be0223f948cfa401d4796ed9c0815cbffe5c700ad77bd7dbba683df8230c": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "surfaces",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "surfaces",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [
+                        {
+                            "action": "reorder",
+                            "message": "Read as `sensitivity/full`, a view of the whole role, where the request names the part role.",
+                            "ruleId": "_recognition_role"
+                        }
+                    ],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "CONFIDENTIAL",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "sharing",
+                            "conceptId": "PARTNERS",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            {
+                                "categoryId": "level",
+                                "conceptId": "CONFIDENTIAL"
+                            },
+                            { "categoryId": "sharing", "conceptId": "PARTNERS" }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": false,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "recognition": {
+                        "corrections": [],
+                        "inputFormat": "sensitivity/full",
+                        "role": "whole",
+                        "status": "complete",
+                        "surface": "sensitivity",
+                        "unmatched": []
+                    },
+                    "rendered": "CONF // PARTNERS",
+                    "renders": {},
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "9d7c1ce13aa8079906468d185a2695268c4b2c1333104f56515f1f571049aecd": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "surfaces",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "surfaces",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "CONFIDENTIAL",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "sharing",
+                            "conceptId": "PARTNERS",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            {
+                                "categoryId": "level",
+                                "conceptId": "CONFIDENTIAL"
+                            },
+                            { "categoryId": "sharing", "conceptId": "PARTNERS" }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "recognition": {
+                        "corrections": [],
+                        "inputFormat": "sensitivity/short",
+                        "role": "part",
+                        "status": "complete",
+                        "surface": "sensitivity",
+                        "unmatched": []
+                    },
+                    "rendered": "CONFIDENTIAL // PARTNERS",
+                    "renders": {},
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "add423be66ff853165887dc8a76e111043e7e230094990261a3e5efc0f422a70": {
+            "body": [
+                {
+                    "aliases": [],
+                    "categories": ["level"],
+                    "id": "INTERNAL",
+                    "name": "Internal",
+                    "parents": [],
+                    "position": 1,
+                    "rank": 1,
+                    "views": { "abbreviated": "INT", "default": "INTERNAL" }
+                },
+                {
+                    "aliases": [],
+                    "categories": ["level"],
+                    "id": "CONFIDENTIAL",
+                    "name": "Confidential",
+                    "parents": [],
+                    "position": 2,
+                    "rank": 2,
+                    "views": {
+                        "abbreviated": "CONF",
+                        "default": "CONFIDENTIAL"
+                    }
+                },
+                {
+                    "aliases": [],
+                    "categories": ["sharing"],
+                    "id": "PARTNERS",
+                    "name": "Shared with partners",
+                    "parents": [],
+                    "position": 3,
+                    "rank": 3,
+                    "views": { "default": "PARTNERS" }
+                },
+                {
+                    "aliases": [],
+                    "categories": ["keep"],
+                    "id": "KEEP_7Y",
+                    "name": "Seven years",
+                    "parents": [],
+                    "position": 4,
+                    "rank": 4,
+                    "views": { "default": "KEEP 7 YEARS" }
+                }
+            ],
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "ca2138d0c088c32ed4ba4499d5d9394c6ccc5cdddd2f0ad2b4545b2538c8f060": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "surfaces",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "surfaces",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "CONFIDENTIAL",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "sharing",
+                            "conceptId": "PARTNERS",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            {
+                                "categoryId": "level",
+                                "conceptId": "CONFIDENTIAL"
+                            },
+                            { "categoryId": "sharing", "conceptId": "PARTNERS" }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "recognition": {
+                        "corrections": [],
+                        "inputFormat": "sensitivity/full",
+                        "role": "whole",
+                        "status": "complete",
+                        "surface": "sensitivity",
+                        "unmatched": []
+                    },
+                    "rendered": "CONFIDENTIAL // PARTNERS",
+                    "renders": {
+                        "sensitivity/short": {
+                            "assessment": {
+                                "collapsed": [],
+                                "conflicts": [],
+                                "emitted": [
+                                    {
+                                        "categoryId": "level",
+                                        "conceptId": "CONFIDENTIAL"
+                                    },
+                                    {
+                                        "categoryId": "sharing",
+                                        "conceptId": "PARTNERS"
+                                    }
+                                ],
+                                "omitted": [],
+                                "unrepresentable": []
+                            },
+                            "rendered": "CONF // PARTNERS"
+                        }
+                    },
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "cdadf62a4c2117c2b91aa1b7fe18c16ea125d450571f30b728b56a8b1e767118": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "surfaces",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "surfaces",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "CONFIDENTIAL",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "sharing",
+                            "conceptId": "PARTNERS",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            {
+                                "categoryId": "level",
+                                "conceptId": "CONFIDENTIAL"
+                            },
+                            { "categoryId": "sharing", "conceptId": "PARTNERS" }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "CONF // PARTNERS",
+                    "renders": {},
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "d070c6c09a019c790c075999be8a4cc3dac51acb7abec5923bb4651deeb3fe88": {
+            "body": [
+                {
+                    "categoryOrder": ["level"],
+                    "defaultFor": ["part"],
+                    "id": "sensitivity/short",
+                    "mode": "inline",
+                    "outputView": "short",
+                    "role": "part",
+                    "surface": "sensitivity",
+                    "view": "abbreviated"
+                },
+                {
+                    "categoryOrder": ["level", "sharing"],
+                    "categoryViews": {
+                        "level": "default",
+                        "sharing": "default"
+                    },
+                    "defaultFor": ["whole"],
+                    "id": "sensitivity/full",
+                    "mode": "inline",
+                    "outputView": "full",
+                    "role": "whole",
+                    "separator": " // ",
+                    "separatorBefore": { "sharing": " // " },
+                    "surface": "sensitivity"
+                },
+                {
+                    "categoryOrder": ["level", "sharing"],
+                    "categoryViews": {
+                        "level": "default",
+                        "sharing": "default"
+                    },
+                    "defaultFor": [],
+                    "id": "sensitivity/xml",
+                    "mode": "block",
+                    "outputView": "xml",
+                    "surface": "sensitivity",
+                    "syntax": { "type": "xml-attributes" }
+                },
+                {
+                    "categoryOrder": ["keep"],
+                    "categoryViews": { "keep": "default" },
+                    "defaultFor": ["whole", "part"],
+                    "id": "retention/block",
+                    "mode": "block",
+                    "outputView": "block",
+                    "surface": "retention"
+                }
+            ],
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "e070dec6e78862435e7c23c92a6e4a93a9667377aed0b78b533966687028c314": {
+            "body": {
+                "abiVersion": "v1",
+                "engineSha": "",
+                "engineVersion": "1.0.0-dev.30",
+                "gitTag": "",
+                "openapiVersion": "1.0.0-dev.30",
+                "status": "ok"
+            },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "e15150ee5915f731379455f5d8a71127e8225220a5a91d5ddbafab4a7686b07c": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "surfaces",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "surfaces",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "CONFIDENTIAL",
+                            "confidence": "certain",
+                            "source": "user"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            {
+                                "categoryId": "level",
+                                "conceptId": "CONFIDENTIAL"
+                            }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "CONFIDENTIAL",
+                    "renders": {},
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "e67928cfd9c86ed50aed622140553faffde8efee9fdc955ec99efa2579e08318": {
+            "body": [
+                {
+                    "id": "level",
+                    "label": "Level",
+                    "required": true,
+                    "rollup": "max",
+                    "single": true
+                },
+                {
+                    "id": "sharing",
+                    "label": "Sharing",
+                    "required": false,
+                    "rollup": "first",
+                    "single": true
+                },
+                {
+                    "id": "keep",
+                    "label": "Keep for",
+                    "required": true,
+                    "rollup": "max",
+                    "scopes": ["retention"],
+                    "single": true
+                }
+            ],
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "ea1f81c404b219619a35b45a6cf413fd83aaa44ac57ee822396328b148d3dba5": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "surfaces",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "surfaces",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "CONFIDENTIAL",
+                            "confidence": "certain",
+                            "source": "user"
+                        },
+                        {
+                            "categoryId": "sharing",
+                            "conceptId": "PARTNERS",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            {
+                                "categoryId": "level",
+                                "conceptId": "CONFIDENTIAL"
+                            },
+                            { "categoryId": "sharing", "conceptId": "PARTNERS" }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "CONFIDENTIAL // PARTNERS",
+                    "renders": {},
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "ef8bc34ce12a9dd454dd7e2297e9644ba156e967ef977fab1c647e1e27a80aa1": {
+            "body": {
+                "id": "surfaces",
+                "scheme": {
+                    "id": "surfaces",
+                    "resolvedVersion": "1.0.0",
+                    "version": "1.0.0"
+                },
+                "schemes": [
+                    {
+                        "id": "surfaces",
+                        "roles": ["primary"],
+                        "selector": "surfaces",
+                        "version": "1.0.0"
+                    }
+                ],
+                "version": "1.0.0"
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "f3954d21f21c099f125de4b702b6aeb2561824b6c9c9205c933ed0b39826aff1": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "surfaces",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "surfaces",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "CONFIDENTIAL",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "sharing",
+                            "conceptId": "PARTNERS",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "keep",
+                            "conceptId": "KEEP_7Y",
+                            "confidence": "certain",
+                            "source": "user"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            {
+                                "categoryId": "level",
+                                "conceptId": "CONFIDENTIAL"
+                            },
+                            { "categoryId": "sharing", "conceptId": "PARTNERS" }
+                        ],
+                        "omitted": [
+                            { "categoryId": "keep", "conceptId": "KEEP_7Y" }
+                        ],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "recognition": {
+                        "corrections": [],
+                        "inputFormat": "sensitivity/full",
+                        "role": "whole",
+                        "status": "complete",
+                        "surface": "sensitivity",
+                        "unmatched": []
+                    },
+                    "rendered": "CONFIDENTIAL // PARTNERS",
+                    "renders": {},
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "f552c391871a0c33aea490adb2f945f0bb20cec3bd83765c1ac163ebc30f0fc0": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "surfaces",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "surfaces",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "CONFIDENTIAL",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "sharing",
+                            "conceptId": "PARTNERS",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            {
+                                "categoryId": "level",
+                                "conceptId": "CONFIDENTIAL"
+                            },
+                            { "categoryId": "sharing", "conceptId": "PARTNERS" }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "CONFIDENTIAL // PARTNERS",
+                    "renders": {},
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "f7cfc6cf3d5da8d5bdd1d13c0f0e23c7a7c77a982c551427790cee30dc7b0256": {
+            "body": {
+                "contextId": "sbx-b75503240aef95d569b628c3a6f7fd65f8632ecc3e1401462511710b19f4a231"
+            },
+            "method": "PUT",
+            "statusCode": 200
+        }
+    }
+}

@@ -4,8 +4,9 @@ import {
     markAttention,
     extractInner,
     applyRepairs,
-    keepLeadingPartMarks,
+    editedMarkingIndices,
     matchLeadingMark,
+    templateDelimiters,
     wrapPartMark,
     fixesNeedingCorrection,
     paragraphNumber,
@@ -46,6 +47,62 @@ describe('marked-text-area-logic', () => {
         });
     });
 
+    describe('templateDelimiters', () => {
+        it('reads the delimiters on both sides of the marking slot', () => {
+            expect(templateDelimiters('({marking}) ')).toEqual({
+                open: '(',
+                close: ')',
+            });
+            expect(templateDelimiters('[[{marking}]] ')).toEqual({
+                open: '[[',
+                close: ']]',
+            });
+        });
+
+        it('reads none for a template that writes the marking bare', () => {
+            expect(templateDelimiters('{marking} ')).toEqual({
+                open: '',
+                close: '',
+            });
+        });
+    });
+
+    describe('editedMarkingIndices', () => {
+        it('names only the mark the edit changed', () => {
+            expect(
+                editedMarkingIndices(
+                    ['(INTERNAL)', '(PUBLIC)', '(INTERNAL)'],
+                    ['(INTERNAL)', '(CONFIDENTIAL)', '(INTERNAL)'],
+                ),
+            ).toEqual([1]);
+        });
+
+        it('names an inserted mark and not the marks it pushed down', () => {
+            expect(
+                editedMarkingIndices(
+                    ['(INTERNAL)', '(PUBLIC)'],
+                    ['(PUBLIC)', '(INTERNAL)', '(PUBLIC)'],
+                ),
+            ).toEqual([0]);
+        });
+
+        it('names nothing when the edit only removed a mark or left them all alone', () => {
+            expect(
+                editedMarkingIndices(
+                    ['(INTERNAL)', '(PUBLIC)', '(INTERNAL)'],
+                    ['(INTERNAL)', '(INTERNAL)'],
+                ),
+            ).toEqual([]);
+            expect(
+                editedMarkingIndices(['(INTERNAL)'], ['(INTERNAL)']),
+            ).toEqual([]);
+        });
+
+        it('names every mark of a field that had none', () => {
+            expect(editedMarkingIndices([], ['(I)', '(P)'])).toEqual([0, 1]);
+        });
+    });
+
     describe('wrapPartMark', () => {
         const template = '({marking}) ';
         const patterns = '\\(([^)]+)\\)';
@@ -69,11 +126,11 @@ describe('marked-text-area-logic', () => {
             );
         });
 
-        it('does not let a greedy pattern take two marks for one', () => {
-            expect(wrapPartMark('(A)//(B)', template, greedy)).toBe(
-                '((A)//(B)) ',
-            );
+        it('reads a greedy pattern as written', () => {
             expect(wrapPartMark('(gluten)', template, greedy)).toBe('(gluten)');
+            expect(wrapPartMark('S//REL TO (X)', template, greedy)).toBe(
+                '(S//REL TO (X)) ',
+            );
         });
 
         it('wraps when the scheme declares no embedded pattern', () => {
@@ -192,7 +249,7 @@ describe('marked-text-area-logic', () => {
             const result = applyRepairs(segments, '(A) text', template);
             expect(result.patched).toBe(false);
             expect(result.value).toBe('(A) text');
-            expect(result.drift).toBe(0);
+            expect(result.caret).toBe(0);
         });
 
         it('patches a repaired segment', () => {
@@ -208,10 +265,9 @@ describe('marked-text-area-logic', () => {
             const result = applyRepairs(segments, '(A) text', template);
             expect(result.patched).toBe(true);
             expect(result.value).toBe('(B) text');
-            expect(result.drift).toBe(0);
         });
 
-        it('tracks drift when replacement changes length', () => {
+        it('moves a caret after a repair by the length the repair changed', () => {
             const segments: RepairSegment[] = [
                 {
                     start: 0,
@@ -221,10 +277,40 @@ describe('marked-text-area-logic', () => {
                     repaired: true,
                 },
             ];
-            const result = applyRepairs(segments, '(A) text', template);
+            const result = applyRepairs(
+                segments,
+                '(A) text',
+                template,
+                undefined,
+                5,
+            );
             expect(result.patched).toBe(true);
             expect(result.value).toBe('(LONG) text');
-            expect(result.drift).toBe(3);
+            expect(result.caret).toBe(8);
+        });
+
+        it('keeps a caret ahead of a repair where it is', () => {
+            // A caret on the first line must not move for a shorter mark
+            // written on a later line: counting that repair would put it
+            // before the start of the text, which a textarea reads as its end.
+            const segments: RepairSegment[] = [
+                {
+                    start: 8,
+                    end: 18,
+                    marking: '(INTERNAL)',
+                    rendered: 'I',
+                    repaired: true,
+                },
+            ];
+            const result = applyRepairs(
+                segments,
+                '(A) one\n(INTERNAL) two',
+                template,
+                undefined,
+                2,
+            );
+            expect(result.value).toBe('(A) one\n(I) two');
+            expect(result.caret).toBe(2);
         });
 
         it('skips repaired segments whose corrected form matches the original', () => {
@@ -268,109 +354,37 @@ describe('marked-text-area-logic', () => {
         });
     });
 
-    describe('keepLeadingPartMarks', () => {
-        // Helper: locate each candidate's start offset in the text by literal find.
-        const at = (text: string, ...markings: string[]) =>
-            markings.map((m) => ({ start: text.indexOf(m), marking: m }));
-
-        it('keeps a single leading mark', () => {
-            const text =
-                '(U) Some plain definition prose with no other parens.';
-            const scanned = at(text, '(U)');
-            expect(keepLeadingPartMarks(scanned, text)).toEqual(scanned);
-        });
-
-        it('drops a mid-prose parenthesized citation token', () => {
-            // The SECRET-guidance false positive: real "(U)" lead + a "§1.2(a)" cite.
-            const text =
-                '(U) Marking Sponsor/Policy Basis: OCA/EO 13526, §1.2(a).';
-            const lead = { start: text.indexOf('(U)'), marking: '(U)' };
-            const cite = { start: text.indexOf('(a)'), marking: '(a)' };
-            const kept = keepLeadingPartMarks([lead, cite], text);
-            expect(kept).toEqual([lead]);
-        });
-
-        it('keeps one leading mark per line in a multi-paragraph field', () => {
-            const text = '(U) Para one.\n\n(S) Para two.';
-            const scanned = at(text, '(U)', '(S)');
-            expect(keepLeadingPartMarks(scanned, text)).toEqual(scanned);
-        });
-
-        it('treats whitespace/indent before a mark as still leading', () => {
-            const text = '   (C) indented mark';
-            const scanned = at(text, '(C)');
-            expect(keepLeadingPartMarks(scanned, text)).toEqual(scanned);
-        });
-
-        it('drops a mark when non-blank text precedes it on the same line', () => {
-            const text = 'see also (TS) for the higher level';
-            const scanned = at(text, '(TS)');
-            expect(keepLeadingPartMarks(scanned, text)).toEqual([]);
-        });
-
-        it('keeps the line-leading mark but drops a same-line trailing one', () => {
-            const text = '(U) refer to clause (b) below';
-            const lead = { start: text.indexOf('(U)'), marking: '(U)' };
-            const trailing = { start: text.indexOf('(b)'), marking: '(b)' };
-            expect(keepLeadingPartMarks([lead, trailing], text)).toEqual([
-                lead,
-            ]);
-        });
-
-        it('keeps the leading mark and drops a mid-sentence prose parenthetical', () => {
-            // A description field with a leading "(U)" plus a later
-            // "(effective 31 December 2016)" parenthetical. Only the leading mark is a
-            // genuine part mark; the mid-sentence parenthetical is prose.
-            const text =
-                '(U) Classification and control markings for US government documents per the 2016 IC Markings System Register and Manual (effective 31 December 2016), implementing ICD 710 and EO 13526.';
-            const lead = { start: text.indexOf('(U)'), marking: '(U)' };
-            const parenthetical = {
-                start: text.indexOf('(effective'),
-                marking: '(effective 31 December 2016)',
-            };
-            expect(keepLeadingPartMarks([lead, parenthetical], text)).toEqual([
-                lead,
-            ]);
-        });
-    });
-
     describe('matchLeadingMark', () => {
-        // us-gov-capco ships a greedy wrapper pattern.
+        const bounded = '\\(([^)]+)\\)';
         const greedy = '\\((.+)\\)';
 
-        it('matches only the leading mark when prose has a later paren', () => {
-            const text =
-                '(U) Marking Sponsor/Policy Basis: OCA/EO 13526, §1.2(a). Further';
-            expect(matchLeadingMark(text, greedy)).toBe('(U)');
+        it('matches the mark that leads the value', () => {
+            expect(matchLeadingMark('(U) see section (a) below', bounded)).toBe(
+                '(U)',
+            );
+            expect(matchLeadingMark('(TS//SI) text', greedy)).toBe('(TS//SI)');
         });
 
-        it('matches the leading mark when there is no later paren', () => {
-            expect(
-                matchLeadingMark(
-                    '(U) Under EO 13526, SECRET must be applied',
-                    greedy,
-                ),
-            ).toBe('(U)');
-        });
-
-        it('keeps joint markings intact (no inner paren)', () => {
-            expect(
-                matchLeadingMark('(TS//SI) some text (b) later', greedy),
-            ).toBe('(TS//SI)');
+        it('applies a greedy pattern as written, as the scan does', () => {
+            expect(matchLeadingMark('(U) see section (a) below', greedy)).toBe(
+                '(U) see section (a)',
+            );
         });
 
         it('returns empty when no mark leads the value', () => {
             expect(
                 matchLeadingMark('plain prose, no marking here', greedy),
             ).toBe('');
+            expect(matchLeadingMark('see (U) here', bounded)).toBe('');
         });
 
-        it('returns empty for empty inputs', () => {
+        it('returns empty for empty inputs or a pattern that does not compile', () => {
             expect(matchLeadingMark('', greedy)).toBe('');
             expect(matchLeadingMark('(U) x', '')).toBe('');
+            expect(matchLeadingMark('(U) x', '(')).toBe('');
         });
 
-        it('honors an already-anchored, already-reluctant pattern', () => {
+        it('honors an already-anchored pattern', () => {
             expect(matchLeadingMark('(C) text (z)', '^\\((.+?)\\)')).toBe(
                 '(C)',
             );

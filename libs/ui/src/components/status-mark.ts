@@ -6,12 +6,12 @@
  * arrive and get noticed:
  *
  * - **quiet**: no applied fixes. The whole glyph sits muted.
- * - **unseen**: EzClassify applied a fix the user has not yet been shown. The
- *   sparkle turns accent-colored, a small corner dot appears, and the sparkle
- *   pulses on an interval to draw the eye without demanding it.
- * - **seen**: the fix tooltip has actually presented (hover-intent delay elapsed,
- *   keyboard focus, or a press). The dot clears and the pulse stops; the accent
- *   sparkle persists as "done and known."
+ * - **unseen**: a marking rule changed the marking and the author has not yet
+ *   been shown what. The whole mark turns strong, with the accent sparkle, and
+ *   the number of changes stands beside it.
+ * - **seen**: the list has actually presented (hover-intent delay elapsed,
+ *   keyboard focus, or a press). The number goes; the strong mark and the
+ *   accent sparkle stay as "done and known."
  * - **error**: the field could not check all of its text (see
  *   {@link setStatusMarkError}). The sparkle turns the error color and the
  *   popover leads with the reason. It overrides the fix states until the field
@@ -23,23 +23,193 @@
  * and forgets what was seen, so the next fix starts unseen again. State lives
  * in-memory per mark element; there is no persistence across mounts.
  *
- * A proposed fix never changes the mark; only fixes EzClassify actually applied
+ * A proposed fix never changes the mark; only changes EzClassify actually made
  * do. Hovering (past the tooltip's hover-intent delay) or focusing an active
- * mark previews every change the engine made, each change once, in the engine's
- * own words for it (the change's `message`). Pressing it (a tap, a click, Enter
- * or Space) opens that list until a second press, Escape, or a press or focus
- * outside the field closes it; a phone has no hover, so the press is its only
- * way in. The indicator communicates state; it is not a per-fix activity feed.
+ * mark previews every change EzClassify made to what the author chose, one line
+ * per change to the marking however many rules made it: what was added, removed
+ * or replaced, in the field's own words for the value and its category, with
+ * the rule that did it under it. A change that adds or removes nothing keeps
+ * the engine's own words for it (its `message`). While the marking can go back
+ * to what it was before the author's last edit, the list ends with that undo.
+ * It lists only what the field's scopes write or what it changed, and only
+ * changes to what the marking writes: a fact a rule derived that the marking
+ * does not write, such as a member collapsed into its group's name, is not a
+ * change the author signs. Pressing it (a tap, a click, Enter or Space) opens
+ * that list until a second press, Escape, or a press or focus outside the field
+ * closes it; a phone has no hover, so the press is its only way in. A hovered
+ * list can be reached: the pointer can move from the mark into it, and it
+ * closes a moment after the pointer has left both. Tab from the mark reaches
+ * its undo. The list sits outside the field's box, so it never covers what it
+ * explains, right next to the mark: on the side of the field the mark is
+ * toward, its trailing edge lined up with the mark's. The indicator
+ * communicates state; it is not a per-fix activity feed.
  *
  * The module owns the single-mark invariant: `ensureStatusMark` is idempotent
  * per wrap element and `setStatusMarkFixes` mutates the existing mark in place,
  * so re-renders can never stack indicators.
  */
 
-import type { AssertionRef, Change } from '@ezclassify/types';
-import { attachTooltip, hideTooltip, showTooltip } from './tooltip-manager';
+import type { Assertion, AssertionRef, Change } from '@ezclassify/types';
+import {
+    attachTooltip,
+    hideTooltip,
+    showTooltip,
+    type TooltipPlacement,
+} from './tooltip-manager';
+import { derivedAssertion, takenFromWhole } from '../assertion-identity';
+import { t } from '../i18n';
+import { writtenConcept, type ConceptWriting } from '../written-concept';
 import { adoptStylesOnce } from '../styles/adopt';
 import statusMarkCss from './status-mark.css?inline';
+
+/** A concept in a category, as one string. */
+function refKey(ref: Pick<AssertionRef, 'categoryId' | 'conceptId'>): string {
+    return `${ref.categoryId}\u0000${ref.conceptId}`;
+}
+
+/**
+ * What a change did to the marking: the concepts it added and removed, in their
+ * categories. Two rules that each add the same concept made one change to the
+ * marking, so the mark explains it once. A change that adds and removes nothing
+ * (a spelling or order the reading went through) is known by what it says.
+ */
+function effectKey(change: Change): string {
+    const refs = (list: readonly AssertionRef[] | undefined) =>
+        (list ?? []).map(refKey).sort();
+    const add = refs(change.add);
+    const remove = refs(change.remove);
+    return add.length > 0 || remove.length > 0
+        ? JSON.stringify(['effect', add, remove])
+        : JSON.stringify(['note', change.action, change.message]);
+}
+
+/**
+ * Whether a scheme rule added this fact to the marking. A category's default
+ * and a value a part takes from its whole are not changes to what the author
+ * chose; they hold before the author chooses anything.
+ */
+function ruleAdded(assertion: Assertion): boolean {
+    return (
+        assertion.sourceRule !== undefined &&
+        derivedAssertion(assertion) &&
+        assertion.source !== 'default' &&
+        !takenFromWhole(assertion)
+    );
+}
+
+/** What a field shows of the marking it holds, so its mark explains that. */
+export interface ExplainedField {
+    /**
+     * Whether the field writes a category's facts: those of the scopes it
+     * writes. Every category when omitted.
+     */
+    writes?: (categoryId: string) => boolean;
+    /**
+     * Whether the marking the field shows writes a fact, by the engine's render
+     * assessments of the forms it shows (see written-facts.ts). Every fact when
+     * omitted.
+     */
+    written?: (ref: Pick<AssertionRef, 'categoryId' | 'conceptId'>) => boolean;
+    /**
+     * Whether the field shows each fact, a chip or a dot or a row for each, so
+     * a fact a rule filled in that no applied change names would show up
+     * changed with nothing said. A field that shows only its text does not: the
+     * engine names every fact a rule adds that the text writes.
+     */
+    showsUnwritten: boolean;
+}
+
+/**
+ * The changes a field's status mark explains for the value it holds: pass the
+ * result to {@link setStatusMarkFixes}.
+ *
+ * The author signs what the marking writes, so a change is one to what the
+ * marking writes. A fact a rule derived that the marking does not write (a
+ * group's members, collapsed into the group's written name, or a default no
+ * output prints) changed nothing the author sees, so it is no change, and a
+ * change that touched only such facts is left out. A fact a rule added that the
+ * marking does write is a change whether or not the author wrote it.
+ *
+ * A field that shows each fact also lists the written facts a rule filled in
+ * that no applied change names, each as one change in the engine's wording for
+ * an added concept. A field that shows only its text lists none of them.
+ *
+ * An applied change describes a value the field has moved on from, and is left
+ * out, when a concept it added is no longer held or a concept it removed is
+ * held again. A change to categories the field does not write is left out too:
+ * the mark explains what this field writes or changed, not the rest of the
+ * marking.
+ *
+ * @param applied - The applied changes the field has recorded
+ * @param holds - The assertions the field holds now (every marking it holds,
+ *   for a field that holds several)
+ * @param field - What the field writes and shows
+ * @returns The applied changes still behind the value, narrowed to the facts
+ *   the marking writes, then one change per filled-in fact no applied change
+ *   names
+ */
+export function explainedChanges(
+    applied: readonly Change[],
+    holds: readonly Assertion[],
+    field: ExplainedField,
+): Change[] {
+    const writes = field.writes ?? (() => true);
+    const written = field.written ?? (() => true);
+    const held = new Set(holds.map(refKey));
+    const current: Change[] = [];
+    for (const change of applied) {
+        const added = change.add ?? [];
+        const removed = change.remove ?? [];
+        if (
+            !added.every((ref) => held.has(refKey(ref))) ||
+            removed.some((ref) => held.has(refKey(ref)))
+        )
+            continue;
+        if (added.length === 0 && removed.length === 0) {
+            current.push(change);
+            continue;
+        }
+        const add = added.filter(written);
+        const remove = removed.filter(written);
+        const touched = [...add, ...remove];
+        if (!touched.some((ref) => writes(ref.categoryId))) continue;
+        current.push(
+            add.length === added.length && remove.length === removed.length
+                ? change
+                : { ...change, add, remove },
+        );
+    }
+    if (!field.showsUnwritten) return current;
+    const explained = new Set(
+        current.flatMap((change) => (change.add ?? []).map(refKey)),
+    );
+    const filledIn: Change[] = [];
+    for (const assertion of holds) {
+        const key = refKey(assertion);
+        if (
+            !ruleAdded(assertion) ||
+            !writes(assertion.categoryId) ||
+            !written(assertion) ||
+            explained.has(key)
+        )
+            continue;
+        explained.add(key);
+        const ref = {
+            conceptId: assertion.conceptId,
+            categoryId: assertion.categoryId,
+        };
+        filledIn.push({
+            ruleId: assertion.sourceRule!,
+            action: 'add',
+            add: [ref],
+            message: fill(t('mark.added'), {
+                value: ref.conceptId,
+                category: ref.categoryId,
+            }),
+        });
+    }
+    return [...current, ...filledIn];
+}
 
 /**
  * A change's identity: its rule, what it did and to what, and what it says. One
@@ -77,6 +247,95 @@ export function recordAppliedFixes(
     }
 }
 
+/** Put each `{name}` of `template` in its place. */
+function fill(template: string, values: Record<string, string>): string {
+    return template.replace(/\{(\w+)\}/g, (whole, name: string) =>
+        name in values ? values[name] : whole,
+    );
+}
+
+/**
+ * How a field names what a change touched, in the words it shows the author. A
+ * field that gives none has the ids said instead.
+ */
+export interface ChangeWords {
+    /** A concept, the way the field writes it (see written-concept.ts). */
+    value(ref: Pick<AssertionRef, 'categoryId' | 'conceptId'>): string;
+    /** A category's label. */
+    category(categoryId: string): string;
+}
+
+/**
+ * A field's words for the status mark: a value the way the field writes its
+ * concept, the same text its options and summaries name it by, and a category
+ * by its label. Read when a list is built, so a field can hand this over before
+ * its scheme has loaded; until then the ids stand in.
+ *
+ * @param writing - The field and its scheme, once the scheme has loaded
+ */
+export function schemeChangeWords(
+    writing: () => ConceptWriting | undefined,
+): ChangeWords {
+    return {
+        value: (ref) => {
+            const known = writing();
+            return known ? writtenConcept(known, ref) : ref.conceptId;
+        },
+        category: (id) =>
+            writing()?.scheme.categories.find((c) => c.id === id)?.label || id,
+    };
+}
+
+const ID_WORDS: ChangeWords = {
+    value: (ref) => ref.conceptId,
+    category: (id) => id,
+};
+
+/**
+ * The lines a change reads as in the mark's list. A change that takes one value
+ * out of a category and puts one in is a replacement; otherwise each value it
+ * adds and each it removes is a line. A change that touches no value reads as
+ * the engine's own message.
+ *
+ * @param change - An applied change
+ * @param words - How the field names values and categories
+ * @returns One sentence per line
+ */
+export function changeLines(
+    change: Change,
+    words: ChangeWords = ID_WORDS,
+): string[] {
+    const added = change.add ?? [];
+    const removed = change.remove ?? [];
+    if (added.length === 0 && removed.length === 0) return [change.message];
+    if (
+        added.length === 1 &&
+        removed.length === 1 &&
+        added[0].categoryId === removed[0].categoryId
+    )
+        return [
+            fill(t('mark.replaced'), {
+                old: words.value(removed[0]),
+                new: words.value(added[0]),
+                category: words.category(added[0].categoryId),
+            }),
+        ];
+    return [
+        ...added.map((ref) =>
+            fill(t('mark.added'), {
+                value: words.value(ref),
+                category: words.category(ref.categoryId),
+            }),
+        ),
+        ...removed.map((ref) =>
+            fill(t('mark.removed'), {
+                value: words.value(ref),
+                category: words.category(ref.categoryId),
+            }),
+        ),
+    ];
+}
+
 /** Options for mounting a status mark on a field wrap. */
 export interface StatusMarkOptions {
     /**
@@ -90,6 +349,19 @@ export interface StatusMarkOptions {
     root?: HTMLElement;
     /** Tooltip guard (the data-ezclassify-no-tooltips opt-out). */
     shouldShowTooltip?: () => boolean;
+    /** How the field names values and categories in the list. */
+    words?: ChangeWords;
+    /**
+     * The undo of the author's last edit while the marking offers one (see
+     * marking-undo.ts), else null. The list ends with it.
+     */
+    undoLastEdit?: () => (() => void) | null;
+    /**
+     * Called when what the author has not yet reviewed changes, so a field that
+     * draws rule-added values differently (see {@link unreviewedAdditions}) can
+     * draw them again.
+     */
+    onReviewChange?: () => void;
 }
 
 /**
@@ -101,29 +373,32 @@ type MarkState = 'quiet' | 'unseen' | 'seen' | 'error';
 /** The error each mark reports, when its field has one (see setStatusMarkError). */
 const markErrors = new WeakMap<HTMLElement, string>();
 
-/** Deduplicated applied fixes per mark element, keyed by change. */
+/** The changes each mark explains, one per effect (see effectKey). */
 const markFixes = new WeakMap<HTMLElement, Map<string, Change>>();
 
 /**
- * The fixes that have actually been shown to the user (tooltip presented, not
- * just hovered-through), as rule id to the message that was shown. A rule id
- * alone does not identify a fix: the same rule reading a different value says
- * something new, and that must not count as seen.
+ * For a mark whose field holds several markings, the marking each of its
+ * changes was made to, by the change's key in {@link markFixes}.
  */
-const markAcknowledged = new WeakMap<HTMLElement, Map<string, string>>();
+const markGroups = new WeakMap<HTMLElement, Map<string, string>>();
 
 /**
- * The fixes, rule id to message, that were actually behind the tooltip content
- * the last time it was built. The tooltip's own hover-intent delay means
- * content built at mouseenter can predate a mid-dwell reprocess; acknowledging
- * must credit only what this snapshot says was shown, never the live fix set,
- * or a fix that arrived after the hover started and was never rendered gets
+ * The changes, by effect, that have actually been shown to the user (tooltip
+ * presented, not just hovered-through). The effect is the identity: a second
+ * rule making a change already shown says nothing new, and a change to another
+ * concept is new whichever rule made it.
+ */
+const markAcknowledged = new WeakMap<HTMLElement, Set<string>>();
+
+/**
+ * The changes, by effect, that were actually behind the tooltip content the
+ * last time it was built. The tooltip's own hover-intent delay means content
+ * built at mouseenter can predate a mid-dwell reprocess; acknowledging must
+ * credit only what this snapshot says was shown, never the live set, or a
+ * change that arrived after the hover started and was never rendered gets
  * marked seen anyway.
  */
-const markContentSnapshot = new WeakMap<
-    HTMLElement,
-    ReadonlyMap<string, string>
->();
+const markContentSnapshot = new WeakMap<HTMLElement, ReadonlySet<string>>();
 
 const ENHANCED_LABEL = 'Enhanced by EzClassify';
 
@@ -134,8 +409,7 @@ function injectStyles(root: HTMLElement | undefined): void {
 
 /**
  * Build the mark's SVG: the 3-bar-plus-sparkle brand glyph. The sparkle path
- * carries its own class so CSS can drive its color and pulse animation
- * independently of the bars, which stay muted in every state.
+ * carries its own class so CSS can drive its color independently of the bars.
  */
 function buildMarkSvg(): string {
     return (
@@ -150,26 +424,6 @@ function buildMarkSvg(): string {
     );
 }
 
-/**
- * Whether the user has expressed a system-level preference for reduced motion.
- * Read fresh on every unseen transition rather than watched live, matching how
- * the rest of the library treats media-query preferences (compare the
- * coarse-pointer check in tag-input.ts). A mid-session OS change does not need
- * to interrupt an already-scheduled pulse.
- */
-function prefersReducedMotion(): boolean {
-    return (
-        typeof window !== 'undefined' &&
-        typeof window.matchMedia === 'function' &&
-        window.matchMedia('(prefers-reduced-motion: reduce)').matches
-    );
-}
-
-/** Each fix's message, keyed by its rule id. */
-function messagesOf(fixes: ReadonlyMap<string, Change>): Map<string, string> {
-    return new Map([...fixes].map(([id, fix]) => [id, fix.message]));
-}
-
 /** Derive the mark's current state from its fixes and acknowledgment set. */
 function deriveState(mark: HTMLElement): MarkState {
     if (markErrors.has(mark)) return 'error';
@@ -178,7 +432,7 @@ function deriveState(mark: HTMLElement): MarkState {
     const acknowledged = markAcknowledged.get(mark);
     const allSeen =
         !!acknowledged &&
-        [...fixes].every(([id, fix]) => acknowledged.get(id) === fix.message);
+        [...fixes.keys()].every((key) => acknowledged.has(key));
     return allSeen ? 'seen' : 'unseen';
 }
 
@@ -193,12 +447,6 @@ function applyVisualState(mark: HTMLElement, state: MarkState): void {
     mark.classList.toggle('ez-status-mark--unseen', state === 'unseen');
     mark.classList.toggle('ez-status-mark--seen', state === 'seen');
     mark.classList.toggle('ez-status-mark--error', state === 'error');
-    // The pulse is a courtesy nudge, not the state carrier: the corner dot
-    // alone must communicate "unseen fix" when motion is reduced.
-    mark.classList.toggle(
-        'ez-status-mark--pulse',
-        state === 'unseen' && !prefersReducedMotion(),
-    );
 
     const active = state !== 'quiet';
     // Quiet is decorative; an active mark carries an explanation, so it
@@ -214,23 +462,13 @@ function applyVisualState(mark: HTMLElement, state: MarkState): void {
         mark.removeAttribute('aria-controls');
     }
 
-    const fixes = markFixes.get(mark);
-    const count = fixes?.size ?? 0;
-    // The dot and the pulse are aria-hidden, so the label is the only
-    // accessible carrier of unseen vs. seen; fold the review state into it
-    // rather than leaving both states with identical text.
-    const reviewStatus =
-        state === 'unseen'
-            ? ', not yet reviewed'
-            : state === 'seen'
-              ? ', reviewed'
-              : '';
-    const fixed =
-        count > 0
-            ? ` ${count} fix${
-                  count === 1 ? '' : 'es'
-              } applied to this marking${reviewStatus}.`
-            : '';
+    const count = linesOf(mark).length;
+    // The number beside the mark is aria-hidden, so the label carries the
+    // count and whether it has been reviewed.
+    const countEl = mark.querySelector<HTMLElement>('.ez-status-mark__count');
+    if (countEl) countEl.textContent = state === 'unseen' ? String(count) : '';
+    const review = state === 'unseen' ? t('mark.notReviewed') : '';
+    const fixed = count > 0 ? ` ${changesLabel(count)}${review}.` : '';
     const error = markErrors.get(mark);
     mark.setAttribute(
         'aria-label',
@@ -242,6 +480,80 @@ function applyVisualState(mark: HTMLElement, state: MarkState): void {
     );
 }
 
+/** "3 changes made by marking rules". */
+function changesLabel(count: number): string {
+    return count === 1
+        ? t('mark.changesOne')
+        : fill(t('mark.changesMany'), { count: String(count) });
+}
+
+/** The options each mark was mounted with. */
+const markOptions = new WeakMap<HTMLElement, StatusMarkOptions>();
+
+/**
+ * The lines the mark's list shows, each once, with the rule that made it: two
+ * changes that read the same are one line.
+ */
+function linesOf(
+    mark: HTMLElement,
+): { text: string; rule: string; group?: string }[] {
+    const words = markOptions.get(mark)?.words;
+    const groups = markGroups.get(mark);
+    const seen = new Set<string>();
+    const lines: { text: string; rule: string; group?: string }[] = [];
+    for (const [key, change] of markFixes.get(mark) ?? []) {
+        const group = groups?.get(key);
+        for (const text of changeLines(change, words)) {
+            const once = `${group ?? ''}\u0000${text}`;
+            if (seen.has(once)) continue;
+            seen.add(once);
+            lines.push({ text, rule: change.ruleId, group });
+        }
+    }
+    return lines;
+}
+
+/** What each mark last told its field the unreviewed additions were. */
+const markUnreviewed = new WeakMap<HTMLElement, string>();
+
+/**
+ * Tell the field when the values its unreviewed changes added differ from the
+ * last time it heard, so it can draw them again.
+ */
+function noteReview(mark: HTMLElement): void {
+    const key = JSON.stringify([...unreviewedKeys(mark)].sort());
+    if ((markUnreviewed.get(mark) ?? '[]') === key) return;
+    markUnreviewed.set(mark, key);
+    markOptions.get(mark)?.onReviewChange?.();
+}
+
+/** The refKeys of what the mark's not-yet-shown changes added. */
+function unreviewedKeys(mark: HTMLElement): Set<string> {
+    const keys = new Set<string>();
+    const acknowledged = markAcknowledged.get(mark);
+    for (const [effect, change] of markFixes.get(mark) ?? []) {
+        if (acknowledged?.has(effect)) continue;
+        for (const ref of change.add ?? []) keys.add(refKey(ref));
+    }
+    return keys;
+}
+
+/**
+ * The values a marking rule added that the author has not reviewed yet: the
+ * additions of the changes the wrap's mark has not yet shown. A field draws
+ * these in the family's inferred style until they are reviewed.
+ *
+ * @param wrap - The wrapper the mark was mounted on
+ * @returns Whether a value in a category is such an addition
+ */
+export function unreviewedAdditions(
+    wrap: HTMLElement,
+): (ref: Pick<AssertionRef, 'categoryId' | 'conceptId'>) => boolean {
+    const mark = wrap.querySelector<HTMLElement>(':scope > .ez-status-mark');
+    const keys = mark ? unreviewedKeys(mark) : new Set<string>();
+    return (ref) => keys.has(refKey(ref));
+}
+
 /** The tooltip root each mark shows its applied-changes popover in. */
 const markRoot = new WeakMap<HTMLElement, HTMLElement | undefined>();
 /** Marks whose popover the user pressed open, as opposed to hovered. */
@@ -251,13 +563,37 @@ const markDismissers = new WeakMap<HTMLElement, () => void>();
 
 /** The field a mark belongs to: the library wrapper around it. */
 function fieldOf(mark: HTMLElement): HTMLElement {
+    // The suite frame (field-chrome.ts) is the box every control draws, the
+    // pickers and DecisionFlow included; the text fields' wraps hold theirs.
     return (
         mark.closest<HTMLElement>(
-            '.marking-field-wrap, .marked-input-wrap, .marked-textarea-wrap, .tag-input-wrap',
+            '.ez-field-frame, .marking-field-wrap, .marked-input-wrap, .marked-textarea-wrap, .tag-input-wrap',
         ) ??
         mark.parentElement ??
         mark
     );
+}
+
+/** The field's visible error lists: inside it, or right after it. */
+function errorListsOf(field: HTMLElement): HTMLElement[] {
+    return [
+        ...(field.parentElement?.querySelectorAll<HTMLElement>(
+            '.ez-validation-errors',
+        ) ?? []),
+    ].filter(
+        (list) =>
+            !list.hidden &&
+            (field.contains(list) || list.previousElementSibling === field),
+    );
+}
+
+/**
+ * Where the mark's popover may sit: outside the field and its error list, so it
+ * never covers what it explains (see TooltipPlacement.clearOf).
+ */
+function popoverPlacement(mark: HTMLElement): TooltipPlacement {
+    const field = fieldOf(mark);
+    return { clearOf: [field, ...errorListsOf(field)] };
 }
 
 /**
@@ -306,37 +642,27 @@ function popoverOpen(mark: HTMLElement): boolean {
 }
 
 /**
- * The popover just opened on `mark`: keep it off the field's error list (it
- * moves above the mark, or closes when there is no room), and close it when
- * focus or a press goes anywhere outside the field.
+ * The popover just opened on `mark`, placed clear of the field and its error
+ * list (see popoverPlacement). Where no room outside them was found it closes
+ * rather than cover the field or its errors, and it closes when focus or a
+ * press goes anywhere outside the field.
  */
 function guardPopover(mark: HTMLElement): void {
     const tipId = mark.getAttribute('aria-describedby');
     const tip = tipId ? document.getElementById(tipId) : null;
     if (!tip) return;
     const field = fieldOf(mark);
-    const errors = [
-        ...(field.parentElement?.querySelectorAll<HTMLElement>(
-            '.ez-validation-errors',
-        ) ?? []),
-    ].filter(
-        (list) =>
-            !list.hidden &&
-            (field.contains(list) || list.previousElementSibling === field),
-    );
-    for (const list of errors) {
-        const a = tip.getBoundingClientRect();
+    const a = tip.getBoundingClientRect();
+    // Where no side had room, the list closes rather than cover the field it
+    // explains (an open step and its options included) or the field's errors.
+    for (const list of [field, ...errorListsOf(field)]) {
         const b = list.getBoundingClientRect();
         const overlaps =
             a.left < b.right &&
             b.left < a.right &&
             a.top < b.bottom &&
             b.top < a.bottom;
-        if (!overlaps) continue;
-        const above = mark.getBoundingClientRect().top - a.height - 6;
-        if (above >= 8) {
-            tip.style.top = `${above}px`;
-        } else {
+        if (overlaps) {
             dismissStatusMarkPopover(mark);
             return;
         }
@@ -371,16 +697,14 @@ function acknowledgeMark(mark: HTMLElement): void {
     const shown = markContentSnapshot.get(mark);
     let acknowledged = markAcknowledged.get(mark);
     if (!acknowledged) {
-        acknowledged = new Map();
+        acknowledged = new Set();
         markAcknowledged.set(mark, acknowledged);
     }
-    const toAcknowledge = shown ?? messagesOf(fixes);
-    for (const [key, message] of toAcknowledge) {
-        if (fixes.get(key)?.message === message) {
-            acknowledged.set(key, message);
-        }
+    for (const key of shown ?? fixes.keys()) {
+        if (fixes.has(key)) acknowledged.add(key);
     }
     applyVisualState(mark, deriveState(mark));
+    noteReview(mark);
 }
 
 /**
@@ -411,14 +735,18 @@ export function ensureStatusMark(
     mark.tabIndex = -1;
     mark.setAttribute('aria-label', ENHANCED_LABEL);
     mark.innerHTML = buildMarkSvg();
-    const dot = document.createElement('span');
-    dot.className = 'ez-status-mark__dot';
-    dot.setAttribute('aria-hidden', 'true');
-    mark.appendChild(dot);
+    // The count leads the icon. The mark sits at the trailing end of its
+    // row, so the icon stays where it is when the count goes away on the
+    // first look at the list, rather than sliding out from under the pointer.
+    const count = document.createElement('span');
+    count.className = 'ez-status-mark__count';
+    count.setAttribute('aria-hidden', 'true');
+    mark.prepend(count);
     markFixes.set(mark, new Map());
-    markAcknowledged.set(mark, new Map());
+    markAcknowledged.set(mark, new Set());
+    markOptions.set(mark, opts);
 
-    const content = (): string | undefined => {
+    const content = (): Node | string | undefined => {
         const error = markErrors.get(mark);
         const fixes = markFixes.get(mark);
         // The opt-out hides the fix explanation, never the error.
@@ -426,13 +754,8 @@ export function ensureStatusMark(
         // Snapshot exactly which fixes are behind this content build so
         // acknowledgeMark can credit only what actually got shown, not
         // whatever the fix set grows to before the tooltip fires.
-        markContentSnapshot.set(mark, messagesOf(fixes));
-        const lines = [...fixes.values()].map((f) => '• ' + f.message);
-        return [
-            ...(error !== undefined ? [error, ''] : []),
-            'EzClassify fixed this marking:',
-            ...lines,
-        ].join('\n');
+        markContentSnapshot.set(mark, new Set(fixes.keys()));
+        return changeList(mark, error, opts.undoLastEdit?.() ?? null);
     };
     const explainsFixes = () => opts.shouldShowTooltip?.() ?? true;
     // The error is not an optional helper: the tooltip opt-out hides the fix
@@ -445,11 +768,9 @@ export function ensureStatusMark(
         guardPopover(mark);
     };
 
-    // A press must not move focus onto the mark. Focus inside the field
-    // turns its chrome into the attached drawer, which moves the mark out
-    // from under the finger or pointer before the press ends, so the click
-    // would land on the field instead. The keyboard still reaches the mark
-    // with Tab.
+    // A press must not move focus onto the mark: taking focus from the field
+    // would blur it, and a blur commits the field's draft mid-interaction.
+    // The keyboard still reaches the mark with Tab.
     mark.addEventListener('mousedown', (e) => e.preventDefault());
     // A press (tap, click, Enter, Space) opens the list, or closes the one
     // it opened. It must not submit a form or reach the field's own click
@@ -463,11 +784,28 @@ export function ensureStatusMark(
         }
         const text = mayShow() ? content() : undefined;
         if (!text) return;
-        showTooltip(mark, text, opts.root, undefined, () => collapse(mark));
+        showTooltip(mark, text, opts.root, popoverPlacement(mark), () =>
+            collapse(mark),
+        );
         expand(mark);
         shown();
     });
     mark.addEventListener('keydown', (e) => {
+        // The list the press opened sits outside the field, so Tab takes the
+        // keyboard into it when it holds the undo.
+        if (e.key === 'Tab' && !e.shiftKey && popoverOpen(mark)) {
+            const tipId = mark.getAttribute('aria-describedby');
+            const undo = tipId
+                ? document
+                      .getElementById(tipId)
+                      ?.querySelector<HTMLElement>('.ez-status-list__undo')
+                : null;
+            if (undo) {
+                e.preventDefault();
+                undo.focus();
+            }
+            return;
+        }
         if (e.key !== 'Escape' || !popoverOpen(mark)) return;
         // Closing the list is all Escape does here: the field must not also
         // take it as a cancel.
@@ -486,7 +824,7 @@ export function ensureStatusMark(
         // delay already filters that out before this fires.
         shown,
         undefined,
-        undefined,
+        () => popoverPlacement(mark),
         () => markPinned.has(mark) && popoverOpen(mark),
     );
     markRoot.set(mark, opts.root);
@@ -496,20 +834,65 @@ export function ensureStatusMark(
 }
 
 /**
- * Update the wrap's status mark to reflect the fixes EzClassify has applied to
- * the field's current value. An empty list returns the mark to quiet and
- * forgets what was previously shown, so a later fix starts unseen again. A
- * non-empty list that includes any fix not yet shown to the user (re)arms
- * unseen; if every current fix has already been shown, the mark reads seen.
- * Each change appears once, however many readings made it. Only fixes the
- * engine actually APPLIED belong here; proposed fixes must never be passed.
+ * Update the wrap's status mark to reflect the changes EzClassify made to the
+ * field's current value. An empty set returns the mark to quiet and forgets
+ * what was previously shown, so a later change starts unseen again. A set that
+ * includes any change not yet shown to the user (re)arms unseen; if every
+ * current change has already been shown, the mark reads seen.
+ *
+ * Each change to the marking appears once, however many readings or rules made
+ * it: two rules that add the same concept are one line, in the words of the
+ * first change listed. A field passes what {@link explainedChanges} gives for
+ * its applied fixes and what it holds, so the facts a rule filled in are
+ * explained too. Proposed fixes must never be passed.
  *
  * @param wrap - The wrapper the mark was mounted on via {@link ensureStatusMark}
- * @param fixes - Applied fixes behind the field's current value
+ * @param fixes - The changes behind the field's current value
  */
 export function setStatusMarkFixes(
     wrap: HTMLElement,
     fixes: readonly Change[],
+): void {
+    setMarkChanges(wrap, [{ changes: fixes }]);
+}
+
+/** The changes made to one of the markings a field holds. */
+export interface StatusMarkGroup {
+    /** The marking as the field now writes it in its text. */
+    marking: string;
+    /** What {@link explainedChanges} gives for that marking. */
+    changes: readonly Change[];
+}
+
+/**
+ * {@link setStatusMarkFixes} for a field that holds several markings, such as a
+ * MarkedTextArea: the mark is still the field's one mark and counts every
+ * change, and its list puts each marking's changes under a small heading that
+ * names the marking, in the order given. A marking with no changes gets no
+ * heading, and a list with changes to one marking only needs none.
+ *
+ * @param wrap - The wrapper the mark was mounted on via {@link ensureStatusMark}
+ * @param groups - Each marking with its changes, in the order of the text
+ */
+export function setStatusMarkGroups(
+    wrap: HTMLElement,
+    groups: readonly StatusMarkGroup[],
+): void {
+    const changed = groups.filter((group) => group.changes.length > 0);
+    setMarkChanges(
+        wrap,
+        changed.length > 1
+            ? changed.map(({ marking, changes }) => ({
+                  label: marking,
+                  changes,
+              }))
+            : changed.map(({ changes }) => ({ changes })),
+    );
+}
+
+function setMarkChanges(
+    wrap: HTMLElement,
+    groups: readonly { label?: string; changes: readonly Change[] }[],
 ): void {
     const mark = wrap.querySelector<HTMLElement>(':scope > .ez-status-mark');
     if (!mark) return;
@@ -517,23 +900,116 @@ export function setStatusMarkFixes(
     // it had is out of date.
     dismissStatusMarkPopover(mark);
 
-    const deduped = new Map<string, Change>();
-    recordAppliedFixes(deduped, fixes);
-    markFixes.set(mark, deduped);
+    // A change is known by what it did, within its marking: the same change
+    // made to two markings is two changes.
+    const changes = new Map<string, Change>();
+    const labels = new Map<string, string>();
+    for (const { label, changes: list } of groups) {
+        for (const change of list) {
+            const effect = effectKey(change);
+            const key =
+                label === undefined
+                    ? effect
+                    : JSON.stringify(['marking', label, effect]);
+            if (changes.has(key)) continue;
+            changes.set(key, change);
+            if (label !== undefined) labels.set(key, label);
+        }
+    }
+    markFixes.set(mark, changes);
+    markGroups.set(mark, labels);
     // Prune acknowledgment for any change that is no longer shown, not only
     // when the set goes fully empty, so a change that drops out and comes
     // back later is unseen again. This also covers the clean-reprocess case
     // (every change drops out, so acknowledged empties).
     const acknowledged = markAcknowledged.get(mark);
     if (acknowledged) {
-        for (const [key, message] of acknowledged) {
-            if (deduped.get(key)?.message !== message) {
-                acknowledged.delete(key);
-            }
+        for (const key of acknowledged) {
+            if (!changes.has(key)) acknowledged.delete(key);
         }
     }
 
     applyVisualState(mark, deriveState(mark));
+    noteReview(mark);
+}
+
+/**
+ * The list the mark opens: what is wrong with the field, if anything, then a
+ * heading with the number of changes, each change with the rule that made it
+ * under it, and the undo of the author's last edit while there is one.
+ */
+function changeList(
+    mark: HTMLElement,
+    error: string | undefined,
+    undo: (() => void) | null,
+): HTMLElement {
+    const list = document.createElement('div');
+    list.className = 'ez-status-list';
+    if (error !== undefined) {
+        const reason = document.createElement('div');
+        reason.className = 'ez-status-list__error';
+        reason.textContent = error;
+        list.appendChild(reason);
+    }
+    const lines = linesOf(mark);
+    const heading = document.createElement('div');
+    heading.className = 'ez-tooltip__header';
+    heading.textContent = changesLabel(lines.length);
+    list.appendChild(heading);
+    let items: HTMLUListElement | null = null;
+    let group: string | undefined;
+    for (const line of lines) {
+        // A field of several markings lists each marking's changes under the
+        // marking, as its text now writes it.
+        if (!items || line.group !== group) {
+            group = line.group;
+            if (group !== undefined) {
+                const name = document.createElement('div');
+                name.className = 'ez-status-list__marking';
+                name.textContent = group;
+                list.appendChild(name);
+            }
+            items = document.createElement('ul');
+            items.className = 'ez-status-list__changes';
+            list.appendChild(items);
+        }
+        const item = document.createElement('li');
+        item.className = 'ez-status-list__change';
+        const text = document.createElement('div');
+        text.className = 'ez-status-list__text';
+        text.textContent = line.text;
+        item.appendChild(text);
+        // An engine-owned id (it begins with `_`, which a scheme rule's never
+        // does) names no rule the author could look up.
+        if (!line.rule.startsWith('_')) {
+            const rule = document.createElement('div');
+            rule.className = 'ez-status-list__rule';
+            rule.textContent = fill(t('mark.rule'), { rule: line.rule });
+            item.appendChild(rule);
+        }
+        items.appendChild(item);
+    }
+    if (undo) {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'ez-status-list__undo';
+        button.textContent = t('mark.undoLastEdit');
+        const description = document.createElement('div');
+        description.className = 'ez-status-list__undo-description';
+        description.id = `ez-undo-${Math.random().toString(36).slice(2, 10)}`;
+        description.textContent = t('mark.undoLastEditDescription');
+        button.setAttribute('aria-describedby', description.id);
+        // A press here must not blur the field and commit its draft.
+        button.addEventListener('mousedown', (e) => e.preventDefault());
+        button.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            dismissStatusMarkPopover(mark);
+            undo();
+        });
+        list.append(button, description);
+    }
+    return list;
 }
 
 /**

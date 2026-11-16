@@ -7,6 +7,7 @@
  * field read its value again. A whole with no marked parts sends no `parts` key
  * at all.
  */
+import { asContext } from '../../test-fixtures/as-context';
 import {
     afterEach,
     beforeEach,
@@ -16,14 +17,9 @@ import {
     vi,
     type Mock,
 } from 'vitest';
-import { Context } from '@ezclassify/engine';
-import {
-    cedarValleyAccessYaml,
-    cedarValleyGuideYaml,
-    cedarValleySchemeYaml,
-} from '@ezclassify/example-schemes/cedar-valley';
-import * as jsYaml from 'js-yaml';
+import { openContext } from '../../test-fixtures/context-doubles';
 import { EzClassifyUI } from '../ezclassify-ui';
+import { connectDemoContext } from '../../../../test-support/demo-runtime';
 
 const wait = (ms = 80) => new Promise((r) => setTimeout(r, ms));
 
@@ -48,11 +44,9 @@ afterEach(() => {
  * every engine process call recorded.
  */
 async function mount(field: string, partIds: string[]): Promise<HTMLElement> {
-    const ctx = Context.fromComponents({
-        scheme: jsYaml.load(cedarValleySchemeYaml),
-        guides: [jsYaml.load(cedarValleyGuideYaml)],
-        access: jsYaml.load(cedarValleyAccessYaml),
-    });
+    const ctx = openContext(
+        await connectDemoContext({ contextId: 'cedar-valley' }),
+    );
     const scheme = ctx.scheme as unknown as {
         process: (...args: unknown[]) => unknown;
     };
@@ -62,14 +56,14 @@ async function mount(field: string, partIds: string[]): Promise<HTMLElement> {
     );
     scheme.process = process;
     root.innerHTML = [
-        '<input type="hidden" id="doc" data-ezclassify-rendered />',
+        '<input type="hidden" id="doc" data-ezclassify-marking />',
         ...partIds.map(
             (id) =>
-                `<input type="hidden" id="${id}" data-ezclassify-rendered data-ezclassify-part-of="doc" />`,
+                `<input type="hidden" id="${id}" data-ezclassify-marking data-ezclassify-part-of="doc" />`,
         ),
         field,
     ].join('');
-    forms = new EzClassifyUI(ctx, { root });
+    forms = new EzClassifyUI(asContext(ctx), { root });
     await wait();
     return root.querySelector<HTMLElement>('#host')!;
 }
@@ -219,17 +213,18 @@ describe('a whole field owns its coverage finding', () => {
         expect(forms!.store.get('doc').valid).toBe(true);
     });
 
-    it('judges the parts the rollup compares, a plain field with no marking id included', async () => {
-        // A plain input that names the whole is a part the rollup compares
-        // with it, though it holds no marking of its own in the store.
+    it('judges the parts the rollup compares, a plain marking input included', async () => {
+        // A plain marking input that names the whole is a part the rollup
+        // compares with it.
         const host = await mount(
             FIELD +
-                '<input type="text" data-ezclassify-part-of="doc" value="RESTRICTED" />',
+                '<input type="text" data-ezclassify-marking data-ezclassify-part-of="doc" value="RESTRICTED" />',
             [],
         );
         await component(host).setValue('INTERNAL//FINANCIAL INFORMATION');
         await wait(150);
-        expect(partsSent()).toContainEqual(['RESTRICTED']);
+        // The store writes a part in the scheme's part format.
+        expect(partsSent()).toContainEqual(['R']);
         expect(fixButton('Replace INTERNAL with RESTRICTED')).toBeDefined();
     });
 

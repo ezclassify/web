@@ -113,10 +113,6 @@
 
     /* Mode headers: preset/custom toggle in dropdowns */
 
-    /* Marking label: default color (domain-specific colors supplied by consumer) */
-    --ez-marking-label-default: #6b7280;
-    --ez-marking-label-text: #ffffff;
-
     /* Keyboard hint */
     --ez-kbd-background: rgba(0, 0, 0, 0.06);
     --ez-kbd-color: #1f2937;
@@ -134,6 +130,12 @@
        against whatever background is in play, category-colored or not. */
     --ez-tag-color: #475569;
     --ez-tag-bg: #e2e8f0;
+
+    /* Field status mark: muted while the field has nothing to say, strong
+       while it has a message (an applied fix or an error). Strong is the
+       field's own text color on a light palette. */
+    --ez-status-mark-color: #9ca3af;
+    --ez-status-mark-strong-color: currentColor;
 }
 
 .ez-root,
@@ -239,14 +241,16 @@
 
     /* Mode headers */
 
-    --ez-marking-label-default: #4b5563;
-    --ez-marking-label-text: #e5e7eb;
     --ez-kbd-background: rgba(255, 255, 255, 0.08);
     --ez-kbd-color: #b0b8c4;
     --ez-select-hover-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
 
     --ez-tag-color: #e5e7eb;
     --ez-tag-bg: #374151;
+
+    /* Status mark: strong is gold on a dark palette. */
+    --ez-status-mark-color: #9ca3af;
+    --ez-status-mark-strong-color: var(--ez-color-primary, #fdb827);
 }
 
 /* ── Light palette ────────────────────────────────────────
@@ -298,14 +302,15 @@
         transparent
     );
 
-    --ez-marking-label-default: #6b7280;
-    --ez-marking-label-text: #ffffff;
     --ez-kbd-background: rgba(0, 0, 0, 0.06);
     --ez-kbd-color: #1f2937;
     --ez-select-hover-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
 
     --ez-tag-color: #475569;
     --ez-tag-bg: #e2e8f0;
+
+    --ez-status-mark-color: #9ca3af;
+    --ez-status-mark-strong-color: currentColor;
 }
 
 /* ── Opt-in input styling (.ez-styled-inputs or styleInputs: true) ── */
@@ -350,20 +355,6 @@
     font-weight: 600;
     color: var(--ez-color-text);
     letter-spacing: 0.02em;
-}
-
-/* Marking label: colored display bar showing a marking string */
-.ez-marking-label {
-    font-family: var(--ez-font-family);
-    font-size: var(--ez-font-size);
-    font-weight: 700;
-    text-align: center;
-    padding: var(--ez-spacing-sm) var(--ez-spacing-lg);
-    color: var(--ez-marking-label-text);
-    letter-spacing: 0.05em;
-    width: 100%;
-    box-sizing: border-box;
-    background: var(--ez-marking-label-default);
 }
 
 /* Validation */

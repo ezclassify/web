@@ -1,79 +1,70 @@
+/**
+ * Engine calls a rollup pass makes. The rollup values come from the store,
+ * which rolls up contributor facts, so the pass itself aggregates nothing; it
+ * reads each whole and each part once for coverage and reuses those reads.
+ */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { updateRollup } from './rollup';
-import type { FormsContext } from './types';
-import type { ComponentInstance } from '../components/component-base';
-import { mockRenderFormats } from '../render-format-layout-mock';
+import type { CoverageReport, ProcessResult } from '@ezclassify/types';
+import { clearRollupProcessCache, updateRollup } from './rollup';
+import type { BucketScheme, FormsContext } from './types';
+import { SOLE_BUCKET } from '../store/store-shared';
 
 vi.mock('./dom', () => ({
     showCopiedIndicator: vi.fn(),
 }));
 
-interface MockAssertion {
-    conceptId: string;
-    categoryId: string;
-    confidence: string;
-    source: string;
-}
-
-function createMockEngine() {
-    const _profile = {
-        concepts: [] as MockAssertion[],
-        categories: [] as any[],
-        formats: [
-            {
-                id: 'default',
-                categoryOrder: [],
-                separator: ' ',
-                categorySeparator: '//',
-                view: 'default',
-            },
-        ],
-        scopes: [],
-        defaultRenderFormat: 'default',
-    };
+function createEngine() {
     return {
-        getScheme: vi.fn(() => _profile),
-        getSchemeMeta: vi.fn(() => ({
-            id: 'test',
-            version: '1.0',
-            name: 'Test',
-            defaultRenderFormat: 'default',
-            formats: mockRenderFormats(_profile.formats),
-            scopes: [],
-        })),
-        listCategories: vi.fn(() => _profile.categories),
-        getConceptsInCategory: vi.fn((_catId: string) => []),
-        render: vi.fn((_assertions: MockAssertion[]) => ''),
-        process: vi.fn((input: string) => ({
-            assertions: input
-                ? [
-                      {
-                          conceptId: input,
-                          categoryId: 'level',
-                          confidence: 'certain',
-                          source: 'parse',
-                      },
-                  ]
-                : [],
-            rendered: input,
-            valid: true,
-        })),
-        suggest: vi.fn(() => ({ suggestions: [] })),
-        aggregate: vi.fn((values: string[]) => ({
-            assertions: [],
-            rendered: values.join('|'),
-            valid: true,
-        })),
+        process: vi.fn(
+            (input: string, _options?: unknown) =>
+                ({
+                    valid: true,
+                    rendered: input,
+                    assertions: [],
+                    errors: [],
+                    warnings: [],
+                }) as unknown as ProcessResult,
+        ),
+        checkCoverage: vi.fn(
+            (_children: string[], _parent: string) =>
+                ({
+                    covered: true,
+                    missing: [],
+                    missingLabels: [],
+                    excess: [],
+                    excessLabels: [],
+                    rendered: '',
+                }) as unknown as CoverageReport,
+        ),
+        aggregate: vi.fn(),
+        aggregateAssertions: vi.fn(),
+        suggest: vi.fn(),
     };
 }
 
-function createMockCtx(overrides: Partial<FormsContext> = {}): FormsContext {
+function createCtx(
+    engine: ReturnType<typeof createEngine>,
+    overrides: Partial<FormsContext> = {},
+): FormsContext {
+    const scheme: BucketScheme = {
+        bucket: SOLE_BUCKET,
+        adapter: engine,
+        process: (input, options) => engine.process(input, options as never),
+        validate: (input) => engine.process(input) as never,
+        checkCoverage: (children, parent) =>
+            engine.checkCoverage(children as never, parent as never),
+        getSchemeMeta: () => ({ id: 's', version: '1', name: 's' }) as never,
+    };
     return {
-        engine: createMockEngine() as unknown as FormsContext['engine'],
+        engine: engine as unknown as FormsContext['engine'],
+        schemeOf: () => scheme,
+        bucketsNamed: () => [SOLE_BUCKET],
+        aggregateOf: () => new Map(),
+        destroyed: false,
         root: document.body,
         fields: [],
-        rollupField: null,
         defaultFormat: 'default',
+        defaultPartFormat: 'default',
         domObserver: null,
         autocompleters: new Map(),
         lastValidated: new Map(),
@@ -81,199 +72,72 @@ function createMockCtx(overrides: Partial<FormsContext> = {}): FormsContext {
         tooltipEl: null,
         settingValue: false,
         colorMap: {},
-        selectorAttr: 'ezclassify',
+        initializing: false,
+        mountInstanceId: 'instance',
         mounted: new Map(),
         partOfMap: new Map(),
-        targetMap: new Map(),
-        initializing: false,
+        aggregates: new Map(),
         ...overrides,
     } as FormsContext;
 }
 
-function createMockComponent(rendered: string): ComponentInstance {
-    return {
-        init: vi.fn(),
-        getAssertions: vi.fn(() => []),
-        setAssertions: vi.fn(),
-        setValue: vi.fn(),
-        destroy: vi.fn(),
-        getRendered: vi.fn(() => rendered),
-    };
+function input(value: string, id = ''): HTMLInputElement {
+    const el = document.createElement('input');
+    el.value = value;
+    if (id) el.id = id;
+    document.body.appendChild(el);
+    return el;
 }
 
-describe('API call budget: updateRollup', () => {
+describe('API call budget: a rollup pass', () => {
     beforeEach(() => {
-        vi.clearAllMocks();
+        document.body.innerHTML = '';
+        clearRollupProcessCache();
     });
 
-    it('calls aggregate exactly once per rollup with N populated fields', async () => {
-        const rollupField = document.createElement('input');
-        const ctx = createMockCtx({ rollupField });
-
-        const fieldA = document.createElement('input');
-        fieldA.value = 'ALPHA';
-        const fieldB = document.createElement('input');
-        fieldB.value = 'BRAVO';
-        const fieldC = document.createElement('input');
-        fieldC.value = 'CHARLIE';
-        ctx.fields.push(fieldA, fieldB, fieldC);
+    it('aggregates nothing itself, however many fields hold markings', async () => {
+        const engine = createEngine();
+        const fields = ['A', 'B', 'C'].map((v) => input(v));
+        const ctx = createCtx(engine, { fields });
 
         await updateRollup(ctx);
 
-        expect(ctx.engine.aggregate).toHaveBeenCalledTimes(1);
-        const callArgs = (ctx.engine.aggregate as ReturnType<typeof vi.fn>).mock
-            .calls[0];
-        expect(callArgs[0]).toEqual(['ALPHA', 'BRAVO', 'CHARLIE']);
+        expect(engine.aggregate).not.toHaveBeenCalled();
+        expect(engine.aggregateAssertions).not.toHaveBeenCalled();
+        expect(engine.process).not.toHaveBeenCalled();
+        expect(engine.suggest).not.toHaveBeenCalled();
     });
 
-    it('does not call aggregate when all fields are empty', async () => {
-        const rollupField = document.createElement('input');
-        const ctx = createMockCtx({ rollupField });
-
-        const fieldA = document.createElement('input');
-        fieldA.value = '';
-        const fieldB = document.createElement('input');
-        fieldB.value = '   ';
-        ctx.fields.push(fieldA, fieldB);
+    it('reads a whole and each part once, one coverage check per whole, and reuses the reads', async () => {
+        const engine = createEngine();
+        const whole = input('W', 'memo');
+        const parts = [input('P1'), input('P2')];
+        const ctx = createCtx(engine, {
+            fields: [whole, ...parts],
+            partOfMap: new Map(parts.map((p) => [p, 'memo'])),
+        });
 
         await updateRollup(ctx);
+        expect(engine.process).toHaveBeenCalledTimes(3);
+        expect(engine.checkCoverage).toHaveBeenCalledTimes(1);
 
-        expect(ctx.engine.aggregate).not.toHaveBeenCalled();
+        await updateRollup(ctx);
+        expect(engine.process).toHaveBeenCalledTimes(3);
     });
 
-    it('does not call aggregate when there are no fields or components', async () => {
-        const rollupField = document.createElement('input');
-        const ctx = createMockCtx({ rollupField });
+    it('makes no call while initializing', async () => {
+        const engine = createEngine();
+        const whole = input('W', 'memo');
+        const part = input('P1');
+        const ctx = createCtx(engine, {
+            initializing: true,
+            fields: [whole, part],
+            partOfMap: new Map([[part, 'memo']]),
+        });
 
         await updateRollup(ctx);
 
-        expect(ctx.engine.aggregate).not.toHaveBeenCalled();
-    });
-
-    it('does not call suggest during rollup', async () => {
-        const rollupField = document.createElement('input');
-        const ctx = createMockCtx({ rollupField });
-
-        const field = document.createElement('input');
-        field.value = 'DATA';
-        ctx.fields.push(field);
-
-        await updateRollup(ctx);
-
-        expect(ctx.engine.suggest).not.toHaveBeenCalled();
-    });
-
-    /**
-     * One populated field is one validation. A repeat rollup over unchanged
-     * values is served from this engine's rollup cache.
-     */
-    it('calls process once per populated field and reuses it on a repeat rollup', async () => {
-        const rollupField = document.createElement('input');
-        const ctx = createMockCtx({ rollupField });
-
-        const field = document.createElement('input');
-        field.value = 'DATA';
-        ctx.fields.push(field);
-
-        await updateRollup(ctx);
-        expect(ctx.engine.process).toHaveBeenCalledTimes(1);
-
-        await updateRollup(ctx);
-        expect(ctx.engine.process).toHaveBeenCalledTimes(1);
-    });
-
-    it('scoped components do not trigger aggregate', async () => {
-        const rollupField = document.createElement('input');
-        const ctx = createMockCtx({ rollupField });
-
-        const scopedEl = document.createElement('div');
-        scopedEl.setAttribute('data-ezclassify-scope', 'authority');
-        const comp = createMockComponent('scoped-value');
-        ctx.mounted.set(scopedEl, comp);
-
-        await updateRollup(ctx);
-
-        expect(ctx.engine.aggregate).not.toHaveBeenCalled();
-    });
-
-    it('mixes scoped and unscoped: only unscoped values go to aggregate', async () => {
-        const rollupField = document.createElement('input');
-        const ctx = createMockCtx({ rollupField });
-
-        const scopedEl = document.createElement('div');
-        scopedEl.setAttribute('data-ezclassify-scope', 'authority');
-        ctx.mounted.set(scopedEl, createMockComponent('scoped-value'));
-
-        const unscopedEl = document.createElement('div');
-        ctx.mounted.set(unscopedEl, createMockComponent('unscoped-value'));
-
-        await updateRollup(ctx);
-
-        expect(ctx.engine.aggregate).toHaveBeenCalledTimes(1);
-        const values = (ctx.engine.aggregate as ReturnType<typeof vi.fn>).mock
-            .calls[0][0];
-        expect(values).toEqual(['unscoped-value']);
-    });
-
-    it('skips rollup during initialization', async () => {
-        const rollupField = document.createElement('input');
-        const ctx = createMockCtx({ rollupField, initializing: true } as any);
-
-        const field = document.createElement('input');
-        field.value = 'DATA';
-        ctx.fields.push(field);
-
-        await updateRollup(ctx);
-
-        expect(ctx.engine.aggregate).not.toHaveBeenCalled();
-    });
-
-    it('does not call aggregate when rollupField is null', async () => {
-        const ctx = createMockCtx({ rollupField: null });
-
-        const field = document.createElement('input');
-        field.value = 'DATA';
-        ctx.fields.push(field);
-
-        await updateRollup(ctx);
-
-        expect(ctx.engine.aggregate).not.toHaveBeenCalled();
-    });
-
-    it('single field with value calls aggregate exactly once', async () => {
-        const rollupField = document.createElement('input');
-        const ctx = createMockCtx({ rollupField });
-
-        const field = document.createElement('input');
-        field.value = 'SINGLE';
-        ctx.fields.push(field);
-
-        await updateRollup(ctx);
-
-        expect(ctx.engine.aggregate).toHaveBeenCalledTimes(1);
-        const values = (ctx.engine.aggregate as ReturnType<typeof vi.fn>).mock
-            .calls[0][0];
-        expect(values).toEqual(['SINGLE']);
-    });
-
-    it('fields with data-ezclassify-no-rollup are excluded from aggregate', async () => {
-        const rollupField = document.createElement('input');
-        const ctx = createMockCtx({ rollupField });
-
-        const normalField = document.createElement('input');
-        normalField.value = 'NORMAL';
-        ctx.fields.push(normalField);
-
-        const excludedField = document.createElement('input');
-        excludedField.value = 'EXCLUDED';
-        excludedField.setAttribute('data-ezclassify-no-rollup', '');
-        ctx.fields.push(excludedField);
-
-        await updateRollup(ctx);
-
-        expect(ctx.engine.aggregate).toHaveBeenCalledTimes(1);
-        const values = (ctx.engine.aggregate as ReturnType<typeof vi.fn>).mock
-            .calls[0][0];
-        expect(values).toEqual(['NORMAL']);
+        expect(engine.process).not.toHaveBeenCalled();
+        expect(engine.checkCoverage).not.toHaveBeenCalled();
     });
 });

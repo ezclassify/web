@@ -7,71 +7,76 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import type { LocalSchemeEngineAdapter } from '@ezclassify/types';
-import { Context } from '@ezclassify/engine';
+import type { RemoteContextSchemeEngineAdapter } from '@ezclassify/types';
 import { EzClassifyUI } from './ezclassify-ui';
 import { parseComponentOptions } from './component-factory';
+import { asContext } from '../test-fixtures/as-context';
+import { connectDemoContext } from '../../../test-support/demo-runtime';
 
 function wait(ms = 50): Promise<void> {
     return new Promise((r) => setTimeout(r, ms));
 }
 
-function createEngine(): LocalSchemeEngineAdapter {
-    return Context.fromComponents({
-        scheme: {
-            scheme: {
-                id: 'optout-test',
-                version: '1.0.0',
-                name: 'Opt-out Test',
-                data: {
-                    concepts: {
-                        inline: [
+async function createEngine(): Promise<RemoteContextSchemeEngineAdapter> {
+    return (
+        await connectDemoContext({
+            draft: {
+                scheme: {
+                    scheme: {
+                        id: 'optout-test',
+                        version: '1.0.0',
+                        name: 'Opt-out Test',
+                        description: 'Opt-out Test test fixture.',
+                        data: {
+                            concepts: [
+                                {
+                                    id: 'U',
+                                    name: 'Unclassified',
+                                    views: { default: 'U' },
+                                    categories: ['level'],
+                                    parents: [],
+                                    aliases: [],
+                                    position: 1,
+                                    rank: 1,
+                                },
+                            ],
+                            categories: [
+                                {
+                                    id: 'level',
+                                    label: 'Level',
+                                    required: false,
+                                    single: true,
+                                    rollup: 'max',
+                                    position: 1,
+                                },
+                            ],
+                        },
+                        rules: [],
+                        embedded_marking: [
                             {
-                                id: 'U',
-                                name: 'Unclassified',
-                                views: { default: 'U' },
-                                categories: ['level'],
-                                parents: [],
-                                aliases: [],
-                                position: 1,
-                                rank: 1,
+                                pattern: '\\(([^)]+)\\)',
+                                template: '({marking}) ',
                             },
                         ],
+                        render: {
+                            default: 'portion',
+                            formats: [
+                                {
+                                    id: 'portion',
+                                    surface: 'marking',
+                                    mode: 'inline',
+                                    separator: '//',
+                                    fields: [
+                                        { category: 'level', separator: '/' },
+                                    ],
+                                },
+                            ],
+                        },
                     },
-                    categories: [
-                        {
-                            id: 'level',
-                            label: 'Level',
-                            required: false,
-                            single: true,
-                            rollup: 'max',
-                            position: 1,
-                        },
-                    ],
-                },
-                rules: [],
-                embedded_marking: [
-                    { pattern: '\\(([^)]+)\\)', template: '({marking}) ' },
-                ],
-                parse: {
-                    case_sensitive: false,
-                    strip_whitespace: true,
-                },
-                render: {
-                    default: 'portion',
-                    formats: [
-                        {
-                            id: 'portion',
-                            surface: 'marking',
-                            mode: 'inline',
-                            separator: '//',
-                            fields: [{ category: 'level', separator: '/' }],
-                        },
-                    ],
                 },
             },
-        },
-    }).scheme as LocalSchemeEngineAdapter;
+        })
+    ).scheme as RemoteContextSchemeEngineAdapter;
 }
 
 let root: HTMLDivElement;
@@ -124,9 +129,9 @@ describe('parseComponentOptions opt-out harvesting', () => {
 
 describe('data-ezclassify-no-hints', () => {
     it('suppresses the marked-input keyboard hint but keeps the touch affordance', async () => {
-        const engine = createEngine();
+        const engine = await createEngine();
         root.innerHTML = `<input type="text" id="mi" data-ezclassify-controller="marked-input" data-ezclassify-no-hints>`;
-        const forms = new EzClassifyUI(engine as never, { root });
+        const forms = new EzClassifyUI(asContext(engine as never), { root });
         activeForms.push(forms);
         await wait(80);
 
@@ -136,9 +141,9 @@ describe('data-ezclassify-no-hints', () => {
     });
 
     it('keeps the marked-input keyboard hint without the attribute', async () => {
-        const engine = createEngine();
+        const engine = await createEngine();
         root.innerHTML = `<input type="text" id="mi" data-ezclassify-controller="marked-input">`;
-        const forms = new EzClassifyUI(engine as never, { root });
+        const forms = new EzClassifyUI(asContext(engine as never), { root });
         activeForms.push(forms);
         await wait(80);
 
@@ -146,12 +151,12 @@ describe('data-ezclassify-no-hints', () => {
     });
 
     it('hides the tag-input hint chrome via an ancestor attribute', async () => {
-        const engine = createEngine();
+        const engine = await createEngine();
         root.innerHTML = `
       <div data-ezclassify-no-hints>
         <input id="ac" data-ezclassify-controller="tags" type="text" value="" />
       </div>`;
-        const forms = new EzClassifyUI(engine as never, { root });
+        const forms = new EzClassifyUI(asContext(engine as never), { root });
         activeForms.push(forms);
         await wait(80);
 
@@ -165,9 +170,9 @@ describe('data-ezclassify-no-hints', () => {
 
 describe('data-ezclassify-no-tooltips', () => {
     it('turns shouldShowTooltip off for the enhanced component', async () => {
-        const engine = createEngine();
+        const engine = await createEngine();
         root.innerHTML = `<input id="ac" data-ezclassify-controller="tags" data-ezclassify-no-tooltips type="text" value="" />`;
-        const forms = new EzClassifyUI(engine as never, { root });
+        const forms = new EzClassifyUI(asContext(engine as never), { root });
         activeForms.push(forms);
         await wait(80);
 

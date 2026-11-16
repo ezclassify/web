@@ -13,7 +13,10 @@
  *
  * - Ownership is the boundary (one instance enhances a field).
  * - Contribution is hierarchical (a child scope contributes its rolled-up WHOLE,
- *   never its raw fields, to its nearest ancestor scope).
+ *   never its raw fields, to its nearest ancestor scope). In the parent's tree
+ *   the child is a member of the parent's nearest collection enclosing the
+ *   child's root, or of the parent's page when none does
+ *   (`binding-model.placeNestedRoot`).
  *
  * The edge is inferred from DOM ancestry at construction: a child instance
  * walks up from its own root's parent to the nearest
@@ -27,33 +30,27 @@
  * a child in bundle B would never find each other.
  */
 
-import type { FieldAssertion } from './forms/types';
+import type { Assertion } from '@ezclassify/types';
+import type { HostError } from './binding-model';
+import type { BucketKey } from './store/store-shared';
 
 /**
- * One child scope's contribution to its parent, grouped by scheme id. The child
- * publishes the assertion set of its rolled-up whole per scheme; the parent
- * re-aggregates these into its own per-scheme buckets so distinct schemes
- * render side-by-side and the same scheme co-aggregates losslessly.
+ * One child scope's contribution to its parent in one bucket. The parent
+ * re-aggregates these into the same bucket of the collection the child is a
+ * member of, so distinct buckets render side by side and the same bucket
+ * co-aggregates. Buckets never merge.
  *
- * Assertions (not the rendered string) are the payload: the assertion-set path
- * skips the parse round-trip and is immune to the format-mismatch loss vector.
+ * Facts (the assertion set) are the payload; the rendered string is what the
+ * child shows, kept for display and diagnostics. The assertion path skips the
+ * parse round-trip and cannot lose what a format mismatch would drop.
  */
 export interface ChildWhole {
-    /** Scheme id this whole belongs to. Distinct ids never co-aggregate. */
-    schemeId: string;
-    /**
-     * The child whole's rendered string (already rolled up within the child).
-     * This is what the parent re-aggregates into its own per-scheme bucket.
-     * Whole-of-wholes aggregation is lossless within a scheme family, so
-     * contributing the child's rendered whole is safe.
-     */
+    /** The (Context key, scheme selector) bucket this whole belongs to. */
+    bucket: BucketKey;
+    /** The child whole's assertion set. */
+    assertions: Assertion[];
+    /** The child whole's rendered string, as the child shows it. */
     rendered: string;
-    /**
-     * The child whole's assertion set, when available. Reserved for adapters
-     * that expose `aggregateAssertions` (the structurally safer path); the
-     * current consumer re-aggregates `rendered`.
-     */
-    assertions: FieldAssertion[];
 }
 
 /** Minimal view of a registered child instance the registry needs. */
@@ -61,10 +58,21 @@ export interface RegistryChild {
     /** Stable per-instance id (the child's `data-ezclassify-mount-root` value). */
     readonly instanceId: string;
     /**
-     * The child's current rolled-up wholes, one per contributing scheme id.
-     * Read by the parent's rollup pass.
+     * The child's root element. The parent reads a single-Context child's
+     * wholes in the Context the parent resolves at this element, and orders
+     * them where it stands in the document.
      */
-    childWholesByScheme(): Map<string, ChildWhole>;
+    readonly root: HTMLElement;
+    /**
+     * The collection in the parent's tree the child's wholes are members of;
+     * null for the parent's page.
+     */
+    readonly collectionId: string | null;
+    /**
+     * The child's current rolled-up wholes, one per contributing bucket. Read
+     * by the parent's rollup pass.
+     */
+    childWholes(): Map<BucketKey, ChildWhole>;
     /**
      * Whether the child's rolled-up whole may be missing markings: something in
      * its scope was not read, or a scope inside it says so. A parent built from
@@ -88,6 +96,11 @@ export interface Releaser {
      * of this module still works.
      */
     refreshIncomplete?(): void;
+    /**
+     * Record a host error in this instance's tree: a nested instance whose root
+     * cannot be placed in it. The instance's levels then read as incomplete.
+     */
+    reportHostError?(error: HostError): void;
 }
 
 interface MountRollupRegistry {

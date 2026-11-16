@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import {
     EMPTY_EZCLASSIFY_STATE,
+    SOLE_BUCKET,
     type EzClassifyStoreEngine,
     type FacetState,
 } from '@ezclassify/ui';
@@ -9,7 +10,7 @@ import {
     runEzClassifyStoreConformance,
     runEzClassifyStoreBudgetConformance,
     runEzClassifyStoreSeedConformance,
-} from '@ezclassify/testing-utils';
+} from '../../../../test-support/store-conformance';
 import type { Assertion, RenderAssessment } from '@ezclassify/types';
 import { AngularSignalStore } from './angular-signal-store';
 
@@ -76,17 +77,17 @@ describe('AngularSignalStore: aggregate signal and whole rollup', () => {
     it('aggregateSignalRef returns a signal that tracks aggregate', async () => {
         const store = new AngularSignalStore(passThrough());
         const sig = store.aggregateSignalRef();
-        expect(sig().rendered).toBe('');
+        expect(sig().byBucket.size).toBe(0);
         await store.publishRendered('doc', 'level:high');
         await flush();
-        expect(sig().rendered).toBe('level:high');
+        expect(sig().byBucket.get(SOLE_BUCKET)?.rendered).toBe('level:high');
     });
 
     it('subscribeAggregate unsubscribe stops further notifications', async () => {
         const store = new AngularSignalStore(passThrough());
         const received: string[] = [];
         const unsub = store.subscribeAggregate((s) =>
-            received.push(s.rendered),
+            received.push(s.byBucket.get(SOLE_BUCKET)?.rendered ?? ''),
         );
         await store.publishRendered('doc', 'level:high');
         await flush();
@@ -113,7 +114,7 @@ describe('AngularSignalStore: aggregate signal and whole rollup', () => {
         await store.publishRendered('doc1', 'level:high');
         await store.publishRendered('doc2', 'ctrl:a');
         await flush();
-        const agg = store.getAggregate();
+        const agg = store.getAggregate().byBucket.get(SOLE_BUCKET)!;
         expect(agg.rendered).toContain('level:high');
         expect(agg.rendered).toContain('ctrl:a');
     });

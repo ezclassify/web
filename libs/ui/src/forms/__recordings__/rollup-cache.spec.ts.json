@@ -1,0 +1,1017 @@
+{
+    "engineVersion": "1.0.0-dev.30",
+    "openapiVersion": "1.0.0-dev.30",
+    "responses": {
+        "0f602a6e6c9c5f841024700792ab9e2da64c8974d15356742c90ff071b665570": {
+            "body": [],
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "2dc96128826dc40d1d945ce768add0d8b0314f9726b739923cd70e868048110d": {
+            "body": {
+                "colorFrom": "level",
+                "contextFormats": { "part": ["short"], "whole": ["long"] },
+                "defaultRenderFormat": "long",
+                "defaultScope": "marking",
+                "description": "A district-wide fictional example for files across Oakwood, Pinecrest, Riverside, and the district office. Protection rolls up by maximum sensitivity; sensitive content and handling combine; school and external-recipient permissions intersect. Markings describe policy inputs while the host application supplies identity, record relationships, assignments, and delivery facts.",
+                "embeddedMarking": [
+                    {
+                        "autoInsert": "every-paragraph",
+                        "pattern": "\\(([^)]+)\\)",
+                        "template": "({marking}) "
+                    }
+                ],
+                "id": "cedar-valley",
+                "name": "Cedar Valley District Files",
+                "referenceSurfaceLabel": {
+                    "plural": "Handbooks",
+                    "singular": "Handbook"
+                },
+                "roleAware": false,
+                "version": "1.0.0",
+                "vocabulary": {
+                    "marking": {
+                        "plural": "File Markings",
+                        "singular": "File Marking"
+                    }
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "3b9ae2fdbad6b29d5ea7301e5b9d65d7a665ef85e8e670dc1e2a5fc570adfa89": {
+            "body": {
+                "access": {
+                    "id": "cedar-valley-access",
+                    "resolvedVersion": "1.0.0",
+                    "version": "1.0.0"
+                },
+                "description": "Explore Cedar Valley district files across protection, sensitive content, school eligibility, external sharing, and handling. The host supplies trusted identity and authorization facts.",
+                "guides": [
+                    {
+                        "id": "cedar-valley-guide",
+                        "resolvedVersion": "1.0.0",
+                        "version": "1.0.0"
+                    }
+                ],
+                "id": "cedar-valley",
+                "scheme": {
+                    "id": "cedar-valley",
+                    "resolvedVersion": "1.0.0",
+                    "version": "1.0.0"
+                },
+                "schemes": [
+                    {
+                        "id": "cedar-valley",
+                        "roles": ["primary"],
+                        "selector": "cedar-valley",
+                        "version": "1.0.0"
+                    }
+                ],
+                "version": "1.0.0"
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "4f8a0880ec9bcd92c8e41a094d459fe407b37b78019ee213ad3c0ee2d7f1fcf4": {
+            "body": [
+                {
+                    "id": "level",
+                    "label": "Protection",
+                    "position": 0,
+                    "required": true,
+                    "rollup": "max",
+                    "single": true
+                },
+                {
+                    "id": "sensitive_content",
+                    "label": "Sensitive content",
+                    "position": 1,
+                    "required": false,
+                    "rollup": "union",
+                    "single": false,
+                    "sort": "alphabetical"
+                },
+                {
+                    "id": "permitted_schools",
+                    "label": "Permitted schools",
+                    "position": 2,
+                    "required": false,
+                    "rollup": "pipeline",
+                    "single": false,
+                    "sort": "alphabetical"
+                },
+                {
+                    "id": "allow_sharing_with",
+                    "label": "Allow sharing with",
+                    "position": 3,
+                    "required": false,
+                    "rollup": "pipeline",
+                    "single": false,
+                    "sort": "alphabetical"
+                },
+                {
+                    "id": "handling",
+                    "label": "Handling",
+                    "position": 4,
+                    "required": false,
+                    "rollup": "union",
+                    "single": false,
+                    "sort": "alphabetical"
+                }
+            ],
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "76368fd0e69141bb92df5f80d603570a9b3461efdb603d2054087252c1e6ddc6": {
+            "body": [
+                {
+                    "aliases": ["public"],
+                    "categories": ["level"],
+                    "color": { "background": "#2e7d32", "text": "#ffffff" },
+                    "definition": "This exact version is approved for anyone to read or share. An unmarked file is not automatically public.",
+                    "guidance": "Use for a published lunch menu, school calendar, or released practice questions.",
+                    "id": "PUBLIC",
+                    "name": "Public",
+                    "parents": [],
+                    "position": 0,
+                    "rank": -100,
+                    "views": {
+                        "default": "PUBLIC",
+                        "long": "PUBLIC",
+                        "short": "P"
+                    }
+                },
+                {
+                    "aliases": ["internal"],
+                    "categories": ["level"],
+                    "color": { "background": "#1565c0", "text": "#ffffff" },
+                    "definition": "Routine Cedar Valley business that has not been approved for public distribution.",
+                    "guidance": "Use for a staff plan, district memo, or bus operations schedule without student names or home addresses.",
+                    "id": "INTERNAL",
+                    "name": "Internal",
+                    "parents": [],
+                    "position": 0,
+                    "rank": 100,
+                    "views": {
+                        "default": "INTERNAL",
+                        "long": "INTERNAL",
+                        "short": "I"
+                    }
+                },
+                {
+                    "aliases": ["confidential"],
+                    "categories": ["level"],
+                    "color": { "background": "#6a1b9a", "text": "#ffffff" },
+                    "definition": "Private information that must be protected from unauthorized disclosure.",
+                    "guidance": "Use for student records, employee evaluations, or nonpublic purchasing information. The host application still verifies the reader’s record relationship or approved business purpose.",
+                    "id": "CONFIDENTIAL",
+                    "name": "Confidential",
+                    "parents": [],
+                    "position": 0,
+                    "rank": 200,
+                    "views": {
+                        "default": "CONFIDENTIAL",
+                        "long": "CONFIDENTIAL",
+                        "short": "C"
+                    }
+                },
+                {
+                    "aliases": ["restricted"],
+                    "categories": ["level"],
+                    "color": { "background": "#c62828", "text": "#ffffff" },
+                    "definition": "Information needing the strongest protection because disclosure could compromise safety, an investigation, or an assessment.",
+                    "guidance": "Use for building access codes, an active investigation file, or live assessment questions. The host application verifies explicit assignment to the file, case, assessment, or team.",
+                    "id": "RESTRICTED",
+                    "name": "Restricted",
+                    "parents": [],
+                    "position": 0,
+                    "rank": 300,
+                    "views": {
+                        "default": "RESTRICTED",
+                        "long": "RESTRICTED",
+                        "short": "R"
+                    }
+                },
+                {
+                    "aliases": ["student information", "student record"],
+                    "categories": ["sensitive_content"],
+                    "definition": "Protected information about identifiable students, including learning, support, attendance, or individual results.",
+                    "guidance": "Access to one student’s information does not grant access to every student. The host application supplies the record relationship.",
+                    "id": "STUDENT_INFORMATION",
+                    "name": "Student information",
+                    "parents": [],
+                    "position": 0,
+                    "views": {
+                        "default": "STUDENT INFORMATION",
+                        "long": "STUDENT INFORMATION",
+                        "short": "STUDENT"
+                    }
+                },
+                {
+                    "aliases": ["employee information", "personnel"],
+                    "categories": ["sensitive_content"],
+                    "definition": "Private information about individual employees or personnel matters.",
+                    "guidance": "Use for an employee evaluation or personnel investigation. The host application supplies the record or case authorization.",
+                    "id": "EMPLOYEE_INFORMATION",
+                    "name": "Employee information",
+                    "parents": [],
+                    "position": 0,
+                    "views": {
+                        "default": "EMPLOYEE INFORMATION",
+                        "long": "EMPLOYEE INFORMATION",
+                        "short": "EMPLOYEE"
+                    }
+                },
+                {
+                    "aliases": ["financial information", "purchasing notes"],
+                    "categories": ["sensitive_content"],
+                    "definition": "Nonpublic purchasing, payment, or financial information.",
+                    "guidance": "Use for supplier bids or evaluation notes during an active purchasing review. A published budget does not need this tag.",
+                    "id": "FINANCIAL_INFORMATION",
+                    "name": "Financial information",
+                    "parents": [],
+                    "position": 0,
+                    "views": {
+                        "default": "FINANCIAL INFORMATION",
+                        "long": "FINANCIAL INFORMATION",
+                        "short": "FINANCIAL"
+                    }
+                },
+                {
+                    "aliases": [
+                        "secure assessments",
+                        "live exam",
+                        "answer key"
+                    ],
+                    "categories": ["sensitive_content"],
+                    "definition": "Unreleased questions, answer keys, and other controlled assessment material.",
+                    "guidance": "Use for a live assessment booklet or its answer key. The host application verifies assignment to the assessment.",
+                    "id": "SECURE_ASSESSMENTS",
+                    "name": "Secure assessments",
+                    "parents": [],
+                    "position": 0,
+                    "views": {
+                        "default": "SECURE ASSESSMENTS",
+                        "long": "SECURE ASSESSMENTS",
+                        "short": "ASSESSMENT"
+                    }
+                },
+                {
+                    "aliases": ["security information", "access code"],
+                    "categories": ["sensitive_content"],
+                    "definition": "Details that could expose people, buildings, or systems to harm.",
+                    "guidance": "Use for door access codes or security-system blind spots. The host application verifies a reader’s operational need.",
+                    "id": "SECURITY_INFORMATION",
+                    "name": "Security information",
+                    "parents": [],
+                    "position": 0,
+                    "views": {
+                        "default": "SECURITY INFORMATION",
+                        "long": "SECURITY INFORMATION",
+                        "short": "SECURITY"
+                    }
+                },
+                {
+                    "aliases": ["all", "all schools"],
+                    "categories": ["permitted_schools"],
+                    "definition": "A finite group containing Oakwood Middle School, Pinecrest Middle School, and Riverside High School. It is not a wildcard or an access grant.",
+                    "guidance": "Use ALL by itself for a file permitted at all three schools. Combined markings retain only schools permitted by every contributing marking; permission for all three is displayed as ALL.",
+                    "id": "ALL",
+                    "members": ["OAKWOOD", "PINECREST", "RIVERSIDE"],
+                    "name": "All three schools",
+                    "parents": [],
+                    "position": 0,
+                    "views": {
+                        "default": "ALL",
+                        "long": "ALL SCHOOLS",
+                        "short": "ALL"
+                    }
+                },
+                {
+                    "aliases": ["oakwood", "oakwood middle school"],
+                    "categories": ["permitted_schools"],
+                    "definition": "Permitted for Oakwood Middle School. Other protection and access requirements still apply.",
+                    "guidance": "Use for an Oakwood staffing plan or include it with another school when both may receive the file.",
+                    "id": "OAKWOOD",
+                    "name": "Oakwood Middle School",
+                    "parents": [],
+                    "position": 0,
+                    "views": {
+                        "default": "OAKWOOD",
+                        "long": "OAKWOOD MIDDLE SCHOOL",
+                        "short": "OAK"
+                    }
+                },
+                {
+                    "aliases": ["pinecrest", "pinecrest middle school"],
+                    "categories": ["permitted_schools"],
+                    "definition": "Permitted for Pinecrest Middle School. Other protection and access requirements still apply.",
+                    "guidance": "Use for a Pinecrest file or include it with another school when both may receive the file.",
+                    "id": "PINECREST",
+                    "name": "Pinecrest Middle School",
+                    "parents": [],
+                    "position": 0,
+                    "views": {
+                        "default": "PINECREST",
+                        "long": "PINECREST MIDDLE SCHOOL",
+                        "short": "PINE"
+                    }
+                },
+                {
+                    "aliases": ["riverside", "riverside high school"],
+                    "categories": ["permitted_schools"],
+                    "definition": "Permitted for Riverside High School. Other protection and access requirements still apply.",
+                    "guidance": "Use for a Riverside file or include it with another school when both may receive the file.",
+                    "id": "RIVERSIDE",
+                    "name": "Riverside High School",
+                    "parents": [],
+                    "position": 0,
+                    "views": {
+                        "default": "RIVERSIDE",
+                        "long": "RIVERSIDE HIGH SCHOOL",
+                        "short": "RIVER"
+                    }
+                },
+                {
+                    "aliases": [],
+                    "categories": ["allow_sharing_with"],
+                    "definition": "The implicit internal recipient for every nonpublic Cedar Valley file. Authors do not select it; the scheme derives it from Internal, Confidential, or Restricted protection.",
+                    "guidance": "Its presence makes blank external sharing district-only and preserves district access when an external organization is also permitted.",
+                    "id": "CEDAR_VALLEY_DISTRICT",
+                    "name": "Cedar Valley District (implicit)",
+                    "parents": [],
+                    "position": 0,
+                    "views": {
+                        "default": "CEDAR VALLEY DISTRICT",
+                        "long": "CEDAR VALLEY DISTRICT",
+                        "short": "DISTRICT"
+                    }
+                },
+                {
+                    "aliases": [
+                        "commonwealth education department",
+                        "education department"
+                    ],
+                    "categories": ["allow_sharing_with"],
+                    "definition": "Allows delivery to authorized staff of the fictional state education department, in addition to authorized Cedar Valley recipients.",
+                    "guidance": "Use only when this exact nonpublic file may be shared with the department. The marking does not establish a recipient’s identity or business need.",
+                    "id": "COMMONWEALTH_EDUCATION_DEPARTMENT",
+                    "name": "Commonwealth Education Department",
+                    "parents": [],
+                    "position": 0,
+                    "views": {
+                        "default": "COMMONWEALTH EDUCATION DEPARTMENT",
+                        "long": "COMMONWEALTH EDUCATION DEPARTMENT",
+                        "short": "EDUCATION DEPARTMENT"
+                    }
+                },
+                {
+                    "aliases": [
+                        "student transportation services",
+                        "transportation services"
+                    ],
+                    "categories": ["allow_sharing_with"],
+                    "definition": "Allows delivery to authorized staff of Cedar Valley’s contracted transportation provider, in addition to authorized Cedar Valley recipients.",
+                    "guidance": "Use for an approved provider copy such as a bus operations plan without student names or home addresses. The marking does not verify the recipient.",
+                    "id": "STUDENT_TRANSPORTATION_SERVICES",
+                    "name": "Student Transportation Services",
+                    "parents": [],
+                    "position": 0,
+                    "views": {
+                        "default": "STUDENT TRANSPORTATION SERVICES",
+                        "long": "STUDENT TRANSPORTATION SERVICES",
+                        "short": "TRANSPORTATION"
+                    }
+                },
+                {
+                    "aliases": ["do not forward", "no forward"],
+                    "categories": ["handling"],
+                    "definition": "Do not pass this copy on. Ask the owner before distributing it further.",
+                    "guidance": "A human instruction for material such as an internal purchasing memo circulated for review. The marking does not technically block forwarding.",
+                    "id": "DO_NOT_FORWARD",
+                    "name": "Do not forward",
+                    "parents": [],
+                    "position": 0,
+                    "views": {
+                        "default": "DO NOT FORWARD",
+                        "long": "DO NOT FORWARD",
+                        "short": "NO FWD"
+                    }
+                },
+                {
+                    "aliases": ["redact before release", "redact"],
+                    "categories": ["handling"],
+                    "definition": "Remove protected information and obtain approval for a separate public version. This copy stays protected.",
+                    "guidance": "A human instruction for material such as a purchasing report with private contact or payment information. The marking does not perform redaction.",
+                    "id": "REDACT_BEFORE_RELEASE",
+                    "name": "Redact before release",
+                    "parents": [],
+                    "position": 0,
+                    "views": {
+                        "default": "REDACT BEFORE RELEASE",
+                        "long": "REDACT BEFORE RELEASE",
+                        "short": "REDACT"
+                    }
+                },
+                {
+                    "aliases": ["keep sealed", "sealed"],
+                    "categories": ["handling"],
+                    "definition": "Keep the packet closed until its authorized opening time or event.",
+                    "guidance": "A human instruction for a live assessment packet awaiting its scheduled session. The marking does not run a clock or verify the seal.",
+                    "id": "KEEP_SEALED",
+                    "name": "Keep sealed",
+                    "parents": [],
+                    "position": 0,
+                    "views": {
+                        "default": "KEEP SEALED",
+                        "long": "KEEP SEALED",
+                        "short": "SEALED"
+                    }
+                },
+                {
+                    "aliases": ["collect after use", "collect"],
+                    "categories": ["handling"],
+                    "definition": "Collect every issued copy after the authorized activity and return it to its custodian.",
+                    "guidance": "A human instruction for controlled packets or temporary plans. The marking does not prove that every copy was returned.",
+                    "id": "COLLECT_AFTER_USE",
+                    "name": "Collect after use",
+                    "parents": [],
+                    "position": 0,
+                    "views": {
+                        "default": "COLLECT AFTER USE",
+                        "long": "COLLECT AFTER USE",
+                        "short": "COLLECT"
+                    }
+                }
+            ],
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "796ebe93cc0998890b50ffaa43542db81baffcef12e437091ed8942890693e29": {
+            "body": [
+                {
+                    "categoryOrder": [
+                        "level",
+                        "sensitive_content",
+                        "permitted_schools",
+                        "allow_sharing_with",
+                        "handling"
+                    ],
+                    "categorySeparators": {
+                        "allow_sharing_with": "/",
+                        "handling": "/",
+                        "level": "/",
+                        "permitted_schools": "/",
+                        "sensitive_content": "/"
+                    },
+                    "id": "long",
+                    "mode": "inline",
+                    "separator": "//",
+                    "separatorBefore": {
+                        "allow_sharing_with": "//",
+                        "handling": "//",
+                        "permitted_schools": "//",
+                        "sensitive_content": "//"
+                    },
+                    "surface": "marking",
+                    "view": "default"
+                },
+                {
+                    "categoryOrder": [
+                        "level",
+                        "sensitive_content",
+                        "permitted_schools",
+                        "allow_sharing_with",
+                        "handling"
+                    ],
+                    "categorySeparators": {
+                        "allow_sharing_with": "/",
+                        "handling": "/",
+                        "level": "/",
+                        "permitted_schools": "/",
+                        "sensitive_content": "/"
+                    },
+                    "id": "short",
+                    "mode": "inline",
+                    "separator": "//",
+                    "separatorBefore": {
+                        "allow_sharing_with": "//",
+                        "handling": "//",
+                        "permitted_schools": "//",
+                        "sensitive_content": "//"
+                    },
+                    "surface": "marking",
+                    "view": "short"
+                },
+                {
+                    "categoryOrder": [
+                        "level",
+                        "sensitive_content",
+                        "permitted_schools",
+                        "allow_sharing_with",
+                        "handling"
+                    ],
+                    "categorySeparators": {
+                        "allow_sharing_with": ", ",
+                        "handling": ", ",
+                        "level": ", ",
+                        "permitted_schools": ", ",
+                        "sensitive_content": ", "
+                    },
+                    "id": "instructions",
+                    "mode": "inline",
+                    "separator": " // ",
+                    "separatorBefore": {
+                        "allow_sharing_with": " // ",
+                        "handling": " // ",
+                        "permitted_schools": " // ",
+                        "sensitive_content": " // "
+                    },
+                    "surface": "marking",
+                    "view": "long"
+                }
+            ],
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "81234dfa18ec7b6f164b3292088b5a901b9659645dc03273d4c218165c0824b0": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "cedar-valley",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "cedar-valley-guide",
+                            "kind": "guide",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "cedar-valley-access",
+                            "kind": "access",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "cedar-valley",
+                            "kind": "context",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "cedar-valley",
+                    "requestedVersion": "latest",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "categories": [
+                        {
+                            "id": "protection",
+                            "items": [
+                                {
+                                    "dependsOn": [],
+                                    "dependsOnNames": [],
+                                    "id": "public",
+                                    "isComputed": false,
+                                    "keywords": [
+                                        "published lunch menu",
+                                        "school calendar",
+                                        "released practice questions",
+                                        "approved for public release"
+                                    ],
+                                    "matcherLabels": [],
+                                    "name": "Public",
+                                    "outcomeText": "PUBLIC",
+                                    "overrideNames": [],
+                                    "overrides": [],
+                                    "rationale": "Public is a positive approval for this exact version; an unmarked file is not public."
+                                },
+                                {
+                                    "dependsOn": [],
+                                    "dependsOnNames": [],
+                                    "id": "internal",
+                                    "isComputed": false,
+                                    "keywords": [
+                                        "staff plan",
+                                        "district memo",
+                                        "routine operations",
+                                        "bus operations schedule"
+                                    ],
+                                    "matcherLabels": [],
+                                    "name": "Internal",
+                                    "outcomeText": "INTERNAL",
+                                    "overrideNames": [],
+                                    "overrides": [],
+                                    "rationale": "Routine district work that has not been approved for public distribution is Internal."
+                                },
+                                {
+                                    "dependsOn": [],
+                                    "dependsOnNames": [],
+                                    "id": "confidential",
+                                    "isComputed": false,
+                                    "keywords": [
+                                        "student record",
+                                        "employee evaluation",
+                                        "supplier bid",
+                                        "payment information",
+                                        "purchasing notes"
+                                    ],
+                                    "matcherLabels": [],
+                                    "name": "Confidential",
+                                    "outcomeText": "CONFIDENTIAL",
+                                    "overrideNames": [],
+                                    "overrides": [],
+                                    "rationale": "Private records and active purchasing material need confirmed record or business authorization from the host."
+                                },
+                                {
+                                    "dependsOn": [],
+                                    "dependsOnNames": [],
+                                    "id": "restricted",
+                                    "isComputed": false,
+                                    "keywords": [
+                                        "live assessment",
+                                        "answer key",
+                                        "building access code",
+                                        "security blind spot",
+                                        "active investigation"
+                                    ],
+                                    "matcherLabels": [],
+                                    "name": "Restricted",
+                                    "outcomeText": "RESTRICTED",
+                                    "overrideNames": [],
+                                    "overrides": [],
+                                    "rationale": "Safety, investigation, and live-assessment material needs explicit assignment from the host."
+                                }
+                            ],
+                            "label": "1. Protection"
+                        },
+                        {
+                            "id": "content",
+                            "items": [
+                                {
+                                    "dependsOn": [],
+                                    "dependsOnNames": [],
+                                    "id": "student-information",
+                                    "isComputed": false,
+                                    "keywords": [
+                                        "student record",
+                                        "attendance record",
+                                        "individual result",
+                                        "support plan"
+                                    ],
+                                    "matcherLabels": [],
+                                    "name": "Student information",
+                                    "outcomeText": "STUDENT_INFORMATION",
+                                    "overrideNames": [],
+                                    "overrides": [],
+                                    "rationale": "The host still verifies access to the particular student record."
+                                },
+                                {
+                                    "dependsOn": [],
+                                    "dependsOnNames": [],
+                                    "id": "employee-information",
+                                    "isComputed": false,
+                                    "keywords": [
+                                        "employee evaluation",
+                                        "personnel file"
+                                    ],
+                                    "matcherLabels": [],
+                                    "name": "Employee information",
+                                    "outcomeText": "EMPLOYEE_INFORMATION",
+                                    "overrideNames": [],
+                                    "overrides": [],
+                                    "rationale": "The host still verifies access to the employee record or case."
+                                },
+                                {
+                                    "dependsOn": [],
+                                    "dependsOnNames": [],
+                                    "id": "financial-information",
+                                    "isComputed": false,
+                                    "keywords": [
+                                        "supplier bid",
+                                        "payment information",
+                                        "purchasing notes"
+                                    ],
+                                    "matcherLabels": [],
+                                    "name": "Financial information",
+                                    "outcomeText": "FINANCIAL_INFORMATION",
+                                    "overrideNames": [],
+                                    "overrides": [],
+                                    "rationale": "A published budget does not need this tag."
+                                },
+                                {
+                                    "dependsOn": [],
+                                    "dependsOnNames": [],
+                                    "id": "secure-assessments",
+                                    "isComputed": false,
+                                    "keywords": [
+                                        "live assessment",
+                                        "unreleased questions",
+                                        "answer key"
+                                    ],
+                                    "matcherLabels": [],
+                                    "name": "Secure assessments",
+                                    "outcomeText": "SECURE_ASSESSMENTS",
+                                    "overrideNames": [],
+                                    "overrides": [],
+                                    "rationale": "The host verifies assignment to the assessment."
+                                },
+                                {
+                                    "dependsOn": [],
+                                    "dependsOnNames": [],
+                                    "id": "security-information",
+                                    "isComputed": false,
+                                    "keywords": [
+                                        "building access code",
+                                        "security blind spot"
+                                    ],
+                                    "matcherLabels": [],
+                                    "name": "Security information",
+                                    "outcomeText": "SECURITY_INFORMATION",
+                                    "overrideNames": [],
+                                    "overrides": [],
+                                    "rationale": "The host verifies an operational need."
+                                }
+                            ],
+                            "label": "2. Sensitive content"
+                        },
+                        {
+                            "id": "schools",
+                            "items": [
+                                {
+                                    "dependsOn": [],
+                                    "dependsOnNames": [],
+                                    "id": "all-schools",
+                                    "isComputed": false,
+                                    "keywords": [
+                                        "all three schools",
+                                        "districtwide school plan"
+                                    ],
+                                    "matcherLabels": [],
+                                    "name": "All three schools",
+                                    "outcomeText": "ALL",
+                                    "overrideNames": [],
+                                    "overrides": [],
+                                    "rationale": "ALL is the finite Oakwood, Pinecrest, and Riverside group."
+                                },
+                                {
+                                    "dependsOn": [],
+                                    "dependsOnNames": [],
+                                    "id": "oakwood",
+                                    "isComputed": false,
+                                    "keywords": [
+                                        "oakwood",
+                                        "oakwood middle school"
+                                    ],
+                                    "matcherLabels": [],
+                                    "name": "Oakwood",
+                                    "outcomeText": "OAKWOOD",
+                                    "overrideNames": [],
+                                    "overrides": [],
+                                    "rationale": "Select Oakwood only when it is an allowed school recipient."
+                                },
+                                {
+                                    "dependsOn": [],
+                                    "dependsOnNames": [],
+                                    "id": "pinecrest",
+                                    "isComputed": false,
+                                    "keywords": [
+                                        "pinecrest",
+                                        "pinecrest middle school"
+                                    ],
+                                    "matcherLabels": [],
+                                    "name": "Pinecrest",
+                                    "outcomeText": "PINECREST",
+                                    "overrideNames": [],
+                                    "overrides": [],
+                                    "rationale": "Select Pinecrest only when it is an allowed school recipient."
+                                },
+                                {
+                                    "dependsOn": [],
+                                    "dependsOnNames": [],
+                                    "id": "riverside",
+                                    "isComputed": false,
+                                    "keywords": [
+                                        "riverside",
+                                        "riverside high school"
+                                    ],
+                                    "matcherLabels": [],
+                                    "name": "Riverside",
+                                    "outcomeText": "RIVERSIDE",
+                                    "overrideNames": [],
+                                    "overrides": [],
+                                    "rationale": "Select Riverside only when it is an allowed school recipient."
+                                }
+                            ],
+                            "label": "3. Permitted schools"
+                        },
+                        {
+                            "id": "sharing",
+                            "items": [
+                                {
+                                    "dependsOn": [],
+                                    "dependsOnNames": [],
+                                    "id": "education-department",
+                                    "isComputed": false,
+                                    "keywords": [
+                                        "commonwealth education department",
+                                        "state education department"
+                                    ],
+                                    "matcherLabels": [],
+                                    "name": "Commonwealth Education Department",
+                                    "outcomeText": "COMMONWEALTH_EDUCATION_DEPARTMENT",
+                                    "overrideNames": [],
+                                    "overrides": [],
+                                    "rationale": "This adds one external recipient; it does not establish identity or business need."
+                                },
+                                {
+                                    "dependsOn": [],
+                                    "dependsOnNames": [],
+                                    "id": "transportation-services",
+                                    "isComputed": false,
+                                    "keywords": [
+                                        "student transportation services",
+                                        "transportation provider"
+                                    ],
+                                    "matcherLabels": [],
+                                    "name": "Student Transportation Services",
+                                    "outcomeText": "STUDENT_TRANSPORTATION_SERVICES",
+                                    "overrideNames": [],
+                                    "overrides": [],
+                                    "rationale": "This adds one external recipient; it does not establish identity or business need."
+                                }
+                            ],
+                            "label": "4. Allow sharing with"
+                        },
+                        {
+                            "id": "handling",
+                            "items": [
+                                {
+                                    "dependsOn": [],
+                                    "dependsOnNames": [],
+                                    "id": "do-not-forward",
+                                    "isComputed": false,
+                                    "keywords": [
+                                        "do not forward",
+                                        "ask before sharing"
+                                    ],
+                                    "matcherLabels": [],
+                                    "name": "Do not forward",
+                                    "outcomeText": "DO_NOT_FORWARD",
+                                    "overrideNames": [],
+                                    "overrides": [],
+                                    "rationale": "This is a human instruction; the marking does not technically block forwarding."
+                                },
+                                {
+                                    "dependsOn": [],
+                                    "dependsOnNames": [],
+                                    "id": "redact-before-release",
+                                    "isComputed": false,
+                                    "keywords": [
+                                        "redact before release",
+                                        "public copy"
+                                    ],
+                                    "matcherLabels": [],
+                                    "name": "Redact before release",
+                                    "outcomeText": "REDACT_BEFORE_RELEASE",
+                                    "overrideNames": [],
+                                    "overrides": [],
+                                    "rationale": "Create and approve a separate redacted public version; this copy remains protected."
+                                },
+                                {
+                                    "dependsOn": [],
+                                    "dependsOnNames": [],
+                                    "id": "keep-sealed",
+                                    "isComputed": false,
+                                    "keywords": [
+                                        "keep sealed",
+                                        "open at scheduled time"
+                                    ],
+                                    "matcherLabels": [],
+                                    "name": "Keep sealed",
+                                    "outcomeText": "KEEP_SEALED",
+                                    "overrideNames": [],
+                                    "overrides": [],
+                                    "rationale": "The custodian controls the opening event outside the marking engine."
+                                },
+                                {
+                                    "dependsOn": [],
+                                    "dependsOnNames": [],
+                                    "id": "collect-after-use",
+                                    "isComputed": false,
+                                    "keywords": [
+                                        "collect after use",
+                                        "return every copy"
+                                    ],
+                                    "matcherLabels": [],
+                                    "name": "Collect after use",
+                                    "outcomeText": "COLLECT_AFTER_USE",
+                                    "overrideNames": [],
+                                    "overrides": [],
+                                    "rationale": "The custodian records collection outside the marking engine."
+                                }
+                            ],
+                            "label": "5. Handling instructions"
+                        }
+                    ],
+                    "description": "Suggests protection, sensitive-content, school, external-sharing, and handling markings for an author to review. It does not infer identity, record relationships, assignments, approval, or completed handling actions.",
+                    "id": "cedar-valley-guide",
+                    "name": "Cedar Valley District Files Guide",
+                    "uncategorized": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "c5ca3b3e876e51956fd23aac143b312aa40a0160b3d7334f31cbb7393731410e": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "cedar-valley",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "cedar-valley-guide",
+                            "kind": "guide",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "cedar-valley-access",
+                            "kind": "access",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "cedar-valley",
+                            "kind": "context",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "cedar-valley",
+                    "requestedVersion": "latest",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [
+                        {
+                            "categoryId": "level",
+                            "constraintId": "protection-level-required",
+                            "message": "Choose a protection level."
+                        }
+                    ],
+                    "inputWasValid": false,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "recognition": {
+                        "corrections": [],
+                        "status": "complete",
+                        "unmatched": []
+                    },
+                    "rendered": "",
+                    "renders": {},
+                    "valid": false,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "e070dec6e78862435e7c23c92a6e4a93a9667377aed0b78b533966687028c314": {
+            "body": {
+                "abiVersion": "v1",
+                "engineSha": "",
+                "engineVersion": "1.0.0-dev.30",
+                "gitTag": "",
+                "openapiVersion": "1.0.0-dev.30",
+                "status": "ok"
+            },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "f64766b6d4a0f5ab33e6a01d8d99d473a257fe272062a2e248230306eb7d9809": {
+            "body": [{ "id": "marking", "label": "File marking" }],
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        }
+    }
+}

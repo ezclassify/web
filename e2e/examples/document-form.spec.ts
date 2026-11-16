@@ -9,6 +9,10 @@
  * the title and body, then leave the form. The replay server answers recorded
  * requests and refuses the rest with a 501, so a run with no failed response is
  * proof the example sends exactly what the README promises.
+ *
+ * A second test loads the same form with the page's fields set in a monospace
+ * face, as a host that styles its textareas that way does, and checks that the
+ * library's chrome keeps the page font while the field text keeps the field's.
  */
 
 import {
@@ -118,32 +122,79 @@ async function settle(observed: Observed): Promise<void> {
 }
 
 /**
- * Labels whose text a visible field drawer covers, by label text.
+ * Field controls whose text runs into their own chrome: the layer on screen has
+ * its content box, or a line of its text, reaching past the chrome's leading
+ * edge. The chrome is the status mark, favorites and clear at the trailing
+ * edge, and the text layers reserve its room at rest and while focused.
  *
  * @param page - The page under test.
- * @returns One entry per covered label; empty when every label reads clear.
+ * @returns One entry per overlapping control; empty when every one reads clear.
  */
-async function labelOverlaps(page: Page): Promise<string[]> {
-    return page.evaluate(() => {
-        const drawers = [
-            ...document.querySelectorAll<HTMLElement>('.ez-field-drawer'),
-        ]
-            .filter((drawer) => drawer.checkVisibility())
-            .map((drawer) => drawer.getBoundingClientRect());
-        return [...document.querySelectorAll('label')].flatMap((label) => {
-            const range = document.createRange();
-            range.selectNodeContents(label);
-            const text = range.getBoundingClientRect();
-            const covered = drawers.some(
-                (box) =>
-                    box.left < text.right &&
-                    text.left < box.right &&
-                    box.top < text.bottom &&
-                    text.top < box.bottom,
+async function chromeOverlaps(page: Page): Promise<string[]> {
+    return page.locator(FIELD_CONTROLS).evaluateAll((wraps) =>
+        wraps.flatMap((wrap) => {
+            const chrome = wrap.querySelector(':scope > .ez-field-chrome');
+            if (!chrome) return [`${wrap.className}: no chrome`];
+            const layer = wrap.matches('.tag-input-wrap')
+                ? wrap
+                : [
+                      ...wrap.querySelectorAll<HTMLElement>(
+                          ':scope > .marking-field-host, :scope > .marking-field-display, :scope > .marked-input-display, :scope > .marked-textarea-display',
+                      ),
+                  ].find((shown) =>
+                      shown.checkVisibility({ opacityProperty: true }),
+                  );
+            if (!layer) return [`${wrap.className}: no text layer`];
+            const edge = chrome.getBoundingClientRect().left;
+            const box = layer.getBoundingClientRect();
+            const style = getComputedStyle(layer);
+            const content =
+                box.right -
+                parseFloat(style.borderRightWidth) -
+                parseFloat(style.paddingRight);
+            let text = 0;
+            const walker = document.createTreeWalker(
+                layer,
+                NodeFilter.SHOW_TEXT,
             );
-            return covered ? [label.textContent?.trim() ?? ''] : [];
-        });
-    });
+            for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+                if (chrome.contains(node)) continue;
+                const range = document.createRange();
+                range.selectNodeContents(node);
+                for (const rect of range.getClientRects())
+                    text = Math.max(text, rect.right);
+            }
+            return content > edge || text > edge
+                ? [
+                      `${wrap.className}: text to ${Math.max(content, text)}, chrome at ${edge}`,
+                  ]
+                : [];
+        }),
+    );
+}
+
+/**
+ * Status marks whose color does not say what the field has: muted while it has
+ * nothing to say, the field's own text color once it has a message.
+ *
+ * @param page - The page under test.
+ * @returns One entry per mismatched mark.
+ */
+async function markToneMismatches(page: Page): Promise<string[]> {
+    return page
+        .locator('.ez-field-chrome .ez-status-mark')
+        .evaluateAll((marks) =>
+            marks.flatMap((mark) => {
+                const quiet = mark.classList.contains('ez-status-mark--quiet');
+                const color = getComputedStyle(mark).color;
+                const expected = quiet
+                    ? 'rgb(156, 163, 175)'
+                    : getComputedStyle(mark.parentElement!).color;
+                return color === expected
+                    ? []
+                    : [`${quiet ? 'quiet' : 'message'} mark is ${color}`];
+            }),
+        );
 }
 
 /** The outer element of each of the five field controls. */
@@ -272,6 +323,8 @@ for (const viewport of [
                 },
             );
             expect(hint.width).toBeLessThanOrEqual(hint.room);
+            expect(await chromeOverlaps(page)).toEqual([]);
+            expect(await markToneMismatches(page)).toEqual([]);
 
             for (const [id, field] of Object.entries(fields)) {
                 observed.step = `focus-${id}`;
@@ -280,6 +333,7 @@ for (const viewport of [
                 await settle(observed);
                 // Focus adds one ring inside the edge; the edge itself holds.
                 expect(await fieldEdges(page)).toEqual(edges);
+                expect(await chromeOverlaps(page)).toEqual([]);
                 const focused = await outlines(field);
                 expect(focused.length, focused.join(' / ')).toBe(
                     atRest.length + 1,
@@ -293,8 +347,8 @@ for (const viewport of [
                 await page.keyboard.press('Alt+ArrowDown');
                 await expect(composer).toBeVisible();
                 await settle(observed);
-                // The field's chrome stays clear of every label's text.
-                expect(await labelOverlaps(page)).toEqual([]);
+                // The field's chrome stays inline, clear of the field's text.
+                expect(await chromeOverlaps(page)).toEqual([]);
                 const field = fields[id];
                 const value = await field.inputValue();
                 const headings = composer.locator(
@@ -427,3 +481,83 @@ for (const viewport of [
         });
     });
 }
+
+test.describe('README document form beside monospace fields', () => {
+    test.use({ viewport: { width: 1280, height: 900 } });
+
+    test("keeps the page font in the library's chrome and the field's font in its text", async ({
+        page,
+    }, info) => {
+        const observed = observe(page);
+        // A host stylesheet that sets its fields in a monospace face. Adopted
+        // before the page loads, so the fields mirror it when they enhance.
+        await page.addInitScript(() => {
+            const sheet = new CSSStyleSheet();
+            sheet.replaceSync(
+                'input, textarea { font-family: "Courier New", monospace; }',
+            );
+            document.adoptedStyleSheets = [
+                ...document.adoptedStyleSheets,
+                sheet,
+            ];
+        });
+        const family = (locator: Locator) =>
+            locator.evaluate((element) => getComputedStyle(element).fontFamily);
+
+        await page.goto('/');
+        const body = page.locator('textarea#body');
+        const summary = page.locator('input.tag-input-filter');
+        await expect(body).toBeVisible({ timeout: 60_000 });
+        await settle(observed);
+
+        const pageFont = await family(page.locator('body'));
+        const fieldFont = await family(body);
+        expect(fieldFont).toContain('monospace');
+        expect(pageFont).not.toContain('monospace');
+
+        // The field's own text keeps the control's face.
+        expect(await family(page.locator('.marked-textarea-display'))).toBe(
+            fieldFont,
+        );
+        // In-flow chrome beside the field reads the page font.
+        expect(await family(page.locator('.marked-textarea-kb-hint'))).toBe(
+            pageFont,
+        );
+
+        // The composer, portaled to the body, reads the page font whether it
+        // opens from the tag field or the text area's inline editor, in the
+        // README path's order.
+        const composer = page.locator('.ez-composer:not([hidden])');
+        observed.step = 'browse-summary';
+        await summary.focus();
+        await page.keyboard.press('Alt+ArrowDown');
+        await expect(composer).toBeVisible();
+        await settle(observed);
+        expect(await family(composer)).toBe(pageFont);
+        await page.keyboard.press('Escape');
+        await expect(composer).toHaveCount(0);
+        await settle(observed);
+
+        observed.step = 'marking-body';
+        await body.focus();
+        await page.keyboard.press('ControlOrMeta+Enter');
+        await expect(composer).toBeVisible();
+        await settle(observed);
+        expect(await family(composer)).toBe(pageFont);
+        expect(
+            await family(composer.locator('.ez-composer__group-label').first()),
+        ).toBe(pageFont);
+        await page.screenshot({
+            path: await evidencePath(
+                `${info.project.name}-monospace-marking-body.png`,
+            ),
+            animations: 'disabled',
+        });
+        await page.keyboard.press('Escape');
+        await expect(composer).toHaveCount(0);
+        await settle(observed);
+
+        expect(observed.failures).toEqual([]);
+        expect(observed.errors).toEqual([]);
+    });
+});

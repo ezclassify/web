@@ -1,216 +1,273 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { Context } from '@ezclassify/engine';
-import type { Assertion, LocalSchemeEngineAdapter } from '@ezclassify/types';
+import {
+    openContext,
+    schemeOnlyContext,
+} from '../../test-fixtures/context-doubles';
+import type {
+    Assertion,
+    LocalContextSchemeEngineAdapter,
+} from '@ezclassify/types';
+import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { SingleSelect } from './single-select';
-function makeEngine(
+import {
+    connectDemoContext,
+    demoRuntimeSettled,
+} from '../../../../test-support/demo-runtime';
+async function makeEngine(
     withTextInput = false,
     calendarValue = false,
-): LocalSchemeEngineAdapter {
-    return Context.fromComponents({
-        scheme: {
-            scheme: {
-                id: 'test-select',
-                version: '1.0.0',
-                name: 'Test Select',
-                description: '',
-                data: {
-                    categories: [
-                        {
-                            id: 'level',
-                            label: 'Level',
-                            required: false,
-                            single: true,
-                            rollup: 'max',
-                            position: 0,
-                            hierarchy_root: true,
-                        },
-                    ],
-                    concepts: {
-                        inline: [
-                            {
-                                id: 'level-1',
-                                name: 'Level 1',
-                                views: { default: 'L1' },
-                                definition:
-                                    'Choose this level for the first tier.',
-                                aliases: [],
-                                categories: ['level'],
-                                parents: [],
-                                position: 1,
-                                rank: 0,
-                            },
-                            {
-                                id: 'level-2',
-                                name: 'Level 2',
-                                views: { default: 'L2' },
-                                aliases: [],
-                                categories: ['level'],
-                                parents: [],
-                                position: 2,
-                                rank: 1,
-                            },
-                            {
-                                id: 'level-3',
-                                name: 'Level 3',
-                                views: {
-                                    default: calendarValue ? '{value}' : 'L3',
+): Promise<LocalContextSchemeEngineAdapter> {
+    return openContext(
+        await connectDemoContext({
+            draft: {
+                scheme: {
+                    scheme: {
+                        id: 'test-select',
+                        version: '1.0.0',
+                        name: 'Test Select',
+                        description: '',
+                        data: {
+                            categories: [
+                                {
+                                    id: 'level',
+                                    label: 'Level',
+                                    required: false,
+                                    single: true,
+                                    rollup: 'max',
+                                    position: 0,
+                                    hierarchy_root: true,
                                 },
-                                ...(withTextInput
-                                    ? {
-                                          text_input: {
-                                              encoding: calendarValue
-                                                  ? {
-                                                        type: 'calendar-date',
-                                                        canonical: 'YYYY-MM-DD',
-                                                        accepts: [
-                                                            'YYYYMMDD',
-                                                            'YYYY-MM-DD',
-                                                        ],
-                                                        views: {
-                                                            default: 'YYYYMMDD',
+                            ],
+                            concepts: [
+                                {
+                                    id: 'level-1',
+                                    name: 'Level 1',
+                                    views: { default: 'L1' },
+                                    definition:
+                                        'Choose this level for the first tier.',
+                                    aliases: [],
+                                    categories: ['level'],
+                                    parents: [],
+                                    position: 1,
+                                    rank: 0,
+                                },
+                                {
+                                    id: 'level-2',
+                                    name: 'Level 2',
+                                    views: { default: 'L2' },
+                                    aliases: [],
+                                    categories: ['level'],
+                                    parents: [],
+                                    position: 2,
+                                    rank: 1,
+                                },
+                                {
+                                    id: 'level-3',
+                                    name: 'Level 3',
+                                    views: {
+                                        default: calendarValue
+                                            ? '{value}'
+                                            : 'L3',
+                                    },
+                                    ...(withTextInput
+                                        ? {
+                                              text_input: {
+                                                  encoding: calendarValue
+                                                      ? {
+                                                            type: 'calendar-date',
+                                                            canonical:
+                                                                'YYYY-MM-DD',
+                                                            accepts: [
+                                                                'YYYYMMDD',
+                                                                'YYYY-MM-DD',
+                                                            ],
+                                                            views: {
+                                                                default:
+                                                                    'YYYYMMDD',
+                                                            },
+                                                        }
+                                                      : {
+                                                            type: 'text',
+                                                            pattern: '\\d{8}',
                                                         },
-                                                    }
-                                                  : {
-                                                        type: 'text',
-                                                        pattern: '\\d{8}',
-                                                    },
-                                              placeholder: 'YYYYMMDD',
-                                              label: 'Review date',
-                                              required: true,
-                                          },
-                                      }
-                                    : {}),
-                                aliases: [],
-                                categories: ['level'],
-                                parents: [],
-                                position: 3,
-                                rank: 2,
-                            },
-                        ],
+                                                  placeholder: 'YYYYMMDD',
+                                                  label: 'Review date',
+                                                  required: true,
+                                              },
+                                          }
+                                        : {}),
+                                    aliases: [],
+                                    categories: ['level'],
+                                    parents: [],
+                                    position: 3,
+                                    rank: 2,
+                                },
+                            ],
+                        },
+                        rules: [],
+                        rollup_pipelines: [],
+                        render: {
+                            default: 'default',
+                            formats: [
+                                {
+                                    id: 'default',
+                                    surface: 'marking',
+                                    mode: 'inline',
+                                    separator: '//',
+                                    fields: [
+                                        { category: 'level', separator: '//' },
+                                    ],
+                                },
+                            ],
+                        },
                     },
                 },
-                rules: [],
-                rollup_pipelines: [],
-                parse: {
-                    case_sensitive: false,
-                    strip_whitespace: true,
-                },
-                render: {
-                    default: 'default',
-                    formats: [
-                        {
-                            id: 'default',
-                            surface: 'marking',
-                            mode: 'inline',
-                            separator: '//',
-                            fields: [{ category: 'level', separator: '//' }],
-                        },
-                    ],
-                },
             },
-        },
-    }).scheme as LocalSchemeEngineAdapter;
+        }),
+    ).scheme as LocalContextSchemeEngineAdapter;
 }
 
 // Same shape as makeEngine, but the level category drives the display color
 // (render.color_from) and each level concept carries an authority-mandated
 // color pair. Used to prove the cards adopt the mandated color.
-function makeColoredEngine(): LocalSchemeEngineAdapter {
+async function makeColoredEngine(): Promise<LocalContextSchemeEngineAdapter> {
     const colors: Record<string, { background: string; text: string }> = {
         'level-1': { background: '#00a651', text: '#ffffff' },
         'level-2': { background: '#ff8c00', text: '#000000' },
         'level-3': { background: '#c8102e', text: '#ffffff' },
     };
-    return Context.fromComponents({
-        scheme: {
-            scheme: {
-                id: 'test-select-colored',
-                version: '1.0.0',
-                name: 'Test Select Colored',
-                description: '',
-                data: {
-                    categories: [
-                        {
-                            id: 'level',
-                            label: 'Level',
-                            required: false,
-                            single: true,
-                            rollup: 'max',
-                            position: 0,
-                            hierarchy_root: true,
+    return openContext(
+        await connectDemoContext({
+            draft: {
+                scheme: {
+                    scheme: {
+                        id: 'test-select-colored',
+                        version: '1.0.0',
+                        name: 'Test Select Colored',
+                        description: '',
+                        data: {
+                            categories: [
+                                {
+                                    id: 'level',
+                                    label: 'Level',
+                                    required: false,
+                                    single: true,
+                                    rollup: 'max',
+                                    position: 0,
+                                    hierarchy_root: true,
+                                },
+                            ],
+                            concepts: [
+                                {
+                                    id: 'level-1',
+                                    name: 'Level 1',
+                                    views: { default: 'L1' },
+                                    color: colors['level-1'],
+                                    aliases: [],
+                                    categories: ['level'],
+                                    parents: [],
+                                    position: 1,
+                                    rank: 0,
+                                },
+                                {
+                                    id: 'level-2',
+                                    name: 'Level 2',
+                                    views: { default: 'L2' },
+                                    color: colors['level-2'],
+                                    aliases: [],
+                                    categories: ['level'],
+                                    parents: [],
+                                    position: 2,
+                                    rank: 1,
+                                },
+                                {
+                                    id: 'level-3',
+                                    name: 'Level 3',
+                                    views: { default: 'L3' },
+                                    color: colors['level-3'],
+                                    aliases: [],
+                                    categories: ['level'],
+                                    parents: [],
+                                    position: 3,
+                                    rank: 2,
+                                },
+                            ],
                         },
-                    ],
-                    concepts: {
-                        inline: [
-                            {
-                                id: 'level-1',
-                                name: 'Level 1',
-                                views: { default: 'L1' },
-                                color: colors['level-1'],
-                                aliases: [],
-                                categories: ['level'],
-                                parents: [],
-                                position: 1,
-                                rank: 0,
-                            },
-                            {
-                                id: 'level-2',
-                                name: 'Level 2',
-                                views: { default: 'L2' },
-                                color: colors['level-2'],
-                                aliases: [],
-                                categories: ['level'],
-                                parents: [],
-                                position: 2,
-                                rank: 1,
-                            },
-                            {
-                                id: 'level-3',
-                                name: 'Level 3',
-                                views: { default: 'L3' },
-                                color: colors['level-3'],
-                                aliases: [],
-                                categories: ['level'],
-                                parents: [],
-                                position: 3,
-                                rank: 2,
-                            },
-                        ],
+                        rules: [],
+                        rollup_pipelines: [],
+                        render: {
+                            default: 'default',
+                            color_from: 'level',
+                            formats: [
+                                {
+                                    id: 'default',
+                                    surface: 'marking',
+                                    mode: 'inline',
+                                    separator: '//',
+                                    fields: [
+                                        { category: 'level', separator: '//' },
+                                    ],
+                                },
+                            ],
+                        },
                     },
                 },
-                rules: [],
-                rollup_pipelines: [],
-                parse: {
-                    case_sensitive: false,
-                    strip_whitespace: true,
-                },
-                render: {
-                    default: 'default',
-                    color_from: 'level',
-                    formats: [
-                        {
-                            id: 'default',
-                            surface: 'marking',
-                            mode: 'inline',
-                            separator: '//',
-                            fields: [{ category: 'level', separator: '//' }],
-                        },
-                    ],
-                },
             },
-        },
-    }).scheme as LocalSchemeEngineAdapter;
+        }),
+    ).scheme as LocalContextSchemeEngineAdapter;
 }
 
-const toCtx = (eng: unknown) => Context.fromSchemeEngine(eng as never);
+const toCtx = (eng: unknown) => schemeOnlyContext(eng as never);
+
+/**
+ * A selector's weight: ids, then classes, attributes and pseudo-classes, then
+ * elements.
+ */
+type Specificity = [number, number, number];
+
+/**
+ * The specificity of one compound selector list item, enough for the selectors
+ * this library writes: `:where()` weighs nothing, and `:is()` and `:not()`
+ * weigh their heaviest argument.
+ */
+function specificity(selector: string): Specificity {
+    let rest = selector;
+    const weight: Specificity = [0, 0, 0];
+    rest = rest.replace(/:where\((?:[^()]|\([^()]*\))*\)/g, ' ');
+    rest = rest.replace(
+        /:(?:is|not)\(((?:[^()]|\([^()]*\))*)\)/g,
+        (_, inner: string) => {
+            const heaviest = inner
+                .split(',')
+                .map(specificity)
+                .sort((a, b) => compareSpecificity(b, a))[0];
+            for (let i = 0; i < 3; i++) weight[i] += heaviest[i];
+            return ' ';
+        },
+    );
+    weight[0] += (rest.match(/#[\w-]+/g) ?? []).length;
+    weight[1] += (rest.match(/\.[\w-]+|\[[^\]]*\]|:(?!:)[\w-]+/g) ?? []).length;
+    weight[2] += (
+        rest.match(/(?:^|[\s>+~])[a-z][\w-]*|::[\w-]+/gi) ?? []
+    ).length;
+    return weight;
+}
+
+function compareSpecificity(a: Specificity, b: Specificity): number {
+    for (let i = 0; i < 3; i++) if (a[i] !== b[i]) return a[i] - b[i];
+    return 0;
+}
+
 describe('SingleSelect', () => {
     let container: HTMLDivElement;
-    let engine: LocalSchemeEngineAdapter;
+    let engine: LocalContextSchemeEngineAdapter;
     let component: SingleSelect;
     beforeEach(async () => {
         container = document.createElement('div');
         document.body.appendChild(container);
-        engine = makeEngine();
+        engine = await makeEngine();
         component = new SingleSelect();
     });
     it('renders a conventional select by default', async () => {
@@ -222,6 +279,45 @@ describe('SingleSelect', () => {
         expect(container.querySelector('.select-card')).toBeNull();
         component.destroy();
     });
+    it("leaves the select's type size to a host rule for its selects", async () => {
+        await component.init(container, toCtx(engine));
+        const select =
+            container.querySelector<HTMLSelectElement>('.select-dropdown')!;
+        // A host sizes its selects with a class and an element, e.g.
+        // `.demo select { font-size: 1rem }`. Every library rule that sets the
+        // select's type must weigh less, so the host's size stands.
+        const host: Specificity = [0, 1, 1];
+        const style = document.createElement('style');
+        style.textContent = readFileSync(
+            join(dirname(fileURLToPath(import.meta.url)), 'single-select.css'),
+            'utf8',
+        );
+        document.head.appendChild(style);
+        const typeRules: string[] = [];
+        const walk = (rules: CSSRuleList) => {
+            for (const rule of Array.from(rules)) {
+                if (rule instanceof CSSMediaRule) walk(rule.cssRules);
+                if (!(rule instanceof CSSStyleRule)) continue;
+                const setsType = ['font', 'font-size'].some((name) =>
+                    rule.style.getPropertyValue(name),
+                );
+                if (!setsType) continue;
+                for (const selector of rule.selectorText.split(','))
+                    if (select.matches(selector))
+                        typeRules.push(selector.trim());
+            }
+        };
+        walk(style.sheet!.cssRules);
+        style.remove();
+        expect(typeRules.length).toBeGreaterThan(0);
+        for (const selector of typeRules)
+            expect(
+                compareSpecificity(specificity(selector), host),
+                selector,
+            ).toBeLessThan(0);
+        component.destroy();
+    });
+
     it('keeps choices compact and previews help in one shared detail panel', async () => {
         await component.init(container, toCtx(engine), { mode: 'cards' });
         const cards = container.querySelectorAll<HTMLElement>('.select-card');
@@ -234,6 +330,7 @@ describe('SingleSelect', () => {
         expect(detail.textContent).toContain('Select Level');
 
         cards[0].dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }));
+        await demoRuntimeSettled();
         expect(detail.dataset.state).toBe('preview');
         expect(detail.textContent).toContain('L1');
         expect(detail.textContent).toContain(
@@ -241,16 +338,18 @@ describe('SingleSelect', () => {
         );
 
         cards[0].dispatchEvent(new MouseEvent('mouseleave', { bubbles: true }));
+        await demoRuntimeSettled();
         expect(detail.dataset.state).toBe('empty');
 
         cards[0].click();
+        await demoRuntimeSettled();
         expect(detail.dataset.state).toBe('selected');
         expect(detail.textContent).toContain('L1');
         component.destroy();
     });
     it('fills cards from authority-mandated colors (render.color_from)', async () => {
         // No host colorMap: the mandated per-concept color drives each card.
-        const coloredEngine = makeColoredEngine();
+        const coloredEngine = await makeColoredEngine();
         await component.init(container, toCtx(coloredEngine), {
             mode: 'cards',
         });
@@ -267,16 +366,18 @@ describe('SingleSelect', () => {
         component.destroy();
     });
     it('puts a selected concept text field below the default select', async () => {
-        const textInputEngine = makeEngine(true);
+        const textInputEngine = await makeEngine(true);
         await component.init(container, toCtx(textInputEngine));
         const select =
             container.querySelector<HTMLSelectElement>('.select-dropdown')!;
         select.value = 'level-3';
         select.dispatchEvent(new Event('change', { bubbles: true }));
+        await demoRuntimeSettled();
 
         // A text choice is only a local draft until it has a valid value.
         // A scoped engine or store refresh can return no complete assertion.
         component.setAssertions([]);
+        await demoRuntimeSettled();
         await vi.waitFor(() => expect(select.value).toBe('level-3'));
 
         const supplement = container.querySelector(
@@ -320,11 +421,12 @@ describe('SingleSelect', () => {
 
         select.value = 'level-1';
         select.dispatchEvent(new Event('change', { bubbles: true }));
+        await demoRuntimeSettled();
         expect(supplement.querySelector('.select-card-text-field')).toBeNull();
         component.destroy();
     });
     it('keeps a real canonical calendar choice across a second edit and clear', async () => {
-        const calendar = makeEngine(true, true);
+        const calendar = await makeEngine(true, true);
         const raw: Assertion = {
             conceptId: 'level-3',
             categoryId: 'level',
@@ -341,6 +443,7 @@ describe('SingleSelect', () => {
         expect(result.appliedFixes).toEqual([]);
         await component.init(container, toCtx(calendar));
         component.setAssertions([raw]);
+        await demoRuntimeSettled();
         expect(component.getAssertions()[0]).toMatchObject({
             ...raw,
             value: '2035-09-30',
@@ -362,8 +465,8 @@ describe('SingleSelect', () => {
         component.destroy();
     });
 
-    it('makes an explicit selected-value edit a fresh user choice without changing provider provenance', async () => {
-        const textEngine = makeEngine(true);
+    it('makes an explicit selected-value edit a fresh user choice', async () => {
+        const textEngine = await makeEngine(true);
         const process = textEngine.process.bind(textEngine);
         const derived: Assertion = {
             conceptId: 'level-3',
@@ -372,14 +475,6 @@ describe('SingleSelect', () => {
             source: 'infer',
             confidence: 'inferred',
             sourceRule: 'suggest-value',
-            provenance: {
-                providerId: 'fixture-provider',
-                reproducibility: 'best-effort',
-                attribution: {
-                    name: 'Fixture provider',
-                    license: 'Apache-2.0',
-                },
-            },
         };
         const canonical = await process([
             { ...derived, source: 'user', confidence: 'certain' },
@@ -396,6 +491,7 @@ describe('SingleSelect', () => {
                 confidence: 'certain',
             },
         ]);
+        await demoRuntimeSettled();
         const beforeEdit = component.getAssertions()[0];
         spy.mockImplementation(process);
         const input = container.querySelector<HTMLInputElement>(
@@ -421,11 +517,12 @@ describe('SingleSelect', () => {
     });
 
     it('does not reclaim focus when a user leaves a text choice before the next frame', async () => {
-        await component.init(container, toCtx(makeEngine(true)));
+        await component.init(container, toCtx(await makeEngine(true)));
         const select =
             container.querySelector<HTMLSelectElement>('.select-dropdown')!;
         select.value = 'level-3';
         select.dispatchEvent(new Event('change', { bubbles: true }));
+        await demoRuntimeSettled();
         const input = container.querySelector<HTMLInputElement>(
             '.select-card-text-field',
         )!;
@@ -440,11 +537,12 @@ describe('SingleSelect', () => {
         component.destroy();
     });
     it('clears an incomplete text choice on an explicit value reset', async () => {
-        await component.init(container, toCtx(makeEngine(true)));
+        await component.init(container, toCtx(await makeEngine(true)));
         const select =
             container.querySelector<HTMLSelectElement>('.select-dropdown')!;
         select.value = 'level-3';
         select.dispatchEvent(new Event('change', { bubbles: true }));
+        await demoRuntimeSettled();
         expect(select.value).toBe('level-3');
 
         await component.setValue('');
@@ -453,7 +551,7 @@ describe('SingleSelect', () => {
         component.destroy();
     });
     it('host colorMap wins over the scheme default color', async () => {
-        const coloredEngine = makeColoredEngine();
+        const coloredEngine = await makeColoredEngine();
         const colorMap = {
             'level-1': { background: '#111111', text: '#eeeeee' },
         };
@@ -517,6 +615,7 @@ describe('SingleSelect', () => {
             '.select-card',
         ) as NodeListOf<HTMLElement>;
         cards[0].click();
+        await demoRuntimeSettled();
         // Re-query after render
         const updatedCards = container.querySelectorAll(
             '.select-card',
@@ -550,6 +649,7 @@ describe('SingleSelect', () => {
             '.select-card',
         ) as NodeListOf<HTMLElement>;
         cards[0].click();
+        await demoRuntimeSettled();
         const indicators = container.querySelectorAll(
             '.select-card-indicator',
         ) as NodeListOf<HTMLElement>;
@@ -594,6 +694,7 @@ describe('SingleSelect', () => {
                     bubbles: true,
                 }),
             );
+            await demoRuntimeSettled();
 
             const updated =
                 container.querySelectorAll<HTMLElement>('.select-card');
@@ -615,6 +716,7 @@ describe('SingleSelect', () => {
             cards[1].dispatchEvent(
                 new KeyboardEvent('keydown', { key: 'ArrowUp', bubbles: true }),
             );
+            await demoRuntimeSettled();
 
             const updated =
                 container.querySelectorAll<HTMLElement>('.select-card');
@@ -665,6 +767,7 @@ describe('SingleSelect', () => {
                     source: 'user',
                 },
             ]);
+            await demoRuntimeSettled();
             const cards =
                 container.querySelectorAll<HTMLElement>('.select-card');
             const tabStops = Array.from(cards).filter((c) => c.tabIndex === 0);

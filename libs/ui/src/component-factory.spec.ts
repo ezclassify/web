@@ -4,8 +4,11 @@ import {
     resolveNativeInput,
     createMountContainer,
     createComponent,
+    createHostComponent,
+    componentNameForHost,
     buildComponentOptions,
 } from './component-factory';
+import { TranslatedView } from './components/translated-view';
 import type { ControllerName } from './element-scanner';
 
 describe('parseComponentOptions', () => {
@@ -13,18 +16,6 @@ describe('parseComponentOptions', () => {
 
     beforeEach(() => {
         el = document.createElement('div');
-    });
-
-    it('maps `format` to formatId', () => {
-        expect(parseComponentOptions(el, { format: 'banner' })).toEqual(
-            expect.objectContaining({ formatId: 'banner' }),
-        );
-    });
-
-    it('maps `category` to categoryId', () => {
-        expect(parseComponentOptions(el, { category: 'level' })).toEqual(
-            expect.objectContaining({ categoryId: 'level' }),
-        );
     });
 
     it('passes through `size` unchanged', () => {
@@ -42,8 +33,19 @@ describe('parseComponentOptions', () => {
     it('reads scope from data-ezclassify-scope on the host element', () => {
         el.setAttribute('data-ezclassify-scope', 'my-scope');
         expect(parseComponentOptions(el, {})).toEqual(
-            expect.objectContaining({ scope: 'my-scope' }),
+            expect.objectContaining({
+                scope: 'my-scope',
+                scopes: ['my-scope'],
+            }),
         );
+    });
+
+    it('reads data-ezclassify-scope as a space-separated list of scopes', () => {
+        el.setAttribute('data-ezclassify-scope', ' marking  record marking ');
+        const opts = parseComponentOptions(el, {});
+        expect(opts.scopes).toEqual(['marking', 'record']);
+        // One surface a field reads as exists only when one scope is named.
+        expect(opts.scope).toBeUndefined();
     });
 
     it('maps `parent-concept` to parentConcept', () => {
@@ -105,37 +107,28 @@ describe('parseComponentOptions', () => {
     });
 
     it('extracts multiple options at once', () => {
-        const opts = parseComponentOptions(el, {
-            'format': 'short',
-            'category': 'level',
-            'show-preview': '',
-        });
+        el.setAttribute('data-ezclassify-format', 'short');
+        el.setAttribute('data-ezclassify-category', 'level');
+        const opts = parseComponentOptions(el, { 'show-preview': '' });
         expect(opts.formatId).toBe('short');
         expect(opts.categoryId).toBe('level');
         expect(opts.showPreview).toBe(true);
     });
 
-    it('falls back to data-ezclassify-category on the host when no controller option set', () => {
+    it('reads the category from data-ezclassify-category on the host', () => {
         el.setAttribute('data-ezclassify-category', 'level');
         expect(parseComponentOptions(el, {})).toEqual(
             expect.objectContaining({ categoryId: 'level' }),
         );
     });
 
-    it('falls back to data-ezclassify-format on the host when no controller option set', () => {
+    it('reads the format from data-ezclassify-format on the host', () => {
         // `data-ezclassify-format` is a host-level attribute in the documented
-        // grammar, like scheme / scope / category: one attribute, one meaning,
+        // grammar, like scope and category: one attribute, one meaning,
         // wherever it is written. A controller host must honor it.
         el.setAttribute('data-ezclassify-format', 'banner');
         expect(parseComponentOptions(el, {})).toEqual(
             expect.objectContaining({ formatId: 'banner' }),
-        );
-    });
-
-    it('prefers the controller-prefixed format option over the host attribute', () => {
-        el.setAttribute('data-ezclassify-format', 'banner');
-        expect(parseComponentOptions(el, { format: 'inline' })).toEqual(
-            expect.objectContaining({ formatId: 'inline' }),
         );
     });
 
@@ -145,19 +138,12 @@ describe('parseComponentOptions', () => {
     });
 
     it('does not inherit data-ezclassify-format from an ancestor', () => {
-        // Unlike `scheme`, format is per-field: a wrapper that sets one field's
-        // format must not silently retag every controller beneath it.
+        // Format is per-field: a wrapper that sets one field's format must not
+        // silently retag every controller beneath it.
         const parent = document.createElement('div');
         parent.setAttribute('data-ezclassify-format', 'banner');
         parent.appendChild(el);
         expect(parseComponentOptions(el, {}).formatId).toBeUndefined();
-    });
-
-    it('reads data-ezclassify-scheme as schemeId', () => {
-        el.setAttribute('data-ezclassify-scheme', 'scheme-x');
-        expect(parseComponentOptions(el, {})).toEqual(
-            expect.objectContaining({ schemeId: 'scheme-x' }),
-        );
     });
 });
 
@@ -222,12 +208,6 @@ describe('createMountContainer', () => {
         expect(input.style.display).toBe('none');
     });
 
-    it('returns the element itself for the card controller (read-only)', () => {
-        const el = document.createElement('div');
-        const container = createMountContainer(el, 'card');
-        expect(container).toBe(el);
-    });
-
     it('returns the element itself for the banner controller (read-only)', () => {
         const el = document.createElement('div');
         const container = createMountContainer(el, 'banner');
@@ -249,9 +229,7 @@ describe('createComponent', () => {
         'select',
         'checklist',
         'selector',
-        'card',
         'banner',
-        'dualpane',
         'handbook',
         'decisionflow',
         'hidden',
@@ -271,6 +249,35 @@ describe('createComponent', () => {
     it('returns null for an unknown controller', () => {
         const component = createComponent('not-a-controller' as any);
         expect(component).toBeNull();
+    });
+});
+
+describe('createHostComponent', () => {
+    function translated(): HTMLElement {
+        const el = document.createElement('span');
+        el.setAttribute('data-ezclassify-source', 'memo1');
+        el.setAttribute('data-ezclassify-translate', 'tier-to-label');
+        return el;
+    }
+
+    it('mounts a translated view on a host with data-ezclassify-translate', () => {
+        const el = translated();
+        expect(createHostComponent(el, null)).toBeInstanceOf(TranslatedView);
+        expect(componentNameForHost(el, null)).toBe('TranslatedView');
+    });
+
+    it('mounts a translated view in place', () => {
+        const parent = document.createElement('div');
+        const el = translated();
+        parent.appendChild(el);
+        expect(createMountContainer(el, null)).toBe(el);
+        expect(parent.querySelector('[data-ezclassify-mount]')).toBeNull();
+    });
+
+    it('mounts the controller component on any other host', () => {
+        const el = document.createElement('div');
+        expect(componentNameForHost(el, 'banner')).toBe('StatusBanner');
+        expect(createHostComponent(el, null)).toBeNull();
     });
 });
 

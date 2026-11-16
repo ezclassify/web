@@ -22,8 +22,11 @@
  *
  * One replay server per example, because the replay server permits exactly one
  * browser origin. The Angular example reads its server from
- * `src/environments/environment.ts`, so it gets the README's default port; the
- * Vite examples read `VITE_EZCLASSIFY_URL`.
+ * `src/environments/environment.ts`, so its replay takes the README's default
+ * port (3000); the Vite examples read `VITE_EZCLASSIFY_URL`. That is also the
+ * port the README runs the developer runtime on, and the lane never reuses a
+ * server it did not start, so stop a local developer runtime before `npm run
+ * e2e`.
  */
 export const EXAMPLES = [
     {
@@ -50,7 +53,7 @@ export const EXAMPLES = [
     {
         name: 'angular-example',
         appPort: 4200,
-        serverPort: 4010,
+        serverPort: 3000,
         dev: 'npm start',
     },
 ];

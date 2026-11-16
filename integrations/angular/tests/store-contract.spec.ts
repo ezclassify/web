@@ -26,7 +26,7 @@ import {
     runEzClassifyStoreConformance,
     runEzClassifyStoreBudgetConformance,
     runEzClassifyStoreFacetConformance,
-} from '@ezclassify/testing-utils';
+} from '../../../test-support/store-conformance';
 import { ReactEzClassifyStore } from '@ezclassify/react';
 import { VueRefStore } from '@ezclassify/vue';
 import { AngularSignalStore } from '@ezclassify/angular';

@@ -22,25 +22,33 @@ import * as ui from './index';
 
 describe('@ezclassify/ui public surface', () => {
     const intendedPublicComponents = [
-        'AssertionCard',
         'TagInput',
+        'Handbook',
+        'ContextReference',
+        'MarkedTextArea',
+        'MarkedInput',
+    ] as const;
+
+    // Every other control mounts through its data-ezclassify-controller
+    // attribute, so its class is not part of the package contract.
+    const attributeOnlyComponents = [
         'DualPane',
         'CategoryChecklist',
         'CategorySelector',
         'SingleSelect',
         'StatusBanner',
-        'Handbook',
         'Guidebook',
-        'ContextReference',
         'GuideChecklist',
         'DecisionFlow',
         'HiddenAssertionField',
         'EzClassifyText',
-        'MarkedTextArea',
-        'MarkedInput',
         'MarkingField',
         'EquivalencyMap',
     ] as const;
+
+    it.each(attributeOnlyComponents)('does not export the class %s', (name) => {
+        expect((ui as Record<string, unknown>)[name]).toBeUndefined();
+    });
 
     it.each(intendedPublicComponents)(
         're-exports the public component %s',
@@ -136,16 +144,15 @@ describe('EzClassifyUI published declaration', () => {
     // host applications load a value through a mounted field's own `setValue`
     // (see docs/binding-model.md).
     const publicMembers = [
-        'engine',
         'root',
         'store',
         'components',
         'isReady',
         'constructor',
         'recalculate',
-        'getRollup',
+        'add',
+        'remove',
         'getAllAssertions',
-        'getAssertionsByTarget',
         'copyMarkingToClipboard',
         'destroy',
     ];

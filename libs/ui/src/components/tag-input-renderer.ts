@@ -1,17 +1,21 @@
 /**
  * Chip rendering pipeline for TagInput.
  *
- * One pill per assertion, in the print order the engine returned, including
- * facts omitted from print. The UI does not reconstruct marking order from
- * category or header metadata.
+ * One pill per value of the marking. The chips go in the order the field's
+ * output writes their categories (`categoryOrder` from the scheme metadata),
+ * and within a category in the order the engine returned them.
  *
  * A chip's style says who stated the fact. A solid chip is the author's; a fact
  * the engine derived (a default, an inference, a value taken from the whole) is
  * dashed and has no remove button, because removing it would only have the
- * engine derive it again. A fact the rendered marking leaves out, such as one
- * the scheme suppresses from print, is drawn faded: the field holds it, the
- * marking does not show it. Text the engine could not read follows the chips as
- * flagged pills of its own, so the chips hold everything the field does.
+ * engine derive it again. A fact the marking holds but does not write is drawn
+ * faded. For a derived one, such as a member collapsed into its group's written
+ * name or a default no output prints, the chip says why in its tooltip and its
+ * accessible name: "Included by" the value it is written under, or that it is a
+ * default the marking does not write. Which facts the marking writes, and why
+ * one is left out, come from the engine's render assessments (see
+ * written-facts.ts), never from concept ids. Text the engine could not read
+ * follows the chips as flagged pills of its own.
  */
 
 import type {
@@ -20,6 +24,8 @@ import type {
     SchemePublicView,
 } from '@ezclassify/types';
 import { resolveMarkingColor } from '../color-resolver';
+import { t } from '../i18n';
+import type { UnwrittenFact } from '../written-facts';
 import {
     getPublicFormatLayout,
     type FormatLayoutSource,
@@ -55,6 +61,20 @@ export interface TagChipRenderContext {
      * `omitted`).
      */
     unprinted?: readonly AssertionRef[];
+    /**
+     * Why the marking leaves out a fact it holds, by the engine's render
+     * assessments (see written-facts.ts); undefined for a fact it writes. Every
+     * fact is written when omitted.
+     */
+    unwritten?: (
+        ref: Pick<AssertionRef, 'categoryId' | 'conceptId'>,
+    ) => UnwrittenFact | undefined;
+    /**
+     * The order chips' categories go in, the order the field's output writes
+     * them in. A category not named goes after those named; within a category
+     * the chips keep the engine's order.
+     */
+    categoryOrder?: readonly string[];
     /** Author text the engine could not read, one entry per fragment. */
     unread?: readonly string[];
     onRemoveAssertion: (conceptId: string, categoryId: string) => void;
@@ -70,6 +90,7 @@ export interface TagChipRenderContext {
         el: HTMLElement,
         conceptId: string,
         categoryId: string,
+        reason?: string,
     ) => void;
 }
 
@@ -78,7 +99,21 @@ export interface TagChipRenderContext {
  * list of tag elements.
  */
 export function renderTagChips(ctx: TagChipRenderContext): HTMLElement[] {
-    const { scheme, assertions, inputWrap, filterInput } = ctx;
+    const { scheme, inputWrap, filterInput } = ctx;
+    const rank = new Map(
+        (ctx.categoryOrder ?? []).map((categoryId, i) => [categoryId, i]),
+    );
+    const last = rank.size;
+    // A stable sort: within a category the engine's order stands, so a
+    // collapsed member follows the group it is written under.
+    const assertions = ctx.assertions
+        .map((assertion, at) => ({ assertion, at }))
+        .sort(
+            (a, b) =>
+                (rank.get(a.assertion.categoryId) ?? last) -
+                    (rank.get(b.assertion.categoryId) ?? last) || a.at - b.at,
+        )
+        .map(({ assertion }) => assertion);
 
     if (!scheme.concepts || scheme.concepts.length === 0) {
         while (inputWrap.firstChild && inputWrap.firstChild !== filterInput) {
@@ -92,6 +127,38 @@ export function renderTagChips(ctx: TagChipRenderContext): HTMLElement[] {
     const conceptMap = new Map(scheme.concepts.map((c) => [c.id, c]));
     const layout = getPublicFormatLayout(ctx.schemeMeta, ctx.formatId);
     const fmt = layout.format;
+    // A value as this field writes it: the active format's concept view,
+    // without the marking's separators or wrappers.
+    const writtenLabel = (conceptId: string) => {
+        const concept = conceptMap.get(conceptId);
+        return (
+            concept?.views?.[fmt.view ?? 'default'] ??
+            concept?.views?.['default'] ??
+            concept?.name ??
+            conceptId
+        );
+    };
+    // Why the marking holds a derived fact it does not write, or undefined
+    // for a fact the author stated or the marking writes.
+    const unwrittenReason = (a: Assertion): string | undefined => {
+        if (!derivedAssertion(a)) return undefined;
+        const why = ctx.unwritten?.(a);
+        if (!why) return undefined;
+        if (why.into)
+            return t('flow.includedBy').replace('{choice}', () =>
+                writtenLabel(why.into!.conceptId),
+            );
+        if (a.source === 'default') {
+            const category = scheme.categories.find(
+                (c) => c.id === a.categoryId,
+            );
+            return t('tag.defaultUnwritten').replace(
+                '{category}',
+                () => category?.label ?? a.categoryId,
+            );
+        }
+        return t('tag.unwritten');
+    };
 
     const unprinted = new Set(
         (ctx.unprinted ?? []).map(
@@ -120,17 +187,21 @@ export function renderTagChips(ctx: TagChipRenderContext): HTMLElement[] {
         (a) =>
             `${ctx.formatId}::${a.conceptId}::${a.categoryId}::` +
             `${derivedAssertion(a) ? 'derived' : 'stated'}::` +
-            `${isUnprinted(a) ? 'unprinted' : 'printed'}`,
+            `${isUnprinted(a) ? 'unprinted' : 'printed'}::` +
+            (unwrittenReason(a) ?? ''),
         (a) => {
             const concept = conceptMap.get(a.conceptId);
             const isInferred = derivedAssertion(a);
+            const reason = unwrittenReason(a);
+            const isTextInput = !!(concept?.textInput && !isInferred);
             // Match the active format's concept view without adding marking
-            // separators or wrappers to individual assertion chips.
-            const label =
-                concept?.views?.[fmt.view ?? 'default'] ??
-                concept?.views?.['default'] ??
-                concept?.name ??
-                a.conceptId;
+            // separators or wrappers to individual assertion chips. A chip
+            // whose value is typed into it takes the concept's name instead,
+            // as DecisionFlow's options do: its view is a template such as
+            // "{value}", which says nothing beside the field holding the value.
+            const label = isTextInput
+                ? concept!.name
+                : writtenLabel(a.conceptId);
             const authority = resolveMarkingColor(
                 { colorFrom: ctx.colorFrom },
                 [
@@ -149,7 +220,6 @@ export function renderTagChips(ctx: TagChipRenderContext): HTMLElement[] {
             // pill where the two colors must actually pair for contrast.
             const textColor =
                 authority?.text ?? ctx.getCategoryTextColor(a.categoryId);
-            const isTextInput = !!(concept?.textInput && !isInferred);
             const editableOpts = isTextInput
                 ? {
                       value: a.value ?? '',
@@ -175,7 +245,8 @@ export function renderTagChips(ctx: TagChipRenderContext): HTMLElement[] {
                 color,
                 textColor,
                 inferred: isInferred,
-                unprinted: isUnprinted(a),
+                unprinted: isUnprinted(a) || reason !== undefined,
+                reason,
                 colorCoding: ctx.colorCoding,
                 onRemove: !isInferred
                     ? () => ctx.onRemoveAssertion(a.conceptId, a.categoryId)
@@ -191,7 +262,7 @@ export function renderTagChips(ctx: TagChipRenderContext): HTMLElement[] {
                 ctx.onChipKeydown(e, el as HTMLSpanElement),
             );
             el.addEventListener('blur', () => ctx.onChipBlur(el));
-            ctx.onChipCreated?.(el, a.conceptId, a.categoryId);
+            ctx.onChipCreated?.(el, a.conceptId, a.categoryId, reason);
             return el;
         },
         undefined,

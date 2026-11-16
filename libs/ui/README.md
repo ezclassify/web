@@ -2,6 +2,8 @@
 
 The forms library enhances native HTML inputs with interactive marking components. It is the shared UI layer used by every framework integration (React, Angular, Vue), and it mounts over plain markup with no framework at all.
 
+You initialize it once. Everything after that is HTML attributes.
+
 ## Architecture
 
 The marking store holds structured assertions, rendered values and validity
@@ -12,18 +14,18 @@ prose. Persist structured assertions when your document needs categories or
 capture values that its display format does not show. See
 [ARCHITECTURE.md](https://github.com/ezclassify/web/blob/main/libs/ui/ARCHITECTURE.md) for the binding and engine API contracts.
 
-Every `data-ezclassify-*` attribute the runtime reads or stamps is tabled in [docs/attributes.md](https://github.com/ezclassify/web/blob/main/libs/ui/docs/attributes.md); the binding/view seam is described in [docs/binding-model.md](https://github.com/ezclassify/web/blob/main/libs/ui/docs/binding-model.md). Teams keeping Angular Material, MUI, React Select, Vue libraries, jQuery/Select2, or other preferred controls should use the framework-neutral [third-party control contract](https://github.com/ezclassify/web/blob/main/libs/ui/docs/third-party-controls.md).
+Every `data-ezclassify-*` attribute the runtime reads or stamps is tabled in [docs/attributes.md](https://github.com/ezclassify/web/blob/main/libs/ui/docs/attributes.md); wholes, parts, collections and views are defined in [docs/binding-model.md](https://github.com/ezclassify/web/blob/main/libs/ui/docs/binding-model.md). Teams keeping Angular Material, MUI, React Select, Vue libraries, jQuery/Select2, or other preferred controls should use the framework-neutral [third-party control contract](https://github.com/ezclassify/web/blob/main/libs/ui/docs/third-party-controls.md).
 
 ## Boundary
 
 This package ships components, not policy. There is no classification engine
 in the tarball and no EzClassify-maintained scheme content. `EzClassifyUI`
-takes an engine-compatible adapter and calls it; whatever you hand it decides
-what a marking means. Opening, modifying, or redistributing this UI code grants
-no right to use the engine or EzClassify-maintained content.
+takes a Context adapter and calls it; whatever you hand it decides what a
+marking means. Opening, modifying, or redistributing this UI code grants no
+right to use the engine or EzClassify-maintained content.
 
 The adapter you use is `@ezclassify/rest-client`, the thin REST client. The
-document form below runs it against a replay server that needs no license. In
+document form below runs it against the free developer runtime. In
 production the same client points at your EzClassify runtime.
 
 ## Install
@@ -33,32 +35,57 @@ npm install @ezclassify/ui @ezclassify/rest-client
 ```
 
 `@ezclassify/rest-client` ships from
-[ezclassify/client-js](https://github.com/ezclassify/client-js). It is a
+[ezclassify/sdk-js](https://github.com/ezclassify/sdk-js). It is a
 separate install, not a dependency of this package, so an application that
 brings its own adapter does not pull it in.
 
+## Mark one field
+
+One attribute and one line of code:
+
+```html
+<input name="marking" data-ezclassify-controller="marking" />
+```
+
+```ts
+import { connectContext } from '@ezclassify/rest-client';
+import { EzClassifyUI } from '@ezclassify/ui';
+
+const client = await connectContext({
+    baseUrl: 'https://api.example.com',
+    contextId: 'cedar-valley',
+    contextVersion: '1.0.0',
+});
+new EzClassifyUI(client);
+```
+
+The instance enhances every marked field under `document.body` and creates
+the store they share. Pass `{ root }` to enhance one part of the page instead.
+
 ## Mark a document and its parts
 
-You can see the controls working before you have a runtime. The conformance
-server replays recorded answers for Cedar Valley, a fictional school district's
-teaching policy, over real HTTP. Your page talks to it through the same client
-and components it will use in production.
+You can see the controls working before you have a runtime of your own. The
+free developer runtime serves the public demo Contexts, Cedar Valley (a
+fictional school district's teaching policy) among them, over real HTTP. Your
+page talks to it through the same client and components it will use in
+production.
 
-Start the server. A browser app on a different origin from the server needs
-`--cors-origin` with that exact origin (no wildcard). `5173` is the Vite
+Start the runtime. A browser app on a different origin from the runtime needs
+`EZCLASSIFY_DEMO_ALLOWED_ORIGINS` set to that exact origin (no wildcard). `5173` is the Vite
 default, so use your dev server's own origin if it differs.
 
 ```bash
-npx @ezclassify/conformance-server --scenario cedar-valley --port 4010 \
-  --cors-origin http://localhost:5173
+docker run --rm -p 3000:8080 \
+  -e EZCLASSIFY_DEMO_ALLOWED_ORIGINS=http://localhost:5173 \
+  ghcr.io/ezclassify/developer-runtime
 ```
 
-The form below connects one document marking to the parts inside it. The
-document's MarkingField edits its authored whole marking. The attachment
-MarkingField, the summary TagInput, the title MarkedInput and the portions
-inside the body MarkedTextArea are parts of that whole. One store holds them
-all, a preview reads the authored whole, and a second banner shows what the
-parts require. The complete app is in
+`data-ezclassify-whole="document"` on the form says the form holds the
+`document` marking and its parts. The field with `id="document"` is the whole.
+Every other marked field inside the form is a part: the attachment
+MarkingField, the summary TagInput, the title MarkedInput and each portion in
+the body MarkedTextArea. A `source` banner shows the authored whole, and an
+`aggregate` banner shows what the parts require. The complete app is in
 [`examples/vanilla-example`](https://github.com/ezclassify/web/tree/main/examples/vanilla-example).
 
 ```html
@@ -72,7 +99,7 @@ parts require. The complete app is in
         <link rel="stylesheet" href="/src/styles.css" />
     </head>
     <body>
-        <form id="document-form">
+        <form data-ezclassify-whole="document">
             <label for="document">Document marking</label>
             <input
                 id="document"
@@ -86,30 +113,26 @@ parts require. The complete app is in
                 id="attachment"
                 name="attachmentMarking"
                 type="text"
-                data-ezclassify-controller="marking"
-                data-ezclassify-part-of="document"
-                value="PUBLIC" />
+                value="PUBLIC"
+                data-ezclassify-controller="marking" />
             <label for="summary">Summary marking (TagInput)</label>
             <input
                 id="summary"
                 name="summaryMarking"
                 value="CONFIDENTIAL"
-                data-ezclassify-controller="tags"
-                data-ezclassify-part-of="document" />
+                data-ezclassify-controller="tags" />
             <label for="title">Title (MarkedInput)</label>
             <input
                 id="title"
                 name="title"
                 type="text"
-                data-ezclassify-controller="marked-input"
-                data-ezclassify-part-of="document"
-                value="(PUBLIC) District report" />
+                value="(PUBLIC) District report"
+                data-ezclassify-controller="marked-input" />
             <label for="body">Body (MarkedTextArea)</label>
             <textarea
                 id="body"
                 name="body"
-                data-ezclassify-controller="marked-textarea"
-                data-ezclassify-part-of="document">
+                data-ezclassify-controller="marked-textarea">
 (INTERNAL) Planning notes.
 (PUBLIC) Published background.</textarea>
 
@@ -121,6 +144,7 @@ parts require. The complete app is in
             <div
                 data-ezclassify-controller="banner"
                 data-ezclassify-aggregate="document"></div>
+
             <button id="set-document" type="button">
                 Set document to CONFIDENTIAL
             </button>
@@ -134,57 +158,67 @@ parts require. The complete app is in
 ```ts
 // src/main.ts
 import { connectContext } from '@ezclassify/rest-client';
-import { EzClassifyUI, VanillaEzClassifyStore } from '@ezclassify/ui';
+import { EzClassifyUI } from '@ezclassify/ui';
+import { showDocumentState } from './document-state';
 
 const client = await connectContext({
-    baseUrl: import.meta.env.VITE_EZCLASSIFY_URL ?? 'http://127.0.0.1:4010',
+    baseUrl: import.meta.env.VITE_EZCLASSIFY_URL ?? 'http://localhost:3000',
     contextId: 'cedar-valley',
     contextVersion: '1.0.0',
 });
-const store = new VanillaEzClassifyStore(client.scheme);
-const root = document.querySelector<HTMLElement>('#document-form')!;
-const forms = new EzClassifyUI(client, { root, store });
-const status = document.querySelector<HTMLOutputElement>('#save-status')!;
-document
-    .querySelector<HTMLButtonElement>('#set-document')!
-    .addEventListener('click', () => {
-        void store.publishRendered('document', 'CONFIDENTIAL').then(
-            () => {
-                status.value = `Document marking: ${store.get('document').rendered}`;
-            },
-            (error: unknown) => {
-                status.value = String(error);
-            },
-        );
-    });
+const forms = new EzClassifyUI(client);
+showDocumentState(forms);
 ```
 
 The example adds a small page stylesheet, [`src/styles.css`](https://github.com/ezclassify/web/blob/main/examples/vanilla-example/src/styles.css), for layout and a plain style for the page's inputs and its button. The controls take their edge, padding and font from the input or textarea they enhance, so they match the rest of your form.
 `VITE_EZCLASSIFY_URL` names the server when you start Vite; without it, the page
-connects to the replay server above.
+connects to the developer runtime above.
 
 The authored whole starts at INTERNAL. The CONFIDENTIAL summary part changes
 what that whole must cover; it does not silently replace the whole. The whole
 MarkingField shows its contextual errors and fixes. The store's `valid` and
 `errors` describe each marking itself; they do not include the whole's
-coverage of its parts. The read-only `source` banner shows the authored whole,
-while `aggregate="document"` shows only its parts. The button publishes a real
-store edit, which updates the same whole editor and preview. A bare
-`data-ezclassify-aggregate` instead reads the page aggregate, including the
-whole itself and every other marking in this store.
+coverage of its parts. `aggregate="document"` shows only the parts. A bare
+`data-ezclassify-aggregate` shows the page: every whole on it.
 
-The replay records this form used as written: focus each control, browse each
+### Read and write the state in code
+
+The form needs no code beyond `new EzClassifyUI(client)`. The button and the
+status line show how code reads and writes the same store the controls use,
+through `forms.store`:
+
+```ts
+// src/document-state.ts
+import type { EzClassifyUI } from '@ezclassify/ui';
+
+/** Writes the document marking from code and reports what the store holds. */
+export function showDocumentState(forms: EzClassifyUI): void {
+    const { store } = forms;
+    const status = document.querySelector<HTMLOutputElement>('#save-status')!;
+    document
+        .querySelector<HTMLButtonElement>('#set-document')!
+        .addEventListener('click', () => {
+            void store.publishRendered('document', 'CONFIDENTIAL').then(
+                () => {
+                    status.value = `Document marking: ${store.get('document').rendered}`;
+                },
+                (error: unknown) => {
+                    status.value = String(error);
+                },
+            );
+        });
+}
+```
+
+The button publishes a real store edit, which updates the whole editor and its
+preview.
+
+Try this form as written: focus each control, browse each
 picker, open the marking popup in the title and body (Ctrl+Enter, or Cmd+Enter
 on macOS), select **Set document to CONFIDENTIAL**, then change the title to
 `(PUBLIC) District report card` and the body's first line to
 `(CONFIDENTIAL) Planning notes.` The whole ends at CONFIDENTIAL and covers its
-parts. Other values need your runtime; the
-[scenario catalog](https://github.com/ezclassify/contracts/tree/main/packages/conformance-server/scenarios/cedar-valley)
-lists everything the replay records. By default the server does not check
-credentials. Add `--auth simulated` to exercise yours with the published test
-bearer; the
-[conformance server guide](https://github.com/ezclassify/contracts/tree/main/packages/conformance-server#testing-an-application-integration)
-covers that, the failure profiles and the other scenarios.
+parts. The runtime applies the Context's real rules, so other values work too.
 
 ### Switch to your runtime
 
@@ -204,32 +238,223 @@ const client = await connectContext({
 });
 ```
 
-The markup, the store and the rest of `main.ts` stay as they are.
+The markup and the rest of `main.ts` stay as they are.
 
-### Load, read and save the form's state
+## Larger pages
 
-Use `await store.seedAssertions(id, savedAssertions)` to load a document's
-structured marking baseline when opening its form. User and application edits
-then use `publishRendered` or `publishAssertions`; later seeding keeps those
-edits on top of the baseline. For example, serialize the authored whole as
-`JSON.stringify(store.get('document').assertions)` alongside your document's
-content and other marking assertion sets. Restore the native marked text
-values too, so the body and title retain their prose and inline markings.
+Each case below adds attributes only where the page's structure cannot say it.
+They assume a Context of your own, served by your runtime.
 
-Use `store.get(id)` for a snapshot, `store.subscribe(id, listener)` for committed
-changes, and `store.subscribeWholeRollup(wholeId, listener)` for the parts-only
-rollup. Subscriptions return unsubscribe functions. Render `stale` rollups with
-an unresolved treatment; the built-in banner says such a rollup may be
-incomplete. Persist structured `state.assertions` alongside the
-host document, rather than expecting every category/capture value in a rendered
+### Several independent fields and a page marking
+
+A marked field outside any `whole` container is a whole of its own. A bare
+`aggregate` view shows the page, which is every whole on it:
+
+```html
+<input name="a" data-ezclassify-controller="marking" />
+<input name="b" data-ezclassify-controller="marking" />
+<div data-ezclassify-controller="banner" data-ezclassify-aggregate></div>
+<input type="hidden" name="pageMarking" data-ezclassify-aggregate />
+```
+
+The library adds no input of its own to your form. If the page marking has to
+be submitted, place a hidden input with `data-ezclassify-aggregate` where you
+want it, and it holds the rendered value. Any other element with no controller
+shows the value as text. A view never feeds back into a rollup.
+
+### A part outside its whole's container
+
+When a part cannot sit inside its whole's container, name the whole on it:
+
+```html
+<input
+    data-ezclassify-controller="marking"
+    data-ezclassify-part-of="document" />
+```
+
+`part-of` only ever names a whole. A field that carries it always reads as a
+part.
+
+### Folders
+
+`data-ezclassify-collection="<id>"` declares a collection. The wholes and child
+collections nested inside it are its members, and `aggregate="<id>"` shows
+their rollup:
+
+```html
+<main>
+    <div data-ezclassify-controller="banner" data-ezclassify-aggregate></div>
+    <section data-ezclassify-collection="folderA">
+        <div
+            data-ezclassify-controller="banner"
+            data-ezclassify-aggregate="folderA"></div>
+        <article data-ezclassify-whole="memo1">
+            <input id="memo1" data-ezclassify-controller="marking" />
+            <textarea data-ezclassify-controller="marked-textarea"></textarea>
+        </article>
+        <input id="memo2" data-ezclassify-controller="marking" />
+    </section>
+</main>
+```
+
+| Where a marked field sits                | It reads as                               |
+| ---------------------------------------- | ----------------------------------------- |
+| Inside a `whole` container               | a part of that whole                      |
+| Inside a collection, outside any `whole` | a whole, member of the nearest collection |
+| In neither                               | a whole, member of the page               |
+
+A whole or collection that cannot nest inside its collection names it with
+`data-ezclassify-member-of="<id>"`. One instance holds the whole tree.
+
+### Several Contexts on one page
+
+Pass every Context at initialization, each under a key you choose, and mark
+each section with the key it uses:
+
+```ts
+new EzClassifyUI({ contexts: { district, records } });
+```
+
+```html
+<body data-ezclassify-context="district">
+    <!-- district fields -->
+    <section data-ezclassify-context="records">
+        <!-- records fields -->
+    </section>
+    <div data-ezclassify-controller="banner" data-ezclassify-aggregate></div>
+</body>
+```
+
+A field takes its Context from the nearest ancestor that names one. There is no
+implicit default: with several Contexts, a marked field that resolves none
+stays unenhanced and reports a host error. Markings from different Contexts
+never merge. The page banner shows one labeled marking per Context, and a
+hidden input that holds a rollup names the one it holds with its own
+`data-ezclassify-context`.
+
+### A Context with two schemes
+
+A crosswalk Context holds a second scheme. Fields mark in the Context's
+primary scheme unless `data-ezclassify-scheme` selects another one by the
+Context's own selector, on the field or an ancestor:
+
+```html
+<input id="doc-level" data-ezclassify-controller="marking" />
+<div data-ezclassify-scheme="tier">
+    <input id="doc-tier" data-ezclassify-controller="marking" />
+</div>
+<div data-ezclassify-controller="banner" data-ezclassify-aggregate></div>
+```
+
+Each scheme rolls up on its own and the two never merge. The page banner shows
+both markings, each labeled with its scheme's name. A selector the Context does
+not hold is a host error on that field, which stays unenhanced; it is never
+marked in the primary instead.
+
+To show a marking translated through the crosswalk, add
+`data-ezclassify-translate` to a view. It takes the crosswalk id, and needs no
+value when the Context holds exactly one crosswalk from its primary scheme:
+
+```html
+<div
+    data-ezclassify-controller="banner"
+    data-ezclassify-source="document"
+    data-ezclassify-translate></div>
+```
+
+### Text that quotes other markings
+
+The library reads only elements that carry `data-ezclassify-*` attributes, so
+ordinary page text is never read as a marking. Inside an enhanced area, fence a
+region with `data-ezclassify-ignore`:
+
+```html
+<ul data-ezclassify-ignore>
+    <li>Source: Report 12, marked CONFIDENTIAL</li>
+</ul>
+```
+
+A marked field inside an ignored region is a host error, not a silent skip.
+
+### Guides, access policies and crosswalks
+
+The `handbook`, `guidebook`, `access-handbook`, `crosswalk-handbook` and
+`context-reference` controllers need only the controller attribute. They read
+the guides, access policy and crosswalks the Context holds. A Context with
+several crosswalks needs the one to show named:
+
+```html
+<div
+    data-ezclassify-controller="crosswalk-handbook"
+    data-ezclassify-crosswalk-handbook-crosswalk-id="cvss-31-to-40"></div>
+```
+
+The `context-reference` drawer shows every Context the page loaded, each with
+its own handbook tabs, so it never needs `data-ezclassify-context`.
+
+### Pages you can't edit
+
+On a page whose HTML you don't control, such as a SharePoint or Jira page, a
+script marks up the elements it finds. `ui.add(element, controller,
+attributes)` writes the attributes the markup would have carried and reads the
+element right away. `ui.remove(element)` takes them off again and tears the
+field down:
+
+```ts
+const ui = new EzClassifyUI(context);
+
+const summary = document.querySelector<HTMLInputElement>('#summary');
+const details = document.querySelector<HTMLInputElement>('#details');
+if (summary && details) {
+    ui.add(summary, 'marking');
+    ui.add(details, 'marking', { partOf: 'summary' });
+}
+```
+
+The controller is the `data-ezclassify-controller` value. Attribute keys are
+the names after `data-ezclassify-` in camelCase, so `{ partOf: 'summary' }`
+writes `data-ezclassify-part-of="summary"`, and `true` writes a presence-only
+attribute such as `{ noRollup: true }`. The element then reads exactly as the
+markup would: inside a `whole` container it is a part, and inside an ignored
+region it is a host error. `remove` leaves the page's own attributes alone.
+
+Attributes a script sets directly after initialization are read the same way,
+so a script can also declare a container with
+`form.setAttribute('data-ezclassify-whole', 'issue')`. When the host page
+replaces an element, as single-page apps do, call `add` on the new one.
+
+In the framework integrations the runtime is `useEzClassifyUI()` in React,
+`useEzClassifyUI()` (a ref) in Vue and `injectEzClassifyUI()` (a signal) in
+Angular.
+
+SharePoint Online doesn't run script pasted into a page. Package yours as your
+own SharePoint Framework (SPFx) extension and deploy it through your tenant's
+app catalog.
+
+## Load, read and save the form's state
+
+Use `await forms.store.seedAssertions(id, savedAssertions)` to load a
+document's structured marking baseline when opening its form. User and
+application edits then use `publishRendered` or `publishAssertions`; later
+seeding keeps those edits on top of the baseline. For example, serialize the
+authored whole as `JSON.stringify(forms.store.get('document').assertions)`
+alongside your document's content and other marking assertion sets. Restore the
+native marked text values too, so the body and title retain their prose and
+inline markings. A marking that code seeds or saves needs an `id` on its field.
+
+Use `store.get(id)` for a snapshot and `store.subscribe(id, listener)` for
+committed changes. Subscriptions return unsubscribe functions. Render `stale`
+rollups with an unresolved treatment; the built-in banner says such a rollup
+may be incomplete. Persist structured `state.assertions` alongside the host
+document, rather than expecting every category/capture value in a rendered
 string. Keep the marked textarea/input prose in their native form values.
 
-At document close, unsubscribe host listeners, call `forms.destroy()` and
-`store.destroy()`. Destroy the application-owned client once at application or
-session teardown. The configured store and client remain host-owned.
+At document close, unsubscribe host listeners, then call `forms.destroy()` and
+`forms.store.destroy()`. Destroy the application-owned client once at
+application or session teardown.
 
 See the [React document-form example](https://github.com/ezclassify/web/blob/main/integrations/react/README.md) for
-the same controls backed by a form-scoped React store. The
+the same controls in React. The
 [binding model](https://github.com/ezclassify/web/blob/main/libs/ui/docs/binding-model.md) defines the full graph and lifecycle.
 
 ## Browser support
@@ -246,14 +471,35 @@ throws on first use instead.
 
 ## There is no local-engine path
 
-`@ezclassify/ui` accepts any engine-compatible adapter, and the one you can get
-is `@ezclassify/rest-client`. The engine itself is not distributed as a library. It
+`@ezclassify/ui` accepts any Context adapter, and the one you can get is
+`@ezclassify/rest-client`. The engine itself is not distributed as a library. It
 runs inside an EzClassify deployment, which is what the client connects to, so
 there is no package to install and no in-process alternative to write.
 
 That is a product boundary, not a packaging accident. Scheme content in the
 browser puts the rules in the client, where they can be read and edited. The
 REST path keeps them on the server and sends back answers.
+
+## Highlight components while you build
+
+`@ezclassify/ui/devtools` outlines every region of a page EzClassify reads or
+drives: components, bound markings, wholes and collections, views and
+handbooks, ignored regions, and anything you tag `data-ezclassify-powered`
+because your own code fills it from EzClassify data. Hidden inputs have no box,
+so its legend lists them instead. It is a separate entry, so a production
+bundle never carries it unless you import it.
+
+```ts
+import { createComponentLocator } from '@ezclassify/ui/devtools';
+
+const locator = createComponentLocator();
+document.body.append(locator.element);
+// later: locator.destroy();
+```
+
+On a page with no build step, load the entry as a module and type
+`ezclassify.devtools()` in the browser console. `ezclassify.devtools(false)`
+turns it off.
 
 ## Key exports
 
@@ -262,41 +508,9 @@ REST path keeps them on the server and sends back answers.
 | `EzClassifyUI`                                      | Main class; mounts all components on a container |
 | `getDefaultStyles()` / `injectDefaultStyles()`      | CSS string / adopt a stylesheet                  |
 | `EZ_CSS_VARIABLES`                                  | Raw CSS tokens for custom theming                |
-| `captureFormState` / `restoreFormState`             | Serialize and re-hydrate form values             |
-| `exportFormState` / `importFormState`               | JSON round-trip for save/load workflows          |
 | `THEMES` / `applyTheme`                             | Built-in visual themes                           |
-| `initComparison` / `compareRenderings`              | Side-by-side profile comparison helper           |
 | `defaultLocale` / `setLocale` / `resetLocale` / `t` | i18n support                                     |
 | `buildCategoryColorMap`                             | Map each scheme category id to its color         |
-| `assembleWithConcept` / `findUnambiguousMatch`      | Autocomplete helpers                             |
-| `groupSuggestionsWithDepth` / `getConceptDepth`     | Suggestion grouping utilities                    |
-
-## Form state serialization
-
-```ts
-import {
-    captureFormState,
-    restoreFormState,
-    exportFormState,
-    importFormState,
-} from '@ezclassify/ui';
-
-// forms is the mounted EzClassifyUI instance from the document form above.
-
-// In-memory snapshot: every field's value plus its structured assertions,
-// so alternate-scope categories and capture values survive the round-trip.
-const state = await captureFormState(forms);
-// ... user edits ...
-restoreFormState(forms, state);
-
-// JSON round-trip for save/load workflows. importFormState fails closed:
-// it throws on a shape-version, structure, or scheme mismatch instead of
-// restoring a snapshot it cannot read.
-localStorage.setItem('draft', await exportFormState(forms));
-
-const draft = localStorage.getItem('draft');
-if (draft) importFormState(forms, draft);
-```
 
 ## Whole-marking fields
 
@@ -349,16 +563,17 @@ marking are listed once. Pressing one makes what the fix keeps and adds the
 field's value in one write, the same way picking from its list does. The
 engine words the message; the heading comes from the `fix.heading` locale key.
 
-A field bound to a whole that other fields name with
-`data-ezclassify-part-of` is judged against those parts. The runtime sends the
+A whole with parts, the fields inside its `data-ezclassify-whole` container or
+naming it with `data-ezclassify-part-of`, is judged against those parts. The
+runtime sends the
 parts' current markings to the engine as `parts` on every `process` call the
 field makes, so a whole below its parts gets an error for what it is missing,
 and every fix it is offered lands no lower than the parts need. When a part
 changes, the field reads its value again. A whole with no marked parts sends no
 `parts` at all. That field is the only place the coverage finding shows: the
 runtime adds no notice or correction action of its own beside it. Nothing extra
-goes in the markup: the `part-of` attributes that already feed the whole's
-rollup are what the runtime reads.
+goes in the markup: the structure that already feeds the whole's rollup is what
+the runtime reads.
 
 Engine warnings for the value (`ProcessResult.warnings`) follow the errors in
 the warning color. A warning never makes the field invalid and never offers a
@@ -411,13 +626,20 @@ injectDefaultStyles();
 }
 ```
 
+### Fonts
+
+Text you type into a field takes the font of the control it enhances, so the
+field reads like the rest of your form. The library's own chrome (pickers,
+lists, tooltips, banners, labels) takes the page font. Set `--ez-font-family`
+to give that chrome a different font. It leaves field text alone unless you
+opt into the library's styled inputs (`styleInputs: true`), which use it too.
+
 ## Adapter capabilities used by the UI
 
 | UI behavior                            | Adapter capability                                                  |
 | -------------------------------------- | ------------------------------------------------------------------- |
 | Parse, validate, and fix marking edits | `process`, `validate`                                               |
 | Store page/whole rollups               | `aggregateAssertions`                                               |
-| Native rendered-string rollups         | `aggregate`                                                         |
 | Interactive choices                    | `suggest`, with optional `suggestForCategories` batching for facets |
 | Output views                           | `render` and scheme format metadata                                 |
 | Inline markings in MarkedTextArea      | `scan`                                                              |
@@ -426,4 +648,4 @@ injectDefaultStyles();
 
 The REST client supplies the remote Context adapter. Its complete API includes
 operations beyond those the UI calls; see the
-[REST client guide](https://github.com/ezclassify/client-js).
+[REST client guide](https://github.com/ezclassify/sdk-js).

@@ -19,15 +19,16 @@ import { SingleSelect } from './single-select';
 import { CategorySelector } from './category-selector';
 import { CategoryChecklist } from './category-checklist';
 import { DecisionFlow } from './decision-flow';
-import { Context } from '@ezclassify/engine';
+import { schemeOnlyContext } from '../../test-fixtures/context-doubles';
 
-const toCtx = (eng: unknown) => Context.fromSchemeEngine(eng as never);
+const toCtx = (eng: unknown) => schemeOnlyContext(eng as never);
 import {
     VanillaEzClassifyStore,
     type EzClassifyStoreEngine,
     type FacetState,
 } from '../store/ezclassify-store';
-import type { SchemeEngineAdapter } from '@ezclassify/types';
+import type { RemoteContextSchemeEngineAdapter } from '@ezclassify/types';
+import { demoRuntimeSettled } from '../../../../test-support/demo-runtime';
 
 /**
  * Flush enough microtasks for the store's refreshFacets chain to settle.
@@ -35,16 +36,16 @@ import type { SchemeEngineAdapter } from '@ezclassify/types';
  * refreshFacets (await suggest, ~1 tick). Four rounds covers all paths.
  */
 async function flushFacets(): Promise<void> {
-    for (let i = 0; i < 6; i++) await Promise.resolve();
+    await demoRuntimeSettled();
 }
 
 describe('store-driven suggest filtering (facet subscription)', () => {
-    let engine: SchemeEngineAdapter;
+    let engine: RemoteContextSchemeEngineAdapter;
     let store: VanillaEzClassifyStore;
     let container: HTMLDivElement;
 
-    beforeEach(() => {
-        engine = loadMultiScopeRegression();
+    beforeEach(async () => {
+        engine = await loadMultiScopeRegression();
         store = new VanillaEzClassifyStore(
             engine as unknown as EzClassifyStoreEngine,
         );
@@ -388,6 +389,21 @@ describe('store-driven suggest filtering (facet subscription)', () => {
 
     // DecisionFlow requests its own options when the author enters a step.
     describe('DecisionFlow (from_school step): self-suggest path', () => {
+        /**
+         * Whether the school step offers a school: an option that can be
+         * chosen, read by its name, not one shown only as unavailable.
+         */
+        const offersSchool = () =>
+            Array.from(
+                container.querySelectorAll(
+                    '.ez-decision-flow__option:not([aria-disabled="true"])',
+                ),
+            ).some((el) =>
+                /OAKWOOD|RIVERSIDE|LINCOLN/.test(
+                    el.textContent?.toUpperCase() ?? '',
+                ),
+            );
+
         it('hides school choices on the school step without a level', async () => {
             const component = new DecisionFlow();
             await component.init(container, toCtx(engine), {
@@ -397,19 +413,9 @@ describe('store-driven suggest filtering (facet subscription)', () => {
             container
                 .querySelector<HTMLButtonElement>('.ez-decision-flow__option')
                 ?.focus();
-            await new Promise((resolve) => setTimeout(resolve, 0));
+            await demoRuntimeSettled();
 
-            const optionNames = Array.from(
-                container.querySelectorAll('.ez-decision-flow__option'),
-            ).map((el) => el.textContent);
-            expect(
-                optionNames.some(
-                    (n) =>
-                        n?.includes('OAKWOOD') ||
-                        n?.includes('RIVERSIDE') ||
-                        n?.includes('LINCOLN'),
-                ),
-            ).toBe(false);
+            expect(offersSchool()).toBe(false);
         });
 
         it('shows school choices on the school step after level becomes STATE_ASSESSMENT_STAFF', async () => {
@@ -423,17 +429,7 @@ describe('store-driven suggest filtering (facet subscription)', () => {
                 ?.focus();
             await new Promise((resolve) => setTimeout(resolve, 0));
 
-            const optionNames = Array.from(
-                container.querySelectorAll('.ez-decision-flow__option'),
-            ).map((el) => el.textContent);
-            expect(
-                optionNames.some(
-                    (n) =>
-                        n?.includes('OAKWOOD') ||
-                        n?.includes('RIVERSIDE') ||
-                        n?.includes('LINCOLN'),
-                ),
-            ).toBe(true);
+            expect(offersSchool()).toBe(true);
         });
     });
 });

@@ -12,34 +12,53 @@ Peers: `@angular/core`, `@angular/common`, and `@angular/forms` each support
 `^20.3.34 || ^21.0.0 || ^22.0.0`; `rxjs` supports `>=7.0.0`. Keep Angular
 packages on the same supported major. The library uses Angular 20 partial-Ivy output.
 
+## Mark One Field
+
+Provide the client once, at bootstrap:
+
+```ts
+bootstrapApplication(App, {
+    providers: [provideEzClassify({ context: client })],
+});
+```
+
+Put the `ezClassify` directive on each document and mark its fields with
+attributes:
+
+```html
+<form ezClassify>
+    <input name="marking" data-ezclassify-controller="marking" />
+</form>
+```
+
+Each `ezClassify` host owns the store for the fields inside it, provides it to
+its descendants, and releases it when Angular destroys the host.
+
 ## Mark a Document and Its Parts
 
-This form connects one document marking to the parts inside it through one form
-store. `connectContext` loads public vocabulary and UI metadata before
-returning. Rule evaluation stays on the REST deployment.
+`data-ezclassify-whole="document"` on the form says the form holds the
+`document` marking and its parts. The field with `id="document"` is the whole.
+Every other marked field inside the form is a part: the attachment
+MarkingField, the summary TagInput, the title MarkedInput and each portion in
+the body MarkedTextArea. A `source` banner shows the authored whole, and an
+`aggregate` banner shows what the parts require. `connectContext` loads public
+vocabulary and UI metadata before returning. Rule evaluation stays on the REST
+deployment.
 
-Start the Cedar Valley replay server first. It answers recorded requests for
-Cedar Valley, a fictional school district's teaching policy, over real HTTP, so
-the form works before you have a runtime. `--cors-origin` is your dev server's
-exact origin; `http://localhost:4200` is the Angular CLI default.
+Start the free developer runtime first. It serves the public demo Contexts,
+Cedar Valley (a fictional school district's teaching policy) among them, over
+real HTTP, so the form works before you have a runtime of your own.
+`EZCLASSIFY_DEMO_ALLOWED_ORIGINS` is your dev server's exact origin; `http://localhost:4200` is the Angular CLI default.
 
 ```bash
-npx @ezclassify/conformance-server --scenario cedar-valley --port 4010 \
-  --cors-origin http://localhost:4200
+docker run --rm -p 3000:8080 \
+  -e EZCLASSIFY_DEMO_ALLOWED_ORIGINS=http://localhost:4200 \
+  ghcr.io/ezclassify/developer-runtime
 ```
 
 The complete app is in [`examples/angular-example`](https://github.com/ezclassify/web/tree/main/examples/angular-example).
-
-Create one client during application startup and share it through Angular DI.
-This complete form uses the full `cedar-valley@1.0.0` Context, whose inline
-markings support its title/body fields.
-
-```ts
-// src/client-token.ts
-import { InjectionToken } from '@angular/core';
-import type { EzClassifyClient } from '@ezclassify/rest-client';
-export const CLIENT = new InjectionToken<EzClassifyClient>('EzClassify client');
-```
+It uses the full `cedar-valley@1.0.0` Context, whose inline markings support its
+title and body fields.
 
 The server URL lives in the CLI's environment file, so pointing the app
 somewhere else is a one-line change:
@@ -47,7 +66,7 @@ somewhere else is a one-line change:
 ```ts
 // src/environments/environment.ts
 export const environment = {
-    ezclassifyUrl: 'http://127.0.0.1:4010',
+    ezclassifyUrl: 'http://localhost:3000',
 };
 ```
 
@@ -55,9 +74,9 @@ export const environment = {
 // src/main.ts
 import { provideZonelessChangeDetection } from '@angular/core';
 import { bootstrapApplication } from '@angular/platform-browser';
+import { provideEzClassify } from '@ezclassify/angular';
 import { connectContext } from '@ezclassify/rest-client';
 import { AppComponent } from './app.component';
-import { CLIENT } from './client-token';
 import { environment } from './environments/environment';
 
 async function start() {
@@ -69,7 +88,7 @@ async function start() {
     const app = await bootstrapApplication(AppComponent, {
         providers: [
             provideZonelessChangeDetection(),
-            { provide: CLIENT, useValue: client },
+            provideEzClassify({ context: client }),
         ],
     });
     app.onDestroy(() => client.destroy());
@@ -94,31 +113,14 @@ when adding the feature there.
 ```ts
 // src/app.component.ts
 import { Component } from '@angular/core';
-import { DocumentEditorComponent } from './document-editor.component';
+import { EzClassifyDirective } from '@ezclassify/angular';
+import { DocumentStateComponent } from './document-state.component';
 @Component({
     selector: 'app-root',
-    imports: [DocumentEditorComponent],
-    template: '<app-document-editor />',
-})
-export class AppComponent {}
-```
-
-The document's directive creates one `AngularSignalStore` for this form and
-provides it to descendants. Removing the document destroys its scanner and
-store, leaving the application client available to other features.
-
-```ts
-// src/document-editor.component.ts
-import { Component, inject } from '@angular/core';
-import { EzClassifyDirective } from '@ezclassify/angular';
-import { CLIENT } from './client-token';
-import { DocumentSummaryComponent } from './document-summary.component';
-@Component({
-    selector: 'app-document-editor',
-    imports: [EzClassifyDirective, DocumentSummaryComponent],
+    imports: [EzClassifyDirective, DocumentStateComponent],
     template: `
-        <section [ezClassify]="client">
-            <form id="document-form">
+        <section ezClassify>
+            <form data-ezclassify-whole="document">
                 <label for="document">Document marking</label>
                 <input
                     id="document"
@@ -134,30 +136,26 @@ import { DocumentSummaryComponent } from './document-summary.component';
                     id="attachment"
                     name="attachmentMarking"
                     type="text"
-                    data-ezclassify-controller="marking"
-                    data-ezclassify-part-of="document"
-                    value="PUBLIC" />
+                    value="PUBLIC"
+                    data-ezclassify-controller="marking" />
                 <label for="summary">Summary marking (TagInput)</label>
                 <input
                     id="summary"
                     name="summaryMarking"
                     value="CONFIDENTIAL"
-                    data-ezclassify-controller="tags"
-                    data-ezclassify-part-of="document" />
+                    data-ezclassify-controller="tags" />
                 <label for="title">Title (MarkedInput)</label>
                 <input
                     id="title"
                     name="title"
                     type="text"
-                    data-ezclassify-controller="marked-input"
-                    data-ezclassify-part-of="document"
-                    value="(PUBLIC) District report" />
+                    value="(PUBLIC) District report"
+                    data-ezclassify-controller="marked-input" />
                 <label for="body">Body (MarkedTextArea)</label>
                 <textarea
                     id="body"
                     name="body"
-                    data-ezclassify-controller="marked-textarea"
-                    data-ezclassify-part-of="document">
+                    data-ezclassify-controller="marked-textarea">
 (INTERNAL) Planning notes.
 (PUBLIC) Published background.</textarea>
 
@@ -169,25 +167,33 @@ import { DocumentSummaryComponent } from './document-summary.component';
                 <div
                     data-ezclassify-controller="banner"
                     data-ezclassify-aggregate="document"></div>
-                <app-document-summary />
+                <app-document-state />
             </form>
         </section>
     `,
 })
-export class DocumentEditorComponent {
-    readonly client = inject(CLIENT);
-}
+export class AppComponent {}
 ```
 
-The custom summary injects the directive's live store signal. Template reads
-track its marking state; the button publishes to that same store.
+The initial whole is INTERNAL while the summary part is CONFIDENTIAL. The
+whole field shows the engine's coverage error and proposed fix. Editing a
+part changes what the whole must cover without silently replacing its authored
+value. MarkedInput enhances a text input for one logical line; MarkedTextArea
+registers its individual portions beneath the whole.
+
+### Read and Write the State in Code
+
+The form needs no code. `DocumentStateComponent` shows how a component inside
+the `ezClassify` host reads and writes the same store the controls use. It
+injects the host's live store signal; template reads track its marking state,
+and the button publishes to that same store:
 
 ```ts
-// src/document-summary.component.ts
+// src/document-state.component.ts
 import { Component, inject, signal } from '@angular/core';
 import { EZCLASSIFY_STORE_SIGNAL } from '@ezclassify/angular';
 @Component({
-    selector: 'app-document-summary',
+    selector: 'app-document-state',
     template: `
         @if (store(); as current) {
             <p>
@@ -213,7 +219,7 @@ import { EZCLASSIFY_STORE_SIGNAL } from '@ezclassify/angular';
         <p role="status">{{ error() }}</p>
     `,
 })
-export class DocumentSummaryComponent {
+export class DocumentStateComponent {
     readonly store = inject(EZCLASSIFY_STORE_SIGNAL);
     readonly error = signal('');
     setDocument() {
@@ -226,26 +232,12 @@ export class DocumentSummaryComponent {
 }
 ```
 
-The document MarkingField authors the whole. The other MarkingField, TagInput,
-MarkedInput and the portions in MarkedTextArea are parts of that whole through
-`data-ezclassify-part-of="document"`. A `source` banner reads the authored whole;
-`aggregate="document"` reads only its computed parts. A bare `aggregate` reads
-all markings in this store, including the whole itself: the page aggregate
-answers a different question.
-
-The initial whole is INTERNAL while the summary part is CONFIDENTIAL. The
-whole field shows the engine's coverage error and proposed fix. Editing a
-part changes what the whole must cover without silently replacing its authored
-value. The custom button writes the same store as the whole field and preview.
-MarkedInput enhances a text input for one logical line; MarkedTextArea registers
-its individual portions beneath the whole.
-
-The replay records this form used as written: focus each control, browse each
+Try this form as written: focus each control, browse each
 picker, open the marking popup in the title and body (Ctrl+Enter, or Cmd+Enter
 on macOS), select **Set document to CONFIDENTIAL**, then change the title to
 `(PUBLIC) District report card` and the body's first line to
 `(CONFIDENTIAL) Planning notes.` The whole ends at CONFIDENTIAL and covers its
-parts. Other values need your runtime.
+parts. The runtime applies the Context's real rules, so other values work too.
 
 ### Switch to Your Runtime
 
@@ -265,23 +257,52 @@ const client = await connectContext({
 });
 ```
 
+## Larger Pages
+
+Folders, several Contexts, a crosswalk's second scheme, a part outside its
+whole's container and a submitted page marking are all attributes. The
+[`@ezclassify/ui` README](https://github.com/ezclassify/web/blob/main/libs/ui/README.md#larger-pages)
+shows each one; the markup is the same in Angular.
+
+For several Contexts, provide them all under keys you choose, and name the key
+on each section with `data-ezclassify-context`:
+
+```ts
+provideEzClassify({ contexts: { district, records } });
+```
+
+A host that needs a store your application already owns, or options for one
+document only, binds them with `[ezClassifyStore]` and `[ezClassifyOptions]`.
+
+On a page whose markup you can't edit, a component inside the root marks up the
+elements it finds through the runtime, as the
+[pages you can't edit](https://github.com/ezclassify/web/blob/main/libs/ui/README.md#pages-you-cant-edit) section shows. `injectEzClassifyUI()` returns a signal that holds it
+once the root has mounted:
+
+```ts
+private readonly ui = injectEzClassifyUI();
+private readonly enhance = effect(() => {
+    const summary = document.getElementById('summary');
+    if (summary) this.ui()?.add(summary, 'marking');
+});
+```
+
 ## Load, Read, Write, and Save Markings
 
 `seedAssertions(id, savedAssertions)` loads a document's marking baseline;
 `publishRendered` and `publishAssertions` apply user/application edits on top.
 Use `get(id)` for a snapshot and `subscribe(id, listener)` for committed changes;
 subscriptions return an unsubscribe function. `getWholeRollup(wholeId)` and
-`subscribeWholeRollup` read the parts only; `getAggregate` and
-`subscribeAggregate` read the page aggregate. Show a rolled-up state's `stale`
+`subscribeWholeRollup` read the parts only. Show a rolled-up state's `stale`
 flag as unresolved after a failed refresh.
 
 Persist structured assertions with your document, for example
 `JSON.stringify(store.get('document').assertions)`. A display format may omit
 alternate-scope categories or captured values. Save native title/body values
-too, preserving their prose and inline markings. The store's `valid` and
-`errors` describe the marking itself, not whole-versus-parts coverage. The
-whole MarkingField owns that contextual comparison and displays its errors
-and proposed fixes.
+too, preserving their prose and inline markings. A marking that code seeds or
+saves needs an `id` on its field. The store's `valid` and `errors` describe the
+marking itself, not whole-versus-parts coverage. The whole MarkingField owns
+that contextual comparison and displays its errors and proposed fixes.
 
 ## Presentation
 

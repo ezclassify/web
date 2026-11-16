@@ -8,13 +8,13 @@
  * Nothing on this page evaluates a scheme.
  *
  * The two EzClassify surfaces are declared as attributes on ordinary HTML,
- * which is the whole integration: `@ezclassify/react` names the runtime once at
- * the root, and `useSchemeEngine()` enhances whatever carries
- * `data-ezclassify-*` inside its container.
+ * which is the whole integration: `<EzClassifyProvider>` names the Context
+ * once, and `<EzClassify>` enhances whatever carries `data-ezclassify-*` inside
+ * it.
  */
 
 import { useEffect, useState, type ReactElement } from 'react';
-import { EzClassifyProvider, useSchemeEngine } from '@ezclassify/react';
+import { EzClassify, EzClassifyProvider } from '@ezclassify/react';
 import type { EzClassifyClient } from '@ezclassify/rest-client';
 import { useHostRuntime } from './useHostRuntime';
 
@@ -41,19 +41,19 @@ export function App(): ReactElement {
     }
 
     return (
-        <EzClassifyProvider engine={client}>
-            <main className="page">
-                <h1>React integration host</h1>
-                <CompositionSummary client={client} />
-                {client ? (
+        <main className="page">
+            <h1>React integration host</h1>
+            <CompositionSummary client={client} />
+            {client ? (
+                <EzClassifyProvider context={client}>
                     <AuthoringSurface />
-                ) : (
-                    <p data-testid="connection-state" data-state="connecting">
-                        Connecting to the runtime…
-                    </p>
-                )}
-            </main>
-        </EzClassifyProvider>
+                </EzClassifyProvider>
+            ) : (
+                <p data-testid="connection-state" data-state="connecting">
+                    Connecting to the runtime…
+                </p>
+            )}
+        </main>
     );
 }
 
@@ -102,21 +102,20 @@ function CompositionSummary({
 /**
  * The marking field and the banner that mirrors it.
  *
- * `Container` mounts the scanner's root and provides the binding store to
- * everything under it, so the two surfaces below share one marking without
- * either of them being told about the other.
+ * `<EzClassify>` is the marking root: it owns the store everything under it
+ * binds to, so the two surfaces below share one marking without either of them
+ * being told about the other.
  *
  * @returns The authoring controls.
  */
 function AuthoringSurface(): ReactElement {
-    const { Container } = useSchemeEngine();
     return (
-        <Container>
+        <EzClassify>
             {/* The document's marking. The field writes it, the banner reads it. */}
             <input
                 id={DOCUMENT_MARKING}
                 type="hidden"
-                data-ezclassify-rendered
+                data-ezclassify-marking
             />
 
             <div
@@ -138,6 +137,6 @@ function AuthoringSurface(): ReactElement {
                 data-ezclassify-controller="marking"
                 data-ezclassify-bound-to={DOCUMENT_MARKING}
             />
-        </Container>
+        </EzClassify>
     );
 }

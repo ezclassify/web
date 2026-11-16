@@ -1,8 +1,8 @@
 import { provideZonelessChangeDetection } from '@angular/core';
 import { bootstrapApplication } from '@angular/platform-browser';
+import { provideEzClassify } from '@ezclassify/angular';
 import { connectContext } from '@ezclassify/rest-client';
 import { AppComponent } from './app.component';
-import { CLIENT } from './client-token';
 import { environment } from './environments/environment';
 
 async function start() {
@@ -14,7 +14,7 @@ async function start() {
     const app = await bootstrapApplication(AppComponent, {
         providers: [
             provideZonelessChangeDetection(),
-            { provide: CLIENT, useValue: client },
+            provideEzClassify({ context: client }),
         ],
     });
     app.onDestroy(() => client.destroy());

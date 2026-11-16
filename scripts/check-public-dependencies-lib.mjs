@@ -10,9 +10,9 @@
  *
  * These ship from the public repositories: the wire contract and its
  * conformance material from `ezclassify/contracts`, and the REST client from
- * `ezclassify/client-js`. Everything else under the scope is proprietary,
- * starting with the engine, which is embedded only in EzClassify's own
- * applications and is never published as an importable library.
+ * `ezclassify/sdk-js`. Everything else under the scope is proprietary, starting
+ * with the engine, which is embedded only in EzClassify's own applications and
+ * is never published as an importable library.
  *
  * The list is an allowlist rather than a denylist on purpose. A new private
  * package appearing in a manifest should fail this gate on the day it lands,

@@ -1,3 +1,3 @@
 export const environment = {
-    ezclassifyUrl: 'http://127.0.0.1:4010',
+    ezclassifyUrl: 'http://localhost:3000',
 };

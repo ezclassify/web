@@ -1,13 +1,16 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { asContext } from '../../test-fixtures/as-context';
+import { expectInlineChrome, markTone } from '../../test-fixtures/field-chrome';
 import { openSurface, press, rowFor } from './composer/composer-harness';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
-import { Context } from '@ezclassify/engine';
-import type { LocalSchemeEngineAdapter } from '@ezclassify/types';
+import type { RemoteContextSchemeEngineAdapter } from '@ezclassify/types';
 import { MarkedInput } from './marked-input';
 import { InlineMarkingEditor } from './inline-marking-editor';
 import { EzClassifyUI } from '../ezclassify-ui';
+import { levelState } from '../store/page-rollup-harness';
+import { connectDemoContext } from '../../../../test-support/demo-runtime';
 
 /**
  * User interactions address the owned editor; form assertions use the original
@@ -37,146 +40,154 @@ function wait(ms = 50): Promise<void> {
  * produce "(U) " exactly once. The template is a parameter so specs can cover
  * schemes that declare no trailing space (e.g. "({marking})").
  */
-function createBareEngineWithTemplate(
+async function createBareEngineWithTemplate(
     template: string,
-): LocalSchemeEngineAdapter {
-    return Context.fromComponents({
-        scheme: {
-            scheme: {
-                id: 'mi-bare',
-                version: '1.0.0',
-                name: 'MarkedInput Bare Format Test',
-                data: {
-                    concepts: {
-                        inline: [
-                            {
-                                id: 'U',
-                                name: 'Unclassified',
-                                views: { default: 'U' },
-                                categories: ['level'],
-                                parents: [],
-                                aliases: [],
-                                position: 1,
-                                rank: 1,
-                            },
-                            {
-                                id: 'S',
-                                name: 'Secret',
-                                views: { default: 'S' },
-                                categories: ['level'],
-                                parents: [],
-                                aliases: [],
-                                position: 2,
-                                rank: 2,
-                            },
+): Promise<RemoteContextSchemeEngineAdapter> {
+    return (
+        await connectDemoContext({
+            draft: {
+                scheme: {
+                    scheme: {
+                        id: 'mi-bare',
+                        version: '1.0.0',
+                        name: 'MarkedInput Bare Format Test',
+                        description:
+                            'MarkedInput Bare Format Test test fixture.',
+                        data: {
+                            concepts: [
+                                {
+                                    id: 'U',
+                                    name: 'Unclassified',
+                                    views: { default: 'U' },
+                                    categories: ['level'],
+                                    parents: [],
+                                    aliases: [],
+                                    position: 1,
+                                    rank: 1,
+                                },
+                                {
+                                    id: 'S',
+                                    name: 'Secret',
+                                    views: { default: 'S' },
+                                    categories: ['level'],
+                                    parents: [],
+                                    aliases: [],
+                                    position: 2,
+                                    rank: 2,
+                                },
+                            ],
+                            categories: [
+                                {
+                                    id: 'level',
+                                    label: 'Level',
+                                    required: false,
+                                    single: true,
+                                    rollup: 'max',
+                                    position: 1,
+                                },
+                            ],
+                        },
+                        rules: [],
+                        embedded_marking: [
+                            { pattern: '\\(([^)]+)\\)', template },
                         ],
+                        render: {
+                            default: 'portion',
+                            formats: [
+                                // Bare format: engine.render() returns "U", not "(U)".
+                                // The MI/MTA template applies the () wrapper exactly once.
+                                {
+                                    id: 'portion',
+                                    surface: 'marking',
+                                    mode: 'inline',
+                                    separator: '//',
+                                    fields: [
+                                        { category: 'level', separator: '/' },
+                                    ],
+                                },
+                            ],
+                        },
                     },
-                    categories: [
-                        {
-                            id: 'level',
-                            label: 'Level',
-                            required: false,
-                            single: true,
-                            rollup: 'max',
-                            position: 1,
-                        },
-                    ],
-                },
-                rules: [],
-                embedded_marking: [{ pattern: '\\(([^)]+)\\)', template }],
-                parse: {
-                    case_sensitive: false,
-                    strip_whitespace: true,
-                },
-                render: {
-                    default: 'portion',
-                    formats: [
-                        // Bare format: engine.render() returns "U", not "(U)".
-                        // The MI/MTA template applies the () wrapper exactly once.
-                        {
-                            id: 'portion',
-                            surface: 'marking',
-                            mode: 'inline',
-                            separator: '//',
-                            fields: [{ category: 'level', separator: '/' }],
-                        },
-                    ],
                 },
             },
-        },
-    }).scheme as LocalSchemeEngineAdapter;
+        })
+    ).scheme as RemoteContextSchemeEngineAdapter;
 }
 
-function createBareFormatEngine(): LocalSchemeEngineAdapter {
-    return createBareEngineWithTemplate('({marking}) ');
+async function createBareFormatEngine(): Promise<RemoteContextSchemeEngineAdapter> {
+    return await createBareEngineWithTemplate('({marking}) ');
 }
 
-function createTestEngine(): LocalSchemeEngineAdapter {
-    return Context.fromComponents({
-        scheme: {
-            scheme: {
-                id: 'mi-test',
-                version: '1.0.0',
-                name: 'MarkedInput Test',
-                data: {
-                    concepts: {
-                        inline: [
+async function createTestEngine(): Promise<RemoteContextSchemeEngineAdapter> {
+    return (
+        await connectDemoContext({
+            draft: {
+                scheme: {
+                    scheme: {
+                        id: 'mi-test',
+                        version: '1.0.0',
+                        name: 'MarkedInput Test',
+                        description: 'MarkedInput Test test fixture.',
+                        data: {
+                            concepts: [
+                                {
+                                    id: 'U',
+                                    name: 'Unclassified',
+                                    views: { default: 'U' },
+                                    categories: ['level'],
+                                    parents: [],
+                                    aliases: [],
+                                    position: 1,
+                                    rank: 1,
+                                },
+                                {
+                                    id: 'S',
+                                    name: 'Secret',
+                                    views: { default: 'S' },
+                                    categories: ['level'],
+                                    parents: [],
+                                    aliases: [],
+                                    position: 2,
+                                    rank: 2,
+                                },
+                            ],
+                            categories: [
+                                {
+                                    id: 'level',
+                                    label: 'Level',
+                                    required: false,
+                                    single: true,
+                                    rollup: 'max',
+                                    position: 1,
+                                },
+                            ],
+                        },
+                        rules: [],
+                        embedded_marking: [
                             {
-                                id: 'U',
-                                name: 'Unclassified',
-                                views: { default: 'U' },
-                                categories: ['level'],
-                                parents: [],
-                                aliases: [],
-                                position: 1,
-                                rank: 1,
-                            },
-                            {
-                                id: 'S',
-                                name: 'Secret',
-                                views: { default: 'S' },
-                                categories: ['level'],
-                                parents: [],
-                                aliases: [],
-                                position: 2,
-                                rank: 2,
+                                pattern: '\\(([^)]+)\\)',
+                                template: '({marking}) ',
                             },
                         ],
+                        render: {
+                            default: 'portion',
+                            formats: [
+                                {
+                                    id: 'portion',
+                                    surface: 'marking',
+                                    mode: 'inline',
+                                    separator: '//',
+                                    fields: [
+                                        { category: 'level', separator: '/' },
+                                    ],
+                                },
+                            ],
+                        },
                     },
-                    categories: [
-                        {
-                            id: 'level',
-                            label: 'Level',
-                            required: false,
-                            single: true,
-                            rollup: 'max',
-                            position: 1,
-                        },
-                    ],
-                },
-                rules: [],
-                embedded_marking: [
-                    { pattern: '\\(([^)]+)\\)', template: '({marking}) ' },
-                ],
-                parse: {
-                    case_sensitive: false,
-                    strip_whitespace: true,
-                },
-                render: {
-                    default: 'portion',
-                    formats: [
-                        {
-                            id: 'portion',
-                            surface: 'marking',
-                            mode: 'inline',
-                            separator: '//',
-                            fields: [{ category: 'level', separator: '/' }],
-                        },
-                    ],
                 },
             },
-        },
-    }).scheme as LocalSchemeEngineAdapter;
+        })
+    ).scheme as RemoteContextSchemeEngineAdapter;
 }
 
 /**
@@ -185,16 +196,17 @@ function createTestEngine(): LocalSchemeEngineAdapter {
  * mount MarkedInput directly via `.init()`: favorites config is a plain JS
  * function with no declarative `data-ezclassify-*` equivalent.
  */
-function createTestContext() {
-    return Context.fromComponents({
-        scheme: {
+async function createTestContext() {
+    return await connectDemoContext({
+        draft: {
             scheme: {
-                id: 'mi-fav-test',
-                version: '1.0.0',
-                name: 'MarkedInput Favorites Test',
-                data: {
-                    concepts: {
-                        inline: [
+                scheme: {
+                    id: 'mi-fav-test',
+                    version: '1.0.0',
+                    name: 'MarkedInput Favorites Test',
+                    description: 'MarkedInput Favorites Test test fixture.',
+                    data: {
+                        concepts: [
                             {
                                 id: 'U',
                                 name: 'Unclassified',
@@ -216,37 +228,33 @@ function createTestContext() {
                                 rank: 2,
                             },
                         ],
+                        categories: [
+                            {
+                                id: 'level',
+                                label: 'Level',
+                                required: false,
+                                single: true,
+                                rollup: 'max',
+                                position: 1,
+                            },
+                        ],
                     },
-                    categories: [
-                        {
-                            id: 'level',
-                            label: 'Level',
-                            required: false,
-                            single: true,
-                            rollup: 'max',
-                            position: 1,
-                        },
+                    rules: [],
+                    embedded_marking: [
+                        { pattern: '\\(([^)]+)\\)', template: '({marking}) ' },
                     ],
-                },
-                rules: [],
-                embedded_marking: [
-                    { pattern: '\\(([^)]+)\\)', template: '({marking}) ' },
-                ],
-                parse: {
-                    case_sensitive: false,
-                    strip_whitespace: true,
-                },
-                render: {
-                    default: 'portion',
-                    formats: [
-                        {
-                            id: 'portion',
-                            surface: 'marking',
-                            mode: 'inline',
-                            separator: '//',
-                            fields: [{ category: 'level', separator: '/' }],
-                        },
-                    ],
+                    render: {
+                        default: 'portion',
+                        formats: [
+                            {
+                                id: 'portion',
+                                surface: 'marking',
+                                mode: 'inline',
+                                separator: '//',
+                                fields: [{ category: 'level', separator: '/' }],
+                            },
+                        ],
+                    },
                 },
             },
         },
@@ -258,113 +266,116 @@ function createTestContext() {
  * `level` (U/S) and `scope` (LOCAL/REGIONAL), the part format renders both so
  * we can detect when one category is silently dropped.
  */
-function createMultiCategoryEngine(): LocalSchemeEngineAdapter {
-    return Context.fromComponents({
-        scheme: {
-            scheme: {
-                id: 'mi-multi',
-                version: '1.0.0',
-                name: 'MarkedInput Multi-Category Test',
-                data: {
-                    concepts: {
-                        inline: [
+async function createMultiCategoryEngine(): Promise<RemoteContextSchemeEngineAdapter> {
+    return (
+        await connectDemoContext({
+            draft: {
+                scheme: {
+                    scheme: {
+                        id: 'mi-multi',
+                        version: '1.0.0',
+                        name: 'MarkedInput Multi-Category Test',
+                        description:
+                            'MarkedInput Multi-Category Test test fixture.',
+                        data: {
+                            concepts: [
+                                {
+                                    id: 'U',
+                                    name: 'Unclassified',
+                                    views: { default: 'U' },
+                                    categories: ['level'],
+                                    parents: [],
+                                    aliases: [],
+                                    position: 1,
+                                    rank: 1,
+                                },
+                                {
+                                    id: 'S',
+                                    name: 'Secret',
+                                    views: { default: 'S' },
+                                    categories: ['level'],
+                                    parents: [],
+                                    aliases: [],
+                                    position: 2,
+                                    rank: 2,
+                                },
+                                {
+                                    id: 'LOCAL',
+                                    name: 'Local',
+                                    views: { default: 'LOCAL' },
+                                    categories: ['scope'],
+                                    parents: [],
+                                    aliases: [],
+                                    position: 1,
+                                    rank: 1,
+                                },
+                                {
+                                    id: 'REGIONAL',
+                                    name: 'Regional',
+                                    views: { default: 'REGIONAL' },
+                                    categories: ['scope'],
+                                    parents: [],
+                                    aliases: [],
+                                    position: 2,
+                                    rank: 2,
+                                },
+                            ],
+                            categories: [
+                                {
+                                    id: 'level',
+                                    label: 'Level',
+                                    required: false,
+                                    single: true,
+                                    rollup: 'max',
+                                    position: 1,
+                                },
+                                {
+                                    id: 'scope',
+                                    label: 'Scope',
+                                    required: false,
+                                    single: true,
+                                    rollup: 'max',
+                                    position: 2,
+                                },
+                            ],
+                        },
+                        rules: [],
+                        embedded_marking: [
                             {
-                                id: 'U',
-                                name: 'Unclassified',
-                                views: { default: 'U' },
-                                categories: ['level'],
-                                parents: [],
-                                aliases: [],
-                                position: 1,
-                                rank: 1,
-                            },
-                            {
-                                id: 'S',
-                                name: 'Secret',
-                                views: { default: 'S' },
-                                categories: ['level'],
-                                parents: [],
-                                aliases: [],
-                                position: 2,
-                                rank: 2,
-                            },
-                            {
-                                id: 'LOCAL',
-                                name: 'Local',
-                                views: { default: 'LOCAL' },
-                                categories: ['scope'],
-                                parents: [],
-                                aliases: [],
-                                position: 1,
-                                rank: 1,
-                            },
-                            {
-                                id: 'REGIONAL',
-                                name: 'Regional',
-                                views: { default: 'REGIONAL' },
-                                categories: ['scope'],
-                                parents: [],
-                                aliases: [],
-                                position: 2,
-                                rank: 2,
+                                pattern: '\\(([^)]+)\\)',
+                                template: '({marking}) ',
                             },
                         ],
+                        render: {
+                            default: 'long',
+                            formats: [
+                                {
+                                    id: 'long',
+                                    surface: 'marking',
+                                    mode: 'inline',
+                                    separator: '//',
+                                    fields: [
+                                        { category: 'level', separator: '/' },
+                                        { category: 'scope', separator: '/' },
+                                    ],
+                                },
+                                {
+                                    id: 'portion',
+                                    surface: 'marking',
+                                    mode: 'inline',
+                                    separator: '//',
+                                    fields: [
+                                        { category: 'level', separator: '/' },
+                                        { category: 'scope', separator: '/' },
+                                    ],
+                                },
+                            ],
+                        },
                     },
-                    categories: [
-                        {
-                            id: 'level',
-                            label: 'Level',
-                            required: false,
-                            single: true,
-                            rollup: 'max',
-                            position: 1,
-                        },
-                        {
-                            id: 'scope',
-                            label: 'Scope',
-                            required: false,
-                            single: true,
-                            rollup: 'max',
-                            position: 2,
-                        },
-                    ],
-                },
-                rules: [],
-                embedded_marking: [
-                    { pattern: '\\(([^)]+)\\)', template: '({marking}) ' },
-                ],
-                parse: {
-                    case_sensitive: false,
-                    strip_whitespace: true,
-                },
-                render: {
-                    default: 'long',
-                    formats: [
-                        {
-                            id: 'long',
-                            surface: 'marking',
-                            mode: 'inline',
-                            separator: '//',
-                            fields: [
-                                { category: 'level', separator: '/' },
-                                { category: 'scope', separator: '/' },
-                            ],
-                        },
-                        {
-                            id: 'portion',
-                            surface: 'marking',
-                            mode: 'inline',
-                            separator: '//',
-                            fields: [
-                                { category: 'level', separator: '/' },
-                                { category: 'scope', separator: '/' },
-                            ],
-                        },
-                    ],
                 },
             },
-        },
-    }).scheme as LocalSchemeEngineAdapter;
+        })
+    ).scheme as RemoteContextSchemeEngineAdapter;
 }
 
 let root: HTMLDivElement;
@@ -385,11 +396,11 @@ afterEach(() => {
 
 describe('MarkedInput', () => {
     it('mounts without error and enhances the input element', async () => {
-        const engine = createTestEngine();
+        const engine = await createTestEngine();
         root.innerHTML = `
       <input type="text" id="field" data-ezclassify-controller="marked-input">
     `;
-        const forms = new EzClassifyUI(engine as never, {});
+        const forms = new EzClassifyUI(asContext(engine as never), {});
         activeForms.push(forms);
         await wait(50);
 
@@ -405,6 +416,74 @@ describe('MarkedInput', () => {
                 .closest('.marked-input-wrap')
                 ?.querySelector('.marked-input-display'),
         ).toBeTruthy();
+    });
+
+    it("takes its host input's padding, as the other fields of the family do", async () => {
+        // An input-only host rule: the owned editor is a textarea and never
+        // matches it, so the padding has to come from the host input itself.
+        const engine = await createTestEngine();
+        root.innerHTML = `
+      <style>
+        .demo input { padding: 8px 10px; }
+      </style>
+      <div class="demo">
+        <input type="text" id="field" data-ezclassify-controller="marked-input">
+      </div>
+    `;
+        const forms = new EzClassifyUI(asContext(engine as never), { root });
+        activeForms.push(forms);
+        await wait(50);
+        await new Promise<void>((resolve) =>
+            requestAnimationFrame(() => resolve()),
+        );
+
+        const control = editingField('field') as HTMLTextAreaElement;
+        const display = root.querySelector(
+            '.marked-input-display',
+        ) as HTMLDivElement;
+        // Both layers start the text where the host's padding puts it, so a
+        // press over the display lands on the same character in the editor.
+        for (const layer of [display, control]) {
+            expect(layer.style.paddingTop).toBe('8px');
+            expect(layer.style.paddingLeft).toBe('10px');
+            expect(layer.style.paddingBottom).toBe('8px');
+        }
+    });
+
+    it("keeps the display's typography identical to its control after enhancement", async () => {
+        // jsdom does not inherit fonts, so the owned editor textarea is given
+        // the face a browser would pass it from the authored input's styles.
+        const engine = await createTestEngine();
+        root.innerHTML = `
+      <style>
+        .demo input,
+        .demo textarea {
+          font-family: monospace;
+          font-size: 14px;
+          line-height: 23px;
+        }
+      </style>
+      <div class="demo">
+        <input type="text" id="field" data-ezclassify-controller="marked-input">
+      </div>
+    `;
+        const forms = new EzClassifyUI(asContext(engine as never), { root });
+        activeForms.push(forms);
+        await wait(50);
+        await new Promise<void>((resolve) =>
+            requestAnimationFrame(() => resolve()),
+        );
+
+        const control = editingField('field') as HTMLTextAreaElement;
+        const display = root.querySelector(
+            '.marked-input-display',
+        ) as HTMLDivElement;
+        const controlStyle = getComputedStyle(control);
+        const displayStyle = getComputedStyle(display);
+        expect(displayStyle.fontFamily).toBe('monospace');
+        expect(displayStyle.fontFamily).toBe(controlStyle.fontFamily);
+        expect(displayStyle.fontSize).toBe(controlStyle.fontSize);
+        expect(displayStyle.lineHeight).toBe(controlStyle.lineHeight);
     });
 
     it('the field wraps and grows to show the full chip without ellipsis', () => {
@@ -436,7 +515,7 @@ describe('MarkedInput', () => {
         // mirrors those metrics. Temporarily unmasking authored colors must not
         // replace that font with the browser control default. Mock the two
         // computed states because jsdom does not apply the stylesheet cascade.
-        const engine = createTestEngine();
+        const engine = await createTestEngine();
         root.innerHTML = `<input type="text" id="field" data-ezclassify-controller="marked-input" value="(U) title">`;
 
         const CLASS_ON_FONT = '16px system-ui'; // what .marked-input-native (font: inherit) resolves to
@@ -475,7 +554,9 @@ describe('MarkedInput', () => {
             });
 
         try {
-            const forms = new EzClassifyUI(engine as never, { root });
+            const forms = new EzClassifyUI(asContext(engine as never), {
+                root,
+            });
             activeForms.push(forms);
             await wait(50);
             // The re-read is deferred one requestAnimationFrame tick past mount.
@@ -509,22 +590,25 @@ describe('MarkedInput', () => {
         }
     });
 
-    it('keeps the chrome slot at the bottom of the field, out of normal flow', () => {
-        // jsdom has no layout engine, so this reads the source CSS; the real
-        // geometry needs a real browser.
+    it('centers its chrome on the field row, above the footer', () => {
+        // jsdom has no layout engine, so this reads the source CSS; the browser
+        // lane measures the real geometry.
         const here = dirname(fileURLToPath(import.meta.url));
         const css = readFileSync(join(here, 'marked-input.css'), 'utf8');
         expect(css).toMatch(
-            /\.marked-input-hint-chrome\s*\{[^}]*position:\s*absolute[^}]*bottom:\s*0\.25rem/,
+            /\.marked-input-wrap\s*\{[^}]*position:\s*relative[^}]*display:\s*grid/,
         );
-        // The wrap remains the positioning context for the bottom chrome.
-        expect(css).toMatch(
-            /\.marked-input-wrap\s*\{[^}]*position:\s*relative/,
+        const chrome = readFileSync(join(here, 'field-chrome.css'), 'utf8');
+        expect(chrome).toMatch(
+            /\.marked-input-wrap > \.ez-field-chrome\s*\{\s*grid-area:\s*1 \/ 1 \/ 2 \/ 2;/,
+        );
+        expect(chrome).toMatch(
+            /\.ez-field-chrome\s*\{[^}]*top:\s*50%[^}]*transform:\s*translateY\(-50%\)/,
         );
     });
 
     it('keeps authored input paint through deferred refresh and theme changes', async () => {
-        const engine = createTestEngine();
+        const engine = await createTestEngine();
         root.innerHTML = `<input type="text" id="field" data-ezclassify-controller="marked-input" value="(U) title" style="color: rgb(12, 34, 56); background-color: rgb(245, 246, 247); border-color: rgb(67, 89, 101)">`;
         const native = document.getElementById('field') as HTMLInputElement;
         const realGetComputedStyle = window.getComputedStyle.bind(window);
@@ -555,7 +639,9 @@ describe('MarkedInput', () => {
                 });
             });
         try {
-            const forms = new EzClassifyUI(engine as never, { root });
+            const forms = new EzClassifyUI(asContext(engine as never), {
+                root,
+            });
             activeForms.push(forms);
             await wait(50);
             await new Promise<void>((resolve) =>
@@ -586,9 +672,9 @@ describe('MarkedInput', () => {
     });
 
     it("draws the native input's edge, focused or not, like the rest of the field family", async () => {
-        const engine = createTestEngine();
+        const engine = await createTestEngine();
         root.innerHTML = `<input type="text" id="field" data-ezclassify-controller="marked-input" value="(U) title" style="border: 3px dashed rgb(1, 2, 3); border-radius: 5px">`;
-        const forms = new EzClassifyUI(engine as never, { root });
+        const forms = new EzClassifyUI(asContext(engine as never), { root });
         activeForms.push(forms);
         await wait(50);
         await new Promise<void>((resolve) =>
@@ -615,11 +701,11 @@ describe('MarkedInput', () => {
     });
 
     it('disconnects its theme MutationObserver on destroy (no observer leak)', async () => {
-        const engine = createTestEngine();
+        const engine = await createTestEngine();
         root.innerHTML = `
       <input type="text" id="field" data-ezclassify-controller="marked-input">
     `;
-        const forms = new EzClassifyUI(engine as never, {});
+        const forms = new EzClassifyUI(asContext(engine as never), {});
         await wait(50);
 
         const inputEl = editingField('field') as HTMLTextAreaElement;
@@ -638,7 +724,7 @@ describe('MarkedInput', () => {
     });
 
     it('binds two BARE sibling marked-inputs each to its own element (no cross-leak)', async () => {
-        const engine = createTestEngine();
+        const engine = await createTestEngine();
         // Two marked-inputs as DIRECT siblings under one parent (root), with NO
         // per-field wrapper. The old parent-wide querySelector fallback bound BOTH
         // controllers to the first input; this asserts each binds its own.
@@ -646,7 +732,7 @@ describe('MarkedInput', () => {
       <input type="text" id="a" data-ezclassify-controller="marked-input" value="(S) alpha">
       <input type="text" id="b" data-ezclassify-controller="marked-input" value="(U) bravo">
     `;
-        const forms = new EzClassifyUI(engine as never, {});
+        const forms = new EzClassifyUI(asContext(engine as never), {});
         activeForms.push(forms);
         await wait(100);
 
@@ -683,11 +769,11 @@ describe('MarkedInput', () => {
     });
 
     it('parses an initial marked value and exposes assertions', async () => {
-        const engine = createTestEngine();
+        const engine = await createTestEngine();
         root.innerHTML = `
       <input type="text" id="field" data-ezclassify-controller="marked-input" value="(U) report title">
     `;
-        const forms = new EzClassifyUI(engine as never, {});
+        const forms = new EzClassifyUI(asContext(engine as never), {});
         activeForms.push(forms);
         await wait(80);
 
@@ -705,11 +791,11 @@ describe('MarkedInput', () => {
     });
 
     it('keeps input.value in lockstep when setValue is called', async () => {
-        const engine = createTestEngine();
+        const engine = await createTestEngine();
         root.innerHTML = `
       <input type="text" id="field" data-ezclassify-controller="marked-input">
     `;
-        const forms = new EzClassifyUI(engine as never, {});
+        const forms = new EzClassifyUI(asContext(engine as never), {});
         activeForms.push(forms);
         await wait(50);
 
@@ -725,11 +811,11 @@ describe('MarkedInput', () => {
     });
 
     it('updates value and assertions when setAssertions is called', async () => {
-        const engine = createTestEngine();
+        const engine = await createTestEngine();
         root.innerHTML = `
       <input type="text" id="field" data-ezclassify-controller="marked-input" value="(U) some text">
     `;
-        const forms = new EzClassifyUI(engine as never, {});
+        const forms = new EzClassifyUI(asContext(engine as never), {});
         activeForms.push(forms);
         await wait(80);
 
@@ -752,12 +838,66 @@ describe('MarkedInput', () => {
         expect(inputEl.value).toContain('S');
     });
 
+    it('keeps the field value and says why when the engine refuses to write new facts', async () => {
+        const real = await createTestEngine();
+        let refusing = false;
+        // The adapter is frozen, so the refusal wraps it from outside.
+        const engine = new Proxy(real, {
+            get(target, key) {
+                const member = Reflect.get(target, key, target) as unknown;
+                if (typeof member !== 'function') return member;
+                if (key !== 'process') return member.bind(target);
+                return async (...args: unknown[]) => {
+                    const result = await Reflect.apply(member, target, args);
+                    if (!refusing) return result;
+                    return {
+                        ...result,
+                        rendered: '[unrepresentable:ambiguous-representation]',
+                        assessment: {
+                            ...result.assessment,
+                            unrepresentable: [
+                                {
+                                    output: 'portion',
+                                    reason: 'ambiguous-representation',
+                                },
+                            ],
+                        },
+                    };
+                };
+            },
+        });
+        root.innerHTML = `
+      <input type="text" id="field" data-ezclassify-controller="marked-input" value="(U) some text">
+    `;
+        const forms = new EzClassifyUI(asContext(engine as never), {});
+        activeForms.push(forms);
+        await wait(80);
+        const inputEl = editingField('field') as HTMLTextAreaElement;
+        const comp = forms.components.get(nativeField(inputEl)) as MarkedInput;
+        const held = inputEl.value;
+        refusing = true;
+
+        comp.setAssertions([
+            {
+                conceptId: 'S',
+                categoryId: 'level',
+                confidence: 'certain',
+                source: 'user',
+            },
+        ]);
+        await wait(80);
+
+        expect(inputEl.value).toBe(held);
+        expect(comp.getRendered()).not.toContain('unrepresentable');
+        expect(document.body.textContent).toContain('ambiguous-representation');
+    });
+
     it('emits ezclassify:change event when mark changes', async () => {
-        const engine = createTestEngine();
+        const engine = await createTestEngine();
         root.innerHTML = `
       <input type="text" id="field" data-ezclassify-controller="marked-input">
     `;
-        const forms = new EzClassifyUI(engine as never, {});
+        const forms = new EzClassifyUI(asContext(engine as never), {});
         activeForms.push(forms);
         await wait(50);
 
@@ -780,11 +920,11 @@ describe('MarkedInput', () => {
     });
 
     it('renders a chip for the marking in the display div', async () => {
-        const engine = createTestEngine();
+        const engine = await createTestEngine();
         root.innerHTML = `
       <input type="text" id="field" data-ezclassify-controller="marked-input" value="(U) memo text">
     `;
-        const forms = new EzClassifyUI(engine as never, {});
+        const forms = new EzClassifyUI(asContext(engine as never), {});
         activeForms.push(forms);
         await wait(50);
 
@@ -798,11 +938,11 @@ describe('MarkedInput', () => {
     });
 
     it('shows a concept dwell tooltip on hover over the marking chip', async () => {
-        const engine = createTestEngine();
+        const engine = await createTestEngine();
         root.innerHTML = `
       <input type="text" id="field" data-ezclassify-controller="marked-input" value="(U) memo text">
     `;
-        const forms = new EzClassifyUI(engine as never, {});
+        const forms = new EzClassifyUI(asContext(engine as never), {});
         activeForms.push(forms);
         await wait(50);
 
@@ -823,18 +963,19 @@ describe('MarkedInput', () => {
         expect(tip!.hidden).toBe(false);
 
         chip.dispatchEvent(new Event('mouseleave'));
-        await wait();
+        // It stays a moment, so the pointer can reach it, then closes.
+        await wait(350);
         expect(tip!.hidden).toBe(true);
     });
 
     it('removes a VISIBLE segment tooltip and its listeners on destroy (no leak)', async () => {
         // Destroy must remove a visible segment tooltip and its Escape, scroll,
         // and resize listeners, including destruction during hover.
-        const engine = createTestEngine();
+        const engine = await createTestEngine();
         root.innerHTML = `
       <input type="text" id="field" data-ezclassify-controller="marked-input" value="(U) memo text">
     `;
-        const forms = new EzClassifyUI(engine as never, {});
+        const forms = new EzClassifyUI(asContext(engine as never), {});
         await wait(50);
 
         const inputEl = editingField('field') as HTMLTextAreaElement;
@@ -859,11 +1000,11 @@ describe('MarkedInput', () => {
     });
 
     it('honors the data-ezclassify-no-tooltips opt-out for the marking chip', async () => {
-        const engine = createTestEngine();
+        const engine = await createTestEngine();
         root.innerHTML = `
       <input type="text" id="field" data-ezclassify-controller="marked-input" data-ezclassify-no-tooltips value="(U) memo text">
     `;
-        const forms = new EzClassifyUI(engine as never, {});
+        const forms = new EzClassifyUI(asContext(engine as never), {});
         activeForms.push(forms);
         await wait(50);
 
@@ -880,11 +1021,11 @@ describe('MarkedInput', () => {
     });
 
     it('clears assertions when the marking is removed from the value', async () => {
-        const engine = createTestEngine();
+        const engine = await createTestEngine();
         root.innerHTML = `
       <input type="text" id="field" data-ezclassify-controller="marked-input" value="(U) memo">
     `;
-        const forms = new EzClassifyUI(engine as never, {});
+        const forms = new EzClassifyUI(asContext(engine as never), {});
         activeForms.push(forms);
         await wait(80);
 
@@ -902,11 +1043,11 @@ describe('MarkedInput', () => {
     });
 
     it('opens and closes the picker via Ctrl+Enter', async () => {
-        const engine = createTestEngine();
+        const engine = await createTestEngine();
         root.innerHTML = `
       <input type="text" id="field" data-ezclassify-controller="marked-input">
     `;
-        const forms = new EzClassifyUI(engine as never, {});
+        const forms = new EzClassifyUI(asContext(engine as never), {});
         activeForms.push(forms);
         await wait(50);
 
@@ -942,27 +1083,65 @@ describe('MarkedInput', () => {
         ).toBe(false);
     });
 
-    it('keeps the status mark and ★ button in one slot, last in the wrap, while the editor opens and closes', async () => {
+    it('keeps its status mark muted when the field has nothing to say', async () => {
+        const engine = await createTestEngine();
+        root.innerHTML = `<input type="text" id="field" data-ezclassify-controller="marked-input" value="(U) title">`;
+        const forms = new EzClassifyUI(asContext(engine as never), {});
+        activeForms.push(forms);
+        await wait(50);
+        const wrap = editingField('field')!.closest('.marked-input-wrap')!;
+        expect(markTone(wrap.querySelector('.ez-status-mark')!)).toBe('muted');
+    });
+
+    it('colors its status mark strong when a read applies a fix, and says so', async () => {
+        const engine = await createTestEngine();
+        const read = engine.process.bind(engine);
+        // The recorded read, with a fix the engine applied on top: what the
+        // field does with an applied fix is the point, not which rule made it.
+        vi.spyOn(engine, 'process').mockImplementation(
+            async (...args: Parameters<typeof engine.process>) => ({
+                ...(await read(...args)),
+                appliedFixes: [
+                    {
+                        ruleId: 'adds-level',
+                        action: 'add',
+                        add: [{ conceptId: 'U', categoryId: 'level' }],
+                        message: 'Added U',
+                    },
+                ],
+            }),
+        );
+        root.innerHTML = `<input type="text" id="field" data-ezclassify-controller="marked-input" value="(U) title">`;
+        const forms = new EzClassifyUI(asContext(engine as never), {});
+        activeForms.push(forms);
+        await wait(50);
+        const wrap = editingField('field')!.closest('.marked-input-wrap')!;
+        const mark = wrap.querySelector('.ez-field-chrome .ez-status-mark')!;
+        expect(markTone(mark)).toBe('strong');
+        expect(mark.getAttribute('aria-label')).toContain(
+            '1 change made by a marking rule, not yet reviewed',
+        );
+    });
+
+    it('keeps its inline chrome in place while the editor opens and closes', async () => {
         Element.prototype.scrollIntoView = vi.fn();
 
-        const engine = createTestEngine();
+        const engine = await createTestEngine();
         root.innerHTML = `
       <input type="text" id="field" data-ezclassify-controller="marked-input">
     `;
-        const forms = new EzClassifyUI(engine as never, {});
+        const forms = new EzClassifyUI(asContext(engine as never), {});
         activeForms.push(forms);
         await wait(50);
 
         const inputEl = editingField('field') as HTMLTextAreaElement;
         const wrap = inputEl.closest('.marked-input-wrap') as HTMLElement;
-        const chrome = wrap.querySelector(
-            ':scope > .marked-input-hint-chrome',
-        ) as HTMLElement;
+        // Last in the wrap, so Tab reaches the field's fixes and hint first.
+        const chrome = expectInlineChrome(wrap, [
+            inputEl,
+            wrap.querySelector(':scope > .marked-input-display')!,
+        ]);
         const mark = chrome.querySelector('.ez-status-mark');
-        expect(mark).toBeTruthy();
-        // After the footer, so Tab reaches the field's fixes and hint first.
-        expect(wrap.lastElementChild).toBe(chrome);
-        expect(wrap.querySelectorAll('.ez-status-mark')).toHaveLength(1);
 
         inputEl.dispatchEvent(
             new KeyboardEvent('keydown', {
@@ -993,11 +1172,11 @@ describe('MarkedInput', () => {
         // markEnd is the first free-text character. A click at that offset must
         // close the picker and leave the caret there, following the ordinary
         // outside-click then mouseup event order.
-        const engine = createTestEngine();
+        const engine = await createTestEngine();
         root.innerHTML = `
       <input type="text" id="field" data-ezclassify-controller="marked-input" value="(U) memo text">
     `;
-        const forms = new EzClassifyUI(engine as never, {});
+        const forms = new EzClassifyUI(asContext(engine as never), {});
         activeForms.push(forms);
         await wait(50);
 
@@ -1051,11 +1230,11 @@ describe('MarkedInput', () => {
     it('the chip hit-test resolves adjacent integer clicks against fractional layout geometry', async () => {
         // Use a fractional chip rectangle and the adjacent integer coordinates
         // on each side of its edge to check which clicks enter marking edit mode.
-        const engine = createTestEngine();
+        const engine = await createTestEngine();
         root.innerHTML = `
       <input type="text" id="field" data-ezclassify-controller="marked-input" value="(U)">
     `;
-        const forms = new EzClassifyUI(engine as never, {});
+        const forms = new EzClassifyUI(asContext(engine as never), {});
         activeForms.push(forms);
         await wait(50);
 
@@ -1137,11 +1316,11 @@ describe('MarkedInput', () => {
     });
 
     it('with the picker open, clicking inside the free-text tail closes the picker and lands the caret at the click offset', async () => {
-        const engine = createTestEngine();
+        const engine = await createTestEngine();
         root.innerHTML = `
       <input type="text" id="field" data-ezclassify-controller="marked-input" value="(U) memo text">
     `;
-        const forms = new EzClassifyUI(engine as never, {});
+        const forms = new EzClassifyUI(asContext(engine as never), {});
         activeForms.push(forms);
         await wait(50);
 
@@ -1190,11 +1369,11 @@ describe('MarkedInput', () => {
         // A caret-driven open can still be mounting when Ctrl+Enter arrives.
         // Only the current editor may take focus when mounting completes, and
         // the shortcut must leave its list open.
-        const engine = createTestEngine();
+        const engine = await createTestEngine();
         root.innerHTML = `
       <input type="text" id="field" data-ezclassify-controller="marked-input" value="(U) memo text">
     `;
-        const forms = new EzClassifyUI(engine as never, {});
+        const forms = new EzClassifyUI(asContext(engine as never), {});
         activeForms.push(forms);
         await wait(50);
 
@@ -1237,12 +1416,12 @@ describe('MarkedInput', () => {
     });
 
     it('includes the visible shortcut hint in its accessible name', async () => {
-        const engine = createTestEngine();
+        const engine = await createTestEngine();
         root.innerHTML = `
       <input type="text" id="field" data-ezclassify-controller="marked-input" value="(U) memo text">
       <textarea id="body" data-ezclassify-controller="marked-textarea"></textarea>
     `;
-        const forms = new EzClassifyUI(engine as never, {});
+        const forms = new EzClassifyUI(asContext(engine as never), {});
         activeForms.push(forms);
         await wait(50);
 
@@ -1267,12 +1446,12 @@ describe('MarkedInput', () => {
     });
 
     it('words the touch button like its key hint: MarkedInput sets its one mark, MarkedTextArea adds a portion mark', async () => {
-        const engine = createTestEngine();
+        const engine = await createTestEngine();
         root.innerHTML = `
       <input type="text" id="field" data-ezclassify-controller="marked-input" value="(U) memo text">
       <textarea id="body" data-ezclassify-controller="marked-textarea"></textarea>
     `;
-        const forms = new EzClassifyUI(engine as never, {});
+        const forms = new EzClassifyUI(asContext(engine as never), {});
         activeForms.push(forms);
         await wait(50);
 
@@ -1292,11 +1471,11 @@ describe('MarkedInput', () => {
     it('draws no tail synthetic caret while the picker is open (single caret)', async () => {
         // The editing chip hosts the picker caret. While the picker is open,
         // the free-text display must not draw a second synthetic caret.
-        const engine = createTestEngine();
+        const engine = await createTestEngine();
         root.innerHTML = `
       <input type="text" id="field" data-ezclassify-controller="marked-input" value="(U) memo text">
     `;
-        const forms = new EzClassifyUI(engine as never, {});
+        const forms = new EzClassifyUI(asContext(engine as never), {});
         activeForms.push(forms);
         await wait(80);
 
@@ -1339,11 +1518,11 @@ describe('MarkedInput', () => {
         // test supplies that browser method.
         Element.prototype.scrollIntoView = vi.fn();
 
-        const engine = createTestEngine();
+        const engine = await createTestEngine();
         root.innerHTML = `
       <input type="text" id="field" data-ezclassify-controller="marked-input">
     `;
-        const forms = new EzClassifyUI(engine as never, {});
+        const forms = new EzClassifyUI(asContext(engine as never), {});
         activeForms.push(forms);
         await wait(50);
 
@@ -1404,11 +1583,11 @@ describe('MarkedInput', () => {
     });
 
     it('the touch "Add marking" button opens the picker (same action as Ctrl+Enter)', async () => {
-        const engine = createTestEngine();
+        const engine = await createTestEngine();
         root.innerHTML = `
       <input type="text" id="field" data-ezclassify-controller="marked-input">
     `;
-        const forms = new EzClassifyUI(engine as never, {});
+        const forms = new EzClassifyUI(asContext(engine as never), {});
         activeForms.push(forms);
         await wait(50);
 
@@ -1431,11 +1610,11 @@ describe('MarkedInput', () => {
     });
 
     it('the "to set marking" keyboard hint is a real button, not decorative text, and opens the picker on click', async () => {
-        const engine = createTestEngine();
+        const engine = await createTestEngine();
         root.innerHTML = `
       <input type="text" id="field" data-ezclassify-controller="marked-input">
     `;
-        const forms = new EzClassifyUI(engine as never, {});
+        const forms = new EzClassifyUI(asContext(engine as never), {});
         activeForms.push(forms);
         await wait(50);
 
@@ -1461,11 +1640,11 @@ describe('MarkedInput', () => {
     });
 
     it('omits the keyboard hint button entirely when hints are disabled', async () => {
-        const engine = createTestEngine();
+        const engine = await createTestEngine();
         root.innerHTML = `
       <input type="text" id="field" data-ezclassify-controller="marked-input" data-ezclassify-no-hints>
     `;
-        const forms = new EzClassifyUI(engine as never, {});
+        const forms = new EzClassifyUI(asContext(engine as never), {});
         activeForms.push(forms);
         await wait(50);
 
@@ -1478,11 +1657,11 @@ describe('MarkedInput', () => {
         // Architecture rule: render formats return bare markings ("S", not "(S)").
         // The embedded_marking template is the single authority that adds the ()
         // wrapper. setAssertions should produce "(S) title text", never "((S))".
-        const engine = createBareFormatEngine();
+        const engine = await createBareFormatEngine();
         root.innerHTML = `
       <input type="text" id="field" data-ezclassify-controller="marked-input" value="(U) title text">
     `;
-        const forms = new EzClassifyUI(engine as never, {});
+        const forms = new EzClassifyUI(asContext(engine as never), {});
         activeForms.push(forms);
         await wait(100);
 
@@ -1515,11 +1694,11 @@ describe('MarkedInput', () => {
         // Some schemes declare an embedded template WITHOUT a trailing space
         // ("({marking})"). Every external update then rebuilt the value as
         // "(S)quarterly report", gluing the text to the closing delimiter.
-        const engine = createBareEngineWithTemplate('({marking})');
+        const engine = await createBareEngineWithTemplate('({marking})');
         root.innerHTML = `
       <input type="text" id="field" data-ezclassify-controller="marked-input" value="(U) quarterly report">
     `;
-        const forms = new EzClassifyUI(engine as never, {});
+        const forms = new EzClassifyUI(asContext(engine as never), {});
         activeForms.push(forms);
         await wait(100);
 
@@ -1541,15 +1720,15 @@ describe('MarkedInput', () => {
     });
 
     it('preserves free text when an external store commit changes the marking', async () => {
-        const engine = createTestEngine();
+        const engine = await createTestEngine();
         // Marking host + MI bound to it, mirrors the demo's doc-marking pattern.
         root.innerHTML = `
-      <input type="hidden" id="doc-marking" data-ezclassify-rendered />
+      <input type="hidden" id="doc-marking" data-ezclassify-marking />
       <input type="text" id="mi-field"
              data-ezclassify-controller="marked-input"
              data-ezclassify-bound-to="doc-marking" value="(U) report title">
     `;
-        const forms = new EzClassifyUI(engine as never, { root });
+        const forms = new EzClassifyUI(asContext(engine as never), { root });
         activeForms.push(forms);
         await wait(150);
 
@@ -1576,14 +1755,14 @@ describe('MarkedInput', () => {
     it('does not show a stale invalid chip once a store seed replaces an unparseable placeholder marking', async () => {
         // A valid store seed must replace both the rendered placeholder and
         // its invalid parse state, keeping the chip consistent with its marking.
-        const engine = createTestEngine();
+        const engine = await createTestEngine();
         root.innerHTML = `
-      <input type="hidden" id="doc-marking" data-ezclassify-rendered />
+      <input type="hidden" id="doc-marking" data-ezclassify-marking />
       <input type="text" id="mi-field"
              data-ezclassify-controller="marked-input"
              data-ezclassify-bound-to="doc-marking" value="(X) quarterly report">
     `;
-        const forms = new EzClassifyUI(engine as never, { root });
+        const forms = new EzClassifyUI(asContext(engine as never), { root });
         activeForms.push(forms);
         await wait(150);
 
@@ -1611,9 +1790,9 @@ describe('MarkedInput', () => {
     });
 
     it('picker on empty input: renderDisplay attaches the picker mount as an editing chip', async () => {
-        const engine = createTestEngine();
+        const engine = await createTestEngine();
         root.innerHTML = `<input type="text" id="field" data-ezclassify-controller="marked-input">`;
-        const forms = new EzClassifyUI(engine as never, {});
+        const forms = new EzClassifyUI(asContext(engine as never), {});
         activeForms.push(forms);
         await wait(50);
 
@@ -1639,14 +1818,14 @@ describe('MarkedInput', () => {
     it('setAssertions does not echo a short-format render back to the store', async () => {
         // setAssertions renders in the component part format. It must not echo
         // that rendering into a store which parses the default format.
-        const engine = createTestEngine();
+        const engine = await createTestEngine();
         root.innerHTML = `
-      <input type="hidden" id="doc-marking" data-ezclassify-rendered />
+      <input type="hidden" id="doc-marking" data-ezclassify-marking />
       <input type="text" id="mi-field"
              data-ezclassify-controller="marked-input"
              data-ezclassify-bound-to="doc-marking" value="(U) quarterly report">
     `;
-        const forms = new EzClassifyUI(engine as never, { root });
+        const forms = new EzClassifyUI(asContext(engine as never), { root });
         activeForms.push(forms);
         await wait(150);
 
@@ -1672,11 +1851,11 @@ describe('MarkedInput', () => {
         // An empty setAssertions call must invalidate an earlier deferred apply.
         // The two calls run synchronously without an await, so the non-empty
         // process result is still queued when the clear occurs.
-        const engine = createTestEngine();
+        const engine = await createTestEngine();
         root.innerHTML = `
       <input type="text" id="field" data-ezclassify-controller="marked-input">
     `;
-        const forms = new EzClassifyUI(engine as never, {});
+        const forms = new EzClassifyUI(asContext(engine as never), {});
         activeForms.push(forms);
         await wait(80);
 
@@ -1702,14 +1881,14 @@ describe('MarkedInput', () => {
     it('focus + picker open + close without user edit does not republish store (no wipe)', async () => {
         // Opening and closing the picker without editing must not emit a change
         // that republishes the part-formatted marking into the default-format store.
-        const engine = createMultiCategoryEngine();
+        const engine = await createMultiCategoryEngine();
         root.innerHTML = `
-      <input type="hidden" id="doc-marking" data-ezclassify-rendered />
+      <input type="hidden" id="doc-marking" data-ezclassify-marking />
       <input type="text" id="mi-field"
              data-ezclassify-controller="marked-input"
              data-ezclassify-bound-to="doc-marking">
     `;
-        const forms = new EzClassifyUI(engine as never, { root });
+        const forms = new EzClassifyUI(asContext(engine as never), { root });
         activeForms.push(forms);
         await wait(150);
 
@@ -1784,11 +1963,11 @@ describe('MarkedInput', () => {
     });
 
     it('adopts its stylesheet and builds a display layer with the correct class', async () => {
-        const engine = createTestEngine();
+        const engine = await createTestEngine();
         root.innerHTML = `
       <input type="text" id="field" data-ezclassify-controller="marked-input">
     `;
-        const forms = new EzClassifyUI(engine as never, {});
+        const forms = new EzClassifyUI(asContext(engine as never), {});
         activeForms.push(forms);
         await wait(50);
 
@@ -1820,7 +1999,12 @@ describe('MarkedInput native input ownership', () => {
         const native = root.querySelector<HTMLInputElement>('#title')!;
         const body = root.querySelector<HTMLTextAreaElement>('#body')!;
         const form = root.querySelector('form')!;
-        const forms = new EzClassifyUI(createTestEngine() as never, { root });
+        const forms = new EzClassifyUI(
+            asContext((await createTestEngine()) as never),
+            {
+                root,
+            },
+        );
         activeForms.push(forms);
         await wait(80);
         const editor = root.querySelector<HTMLTextAreaElement>(
@@ -1864,7 +2048,12 @@ describe('MarkedInput native input ownership', () => {
         native.setCustomValidity('Host error');
         const focus = native.focus;
         const validity = native.setCustomValidity;
-        const forms = new EzClassifyUI(createTestEngine() as never, { root });
+        const forms = new EzClassifyUI(
+            asContext((await createTestEngine()) as never),
+            {
+                root,
+            },
+        );
         activeForms.push(forms);
         await wait(80);
         const editor = root.querySelector<HTMLTextAreaElement>(
@@ -1928,9 +2117,9 @@ describe('MarkedInput native input ownership', () => {
 
 describe('MarkedInput: wrapping owned textarea editor', () => {
     it('a plain Enter never inserts a newline into the value (keeps Ctrl/Cmd+Enter accept semantics)', async () => {
-        const engine = createTestEngine();
+        const engine = await createTestEngine();
         root.innerHTML = `<input type="text" id="field" data-ezclassify-controller="marked-input" value="(U) memo">`;
-        const forms = new EzClassifyUI(engine as never, { root });
+        const forms = new EzClassifyUI(asContext(engine as never), { root });
         activeForms.push(forms);
         await wait(50);
 
@@ -1984,9 +2173,9 @@ describe('MarkedInput: wrapping owned textarea editor', () => {
     });
 
     it('pasting multi-line text strips the newlines instead of inserting them', async () => {
-        const engine = createTestEngine();
+        const engine = await createTestEngine();
         root.innerHTML = `<input type="text" id="field" data-ezclassify-controller="marked-input" value="(U) ">`;
-        const forms = new EzClassifyUI(engine as never, { root });
+        const forms = new EzClassifyUI(asContext(engine as never), { root });
         activeForms.push(forms);
         await wait(50);
 
@@ -2021,9 +2210,9 @@ describe('MarkedInput: wrapping owned textarea editor', () => {
     });
 
     it('a paste with no newlines is left to the browser default (not intercepted)', async () => {
-        const engine = createTestEngine();
+        const engine = await createTestEngine();
         root.innerHTML = `<input type="text" id="field" data-ezclassify-controller="marked-input" value="(U) ">`;
-        const forms = new EzClassifyUI(engine as never, { root });
+        const forms = new EzClassifyUI(asContext(engine as never), { root });
         activeForms.push(forms);
         await wait(50);
 
@@ -2069,10 +2258,10 @@ describe('MarkedInput: wrapping owned textarea editor', () => {
         // observable signal is defaultPrevented + whether the picker
         // opened, same as the sibling "left to the browser default" test
         // above).
-        const engine = createTestEngine();
+        const engine = await createTestEngine();
 
         root.innerHTML = `<input type="text" id="field" data-ezclassify-controller="marked-input" value="(S) report">`;
-        const forms = new EzClassifyUI(engine as never, { root });
+        const forms = new EzClassifyUI(asContext(engine as never), { root });
         activeForms.push(forms);
         await wait(50);
 
@@ -2107,12 +2296,12 @@ describe('MarkedInput: wrapping owned textarea editor', () => {
     });
 
     it('original input retains its label association', async () => {
-        const engine = createTestEngine();
+        const engine = await createTestEngine();
         root.innerHTML = `
       <label for="field">Title</label>
       <input type="text" id="field" data-ezclassify-controller="marked-input" value="(U) memo">
     `;
-        const forms = new EzClassifyUI(engine as never, { root });
+        const forms = new EzClassifyUI(asContext(engine as never), { root });
         activeForms.push(forms);
         await wait(50);
 
@@ -2123,9 +2312,9 @@ describe('MarkedInput: wrapping owned textarea editor', () => {
     });
 
     it('form submit value is unchanged: still the flat "(U) title" string, no embedded newline', async () => {
-        const engine = createTestEngine();
+        const engine = await createTestEngine();
         root.innerHTML = `<form id="f"><input type="text" id="field" data-ezclassify-controller="marked-input" value="(U) report title"></form>`;
-        const forms = new EzClassifyUI(engine as never, { root });
+        const forms = new EzClassifyUI(asContext(engine as never), { root });
         activeForms.push(forms);
         await wait(50);
 
@@ -2141,13 +2330,13 @@ describe('MarkedInput: wrapping owned textarea editor', () => {
         // jsdom cannot measure wrapping. This test checks character-offset
         // boundary behavior on a long free-text tail at offsets corresponding
         // to marking and free-text positions.
-        const engine = createTestEngine();
+        const engine = await createTestEngine();
         const longTail =
             'the quarterly report covers several regional offices and includes a long narrative section that a real browser would wrap across many visual lines';
         root.innerHTML = `
       <input type="text" id="field" data-ezclassify-controller="marked-input" value="(U) ${longTail}">
     `;
-        const forms = new EzClassifyUI(engine as never, { root });
+        const forms = new EzClassifyUI(asContext(engine as never), { root });
         activeForms.push(forms);
         await wait(50);
 
@@ -2207,9 +2396,9 @@ describe('MarkedInput: standalone self-publish to the page aggregate', () => {
     // register as a marking host and publish edits into the page aggregate.
 
     it('auto-assigns a synthetic marking id when the host has none', async () => {
-        const engine = createTestEngine();
+        const engine = await createTestEngine();
         root.innerHTML = `<input type="text" data-ezclassify-controller="marked-input" value="(U) memo">`;
-        const forms = new EzClassifyUI(engine as never, {});
+        const forms = new EzClassifyUI(asContext(engine as never), {});
         activeForms.push(forms);
         await wait(80);
 
@@ -2218,7 +2407,7 @@ describe('MarkedInput: standalone self-publish to the page aggregate', () => {
     });
 
     it('a marked field edit MOVES the page aggregate (the banner roll-up)', async () => {
-        const engine = createTestEngine();
+        const engine = await createTestEngine();
         // Two standalone marked-inputs, mirroring the Builder's name + a second
         // marked field. Start both unmarked so the aggregate is genuinely a rollup.
         // Each input lives in its own field wrapper, as the Builder renders them:
@@ -2228,7 +2417,7 @@ describe('MarkedInput: standalone self-publish to the page aggregate', () => {
       <div class="field"><input type="text" id="mi-a" data-ezclassify-controller="marked-input"></div>
       <div class="field"><input type="text" id="mi-b" data-ezclassify-controller="marked-input"></div>
     `;
-        const forms = new EzClassifyUI(engine as never, {});
+        const forms = new EzClassifyUI(asContext(engine as never), {});
         activeForms.push(forms);
         await wait(80);
 
@@ -2236,7 +2425,7 @@ describe('MarkedInput: standalone self-publish to the page aggregate', () => {
         const b = editingField('mi-b') as HTMLTextAreaElement;
 
         // Empty aggregate up front.
-        expect(forms.store.getAggregate().assertions).toHaveLength(0);
+        expect(levelState(forms.store).assertions).toHaveLength(0);
 
         // Mark A (U), B (S). The 'max' rollup on `level` makes the aggregate S.
         a.value = '(U) alpha';
@@ -2246,7 +2435,7 @@ describe('MarkedInput: standalone self-publish to the page aggregate', () => {
         b.dispatchEvent(new Event('input', { bubbles: true }));
         await wait(80);
 
-        const raised = forms.store.getAggregate();
+        const raised = levelState(forms.store);
         expect(
             raised.assertions.some((x) => x.conceptId === 'S'),
             'aggregate must include S after a marked-input edit',
@@ -2257,7 +2446,7 @@ describe('MarkedInput: standalone self-publish to the page aggregate', () => {
         b.dispatchEvent(new Event('input', { bubbles: true }));
         await wait(80);
 
-        const lowered = forms.store.getAggregate();
+        const lowered = levelState(forms.store);
         expect(
             lowered.assertions.some((x) => x.conceptId === 'S'),
             'aggregate must drop S after lowering the mark',
@@ -2269,18 +2458,16 @@ describe('MarkedInput: standalone self-publish to the page aggregate', () => {
     });
 
     it('clearing a marked-input mark drops its contribution from the aggregate', async () => {
-        const engine = createTestEngine();
+        const engine = await createTestEngine();
         root.innerHTML = `
       <input type="text" id="mi-only" data-ezclassify-controller="marked-input" value="(S) classified title">
     `;
-        const forms = new EzClassifyUI(engine as never, {});
+        const forms = new EzClassifyUI(asContext(engine as never), {});
         activeForms.push(forms);
         await wait(80);
 
         expect(
-            forms.store
-                .getAggregate()
-                .assertions.some((x) => x.conceptId === 'S'),
+            levelState(forms.store).assertions.some((x) => x.conceptId === 'S'),
         ).toBe(true);
 
         // User deletes the marking, leaving plain text. The aggregate must clear.
@@ -2289,19 +2476,19 @@ describe('MarkedInput: standalone self-publish to the page aggregate', () => {
         el.dispatchEvent(new Event('input', { bubbles: true }));
         await wait(80);
 
-        expect(forms.store.getAggregate().assertions).toHaveLength(0);
+        expect(levelState(forms.store).assertions).toHaveLength(0);
     });
 
     it('a marked-input with data-ezclassify-bound-to still binds to the named marking (not self)', async () => {
         // The auto-self-host path must NOT hijack an explicit bound-to. This guards
         // the condition that self-registration only kicks in without bound-to/facet-of.
-        const engine = createTestEngine();
+        const engine = await createTestEngine();
         root.innerHTML = `
-      <input type="hidden" id="doc-marking" data-ezclassify-rendered />
+      <input type="hidden" id="doc-marking" data-ezclassify-marking />
       <input type="text" id="bound-mi" data-ezclassify-controller="marked-input"
              data-ezclassify-bound-to="doc-marking" value="(U) memo">
     `;
-        const forms = new EzClassifyUI(engine as never, { root });
+        const forms = new EzClassifyUI(asContext(engine as never), { root });
         activeForms.push(forms);
         await wait(80);
 
@@ -2336,7 +2523,7 @@ describe('MarkedInput favorites', () => {
         const input = native;
         container.appendChild(input);
         const field = new MarkedInput();
-        await field.init(container, createTestContext(), options);
+        await field.init(container, await createTestContext(), options);
         return {
             input: container.querySelector<HTMLTextAreaElement>(
                 '.marked-input-native',
@@ -2373,6 +2560,63 @@ describe('MarkedInput favorites', () => {
 
         expect(input.value).toBe('(S) quarterly report');
         expect(field.getAssertions().map((a) => a.conceptId)).toEqual(['S']);
+    });
+
+    it('keeps the saved text when the engine refuses to write a favorite', async () => {
+        const real = await createTestEngine();
+        // The adapter is frozen, so the refusal wraps it from outside.
+        const engine = new Proxy(real, {
+            get(target, key) {
+                const member = Reflect.get(target, key, target) as unknown;
+                if (typeof member !== 'function') return member;
+                if (key !== 'validate') return member.bind(target);
+                return async (...args: unknown[]) => {
+                    const result = await Reflect.apply(member, target, args);
+                    return args[0] === 'S'
+                        ? {
+                              ...result,
+                              rendered:
+                                  '[unrepresentable:ambiguous-representation]',
+                              assessment: {
+                                  ...result.assessment,
+                                  unrepresentable: [
+                                      {
+                                          output: 'portion',
+                                          reason: 'ambiguous-representation',
+                                      },
+                                  ],
+                              },
+                          }
+                        : result;
+                };
+            },
+        });
+        const container = document.createElement('div');
+        root.appendChild(container);
+        container.appendChild(document.createElement('input'));
+        const field = new MarkedInput();
+        await field.init(container, asContext(engine as never), {
+            favorites: {
+                load: vi.fn(async () => [{ marking: 'S', label: 'Secret' }]),
+            },
+        });
+        const input = container.querySelector<HTMLTextAreaElement>(
+            '.marked-input-native',
+        )!;
+        input.value = '(U) quarterly report';
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+        await wait();
+
+        (root.querySelector('.ez-favorites-button') as HTMLElement).click();
+        await wait();
+        (
+            document.body.querySelector(
+                '.ez-favorites-panel .proto-dropdown-item',
+            ) as HTMLElement
+        ).dispatchEvent(new MouseEvent('click', { bubbles: true }));
+        await wait();
+
+        expect(input.value).toBe('(S) quarterly report');
     });
 
     it('applying a favorite while the inline picker is open closes the picker instead of leaving it stale', async () => {

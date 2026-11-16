@@ -4,12 +4,15 @@ import type {
     AccessEngineAdapter,
     AccessRuleDescription,
 } from '@ezclassify/types';
-import { Context } from '@ezclassify/engine';
-import type { LocalSchemeEngineAdapter } from '@ezclassify/types';
+import type {
+    ContextAdapter,
+    RemoteContextSchemeEngineAdapter,
+} from '@ezclassify/types';
+import { schemeOnlyContext } from '../../test-fixtures/context-doubles';
 import {
-    loadCedarValleyLevels,
-    loadCedarValleyLevelsAccess,
-} from '@ezclassify/example-schemes/cedar-valley-protection';
+    connectDemoContext,
+    demoRuntimeSettled,
+} from '../../../../test-support/demo-runtime';
 
 function makeRule(
     overrides: Partial<AccessRuleDescription> = {},
@@ -35,73 +38,73 @@ function makeRule(
         attributesNeeded: ['clearance'],
         dependsOn: [],
         overrides: [],
-        lines: [],
         ...overrides,
     };
 }
 
-function makeEngine(): LocalSchemeEngineAdapter {
-    return Context.fromComponents({
-        scheme: {
-            scheme: {
-                id: 'test-access',
-                version: '1.0.0',
-                name: 'Test',
-                description: '',
-                data: {
-                    categories: [
-                        {
-                            id: 'level',
-                            label: 'Level',
-                            required: false,
-                            single: true,
-                            rollup: 'max',
-                            position: 0,
-                            hierarchy_root: true,
+async function makeEngine(): Promise<RemoteContextSchemeEngineAdapter> {
+    return (
+        await connectDemoContext({
+            draft: {
+                scheme: {
+                    scheme: {
+                        id: 'test-access',
+                        version: '1.0.0',
+                        name: 'Test',
+                        description: '',
+                        data: {
+                            categories: [
+                                {
+                                    id: 'level',
+                                    label: 'Level',
+                                    required: false,
+                                    single: true,
+                                    rollup: 'max',
+                                    position: 0,
+                                    hierarchy_root: true,
+                                },
+                            ],
+                            concepts: [
+                                {
+                                    id: 'l1',
+                                    name: 'L1',
+                                    views: { default: 'L1' },
+                                    aliases: [],
+                                    categories: ['level'],
+                                    parents: [],
+                                    position: 1,
+                                    rank: 0,
+                                },
+                            ],
                         },
-                    ],
-                    concepts: {
-                        inline: [
-                            {
-                                id: 'l1',
-                                name: 'L1',
-                                views: { default: 'L1' },
-                                aliases: [],
-                                categories: ['level'],
-                                parents: [],
-                                position: 1,
-                                rank: 0,
-                            },
-                        ],
+                        rules: [],
+                        rollup_pipelines: [],
+                        render: {
+                            default: 'default',
+                            formats: [
+                                {
+                                    id: 'default',
+                                    surface: 'marking',
+                                    mode: 'inline',
+                                    separator: '//',
+                                    fields: [
+                                        { category: 'level', separator: '//' },
+                                    ],
+                                },
+                            ],
+                        },
                     },
                 },
-                rules: [],
-                rollup_pipelines: [],
-                parse: {
-                    case_sensitive: false,
-                    strip_whitespace: true,
-                },
-                render: {
-                    default: 'default',
-                    formats: [
-                        {
-                            id: 'default',
-                            surface: 'marking',
-                            mode: 'inline',
-                            separator: '//',
-                            fields: [{ category: 'level', separator: '//' }],
-                        },
-                    ],
-                },
             },
-        },
-    }).scheme as LocalSchemeEngineAdapter;
+        })
+    ).scheme as RemoteContextSchemeEngineAdapter;
 }
 
 function makeAccessEngine(rules: AccessRuleDescription[]): AccessEngineAdapter {
     return {
         schemeId: 'test',
         describeAllAccessRules: vi.fn(() => rules),
+        describeAccessMarking: vi.fn(() => undefined),
         describeApplicableRules: vi.fn(() => ({
             rules: [],
             combinedRequirementText: '',
@@ -112,14 +115,12 @@ function makeAccessEngine(rules: AccessRuleDescription[]): AccessEngineAdapter {
     } as unknown as AccessEngineAdapter;
 }
 
-/**
- * Build a Context backed by a real scheme engine and a mock access engine.
- * Context's constructor is private; we force-assign `access` on the instance
- * (safe at runtime, TypeScript readonly is compile-time only).
- */
-function makeContext(rules: AccessRuleDescription[]): Context {
-    const engine = makeEngine();
-    const ctx = Context.fromSchemeEngine(engine);
+/** A Context backed by a real scheme and a mock access policy. */
+async function makeContext(
+    rules: AccessRuleDescription[],
+): Promise<ContextAdapter> {
+    const engine = await makeEngine();
+    const ctx = schemeOnlyContext(engine);
     (ctx as unknown as { access: AccessEngineAdapter }).access =
         makeAccessEngine(rules);
     return ctx;
@@ -136,10 +137,123 @@ describe('AccessHandbook', () => {
     });
 
     it('renders an empty-state message when no access engine is bound', async () => {
-        const ctx = Context.fromSchemeEngine(makeEngine());
+        const ctx = schemeOnlyContext(await makeEngine());
         await component.init(container, ctx);
+        await demoRuntimeSettled();
         const empty = container.querySelector('.ez-access-handbook__empty');
         expect(empty).not.toBeNull();
+    });
+
+    describe('overall marking', () => {
+        async function markedContext(
+            rules: AccessRuleDescription[],
+            marking: string,
+        ): Promise<ContextAdapter> {
+            const ctx = await makeContext(rules);
+            Object.assign(ctx.access!, {
+                describeAccessMarking: () => marking,
+            });
+            return ctx;
+        }
+
+        it('leads the overview with the policy document marking', async () => {
+            await component.init(
+                container,
+                await markedContext([makeRule()], '(U) NOTIONAL//TEST'),
+            );
+            await demoRuntimeSettled();
+            await vi.waitFor(() =>
+                expect(
+                    container.querySelector('.ez-access-handbook__overview'),
+                ).not.toBeNull(),
+            );
+
+            const overview = container.querySelector(
+                '.ez-access-handbook__overview',
+            )!;
+            const marking = overview.querySelector(
+                '.ez-access-handbook__overview-marking',
+            )!;
+            expect(overview.firstElementChild).toBe(marking);
+            expect(marking.textContent).toBe(
+                'Overall marking: (U) NOTIONAL//TEST',
+            );
+        });
+
+        it('still shows the marking of a policy with no rules', async () => {
+            await component.init(
+                container,
+                await markedContext([], '(U) NOTIONAL//TEST'),
+            );
+            await demoRuntimeSettled();
+            await vi.waitFor(() =>
+                expect(
+                    container.querySelector('.ez-access-handbook__empty'),
+                ).not.toBeNull(),
+            );
+
+            expect(
+                container.querySelector('.ez-access-handbook__overview-marking')
+                    ?.textContent,
+            ).toBe('Overall marking: (U) NOTIONAL//TEST');
+        });
+
+        it('waits for a marking the policy reports over the wire', async () => {
+            const ctx = await makeContext([makeRule()]);
+            Object.assign(ctx.access!, {
+                describeAccessMarking: () =>
+                    Promise.resolve('(U) NOTIONAL//TEST'),
+            });
+            await component.init(container, ctx);
+            await demoRuntimeSettled();
+
+            await vi.waitFor(() =>
+                expect(
+                    container.querySelector(
+                        '.ez-access-handbook__overview-marking',
+                    )?.textContent,
+                ).toBe('Overall marking: (U) NOTIONAL//TEST'),
+            );
+        });
+
+        it('paints unavailable rather than unmarked when the marking cannot be read', async () => {
+            const consoleError = vi
+                .spyOn(console, 'error')
+                .mockImplementation(() => {});
+            const ctx = await makeContext([makeRule()]);
+            Object.assign(ctx.access!, {
+                describeAccessMarking: () =>
+                    Promise.reject(new Error('policy fetch failed')),
+            });
+            await component.init(container, ctx);
+            await demoRuntimeSettled();
+
+            await vi.waitFor(() =>
+                expect(
+                    container.querySelector('.ez-access-handbook__error'),
+                ).not.toBeNull(),
+            );
+            expect(
+                container.querySelector('.ez-access-handbook__overview'),
+            ).toBeNull();
+            consoleError.mockRestore();
+        });
+
+        it('shows none for a policy that carries none', async () => {
+            await component.init(container, await makeContext([makeRule()]));
+            await demoRuntimeSettled();
+            await vi.waitFor(() =>
+                expect(
+                    container.querySelector('.ez-access-handbook__overview'),
+                ).not.toBeNull(),
+            );
+
+            expect(
+                container.querySelector(
+                    '.ez-access-handbook__overview-marking',
+                ),
+            ).toBeNull();
+        });
     });
 
     it('renders group headers for always and conditional rules', async () => {
@@ -162,8 +276,9 @@ describe('AccessHandbook', () => {
                 whenText: 'When TOP SECRET',
             }),
         ];
-        const ctx = makeContext(rules);
+        const ctx = await makeContext(rules);
         await component.init(container, ctx);
+        await demoRuntimeSettled();
 
         const headers = container.querySelectorAll<HTMLButtonElement>(
             '.ez-access-handbook__group-header',
@@ -190,9 +305,14 @@ describe('AccessHandbook', () => {
                 ruleId: 'r1',
             },
         });
-        await component.init(container, makeContext([baseRule, layerRule]), {
-            expandAll: true,
-        });
+        await component.init(
+            container,
+            await makeContext([baseRule, layerRule]),
+            {
+                expandAll: true,
+            },
+        );
+        await demoRuntimeSettled();
 
         const searchInput = container.querySelector<HTMLInputElement>(
             '.ez-access-handbook__search-input',
@@ -210,8 +330,9 @@ describe('AccessHandbook', () => {
     });
 
     it('rule entries are not tab stops (no tabIndex=0)', async () => {
-        const ctx = makeContext([makeRule()]);
+        const ctx = await makeContext([makeRule()]);
         await component.init(container, ctx);
+        await demoRuntimeSettled();
 
         const entries = container.querySelectorAll<HTMLElement>(
             '.ez-access-handbook__entry',
@@ -224,8 +345,9 @@ describe('AccessHandbook', () => {
     });
 
     it('toggling a group updates aria-expanded in place (no DOM rebuild)', async () => {
-        const ctx = makeContext([makeRule()]);
+        const ctx = await makeContext([makeRule()]);
         await component.init(container, ctx);
+        await demoRuntimeSettled();
 
         const header = container.querySelector<HTMLButtonElement>(
             '.ez-access-handbook__group-header',
@@ -256,8 +378,9 @@ describe('AccessHandbook', () => {
     });
 
     it('toggle back collapses the group again', async () => {
-        const ctx = makeContext([makeRule()]);
+        const ctx = await makeContext([makeRule()]);
         await component.init(container, ctx);
+        await demoRuntimeSettled();
 
         const header = container.querySelector<HTMLButtonElement>(
             '.ez-access-handbook__group-header',
@@ -280,13 +403,14 @@ describe('AccessHandbook', () => {
          * policy behind a runtime has. Every other mock in this file answers
          * synchronously, which never exercises a second turn of the loop.
          */
-        function makeAsyncContext(
+        async function makeAsyncContext(
             describeAllAccessRules: () => Promise<AccessRuleDescription[]>,
-        ): Context {
-            const ctx = Context.fromSchemeEngine(makeEngine());
+        ): Promise<ContextAdapter> {
+            const ctx = schemeOnlyContext(await makeEngine());
             (ctx as unknown as { access: AccessEngineAdapter }).access = {
                 schemeId: 'test',
                 describeAllAccessRules: vi.fn(describeAllAccessRules),
+                describeAccessMarking: vi.fn(() => Promise.resolve(undefined)),
             } as unknown as AccessEngineAdapter;
             return ctx;
         }
@@ -298,8 +422,9 @@ describe('AccessHandbook', () => {
             });
             await component.init(
                 container,
-                makeAsyncContext(() => pending),
+                await makeAsyncContext(() => pending),
             );
+            await demoRuntimeSettled();
 
             expect(
                 container.querySelector('.ez-access-handbook__group-header'),
@@ -321,10 +446,11 @@ describe('AccessHandbook', () => {
                 .mockImplementation(() => {});
             await component.init(
                 container,
-                makeAsyncContext(() =>
+                await makeAsyncContext(() =>
                     Promise.reject(new Error('policy fetch failed')),
                 ),
             );
+            await demoRuntimeSettled();
 
             const failed = await vi.waitFor(() => {
                 const el = container.querySelector<HTMLElement>(
@@ -352,8 +478,9 @@ describe('AccessHandbook', () => {
             });
             await component.init(
                 container,
-                makeAsyncContext(() => pending),
+                await makeAsyncContext(() => pending),
             );
+            await demoRuntimeSettled();
 
             component.destroy();
             release([makeRule()]);
@@ -365,8 +492,9 @@ describe('AccessHandbook', () => {
 
     describe('reference-surface vocabulary', () => {
         it('keeps the generic aria-label when the access policy declares no vocabulary (byte-identical default)', async () => {
-            const ctx = makeContext([makeRule()]);
+            const ctx = await makeContext([makeRule()]);
             await component.init(container, ctx);
+            await demoRuntimeSettled();
 
             const region = container.querySelector('[role="region"]');
             expect(region!.getAttribute('aria-label')).toBe('Access handbook');
@@ -379,12 +507,11 @@ describe('AccessHandbook', () => {
         });
 
         it('uses the generic Access Handbook noun when the policy declares no reference vocabulary', async () => {
-            const schemeEngine = loadCedarValleyLevels();
-            const accessEngine = loadCedarValleyLevelsAccess(schemeEngine);
-            const ctx = Context.fromSchemeEngine(schemeEngine);
-            (ctx as unknown as { access: AccessEngineAdapter }).access =
-                accessEngine;
+            const ctx = await connectDemoContext({
+                contextId: 'cedar-valley-protection',
+            });
             await component.init(container, ctx);
+            await demoRuntimeSettled();
 
             const region = container.querySelector('[role="region"]');
             expect(region!.getAttribute('aria-label')).toBe('Access handbook');

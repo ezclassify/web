@@ -15,9 +15,13 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { loadCedarValley } from '@ezclassify/example-schemes/cedar-valley';
 import { EzClassifyUI } from './ezclassify-ui';
 import { VanillaEzClassifyStore } from './store/ezclassify-store';
+import { asContext } from '../test-fixtures/as-context';
+import {
+    connectDemoContext,
+    demoRuntimeSettled,
+} from '../../../test-support/demo-runtime';
 
 function waitForReady(root: HTMLElement): Promise<CustomEvent> {
     return new Promise((resolve) => {
@@ -47,7 +51,7 @@ describe('EzClassifyUI ezclassify:ready event', () => {
 
     it('fires exactly once per EzClassifyUI instance', async () => {
         root.innerHTML = `
-      <input type="hidden" id="doc-marking" data-ezclassify-rendered />
+      <input type="hidden" id="doc-marking" data-ezclassify-marking />
       <input id="ac" data-ezclassify-controller="tags"
              data-ezclassify-bound-to="doc-marking" />
     `;
@@ -56,17 +60,20 @@ describe('EzClassifyUI ezclassify:ready event', () => {
             fired.push(e as CustomEvent),
         );
 
-        forms = new EzClassifyUI(loadCedarValley(), { root });
+        forms = new EzClassifyUI(
+            await connectDemoContext({ contextId: 'cedar-valley' }),
+            { root },
+        );
         // Drain the constructor's Promise.all chain and any chained microtasks
         // the seed/wire/rollup path may have queued.
-        for (let i = 0; i < 12; i++) await Promise.resolve();
+        await demoRuntimeSettled();
 
         expect(fired.length).toBe(1);
     });
 
     it('fires AFTER every component init() resolves', async () => {
         root.innerHTML = `
-      <input type="hidden" id="doc-marking" data-ezclassify-rendered />
+      <input type="hidden" id="doc-marking" data-ezclassify-marking />
       <input id="ac" data-ezclassify-controller="tags"
              data-ezclassify-bound-to="doc-marking" />
       <input id="level" data-ezclassify-controller="select"
@@ -74,7 +81,10 @@ describe('EzClassifyUI ezclassify:ready event', () => {
              data-ezclassify-category="level" />
     `;
 
-        forms = new EzClassifyUI(loadCedarValley(), { root });
+        forms = new EzClassifyUI(
+            await connectDemoContext({ contextId: 'cedar-valley' }),
+            { root },
+        );
 
         let initializingAtFire: boolean | null = null;
         let componentsAtFire = -1;
@@ -106,11 +116,14 @@ describe('EzClassifyUI ezclassify:ready event', () => {
 
     it('exposes isReady=false before the sweep settles and true after', async () => {
         root.innerHTML = `
-      <input type="hidden" id="doc-marking" data-ezclassify-rendered />
+      <input type="hidden" id="doc-marking" data-ezclassify-marking />
       <input id="ac" data-ezclassify-controller="tags"
              data-ezclassify-bound-to="doc-marking" />
     `;
-        forms = new EzClassifyUI(loadCedarValley(), { root });
+        forms = new EzClassifyUI(
+            await connectDemoContext({ contextId: 'cedar-valley' }),
+            { root },
+        );
         // Synchronously after construction the runtime is still mid-sweep.
         expect(forms.isReady).toBe(false);
         await waitForReady(root);
@@ -119,14 +132,17 @@ describe('EzClassifyUI ezclassify:ready event', () => {
 
     it('event detail carries markingIds and componentCount', async () => {
         root.innerHTML = `
-      <input type="hidden" id="doc-marking" data-ezclassify-rendered />
+      <input type="hidden" id="doc-marking" data-ezclassify-marking />
       <input id="ac" data-ezclassify-controller="tags"
              data-ezclassify-bound-to="doc-marking" />
       <input id="level" data-ezclassify-controller="select"
              data-ezclassify-facet-of="doc-marking"
              data-ezclassify-category="level" />
     `;
-        forms = new EzClassifyUI(loadCedarValley(), { root });
+        forms = new EzClassifyUI(
+            await connectDemoContext({ contextId: 'cedar-valley' }),
+            { root },
+        );
 
         const event = await waitForReady(root);
         const detail = event.detail as {
@@ -151,7 +167,10 @@ describe('EzClassifyUI ezclassify:ready event', () => {
             fired.push(e as CustomEvent),
         );
 
-        forms = new EzClassifyUI(loadCedarValley(), { root });
+        forms = new EzClassifyUI(
+            await connectDemoContext({ contextId: 'cedar-valley' }),
+            { root },
+        );
 
         await waitForReady(root);
         expect(fired.length).toBe(1);
@@ -171,12 +190,17 @@ describe('EzClassifyUI ezclassify:ready event', () => {
         const inner = document.createElement('div');
         outer.appendChild(inner);
         inner.innerHTML = `
-      <input type="hidden" id="doc-marking" data-ezclassify-rendered />
+      <input type="hidden" id="doc-marking" data-ezclassify-marking />
     `;
         const outerFired: Event[] = [];
         outer.addEventListener('ezclassify:ready', (e) => outerFired.push(e));
 
-        forms = new EzClassifyUI(loadCedarValley(), { root: inner });
+        forms = new EzClassifyUI(
+            await connectDemoContext({ contextId: 'cedar-valley' }),
+            {
+                root: inner,
+            },
+        );
 
         // Wait for the event on the inner root, then assert the outer caught it too.
         await waitForReady(inner);
@@ -184,7 +208,8 @@ describe('EzClassifyUI ezclassify:ready event', () => {
     });
 
     it('does not fire for a runtime destroyed while its seeds are on the wire', async () => {
-        const engine = loadCedarValley();
+        const engine = (await connectDemoContext({ contextId: 'cedar-valley' }))
+            .scheme;
         // An engine whose process call never answers, so the seed is still
         // on the wire when the runtime is torn down.
         const stalled = new Proxy(engine, {
@@ -196,10 +221,10 @@ describe('EzClassifyUI ezclassify:ready event', () => {
         });
         const store = new VanillaEzClassifyStore(stalled);
         root.innerHTML =
-            '<input type="hidden" id="doc-marking" data-ezclassify-rendered value="INTERNAL">';
+            '<input type="hidden" id="doc-marking" data-ezclassify-marking value="INTERNAL">';
         let fired = 0;
         root.addEventListener('ezclassify:ready', () => fired++);
-        forms = new EzClassifyUI(engine, { root, store });
+        forms = new EzClassifyUI(asContext(engine), { root, store });
         for (let i = 0; i < 4; i++)
             await new Promise<void>((tick) => setTimeout(tick, 0));
 

@@ -1,4 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import { dirname, join } from 'node:path';
 import { EquivalencyMap } from './equivalency-map';
 import type { SchemeEngineAdapter } from '@ezclassify/types';
 import type {
@@ -6,7 +9,7 @@ import type {
     ConceptView,
     CategoryView,
 } from '@ezclassify/types';
-import { Context } from '@ezclassify/engine';
+import { schemeOnlyContext } from '../../test-fixtures/context-doubles';
 import { mockRenderFormats } from '../render-format-layout-mock';
 
 function createMockProfile(): SchemePublicView {
@@ -87,7 +90,7 @@ const SAMPLE_EQUIVALENCIES = JSON.stringify([
     },
 ]);
 
-const toCtx = (eng: unknown) => Context.fromSchemeEngine(eng as never);
+const toCtx = (eng: unknown) => schemeOnlyContext(eng as never);
 describe('EquivalencyMap', () => {
     let container: HTMLDivElement;
     let engine: SchemeEngineAdapter;
@@ -197,5 +200,22 @@ describe('EquivalencyMap', () => {
             container.querySelectorAll('.ez-equivalency-map__row.active')
                 .length,
         ).toBe(0);
+    });
+});
+
+describe('EquivalencyMap marking typography', () => {
+    it('writes source and target markings in the chrome font, not a code font', () => {
+        // A crosswalk mapping pairs two markings, and a marking is not code.
+        const css = readFileSync(
+            join(
+                dirname(fileURLToPath(import.meta.url)),
+                'equivalency-map.css',
+            ),
+            'utf8',
+        ).replace(/\/\*[\s\S]*?\*\//g, '');
+        expect(css).not.toMatch(/mono/);
+        expect(css).toMatch(
+            /\.ez-equivalency-map\s*\{[^}]*font-family:\s*var\(--ez-font-family, inherit\)/,
+        );
     });
 });

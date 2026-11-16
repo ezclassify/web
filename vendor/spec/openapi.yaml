@@ -135,10 +135,8 @@ paths:
           $ref: "#/components/responses/TooManyRequests"
         "500":
           $ref: "#/components/responses/InternalError"
-      security:
-        - bearerAuth: []
-          contextToken: []
-        - applicationCredential: []
+      parameters:
+        - $ref: "#/components/parameters/ApplicationId"
   /v1/ctx/{ctxId}:
     get:
       operationId: ctxVersions
@@ -156,6 +154,7 @@ paths:
           required: true
           schema:
             type: string
+        - $ref: "#/components/parameters/ApplicationId"
       responses:
         "200":
           description: Available versions for the context
@@ -175,10 +174,6 @@ paths:
           $ref: "#/components/responses/TooManyRequests"
         "500":
           $ref: "#/components/responses/InternalError"
-      security:
-        - bearerAuth: []
-          contextToken: []
-        - applicationCredential: []
   /v1/ctx/{ctxId}/{version}:
     get:
       operationId: ctxDescribe
@@ -204,6 +199,7 @@ paths:
             response header. Without this segment the URL lists the context's versions instead.
           schema:
             type: string
+        - $ref: "#/components/parameters/ApplicationId"
       responses:
         "200":
           description: Resolved context decomposition
@@ -242,10 +238,6 @@ paths:
           $ref: "#/components/responses/TooManyRequests"
         "500":
           $ref: "#/components/responses/InternalError"
-      security:
-        - bearerAuth: []
-          contextToken: []
-        - applicationCredential: []
   /v1/ctx/{ctxId}/{version}/document/audit:
     post:
       operationId: ctxDocumentAudit
@@ -255,12 +247,10 @@ paths:
         authoritative facts. Never accept a nomination without an explicit analyst decision bound to its finding ID and
         document digest; revised text requires new decisions. Determined results include only accepted findings and
         manual selections, while projected results assume unresolved nominations and remain advisory. This operation
-        answers authored correctness and guide review; document access assessment (POST
-        /v1/ctx/{ctxId}/{version}/document/assess-access) answers whether supplied userAttributes satisfy the document
-        policy. The standard response profile is the default; summary suits only an initial large-document overview,
-        standard is needed before analyst decisions or remediation, and full only when matched text or complete
-        breakdowns are necessary. responseProjection counts and omittedFields state what the profile left out; omitted
-        detail is not absent evidence.
+        answers authored correctness and guide review. The standard response profile is the default; summary suits only
+        an initial large-document overview, standard is needed before analyst decisions or remediation, and full only
+        when matched text or complete breakdowns are necessary. responseProjection counts and omittedFields state what
+        the profile left out; omitted detail is not absent evidence.
       tags:
         - context
         - document
@@ -278,6 +268,7 @@ paths:
             response header. The segment may also be left out of the URL, which the server reads as `latest`.
           schema:
             type: string
+        - $ref: "#/components/parameters/ApplicationId"
       requestBody:
         required: true
         content:
@@ -311,90 +302,6 @@ paths:
           $ref: "#/components/responses/TooManyRequests"
         "500":
           $ref: "#/components/responses/InternalError"
-      security:
-        - bearerAuth: []
-          contextToken: []
-        - applicationCredential: []
-  /v1/ctx/{ctxId}/{version}/document/assess-access:
-    post:
-      operationId: ctxDocumentAssessAccess
-      summary: Assess document access in a context
-      description: >-
-        Answers whether the supplied userAttributes satisfy a document under the Context policy. It audits the document
-        once and evaluates authored, authoritative, and projected access scenarios against immutable userAttributes and
-        Context policy. Lexical matches are nominations, never automatic decisions; accepted findings bind to the
-        returned finding ID and document digest, and revised text requires new decisions. Authoritative includes
-        authored facts plus explicit analyst decisions. Projected assumes unresolved nominations and remains advisory.
-        contentRequirements identify supported content that must cease to apply after content change and re-evaluation;
-        they are not instructions to lower a marking. contextRequirements are conditional future relationships between
-        userAttributes and authoritative context, not mutations performed by EzClassify. A denial remains denied until
-        revised text or authoritative external state is re-evaluated. The standard profile is the default; summary suits
-        only an initial large-document overview, standard is needed before decisions or remediation, and full only when
-        matched text or complete breakdowns are necessary. responseProjection counts and omittedFields state what the
-        profile left out; omitted detail is not absent evidence.
-      tags:
-        - context
-        - document
-        - access
-      parameters:
-        - name: ctxId
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: version
-          in: path
-          required: true
-          description: >-
-            A concrete semver version, or `latest`. The version served is reported in the X-EzClassify-Resolved-Version
-            response header. The segment may also be left out of the URL, which the server reads as `latest`.
-          schema:
-            type: string
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/CtxDocumentAssessAccessRequestBody"
-            example:
-              text: Document body text here.
-              userAttributes:
-                clearance: high
-              context:
-                distribution:
-                  - team-a
-              guideDeterminations:
-                findings: []
-                manualSelections: []
-              responseProfile: standard
-      responses:
-        "200":
-          description: Resolved Context document access assessment
-          headers:
-            X-EzClassify-Resolved-Version:
-              $ref: "#/components/headers/ResolvedVersion"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ContextDocumentAccessAssessmentResult"
-        "400":
-          $ref: "#/components/responses/BadRequest"
-        "404":
-          $ref: "#/components/responses/NotFound"
-        "409":
-          $ref: "#/components/responses/Conflict"
-          description: A supplied finding determination or manual selection is stale.
-        "422":
-          $ref: "#/components/responses/UnprocessableEntity"
-          description: Context has no access policy attached.
-        "429":
-          $ref: "#/components/responses/TooManyRequests"
-        "500":
-          $ref: "#/components/responses/InternalError"
-      security:
-        - bearerAuth: []
-          contextToken: []
-        - applicationCredential: []
   /v1/ctx/{ctxId}/{version}/scheme:
     get:
       operationId: ctxSchemeSummary
@@ -425,10 +332,13 @@ paths:
           in: query
           required: false
           description: >-
-            Context-local key, or unambiguous artifact id, of the scheme to read. Defaults to the context's primary
-            scheme; a crosswalk's source or target scheme is named here. A key the context does not hold answers 404.
+            Context-local key of the scheme the request is answered in, as `GET /v1/ctx/{ctxId}/{version}` lists it.
+            Without it the context's primary scheme answers. Any scheme the context holds may be named, a crosswalk's
+            source or target among them. A key the context does not hold answers 404 with code `scheme_not_found`; it
+            never falls back to the primary. Name it once: a repeated selector answers 400.
           schema:
             type: string
+        - $ref: "#/components/parameters/ApplicationId"
       responses:
         "200":
           description: Scheme summary
@@ -447,10 +357,6 @@ paths:
           $ref: "#/components/responses/TooManyRequests"
         "500":
           $ref: "#/components/responses/InternalError"
-      security:
-        - bearerAuth: []
-          contextToken: []
-        - applicationCredential: []
   /v1/ctx/{ctxId}/{version}/scheme/concepts:
     get:
       operationId: ctxSchemeConcepts
@@ -481,10 +387,13 @@ paths:
           in: query
           required: false
           description: >-
-            Context-local key, or unambiguous artifact id, of the scheme to read. Defaults to the context's primary
-            scheme; a crosswalk's source or target scheme is named here. A key the context does not hold answers 404.
+            Context-local key of the scheme the request is answered in, as `GET /v1/ctx/{ctxId}/{version}` lists it.
+            Without it the context's primary scheme answers. Any scheme the context holds may be named, a crosswalk's
+            source or target among them. A key the context does not hold answers 404 with code `scheme_not_found`; it
+            never falls back to the primary. Name it once: a repeated selector answers 400.
           schema:
             type: string
+        - $ref: "#/components/parameters/ApplicationId"
       responses:
         "200":
           description: Concept list
@@ -505,10 +414,6 @@ paths:
           $ref: "#/components/responses/TooManyRequests"
         "500":
           $ref: "#/components/responses/InternalError"
-      security:
-        - bearerAuth: []
-          contextToken: []
-        - applicationCredential: []
   /v1/ctx/{ctxId}/{version}/scheme/categories:
     get:
       operationId: ctxSchemeCategories
@@ -539,10 +444,13 @@ paths:
           in: query
           required: false
           description: >-
-            Context-local key, or unambiguous artifact id, of the scheme to read. Defaults to the context's primary
-            scheme; a crosswalk's source or target scheme is named here. A key the context does not hold answers 404.
+            Context-local key of the scheme the request is answered in, as `GET /v1/ctx/{ctxId}/{version}` lists it.
+            Without it the context's primary scheme answers. Any scheme the context holds may be named, a crosswalk's
+            source or target among them. A key the context does not hold answers 404 with code `scheme_not_found`; it
+            never falls back to the primary. Name it once: a repeated selector answers 400.
           schema:
             type: string
+        - $ref: "#/components/parameters/ApplicationId"
       responses:
         "200":
           description: Category list
@@ -563,10 +471,6 @@ paths:
           $ref: "#/components/responses/TooManyRequests"
         "500":
           $ref: "#/components/responses/InternalError"
-      security:
-        - bearerAuth: []
-          contextToken: []
-        - applicationCredential: []
   /v1/ctx/{ctxId}/{version}/scheme/formats:
     get:
       operationId: ctxSchemeFormats
@@ -597,10 +501,13 @@ paths:
           in: query
           required: false
           description: >-
-            Context-local key, or unambiguous artifact id, of the scheme to read. Defaults to the context's primary
-            scheme; a crosswalk's source or target scheme is named here. A key the context does not hold answers 404.
+            Context-local key of the scheme the request is answered in, as `GET /v1/ctx/{ctxId}/{version}` lists it.
+            Without it the context's primary scheme answers. Any scheme the context holds may be named, a crosswalk's
+            source or target among them. A key the context does not hold answers 404 with code `scheme_not_found`; it
+            never falls back to the primary. Name it once: a repeated selector answers 400.
           schema:
             type: string
+        - $ref: "#/components/parameters/ApplicationId"
       responses:
         "200":
           description: Render format list
@@ -621,66 +528,6 @@ paths:
           $ref: "#/components/responses/TooManyRequests"
         "500":
           $ref: "#/components/responses/InternalError"
-      security:
-        - bearerAuth: []
-          contextToken: []
-        - applicationCredential: []
-  /v1/ctx/{ctxId}/{version}/scheme/grammar:
-    get:
-      operationId: ctxSchemeGrammar
-      summary: Get the scheme parse grammar in a context
-      description: >-
-        Returns the parse grammar for the context's composed scheme: whether its vocabulary is matched case-sensitively
-        and whether surrounding whitespace is ignored. There is no separator; each field of a marking writes its own
-        boundaries. The :version segment may be omitted to default to "latest"; the resolved version is returned in the
-        X-EzClassify-Resolved-Version response header.
-      tags:
-        - context
-        - scheme
-      parameters:
-        - name: ctxId
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: version
-          in: path
-          required: true
-          description: >-
-            A concrete semver version, or `latest`. The version served is reported in the X-EzClassify-Resolved-Version
-            response header. The segment may also be left out of the URL, which the server reads as `latest`.
-          schema:
-            type: string
-        - name: scheme
-          in: query
-          required: false
-          description: >-
-            Context-local key, or unambiguous artifact id, of the scheme to read. Defaults to the context's primary
-            scheme; a crosswalk's source or target scheme is named here. A key the context does not hold answers 404.
-          schema:
-            type: string
-      responses:
-        "200":
-          description: Parse grammar
-          headers:
-            X-EzClassify-Resolved-Version:
-              $ref: "#/components/headers/ResolvedVersion"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/SchemeGrammar"
-        "400":
-          $ref: "#/components/responses/BadRequest"
-        "404":
-          $ref: "#/components/responses/NotFound"
-        "429":
-          $ref: "#/components/responses/TooManyRequests"
-        "500":
-          $ref: "#/components/responses/InternalError"
-      security:
-        - bearerAuth: []
-          contextToken: []
-        - applicationCredential: []
   /v1/ctx/{ctxId}/{version}/scheme/scopes:
     get:
       operationId: ctxSchemeScopes
@@ -710,10 +557,13 @@ paths:
           in: query
           required: false
           description: >-
-            Context-local key, or unambiguous artifact id, of the scheme to read. Defaults to the context's primary
-            scheme; a crosswalk's source or target scheme is named here. A key the context does not hold answers 404.
+            Context-local key of the scheme the request is answered in, as `GET /v1/ctx/{ctxId}/{version}` lists it.
+            Without it the context's primary scheme answers. Any scheme the context holds may be named, a crosswalk's
+            source or target among them. A key the context does not hold answers 404 with code `scheme_not_found`; it
+            never falls back to the primary. Name it once: a repeated selector answers 400.
           schema:
             type: string
+        - $ref: "#/components/parameters/ApplicationId"
       responses:
         "200":
           description: Scope definitions, empty when none are declared
@@ -732,20 +582,15 @@ paths:
           $ref: "#/components/responses/TooManyRequests"
         "500":
           $ref: "#/components/responses/InternalError"
-      security:
-        - bearerAuth: []
-          contextToken: []
-        - applicationCredential: []
   /v1/ctx/{ctxId}/{version}/scheme/label-presets:
     get:
       operationId: ctxSchemeLabelPresets
       summary: List the label presets in a context
       description: >-
-        Returns the label presets of the context's primary scheme, the scheme apply-preset expands them in, as preset
-        views: id, label, description, and scope. Empty when the scheme declares none. The marking string and tag list
-        stay server-side; expand a preset with POST /v1/ctx/{ctxId}/{version}/scheme/apply-preset. The :version segment
-        may be omitted to default to "latest"; the resolved version is returned in the X-EzClassify-Resolved-Version
-        response header.
+        Returns the label presets of the selected scheme as preset views: id, label, description, and scope. Empty when
+        the scheme declares none. The marking string and tag list stay server-side; expand a preset with POST
+        /v1/ctx/{ctxId}/{version}/scheme/apply-preset under the same selector. The :version segment may be omitted to
+        default to "latest"; the resolved version is returned in the X-EzClassify-Resolved-Version response header.
       tags:
         - context
         - scheme
@@ -763,6 +608,17 @@ paths:
             response header. The segment may also be left out of the URL, which the server reads as `latest`.
           schema:
             type: string
+        - name: scheme
+          in: query
+          required: false
+          description: >-
+            Context-local key of the scheme the request is answered in, as `GET /v1/ctx/{ctxId}/{version}` lists it.
+            Without it the context's primary scheme answers. Any scheme the context holds may be named, a crosswalk's
+            source or target among them. A key the context does not hold answers 404 with code `scheme_not_found`; it
+            never falls back to the primary. Name it once: a repeated selector answers 400.
+          schema:
+            type: string
+        - $ref: "#/components/parameters/ApplicationId"
       responses:
         "200":
           description: Label preset list
@@ -783,10 +639,6 @@ paths:
           $ref: "#/components/responses/TooManyRequests"
         "500":
           $ref: "#/components/responses/InternalError"
-      security:
-        - bearerAuth: []
-          contextToken: []
-        - applicationCredential: []
   /v1/ctx/{ctxId}/{version}/scheme/apply-preset:
     post:
       operationId: ctxSchemeApplyPreset
@@ -815,6 +667,17 @@ paths:
             response header. The segment may also be left out of the URL, which the server reads as `latest`.
           schema:
             type: string
+        - name: scheme
+          in: query
+          required: false
+          description: >-
+            Context-local key of the scheme the request is answered in, as `GET /v1/ctx/{ctxId}/{version}` lists it.
+            Without it the context's primary scheme answers. Any scheme the context holds may be named, a crosswalk's
+            source or target among them. A key the context does not hold answers 404 with code `scheme_not_found`; it
+            never falls back to the primary. Name it once: a repeated selector answers 400.
+          schema:
+            type: string
+        - $ref: "#/components/parameters/ApplicationId"
       requestBody:
         required: true
         content:
@@ -842,10 +705,6 @@ paths:
           $ref: "#/components/responses/TooManyRequests"
         "500":
           $ref: "#/components/responses/InternalError"
-      security:
-        - bearerAuth: []
-          contextToken: []
-        - applicationCredential: []
   /v1/ctx/{ctxId}/{version}/scheme/process:
     post:
       operationId: ctxSchemeProcess
@@ -873,6 +732,17 @@ paths:
             response header. The segment may also be left out of the URL, which the server reads as `latest`.
           schema:
             type: string
+        - name: scheme
+          in: query
+          required: false
+          description: >-
+            Context-local key of the scheme the request is answered in, as `GET /v1/ctx/{ctxId}/{version}` lists it.
+            Without it the context's primary scheme answers. Any scheme the context holds may be named, a crosswalk's
+            source or target among them. A key the context does not hold answers 404 with code `scheme_not_found`; it
+            never falls back to the primary. Name it once: a repeated selector answers 400.
+          schema:
+            type: string
+        - $ref: "#/components/parameters/ApplicationId"
       requestBody:
         required: true
         content:
@@ -903,10 +773,6 @@ paths:
           $ref: "#/components/responses/TooManyRequests"
         "500":
           $ref: "#/components/responses/InternalError"
-      security:
-        - bearerAuth: []
-          contextToken: []
-        - applicationCredential: []
   /v1/ctx/{ctxId}/{version}/scheme/validate:
     post:
       operationId: ctxSchemeValidate
@@ -936,6 +802,17 @@ paths:
             response header. The segment may also be left out of the URL, which the server reads as `latest`.
           schema:
             type: string
+        - name: scheme
+          in: query
+          required: false
+          description: >-
+            Context-local key of the scheme the request is answered in, as `GET /v1/ctx/{ctxId}/{version}` lists it.
+            Without it the context's primary scheme answers. Any scheme the context holds may be named, a crosswalk's
+            source or target among them. A key the context does not hold answers 404 with code `scheme_not_found`; it
+            never falls back to the primary. Name it once: a repeated selector answers 400.
+          schema:
+            type: string
+        - $ref: "#/components/parameters/ApplicationId"
       requestBody:
         required: true
         content:
@@ -967,10 +844,6 @@ paths:
           $ref: "#/components/responses/TooManyRequests"
         "500":
           $ref: "#/components/responses/InternalError"
-      security:
-        - bearerAuth: []
-          contextToken: []
-        - applicationCredential: []
   /v1/ctx/{ctxId}/{version}/scheme/explain:
     post:
       operationId: ctxSchemeExplain
@@ -997,6 +870,17 @@ paths:
             response header. The segment may also be left out of the URL, which the server reads as `latest`.
           schema:
             type: string
+        - name: scheme
+          in: query
+          required: false
+          description: >-
+            Context-local key of the scheme the request is answered in, as `GET /v1/ctx/{ctxId}/{version}` lists it.
+            Without it the context's primary scheme answers. Any scheme the context holds may be named, a crosswalk's
+            source or target among them. A key the context does not hold answers 404 with code `scheme_not_found`; it
+            never falls back to the primary. Name it once: a repeated selector answers 400.
+          schema:
+            type: string
+        - $ref: "#/components/parameters/ApplicationId"
       requestBody:
         required: true
         content:
@@ -1027,66 +911,6 @@ paths:
           $ref: "#/components/responses/TooManyRequests"
         "500":
           $ref: "#/components/responses/InternalError"
-      security:
-        - bearerAuth: []
-          contextToken: []
-        - applicationCredential: []
-  /v1/ctx/{ctxId}/{version}/scheme/normalize:
-    post:
-      operationId: ctxSchemeNormalize
-      summary: Normalize a marking in a context
-      description: >-
-        Returns the canonical normalized form of a marking against the context's composed scheme. The :version segment
-        may be omitted to default to "latest"; the resolved version is returned in the X-EzClassify-Resolved-Version
-        response header.
-      tags:
-        - context
-        - scheme
-      parameters:
-        - name: ctxId
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: version
-          in: path
-          required: true
-          description: >-
-            A concrete semver version, or `latest`. The version served is reported in the X-EzClassify-Resolved-Version
-            response header. The segment may also be left out of the URL, which the server reads as `latest`.
-          schema:
-            type: string
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/CtxSchemeNormalizeRequestBody"
-            example:
-              input: EXAMPLE-HIGH
-      responses:
-        "200":
-          description: Normalized marking
-          headers:
-            X-EzClassify-Resolved-Version:
-              $ref: "#/components/headers/ResolvedVersion"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ContextSchemeNormalizeResult"
-        "400":
-          $ref: "#/components/responses/BadRequest"
-          description: Invalid or missing request fields, or an `inputFormat` or `outputFormat` the scheme does not declare.
-        "404":
-          $ref: "#/components/responses/NotFound"
-        "429":
-          $ref: "#/components/responses/TooManyRequests"
-        "500":
-          $ref: "#/components/responses/InternalError"
-      security:
-        - bearerAuth: []
-          contextToken: []
-        - applicationCredential: []
   /v1/ctx/{ctxId}/{version}/scheme/render:
     post:
       operationId: ctxSchemeRender
@@ -1111,6 +935,17 @@ paths:
             response header. The segment may also be left out of the URL, which the server reads as `latest`.
           schema:
             type: string
+        - name: scheme
+          in: query
+          required: false
+          description: >-
+            Context-local key of the scheme the request is answered in, as `GET /v1/ctx/{ctxId}/{version}` lists it.
+            Without it the context's primary scheme answers. Any scheme the context holds may be named, a crosswalk's
+            source or target among them. A key the context does not hold answers 404 with code `scheme_not_found`; it
+            never falls back to the primary. Name it once: a repeated selector answers 400.
+          schema:
+            type: string
+        - $ref: "#/components/parameters/ApplicationId"
       requestBody:
         required: true
         content:
@@ -1136,10 +971,6 @@ paths:
           $ref: "#/components/responses/TooManyRequests"
         "500":
           $ref: "#/components/responses/InternalError"
-      security:
-        - bearerAuth: []
-          contextToken: []
-        - applicationCredential: []
   /v1/ctx/{ctxId}/{version}/scheme/diff:
     post:
       operationId: ctxSchemeDiff
@@ -1165,6 +996,17 @@ paths:
             response header. The segment may also be left out of the URL, which the server reads as `latest`.
           schema:
             type: string
+        - name: scheme
+          in: query
+          required: false
+          description: >-
+            Context-local key of the scheme the request is answered in, as `GET /v1/ctx/{ctxId}/{version}` lists it.
+            Without it the context's primary scheme answers. Any scheme the context holds may be named, a crosswalk's
+            source or target among them. A key the context does not hold answers 404 with code `scheme_not_found`; it
+            never falls back to the primary. Name it once: a repeated selector answers 400.
+          schema:
+            type: string
+        - $ref: "#/components/parameters/ApplicationId"
       requestBody:
         required: true
         content:
@@ -1190,10 +1032,6 @@ paths:
           $ref: "#/components/responses/TooManyRequests"
         "500":
           $ref: "#/components/responses/InternalError"
-      security:
-        - bearerAuth: []
-          contextToken: []
-        - applicationCredential: []
   /v1/ctx/{ctxId}/{version}/scheme/view:
     post:
       operationId: ctxSchemeView
@@ -1219,6 +1057,17 @@ paths:
             response header. The segment may also be left out of the URL, which the server reads as `latest`.
           schema:
             type: string
+        - name: scheme
+          in: query
+          required: false
+          description: >-
+            Context-local key of the scheme the request is answered in, as `GET /v1/ctx/{ctxId}/{version}` lists it.
+            Without it the context's primary scheme answers. Any scheme the context holds may be named, a crosswalk's
+            source or target among them. A key the context does not hold answers 404 with code `scheme_not_found`; it
+            never falls back to the primary. Name it once: a repeated selector answers 400.
+          schema:
+            type: string
+        - $ref: "#/components/parameters/ApplicationId"
       requestBody:
         required: true
         content:
@@ -1243,10 +1092,6 @@ paths:
           $ref: "#/components/responses/TooManyRequests"
         "500":
           $ref: "#/components/responses/InternalError"
-      security:
-        - bearerAuth: []
-          contextToken: []
-        - applicationCredential: []
   /v1/ctx/{ctxId}/{version}/scheme/notices:
     post:
       operationId: ctxSchemeNotices
@@ -1273,6 +1118,17 @@ paths:
             response header. The segment may also be left out of the URL, which the server reads as `latest`.
           schema:
             type: string
+        - name: scheme
+          in: query
+          required: false
+          description: >-
+            Context-local key of the scheme the request is answered in, as `GET /v1/ctx/{ctxId}/{version}` lists it.
+            Without it the context's primary scheme answers. Any scheme the context holds may be named, a crosswalk's
+            source or target among them. A key the context does not hold answers 404 with code `scheme_not_found`; it
+            never falls back to the primary. Name it once: a repeated selector answers 400.
+          schema:
+            type: string
+        - $ref: "#/components/parameters/ApplicationId"
       requestBody:
         required: true
         content:
@@ -1297,62 +1153,6 @@ paths:
           $ref: "#/components/responses/TooManyRequests"
         "500":
           $ref: "#/components/responses/InternalError"
-      security:
-        - bearerAuth: []
-          contextToken: []
-        - applicationCredential: []
-  /v1/ctx/{ctxId}/{version}/scheme/filter-concepts:
-    post:
-      operationId: ctxSchemeFilterConcepts
-      summary: Filter scheme concepts in a context
-      description: >-
-        Filters the context's composed scheme concept list by a text query. The :version segment may be omitted to
-        default to "latest"; the resolved version is returned in the X-EzClassify-Resolved-Version response header.
-      tags:
-        - context
-        - scheme
-      parameters:
-        - name: ctxId
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: version
-          in: path
-          required: true
-          description: >-
-            A concrete semver version, or `latest`. The version served is reported in the X-EzClassify-Resolved-Version
-            response header. The segment may also be left out of the URL, which the server reads as `latest`.
-          schema:
-            type: string
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/CtxSchemeFilterConceptsRequestBody"
-      responses:
-        "200":
-          description: Filtered concepts
-          headers:
-            X-EzClassify-Resolved-Version:
-              $ref: "#/components/headers/ResolvedVersion"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ContextSchemeFilterConceptsResult"
-        "400":
-          $ref: "#/components/responses/BadRequest"
-        "404":
-          $ref: "#/components/responses/NotFound"
-        "429":
-          $ref: "#/components/responses/TooManyRequests"
-        "500":
-          $ref: "#/components/responses/InternalError"
-      security:
-        - bearerAuth: []
-          contextToken: []
-        - applicationCredential: []
   /v1/ctx/{ctxId}/{version}/scheme/scan:
     post:
       operationId: ctxSchemeScan
@@ -1377,6 +1177,17 @@ paths:
             response header. The segment may also be left out of the URL, which the server reads as `latest`.
           schema:
             type: string
+        - name: scheme
+          in: query
+          required: false
+          description: >-
+            Context-local key of the scheme the request is answered in, as `GET /v1/ctx/{ctxId}/{version}` lists it.
+            Without it the context's primary scheme answers. Any scheme the context holds may be named, a crosswalk's
+            source or target among them. A key the context does not hold answers 404 with code `scheme_not_found`; it
+            never falls back to the primary. Name it once: a repeated selector answers 400.
+          schema:
+            type: string
+        - $ref: "#/components/parameters/ApplicationId"
       requestBody:
         required: true
         content:
@@ -1404,19 +1215,17 @@ paths:
           $ref: "#/components/responses/TooManyRequests"
         "500":
           $ref: "#/components/responses/InternalError"
-      security:
-        - bearerAuth: []
-          contextToken: []
-        - applicationCredential: []
   /v1/ctx/{ctxId}/{version}/scheme/aggregate:
     post:
       operationId: ctxSchemeAggregate
       summary: Aggregate marking strings in a context
       description: >-
-        Combines part markings into a single aggregate marking using the context's composed scheme aggregation rules.
-        Supply either `inputs` (marking strings) or `assertionSets` (already-parsed assertion arrays for lossless
-        transport of scope-only assertions and capture values): exactly one, not both. The :version segment may be
-        omitted to default to "latest".
+        Rolls markings up into the one whole marking that covers them, using the context's composed scheme rollup rules.
+        With no `context` the inputs are read as wholes, as in an aggregate such as the documents in a folder; `context`
+        names the role the inputs are read in, and `{ role: 'part', partOf }` reads each as a part of that whole, as in
+        a whole's parts rollup. Supply either `inputs` (marking strings) or `assertionSets` (already-parsed assertion
+        arrays for lossless transport of scope-only assertions and capture values): exactly one, not both. The :version
+        segment may be omitted to default to "latest".
       tags:
         - context
         - scheme
@@ -1434,6 +1243,17 @@ paths:
             response header. The segment may also be left out of the URL, which the server reads as `latest`.
           schema:
             type: string
+        - name: scheme
+          in: query
+          required: false
+          description: >-
+            Context-local key of the scheme the request is answered in, as `GET /v1/ctx/{ctxId}/{version}` lists it.
+            Without it the context's primary scheme answers. Any scheme the context holds may be named, a crosswalk's
+            source or target among them. A key the context does not hold answers 404 with code `scheme_not_found`; it
+            never falls back to the primary. Name it once: a repeated selector answers 400.
+          schema:
+            type: string
+        - $ref: "#/components/parameters/ApplicationId"
       requestBody:
         required: true
         content:
@@ -1465,10 +1285,6 @@ paths:
           $ref: "#/components/responses/TooManyRequests"
         "500":
           $ref: "#/components/responses/InternalError"
-      security:
-        - bearerAuth: []
-          contextToken: []
-        - applicationCredential: []
   /v1/ctx/{ctxId}/{version}/scheme/suggest:
     post:
       operationId: ctxSchemeSuggest
@@ -1494,6 +1310,17 @@ paths:
             response header. The segment may also be left out of the URL, which the server reads as `latest`.
           schema:
             type: string
+        - name: scheme
+          in: query
+          required: false
+          description: >-
+            Context-local key of the scheme the request is answered in, as `GET /v1/ctx/{ctxId}/{version}` lists it.
+            Without it the context's primary scheme answers. Any scheme the context holds may be named, a crosswalk's
+            source or target among them. A key the context does not hold answers 404 with code `scheme_not_found`; it
+            never falls back to the primary. Name it once: a repeated selector answers 400.
+          schema:
+            type: string
+        - $ref: "#/components/parameters/ApplicationId"
       requestBody:
         required: true
         content:
@@ -1523,10 +1350,6 @@ paths:
           $ref: "#/components/responses/TooManyRequests"
         "500":
           $ref: "#/components/responses/InternalError"
-      security:
-        - bearerAuth: []
-          contextToken: []
-        - applicationCredential: []
   /v1/ctx/{ctxId}/{version}/scheme/suggest-for-categories:
     post:
       operationId: ctxSchemeSuggestForCategories
@@ -1554,6 +1377,17 @@ paths:
             response header. The segment may also be left out of the URL, which the server reads as `latest`.
           schema:
             type: string
+        - name: scheme
+          in: query
+          required: false
+          description: >-
+            Context-local key of the scheme the request is answered in, as `GET /v1/ctx/{ctxId}/{version}` lists it.
+            Without it the context's primary scheme answers. Any scheme the context holds may be named, a crosswalk's
+            source or target among them. A key the context does not hold answers 404 with code `scheme_not_found`; it
+            never falls back to the primary. Name it once: a repeated selector answers 400.
+          schema:
+            type: string
+        - $ref: "#/components/parameters/ApplicationId"
       requestBody:
         required: true
         content:
@@ -1586,10 +1420,6 @@ paths:
           $ref: "#/components/responses/TooManyRequests"
         "500":
           $ref: "#/components/responses/InternalError"
-      security:
-        - bearerAuth: []
-          contextToken: []
-        - applicationCredential: []
   /v1/ctx/{ctxId}/{version}/scheme/check-coverage:
     post:
       operationId: ctxSchemeCheckCoverage
@@ -1614,6 +1444,17 @@ paths:
             response header. The segment may also be left out of the URL, which the server reads as `latest`.
           schema:
             type: string
+        - name: scheme
+          in: query
+          required: false
+          description: >-
+            Context-local key of the scheme the request is answered in, as `GET /v1/ctx/{ctxId}/{version}` lists it.
+            Without it the context's primary scheme answers. Any scheme the context holds may be named, a crosswalk's
+            source or target among them. A key the context does not hold answers 404 with code `scheme_not_found`; it
+            never falls back to the primary. Name it once: a repeated selector answers 400.
+          schema:
+            type: string
+        - $ref: "#/components/parameters/ApplicationId"
       requestBody:
         required: true
         content:
@@ -1644,10 +1485,6 @@ paths:
           $ref: "#/components/responses/TooManyRequests"
         "500":
           $ref: "#/components/responses/InternalError"
-      security:
-        - bearerAuth: []
-          contextToken: []
-        - applicationCredential: []
   /v1/ctx/{ctxId}/{version}/scheme/describe-concept:
     get:
       operationId: ctxSchemeDescribeConcept
@@ -1690,6 +1527,17 @@ paths:
           description: "The view to name the concept in: a key of the concept's `views`. Omitted, its default view."
           schema:
             type: string
+        - name: scheme
+          in: query
+          required: false
+          description: >-
+            Context-local key of the scheme the request is answered in, as `GET /v1/ctx/{ctxId}/{version}` lists it.
+            Without it the context's primary scheme answers. Any scheme the context holds may be named, a crosswalk's
+            source or target among them. A key the context does not hold answers 404 with code `scheme_not_found`; it
+            never falls back to the primary. Name it once: a repeated selector answers 400.
+          schema:
+            type: string
+        - $ref: "#/components/parameters/ApplicationId"
       responses:
         "200":
           description: Concept description
@@ -1713,10 +1561,6 @@ paths:
           $ref: "#/components/responses/TooManyRequests"
         "500":
           $ref: "#/components/responses/InternalError"
-      security:
-        - bearerAuth: []
-          contextToken: []
-        - applicationCredential: []
   /v1/ctx/{ctxId}/{version}/access/check:
     post:
       operationId: ctxAccessCheck
@@ -1743,6 +1587,7 @@ paths:
             response header. The segment may also be left out of the URL, which the server reads as `latest`.
           schema:
             type: string
+        - $ref: "#/components/parameters/ApplicationId"
       requestBody:
         required: true
         content:
@@ -1778,67 +1623,6 @@ paths:
           $ref: "#/components/responses/TooManyRequests"
         "500":
           $ref: "#/components/responses/InternalError"
-      security:
-        - bearerAuth: []
-          contextToken: []
-        - applicationCredential: []
-  /v1/ctx/{ctxId}/{version}/access/describe-rule:
-    post:
-      operationId: ctxAccessDescribeRule
-      summary: Describe an access rule in a context
-      description: >-
-        Returns the human-readable predicate, the `userAttributes` paths the rule reads, and the data categories its
-        `when` block depends on, scoped to the context's access policy.
-      tags:
-        - context
-        - access
-      parameters:
-        - name: ctxId
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: version
-          in: path
-          required: true
-          description: >-
-            A concrete semver version, or `latest`. The version served is reported in the X-EzClassify-Resolved-Version
-            response header. The segment may also be left out of the URL, which the server reads as `latest`.
-          schema:
-            type: string
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/CtxAccessDescribeRuleRequestBody"
-            example:
-              ruleId: rule-001
-      responses:
-        "200":
-          description: Resolved Context access rule description
-          headers:
-            X-EzClassify-Resolved-Version:
-              $ref: "#/components/headers/ResolvedVersion"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ContextAccessRuleDescriptionResult"
-        "400":
-          $ref: "#/components/responses/BadRequest"
-        "404":
-          $ref: "#/components/responses/NotFound"
-        "422":
-          $ref: "#/components/responses/UnprocessableEntity"
-          description: Context has no access policy attached.
-        "429":
-          $ref: "#/components/responses/TooManyRequests"
-        "500":
-          $ref: "#/components/responses/InternalError"
-      security:
-        - bearerAuth: []
-          contextToken: []
-        - applicationCredential: []
   /v1/ctx/{ctxId}/{version}/access/describe-requirements:
     post:
       operationId: ctxAccessDescribeRequirements
@@ -1847,9 +1631,7 @@ paths:
         Describes requirements imposed by immutable policy for a trusted target supplied as `marking`, structured
         `assertions`, or both. Both target forms are normalized through the same Context scheme path used by access
         check. These are policy requirements for the supplied target, not remediation instructions and not advice to
-        change immutable `userAttributes`. Document access assessment (POST
-        /v1/ctx/{ctxId}/{version}/document/assess-access) answers document receivability and content or context
-        remediation questions.
+        change immutable `userAttributes`.
       tags:
         - context
         - access
@@ -1867,6 +1649,7 @@ paths:
             response header. The segment may also be left out of the URL, which the server reads as `latest`.
           schema:
             type: string
+        - $ref: "#/components/parameters/ApplicationId"
       requestBody:
         required: true
         content:
@@ -1896,10 +1679,6 @@ paths:
           $ref: "#/components/responses/TooManyRequests"
         "500":
           $ref: "#/components/responses/InternalError"
-      security:
-        - bearerAuth: []
-          contextToken: []
-        - applicationCredential: []
   /v1/ctx/{ctxId}/{version}/access/rules:
     get:
       operationId: ctxAccessRules
@@ -1925,6 +1704,7 @@ paths:
             response header. The segment may also be left out of the URL, which the server reads as `latest`.
           schema:
             type: string
+        - $ref: "#/components/parameters/ApplicationId"
       responses:
         "200":
           description: Every access rule in the context
@@ -1946,10 +1726,6 @@ paths:
           $ref: "#/components/responses/TooManyRequests"
         "500":
           $ref: "#/components/responses/InternalError"
-      security:
-        - bearerAuth: []
-          contextToken: []
-        - applicationCredential: []
   /v1/ctx/{ctxId}/{version}/guide/scan:
     post:
       operationId: ctxGuideScan
@@ -1975,6 +1751,7 @@ paths:
             response header. The segment may also be left out of the URL, which the server reads as `latest`.
           schema:
             type: string
+        - $ref: "#/components/parameters/ApplicationId"
       requestBody:
         required: true
         content:
@@ -2004,18 +1781,15 @@ paths:
           $ref: "#/components/responses/TooManyRequests"
         "500":
           $ref: "#/components/responses/InternalError"
-      security:
-        - bearerAuth: []
-          contextToken: []
-        - applicationCredential: []
   /v1/ctx/{ctxId}/{version}/guide/evaluate:
     post:
       operationId: ctxGuideEvaluate
       summary: Evaluate selected guide rules in a context
       description: >-
-        Supply exactly one of guideId or allGuides: true. A named guide is evaluated alone. allGuides combines every
-        loaded guide in load order through the context's composed scheme, with the later guide owning duplicate rule
-        IDs. Returns the engine's structured evaluation result.
+        Send `guideId` with `selectedRuleIds` to evaluate that one guide, or `selections` to roll up rules selected from
+        several guides. Each selection names its guide, so two guides that use the same rule ID hold two rules. Each
+        guide evaluates its own selected rules, with its own dependencies and overrides, and the outcomes are rolled up
+        per target scheme. No guide overrides or depends on another. Returns the engine's structured evaluation result.
       tags:
         - context
         - guide
@@ -2033,6 +1807,7 @@ paths:
             response header. The segment may also be left out of the URL, which the server reads as `latest`.
           schema:
             type: string
+        - $ref: "#/components/parameters/ApplicationId"
       requestBody:
         required: true
         content:
@@ -2056,68 +1831,12 @@ paths:
                 $ref: "#/components/schemas/ContextGuideEvaluationResult"
         "400":
           $ref: "#/components/responses/BadRequest"
-        "404":
-          $ref: "#/components/responses/NotFound"
-          description: Context or version not found, or the Context has no guide with that `guideId`.
-        "422":
-          $ref: "#/components/responses/UnprocessableEntity"
-          description: Context has no guides attached.
-        "429":
-          $ref: "#/components/responses/TooManyRequests"
-        "500":
-          $ref: "#/components/responses/InternalError"
-      security:
-        - bearerAuth: []
-          contextToken: []
-        - applicationCredential: []
-  /v1/ctx/{ctxId}/{version}/guide/describe-rule:
-    post:
-      operationId: ctxGuideDescribeRule
-      summary: Describe a guide rule in a context
-      description: >-
-        Returns structured metadata for a guide rule (outcome text, when conditions, dependencies, overrides) looking up
-        the rule by id in the guide(s) bound to the context. Pass guideId when the context has multiple guides;
-        otherwise the first guide is used.
-      tags:
-        - context
-        - guide
-      parameters:
-        - name: ctxId
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: version
-          in: path
-          required: true
           description: >-
-            A concrete semver version, or `latest`. The version served is reported in the X-EzClassify-Resolved-Version
-            response header. The segment may also be left out of the URL, which the server reads as `latest`.
-          schema:
-            type: string
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/CtxGuideDescribeRuleRequestBody"
-            example:
-              ruleId: rule-001
-      responses:
-        "200":
-          description: Rule description
-          headers:
-            X-EzClassify-Resolved-Version:
-              $ref: "#/components/headers/ResolvedVersion"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ContextGuideRuleDescriptionResult"
-        "400":
-          $ref: "#/components/responses/BadRequest"
+            Invalid or missing request fields, or a request that is not exactly one of the two forms: `guideId` with
+            `selectedRuleIds`, or `selections`.
         "404":
           $ref: "#/components/responses/NotFound"
-          description: Context or version not found, or the Context has no guide with that `guideId`.
+          description: Context or version not found, or the Context has no guide with a `guideId` the request names.
         "422":
           $ref: "#/components/responses/UnprocessableEntity"
           description: Context has no guides attached.
@@ -2125,66 +1844,6 @@ paths:
           $ref: "#/components/responses/TooManyRequests"
         "500":
           $ref: "#/components/responses/InternalError"
-      security:
-        - bearerAuth: []
-          contextToken: []
-        - applicationCredential: []
-  /v1/ctx/{ctxId}/{version}/guide/filter-rules:
-    post:
-      operationId: ctxGuideFilterRules
-      summary: Filter guide rules in a context
-      description: >-
-        Returns the subset of rules in the context-bound guide that match a free-text query. Pass guideId to
-        disambiguate when the context has multiple guides.
-      tags:
-        - context
-        - guide
-      parameters:
-        - name: ctxId
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: version
-          in: path
-          required: true
-          description: >-
-            A concrete semver version, or `latest`. The version served is reported in the X-EzClassify-Resolved-Version
-            response header. The segment may also be left out of the URL, which the server reads as `latest`.
-          schema:
-            type: string
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/CtxGuideFilterRulesRequestBody"
-      responses:
-        "200":
-          description: Filtered rules
-          headers:
-            X-EzClassify-Resolved-Version:
-              $ref: "#/components/headers/ResolvedVersion"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ContextGuideFilterRulesResult"
-        "400":
-          $ref: "#/components/responses/BadRequest"
-        "404":
-          $ref: "#/components/responses/NotFound"
-          description: Context or version not found, or the Context has no guide with that `guideId`.
-        "422":
-          $ref: "#/components/responses/UnprocessableEntity"
-          description: Context has no guides attached.
-        "429":
-          $ref: "#/components/responses/TooManyRequests"
-        "500":
-          $ref: "#/components/responses/InternalError"
-      security:
-        - bearerAuth: []
-          contextToken: []
-        - applicationCredential: []
   /v1/ctx/{ctxId}/{version}/guide/view:
     post:
       operationId: ctxGuideView
@@ -2209,6 +1868,7 @@ paths:
             response header. The segment may also be left out of the URL, which the server reads as `latest`.
           schema:
             type: string
+        - $ref: "#/components/parameters/ApplicationId"
       requestBody:
         required: true
         content:
@@ -2237,10 +1897,6 @@ paths:
           $ref: "#/components/responses/TooManyRequests"
         "500":
           $ref: "#/components/responses/InternalError"
-      security:
-        - bearerAuth: []
-          contextToken: []
-        - applicationCredential: []
   /v1/ctx/{ctxId}/{version}/crosswalk/translate:
     post:
       operationId: ctxCrosswalkTranslate
@@ -2268,6 +1924,7 @@ paths:
             response header. The segment may also be left out of the URL, which the server reads as `latest`.
           schema:
             type: string
+        - $ref: "#/components/parameters/ApplicationId"
       requestBody:
         required: true
         content:
@@ -2299,10 +1956,52 @@ paths:
           $ref: "#/components/responses/TooManyRequests"
         "500":
           $ref: "#/components/responses/InternalError"
-      security:
-        - bearerAuth: []
-          contextToken: []
-        - applicationCredential: []
+  /v1/ctx/{ctxId}/{version}/crosswalk/describe:
+    get:
+      operationId: ctxCrosswalkDescribe
+      summary: Describe every crosswalk in a context
+      description: >-
+        Returns every crosswalk the context holds, in declaration order: its id and the concrete version that answers,
+        its name, guidance and citation, the source and target schemes as the selectors the context description lists
+        under `schemes`, and the mappings and selections a translation applies, each with its disposition and reason. A
+        context that declares no crosswalk answers with an empty list. The :version segment may be omitted to default to
+        "latest".
+      tags:
+        - context
+        - crosswalk
+      parameters:
+        - name: ctxId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: version
+          in: path
+          required: true
+          description: >-
+            A concrete semver version, or `latest`. The version served is reported in the X-EzClassify-Resolved-Version
+            response header. The segment may also be left out of the URL, which the server reads as `latest`.
+          schema:
+            type: string
+        - $ref: "#/components/parameters/ApplicationId"
+      responses:
+        "200":
+          description: Every crosswalk in the context
+          headers:
+            X-EzClassify-Resolved-Version:
+              $ref: "#/components/headers/ResolvedVersion"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CtxCrosswalkDescribeResponseBody"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/InternalError"
 components:
   schemas:
     AccessComparisonResult:
@@ -2341,22 +2040,17 @@ components:
           items:
             $ref: "#/components/schemas/AccessRuleResult"
           description: One result per rule in the policy, in policy order.
-        provenance:
-          $ref: "#/components/schemas/SourceReference"
+        warnings:
+          type: array
+          items:
+            $ref: "#/components/schemas/Warning"
           description: >-
-            Source provenance for the access-rule source that evaluated this decision.
-
-
-            Populated only when the `AccessEngine` was wired with an external `AccessRuleSource` override at load time
-            (typically a `MappedAccessRuleSource` the server's Context loader built from an access YAML's
-            `rules.external` block). Inline-backed decisions leave this field undefined to keep payloads compact for the
-            common single-source case.
-
-
-            Identity fields mirror the source's `sourceIdentity()` observation at engine-construction time.
+            Warnings from preparing and evaluating the target, including automatic changes. Present on granted and
+            denied decisions; empty when none apply.
       required:
         - granted
         - rules
+        - warnings
       description: >-
         Overall access decision with per-rule breakdown.
 
@@ -2440,11 +2134,6 @@ components:
           items:
             type: string
           description: Union of subject and context paths needed to evaluate the target.
-        lines:
-          type: array
-          items:
-            type: string
-          description: Line-oriented rendering of the combined description.
       required:
         - assertions
         - assertionDisplays
@@ -2454,7 +2143,6 @@ components:
         - rules
         - combinedRequirementText
         - combinedAttributesNeeded
-        - lines
       description: Aggregated immutable-policy requirements for a trusted target.
     AccessRuleActivation:
       type: object
@@ -2516,11 +2204,6 @@ components:
           items:
             $ref: "#/components/schemas/RuleReference"
           description: Qualified rules this rule overrides.
-        lines:
-          type: array
-          items:
-            type: string
-          description: Line-oriented rendering of the description.
       required:
         - rule
         - access
@@ -2530,12 +2213,11 @@ components:
         - attributesNeeded
         - dependsOn
         - overrides
-        - lines
       description: >-
         Human-readable description of a single access rule.
 
 
-        Returned by `AccessEngineAdapter.describeAccessRule`. Tooling (LLM agents, UI tooltips) can render
+        Returned by `AccessEngineAdapter.describeAllAccessRules`. Tooling (LLM agents, UI tooltips) can render
         `requirementText` directly or walk `attributesNeeded` to know which `userAttributes` values a caller has to
         provide.
     AccessRuleResult:
@@ -2589,62 +2271,6 @@ components:
         - comparisons
         - rule
       description: Result of evaluating a single qualified access rule entry.
-    AccessScenarioAssessment:
-      type: object
-      properties:
-        basis:
-          $ref: "#/components/schemas/AccessScenarioBasis"
-          description: Authority basis of this scenario.
-        advisory:
-          type: boolean
-          description: Whether the scenario is advisory rather than authoritative.
-        status:
-          $ref: "#/components/schemas/AccessScenarioStatus"
-          description: Closed evaluation status.
-        target:
-          anyOf:
-            - $ref: "#/components/schemas/EffectiveDocumentTarget"
-            - type: "null"
-          description: Effective target, or null when none can be derived.
-        decision:
-          $ref: "#/components/schemas/AccessDecision"
-          description: Access decision, omitted for summary and not-evaluated scenarios.
-        contentRequirements:
-          type: array
-          items:
-            $ref: "#/components/schemas/ContentChangeRequirement"
-          description: Traceable document-side requirements, omitted by summary.
-        contextRequirements:
-          type: array
-          items:
-            $ref: "#/components/schemas/SubjectContextRequirement"
-          description: Conditional relationship requirements, omitted by summary.
-        limitations:
-          type: array
-          items:
-            $ref: "#/components/schemas/AssessmentLimitation"
-          description: Scenario-specific limitations.
-      required:
-        - basis
-        - advisory
-        - status
-        - target
-        - limitations
-      description: Access result for one authored, authoritative, or projected target.
-    AccessScenarioBasis:
-      type: string
-      enum:
-        - authored
-        - authoritative
-        - projected
-      description: Authority basis used to construct an access scenario.
-    AccessScenarioStatus:
-      type: string
-      enum:
-        - granted
-        - denied
-        - not-evaluated
-      description: Closed evaluation status of an access scenario.
     AggregateResult:
       type: object
       properties:
@@ -2704,12 +2330,12 @@ components:
         - proposedFixes
         - notices
       description: >-
-        Output of SchemeEngine.aggregate(): the combined marking produced from multiple portion inputs. By design
-        aggregate always produces the proper aggregate: fixes are applied, never proposed. Every field it shares with
-        `ValidateResult` means what it means there, `valid` included. It differs in that:
+        Output of SchemeEngine.aggregate(): the combined marking produced from several input markings, always a whole.
+        By design aggregate always produces the proper rollup: fixes are applied, never proposed. Every field it shares
+        with `ValidateResult` means what it means there, `valid` included. It differs in that:
 
 
-        - There is no `inputWasValid` (input is N portions, not a single string)
+        - There is no `inputWasValid` (input is N markings, not a single string)
 
         - `proposedFixes` is always empty (aggregate applies what it can)
     AggregatedMarkings:
@@ -2775,8 +2401,7 @@ components:
           $ref: "#/components/schemas/AssertionConfidence"
           description: >-
             How the assertion was produced: `certain` when read or handed in as stated, `inferred` when an inference
-            rule added it, or `repaired` when the engine added or rewrote it while repairing the marking. The engine
-            does not assign `uncertain` itself.
+            rule added it, or `repaired` when the engine added or rewrote it while repairing the marking.
         source:
           type: string
           description: >-
@@ -2802,9 +2427,6 @@ components:
             with `_`, set when the scheme's structure, not a rule, added the assertion. The engine writes two:
             `_tier_child_requires_parent` (a tier parent required by a stated child) and `_header_of_stated_member` (a
             header filled in for a stated member). A scheme rule id never begins with `_`.
-        expiresAt:
-          type: string
-          description: Caller-supplied ISO 8601 expiry date; the engine does not evaluate it.
         value:
           type: string
           description: >-
@@ -2814,10 +2436,6 @@ components:
             A value handed in is read the way a value in text is: it settles in the spelling the concept's encoding
             stores. One the encoding cannot read is reported as the error `_invalid_assertion_value`, and a concept that
             takes a value, handed in with none, as `_missing_assertion_value`. See `ValidationError`.
-        metadata:
-          type: object
-          additionalProperties: {}
-          description: Caller-defined data attached to the assertion. The engine assigns it no meaning.
         replacedConceptId:
           type: string
           description: >-
@@ -2832,47 +2450,25 @@ components:
 
             It travels on the assertion rather than alongside it because assertion arrays are the engine's state
             transport: an access check made from transported assertions can still explain the substitution.
-        provenance:
-          $ref: "#/components/schemas/SourceReference"
-          description: >-
-            Source provenance for the concept that backed this assertion.
-
-
-            Populated only when the concept came from an external source whose records were loaded with the scheme
-            (typically one a scheme's `concepts.external` block declares). Inline-backed assertions leave this field
-            undefined to keep payloads compact for the common single-source case. A concept a scheme document declares
-            in its `inline` list has none, even when one of that document's `external` sources also serves a record with
-            its id. A concept read through a queryable-only source (`SourceCapabilities.queryableOnly`) has none either:
-            that source is asked per lookup and never loaded whole, and a lookup does not say which source answered.
-            Such a source still appears in a composed operation's `resolution.sources`. Across a layered stack the later
-            layer decides: a concept a later layer's source supplies carries that source's provenance even when an
-            earlier document declares it inline, and a concept a later layer declares inline carries none.
-
-
-            Identity fields mirror the source's `sourceIdentity()` observation at engine-load time (or the immutable
-            value the Context pinned).
       required:
         - categoryId
         - conceptId
         - confidence
         - source
       description: >-
-        A concept asserted in a category during processing, with confidence level and provenance metadata.
+        A concept asserted in a category during processing, with how it was produced and where it came from.
 
 
         Assertions are the core data unit flowing through the engine pipeline. `confidence` records how the assertion
         was produced: `'certain'` when read or handed in as stated, `'inferred'` when an inference rule added it, and
-        `'repaired'` when the engine added or rewrote it while repairing the marking. The engine does not assign
-        `'uncertain'` itself. `source` says where the assertion came from. `expiresAt` records caller-supplied expiry
-        metadata. The engine does not evaluate that date or automatically change confidence or the marking; the host
-        applies its expiry policy.
+        `'repaired'` when the engine added or rewrote it while repairing the marking. `source` says where the assertion
+        came from.
     AssertionConfidence:
       type: string
       enum:
         - certain
         - inferred
         - repaired
-        - uncertain
       description: Confidence assigned to an assertion by the processing pipeline.
     AssertionRef:
       type: object
@@ -2953,65 +2549,6 @@ components:
         - code
         - reason
       description: Explains why an assessment dimension or conclusion is constrained.
-    Attribution:
-      type: object
-      properties:
-        name:
-          type: string
-          description: Display name of the upstream source (e.g. "NIST CSWP-29").
-        license:
-          type: string
-          description: SPDX identifier or short license token (e.g. "CC-BY-4.0", "public-domain").
-        licenseUrl:
-          type: string
-          description: Canonical URL where the license terms can be inspected.
-        citation:
-          type: string
-          description: Suggested citation string for academic / regulatory use.
-      required:
-        - name
-        - license
-      description: >-
-        Provenance attached to every source so downstream consumers can render proper attribution and license notices.
-
-
-        Mandatory because most source data we'll integrate (NIST, ICS, IANA, external taxonomies) requires citation.
-        Sources that don't have a formal license should set `license: 'unspecified'` rather than omit it.
-    BestEffortRuleSourceReference:
-      type: object
-      properties:
-        providerId:
-          type: string
-          description: Stable identifier for the source provider.
-        reproducibility:
-          type: string
-          const: best-effort
-          description: Whether the source observation can be reproduced byte-for-byte.
-      required:
-        - providerId
-        - reproducibility
-      description: Best-effort external source join carried by a qualified rule reference.
-    BestEffortSourceReference:
-      type: object
-      properties:
-        reproducibility:
-          type: string
-          const: best-effort
-          description: Whether the source observation can be reproduced byte-for-byte.
-        locator:
-          type: string
-          description: Location from which the mutable content was observed.
-        providerId:
-          type: string
-          description: Stable identifier for the source provider.
-        attribution:
-          $ref: "#/components/schemas/Attribution"
-          description: Attribution and license information for the observed source.
-      required:
-        - attribution
-        - providerId
-        - reproducibility
-      description: Best-effort source identity and mandatory attribution for an operation.
     CalendarDateSpelling:
       type: string
       enum:
@@ -3224,10 +2761,9 @@ components:
             $ref: "#/components/schemas/Assertion"
           description: >-
             Concepts the parent carries that the children do not account for, judged per category as described on this
-            type. In a `symmetric_difference`, `exclusive_or` or `complement` category that means values the parent
-            states beyond the set the children roll up to. In a `pipeline` category whose findings are not narrowed it
-            means every parent value the rollup of parent and children drops, which can include values the children
-            carry. Everywhere else it means values the children do not allow.
+            type. In a `pipeline` category whose findings are not narrowed it means every parent value the rollup of
+            parent and children drops, which can include values the children carry. Everywhere else it means values the
+            children do not allow.
 
 
             Concepts appear as the author wrote them. When a written value brought others with it, such as a group that
@@ -3295,13 +2831,9 @@ components:
         is excess. A shorter list, or none, is allowed and is not missing.
 
 
-        In a `max`, `min` or `least_upper_bound` category the children roll up to one value, ordered by rank (`max`,
-        `min`) or by the concept hierarchy (`least_upper_bound`). The parent must sit at or above that value for `max`
-        and `least_upper_bound`, and at or below it for `min`. A parent anywhere else, including one the hierarchy does
-        not order against that value, is reported once, under `missing`, and never under `excess`. The value reported is
-        what the parent and children roll up to together. For `max` and `min` that is the children's own value. For
-        `least_upper_bound` it is the bound the parent and children share, which can sit beyond the children's value,
-        and it is the children's own value when the hierarchy gives them no common bound.
+        In a `max` or `min` category the children roll up to one value, ordered by rank. The parent must sit at or above
+        that value for `max`, and at or below it for `min`. A parent anywhere else is reported once, under `missing`,
+        and never under `excess`. The value reported is the children's own value.
 
 
         In a `pipeline` category the parent covers when rolling it up with the children leaves it unchanged. This relies
@@ -3321,22 +2853,16 @@ components:
         pipelines before it and the full findings for those after it.
 
 
-        In a `first` or `last` category the children roll up to one value and the rollup has no restrictive direction,
-        so the parent must state that value. A parent that states a different one is reported once, under `missing`, as
-        the value it should state, and never under `excess`. In such a category that holds several values, values the
-        parent states beyond the picked one are not reported.
-
-
-        In a `symmetric_difference`, `exclusive_or` or `complement` category the children roll up to a set and the
-        rollup has no restrictive direction, so the parent must state exactly that set. Rolled-up values the parent does
-        not state are missing. Values the parent states beyond that set are excess: stated, but not what the children
-        roll up to. Neither side is more restrictive than the other here.
+        In a `first` category the children roll up to one value and the rollup has no restrictive direction, so the
+        parent must state that value. A parent that states a different one is reported once, under `missing`, as the
+        value it should state, and never under `excess`. In such a category that holds several values, values the parent
+        states beyond the picked one are not reported.
 
 
         In a category where the scheme has an `expand_group` rule, a parent that carries every member a group declares
         in that category states the group, and the group is not missing from it. This does not apply to a category whose
-        rollup has no restrictive direction (`first`, `last`, `symmetric_difference`, `exclusive_or`, `complement`),
-        where the parent must state what the children roll up to as it is.
+        rollup has no restrictive direction (`first`), where the parent must state what the children roll up to as it
+        is.
 
 
         In a `union` or `pipeline` category the scheme marks as a hierarchy root, a parent value ranked at or above a
@@ -3525,10 +3051,7 @@ components:
       type: string
       enum:
         - warning
-        - handling
         - admonition
-        - distribution
-        - info
       description: What kind of notice a concept carries.
     ConceptRef:
       type: object
@@ -3681,34 +3204,6 @@ components:
         - concept
         - when
       description: A category default evaluated before any category defaults are added.
-    ContentChangeRequirement:
-      type: object
-      properties:
-        rule:
-          $ref: "#/components/schemas/RuleReference"
-          description: Access rule that denied the effective target.
-        assertion:
-          $ref: "#/components/schemas/AssertionReference"
-          description: Blocking content-derived assertion.
-        supportIds:
-          type: array
-          items:
-            type: string
-          description: Assertion support records proving the content lineage.
-        instruction:
-          type: string
-          description: Conditional instruction that does not synthesize replacement text.
-        verificationRequired:
-          type: boolean
-          const: true
-          description: Revised content must always be reassessed.
-      required:
-        - rule
-        - assertion
-        - supportIds
-        - instruction
-        - verificationRequired
-      description: Traceable document-side route for causing an assertion to cease applying.
     ContentEvidenceSpan:
       type: object
       properties:
@@ -3743,18 +3238,12 @@ components:
         result:
           $ref: "#/components/schemas/AccessDecision"
           description: Typed operation result.
-        operationLimitations:
-          type: array
-          items:
-            $ref: "#/components/schemas/AssessmentLimitation"
-          description: Limitations applying to the operation as a whole.
         responseProjection:
           $ref: "#/components/schemas/DocumentResponseProjection"
           description: Projection metadata, present only for document operations.
       required:
         - resolution
         - result
-        - operationLimitations
       description: Context envelope returned by trusted-target access checks.
     ContextAccessRequirementsResult:
       type: object
@@ -3765,41 +3254,148 @@ components:
         result:
           $ref: "#/components/schemas/AccessRequirementsDescription"
           description: Typed operation result.
-        operationLimitations:
-          type: array
-          items:
-            $ref: "#/components/schemas/AssessmentLimitation"
-          description: Limitations applying to the operation as a whole.
         responseProjection:
           $ref: "#/components/schemas/DocumentResponseProjection"
           description: Projection metadata, present only for document operations.
       required:
         - resolution
         - result
-        - operationLimitations
       description: Context envelope returned by immutable-policy requirement description.
-    ContextAccessRuleDescriptionResult:
+    ContextCrosswalkCandidate:
       type: object
       properties:
-        resolution:
-          $ref: "#/components/schemas/ContextResolution"
-          description: Single resolved composition used throughout the operation.
-        result:
-          $ref: "#/components/schemas/AccessRuleDescription"
-          description: Typed operation result.
-        operationLimitations:
+        id:
+          type: string
+          description: Stable candidate identifier within its selection.
+        disposition:
+          $ref: "#/components/schemas/CrosswalkDisposition"
+          description: Treatment applied when this candidate is selected.
+        when:
+          $ref: "#/components/schemas/CrosswalkSelectionCondition"
+          description: Predicate used by a `first-match` selection; omission makes this the fallback.
+        score:
           type: array
           items:
-            $ref: "#/components/schemas/AssessmentLimitation"
-          description: Limitations applying to the operation as a whole.
-        responseProjection:
-          $ref: "#/components/schemas/DocumentResponseProjection"
-          description: Projection metadata, present only for document operations.
+            $ref: "#/components/schemas/AssertionReference"
+          description: Assertions counted by a `most-matches` selection.
+        sources:
+          type: array
+          items:
+            $ref: "#/components/schemas/AssertionReference"
+          description: Source assertions covered when this candidate is selected.
+        mappings:
+          type: array
+          items:
+            $ref: "#/components/schemas/CrosswalkMapping"
+          description: Per-assertion mappings activated when this candidate is selected.
+        targets:
+          type: array
+          items:
+            $ref: "#/components/schemas/CrosswalkTarget"
+          description: Targets emitted once when this candidate is selected.
+        reason:
+          type: string
+          description: Human-readable basis for selecting and applying this candidate.
+        authority:
+          type: string
+          description: Authority behind the candidate decision, when one exists.
+        guidance:
+          type: string
+          description: Operator guidance for the candidate decision.
+        citation:
+          type: string
+          description: Citation supporting the candidate decision.
       required:
-        - resolution
-        - result
-        - operationLimitations
-      description: Context envelope returned by access-rule description.
+        - disposition
+        - id
+        - reason
+      description: >-
+        One candidate of a cross-field decision a Context's crosswalk applies.
+
+
+        A candidate document may leave its disposition out to mean `carry`. The description always states it, so a
+        reader never applies that default itself.
+    ContextCrosswalkDescriptor:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Crosswalk id, from the crosswalk document; what `translate` takes.
+        version:
+          type: string
+          description: Concrete crosswalk version that answers in this Context.
+        name:
+          type: string
+          description: Human-readable crosswalk name.
+        source:
+          type: string
+          description: Selector of the scheme this crosswalk translates from.
+        target:
+          type: string
+          description: Selector of the scheme this crosswalk translates to.
+        guidance:
+          type: string
+          description: General usage and review guidance, when the crosswalk declares it.
+        citation:
+          type: string
+          description: Primary citation for the crosswalk, when it declares one.
+        marking:
+          type: string
+          description: >-
+            The crosswalk document's own overall marking, exactly as its `crosswalk.marking` writes it. Display only:
+            never interpreted. Absent when the document declares none.
+        mappings:
+          type: array
+          items:
+            $ref: "#/components/schemas/CrosswalkMapping"
+          description: How each source assertion translates, in declared order.
+        selections:
+          type: array
+          items:
+            $ref: "#/components/schemas/ContextCrosswalkSelection"
+          description: Cross-field decisions, in declared order. Empty when there are none.
+      required:
+        - id
+        - version
+        - name
+        - source
+        - target
+        - mappings
+        - selections
+      description: >-
+        One crosswalk a Context holds, with the reviewed decisions it applies.
+
+
+        Read it as a sentence: this Context translates markings from the scheme `source` selects to the scheme `target`
+        selects with crosswalk `id` at `version`, and these are its mappings and selections.
+
+
+        `source` and `target` are scheme selectors, the `selector` values `describeSchemes` reports, not scheme ids. A
+        view bound to one of the Context's schemes finds the crosswalk that reads from it by comparing selectors. The
+        mappings and selections are the effective set after any crosswalk layer the Context stacks, which is the set a
+        translation applies.
+    ContextCrosswalkSelection:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Selection id, as reviewed.
+        strategy:
+          $ref: "#/components/schemas/CrosswalkSelectionStrategy"
+          description: How one candidate is chosen.
+        candidates:
+          type: array
+          items:
+            $ref: "#/components/schemas/ContextCrosswalkCandidate"
+          description: Candidates in declared order; order breaks ties, a fallback is last.
+      required:
+        - id
+        - strategy
+        - candidates
+      description: |-
+        One cross-field decision a Context's crosswalk applies.
+
+        The document form of a selection, with every candidate's treatment written out.
     ContextCrosswalkTranslationResult:
       type: object
       properties:
@@ -3809,41 +3405,13 @@ components:
         result:
           $ref: "#/components/schemas/CrosswalkTranslationResult"
           description: Typed operation result.
-        operationLimitations:
-          type: array
-          items:
-            $ref: "#/components/schemas/AssessmentLimitation"
-          description: Limitations applying to the operation as a whole.
         responseProjection:
           $ref: "#/components/schemas/DocumentResponseProjection"
           description: Projection metadata, present only for document operations.
       required:
         - resolution
         - result
-        - operationLimitations
       description: Context envelope returned by a directional crosswalk translation.
-    ContextDocumentAccessAssessmentResult:
-      type: object
-      properties:
-        resolution:
-          $ref: "#/components/schemas/ContextResolution"
-          description: Single resolved composition used throughout the operation.
-        result:
-          $ref: "#/components/schemas/DocumentAccessAssessment"
-          description: Typed operation result.
-        operationLimitations:
-          type: array
-          items:
-            $ref: "#/components/schemas/AssessmentLimitation"
-          description: Limitations applying to the operation as a whole.
-        responseProjection:
-          $ref: "#/components/schemas/DocumentResponseProjection"
-          description: Projection metadata, present only for document operations.
-      required:
-        - resolution
-        - result
-        - operationLimitations
-      description: Resolved Context envelope returned by document access assessment.
     ContextDocumentAuditResult:
       type: object
       properties:
@@ -3853,18 +3421,12 @@ components:
         result:
           $ref: "#/components/schemas/DocumentAuditReport"
           description: Typed operation result.
-        operationLimitations:
-          type: array
-          items:
-            $ref: "#/components/schemas/AssessmentLimitation"
-          description: Limitations applying to the operation as a whole.
         responseProjection:
           $ref: "#/components/schemas/DocumentResponseProjection"
           description: Projection metadata, present only for document operations.
       required:
         - resolution
         - result
-        - operationLimitations
       description: Resolved Context envelope returned by document audit operations.
     ContextGuideEvaluationResult:
       type: object
@@ -3875,63 +3437,13 @@ components:
         result:
           $ref: "#/components/schemas/EvaluationResult"
           description: Typed operation result.
-        operationLimitations:
-          type: array
-          items:
-            $ref: "#/components/schemas/AssessmentLimitation"
-          description: Limitations applying to the operation as a whole.
         responseProjection:
           $ref: "#/components/schemas/DocumentResponseProjection"
           description: Projection metadata, present only for document operations.
       required:
         - resolution
         - result
-        - operationLimitations
       description: Context envelope returned by guide evaluation.
-    ContextGuideFilterRulesResult:
-      type: object
-      properties:
-        resolution:
-          $ref: "#/components/schemas/ContextResolution"
-          description: Single resolved composition used throughout the operation.
-        result:
-          $ref: "#/components/schemas/FilterResult"
-          description: Typed operation result.
-        operationLimitations:
-          type: array
-          items:
-            $ref: "#/components/schemas/AssessmentLimitation"
-          description: Limitations applying to the operation as a whole.
-        responseProjection:
-          $ref: "#/components/schemas/DocumentResponseProjection"
-          description: Projection metadata, present only for document operations.
-      required:
-        - resolution
-        - result
-        - operationLimitations
-      description: Context envelope returned by guide rule filtering.
-    ContextGuideRuleDescriptionResult:
-      type: object
-      properties:
-        resolution:
-          $ref: "#/components/schemas/ContextResolution"
-          description: Single resolved composition used throughout the operation.
-        result:
-          $ref: "#/components/schemas/RuleDescription"
-          description: Typed operation result.
-        operationLimitations:
-          type: array
-          items:
-            $ref: "#/components/schemas/AssessmentLimitation"
-          description: Limitations applying to the operation as a whole.
-        responseProjection:
-          $ref: "#/components/schemas/DocumentResponseProjection"
-          description: Projection metadata, present only for document operations.
-      required:
-        - resolution
-        - result
-        - operationLimitations
-      description: Context envelope returned by guide-rule description.
     ContextGuideScanResult:
       type: object
       properties:
@@ -3943,18 +3455,12 @@ components:
           items:
             $ref: "#/components/schemas/GuideScanResult"
           description: Typed operation result.
-        operationLimitations:
-          type: array
-          items:
-            $ref: "#/components/schemas/AssessmentLimitation"
-          description: Limitations applying to the operation as a whole.
         responseProjection:
           $ref: "#/components/schemas/DocumentResponseProjection"
           description: Projection metadata, present only for document operations.
       required:
         - resolution
         - result
-        - operationLimitations
       description: Context envelope returned by guide text scanning.
     ContextGuideViewResult:
       type: object
@@ -3965,18 +3471,12 @@ components:
         result:
           $ref: "#/components/schemas/GuideViewResponse"
           description: Typed operation result.
-        operationLimitations:
-          type: array
-          items:
-            $ref: "#/components/schemas/AssessmentLimitation"
-          description: Limitations applying to the operation as a whole.
         responseProjection:
           $ref: "#/components/schemas/DocumentResponseProjection"
           description: Projection metadata, present only for document operations.
       required:
         - resolution
         - result
-        - operationLimitations
       description: Context envelope returned by guide structural view.
     ContextResolution:
       type: object
@@ -3998,16 +3498,10 @@ components:
           items:
             $ref: "#/components/schemas/ArtifactReference"
           description: Ordered artifacts participating in the composition.
-        sources:
-          type: array
-          items:
-            $ref: "#/components/schemas/SourceReference"
-          description: De-duplicated source observations used by the operation.
       required:
         - contextId
         - resolvedVersion
         - artifacts
-        - sources
       description: Resolution identity shared by every branch of one Context operation.
     ContextSchemeAggregateResult:
       type: object
@@ -4018,18 +3512,12 @@ components:
         result:
           $ref: "#/components/schemas/AggregateResult"
           description: Typed operation result.
-        operationLimitations:
-          type: array
-          items:
-            $ref: "#/components/schemas/AssessmentLimitation"
-          description: Limitations applying to the operation as a whole.
         responseProjection:
           $ref: "#/components/schemas/DocumentResponseProjection"
           description: Projection metadata, present only for document operations.
       required:
         - resolution
         - result
-        - operationLimitations
       description: Context envelope returned by scheme aggregation.
     ContextSchemeConceptDescriptionResult:
       type: object
@@ -4040,18 +3528,12 @@ components:
         result:
           $ref: "#/components/schemas/ConceptDescription"
           description: Typed operation result.
-        operationLimitations:
-          type: array
-          items:
-            $ref: "#/components/schemas/AssessmentLimitation"
-          description: Limitations applying to the operation as a whole.
         responseProjection:
           $ref: "#/components/schemas/DocumentResponseProjection"
           description: Projection metadata, present only for document operations.
       required:
         - resolution
         - result
-        - operationLimitations
       description: Context envelope returned by concept description.
     ContextSchemeCoverageResult:
       type: object
@@ -4062,18 +3544,12 @@ components:
         result:
           $ref: "#/components/schemas/CheckCoverageResult"
           description: Typed operation result.
-        operationLimitations:
-          type: array
-          items:
-            $ref: "#/components/schemas/AssessmentLimitation"
-          description: Limitations applying to the operation as a whole.
         responseProjection:
           $ref: "#/components/schemas/DocumentResponseProjection"
           description: Projection metadata, present only for document operations.
       required:
         - resolution
         - result
-        - operationLimitations
       description: Context envelope returned by scheme coverage checks.
     ContextSchemeDescriptor:
       type: object
@@ -4105,9 +3581,9 @@ components:
         plays these `roles`.
 
 
-        `selector` is the whole point. A Context keys its schemes locally, and an operation that addresses one takes
-        that key, so a caller that cannot enumerate the keys cannot reach anything but the primary. On the REST surface
-        the same value is what `?scheme=` takes.
+        `selector` is the whole point. A Context keys its schemes locally, and a caller reaches a scheme by its key: an
+        adapter's `schemes.get` takes it, and so does `?scheme=` on the REST surface. A caller that cannot enumerate the
+        keys cannot reach anything but the primary.
     ContextSchemeDiffResult:
       type: object
       properties:
@@ -4117,18 +3593,12 @@ components:
         result:
           $ref: "#/components/schemas/DiffResult"
           description: Typed operation result.
-        operationLimitations:
-          type: array
-          items:
-            $ref: "#/components/schemas/AssessmentLimitation"
-          description: Limitations applying to the operation as a whole.
         responseProjection:
           $ref: "#/components/schemas/DocumentResponseProjection"
           description: Projection metadata, present only for document operations.
       required:
         - resolution
         - result
-        - operationLimitations
       description: Context envelope returned by scheme diff.
     ContextSchemeExplainResult:
       type: object
@@ -4139,63 +3609,13 @@ components:
         result:
           $ref: "#/components/schemas/ExplanationTrace"
           description: Typed operation result.
-        operationLimitations:
-          type: array
-          items:
-            $ref: "#/components/schemas/AssessmentLimitation"
-          description: Limitations applying to the operation as a whole.
         responseProjection:
           $ref: "#/components/schemas/DocumentResponseProjection"
           description: Projection metadata, present only for document operations.
       required:
         - resolution
         - result
-        - operationLimitations
       description: Context envelope returned by a scheme explanation.
-    ContextSchemeFilterConceptsResult:
-      type: object
-      properties:
-        resolution:
-          $ref: "#/components/schemas/ContextResolution"
-          description: Single resolved composition used throughout the operation.
-        result:
-          $ref: "#/components/schemas/FilterResult"
-          description: Typed operation result.
-        operationLimitations:
-          type: array
-          items:
-            $ref: "#/components/schemas/AssessmentLimitation"
-          description: Limitations applying to the operation as a whole.
-        responseProjection:
-          $ref: "#/components/schemas/DocumentResponseProjection"
-          description: Projection metadata, present only for document operations.
-      required:
-        - resolution
-        - result
-        - operationLimitations
-      description: Context envelope returned by scheme concept filtering.
-    ContextSchemeNormalizeResult:
-      type: object
-      properties:
-        resolution:
-          $ref: "#/components/schemas/ContextResolution"
-          description: Single resolved composition used throughout the operation.
-        result:
-          $ref: "#/components/schemas/NormalizeResponse"
-          description: Typed operation result.
-        operationLimitations:
-          type: array
-          items:
-            $ref: "#/components/schemas/AssessmentLimitation"
-          description: Limitations applying to the operation as a whole.
-        responseProjection:
-          $ref: "#/components/schemas/DocumentResponseProjection"
-          description: Projection metadata, present only for document operations.
-      required:
-        - resolution
-        - result
-        - operationLimitations
-      description: Context envelope returned by scheme normalization.
     ContextSchemeNoticesResult:
       type: object
       properties:
@@ -4207,18 +3627,12 @@ components:
           items:
             $ref: "#/components/schemas/Notice"
           description: Typed operation result.
-        operationLimitations:
-          type: array
-          items:
-            $ref: "#/components/schemas/AssessmentLimitation"
-          description: Limitations applying to the operation as a whole.
         responseProjection:
           $ref: "#/components/schemas/DocumentResponseProjection"
           description: Projection metadata, present only for document operations.
       required:
         - resolution
         - result
-        - operationLimitations
       description: Context envelope returned by scheme notice collection.
     ContextSchemeProcessResult:
       type: object
@@ -4229,18 +3643,12 @@ components:
         result:
           $ref: "#/components/schemas/ProcessResult"
           description: Typed operation result.
-        operationLimitations:
-          type: array
-          items:
-            $ref: "#/components/schemas/AssessmentLimitation"
-          description: Limitations applying to the operation as a whole.
         responseProjection:
           $ref: "#/components/schemas/DocumentResponseProjection"
           description: Projection metadata, present only for document operations.
       required:
         - resolution
         - result
-        - operationLimitations
       description: Context envelope returned by scheme processing.
     ContextSchemeRenderResult:
       type: object
@@ -4251,18 +3659,12 @@ components:
         result:
           $ref: "#/components/schemas/RenderResponse"
           description: Typed operation result.
-        operationLimitations:
-          type: array
-          items:
-            $ref: "#/components/schemas/AssessmentLimitation"
-          description: Limitations applying to the operation as a whole.
         responseProjection:
           $ref: "#/components/schemas/DocumentResponseProjection"
           description: Projection metadata, present only for document operations.
       required:
         - resolution
         - result
-        - operationLimitations
       description: Context envelope returned by scheme rendering.
     ContextSchemeRole:
       type: string
@@ -4288,18 +3690,12 @@ components:
         result:
           $ref: "#/components/schemas/ScanResponseBody"
           description: Typed operation result.
-        operationLimitations:
-          type: array
-          items:
-            $ref: "#/components/schemas/AssessmentLimitation"
-          description: Limitations applying to the operation as a whole.
         responseProjection:
           $ref: "#/components/schemas/DocumentResponseProjection"
           description: Projection metadata, present only for document operations.
       required:
         - resolution
         - result
-        - operationLimitations
       description: Context envelope returned by scheme text scanning.
     ContextSchemeSuggestForCategoriesResult:
       type: object
@@ -4310,18 +3706,12 @@ components:
         result:
           $ref: "#/components/schemas/SuggestResultsByCategory"
           description: Typed operation result.
-        operationLimitations:
-          type: array
-          items:
-            $ref: "#/components/schemas/AssessmentLimitation"
-          description: Limitations applying to the operation as a whole.
         responseProjection:
           $ref: "#/components/schemas/DocumentResponseProjection"
           description: Projection metadata, present only for document operations.
       required:
         - resolution
         - result
-        - operationLimitations
       description: >-
         Context envelope returned by per-category scheme suggestions: the options keyed by category id, the same map a
         process call returns in `suggestionsFor`.
@@ -4334,18 +3724,12 @@ components:
         result:
           $ref: "#/components/schemas/SuggestResult"
           description: Typed operation result.
-        operationLimitations:
-          type: array
-          items:
-            $ref: "#/components/schemas/AssessmentLimitation"
-          description: Limitations applying to the operation as a whole.
         responseProjection:
           $ref: "#/components/schemas/DocumentResponseProjection"
           description: Projection metadata, present only for document operations.
       required:
         - resolution
         - result
-        - operationLimitations
       description: Context envelope returned by scheme suggestions.
     ContextSchemeValidateResult:
       type: object
@@ -4356,18 +3740,12 @@ components:
         result:
           $ref: "#/components/schemas/ValidateResult"
           description: Typed operation result.
-        operationLimitations:
-          type: array
-          items:
-            $ref: "#/components/schemas/AssessmentLimitation"
-          description: Limitations applying to the operation as a whole.
         responseProjection:
           $ref: "#/components/schemas/DocumentResponseProjection"
           description: Projection metadata, present only for document operations.
       required:
         - resolution
         - result
-        - operationLimitations
       description: Context envelope returned by scheme validation.
     ContextSchemeViewResult:
       type: object
@@ -4378,18 +3756,12 @@ components:
         result:
           $ref: "#/components/schemas/SchemeViewResponse"
           description: Typed operation result.
-        operationLimitations:
-          type: array
-          items:
-            $ref: "#/components/schemas/AssessmentLimitation"
-          description: Limitations applying to the operation as a whole.
         responseProjection:
           $ref: "#/components/schemas/DocumentResponseProjection"
           description: Projection metadata, present only for document operations.
       required:
         - resolution
         - result
-        - operationLimitations
       description: Context envelope returned by scheme structural view.
     CrosswalkCompletedTranslationResult:
       type: object
@@ -4507,6 +3879,43 @@ components:
         - status
         - targetScheme
       description: Translation aborted before target processing by one or more prohibitions.
+    CrosswalkMapping:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Stable identifier for audit and review.
+        source:
+          $ref: "#/components/schemas/AssertionReference"
+          description: Source assertion matched by this mapping.
+        targets:
+          type: array
+          items:
+            $ref: "#/components/schemas/CrosswalkTarget"
+          description: >-
+            Target assertions. `carry` mappings emit these automatically; `review` mappings expose them only as
+            proposals. `omit` and `forbid` mappings have no targets.
+        disposition:
+          $ref: "#/components/schemas/CrosswalkDisposition"
+          description: Whether the value is carried, reviewed, omitted, or forbids translation.
+        reason:
+          type: string
+          description: Human-readable basis for the decision.
+        authority:
+          type: string
+          description: Authority or reviewed source behind the mapping, when one exists.
+        guidance:
+          type: string
+          description: Operator guidance for applying or reviewing this mapping.
+        citation:
+          type: string
+          description: Citation supporting this mapping decision.
+      required:
+        - id
+        - source
+        - disposition
+        - reason
+      description: Reviewed treatment of one source assertion in a directional crosswalk.
     CrosswalkMappingForbidMatch:
       type: object
       properties:
@@ -4546,13 +3955,24 @@ components:
           description: Source assertion considered by the crosswalk.
         mappingId:
           type: string
-          description: Matched mapping id, absent when no mapping covers the assertion.
+          description: >-
+            Matched mapping id, absent when no mapping covers the assertion. On a `not-selected` outcome,
+            `<selection>:<candidate>` names the candidate that lost.
         disposition:
           anyOf:
             - $ref: "#/components/schemas/CrosswalkDisposition"
             - type: string
               const: unmapped
-          description: Mapping decision, or `unmapped` when the artifact has no rule.
+            - type: string
+              const: not-selected
+          description: >-
+            Mapping decision, `unmapped` when the artifact has no rule, or `not-selected` when the assertion is covered
+            only by a selection candidate that lost.
+
+
+            `not-selected` is not an `omit`. An `omit` is a reviewed decision to drop the assertion. `not-selected` says
+            a selection chose a different candidate, so nothing decided this assertion on its own. Like an `omit` it
+            emits no targets and leaves the translation settled.
         targets:
           type: array
           items:
@@ -4576,6 +3996,25 @@ components:
         - targets
         - reason
       description: Per-assertion decision produced by a crosswalk translation.
+    CrosswalkSelectionCondition:
+      type: object
+      properties:
+        any:
+          type: array
+          items:
+            $ref: "#/components/schemas/AssertionReference"
+          description: At least one referenced assertion must be present.
+        all:
+          type: array
+          items:
+            $ref: "#/components/schemas/AssertionReference"
+          description: Every referenced assertion must be present.
+        none:
+          type: array
+          items:
+            $ref: "#/components/schemas/AssertionReference"
+          description: None of the referenced assertions may be present.
+      description: Boolean test over source assertions used to choose a crosswalk candidate.
     CrosswalkSelectionForbidMatch:
       type: object
       properties:
@@ -4649,6 +4088,12 @@ components:
         - targets
         - reason
       description: Selected branch of one cross-field crosswalk decision.
+    CrosswalkSelectionStrategy:
+      type: string
+      enum:
+        - first-match
+        - most-matches
+      description: Strategy for choosing one candidate from a reviewed cross-field decision.
     CrosswalkTarget:
       type: object
       properties:
@@ -4723,19 +4168,14 @@ components:
           description: Structured target assertions merged with any parsed marking.
       additionalProperties: false
       description: POST /v1/ctx/{ctxId}/{version?}/access/describe-requirements
-    CtxAccessDescribeRuleRequestBody:
-      type: object
-      properties:
-        ruleId:
-          type: string
-          description: Access rule id from the loaded access policy.
-      required:
-        - ruleId
-      additionalProperties: false
-      description: POST /v1/ctx/{ctxId}/{version?}/access/describe-rule
     CtxAccessRulesResponseBody:
       type: object
       properties:
+        marking:
+          type: string
+          description: >-
+            The access policy document's own overall marking, exactly as its `access.marking` writes it. Display only:
+            never interpreted. Omitted when the document declares none.
         rules:
           type: array
           items:
@@ -4744,12 +4184,8 @@ components:
       required:
         - rules
       description: >-
-        Response body for GET /v1/ctx/{ctxId}/{version?}/access/rules: every rule in the context's access policy.
-
-
-        One route serves both halves of the adapter contract. A caller that wants the descriptions has them; a caller
-        that only wants the rule ids reads them off the same response instead of spending a second round trip on a
-        projection of what it already holds.
+        Response body for GET /v1/ctx/{ctxId}/{version?}/access/rules: every rule in the context's access policy, with
+        the policy's own marking.
     CtxComponentDescriptor:
       type: object
       properties:
@@ -4772,6 +4208,22 @@ components:
         - version
         - resolvedVersion
       description: Component reference echoed in a `CtxDescribeResponseBody`.
+    CtxCrosswalkDescribeResponseBody:
+      type: object
+      properties:
+        crosswalks:
+          type: array
+          items:
+            $ref: "#/components/schemas/ContextCrosswalkDescriptor"
+          description: Every crosswalk in the context, in declaration order.
+      required:
+        - crosswalks
+      description: >-
+        Response body for GET /v1/ctx/{ctxId}/{version?}/crosswalk/describe: every crosswalk the context holds.
+
+
+        A dedicated read rather than a member of the context description, because a crosswalk's reviewed mappings run to
+        tens of kilobytes and every client reads the description when it connects, translating or not.
     CtxCrosswalkTranslateRequestBody:
       type: object
       properties:
@@ -4840,38 +4292,14 @@ components:
             $ref: "#/components/schemas/CtxComponentDescriptor"
           description: >-
             Crosswalk components in declaration order, or omitted when the context declares none. A crosswalk the
-            context follows at `latest` reports here the concrete version that answered.
+            context follows at `latest` reports here the concrete version that answered. This is provenance; the source
+            and target schemes and the reviewed mappings are on `crosswalk/describe`.
       required:
         - id
         - version
         - scheme
         - schemes
       description: "Response body for GET /v1/ctx/{ctxId}/{version}: decomposed context."
-    CtxDocumentAssessAccessRequestBody:
-      type: object
-      properties:
-        text:
-          type: string
-          description: Full document text to audit before access is assessed.
-        userAttributes:
-          type: object
-          additionalProperties: {}
-          description: User attributes interpreted by the Context's access policy.
-        context:
-          type: object
-          additionalProperties: {}
-          description: Optional relationship attributes used with the user attributes.
-        guideDeterminations:
-          $ref: "#/components/schemas/GuideDeterminationInput"
-          description: Optional analyst decisions applied to nominations for this document.
-        responseProfile:
-          $ref: "#/components/schemas/DocumentResponseProfile"
-          description: Detail projection applied after all access scenarios are evaluated.
-      required:
-        - text
-        - userAttributes
-      additionalProperties: false
-      description: POST /v1/ctx/{ctxId}/{version?}/document/assess-access
     CtxDocumentAuditRequestBody:
       type: object
       properties:
@@ -4888,50 +4316,33 @@ components:
         - text
       additionalProperties: false
       description: POST /v1/ctx/{ctxId}/{version?}/document/audit
-    CtxGuideDescribeRuleRequestBody:
-      type: object
-      properties:
-        ruleId:
-          type: string
-          description: Rule id to describe.
-        guideId:
-          type: string
-          description: Guide id when the context has multiple guides. Defaults to the first guide.
-      required:
-        - ruleId
-      additionalProperties: false
-      description: POST /v1/ctx/{ctxId}/{version?}/guide/describe-rule
     CtxGuideEvaluateRequestBody:
       type: object
       properties:
         guideId:
           type: string
-          description: "ID of one guide within the context. Supply this or `allGuides: true`."
-        allGuides:
-          type: boolean
-          description: Evaluate and combine every loaded guide through the context's scheme.
+          description: ID of the one guide to evaluate, with `selectedRuleIds`. Refused with `selections`.
         selectedRuleIds:
           type: array
           items:
             type: string
-          description: Rule IDs the user selected (checked) in the guide wizard.
-      required:
-        - selectedRuleIds
+          description: IDs of the rules selected in the guide `guideId` names. Required with `guideId`, refused with `selections`.
+        selections:
+          type: array
+          items:
+            $ref: "#/components/schemas/GuideRuleSelection"
+          description: >-
+            The selected rules, each named by its guide, rolled up across guides: each guide evaluates the rules
+            selected from it, and the outcomes are rolled up per target scheme. No guide overrides or depends on
+            another, so every selected rule's outcome counts. Refused with `guideId` or `selectedRuleIds`.
       additionalProperties: false
-      description: POST /v1/ctx/{ctxId}/{version?}/guide/evaluate
-    CtxGuideFilterRulesRequestBody:
-      type: object
-      properties:
-        query:
-          type: string
-          description: Text query to filter rules.
-        guideId:
-          type: string
-          description: Guide id when the context has multiple guides. Defaults to the first guide.
-      required:
-        - query
-      additionalProperties: false
-      description: POST /v1/ctx/{ctxId}/{version?}/guide/filter-rules
+      description: >-
+        POST /v1/ctx/{ctxId}/{version?}/guide/evaluate
+
+
+        Two forms, exactly one per request: `guideId` with `selectedRuleIds` evaluates one guide, and `selections` rolls
+        up a selection that spans guides. Any other combination is a 400. The rule is stated here rather than as a root
+        `oneOf`, which would make every generated SDK model this request as a union of two request types.
     CtxGuideScanRequestBody:
       type: object
       properties:
@@ -4996,15 +4407,18 @@ components:
             `render.surfaces` defines it.
         context:
           $ref: "#/components/schemas/ProcessingContext"
-          description: Optional ProcessingContext forwarded verbatim to the engine.
+          description: >-
+            The role the inputs are read in, never the rollup's. Omitted, the inputs are wholes, as in an aggregate such
+            as the documents in a folder. `{ role: 'part', partOf }` reads each input as a part of that whole, as in a
+            whole's parts rollup. The rollup is always a whole marking.
         surface:
           type: string
           description: >-
             Validation surface of the rollup, using the scheme's scope ids. Names what the combined marking is, not what
             any one contributor was. Omitted, the rollup is a whole marking and every required category belonging to the
-            marking as a whole must be covered by the combined result, which is the whole-document case: a portion that
-            omits one is not faulted for it. Given a scope id, the inputs are fragments of that one surface and only the
-            required categories that surface owns are demanded of the rollup.
+            marking as a whole must be covered by the combined result: a contributor that omits one is not faulted for
+            it. Given a scope id, the inputs are fragments of that one surface and only the required categories that
+            surface owns are demanded of the rollup.
       additionalProperties: false
       description: POST /v1/ctx/{ctxId}/{version?}/scheme/aggregate
     CtxSchemeCheckCoverageRequestBody:
@@ -5076,8 +4490,8 @@ components:
           description: >-
             The output the trace's `rendered` is written in. For a scheme that declares `render.surfaces`, an output as
             the scheme document's `render.surfaces` defines it. Omitted or empty, the scheme's default format, or with
-            `render.surfaces`, each written surface's default for the marking's role, by the rule `render.surfaces`
-            states for a request that names no output.
+            `render.surfaces`, the written surfaces' defaults for the marking's role, one alone when it writes the
+            others' scopes, by the rule `render.surfaces` states for a request that names no output.
         assertions:
           type: array
           items:
@@ -5103,41 +4517,6 @@ components:
         POST /v1/ctx/{ctxId}/{version?}/scheme/explain: the trace of a process call.
 
         Takes what process takes, apart from `outputs` and `suggestFor`, which only add to a process result.
-    CtxSchemeFilterConceptsRequestBody:
-      type: object
-      properties:
-        query:
-          type: string
-          description: Text query to filter the concept list.
-      required:
-        - query
-      additionalProperties: false
-      description: POST /v1/ctx/{ctxId}/{version?}/scheme/filter-concepts
-    CtxSchemeNormalizeRequestBody:
-      type: object
-      properties:
-        input:
-          type: string
-          description: Marking string to normalize.
-        inputFormat:
-          type: string
-          description: >-
-            The format `input` is written in. For a scheme that declares `render.surfaces`, the view it is read as, or
-            one of its forms, as the scheme document's `render.surfaces` defines them. Omitted or empty, recognition
-            works it out and reports what the text was read as on `recognition.inputFormat`.
-        outputFormat:
-          type: string
-          description: >-
-            The format the result is rendered in. Omitted or empty, the scheme's default format. It selects output only:
-            it never narrows what may be read.
-
-
-            For a scheme that declares `render.surfaces`, an output as the scheme document's `render.surfaces` defines
-            it.
-      required:
-        - input
-      additionalProperties: false
-      description: POST /v1/ctx/{ctxId}/{version?}/scheme/normalize
     CtxSchemeNoticesRequestBody:
       type: object
       properties:
@@ -5169,8 +4548,9 @@ components:
             scheme that declares `render.surfaces`, an output as the scheme document's `render.surfaces` defines it.
 
 
-            Omitted or empty, the scheme's default format, or with `render.surfaces`, each written surface's default for
-            the marking's role, by the rule `render.surfaces` states for a request that names no output.
+            Omitted or empty, the scheme's default format, or with `render.surfaces`, the written surfaces' defaults for
+            the marking's role, one alone when it writes the others' scopes, by the rule `render.surfaces` states for a
+            request that names no output.
         assertions:
           type: array
           items:
@@ -5372,8 +4752,9 @@ components:
             scheme that declares `render.surfaces`, an output as the scheme document's `render.surfaces` defines it.
 
 
-            Omitted or empty, the scheme's default format, or with `render.surfaces`, each written surface's default for
-            the marking's role, by the rule `render.surfaces` states for a request that names no output.
+            Omitted or empty, the scheme's default format, or with `render.surfaces`, the written surfaces' defaults for
+            the marking's role, one alone when it writes the others' scopes, by the rule `render.surfaces` states for a
+            request that names no output.
         context:
           $ref: "#/components/schemas/ProcessingContext"
           description: Optional ProcessingContext forwarded verbatim to the engine.
@@ -5456,29 +4837,6 @@ components:
         - removed
         - common
       description: "Comparison of two assertion sets: which assertions were added, removed, or shared."
-    DocumentAccessAssessment:
-      type: object
-      properties:
-        audit:
-          $ref: "#/components/schemas/DocumentAuditReport"
-          description: Structural and guide audit used to build every scenario.
-        authored:
-          $ref: "#/components/schemas/AccessScenarioAssessment"
-          description: Decision based only on authored markings.
-        authoritative:
-          $ref: "#/components/schemas/AccessScenarioAssessment"
-          description: Decision including accepted findings and manual selections.
-        projected:
-          anyOf:
-            - $ref: "#/components/schemas/AccessScenarioAssessment"
-            - type: "null"
-          description: Advisory unresolved-nomination scenario when it adds an assertion.
-      required:
-        - audit
-        - authored
-        - authoritative
-        - projected
-      description: Three-scenario document access result with no fused grant or denial.
     DocumentAuditReport:
       type: object
       properties:
@@ -5701,22 +5059,10 @@ components:
         guideUnits:
           type: integer
           description: Number of evaluated guide units.
-        accessRuleResults:
-          type: integer
-          description: Access-rule results across all scenarios.
-        contentRequirements:
-          type: integer
-          description: Content requirements across all scenarios.
-        contextRequirements:
-          type: integer
-          description: Context requirements across all scenarios.
       required:
         - nominations
         - evidenceSpans
         - guideUnits
-        - accessRuleResults
-        - contentRequirements
-        - contextRequirements
       description: Counts the full, unprojected semantic result of a document operation.
     DocumentResponseProfile:
       type: string
@@ -5801,49 +5147,13 @@ components:
           type: string
           description: Written after each value.
       description: Affix written around every value of a field, rather than once around all of them.
-    EffectiveDocumentTarget:
-      type: object
-      properties:
-        basis:
-          $ref: "#/components/schemas/AccessScenarioBasis"
-          description: Authority basis used to construct the target.
-        marking:
-          type: string
-          description: Scheme-rendered effective marking.
-        assertions:
-          type: array
-          items:
-            $ref: "#/components/schemas/Assertion"
-          description: >-
-            Effective assertions evaluated by access policy, listed in print order: the order `marking` places each
-            concept; a concept it leaves out appears where it would print.
-        authoredWhole:
-          type: string
-          description: Authored document-wide marking when present.
-        authoredParts:
-          type: array
-          items:
-            type: string
-          description: Authored part markings.
-        determinedGuideRequiredWhole:
-          type: string
-          description: Whole required by accepted/manual guide facts.
-        projectedGuideRequiredWhole:
-          type: string
-          description: Advisory whole additionally assuming unresolved nominations.
-      required:
-        - basis
-        - marking
-        - assertions
-        - authoredParts
-      description: Effective marking/assertion target evaluated in one access scenario.
     EmbeddedMarkingStyle:
       type: object
       properties:
         pattern:
           type: string
           description: >-
-            RegExp source (no flags) whose first capture group is the raw marking text. Example: `\((.+)\)` for a
+            RegExp source (no flags) whose first capture group is the raw marking text. Example: `\(([^)]+)\)` for a
             marking in parentheses.
         template:
           type: string
@@ -5853,9 +5163,8 @@ components:
         autoInsert:
           $ref: "#/components/schemas/EmbeddedMarkingStyleAutoInsert"
           description: >-
-            When the host UI should proactively prompt the user to add a marking. "every-paragraph" pops the picker on
-            each new paragraph; "first-line" only on the first line of the document; "manual" never auto-prompts.
-            Default "manual".
+            Whether the host UI should prompt the user to add a marking. "every-paragraph" pops the picker on each new
+            paragraph. Absent, the host never prompts on its own.
       required:
         - pattern
         - template
@@ -5864,10 +5173,7 @@ components:
         of a paragraph. A scheme may declare multiple styles; all are matched during scanning.
     EmbeddedMarkingStyleAutoInsert:
       type: string
-      enum:
-        - every-paragraph
-        - first-line
-        - manual
+      const: every-paragraph
       description: When a host UI should proactively prompt for an embedded marking.
     ErrorResponse:
       type: object
@@ -5882,18 +5188,19 @@ components:
           description: >-
             Stable machine-readable classification of the failure, present whenever the server can name one. Set to
             `INVALID_INPUT` when the failure originated in engine input or the request carried something the operation
-            does not declare, and to `route_not_found` on a 404 that reached routing and matched no route. A request
-            refused before routing carries the constant refusal body instead, which has no `code` at all by design, so
-            the absence of a code on a 404 is itself uninformative.
+            does not declare, to `route_not_found` on a 404 that reached routing and matched no route, and to
+            `scheme_not_found` on a 404 for a `?scheme=` key the Context does not hold. A request refused before routing
+            carries the constant refusal body instead, which has no `code` at all by design, so the absence of a code on
+            a 404 is itself uninformative.
         detail:
           type: string
           description: >-
             What the failure is about, beside `code`: a stable operation-specific detail used to classify it. For a
             request that names a format, a concept or a category the scheme does not declare, it is the request field
             and the id it named, written `field: id`, such as `outputFormat: nope` or `conceptId: NOPE`. For a request
-            that carries a query parameter the operation does not declare, it is `query: ` and the parameter's name; for
-            an undeclared body field, `body`, the JSON pointer of the object that holds it, `: ` and the field, such as
-            `body: extra` or `body/context: extra`. Never a scheme's internals.
+            that carries a query parameter the operation does not declare, or names a declared one twice, it is `query:
+            ` and the parameter's name; for an undeclared body field, `body`, the JSON pointer of the object that holds
+            it, `: ` and the field, such as `body: extra` or `body/context: extra`. Never a scheme's internals.
       required:
         - error
       description: Response body for error responses (4xx / 5xx).
@@ -5942,9 +5249,6 @@ components:
           description: >-
             Subset of `breakdown` that actually contributed to `aggregatedMarking` (i.e. `breakdown.filter(b =>
             !b.wasOverridden)`). Precomputed so UI layers stop re-filtering the full breakdown.
-        provenance:
-          $ref: "#/components/schemas/SourceReference"
-          description: External guide-rule source observation used by this evaluation.
       required:
         - selectedRules
         - activeComputedRules
@@ -6011,52 +5315,6 @@ components:
         than the working. Debug tools use this to explain why a marking was accepted or rejected. `repairs` lists each
         repair rule that fired and the before/after strings. `inferences` lists each inference rule that added a concept
         and the reason text.
-    FilterResult:
-      type: object
-      properties:
-        visibleIds:
-          type: array
-          items:
-            type: string
-          description: IDs of concepts or rules that matched the query.
-        categoryCounts:
-          type: object
-          additionalProperties:
-            type: object
-            properties:
-              visible:
-                type: integer
-                description: Items in the category that matched the query.
-              total:
-                type: integer
-                description: Items in the category.
-            required:
-              - visible
-              - total
-          description: Per-category counts.
-        total:
-          type: object
-          properties:
-            visible:
-              type: integer
-              description: Items that matched the query.
-            total:
-              type: integer
-              description: Items in every category.
-          required:
-            - visible
-            - total
-          description: Aggregate counts across all categories.
-      required:
-        - visibleIds
-        - categoryCounts
-        - total
-      description: >-
-        JSON-safe serialization of the engine's Set/Map-based FilterResult.
-
-
-        The engine returns FilterResult with Set<string> and Map<string, ...> fields; this interface is what the server
-        writes to the wire.
     Fix:
       type: object
       properties:
@@ -6668,11 +5926,10 @@ components:
           type: string
           description: Explanation of why this outcome applies.
         when:
-          $ref: "#/components/schemas/RuleWhen"
+          $ref: "#/components/schemas/GuideWhen"
           description: >-
-            When present, this rule auto-activates based on other rules' selection state. Uses the same when framework
-            as scheme rules. `has` references guide rule IDs. Rules with `when` are "computed"; they don't appear as
-            checkboxes.
+            When present, the rule is computed: it activates when this block holds over the rules the user selected, and
+            it is not offered as a checkbox.
         overrides:
           type: array
           items:
@@ -6695,8 +5952,8 @@ components:
         selection state and do not appear as user-visible checkboxes.
 
 
-        This is the named runtime/read-result shape. Authoring input is carried by the guide definition's `rules.inline`
-        entries.
+        This is the named runtime/read-result shape. A guide document authors its rules as `GuideRuleDoc` entries in
+        `guide.rules`.
     GuideRuleOutcome:
       type: object
       properties:
@@ -6709,6 +5966,25 @@ components:
             $ref: "#/components/schemas/ConceptRef"
           description: "Direct concept references: converted to assertions, then engine.process()'d."
       description: "The effect of a guide rule: what it contributes to the marking."
+    GuideRuleSelection:
+      type: object
+      properties:
+        guideId:
+          type: string
+          description: Id of the guide that holds the rule.
+        ruleId:
+          type: string
+          description: Id of the rule within that guide.
+      required:
+        - guideId
+        - ruleId
+      additionalProperties: false
+      description: >-
+        One selected rule, named by the guide that holds it.
+
+
+        Guides in a Context are independent, so two of them may use the same rule id. A selection names the guide as
+        well as the rule, and the two pairs are two rules.
     GuideRuleView:
       type: object
       properties:
@@ -6790,7 +6066,9 @@ components:
           description: The guide rule that matched.
         guideId:
           type: string
-          description: The id of the guide the rule belongs to, when the scan covered more than one.
+          description: >-
+            The id of the guide the rule belongs to. Rule ids are unique only within a guide, so a selection built from
+            this hit names this guide.
         matchedKeywords:
           type: array
           items:
@@ -6801,21 +6079,9 @@ components:
           items:
             $ref: "#/components/schemas/GuideScanSpan"
           description: Every place in the text where the rule fired, in the order found.
-        provenance:
-          $ref: "#/components/schemas/SourceReference"
-          description: >-
-            Source provenance for the guide-rule source that supplied the matched rule.
-
-
-            Populated only when the rule came from an external `GuideRuleSource` override wired into the `GuideEngine`
-            at load time (typically a `MappedGuideRuleSource` the server's Context loader built from a guide YAML's
-            `rules.external` block). Inline-backed results leave this field undefined to keep payloads compact for the
-            common single-source case.
-
-
-            Identity fields mirror the source's `sourceIdentity()` observation at engine-construction time.
       required:
         - rule
+        - guideId
         - matchedKeywords
         - spans
       description: >-
@@ -6836,11 +6102,6 @@ components:
         end:
           type: integer
           description: Offset in the scanned text just past the end of the match, in UTF-16 code units.
-        confidence:
-          type: number
-          description: >-
-            Advisory confidence in [0, 1], present only when the scan asked for it with the `confidence` scan option. An
-            ordinal hint derived from the match's shape, not a calibrated probability.
       required:
         - keyword
         - start
@@ -6919,6 +6180,11 @@ components:
         description:
           type: string
           description: The guide's description. Empty when the guide declares none.
+        marking:
+          type: string
+          description: >-
+            The guide document's own overall marking, exactly as its `guide.marking` writes it. Display only: never
+            interpreted. Absent when the document declares none.
         categories:
           type: array
           items:
@@ -6959,6 +6225,74 @@ components:
       description: >-
         Render-ready Guidebook tree for a guide: its rules grouped under the guide's categories, with every compound
         rule in one `_compound` category at the end.
+    GuideWhen:
+      type: object
+      properties:
+        any:
+          type: array
+          items:
+            $ref: "#/components/schemas/GuideWhenNode"
+          description: At least one of these holds.
+        all:
+          type: array
+          items:
+            $ref: "#/components/schemas/GuideWhenNode"
+          description: Every one of these holds.
+        none:
+          type: array
+          items:
+            $ref: "#/components/schemas/GuideWhenNode"
+          description: None of these holds.
+      description: >-
+        A block of conditions over the rules the user selected. Every list present must hold: `any` when one of its
+        nodes holds, `all` when each does, `none` when none does.
+    GuideWhenHas:
+      type: object
+      properties:
+        has:
+          type: string
+          description: The id of a selectable rule of this guide.
+      required:
+        - has
+      description: A guide condition that holds when the user selected one rule.
+    GuideWhenNode:
+      anyOf:
+        - $ref: "#/components/schemas/GuideWhenHas"
+        - $ref: "#/components/schemas/GuideWhenTest"
+        - $ref: "#/components/schemas/GuideWhen"
+      description: "One node of a guide `when` block: a condition, or a nested block."
+    GuideWhenOperator:
+      type: string
+      enum:
+        - has_concept
+        - not_has_concept
+        - has_content
+        - count_gt
+        - count_gte
+        - count_eq
+        - count_lt
+        - count_lte
+      description: >-
+        The tests a guide `when` condition can apply to the rules the user selected. `has_concept` and `not_has_concept`
+        name a rule by id in `value`; the `count_*` tests (greater than, greater than or equal, equal, less than, less
+        than or equal) compare the number of selected rules with the number in `value`; `has_content` holds when any
+        rule is selected.
+    GuideWhenTest:
+      type: object
+      properties:
+        operator:
+          $ref: "#/components/schemas/GuideWhenOperator"
+          description: The test to apply.
+        value:
+          type:
+            - string
+            - number
+          description: >-
+            A rule id for `has_concept` and `not_has_concept`, a count for the `count_*` tests, absent for
+            `has_content`.
+      required:
+        - operator
+      description: A guide condition that tests the user's selection with an operator.
     HealthResponse:
       type: object
       properties:
@@ -7144,8 +6478,8 @@ components:
           type: string
           description: >-
             The settled marking, written as validate writes it when the request names no output: in the scheme's default
-            format, or for a scheme that declares `render.surfaces`, each written surface in its default for the role
-            the marking has in this document, by the rule `RenderConfigDoc.surfaces` states.
+            format, or for a scheme that declares `render.surfaces`, in the defaults for the role the marking has in
+            this document that the rule `RenderConfigDoc.surfaces` states for an unnamed output selects.
       required:
         - assertions
         - recognition
@@ -7361,15 +6695,6 @@ components:
         - pass
         - fail
       description: Validator outcome retained by a validation expression.
-    NormalizeResponse:
-      type: object
-      properties:
-        result:
-          type: string
-          description: Canonical normalized form of the marking string.
-      required:
-        - result
-      description: Response body for Context normalization.
     Notice:
       type: object
       properties:
@@ -7480,13 +6805,7 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/ValidationError"
-          description: >-
-            What the scheme's rules find wrong with the settled marking. An entry whose severity is `error` makes
-            `valid` false.
-
-
-            No entry here points at a fix path: `suggestedFix` is set only on a result that carries the fix it names,
-            and this result carries none.
+          description: What the scheme's rules find wrong with the settled marking. Any entry makes `valid` false.
         warnings:
           type: array
           items:
@@ -7520,16 +6839,18 @@ components:
             The settled marking, in one string.
 
 
-            It is written in the output the request names. With none named, a scheme without `render.surfaces` writes
-            its default format, and a scheme with them writes each surface in its default for the marking's role, by the
-            rule `RenderConfigDoc.surfaces` states. Every operation that returns this shape follows that one rule.
+            It is written in the output the request names, and in that output alone. With none named, a scheme without
+            `render.surfaces` writes its default format, and a scheme with them writes each surface the result writes in
+            its default for the marking's role, by the rule `RenderConfigDoc.surfaces` states. Every operation that
+            returns this shape follows that one rule.
 
 
-            For a scheme that declares `render.surfaces`, the string is the output resolved on each surface the result
-            writes, as `RenderConfigDoc.surfaces` describes, in declared surface order and joined by
-            `render.surface_separator`. An output that writes nothing adds nothing, and outputs written as XML
-            attributes in one namespace merge into one attribute list. One refused output refuses the whole string, and
-            `assessment` says which one and why.
+            For a scheme that declares `render.surfaces`, the string holds the outputs `RenderConfigDoc.surfaces`
+            selects, in declared surface order and joined by `render.surface_separator`: the one output a request names,
+            or with none named the one default that writes every other surface's scope beside its own, else each
+            surface's default. An output that writes nothing adds nothing, and outputs written as XML attributes in one
+            namespace merge into one attribute list. One refused output refuses the whole string, and `assessment` says
+            which one and why.
         assessment:
           $ref: "#/components/schemas/RenderAssessment"
           description: >-
@@ -7554,24 +6875,6 @@ components:
           description: >-
             Portable scheme-derived display color for the settled marking. Embedding hosts may override this
             presentation default.
-        assertionsBeforeRepair:
-          type: array
-          items:
-            $ref: "#/components/schemas/Assertion"
-          description: >-
-            What was read before repair: the assertions the input stated, before the repair pass took anything away or
-            rewrote it. A retired concept appears under its replacement's name, as it does in `assertions` and in the
-            fixes.
-
-
-            Present only when repair rewrote something that was read. Absent, everything read came through repair. This
-            is a record of the reading; proposed fixes are computed against the resulting `assertions`, never against
-            this earlier set. Repair leaves author-stated rule conflicts in the resulting value for the author to
-            resolve.
-
-
-            Listed in print order, placed by the same rendering as `assertions`. A concept repair took away has no place
-            in it, so it follows the others of its category.
         proposedFixes:
           type: array
           items:
@@ -7579,8 +6882,7 @@ components:
           description: >-
             The ways to make the resulting value valid, computed from that value after applied changes, each a whole
             marking the engine has read back and found valid before offering it. Empty when the marking is valid, or
-            when no change the engine could prove would make it so. An error's `suggestedFix` names one of these by its
-            `message`.
+            when no change the engine could prove would make it so.
 
 
             A request's `parts` go back in with each fix, as the caller will send them, so they are read again in the
@@ -7652,7 +6954,9 @@ components:
       properties:
         role:
           $ref: "#/components/schemas/ProcessingRole"
-          description: "Role of this marking: 'whole' for overall markings, 'part' for portions"
+          description: >-
+            Role of the marking being read: `'whole'` (the default) or `'part'`. On a rollup, the role of each
+            contributor.
         partOf:
           type: object
           properties:
@@ -7715,11 +7019,20 @@ components:
 
 
             Without a verified whole, what needs the whole is left open instead of guessed: a rule condition with
-            `target: 'context'` is unresolved, so its rule never fires, as `RuleConditionTarget` describes.
+            `target: 'context'` is unresolved, so its rule never fires, as `RuleConditionTarget` describes. A stand-in
+            is the exception, because it is shorthand for the whole's values and means nothing without them: a part that
+            leaves a category to a concept that declares `stands_for_whole` carries a `_stand_in_requires_whole` error
+            naming it.
       additionalProperties: false
       description: >-
-        Caller-supplied context describing the role of a marking being processed. No context (or role='whole') means an
-        overall/document-level marking. role='part' means a portion/paragraph that belongs to another marking.
+        Caller-supplied context naming the role the marking being read plays. No context, or `role: 'whole'`, means a
+        whole: a marking that stands for everything it covers. `role: 'part'` means a part that belongs to a whole,
+        named in `partOf` when it is known.
+
+
+        On a rollup the context names the contributors' role, never the rollup's: the rollup is always a whole. So no
+        context rolls wholes up into an aggregate, and `{ role: 'part', partOf }` rolls a whole's parts up. See
+        `SchemeEngineAdapter.aggregate`.
     ProcessingRole:
       type: string
       enum:
@@ -7743,7 +7056,7 @@ components:
       type: string
       enum:
         - audit-degraded
-        - clock-rollback
+        - application-allowance-exceeded
         - generation-refused
         - desired-state-stale
       description: >-
@@ -7759,9 +7072,9 @@ components:
         them until audit writes succeed again.
 
 
-        `clock-rollback`: the system clock reads further behind a time this runtime already accepted than the tolerated
-        skew allows, so license evaluation holds at that accepted time and update entitlement is suspended until the
-        clock is corrected.
+        `application-allowance-exceeded`: more distinct application ids have called the runtime than its license's
+        application allowance. Every application is still served, registered or not: the warning informs and never
+        refuses a request.
 
 
         `generation-refused`: a managed runtime refused what its control plane last offered, either the newest
@@ -7839,23 +7152,17 @@ components:
     RecognitionLimit:
       type: string
       enum:
-        - aborted
         - input-length
         - transitions
         - lookups
         - live-states
-        - wall-clock
-        - grammar-size
-        - depth
       description: >-
         The ceilings recognition can reach.
 
 
-        Closed, because a caller distinguishing a cancelled run from an exhausted one is writing a branch, not a
-        message. `aborted` is the caller's own `AbortSignal` firing, which is a ceiling in the sense that matters here:
-        the answer is not a confident one. `wall-clock` is the operator's time limit, and it is a separate word from
-        `transitions` because the two say different things to whoever set them: one means the input was harder than the
-        work ceiling allows, the other that the host was slower than the time allowed or the input harder than both.
+        Closed, because a caller telling one exhausted ceiling from another is writing a branch, not a message.
+        `input-length` is the longest input the engine reads, `transitions` and `lookups` are the work it spends
+        reading, and `live-states` is how many readings it keeps open at once.
     RecognitionResult:
       type: object
       properties:
@@ -8145,61 +7452,6 @@ components:
         On a process result it holds exactly the outputs the request named in `outputs`. An output that was asked for
         and could not write the state says so in its assessment rather than being left out, because a missing key would
         mean nobody asked for it.
-    RepairConfidence:
-      type: string
-      enum:
-        - safe
-        - uncertain
-      description: Confidence assigned to a deterministic repair.
-    Reproducibility:
-      type: string
-      enum:
-        - reproducible
-        - best-effort
-      description: Describes whether an observed source can be loaded again byte-for-byte.
-    ReproducibleRuleSourceReference:
-      type: object
-      properties:
-        providerId:
-          type: string
-          description: Stable identifier for the source provider.
-        reproducibility:
-          type: string
-          const: reproducible
-          description: Whether the source observation can be reproduced byte-for-byte.
-        snapshotId:
-          type: string
-          description: Immutable snapshot containing the rule.
-      required:
-        - providerId
-        - reproducibility
-        - snapshotId
-      description: Compact source join carried by a qualified rule reference.
-    ReproducibleSourceReference:
-      type: object
-      properties:
-        reproducibility:
-          type: string
-          const: reproducible
-          description: Whether the source observation can be reproduced byte-for-byte.
-        snapshotId:
-          type: string
-          description: Immutable content identity.
-        locator:
-          type: string
-          description: Location from which the content was observed.
-        providerId:
-          type: string
-          description: Stable identifier for the source provider.
-        attribution:
-          $ref: "#/components/schemas/Attribution"
-          description: Attribution and license information for the observed source.
-      required:
-        - attribution
-        - providerId
-        - reproducibility
-        - snapshotId
-      description: Reproducible source identity and mandatory attribution for an operation.
     Rollup:
       type: string
       enum:
@@ -8207,17 +7459,12 @@ components:
         - min
         - union
         - intersection
-        - symmetric_difference
-        - exclusive_or
-        - complement
         - first
-        - last
-        - least_upper_bound
         - pipeline
       description: >-
         Canonical rollup operator. `pipeline` requires a matching entry in the scheme's `rollup_pipelines`. Most merge
-        operators are set-algebraic over each input's assertions; rank-based operators (max/min/least_upper_bound)
-        require categories whose concepts declare `rank`.
+        operators are set-algebraic over each input's assertions; rank-based operators (max/min) require categories
+        whose concepts declare `rank`.
     RuleCondition:
       type: object
       properties:
@@ -8229,12 +7476,9 @@ components:
         has:
           type: string
           description: "Shorthand for has_concept: check if this concept is present"
-        is:
-          type: string
-          description: Combined operator+value shorthand (e.g. "count_eq 1", "has_content")
         operator:
-          type: string
-          description: Explicit operator for the condition
+          $ref: "#/components/schemas/RuleConditionOperator"
+          description: The test to apply to the category's assertions.
         value:
           type:
             - string
@@ -8251,6 +7495,30 @@ components:
       description: >-
         A single condition in a rule's `when` block. Can test category contents, processing context role, or concept
         presence.
+    RuleConditionOperator:
+      type: string
+      enum:
+        - has_content
+        - has_concept
+        - not_has_concept
+        - count_gt
+        - count_gte
+        - count_eq
+        - count_lt
+        - count_lte
+        - min_rank
+        - subset_of
+        - shares_concept_with
+        - every_has_concept
+        - any_lacks_concept
+      description: >-
+        The test a scheme condition applies to one category's assertions. `has_concept` and `not_has_concept` name a
+        concept in `value`; `has_content` holds when the category holds anything; the `count_*` tests (greater than,
+        greater than or equal, equal, less than, less than or equal) compare the number of concepts in the category with
+        the number in `value`; `min_rank` holds when the category holds a concept ranked at or above the rank in
+        `value`; `subset_of` holds when this category's concepts are a subset of the category named in `value`, and
+        `shares_concept_with` when the two share a concept; `every_has_concept` and `any_lacks_concept` ask whether
+        every assertion set, or at least one, holds the concept named in `value`.
     RuleConditionTarget:
       type: string
       enum:
@@ -8269,7 +7537,8 @@ components:
         around it whose answer depends on it. A rule whose `when` is unresolved never fires, changes no value, reports
         no error and offers no fix; a check rule (`require`, `require_any`, `restrict`, `forbid`, `exclusive`,
         `cardinality`) that the marking already meets still passes, and any other unresolved rule gives the part the
-        `_whole_unverified` notice.
+        `_whole_unverified` notice. A part's stand-in for its whole's values is not left open this way: without a
+        verified whole it is a `_stand_in_requires_whole` error. See `ProcessingContext.partOf`.
 
         - `'contributors'`: each contributing assertion set that went into an aggregate, evaluated separately. The
         condition holds only when EVERY contributor satisfies it, and it is never satisfied outside aggregation, where
@@ -8282,55 +7551,6 @@ components:
         - all
         - none
       description: Quantifies a condition block over contributing assertion sets.
-    RuleDescription:
-      type: object
-      properties:
-        rule:
-          $ref: "#/components/schemas/RuleReference"
-          description: Qualified rule being described.
-        guide:
-          $ref: "#/components/schemas/ArtifactReference"
-          description: Guide artifact that owns the rule.
-        name:
-          type: string
-          description: Human-readable rule name.
-        description:
-          type: string
-          description: Optional policy-authored description.
-        outcomeText:
-          type: string
-          description: Human-readable outcome expression.
-        whenText:
-          type: string
-          description: Human-readable activation expression.
-        isComputed:
-          type: boolean
-          description: Whether the rule is computed from other guide facts.
-        dependsOn:
-          type: array
-          items:
-            $ref: "#/components/schemas/RuleReference"
-          description: Qualified rules referenced by this rule's activation block.
-        overrides:
-          type: array
-          items:
-            $ref: "#/components/schemas/RuleReference"
-          description: Qualified rules this rule overrides when it fires.
-        lines:
-          type: array
-          items:
-            type: string
-          description: Flattened multi-line description matching `ConceptDescription.lines`.
-      required:
-        - rule
-        - guide
-        - name
-        - outcomeText
-        - isComputed
-        - dependsOn
-        - overrides
-        - lines
-      description: Human-readable description of a guide rule. Parallels `ConceptDescription` on the scheme side.
     RuleReference:
       type: object
       properties:
@@ -8343,29 +7563,11 @@ components:
         ruleDigest:
           type: string
           description: RFC 8785/SHA-256 digest of the canonical resolved rule content.
-        source:
-          $ref: "#/components/schemas/RuleSourceReference"
-          description: External source identity when the rule was not supplied inline.
       required:
         - artifact
         - ruleId
         - ruleDigest
       description: Identifies the exact resolved semantics of one policy rule.
-    RuleSourceReference:
-      anyOf:
-        - $ref: "#/components/schemas/ReproducibleRuleSourceReference"
-        - $ref: "#/components/schemas/BestEffortRuleSourceReference"
-      description: Compact source join carried by a qualified rule reference.
-      if:
-        properties:
-          reproducibility:
-            const: best-effort
-        required:
-          - reproducibility
-      then:
-        not:
-          required:
-            - snapshotId
     RuleWhen:
       anyOf:
         - type: string
@@ -8460,11 +7662,20 @@ components:
           items:
             $ref: "#/components/schemas/ScanResult"
           description: The markings the scan found, in document order.
+        unread:
+          type: array
+          items:
+            $ref: "#/components/schemas/UnreadMark"
+          description: >-
+            The wrapped marks the scan found but could not read, in document order. Empty when every wrapped mark it
+            reached was read. Text past where the scan stopped was never offered to recognition, so none of it is
+            listed.
         limits:
           $ref: "#/components/schemas/ScanLimits"
           description: How far the scan got, and what stopped it.
       required:
         - results
+        - unread
         - limits
       description: >-
         What a scan answers on the wire.
@@ -8558,24 +7769,6 @@ components:
 
         `complete` means the whole document was offered to recognition. `truncated` means the region cap was reached
         with budget to spare. `resource-limit` means the budget was spent or the caller aborted.
-    SchemeGrammar:
-      type: object
-      properties:
-        caseSensitive:
-          type: boolean
-          description: Whether the vocabulary is matched case-sensitively.
-        stripWhitespace:
-          type: boolean
-          description: Whether surrounding whitespace is ignored when a spelling is compared.
-      required:
-        - caseSensitive
-        - stripWhitespace
-      description: >-
-        Context scheme grammar response: the scheme's recognition policy.
-
-
-        No separator. Every boundary belongs to the field that writes it, so there is no global one to publish; what is
-        left is how a spelling found at a boundary is compared against the vocabulary.
     SchemeScope:
       type: object
       properties:
@@ -8613,13 +7806,18 @@ components:
           description: Display name from the scheme metadata.
         description:
           type: string
-          description: Free-text description from the scheme metadata.
+          description: Free-text description from the scheme metadata. Omitted when the scheme has none.
         definition:
           type: string
           description: Human-readable definition of the scheme, for tooltips and about panels.
         guidance:
           type: string
           description: Usage guidance for the scheme, shown in reference views.
+        marking:
+          type: string
+          description: >-
+            The scheme document's own overall marking, exactly as its `scheme.marking` writes it. Display only: never
+            interpreted. Omitted when the document declares none.
         colorFrom:
           type: string
           description: Single-category scheme-default color source, when category mode is used.
@@ -8713,7 +7911,6 @@ components:
         - id
         - version
         - name
-        - description
         - referenceSurfaceLabel
       description: Context scheme summary response.
     SchemeViewResponse:
@@ -8728,6 +7925,11 @@ components:
         description:
           type: string
           description: The scheme's description. Empty when the scheme declares none.
+        marking:
+          type: string
+          description: >-
+            The scheme document's own overall marking, exactly as its `scheme.marking` writes it. Display only: never
+            interpreted. Absent when the document declares none.
         categories:
           type: array
           items:
@@ -8771,52 +7973,7 @@ components:
       enum:
         - position
         - alphabetical
-        - numeric
       description: How concepts within a category are sorted during rendering.
-    SourceReference:
-      anyOf:
-        - $ref: "#/components/schemas/ReproducibleSourceReference"
-        - $ref: "#/components/schemas/BestEffortSourceReference"
-      description: Records source identity and mandatory attribution for an operation.
-      if:
-        properties:
-          reproducibility:
-            const: best-effort
-        required:
-          - reproducibility
-      then:
-        not:
-          required:
-            - snapshotId
-    SubjectContextRequirement:
-      type: object
-      properties:
-        rule:
-          $ref: "#/components/schemas/RuleReference"
-          description: Access rule requiring the relationship.
-        subjectPath:
-          type: string
-          description: Immutable subject operand path.
-        contextPath:
-          type: string
-          description: Supplied context operand path.
-        operator:
-          type: string
-          description: Comparison operator.
-        acceptableValues:
-          type: array
-          items: {}
-          description: Context values that would satisfy the relationship, when known.
-        instruction:
-          type: string
-          description: Conditional explanation of the external-state prerequisite.
-      required:
-        - rule
-        - subjectPath
-        - contextPath
-        - operator
-        - instruction
-      description: Conditional external relationship needed by a subject-context comparison.
     SuggestResult:
       type: object
       properties:
@@ -9081,9 +8238,6 @@ components:
         description:
           type: string
           description: What the repair does, as the scheme describes it.
-        confidence:
-          $ref: "#/components/schemas/RepairConfidence"
-          description: The confidence the scheme declares for the repair rule.
         before:
           type: string
           description: The text before the repair.
@@ -9096,7 +8250,6 @@ components:
       required:
         - ruleId
         - description
-        - confidence
         - before
         - after
       description: Repair recorded in an explanation trace.
@@ -9116,6 +8269,60 @@ components:
         Validation issue recorded in an explanation trace: the constraint that failed and its message, and nothing else.
         The category, severity and concepts of the error it came from belong to the error, which a validate or process
         result reports in `errors`.
+    UnreadMark:
+      type: object
+      properties:
+        text:
+          type: string
+          description: The wrapped text as found in the document, wrapper included.
+        start:
+          type: integer
+          description: Start position in the input text
+        end:
+          type: integer
+          description: End position in the input text
+        inner:
+          type: string
+          description: "The text inside the wrapper: the capture group of the scheme's `embeddedMarking` pattern."
+        leading:
+          type: boolean
+          description: >-
+            Whether the mark stands where a part mark goes: at the start of its paragraph. Both of these hold for a
+            leading mark.
+
+
+            Its line starts a paragraph. The line starts at the beginning of the text or just after the last line feed
+            before `start`. It starts a paragraph when it is the first line, when the line before it is blank or ends in
+            `.`, `!`, `?`, `:` or `;`, or when the line before it holds nothing but a marking read in the whole role,
+            such as a banner.
+
+
+            Only whitespace and outline labels come before it on its line: at most three labels, each followed by
+            whitespace, in no more than 64 UTF-16 code units after the line's leading whitespace. A line feed is not
+            whitespace here. An outline label is one or more groups of one to four letters or digits, each closed by `.`
+            or `)` and optionally opened by `(` (`1.`, `a)`, `(1)`, `iv.`, `1.a.`, `(a)(1)`); a dotted numeral (`1.2`,
+            `1.2.3.`); one bullet (`-`, `*`, `•`, `‣`, `⁃`, `◦`, `▪` or `–`); or one to six `#`. So the mark in `(QQ)
+            text`, `1. (QQ) text` and `a) 2. (QQ) text` leads, and the one in `See (QQ) text` does not.
+
+
+            A mark that follows another mark on its line does not lead, whether the earlier mark was read or not: in
+            `(S)(QQ)` and in `(S) (QQ)` only `(S)` leads. Wrapped text before a mark is a label rather than a mark when
+            its text is one lowercase letter, that letter two or three times, one to three digits, or a lowercase roman
+            numeral, so the mark in `(a) (QQ) text` leads.
+      required:
+        - text
+        - start
+        - end
+        - inner
+        - leading
+      description: >-
+        A wrapped mark a scan found but could not read.
+
+
+        The text matched the scheme's `embeddedMarking` pattern, which is how a part marking is written, but recognition
+        read no marking in it, and it has no entry in `ScanOutcome.results`. Text that looks like a marking and carries
+        none is reported rather than dropped, so a reader can see it and correct it. `start`/`end` are offsets in UTF-16
+        code units in the input text, as on `ScanResult`.
     UnrepresentableFact:
       type: object
       properties:
@@ -9245,13 +8452,7 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/ValidationError"
-          description: >-
-            What the scheme's rules find wrong with the settled marking. An entry whose severity is `error` makes
-            `valid` false.
-
-
-            No entry here points at a fix path: `suggestedFix` is set only on a result that carries the fix it names,
-            and this result carries none.
+          description: What the scheme's rules find wrong with the settled marking. Any entry makes `valid` false.
         warnings:
           type: array
           items:
@@ -9285,16 +8486,18 @@ components:
             The settled marking, in one string.
 
 
-            It is written in the output the request names. With none named, a scheme without `render.surfaces` writes
-            its default format, and a scheme with them writes each surface in its default for the marking's role, by the
-            rule `RenderConfigDoc.surfaces` states. Every operation that returns this shape follows that one rule.
+            It is written in the output the request names, and in that output alone. With none named, a scheme without
+            `render.surfaces` writes its default format, and a scheme with them writes each surface the result writes in
+            its default for the marking's role, by the rule `RenderConfigDoc.surfaces` states. Every operation that
+            returns this shape follows that one rule.
 
 
-            For a scheme that declares `render.surfaces`, the string is the output resolved on each surface the result
-            writes, as `RenderConfigDoc.surfaces` describes, in declared surface order and joined by
-            `render.surface_separator`. An output that writes nothing adds nothing, and outputs written as XML
-            attributes in one namespace merge into one attribute list. One refused output refuses the whole string, and
-            `assessment` says which one and why.
+            For a scheme that declares `render.surfaces`, the string holds the outputs `RenderConfigDoc.surfaces`
+            selects, in declared surface order and joined by `render.surface_separator`: the one output a request names,
+            or with none named the one default that writes every other surface's scope beside its own, else each
+            surface's default. An output that writes nothing adds nothing, and outputs written as XML attributes in one
+            namespace merge into one attribute list. One refused output refuses the whole string, and `assessment` says
+            which one and why.
         assessment:
           $ref: "#/components/schemas/RenderAssessment"
           description: >-
@@ -9363,23 +8566,11 @@ components:
         categoryId:
           type: string
           description: Category ID this error relates to (when determinable from the constraint).
-        severity:
-          $ref: "#/components/schemas/ValidationSeverity"
-          description: "Severity: 'error' blocks validity, 'warning' is advisory. Default: 'error'."
         affectedConcepts:
           type: array
           items:
             type: string
           description: Concept IDs involved in this validation failure.
-        suggestedFix:
-          type: string
-          description: >-
-            The `message` of the proposed fix that answers this error, such as "Add CTRL-A".
-
-
-            Set only on a result that carries that fix in its own `proposedFixes`. A result with no fix paths, such as a
-            `ValidateResult` or a scan region, never sets it, so a reader never holds a pointer to a fix it was not
-            given.
         didYouMean:
           type: array
           items:
@@ -9400,8 +8591,8 @@ components:
             stands, and naming a different concept would point the author away from a word they spelled right.
 
 
-            It is not a fix: nothing here has been proven to make the marking valid, and `suggestedFix` and the result's
-            fix paths do not depend on it.
+            It is not a fix: nothing here has been proven to make the marking valid, and the result's fix paths do not
+            depend on it.
           minItems: 1
       required:
         - constraintId
@@ -9411,8 +8602,8 @@ components:
 
 
         Carried in the `errors` of every result that judges a marking. `constraintId` identifies the rule that fired;
-        `message` is human-readable. When `severity` is `'warning'`, the violation is advisory and does not set `valid`
-        to `false`. Use `categoryId` and `affectedConcepts` to highlight the specific UI elements involved.
+        `message` is human-readable. Every entry sets `valid` to `false`; advisories are warnings, not errors. Use
+        `categoryId` and `affectedConcepts` to highlight the specific UI elements involved.
 
 
         Two of the ids the engine keeps for itself are for a fact a caller hands in that cannot be settled as given:
@@ -9426,12 +8617,11 @@ components:
         change if rolled up with the part. It is given only for a part that is valid on its own, read in a whole that
         reads and is valid. `affectedConcepts` names every finding, and no fix answers it. See
         `ProcessingContext.partOf`.
-    ValidationSeverity:
-      type: string
-      enum:
-        - error
-        - warning
-      description: Severity assigned to a validation issue.
+
+
+        And `_stand_in_requires_whole` is a part that leaves a category to a stand-in, a concept that declares
+        `stands_for_whole`, with no verified whole to take the values from. `affectedConcepts` names the stand-in and
+        `categoryId` its category.
     ValueEncoding:
       anyOf:
         - $ref: "#/components/schemas/TextValueEncoding"
@@ -9544,18 +8734,21 @@ components:
         This credential is independent of caller identity: the bearer token identifies the principal, while this token
         proves that the deployment authorizes the requested Context and version. Refusals use the same constant
         not-found response as every other authorization failure.
-    applicationCredential:
-      type: apiKey
+  parameters:
+    ApplicationId:
+      name: x-ezclassify-application-id
       in: header
-      name: x-ezclassify-application-grant
+      required: false
       description: >
-        Opaque credential that the deployment's management plane issues to a registered application as either a browser
-        or a backend credential. This is an alternative to bearer and Context token credentials for Context data-path
-        requests. A request that carries it together with an Authorization header, x-ezclassify-context-token, or
-        credentials accepted by a deployment-configured broker is refused. Browser credentials are admitted only from
-        registered origins. Backend credentials are refused on requests from a browser. The credential identifies the
-        calling application, not an end user. Refusals use the same constant not-found response as other authorization
-        failures.
+        Identifies the calling application for per-application usage reporting: the id the application is registered
+        under. It is not a credential and authorizes nothing. A request without it, or with an id the deployment has not
+        registered, is served the same way. An id is 1 to 128 printable ASCII characters (0x21 to 0x7E), with no spaces.
+        A value that does not match is served and counted as unidentified.
+      schema:
+        type: string
+        pattern: ^[\x21-\x7e]{1,128}$
+        maxLength: 128
+      example: case-intake-portal
   headers:
     ResolvedVersion:
       description: >
@@ -9603,8 +8796,9 @@ components:
     NotFound:
       description: >
         Context or resource not found. A request that reached routing and matched no route carries `code:
-        route_not_found`; a request refused before routing carries the constant refusal body, which has no `code` by
-        design. Branch on the code, never on the message. See the API description for why the two bodies differ.
+        route_not_found`, and a `?scheme=` key the Context does not hold carries `code: scheme_not_found`; a request
+        refused before routing carries the constant refusal body, which has no `code` by design. Branch on the code,
+        never on the message. See the API description for why the two bodies differ.
       content:
         application/json:
           schema:
@@ -9614,6 +8808,11 @@ components:
               summary: The route exists and the resource does not
               value:
                 error: "Context not found: nonexistent-context"
+            schemeAbsent:
+              summary: The Context holds no scheme under the `?scheme=` key
+              value:
+                error: "Scheme not found in context: no-such-scheme"
+                code: scheme_not_found
             routeAbsent:
               summary: The request reached routing and matched no route
               value:

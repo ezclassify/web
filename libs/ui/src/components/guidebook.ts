@@ -4,7 +4,8 @@
  * A browsable reference panel that displays all rules from one or more loaded
  * guides, grouped by category. For each rule it shows the name, keywords,
  * outcome, and rationale. Compound rules show their activation conditions and
- * which rules they override.
+ * which rules they override. Each guide leads with its document's overall
+ * marking when it carries one.
  *
  * Pass guide data via `opts.guides` (preferred) or the engine may provide a
  * `buildGuideViews()` method as a fallback path. No guide traversal / matcher
@@ -17,7 +18,6 @@ import {
     resolveVocabulary,
     type ReferenceSurfaceLabel,
     type ResolvedVocabulary,
-    type FilterResult,
     type GuideStructuralView,
     type GuideRuleView,
     type MaybePromise,
@@ -37,6 +37,8 @@ import guidebookCss from './guidebook.css?inline';
 import {
     renderStructuralTree,
     applyFilterToTree,
+    type TreeFilter,
+    buildOverallMarking,
     buildSearchInput,
     announceMatchCount,
     resolveReferenceSurfaceOverride,
@@ -315,6 +317,13 @@ export class Guidebook extends ReadOnlyComponentBase {
             section.dataset.guideId = view.id;
             const open = !multiGuide || this.expandedGuides.has(view.id);
 
+            // Outside the collapsible body: a collapsed guide is still marked.
+            const marking = buildOverallMarking(
+                `${ROOT_CLASS}__guide-marking`,
+                view.marking,
+            );
+            if (marking) section.appendChild(marking);
+
             if (multiGuide) {
                 const ruleCount =
                     view.categories.reduce((n, c) => n + c.items.length, 0) +
@@ -419,7 +428,7 @@ export class Guidebook extends ReadOnlyComponentBase {
      * result per-guide.
      */
     private onSearch(query: string): void {
-        const filterByGuide = new Map<string, FilterResult>();
+        const filterByGuide = new Map<string, TreeFilter>();
         for (const view of this.views)
             filterByGuide.set(view.id, computeViewFilter(view, query));
 
@@ -601,15 +610,14 @@ function combineVocabularies(views: GuideStructuralView[]): ResolvedVocabulary {
 
 /**
  * Case-insensitive substring filter over a single structural view. Matches rule
- * id, name, description, rationale, keywords, and resolved matcher labels, the
- * same surface as engine.filterGuideRules, but operating on the view (which
- * already pre-resolved matcher labels) so the component never needs the raw
- * Guide.
+ * id, name, description, rationale, keywords, and resolved matcher labels. It
+ * reads the view, which already resolved the matcher labels, so the component
+ * never needs the raw Guide.
  */
 function computeViewFilter(
     view: GuideStructuralView,
     query: string,
-): FilterResult {
+): TreeFilter {
     const q = query.trim().toLowerCase();
     const visibleIds = new Set<string>();
     const categoryCounts = new Map<

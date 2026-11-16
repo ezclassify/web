@@ -29,10 +29,12 @@ import type {
 } from '@ezclassify/types';
 import { applyTextInputAttributes } from './text-input-attributes';
 import singleSelectCss from './single-select.css?inline';
+import { mirrorHostFrame } from './field-chrome';
+import { getMountHost } from '../mount-host-registry';
 
 const SINGLE_SELECT_CSS: string = singleSelectCss;
 
-/** Compare complete assertion DTO state; host provenance changes are edits. */
+/** Compare complete assertion state; any field a host changes is an edit. */
 function sameAssertionState(left: unknown, right: unknown): boolean {
     if (Object.is(left, right)) return true;
     if (
@@ -74,14 +76,15 @@ function sameAssertionState(left: unknown, right: unknown): boolean {
  */
 export class SingleSelect extends ComponentBase {
     protected override clearButtonMount(): HTMLElement | null {
-        return this.isDropdownMode
-            ? (this.dropdownEl?.parentElement ?? null)
-            : this.clearButtonFrame(this.cardsContainer);
+        return this.suiteChrome?.element ?? null;
     }
+    /** Stops the field frame following the host input's look. */
+    private stopHostFrame: () => void = () => {};
     private preview!: HTMLDivElement;
     private cardsContainer!: HTMLDivElement;
     private detailPanel!: HTMLDivElement;
-    private announcer!: HTMLDivElement;
+    /** Cards mode only; a native select announces its own value. */
+    private announcer?: HTMLDivElement;
     private focusIndex = -1;
     private previewConceptId: string | null = null;
     /** Dropdown is the ordinary default; cards are an explicit host choice. */
@@ -137,8 +140,23 @@ export class SingleSelect extends ComponentBase {
         const singleCategory = this.resolveCategory(
             this.options.categoryId,
             this.options.scope,
+            this.options.scopes,
         );
-        if (!singleCategory) return;
+        if (!singleCategory) {
+            // A select with nothing to offer renders nothing, so say why
+            // rather than leave an empty spot on the page.
+            const listed = this.options.scopes?.length
+                ? this.options.scopes
+                : this.options.scope
+                  ? [this.options.scope]
+                  : [];
+            console.warn(
+                listed.length > 0
+                    ? `[ezclassify] SingleSelect: the scheme has no category in data-ezclassify-scope "${listed.join(' ')}", so the select shows nothing.`
+                    : '[ezclassify] SingleSelect: the scheme has no category to select in, so the select shows nothing.',
+            );
+            return;
+        }
         this.primaryCategory = {
             ...singleCategory,
             single: singleCategory.single === true,
@@ -176,7 +194,11 @@ export class SingleSelect extends ComponentBase {
         // Preview bar
         this.preview = this.createPreviewBar();
 
-        // Cards container
+        // Cards container, in the suite's field frame with the chrome beside
+        // it.
+        const frame = document.createElement('div');
+        frame.className = 'select-cards-frame';
+        this.applySuiteFrame(frame);
         this.cardsContainer = document.createElement('div');
         this.cardsContainer.className = 'select-cards';
         this.cardsContainer.setAttribute('role', 'radiogroup');
@@ -184,7 +206,9 @@ export class SingleSelect extends ComponentBase {
             'aria-label',
             `Select ${singleCategory.label ?? 'option'}`,
         );
-        this.container.appendChild(this.cardsContainer);
+        frame.appendChild(this.cardsContainer);
+        this.container.appendChild(frame);
+        this.mountSuiteChrome(frame);
 
         // One stable explanation region replaces repeated prose in every
         // option. Its value follows hover/focus, then returns to the selection.
@@ -260,10 +284,24 @@ export class SingleSelect extends ComponentBase {
         });
 
         this.dropdownEl = select;
+        // The select sits in the suite's field frame, which takes the host
+        // input's own look when the select enhances one, with the chrome at
+        // its trailing end.
         const field = document.createElement('div');
         field.className = 'select-dropdown-field';
+        this.applySuiteFrame(field);
         field.appendChild(select);
         this.container.appendChild(field);
+        this.mountSuiteChrome(field, 'overlay');
+        this.stopHostFrame = mirrorHostFrame(
+            field,
+            getMountHost(this.container) ?? this.enhancedInput,
+            {
+                container: this.container,
+                styleInputs: this.options.styleInputs,
+                explicitPalette: () => !!this.options.theme,
+            },
+        );
         this.dropdownSupplement = document.createElement('div');
         this.dropdownSupplement.className = 'select-dropdown-supplement';
         this.container.appendChild(this.dropdownSupplement);
@@ -362,6 +400,8 @@ export class SingleSelect extends ComponentBase {
     }
 
     destroy(): void {
+        this._destroyed = true;
+        this.stopHostFrame();
         this.destroyClearButton();
         this.removeRuleErrors();
         this.pendingText = null;
@@ -380,8 +420,8 @@ export class SingleSelect extends ComponentBase {
                 sameAssertionState(this.assertions[index], assertion),
             )
         ) {
-            // Only a complete state echo leaves the current read active. A
-            // host provenance or metadata edit must invalidate it normally.
+            // Only a complete state echo leaves the current read active. Any
+            // other host edit invalidates it normally.
             this.assertions = [...assertions];
             this.render();
             return;
@@ -801,6 +841,7 @@ export class SingleSelect extends ComponentBase {
                         confidence: 'certain',
                     };
                     delete edited.sourceRule;
+                    this.beginUserEdit();
                     this.assertions = this.assertions.map((current) =>
                         current === assertion ? edited : current,
                     );
@@ -880,7 +921,7 @@ export class SingleSelect extends ComponentBase {
         }
 
         this.selectEntry(entry);
-        announce(this.announcer, `Selected ${entry.name}`);
+        if (this.announcer) announce(this.announcer, `Selected ${entry.name}`);
 
         // Focus the newly selected card
         const cardEl = this.cardsContainer.querySelector(
@@ -899,7 +940,7 @@ export class SingleSelect extends ComponentBase {
         );
         if (current) {
             this.removeAssertion(current.conceptId, current.categoryId);
-            announce(this.announcer, 'Selection cleared');
+            if (this.announcer) announce(this.announcer, 'Selection cleared');
         } else this.render();
     }
 

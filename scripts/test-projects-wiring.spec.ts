@@ -21,7 +21,7 @@ const manifest = JSON.parse(
 ) as { scripts: Record<string, string> };
 
 /** Every `test:<project>` script, excluding the ones that are not projects. */
-const NON_PROJECT_TEST_SCRIPTS = ['test:integration', 'test:verbose'];
+const NON_PROJECT_TEST_SCRIPTS = ['test:verbose'];
 
 describe('npm test reports every project', () => {
     it('drives the aggregate run through the runner, not a chain', () => {

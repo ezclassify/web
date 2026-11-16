@@ -8,6 +8,8 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { EzClassifyUI } from './ezclassify-ui';
 import { VanillaEzClassifyStore } from './store/ezclassify-store';
 import { loadMultiScopeRegression } from '../test-fixtures/load-multi-scope-regression';
+import { asContext } from '../test-fixtures/as-context';
+import { levelState } from './store/page-rollup-harness';
 
 const FORM = `<form id="root">
     <input id="document" value="SCHOOL STAFF" data-ezclassify-controller="marking">
@@ -16,8 +18,8 @@ const FORM = `<form id="root">
     <input id="title" value="(ST) Title" data-ezclassify-controller="marked-input" data-ezclassify-part-of="document">
     <textarea id="body" data-ezclassify-controller="marked-textarea" data-ezclassify-part-of="document">(SS) First.
 (ST) Second.</textarea>
-    <input type="hidden" id="appendix" value="STUDENTS" data-ezclassify-rendered data-ezclassify-part-of="document">
-    <input type="hidden" id="cover" value="SCHOOL STAFF" data-ezclassify-rendered>
+    <input type="hidden" id="appendix" value="STUDENTS" data-ezclassify-marking data-ezclassify-part-of="document">
+    <input type="hidden" id="cover" value="SCHOOL STAFF" data-ezclassify-marking>
     <div data-ezclassify-controller="banner" data-ezclassify-source="document"></div>
     <div data-ezclassify-controller="banner" data-ezclassify-aggregate="document"></div>
 </form>`;
@@ -30,8 +32,8 @@ afterEach(() => {
 });
 
 /** A store that counts the seeds it is sent, and the reads it sends. */
-function countingStore() {
-    const engine = loadMultiScopeRegression();
+async function countingStore() {
+    const engine = await loadMultiScopeRegression();
     let reads = 0;
     const counted = new Proxy(engine, {
         get(target, key, receiver) {
@@ -77,9 +79,9 @@ describe('seeding marking hosts on mount', () => {
     it('seeds each host once on the initial mount', async () => {
         document.body.innerHTML = FORM;
         const root = document.querySelector<HTMLElement>('#root')!;
-        const { engine, store, seeds, reads } = countingStore();
+        const { engine, store, seeds, reads } = await countingStore();
         const isReady = ready(root);
-        ui = new EzClassifyUI(engine, { root, store });
+        ui = new EzClassifyUI(asContext(engine), { root, store });
         await isReady;
         await settle();
         const entries = [
@@ -121,16 +123,16 @@ describe('seeding marking hosts on mount', () => {
     it('seeds a host mounted after the initial sweep once, the same way', async () => {
         document.body.innerHTML = FORM;
         const root = document.querySelector<HTMLElement>('#root')!;
-        const { engine, store, seeds } = countingStore();
+        const { engine, store, seeds } = await countingStore();
         const isReady = ready(root);
-        ui = new EzClassifyUI(engine, { root, store });
+        ui = new EzClassifyUI(asContext(engine), { root, store });
         await isReady;
         await settle();
         seeds.clear();
         root.insertAdjacentHTML(
             'beforeend',
-            `<input type="hidden" id="late-cover" value="STUDENTS" data-ezclassify-rendered>
-            <input type="hidden" id="late-part" value="STUDENTS" data-ezclassify-rendered data-ezclassify-part-of="document">
+            `<input type="hidden" id="late-cover" value="STUDENTS" data-ezclassify-marking>
+            <input type="hidden" id="late-part" value="STUDENTS" data-ezclassify-marking data-ezclassify-part-of="document">
             <input id="late-field" value="STUDENTS" data-ezclassify-controller="marking" data-ezclassify-part-of="document">
             <textarea id="late-body" data-ezclassify-controller="marked-textarea" data-ezclassify-part-of="document">(SS) Late.</textarea>`,
         );
@@ -155,14 +157,14 @@ describe('seeding marking hosts on mount', () => {
     it('rolls a whole up without a part the application registered and never seeded', async () => {
         document.body.innerHTML = FORM;
         const root = document.querySelector<HTMLElement>('#root')!;
-        const { engine, store } = countingStore();
+        const { engine, store } = await countingStore();
         store.setPartOf('never-seeded', 'document');
         const isReady = ready(root);
-        ui = new EzClassifyUI(engine, { root, store });
+        ui = new EzClassifyUI(asContext(engine), { root, store });
         await isReady;
         await settle();
         expect(store.getWholeRollup('document').rendered).not.toBe('');
-        expect(store.getAggregate().rendered).not.toBe('');
+        expect(levelState(store).rendered).not.toBe('');
         const banner = root.querySelector<HTMLElement>(
             '[data-ezclassify-aggregate="document"]',
         )!;

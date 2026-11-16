@@ -10,15 +10,11 @@
  * as exceeding a whole that is not valid, and the report returns once the whole
  * is fixed.
  */
+import { asContext } from '../../test-fixtures/as-context';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { Context } from '@ezclassify/engine';
-import {
-    cedarValleyAccessYaml,
-    cedarValleyGuideYaml,
-    cedarValleySchemeYaml,
-} from '@ezclassify/example-schemes/cedar-valley';
-import * as jsYaml from 'js-yaml';
+import { openContext } from '../../test-fixtures/context-doubles';
 import { EzClassifyUI } from '../ezclassify-ui';
+import { connectDemoContext } from '../../../../test-support/demo-runtime';
 
 const wait = (ms = 80) => new Promise((r) => setTimeout(r, ms));
 
@@ -67,12 +63,10 @@ function partOfSent(args: unknown[]): string | undefined {
  * The cedar-valley engine, with part reads that raise while `failing` is set
  * and reads of `failingText` that raise.
  */
-function engineContext() {
-    const ctx = Context.fromComponents({
-        scheme: jsYaml.load(cedarValleySchemeYaml),
-        guides: [jsYaml.load(cedarValleyGuideYaml)],
-        access: jsYaml.load(cedarValleyAccessYaml),
-    });
+async function engineContext() {
+    const ctx = openContext(
+        await connectDemoContext({ contextId: 'cedar-valley' }),
+    );
     const scheme = ctx.scheme as unknown as {
         process: (...args: unknown[]) => unknown;
     };
@@ -115,10 +109,10 @@ function engineContext() {
 /** Mount `markup` beside the whole `doc`, which holds `whole`. */
 async function mount(markup: string, whole = ''): Promise<void> {
     root.innerHTML = [
-        `<input type="hidden" id="doc" data-ezclassify-rendered value="${whole}" />`,
+        `<input type="hidden" id="doc" data-ezclassify-marking value="${whole}" />`,
         markup,
     ].join('');
-    forms = new EzClassifyUI(engineContext(), { root });
+    forms = new EzClassifyUI(asContext(await engineContext()), { root });
     await wait();
 }
 
@@ -185,14 +179,6 @@ describe.each(PART_FIELDS)('a %s part', (_name, markup) => {
         expect((field as { getRendered(): string }).getRendered()).toBe(
             'RESTRICTED',
         );
-        // The drawer moves off the bottom edge the message now occupies.
-        expect(
-            host
-                .closest('.ez-test-field')!
-                .querySelector('.ez-field-drawer')!
-                .classList.contains('ez-field-drawer--top'),
-        ).toBe(true);
-
         failing = false;
         await publishWhole(VALID_WHOLE);
         expect(report(host)).toEqual({ errors: [], warnings: [] });
@@ -340,7 +326,7 @@ describe('a MarkedTextArea part', () => {
         const ids = component.getEntryIds();
         expect(ids).toHaveLength(2);
         const confidential = (
-            await engineContext().scheme.process('CONFIDENTIAL')
+            await (await engineContext()).scheme.process('CONFIDENTIAL')
         ).assertions;
         await forms!.store.publishAssertions(ids[1]!, confidential);
         await wait(100);
@@ -379,7 +365,7 @@ describe('a MarkedTextArea part', () => {
         };
         const id = component.getEntryIds()[0]!;
         const confidential = (
-            await engineContext().scheme.process('CONFIDENTIAL')
+            await (await engineContext()).scheme.process('CONFIDENTIAL')
         ).assertions;
         failingText = null;
         await forms!.store.publishAssertions(id, confidential);
@@ -436,7 +422,7 @@ describe('a MarkedTextArea part', () => {
 
 describe('a part exceeding its whole', () => {
     const MARKUP = [
-        '<input type="hidden" id="p1" data-ezclassify-rendered data-ezclassify-part-of="doc" />',
+        '<input type="hidden" id="p1" data-ezclassify-marking data-ezclassify-part-of="doc" />',
         '<div class="ez-test-field"><textarea id="part" data-ezclassify-controller="marking" data-ezclassify-bound-to="p1"></textarea></div>',
     ].join('');
 

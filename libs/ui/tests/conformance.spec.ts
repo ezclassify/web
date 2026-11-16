@@ -7,28 +7,34 @@
  * (vendor/spec/plans/v1/) and runs each test case through the forms library
  * integration path:
  *
- *   - fromJSON mode: engine constructed via Context.fromComponents, then wrapped
- *     in EzClassifyUI; methods dispatched through forms.engine.
+ *   - fromJSON mode: the fixture goes to the demo runtime as a draft, the
+ *     connected Context is wrapped in EzClassifyUI, and methods are dispatched
+ *     through forms.engine.
  *
- *   - fromLayers mode: engine constructed via Context.fromComponents with layers, wrapped
- *     in EzClassifyUI; methods dispatched through forms.engine.
+ *   - fromLayers mode: the same, with the fixture's layers in the draft.
  *
  * Skipped plan files (legitimate n/a for the forms UI library):
  *   - check-access.json, access decisions are not a forms-layer concern
  *   - registry.json, the forms library wraps one scheme engine, not a registry
  *
- * This proves the forms library correctly wraps SchemeEngine without mutating
+ * This proves the forms library correctly wraps the scheme operations without mutating
  * it and that engine calls through the forms integration path produce conformant
- * results identical to the Node reference runner.
+ * results identical to the Node reference runner. The runtime's answers replay
+ * from this spec's recordings (test-support/demo-runtime.ts).
  */
 
 import { readFileSync, readdirSync } from 'node:fs';
 import { resolve, dirname, basename } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, it, expect } from 'vitest';
-import { Context, GuideEngine } from '@ezclassify/engine';
-import type { LocalSchemeEngineAdapter } from '@ezclassify/types';
+import type { EzClassifyClient } from '@ezclassify/rest-client';
+import type {
+    GuideRuleSelection,
+    RemoteContextSchemeEngineAdapter,
+} from '@ezclassify/types';
 import { EzClassifyUI } from '@ezclassify/ui';
+import { asContext } from '../test-fixtures/as-context';
+import { connectDemoContext } from '../../../test-support/demo-runtime';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const specRoot = resolve(__dirname, '../../../vendor/spec');
@@ -36,8 +42,8 @@ const plansDir = resolve(specRoot, 'plans/v1');
 const fixturesDir = resolve(specRoot, 'fixtures/v1');
 
 /**
- * Plan files that genuinely do not apply to the forms UI library. Server-slice
- * plans (`slice: "server"`) are skipped separately.
+ * Plan files that genuinely do not apply to the forms UI library. Only
+ * engine-slice plans run here; the slice filter below skips the rest.
  */
 const SKIPPED_PLANS = new Set(['check-access.json', 'registry.json']);
 
@@ -95,13 +101,13 @@ function loadFixture(name: string): unknown {
  * div is mounted in jsdom so DOM ops inside EzClassifyUI succeed. Returns both
  * the forms instance and the root div for cleanup.
  */
-function makeForms(engine: LocalSchemeEngineAdapter): {
+function makeForms(engine: RemoteContextSchemeEngineAdapter): {
     forms: EzClassifyUI;
     root: HTMLDivElement;
 } {
     const root = document.createElement('div');
     document.body.appendChild(root);
-    const forms = new EzClassifyUI(engine, { root });
+    const forms = new EzClassifyUI(asContext(engine), { root });
     return { forms, root };
 }
 
@@ -112,59 +118,58 @@ function makeForms(engine: LocalSchemeEngineAdapter): {
 /**
  * Dispatch a plan method through the forms integration path.
  *
- * Construction: fromJSON, Context.fromComponents({ scheme: fixture }) wrapped
- * in EzClassifyUI fromLayers, Context.fromComponents({ scheme, layers })
- * wrapped in EzClassifyUI
+ * Construction: fromJSON sends `{ scheme: fixture }` through the draft door,
+ * fromLayers sends `{ scheme, layers }`, and either connected Context is
+ * wrapped in EzClassifyUI.
  *
- * Dispatch: methods called on forms.engine (the SchemeEngine the forms instance
- * holds). This verifies the forms initialization path does not corrupt or
- * replace the engine.
+ * Dispatch: methods called on forms.engine (the scheme operations the forms
+ * instance holds). This verifies the forms initialization path does not corrupt
+ * or replace the engine.
  */
-function runViaForms(
+async function runViaForms(
     fixture: string | string[],
     mode: string,
     method: string,
     args: unknown[],
     guideFixture?: string,
-): unknown {
-    let engine: LocalSchemeEngineAdapter;
+): Promise<unknown> {
+    // A guide plan entry composes its guide with the scheme, the way every
+    // guide reaches a caller: through a Context.
+    const guides = guideFixture ? [loadFixture(guideFixture)] : [];
+    let context: EzClassifyClient;
     if (mode === 'fromLayers') {
         const layerNames = Array.isArray(fixture) ? fixture : [fixture];
         const [base, ...layers] = layerNames.map(loadFixture);
-        engine = Context.fromComponents({ scheme: base, layers })
-            .scheme as LocalSchemeEngineAdapter;
+        context = await connectDemoContext({
+            draft: { scheme: base, layers, guides },
+        });
     } else {
         const profileData = loadFixture(
             Array.isArray(fixture) ? fixture[0] : fixture,
         );
-        engine = Context.fromComponents({ scheme: profileData })
-            .scheme as LocalSchemeEngineAdapter;
+        context = await connectDemoContext({
+            draft: { scheme: profileData, guides },
+        });
     }
+    const engine = context.scheme as RemoteContextSchemeEngineAdapter;
+    const guide = () => {
+        if (!guideFixture || !context.guide)
+            throw new Error(`${method} requires guideFixture in plan entry`);
+        return context.guide;
+    };
 
     if (method === 'evaluateGuide') {
-        if (!guideFixture)
-            throw new Error(
-                'evaluateGuide requires guideFixture in plan entry',
-            );
-        return GuideEngine.fromJSON(loadFixture(guideFixture)).evaluate(
+        const loaded = guide();
+        return loaded.evaluate(
+            loaded.listGuideMeta()[0].id,
             args[0] as string[],
-            engine,
         );
     }
     if (method === 'evaluateMany') {
-        if (!guideFixture)
-            throw new Error('evaluateMany requires guideFixture in plan entry');
-        return GuideEngine.fromJSON(loadFixture(guideFixture)).evaluateMany(
-            args[0] as string[],
-            engine,
-        );
+        return guide().evaluateMany(args[0] as GuideRuleSelection[]);
     }
     if (method === 'guideScan') {
-        if (!guideFixture)
-            throw new Error('guideScan requires guideFixture in plan entry');
-        const hits = GuideEngine.fromJSON(loadFixture(guideFixture)).scan(
-            args[0] as string,
-        );
+        const hits = await guide().scan(args[0] as string);
         return {
             count: hits.length,
             firstRuleId:
@@ -189,8 +194,11 @@ function runViaForms(
     const { forms, root } = makeForms(engine);
 
     try {
-        return dispatchOnEngine(
-            forms.engine as LocalSchemeEngineAdapter,
+        // The scheme view the runtime marks with, read through its internal
+        // accessor: the case runs on what the forms instance holds.
+        return await dispatchOnEngine(
+            (forms as unknown as { engine: RemoteContextSchemeEngineAdapter })
+                .engine,
             method,
             args,
         );
@@ -200,12 +208,15 @@ function runViaForms(
     }
 }
 
-/** Dispatch a method call directly on a LocalSchemeEngineAdapter instance. */
-function dispatchOnEngine(
-    engine: LocalSchemeEngineAdapter,
+/**
+ * Dispatch a method call directly on a RemoteContextSchemeEngineAdapter
+ * instance.
+ */
+async function dispatchOnEngine(
+    engine: RemoteContextSchemeEngineAdapter,
     method: string,
     args: unknown[],
-): unknown {
+): Promise<unknown> {
     switch (method) {
         case 'process':
             return (engine.process as (...a: unknown[]) => unknown)(...args);
@@ -219,15 +230,17 @@ function dispatchOnEngine(
             return (engine.suggest as (...a: unknown[]) => unknown)(...args);
         case 'scan': {
             // The same projection the reference runner records: the count and
-            // the first region's position next to the regions themselves.
-            const { results: regions } = (
-                engine.scan as (...a: unknown[]) => {
+            // the first region's position next to the regions themselves, and
+            // the wrapped marks the scan could not read.
+            const { results: regions, unread } = await (
+                engine.scan as (...a: unknown[]) => Promise<{
                     results: Array<{
                         marking?: string;
                         start?: number;
                         result?: { rendered?: string };
                     }>;
-                }
+                    unread: unknown[];
+                }>
             )(...args);
             return {
                 count: regions.length,
@@ -235,16 +248,11 @@ function dispatchOnEngine(
                 firstStart: regions[0]?.start ?? null,
                 firstRendered: regions[0]?.result?.rendered ?? null,
                 results: regions,
+                unread,
             };
         }
         case 'validate':
             return (engine.validate as (...a: unknown[]) => unknown)(...args);
-        case 'normalize':
-            return {
-                result: (engine.normalize as (...a: unknown[]) => unknown)(
-                    ...args,
-                ),
-            };
         case 'render': {
             // `render` writes and does not read, so it keeps one named format
             // argument; a recorded case that passes `{ format }` names it.
@@ -256,8 +264,12 @@ function dispatchOnEngine(
                 typeof second === 'string' ? second : second?.format;
             return {
                 result: (
-                    engine.render as (...a: unknown[]) => { rendered: string }
-                )(assertions, formatId).rendered,
+                    await (
+                        engine.render as (
+                            ...a: unknown[]
+                        ) => Promise<{ rendered: string }>
+                    )(assertions, formatId)
+                ).rendered,
             };
         }
         case 'diff':
@@ -295,16 +307,18 @@ for (const planFile of planFiles) {
     const planDoc: { slice?: string; cases: PlanCase[] } = JSON.parse(
         readFileSync(resolve(plansDir, planFile), 'utf8'),
     );
-    // Server-slice plans (ctx* methods) run against a live REST deployment,
-    // never against the in-process engine here.
-    if (planDoc.slice === 'server') continue;
+    // Only engine-slice plans go through the forms library. Server-slice plans
+    // (ctx* methods) need a live REST deployment, and adapter-slice plans hold
+    // answers an adapter gives in process with no wire operation behind them;
+    // tests/integration/scheme-adapter-over-rest.spec.ts checks those.
+    if (planDoc.slice !== 'engine') continue;
     const capability = basename(planFile, '.json');
 
     describe(`forms-conformance / ${capability}`, () => {
         for (const tc of planDoc.cases) {
-            it(tc.name, () => {
+            it(tc.name, async () => {
                 const mode = tc.mode ?? 'fromJSON';
-                const actual = runViaForms(
+                const actual = await runViaForms(
                     tc.fixture,
                     mode,
                     tc.method,

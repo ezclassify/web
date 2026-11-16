@@ -50,13 +50,20 @@ jobs:
           NPMRC
           echo "NPM_CONFIG_USERCONFIG=$RUNNER_TEMP/ci-npmrc" >> "$GITHUB_ENV"
 
+      - name: Test sources import no engine
+        # Cheapest gate, so it runs first. Reads source text only and needs no
+        # install: no spec, fixture or test helper may import the engine or
+        # its WebAssembly build, because a clean clone cannot install them.
+        # Engine behavior arrives as recordings.
+        run: npm run check:spec-imports
+
       - name: Public dependency closure
         # First gate, before anything is installed, because this is the one
         # failure an outside contributor meets before every other check gets a
         # turn. It reads the committed manifests and fails if the workspace
         # declares a package that is not published publicly, which is how the
-        # engine and the example schemes would come back: quietly, as somebody's
-        # devDependency, breaking `npm install` for every fork.
+        # engine would come back: quietly, as somebody's devDependency, breaking
+        # `npm install` for every fork.
         run: npm run check:public-dependencies
 
       - name: Install dependencies
@@ -147,11 +154,12 @@ jobs:
         run: git diff --exit-code && test -z "$(git status --porcelain)"
 
       - name: Run tests
-        # The public lane. Specs that need the engine, the example schemes, or
-        # the store conformance suite are excluded by
-        # vitest.private-runtime.ts, which annotates the run and writes a job
-        # summary block naming every one of them, so what this check does not
-        # cover is told to a reviewer rather than left to be discovered.
+        # Every spec, the integration tier included. Engine answers replay from
+        # the committed demo runtime recordings, so nothing is started and
+        # nothing is skipped. A request with no recording fails its spec file,
+        # and a changed request or fixture is a new request, because the key
+        # is the request. Whether a recorded answer is still what the engine
+        # says is the maintainer lane's check, recordings.yml.
         run: npm test
 
       - name: Typecheck
@@ -196,7 +204,7 @@ jobs:
           node-version: '24'
       # This native inventory reads committed manifests, not an installed tree.
       - name: Generate SBOM
-        run: node scripts/generate-sbom.mjs
+        run: npm run sbom
       - name: Upload SBOM artifact
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:

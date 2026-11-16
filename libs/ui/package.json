@@ -24,6 +24,10 @@
             "types": "./dist/lib/index.d.ts",
             "import": "./dist/lib/index.mjs",
             "require": "./dist/lib/index.cjs"
+        },
+        "./devtools": {
+            "types": "./dist/lib/devtools/index.d.ts",
+            "import": "./dist/lib/devtools/index.mjs"
         }
     },
     "files": [

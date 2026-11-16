@@ -6,14 +6,18 @@
  * proprietary in-process engine.
  */
 
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, expectTypeOf, it, vi } from 'vitest';
 import type {
     ContextAdapter,
-    RemoteContextSchemeEngineAdapter,
+    ContextSchemeEngineAdapter,
+    LocalContextSchemeEngineAdapter,
     SchemePublicView,
     ValidateResult,
 } from '@ezclassify/types';
-import { ReadOnlyComponentBase } from './component-base-readonly';
+import {
+    ReadOnlyComponentBase,
+    type ComponentSchemeEngine,
+} from './component-base-readonly';
 import { mockValidateResult } from '../engine-result-mock';
 
 class BoundComponent extends ReadOnlyComponentBase {
@@ -55,13 +59,12 @@ function context(validate: ReturnType<typeof vi.fn>): ContextAdapter {
         validate,
         render: vi.fn(async () => ''),
         suggest: vi.fn(async () => ({ suggestions: [] })),
-    } as unknown as RemoteContextSchemeEngineAdapter;
+    } as unknown as ContextSchemeEngineAdapter;
     return {
         connected: true,
         scheme: adapter,
         describeSchemes: async () => [],
         audit: vi.fn(),
-        assessDocumentAccess: vi.fn(),
         checkContextAccess: vi.fn(),
         accessRequirements: vi.fn(),
         translate: vi.fn(),
@@ -70,6 +73,26 @@ function context(validate: ReturnType<typeof vi.fn>): ContextAdapter {
 }
 
 describe('Context-bound scheme operations', () => {
+    it('accepts the canonical local Context query contract without mutable lifecycle', () => {
+        expectTypeOf<LocalContextSchemeEngineAdapter>().toMatchTypeOf<ComponentSchemeEngine>();
+    });
+
+    it('mounts a selected synchronous bound scheme view without a Context wrapper', async () => {
+        const validate = vi.fn((): ValidateResult =>
+            mockValidateResult({ rendered: 'A' }),
+        );
+        const selectedView = context(validate).scheme;
+        const component = new BoundComponent();
+        await component.init(document.createElement('div'), selectedView, {
+            initialValue: 'A',
+        });
+        expect(validate).toHaveBeenCalledOnce();
+        expect(validate).toHaveBeenCalledWith('A', {
+            outputFormat: 'default',
+            context: undefined,
+        });
+    });
+
     it('reads through the bound operation without a scheme selector', async () => {
         const validate = vi.fn(async (): Promise<ValidateResult> =>
             mockValidateResult({ rendered: 'A' }),
@@ -88,15 +111,23 @@ describe('Context-bound scheme operations', () => {
         });
     });
 
-    it('rejects an attempt to select a different scheme', async () => {
-        const validate = vi.fn();
+    it('marks with the view it was given whatever scheme markup sits on its container', async () => {
+        const validate = vi.fn(async (): Promise<ValidateResult> =>
+            mockValidateResult({ rendered: 'A' }),
+        );
         const container = document.createElement('div');
+        // Which scheme markup names is the runtime's to read before mounting;
+        // a component mounted directly marks in the view it is handed.
         container.dataset.ezclassifyScheme = 'secondary';
         const component = new BoundComponent();
 
-        await expect(
-            component.init(container, context(validate)),
-        ).rejects.toThrow(/Context-bound scheme operations target 'primary'/);
-        expect(validate).not.toHaveBeenCalled();
+        await component.init(container, context(validate), {
+            initialValue: 'A',
+        });
+
+        expect(validate).toHaveBeenCalledWith('A', {
+            outputFormat: 'default',
+            context: undefined,
+        });
     });
 });

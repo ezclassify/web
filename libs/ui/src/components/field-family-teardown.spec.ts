@@ -8,12 +8,14 @@
  * a future timer/observer/listener leak in any field component shows up here as
  * a failing `expect` or an actual timeout.
  */
+import { asContext } from '../../test-fixtures/as-context';
 import { describe, it, expect, vi } from 'vitest';
 import { EzClassifyUI } from '../ezclassify-ui';
-import { Context } from '@ezclassify/engine';
+import { openContext } from '../../test-fixtures/context-doubles';
 import type { LocalSchemeEngineAdapter } from '@ezclassify/types';
+import { connectDemoContext } from '../../../../test-support/demo-runtime';
 
-function createTestEngine(): LocalSchemeEngineAdapter {
+async function createTestEngine(): Promise<LocalSchemeEngineAdapter> {
     const categories = [
         {
             id: 'level',
@@ -74,39 +76,40 @@ function createTestEngine(): LocalSchemeEngineAdapter {
             rank: 1,
         },
     ];
-    return Context.fromComponents({
-        scheme: {
-            scheme: {
-                id: 'field-family-teardown-test',
-                version: '1.0.0',
-                name: 'Field Family Teardown Test',
-                data: {
-                    concepts: { inline: concepts },
-                    categories,
-                },
-                rules: [],
-                parse: {
-                    case_sensitive: false,
-                    strip_whitespace: true,
-                },
-                render: {
-                    default: 'default',
-                    formats: [
-                        {
-                            id: 'default',
-                            surface: 'marking',
-                            mode: 'inline',
-                            separator: '//',
-                            fields: [
-                                { category: 'level', separator: '/' },
-                                { category: 'caveat', separator: '/' },
+    return openContext(
+        await connectDemoContext({
+            draft: {
+                scheme: {
+                    scheme: {
+                        id: 'field-family-teardown-test',
+                        version: '1.0.0',
+                        name: 'Field Family Teardown Test',
+                        description: 'Field Family Teardown Test test fixture.',
+                        data: {
+                            concepts: concepts,
+                            categories,
+                        },
+                        rules: [],
+                        render: {
+                            default: 'default',
+                            formats: [
+                                {
+                                    id: 'default',
+                                    surface: 'marking',
+                                    mode: 'inline',
+                                    separator: '//',
+                                    fields: [
+                                        { category: 'level', separator: '/' },
+                                        { category: 'caveat', separator: '/' },
+                                    ],
+                                },
                             ],
                         },
-                    ],
+                    },
                 },
             },
-        },
-    }).scheme as unknown as LocalSchemeEngineAdapter;
+        }),
+    ).scheme as unknown as LocalSchemeEngineAdapter;
 }
 
 /**
@@ -300,12 +303,15 @@ describe('field family: repeated mount/destroy leaves no teardown residue', () =
                 <textarea id="mta-${i}" data-ezclassify-controller="marked-textarea" data-ezclassify-format="default"></textarea>
                 <textarea id="mf-${i}" data-ezclassify-controller="marking" data-ezclassify-format="default"></textarea>
             `;
-            const forms = new EzClassifyUI(createTestEngine() as never, {
-                root,
-                favorites: {
-                    load: () => [{ marking: 'SECRET/NOFORN' }],
+            const forms = new EzClassifyUI(
+                asContext((await createTestEngine()) as never),
+                {
+                    root,
+                    favorites: {
+                        load: () => [{ marking: 'SECRET/NOFORN' }],
+                    },
                 },
-            });
+            );
             // Let async init (suggest/process round trips) settle before tearing
             // down, so destroy() races nothing still in flight.
             await new Promise((resolve) => setTimeout(resolve, 30));
@@ -359,7 +365,12 @@ describe('field family: repeated mount/destroy leaves no teardown residue', () =
                 <textarea id="churn-mf-${i}" data-ezclassify-controller="marking" data-ezclassify-format="default"></textarea>
             `;
             const forms = new EzClassifyUI(
-                answersLate(createTestEngine(), ENGINE_LATENCY_MS) as never,
+                asContext(
+                    answersLate(
+                        await createTestEngine(),
+                        ENGINE_LATENCY_MS,
+                    ) as never,
+                ),
                 {
                     root,
                     favorites: {

@@ -71,6 +71,15 @@
     display: none;
 }
 
+.ez-guidebook__guide-marking {
+    font-weight: 700;
+    font-size: 0.75rem;
+    letter-spacing: 0.02em;
+    color: var(--ez-color-text, #111);
+    padding: 0.25rem 1rem;
+    overflow-wrap: anywhere;
+}
+
 .ez-guidebook__guide-header {
     display: flex;
     align-items: center;

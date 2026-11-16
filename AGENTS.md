@@ -24,10 +24,11 @@ globbing a directory, and that list is the whole install closure:
 
 Everything in the closure installs from a public registry. `npm run
 check:public-dependencies` enforces that by reading the committed manifests: no
-package in the closure may declare `@ezclassify/engine`,
-`@ezclassify/example-schemes`, `@ezclassify/testing-utils`, or anything else
-that is not published publicly. If a spec needs one of those, it belongs to the
-private lane in [`DEVELOPMENT.md`](DEVELOPMENT.md), not in a dependency field.
+package in the closure may declare `@ezclassify/engine`, or anything else
+that is not published publicly. A spec that needs engine answers gets them from
+the demo runtime's committed recordings through
+[`test-support/demo-runtime.ts`](test-support/demo-runtime.ts), never from a package; see "Engine behavior
+in tests" in [`DEVELOPMENT.md`](DEVELOPMENT.md).
 
 The engine in particular is never a dependency of anything here, in any field,
 including a dev one. It is embedded in EzClassify's own applications and is not
@@ -35,20 +36,23 @@ published as an importable library, so declaring it would break `npm install`
 for every outside contributor and would advertise a package nobody can get.
 
 The REST client is not here either. `@ezclassify/rest-client` ships from its own
-repository, [ezclassify/client-js](https://github.com/ezclassify/client-js), alongside the Java, .NET, Python and Go
+repository, [ezclassify/sdk-js](https://github.com/ezclassify/sdk-js), alongside the Java, .NET, Python and Go
 clients. This repository consumes it as an ordinary published dependency,
 which is what an integrator does.
 
 ## Outside the closure
 
 These directories are in the repository but are not workspaces, and a clean
-clone does not install them. Each installs and runs on its own, in the private
-lane.
+clone does not install them. Each installs and runs on its own.
 
-- [`libs/ui-tools/`](libs/ui-tools/) (`@ezclassify/ui-tools`): Playwright test tooling. It has no
-  consumer in this repository and it depends on `@ezclassify/testing-utils`,
-  which is not on a public registry, so it can never go to npmjs.org and it can
-  never join the closure above. Do not import it and do not depend on it here.
+- [`libs/ui-tools/`](libs/ui-tools/) (`@ezclassify/ui-tools`): first-party test tooling, Playwright
+  helpers plus HTTP record and replay. Do not depend on it here. The one
+  exception is its record and replay core
+  ([`libs/ui-tools/src/record-replay/`](libs/ui-tools/src/record-replay/)), which uses Node built-ins only;
+  [`test-support/demo-runtime.ts`](test-support/demo-runtime.ts) imports that source directly, and the
+  integration tier runs its specs. Keep what that directory's `index.ts`
+  exports free of any import but Node built-ins; the Playwright route
+  transport sits beside it and is exported from the package root only.
 
     Its consumers are first-party repositories that install it like any other
     dependency, so it does publish: `publish-mirror.yml` builds it in its own
@@ -59,7 +63,7 @@ lane.
     Keep that flag in the maintained manifest.
 
     It installs and tests on its own, from this directory. The root vitest
-    config excludes its specs because they resolve against
+    config excludes its Playwright specs because they resolve against
     `libs/ui-tools/node_modules`, which a clean clone does not have.
 
     A new package under [`libs/`](libs/) or [`integrations/`](integrations/) has to be published
@@ -78,13 +82,18 @@ The README examples follow their own rules:
   [`scripts/readme-examples.spec.ts`](scripts/readme-examples.spec.ts) fails when a README block and its example
   file differ, so change both together. Each example runs with its CLI's own
   dev command (`npm run dev` for Vite, `npm start` for `ng serve`) and connects
-  to `http://127.0.0.1:4010` unless `VITE_EZCLASSIFY_URL` (Vite) or
+  to `http://localhost:3000` unless `VITE_EZCLASSIFY_URL` (Vite) or
   `src/environments/environment.ts` (Angular) says otherwise. Page styles stay
   in `src/styles.css`: page layout plus one minimal style for native `input`,
   `textarea` and `button`, the edge, padding and font the controls take from
   the field they enhance, and a focus ring like the library's. Keep that file's
   field rules identical across the four examples and never style anything
   inside a control.
+
+    The README path is the free developer runtime, started with
+    `docker run --rm -p 3000:8080 -e EZCLASSIFY_DEMO_ALLOWED_ORIGINS=<origin> ghcr.io/ezclassify/developer-runtime`,
+    where `<origin>` is the example's own. The e2e lane below does not use it:
+    its replay server is test tooling that stands in for the runtime.
 
     They carry NO engine (not as a dependency, not in a bundle), and
     `npm run check:consumer-engine-free` enforces it. That gate runs in CI and
@@ -95,7 +104,8 @@ The browser lanes live in [`e2e/`](e2e/), one Playwright configuration whose lan
 environment selects ([`e2e/lanes.mjs`](e2e/lanes.mjs)):
 
 - Default: [`e2e/examples/document-form.spec.ts`](e2e/examples/document-form.spec.ts) drives all four examples
-  through the README path against the Cedar Valley replay. Playwright starts
+  through the README path against the Cedar Valley replay, which stands in for
+  the developer runtime so the lane needs no Docker. Playwright starts
   one `@ezclassify/conformance-server` per example (the server permits one
   browser origin) and each example's own dev server. Any refused request or
   console error fails the run. `npm run e2e` runs it.

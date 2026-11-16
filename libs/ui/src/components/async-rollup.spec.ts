@@ -4,6 +4,7 @@
  * aggregate call. The async path must produce the same rollup as the sync one.
  */
 
+import { asContext } from '../../test-fixtures/as-context';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import type {
     CategoryView,
@@ -12,6 +13,7 @@ import type {
 } from '@ezclassify/types';
 import { EzClassifyUI } from '../ezclassify-ui';
 import { createAsyncMockEngine } from './async-engine-mock';
+import { levelState } from '../store/page-rollup-harness';
 
 function wait(ms = 50) {
     return new Promise((r) => setTimeout(r, ms));
@@ -109,12 +111,10 @@ describe('Async rollup integration', () => {
         formsRoot.innerHTML = `
       <input type="text" id="field1" data-ezclassify-controller="tags" data-ezclassify-format="default" value="A">
       <input type="text" id="field2" data-ezclassify-controller="tags" data-ezclassify-format="default" value="B">
-      <input type="hidden" id="test-rollup">
+      <input type="hidden" id="test-rollup" data-ezclassify-aggregate>
     `;
 
-        new EzClassifyUI(engine as never, {
-            rollupId: 'test-rollup',
-        });
+        new EzClassifyUI(asContext(engine as never));
 
         // Wait for async init + debounced rollup to settle.
         await waitUntil(
@@ -138,12 +138,10 @@ describe('Async rollup integration', () => {
 
         formsRoot.innerHTML = `
       <input type="text" id="field1" data-ezclassify-controller="tags" data-ezclassify-format="default" value="A">
-      <input type="hidden" id="test-rollup">
+      <input type="hidden" id="test-rollup" data-ezclassify-aggregate>
     `;
 
-        new EzClassifyUI(engine as never, {
-            rollupId: 'test-rollup',
-        });
+        new EzClassifyUI(asContext(engine as never));
         await waitUntil(
             () =>
                 ((document.getElementById('field1') as HTMLInputElement)?.value
@@ -164,16 +162,18 @@ describe('Async rollup integration', () => {
         formsRoot.innerHTML = `
       <input type="text" id="f1" data-ezclassify-controller="tags" data-ezclassify-format="default" value="A">
       <input type="text" id="f2" data-ezclassify-controller="tags" data-ezclassify-format="default" value="B">
-      <input type="hidden" id="test-rollup">
+      <input type="hidden" id="test-rollup" data-ezclassify-aggregate>
     `;
 
-        new EzClassifyUI(engine as never, {
-            rollupId: 'test-rollup',
-        });
-        await waitUntil(() => engine._callCount('aggregate') > 0);
-
-        // Aggregate should have been called with both field values
-        expect(engine._callCount('aggregate')).toBeGreaterThan(0);
+        const forms = new EzClassifyUI(asContext(engine as never));
+        const conceptsOnPage = () =>
+            levelState(forms.store)
+                .assertions.filter((a) => a.confidence !== 'inferred')
+                .map((a) => a.conceptId)
+                .sort();
+        // The page rollup reads both fields' facts.
+        await waitUntil(() => conceptsOnPage().length === 2);
+        expect(conceptsOnPage()).toEqual(['A', 'B']);
     });
 
     it('data-ezclassify-no-rollup fields excluded from aggregate', async () => {
@@ -185,25 +185,17 @@ describe('Async rollup integration', () => {
         formsRoot.innerHTML = `
       <input type="text" id="f1" data-ezclassify-controller="tags" data-ezclassify-format="default" value="A" data-ezclassify-no-rollup>
       <input type="text" id="f2" data-ezclassify-controller="tags" data-ezclassify-format="default" value="B">
-      <input type="hidden" id="test-rollup">
+      <input type="hidden" id="test-rollup" data-ezclassify-aggregate>
     `;
 
-        new EzClassifyUI(engine as never, {
-            rollupId: 'test-rollup',
-        });
-        await waitUntil(() =>
-            engine._calls.some((c) => c.method === 'aggregate'),
-        );
-
-        // Check that aggregate was called, it should only contain B
-        const aggCalls = engine._calls.filter((c) => c.method === 'aggregate');
-        if (aggCalls.length > 0) {
-            const lastCall = aggCalls[aggCalls.length - 1];
-            const inputs = lastCall.args[0] as string[];
-            // A (with data-ezclassify-no-rollup) should not be in the inputs
-            expect(inputs.some((v) => v === 'A' || v.includes('A'))).toBe(
-                false,
-            );
-        }
+        const forms = new EzClassifyUI(asContext(engine as never));
+        const conceptsOnPage = () =>
+            levelState(forms.store)
+                .assertions.filter((a) => a.confidence !== 'inferred')
+                .map((a) => a.conceptId);
+        // Only B reaches the page: A is a live control kept out of every level.
+        await waitUntil(() => conceptsOnPage().length > 0);
+        await wait(100);
+        expect(conceptsOnPage()).toEqual(['B']);
     });
 });

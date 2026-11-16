@@ -1,11 +1,16 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { flushRollupNow, updateRollup } from './rollup';
-import type { FormsContext } from './types';
+import {
+    flushRollupNow,
+    setOutputsIncomplete,
+    updateRollup,
+    type RollupEventDetail,
+} from './rollup';
+import type { BucketAggregate, BucketScheme, FormsContext } from './types';
 import type { ComponentInstance } from '../components/component-base';
-import type { ContributionDescriptor } from './rollup';
 import type { Assertion } from '@ezclassify/types';
-import { setMountHost } from '../mount-host-registry';
 import { mockRenderFormats } from '../render-format-layout-mock';
+import { SOLE_BUCKET, type BucketKey } from '../store/store-shared';
+import { t } from '../i18n';
 
 // Mock forms/dom
 vi.mock('./dom', () => ({
@@ -68,16 +73,6 @@ function createMockEngine(overrides: Record<string, unknown> = {}) {
             rendered: values.join('|'),
             valid: true,
         })),
-        uncoveredAssertions: vi.fn(
-            (candidates: Assertion[], parent: Assertion[]) => {
-                const parentKeys = new Set(
-                    parent.map((a) => `${a.conceptId}::${a.categoryId}`),
-                );
-                return candidates.filter(
-                    (a) => !parentKeys.has(`${a.conceptId}::${a.categoryId}`),
-                );
-            },
-        ),
         checkCoverage: vi.fn(async (children: string[], parent: string) => {
             if (!parent || !Array.isArray(children) || children.length === 0) {
                 return {
@@ -120,13 +115,59 @@ function createMockEngine(overrides: Record<string, unknown> = {}) {
     return engine as unknown as FormsContext['engine'];
 }
 
-function createMockCtx(overrides: Partial<FormsContext> = {}): FormsContext {
+/** The scheme operations of `bucket`, answered by the mock engine. */
+function bucketScheme(
+    engine: FormsContext['engine'],
+    bucket: BucketKey = SOLE_BUCKET,
+): BucketScheme {
+    const e = engine as unknown as Record<string, (...args: unknown[]) => any>;
     return {
-        engine: createMockEngine(),
+        bucket,
+        adapter: engine,
+        process: (input, options) => e.process(input, options),
+        validate: (input, options) => e.process(input, options),
+        checkCoverage: (children, parent, options) =>
+            e.checkCoverage(children, parent, options),
+        getSchemeMeta: () => e.getSchemeMeta(),
+    };
+}
+
+/** A store's level rollups, by level id (`null` for the page). */
+type Levels = Map<string | null, Map<BucketKey, BucketAggregate>>;
+
+function aggregate(rendered: string, stale?: boolean): BucketAggregate {
+    return {
+        rendered,
+        assertions: rendered
+            ? [
+                  {
+                      conceptId: rendered,
+                      categoryId: 'level',
+                      confidence: 'certain',
+                      source: 'parse',
+                  } as Assertion,
+              ]
+            : [],
+        ...(stale ? { stale } : {}),
+    };
+}
+
+function createMockCtx(
+    overrides: Partial<FormsContext> = {},
+    levels: Levels = new Map(),
+): FormsContext {
+    const engine = createMockEngine();
+    return {
+        engine,
+        schemeOf: () => bucketScheme(engine),
+        bucketsNamed: (contextKey: string | null, scheme: string | null) =>
+            contextKey === null && scheme === null ? [SOLE_BUCKET] : [],
+        aggregateOf: vi.fn((id: string | null) => levels.get(id) ?? new Map()),
+        destroyed: false,
         root: document.body,
         fields: [],
-        rollupField: null,
         defaultFormat: 'default',
+        defaultPartFormat: 'default',
         domObserver: null,
         autocompleters: new Map(),
         lastValidated: new Map(),
@@ -134,9 +175,11 @@ function createMockCtx(overrides: Partial<FormsContext> = {}): FormsContext {
         tooltipEl: null,
         settingValue: false,
         colorMap: {},
-        selectorAttr: 'ezclassify',
+        initializing: false,
+        mountInstanceId: 'instance',
         mounted: new Map(),
         partOfMap: new Map(),
+        aggregates: new Map(),
         ...overrides,
     } as FormsContext;
 }
@@ -152,259 +195,369 @@ function createMockComponent(rendered: string): ComponentInstance {
     };
 }
 
+/** A host-placed output: a hidden input showing a level. */
+function sink(
+    level = '',
+    attrs: Record<string, string> = {},
+): HTMLInputElement {
+    const el = document.createElement('input');
+    el.type = 'hidden';
+    el.setAttribute('data-ezclassify-aggregate', level);
+    for (const [name, value] of Object.entries(attrs))
+        el.setAttribute(`data-ezclassify-${name}`, value);
+    document.body.appendChild(el);
+    return el;
+}
+
+function rollupEvents(target: EventTarget): RollupEventDetail[] {
+    const seen: RollupEventDetail[] = [];
+    target.addEventListener('ezclassify:rollup', (e) =>
+        seen.push((e as CustomEvent<RollupEventDetail>).detail),
+    );
+    return seen;
+}
+
+describe('rollup outputs', () => {
+    beforeEach(() => {
+        document.body.innerHTML = '';
+    });
+
+    it("fills a bare hidden sink with the store's page rollup and announces the change", async () => {
+        const out = sink();
+        const changes: string[] = [];
+        out.addEventListener('change', () => changes.push(out.value));
+        const ctx = createMockCtx(
+            {},
+            new Map([[null, new Map([[SOLE_BUCKET, aggregate('SECRET')]])]]),
+        );
+
+        await updateRollup(ctx);
+        await updateRollup(ctx);
+
+        expect(out.value).toBe('SECRET');
+        expect(changes).toEqual(['SECRET']);
+    });
+
+    it('lowers a sink when the rollup it shows goes down, never reading its own value back', async () => {
+        const out = sink();
+        const levels: Levels = new Map([
+            [null, new Map([[SOLE_BUCKET, aggregate('SECRET')]])],
+        ]);
+        // Bound the way a controller-less input is bound: among the fields.
+        const ctx = createMockCtx({ fields: [out] }, levels);
+        await updateRollup(ctx);
+        expect(out.value).toBe('SECRET');
+
+        levels.set(null, new Map([[SOLE_BUCKET, aggregate('UNCLASSIFIED')]]));
+        await updateRollup(ctx);
+
+        expect(out.value).toBe('UNCLASSIFIED');
+        expect(ctx.engine.aggregate).not.toHaveBeenCalled();
+    });
+
+    it('fills a sink named for a whole with its parts rollup, and one named for a collection with its members', async () => {
+        const whole = document.createElement('input');
+        whole.id = 'memo';
+        document.body.appendChild(whole);
+        const part = document.createElement('input');
+        document.body.appendChild(part);
+        const folder = document.createElement('section');
+        folder.setAttribute('data-ezclassify-collection', 'folderA');
+        document.body.appendChild(folder);
+        const wholeSink = sink('memo');
+        const folderSink = sink('folderA');
+        const ctx = createMockCtx(
+            { fields: [whole, part], partOfMap: new Map([[part, 'memo']]) },
+            new Map([
+                ['memo', new Map([[SOLE_BUCKET, aggregate('CONFIDENTIAL')]])],
+                ['folderA', new Map([[SOLE_BUCKET, aggregate('SECRET')]])],
+            ]),
+        );
+
+        await updateRollup(ctx);
+
+        expect(wholeSink.value).toBe('CONFIDENTIAL');
+        expect(folderSink.value).toBe('SECRET');
+    });
+
+    it('shows the rollup as text on a controller-less element that holds no value', async () => {
+        const mirror = document.createElement('span');
+        mirror.setAttribute('data-ezclassify-aggregate', '');
+        document.body.appendChild(mirror);
+        const ctx = createMockCtx(
+            {},
+            new Map([[null, new Map([[SOLE_BUCKET, aggregate('SECRET')]])]]),
+        );
+
+        await updateRollup(ctx);
+
+        expect(mirror.textContent).toBe('SECRET');
+    });
+
+    it('reads a framework\'s "true" as a bare attribute: the page', async () => {
+        const out = sink('true');
+        const ctx = createMockCtx(
+            {},
+            new Map([[null, new Map([[SOLE_BUCKET, aggregate('SECRET')]])]]),
+        );
+
+        await updateRollup(ctx);
+
+        expect(out.value).toBe('SECRET');
+    });
+
+    it('leaves a component view and an output another instance owns alone', async () => {
+        const banner = sink();
+        banner.setAttribute('data-ezclassify-controller', 'banner');
+        const nested = document.createElement('div');
+        nested.setAttribute('data-ezclassify-mount-root', 'other');
+        document.body.appendChild(nested);
+        const foreign = document.createElement('input');
+        foreign.type = 'hidden';
+        foreign.setAttribute('data-ezclassify-aggregate', '');
+        nested.appendChild(foreign);
+        const ctx = createMockCtx(
+            {},
+            new Map([[null, new Map([[SOLE_BUCKET, aggregate('SECRET')]])]]),
+        );
+
+        await updateRollup(ctx);
+
+        expect(banner.value).toBe('');
+        expect(foreign.value).toBe('');
+    });
+
+    it('refuses a sink naming no whole or collection, once, and leaves it empty and invalid', async () => {
+        const out = sink('nowhere');
+        out.value = 'SECRET';
+        const reportHostError = vi.fn();
+        const ctx = createMockCtx({ reportHostError });
+
+        await updateRollup(ctx);
+        await updateRollup(ctx);
+
+        expect(out.value).toBe('');
+        expect(out.getAttribute('aria-invalid')).toBe('true');
+        expect(reportHostError).toHaveBeenCalledTimes(1);
+        expect(reportHostError.mock.calls[0][0]).toMatchObject({
+            code: 'aggregate-level-unknown',
+            element: out,
+        });
+    });
+
+    it('marks a sink incomplete while the store holds its bucket as stale, and clears it once fresh', async () => {
+        const out = document.createElement('input');
+        out.setAttribute('data-ezclassify-aggregate', '');
+        out.required = true;
+        document.body.appendChild(out);
+        const levels: Levels = new Map([
+            [null, new Map([[SOLE_BUCKET, aggregate('SECRET', true)]])],
+        ]);
+        const ctx = createMockCtx({}, levels);
+
+        await updateRollup(ctx);
+        expect(out.value).toBe('SECRET');
+        expect(out.getAttribute('aria-invalid')).toBe('true');
+        expect(out.validationMessage).toBe(t('rollup.incomplete'));
+
+        levels.set(null, new Map([[SOLE_BUCKET, aggregate('SECRET')]]));
+        await updateRollup(ctx);
+        expect(out.hasAttribute('aria-invalid')).toBe(false);
+        expect(out.validationMessage).toBe('');
+    });
+
+    it('carries what the instance could not read to every sink, and keeps a message the host set', async () => {
+        const out = document.createElement('input');
+        out.setAttribute('data-ezclassify-aggregate', '');
+        document.body.appendChild(out);
+        const ctx = createMockCtx(
+            {},
+            new Map([[null, new Map([[SOLE_BUCKET, aggregate('SECRET')]])]]),
+        );
+        await updateRollup(ctx);
+
+        setOutputsIncomplete(ctx, true);
+        expect(out.getAttribute('aria-invalid')).toBe('true');
+        expect(out.validationMessage).toBe(t('rollup.incomplete'));
+
+        setOutputsIncomplete(ctx, false);
+        expect(out.hasAttribute('aria-invalid')).toBe(false);
+        expect(out.validationMessage).toBe('');
+
+        setOutputsIncomplete(ctx, true);
+        out.setCustomValidity('Host says no');
+        setOutputsIncomplete(ctx, false);
+        expect(out.validationMessage).toBe('Host says no');
+    });
+});
+
+describe('ezclassify:rollup', () => {
+    beforeEach(() => {
+        document.body.innerHTML = '';
+    });
+
+    it("fires on each level's element with its buckets, once per change", async () => {
+        const whole = document.createElement('input');
+        whole.id = 'memo';
+        document.body.appendChild(whole);
+        const part = document.createElement('input');
+        document.body.appendChild(part);
+        const folder = document.createElement('section');
+        folder.setAttribute('data-ezclassify-collection', 'folderA');
+        document.body.appendChild(folder);
+        const levels: Levels = new Map([
+            [null, new Map([[SOLE_BUCKET, aggregate('SECRET')]])],
+            ['folderA', new Map([[SOLE_BUCKET, aggregate('SECRET')]])],
+            ['memo', new Map([[SOLE_BUCKET, aggregate('CONFIDENTIAL')]])],
+        ]);
+        const ctx = createMockCtx(
+            { fields: [whole, part], partOfMap: new Map([[part, 'memo']]) },
+            levels,
+        );
+        const pageEvents: RollupEventDetail[] = [];
+        document.body.addEventListener('ezclassify:rollup', (e) => {
+            if (e.target === document.body)
+                pageEvents.push((e as CustomEvent<RollupEventDetail>).detail);
+        });
+        const folderEvents = rollupEvents(folder);
+        const wholeEvents = rollupEvents(whole);
+
+        await updateRollup(ctx);
+        await updateRollup(ctx);
+
+        expect(pageEvents).toEqual([
+            {
+                level: null,
+                buckets: [
+                    {
+                        context: null,
+                        scheme: null,
+                        rendered: 'SECRET',
+                        assertions: aggregate('SECRET').assertions,
+                        stale: false,
+                    },
+                ],
+            },
+        ]);
+        expect(folderEvents.map((d) => d.level)).toEqual(['folderA']);
+        expect(wholeEvents.map((d) => d.buckets[0].rendered)).toEqual([
+            'CONFIDENTIAL',
+        ]);
+
+        levels.set('memo', new Map([[SOLE_BUCKET, aggregate('SECRET')]]));
+        await updateRollup(ctx);
+        expect(wholeEvents.map((d) => d.buckets[0].rendered)).toEqual([
+            'CONFIDENTIAL',
+            'SECRET',
+        ]);
+        expect(pageEvents).toHaveLength(1);
+    });
+
+    it('keeps a bucket that misses a contributor, so a level never reads as empty', async () => {
+        const ctx = createMockCtx(
+            {},
+            new Map([[null, new Map([[SOLE_BUCKET, aggregate('', true)]])]]),
+        );
+        const events = rollupEvents(document.body);
+
+        await updateRollup(ctx);
+
+        expect(events[0].buckets).toEqual([
+            {
+                context: null,
+                scheme: null,
+                rendered: '',
+                assertions: [],
+                stale: true,
+            },
+        ]);
+    });
+
+    it('hands the page rollup, facts included, to the enclosing instance', async () => {
+        const page = new Map([[SOLE_BUCKET, aggregate('SECRET')]]);
+        const onRollupComputed = vi.fn();
+        const ctx = createMockCtx(
+            { onRollupComputed },
+            new Map([[null, page]]),
+        );
+
+        await updateRollup(ctx);
+
+        expect(onRollupComputed).toHaveBeenCalledWith(page);
+    });
+});
+
 describe('updateRollup', () => {
+    beforeEach(() => {
+        document.body.innerHTML = '';
+    });
+
     it('flushes a queued debounce once and settles its callers', async () => {
         vi.useFakeTimers();
         try {
-            const rollupField = document.createElement('input');
-            const field = document.createElement('input');
-            field.value = 'A';
-            const ctx = createMockCtx({ rollupField, fields: [field] });
+            const out = sink();
+            const ctx = createMockCtx(
+                {},
+                new Map([[null, new Map([[SOLE_BUCKET, aggregate('A')]])]]),
+            );
 
             const queued = updateRollup(ctx);
             await flushRollupNow(ctx);
             await vi.advanceTimersByTimeAsync(40);
             await queued;
 
-            expect(ctx.engine.aggregate).toHaveBeenCalledTimes(1);
-            expect(rollupField.value).toBe('A');
+            const pageReads = (
+                ctx.aggregateOf as ReturnType<typeof vi.fn>
+            ).mock.calls.filter(([id]) => id === null);
+            expect(pageReads).toHaveLength(1);
+            expect(out.value).toBe('A');
         } finally {
             vi.useRealTimers();
         }
     });
 
-    it('does not publish an older asynchronous aggregate after a newer edit', async () => {
-        const rollupField = document.createElement('input');
-        const field = document.createElement('input');
-        field.value = 'old';
-        const ctx = createMockCtx({ rollupField, fields: [field] });
-        const pending = new Map<
-            string,
-            (value: { rendered: string; assertions: Assertion[] }) => void
-        >();
-        ctx.engine.aggregate = vi.fn(
-            (values: string[]) =>
-                new Promise<{ rendered: string; assertions: Assertion[] }>(
-                    (resolve) => {
-                        pending.set(values[0], resolve);
-                    },
-                ),
-        ) as unknown as FormsContext['engine']['aggregate'];
-        const events: string[] = [];
-        rollupField.addEventListener('ezclassify:rollup', (event) => {
-            events.push(
-                (event as CustomEvent<{ rendered: string }>).detail.rendered,
-            );
-        });
+    it('drops a pass that a newer one superseded before it read the store', async () => {
+        const ctx = createMockCtx();
 
         const older = flushRollupNow(ctx);
-        await Promise.resolve();
-        expect(pending.has('old')).toBe(true);
-
-        field.value = 'new';
         const newer = flushRollupNow(ctx);
-        await Promise.resolve();
-        expect(pending.has('new')).toBe(true);
+        await Promise.all([older, newer]);
 
-        pending.get('new')?.({ rendered: 'new', assertions: [] });
-        await newer;
-        pending.get('old')?.({ rendered: 'old', assertions: [] });
-        await older;
-
-        expect(rollupField.value).toBe('new');
-        expect(events).toEqual(['new']);
+        const pageReads = (
+            ctx.aggregateOf as ReturnType<typeof vi.fn>
+        ).mock.calls.filter(([id]) => id === null);
+        expect(pageReads).toHaveLength(1);
     });
 
-    it('invalidates an in-flight aggregate when a new edit enters the debounce', async () => {
-        vi.useFakeTimers();
-        try {
-            const rollupField = document.createElement('input');
-            const field = document.createElement('input');
-            field.value = 'old';
-            const ctx = createMockCtx({ rollupField, fields: [field] });
-            const pending = new Map<string, (rendered: string) => void>();
-            ctx.engine.aggregate = vi.fn(
-                (values: string[]) =>
-                    new Promise<{ rendered: string; assertions: Assertion[] }>(
-                        (resolve) => {
-                            pending.set(values[0], (rendered) =>
-                                resolve({ rendered, assertions: [] }),
-                            );
-                        },
-                    ),
-            ) as unknown as FormsContext['engine']['aggregate'];
+    it('waits for the store to settle before it shows anything', async () => {
+        const out = sink();
+        let resume: (() => void) | null = null;
+        const ctx = createMockCtx(
+            {
+                whenStoreIdle: (run) => {
+                    resume = run;
+                    return false;
+                },
+            },
+            new Map([[null, new Map([[SOLE_BUCKET, aggregate('SECRET')]])]]),
+        );
 
-            const older = flushRollupNow(ctx);
-            await Promise.resolve();
-            field.value = 'new';
-            const queued = updateRollup(ctx);
+        await flushRollupNow(ctx);
 
-            pending.get('old')?.('old');
-            await older;
-            expect(rollupField.value).toBe('');
-
-            await vi.advanceTimersByTimeAsync(40);
-            pending.get('new')?.('new');
-            await queued;
-            expect(rollupField.value).toBe('new');
-        } finally {
-            vi.useRealTimers();
-        }
+        expect(out.value).toBe('');
+        expect(resume).not.toBeNull();
     });
 
-    it('collects values from both fields and components', async () => {
-        const rollupField = document.createElement('input');
-        const ctx = createMockCtx({ rollupField });
+    it('does nothing while initializing or once torn down', async () => {
+        const out = sink();
+        const levels: Levels = new Map([
+            [null, new Map([[SOLE_BUCKET, aggregate('SECRET')]])],
+        ]);
 
-        // Add an input field, value matches what engine.render would produce
-        const field = document.createElement('input');
-        field.value = 'A';
-        ctx.fields.push(field);
+        await updateRollup(createMockCtx({ initializing: true }, levels));
+        await updateRollup(createMockCtx({ destroyed: true }, levels));
 
-        // Add a component with a rendered value
-        const compEl = document.createElement('div');
-        const comp = createMockComponent('comp-value');
-        ctx.mounted.set(compEl, comp);
-
-        await updateRollup(ctx);
-
-        // aggregate should be called with values from both sources
-        expect(ctx.engine.aggregate).toHaveBeenCalled();
-        const callArgs = (ctx.engine.aggregate as ReturnType<typeof vi.fn>).mock
-            .calls[0];
-        const values = callArgs[0] as string[];
-        expect(values).toHaveLength(2);
-        // Field value comes from render(assertions)
-        expect(values[0]).toBe('A');
-        // Component value comes from getRendered()
-        expect(values[1]).toBe('comp-value');
-    });
-
-    it('collects only from fields when no components exist', async () => {
-        const rollupField = document.createElement('input');
-        const ctx = createMockCtx({ rollupField });
-
-        const field = document.createElement('input');
-        field.value = 'X';
-        ctx.fields.push(field);
-
-        await updateRollup(ctx);
-
-        expect(ctx.engine.aggregate).toHaveBeenCalled();
-        const values = (ctx.engine.aggregate as ReturnType<typeof vi.fn>).mock
-            .calls[0][0] as string[];
-        expect(values).toHaveLength(1);
-        expect(values[0]).toBe('X');
-    });
-
-    it('collects only from components when no fields exist', async () => {
-        const rollupField = document.createElement('input');
-        const ctx = createMockCtx({ rollupField });
-
-        const compEl = document.createElement('div');
-        const comp = createMockComponent('component-only');
-        ctx.mounted.set(compEl, comp);
-
-        await updateRollup(ctx);
-
-        expect(ctx.engine.aggregate).toHaveBeenCalled();
-        const values = (ctx.engine.aggregate as ReturnType<typeof vi.fn>).mock
-            .calls[0][0] as string[];
-        expect(values).toHaveLength(1);
-        expect(values[0]).toBe('component-only');
-    });
-
-    it('skips components with empty rendered values', async () => {
-        const rollupField = document.createElement('input');
-        const ctx = createMockCtx({ rollupField });
-
-        const comp1El = document.createElement('div');
-        const comp1 = createMockComponent('has-value');
-        ctx.mounted.set(comp1El, comp1);
-
-        const comp2El = document.createElement('div');
-        const comp2 = createMockComponent('');
-        ctx.mounted.set(comp2El, comp2);
-
-        await updateRollup(ctx);
-
-        expect(ctx.engine.aggregate).toHaveBeenCalled();
-        const values = (ctx.engine.aggregate as ReturnType<typeof vi.fn>).mock
-            .calls[0][0] as string[];
-        expect(values).toHaveLength(1);
-        expect(values[0]).toBe('has-value');
-    });
-
-    it('sets rollup field to empty string when no values exist', async () => {
-        const rollupField = document.createElement('input');
-        rollupField.value = 'old-value';
-        const ctx = createMockCtx({ rollupField });
-
-        await updateRollup(ctx);
-
-        expect(rollupField.value).toBe('');
-    });
-
-    it('dispatches ezclassify:rollup event on rollup field', async () => {
-        const rollupField = document.createElement('input');
-        const ctx = createMockCtx({ rollupField });
-
-        const compEl = document.createElement('div');
-        const comp = createMockComponent('val');
-        ctx.mounted.set(compEl, comp);
-
-        const eventPromise = new Promise<CustomEvent>((resolve) => {
-            rollupField.addEventListener('ezclassify:rollup', (e) =>
-                resolve(e as CustomEvent),
-            );
-        });
-
-        await updateRollup(ctx);
-
-        return eventPromise.then((e) => {
-            expect(e.detail.rendered).toBeDefined();
-        });
-    });
-
-    it('emits the full rollup detail shape for named groups', async () => {
-        const rollupField = document.createElement('input');
-        const groupRollup = document.createElement('input');
-        groupRollup.id = 'evidence-rollup';
-        groupRollup.setAttribute('data-ezclassify-scheme', 'test');
-        const field = document.createElement('input');
-        field.id = 'finding';
-        field.value = 'A';
-        field.setAttribute('data-ezclassify-group', 'evidence');
-        document.body.append(field, groupRollup);
-        const ctx = createMockCtx({
-            rollupField,
-            fields: [field],
-        });
-        let detail: Record<string, unknown> | undefined;
-        groupRollup.addEventListener('ezclassify:rollup', (event) => {
-            detail = (event as CustomEvent<Record<string, unknown>>).detail;
-        });
-
-        await updateRollup(ctx);
-
-        expect(detail).toEqual({
-            rendered: 'A',
-            byScheme: { test: 'A' },
-            contributions: [
-                expect.objectContaining({
-                    value: 'A',
-                    sourceId: 'finding',
-                }),
-            ],
-            assertions: [],
-        });
-    });
-
-    it('does nothing when rollupField is null', async () => {
-        const ctx = createMockCtx({ rollupField: null });
-        // Should not throw
-        await updateRollup(ctx);
-        expect(ctx.engine.aggregate).not.toHaveBeenCalled();
+        expect(out.value).toBe('');
     });
 });
 
@@ -414,7 +567,6 @@ describe('updateConditionalVisibility (data-ezclassify-show-when-parent-has / da
     });
 
     it('shows element when parent has a matching concept', async () => {
-        const rollupField = document.createElement('input');
         const parentField = document.createElement('input');
         parentField.id = 'parent1';
         document.body.appendChild(parentField);
@@ -427,7 +579,7 @@ describe('updateConditionalVisibility (data-ezclassify-show-when-parent-has / da
         conditionalEl.style.display = 'none';
         document.body.appendChild(conditionalEl);
 
-        const ctx = createMockCtx({ rollupField });
+        const ctx = createMockCtx();
         parentField.value = 'LEVEL_A';
         ctx.fields.push(parentField);
         ctx.mounted.set(parentField, {
@@ -452,7 +604,6 @@ describe('updateConditionalVisibility (data-ezclassify-show-when-parent-has / da
     });
 
     it('hides element when parent lacks all listed concepts', async () => {
-        const rollupField = document.createElement('input');
         const parentField = document.createElement('input');
         parentField.id = 'parent1';
         document.body.appendChild(parentField);
@@ -465,7 +616,7 @@ describe('updateConditionalVisibility (data-ezclassify-show-when-parent-has / da
         conditionalEl.style.display = '';
         document.body.appendChild(conditionalEl);
 
-        const ctx = createMockCtx({ rollupField });
+        const ctx = createMockCtx();
         ctx.fields.push(parentField);
         ctx.fieldAssertions.set(parentField, [
             { conceptId: 'LEVEL_C', categoryId: 'level' },
@@ -477,8 +628,6 @@ describe('updateConditionalVisibility (data-ezclassify-show-when-parent-has / da
     });
 
     it('hides element when parent element is not found', async () => {
-        const rollupField = document.createElement('input');
-
         const conditionalEl = document.createElement('div');
         conditionalEl.setAttribute(
             'data-ezclassify-show-when-parent-has',
@@ -487,14 +636,13 @@ describe('updateConditionalVisibility (data-ezclassify-show-when-parent-has / da
         conditionalEl.style.display = '';
         document.body.appendChild(conditionalEl);
 
-        const ctx = createMockCtx({ rollupField });
+        const ctx = createMockCtx();
         await updateRollup(ctx);
 
         expect(conditionalEl.style.display).toBe('none');
     });
 
     it('data-ezclassify-hide-when-parent-has hides element when parent has a matching concept', async () => {
-        const rollupField = document.createElement('input');
         const parentField = document.createElement('input');
         parentField.id = 'parent1';
         document.body.appendChild(parentField);
@@ -507,7 +655,7 @@ describe('updateConditionalVisibility (data-ezclassify-show-when-parent-has / da
         conditionalEl.style.display = '';
         document.body.appendChild(conditionalEl);
 
-        const ctx = createMockCtx({ rollupField });
+        const ctx = createMockCtx();
         parentField.value = 'LEVEL_A';
         ctx.fields.push(parentField);
         ctx.mounted.set(parentField, {
@@ -532,7 +680,6 @@ describe('updateConditionalVisibility (data-ezclassify-show-when-parent-has / da
     });
 
     it('data-ezclassify-hide-when-parent-has shows element when parent lacks concept', async () => {
-        const rollupField = document.createElement('input');
         const parentField = document.createElement('input');
         parentField.id = 'parent1';
         document.body.appendChild(parentField);
@@ -545,7 +692,7 @@ describe('updateConditionalVisibility (data-ezclassify-show-when-parent-has / da
         conditionalEl.style.display = 'none';
         document.body.appendChild(conditionalEl);
 
-        const ctx = createMockCtx({ rollupField });
+        const ctx = createMockCtx();
         ctx.fields.push(parentField);
         ctx.fieldAssertions.set(parentField, [
             { conceptId: 'LEVEL_X', categoryId: 'level' },
@@ -557,8 +704,6 @@ describe('updateConditionalVisibility (data-ezclassify-show-when-parent-has / da
     });
 
     it('ignores elements with malformed attribute (no colon)', async () => {
-        const rollupField = document.createElement('input');
-
         const conditionalEl = document.createElement('div');
         conditionalEl.setAttribute(
             'data-ezclassify-show-when-parent-has',
@@ -567,198 +712,11 @@ describe('updateConditionalVisibility (data-ezclassify-show-when-parent-has / da
         conditionalEl.style.display = 'block';
         document.body.appendChild(conditionalEl);
 
-        const ctx = createMockCtx({ rollupField });
+        const ctx = createMockCtx();
         await updateRollup(ctx);
 
         // Should remain unchanged since the attribute is malformed
         expect(conditionalEl.style.display).toBe('block');
-    });
-});
-
-function captureRollupDetail(rollupField: HTMLElement) {
-    let detail: {
-        contributions?: ContributionDescriptor[];
-        assertions?: unknown[];
-    } | null = null;
-    rollupField.addEventListener('ezclassify:rollup', (e) => {
-        detail = (e as CustomEvent).detail;
-    });
-    return () => detail;
-}
-
-describe('ezclassify:rollup enriched event: ContributionDescriptor + assertions', () => {
-    beforeEach(() => {
-        document.body.innerHTML = '';
-    });
-
-    it('event detail includes contributions with value, sourceId, sourceLabel, controller', async () => {
-        const rollupField = document.createElement('input');
-        rollupField.id = 'rollup';
-        document.body.appendChild(rollupField);
-        const ctx = createMockCtx({ rollupField });
-
-        const compEl = document.createElement('div');
-        compEl.id = 'my-select';
-        compEl.setAttribute('aria-label', 'Sensitivity level');
-        compEl.setAttribute('data-ezclassify-controller', 'select');
-        document.body.appendChild(compEl);
-        ctx.mounted.set(compEl, createMockComponent('STATE_ASSESSMENT_STAFF'));
-
-        const getDetail = captureRollupDetail(rollupField);
-        await updateRollup(ctx);
-
-        const detail = getDetail();
-        expect(detail).not.toBeNull();
-        expect(detail!.contributions).toHaveLength(1);
-        const c = detail!.contributions![0];
-        expect(c.value).toBe('STATE_ASSESSMENT_STAFF');
-        expect(c.sourceId).toBe('my-select');
-        expect(c.sourceLabel).toBe('Sensitivity level');
-        expect(c.controller).toBe('select');
-    });
-
-    it('plain field contribution uses aria-label when present', async () => {
-        const rollupField = document.createElement('input');
-        document.body.appendChild(rollupField);
-        const ctx = createMockCtx({ rollupField });
-
-        const field = document.createElement('input') as HTMLInputElement;
-        field.id = 'behavior-input';
-        field.setAttribute('aria-label', 'Behavior-only level input');
-        field.value = 'STUDENTS';
-        document.body.appendChild(field);
-        ctx.fields.push(field);
-
-        const getDetail = captureRollupDetail(rollupField);
-        await updateRollup(ctx);
-
-        const c = getDetail()!.contributions![0];
-        expect(c.value).toBe('STUDENTS');
-        expect(c.sourceLabel).toBe('Behavior-only level input');
-    });
-
-    it('marked-textarea hidden children resolve to the parent textarea', async () => {
-        const rollupField = document.createElement('input');
-        document.body.appendChild(rollupField);
-        const ctx = createMockCtx({ rollupField });
-
-        // Build the marked-textarea DOM structure as createMountContainer +
-        // MarkedTextArea.init() actually produce it in the live app:
-        //   container (outer parent)
-        //     .marked-textarea-wrap                   ← textarea moved here
-        //       textarea#scanner-input[aria-label="…"]
-        //     [data-ezclassify-mount="marked-textarea"] ← mount container
-        //       .marked-textarea-hidden-fields
-        //         input[type=hidden] (synthetic part field)
-        const container = document.createElement('div');
-        document.body.appendChild(container);
-
-        const wrap = document.createElement('div');
-        wrap.className = 'marked-textarea-wrap';
-        container.appendChild(wrap);
-
-        const textarea = document.createElement(
-            'textarea',
-        ) as HTMLTextAreaElement;
-        textarea.id = 'scanner-input';
-        textarea.setAttribute('aria-label', 'Text to scan for markings');
-        wrap.appendChild(textarea);
-
-        const mountContainer = document.createElement('div');
-        mountContainer.setAttribute('data-ezclassify-mount', 'marked-textarea');
-        container.appendChild(mountContainer);
-        setMountHost(mountContainer, textarea);
-
-        const hiddenRoot = document.createElement('div');
-        hiddenRoot.className = 'marked-textarea-hidden-fields';
-        mountContainer.appendChild(hiddenRoot);
-
-        // Two hidden synthetic fields (two inline parts)
-        const part1 = document.createElement('input') as HTMLInputElement;
-        part1.type = 'hidden';
-        part1.id = 'scanner-input-part-0';
-        part1.value = '(SCHOOL STAFF)';
-        hiddenRoot.appendChild(part1);
-
-        const part2 = document.createElement('input') as HTMLInputElement;
-        part2.type = 'hidden';
-        part2.id = 'scanner-input-part-1';
-        part2.value = '(STATE ASSESSMENT STAFF)';
-        hiddenRoot.appendChild(part2);
-
-        ctx.fields.push(part1 as unknown as HTMLInputElement);
-        ctx.fields.push(part2 as unknown as HTMLInputElement);
-
-        const getDetail = captureRollupDetail(rollupField);
-        await updateRollup(ctx);
-
-        const contributions = getDetail()!.contributions!;
-        expect(contributions).toHaveLength(2);
-
-        // Both hidden fields must resolve to the parent textarea, not themselves.
-        for (const c of contributions) {
-            expect(c.sourceId).toBe('scanner-input');
-            expect(c.sourceLabel).toBe('Text to scan for markings');
-            expect(c.controller).toBe('marked-textarea');
-        }
-
-        // Values still come from each hidden field individually.
-        expect(contributions.map((c) => c.value).sort()).toEqual(
-            ['(SCHOOL STAFF)', '(STATE ASSESSMENT STAFF)'].sort(),
-        );
-    });
-
-    it('assertions in event detail match engine.process result for the aggregated rendered value', async () => {
-        const rollupField = document.createElement('input');
-        document.body.appendChild(rollupField);
-        // The default mock engine.process maps each comma-separated token to
-        // { conceptId: token, categoryId: 'level' }. Verify the event carries the
-        // same shape back, this confirms cachedProcess results flow into the event.
-        const ctx = createMockCtx({ rollupField });
-
-        const field = document.createElement('input') as HTMLInputElement;
-        field.value = 'STATE_ASSESSMENT_STAFF';
-        document.body.appendChild(field);
-        ctx.fields.push(field);
-
-        const getDetail = captureRollupDetail(rollupField);
-        await updateRollup(ctx);
-
-        const detail = getDetail()!;
-        expect(detail.assertions).toBeDefined();
-        expect(detail.assertions!.length).toBeGreaterThan(0);
-        const a = (
-            detail.assertions as Array<{
-                conceptId: string;
-                categoryId: string;
-            }>
-        )[0];
-        expect(a.conceptId).toBe('STATE_ASSESSMENT_STAFF');
-        // categoryId comes from the mock engine, 'level' is the fixture value.
-        expect(a.categoryId).toBe('level');
-    });
-
-    it('existing rendered and byScheme keys are preserved in enriched event', async () => {
-        const rollupField = document.createElement('input');
-        document.body.appendChild(rollupField);
-        const ctx = createMockCtx({ rollupField });
-
-        const compEl = document.createElement('div');
-        ctx.mounted.set(compEl, createMockComponent('val'));
-
-        let detail: Record<string, unknown> | null = null;
-        rollupField.addEventListener('ezclassify:rollup', (e) => {
-            detail = (e as CustomEvent).detail;
-        });
-
-        await updateRollup(ctx);
-
-        expect(detail).toMatchObject({
-            rendered: expect.any(String),
-            byScheme: expect.any(Object),
-            contributions: expect.any(Array),
-            assertions: expect.any(Array),
-        });
     });
 });
 
@@ -769,9 +727,7 @@ describe('multi-whole partition (binding-model §16)', () => {
 
     it('resolves coverage owners with linear DOM lookup work', async () => {
         const parentCount = 48;
-        const rollupField = document.createElement('input');
-        const ctx = createMockCtx({ rollupField });
-        document.body.appendChild(rollupField);
+        const ctx = createMockCtx();
         for (let i = 0; i < parentCount; i++) {
             const parent = document.createElement('input');
             parent.id = `whole-${i}`;
@@ -807,9 +763,7 @@ describe('multi-whole partition (binding-model §16)', () => {
     });
 
     it('two part-of children pointing at different parents → engine.checkCoverage runs once per parent', async () => {
-        const rollupField = document.createElement('input');
-        document.body.appendChild(rollupField);
-        const ctx = createMockCtx({ rollupField });
+        const ctx = createMockCtx();
 
         const parentA = document.createElement('input') as HTMLInputElement;
         parentA.id = 'parent-a';
@@ -853,12 +807,7 @@ describe('multi-whole partition (binding-model §16)', () => {
     });
 
     it('populates ctx.aggregates with one entry per declared parent', async () => {
-        const rollupField = document.createElement('input');
-        document.body.appendChild(rollupField);
-        const ctx = createMockCtx({
-            rollupField,
-            aggregates: new Map(),
-        } as Partial<FormsContext>);
+        const ctx = createMockCtx({ aggregates: new Map() });
 
         const parentA = document.createElement('input') as HTMLInputElement;
         parentA.id = 'parent-a';
@@ -896,12 +845,7 @@ describe('multi-whole partition (binding-model §16)', () => {
     });
 
     it('resolves a declared parent to the FIELD when a component shares its id (fields-first precedence)', async () => {
-        const rollupField = document.createElement('input');
-        document.body.appendChild(rollupField);
-        const ctx = createMockCtx({
-            rollupField,
-            aggregates: new Map(),
-        } as Partial<FormsContext>);
+        const ctx = createMockCtx({ aggregates: new Map() });
 
         // A field and a component both carry id "dup-parent". Parent resolution
         // must pick the field (its rendered value drives coverage), matching the
@@ -974,9 +918,7 @@ describe('multi-whole partition (binding-model §16)', () => {
     }
 
     it('dispatches ezclassify:coverage-error from the child element when a parent fails coverage', async () => {
-        const rollupField = document.createElement('input');
-        document.body.appendChild(rollupField);
-        const ctx = createMockCtx({ rollupField });
+        const ctx = createMockCtx();
 
         const parent = document.createElement('input') as HTMLInputElement;
         parent.id = 'doc-parent';
@@ -1027,9 +969,7 @@ describe('multi-whole partition (binding-model §16)', () => {
     });
 
     it('faults only the child the engine says exceeds its whole', async () => {
-        const rollupField = document.createElement('input');
-        document.body.appendChild(rollupField);
-        const ctx = createMockCtx({ rollupField });
+        const ctx = createMockCtx();
 
         const parent = document.createElement('input') as HTMLInputElement;
         parent.id = 'doc-parent';
@@ -1086,9 +1026,7 @@ describe('multi-whole partition (binding-model §16)', () => {
     });
 
     it('still reports a child that exceeds its whole when the whole cannot be checked, with no report', async () => {
-        const rollupField = document.createElement('input');
-        document.body.appendChild(rollupField);
-        const ctx = createMockCtx({ rollupField });
+        const ctx = createMockCtx();
 
         const parent = document.createElement('input') as HTMLInputElement;
         parent.id = 'doc-parent';
@@ -1125,9 +1063,7 @@ describe('multi-whole partition (binding-model §16)', () => {
     });
 
     it('leaves a child component to show its own exceeds error, with no second notice', async () => {
-        const rollupField = document.createElement('input');
-        document.body.appendChild(rollupField);
-        const ctx = createMockCtx({ rollupField });
+        const ctx = createMockCtx();
 
         const parent = document.createElement('input') as HTMLInputElement;
         parent.id = 'doc-parent';
@@ -1181,9 +1117,7 @@ describe('multi-whole partition (binding-model §16)', () => {
         // Binding-model §7: when a parent shifts, the library re-checks coverage
         // and surfaces a fresh event on the child, but the child's own marking
         // must not be mutated. The author resolves the conflict.
-        const rollupField = document.createElement('input');
-        document.body.appendChild(rollupField);
-        const ctx = createMockCtx({ rollupField });
+        const ctx = createMockCtx();
 
         const parent = document.createElement('input') as HTMLInputElement;
         parent.id = 'doc-parent';
@@ -1241,182 +1175,5 @@ describe('multi-whole partition (binding-model §16)', () => {
         expect(
             (events[0].detail as { parentRendered: string }).parentRendered,
         ).toBe('TIGHT-PARENT');
-    });
-});
-
-describe('facet-of contributions', () => {
-    beforeEach(() => {
-        document.body.innerHTML = '';
-    });
-
-    it('rolls up the current shared marking instead of stale whole-valued facet views', async () => {
-        const rollupField = document.createElement('input');
-        document.body.appendChild(rollupField);
-        const ctx = createMockCtx({ rollupField });
-
-        const parent = document.createElement('input');
-        parent.id = 'corporate-marking';
-        parent.value = 'CONFIDENTIAL//DO NOT FORWARD';
-        ctx.fields.push(parent);
-
-        const tier = document.createElement('select');
-        tier.setAttribute('data-ezclassify-facet-of', parent.id);
-        ctx.mounted.set(tier, createMockComponent('CONFIDENTIAL'));
-
-        const caveat = document.createElement('input');
-        caveat.setAttribute('data-ezclassify-facet-of', parent.id);
-        const staleCaveat = createMockComponent('RESTRICTED//DO NOT FORWARD');
-        ctx.mounted.set(caveat, staleCaveat);
-
-        await updateRollup(ctx);
-
-        expect(ctx.engine.aggregate).toHaveBeenCalledWith(
-            [parent.value],
-            expect.any(Object),
-        );
-        expect(rollupField.value).toBe(parent.value);
-        expect(staleCaveat.getRendered).not.toHaveBeenCalled();
-    });
-
-    it.each(['data-ezclassify-no-rollup', 'data-ezclassify-scope'])(
-        'excludes a facet group when its shared marking carries %s',
-        async (attribute) => {
-            const rollupField = document.createElement('input');
-            const ctx = createMockCtx({ rollupField });
-            const parent = document.createElement('input');
-            parent.id = 'excluded-marking';
-            parent.value = 'CONFIDENTIAL';
-            parent.setAttribute(attribute, 'reference');
-            ctx.fields.push(parent);
-
-            const facet = document.createElement('select');
-            facet.setAttribute('data-ezclassify-facet-of', parent.id);
-            ctx.mounted.set(facet, createMockComponent('CONFIDENTIAL'));
-
-            await updateRollup(ctx);
-
-            expect(ctx.engine.aggregate).not.toHaveBeenCalled();
-            expect(rollupField.value).toBe('');
-        },
-    );
-
-    it('two facet-of children + one direct field → 2 contributions, not 3', async () => {
-        const rollupField = document.createElement('input');
-        document.body.appendChild(rollupField);
-        const ctx = createMockCtx({ rollupField });
-
-        // Parent element holds the combined rendering produced by the engine
-        const parentEl = document.createElement('div');
-        parentEl.id = 'doc-section';
-        parentEl.setAttribute('aria-label', 'Section 1');
-        document.body.appendChild(parentEl);
-        ctx.mounted.set(
-            parentEl,
-            createMockComponent('//RIVERSIDE DISTRICT COORDINATORS'),
-        );
-
-        // Facet leaf 1
-        const frag1 = document.createElement('div');
-        frag1.id = 'section-level';
-        frag1.setAttribute('aria-label', 'Sensitivity level');
-        frag1.setAttribute('data-ezclassify-facet-of', 'doc-section');
-        document.body.appendChild(frag1);
-        ctx.mounted.set(frag1, createMockComponent('DISTRICT COORDINATORS'));
-
-        // Facet leaf 2
-        const frag2 = document.createElement('div');
-        frag2.id = 'section-branch';
-        frag2.setAttribute('aria-label', 'School of origin');
-        frag2.setAttribute('data-ezclassify-facet-of', 'doc-section');
-        document.body.appendChild(frag2);
-        ctx.mounted.set(frag2, createMockComponent('//RIVERSIDE'));
-
-        // A standalone (non-facet) field
-        const directField = document.createElement('input') as HTMLInputElement;
-        directField.id = 'main-field';
-        directField.setAttribute('aria-label', 'Behavior-only level input');
-        directField.value = '//OAKWOOD STATE ASSESSMENT STAFF';
-        document.body.appendChild(directField);
-        ctx.fields.push(directField);
-
-        const getDetail = captureRollupDetail(rollupField);
-        await updateRollup(ctx);
-
-        const contributions = getDetail()!.contributions!;
-        expect(contributions).toHaveLength(2);
-    });
-
-    it('facet-of parent row carries the combined rendered value, not a leaf value', async () => {
-        const rollupField = document.createElement('input');
-        document.body.appendChild(rollupField);
-        const ctx = createMockCtx({ rollupField });
-
-        const parentEl = document.createElement('div');
-        parentEl.id = 'doc-section';
-        parentEl.setAttribute('aria-label', 'Section 1');
-        document.body.appendChild(parentEl);
-        ctx.mounted.set(
-            parentEl,
-            createMockComponent('//RIVERSIDE DISTRICT COORDINATORS'),
-        );
-
-        const frag1 = document.createElement('div');
-        frag1.setAttribute('data-ezclassify-facet-of', 'doc-section');
-        document.body.appendChild(frag1);
-        ctx.mounted.set(frag1, createMockComponent('DISTRICT COORDINATORS'));
-
-        const frag2 = document.createElement('div');
-        frag2.setAttribute('data-ezclassify-facet-of', 'doc-section');
-        document.body.appendChild(frag2);
-        ctx.mounted.set(frag2, createMockComponent('//RIVERSIDE'));
-
-        const getDetail = captureRollupDetail(rollupField);
-        await updateRollup(ctx);
-
-        const contributions = getDetail()!.contributions!;
-        expect(contributions).toHaveLength(1);
-        expect(contributions[0].value).toBe(
-            '//RIVERSIDE DISTRICT COORDINATORS',
-        );
-    });
-
-    it('sourceId and sourceLabel resolve to the parent element, not the fragment leaves', async () => {
-        const rollupField = document.createElement('input');
-        document.body.appendChild(rollupField);
-        const ctx = createMockCtx({ rollupField });
-
-        const parentEl = document.createElement('div');
-        parentEl.id = 'doc-section';
-        parentEl.setAttribute('aria-label', 'Section 1');
-        document.body.appendChild(parentEl);
-        ctx.mounted.set(
-            parentEl,
-            createMockComponent('//RIVERSIDE DISTRICT COORDINATORS'),
-        );
-
-        const frag1 = document.createElement('div');
-        frag1.id = 'section-level';
-        frag1.setAttribute('aria-label', 'Sensitivity level');
-        frag1.setAttribute('data-ezclassify-facet-of', 'doc-section');
-        document.body.appendChild(frag1);
-        ctx.mounted.set(frag1, createMockComponent('DISTRICT COORDINATORS'));
-
-        const frag2 = document.createElement('div');
-        frag2.id = 'section-branch';
-        frag2.setAttribute('aria-label', 'School of origin');
-        frag2.setAttribute('data-ezclassify-facet-of', 'doc-section');
-        document.body.appendChild(frag2);
-        ctx.mounted.set(frag2, createMockComponent('//RIVERSIDE'));
-
-        const getDetail = captureRollupDetail(rollupField);
-        await updateRollup(ctx);
-
-        const contributions = getDetail()!.contributions!;
-        expect(contributions).toHaveLength(1);
-        expect(contributions[0].sourceId).toBe('doc-section');
-        expect(contributions[0].sourceLabel).toBe('Section 1');
-        expect(contributions[0].value).toBe(
-            '//RIVERSIDE DISTRICT COORDINATORS',
-        );
     });
 });

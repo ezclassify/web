@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { ReadOnlyComponentBase } from './component-base-readonly';
 import type {
-    SchemeEngineAdapter,
+    ContextSchemeEngineAdapter,
     Assertion,
     ValidationError,
 } from '@ezclassify/types';
@@ -10,8 +10,7 @@ import type {
     ConceptView,
     CategoryView,
 } from '@ezclassify/types';
-import { Context } from '@ezclassify/engine';
-import { registerContext, clearContextRegistry } from '../context-binding';
+import { schemeOnlyContext } from '../../test-fixtures/context-doubles';
 import { hasAdoptedStyles } from '../styles/adopt';
 import { COMPONENT_CSS } from './dom-helpers';
 import { mockRenderFormats } from '../render-format-layout-mock';
@@ -118,7 +117,9 @@ function createMockProfile(): SchemePublicView {
     } as unknown as SchemePublicView;
 }
 
-function createMockEngine(scheme?: SchemePublicView): SchemeEngineAdapter {
+function createMockEngine(
+    scheme?: SchemePublicView,
+): ContextSchemeEngineAdapter {
     const p = scheme ?? createMockProfile();
     return {
         getScheme: () => p,
@@ -163,13 +164,13 @@ function createMockEngine(scheme?: SchemePublicView): SchemeEngineAdapter {
             return { assertions, rendered: input, valid: true };
         }),
         suggest: vi.fn().mockReturnValue({ suggestions: [] }),
-    } as unknown as SchemeEngineAdapter;
+    } as unknown as ContextSchemeEngineAdapter;
 }
 
-const toCtx = (eng: unknown) => Context.fromSchemeEngine(eng as never);
+const toCtx = (eng: unknown) => schemeOnlyContext(eng as never);
 describe('ReadOnlyComponentBase', () => {
     let container: HTMLDivElement;
-    let engine: SchemeEngineAdapter;
+    let engine: ContextSchemeEngineAdapter;
     let component: TestReadOnlyComponent;
 
     beforeEach(() => {
@@ -188,12 +189,10 @@ describe('ReadOnlyComponentBase', () => {
         expect(container.getAttribute('data-ezclassify')).toBe('');
     });
 
-    it('mounts on a bare scheme adapter, with no composed context', async () => {
-        // Injection, not import: the host hands over whatever adapter it has.
-        // A bare scheme adapter drives the marking surface and leaves the
-        // composed context null, rather than being refused or wrapped in a
-        // synthetic context that claims guide and access surfaces the host
-        // never supplied.
+    it('mounts on a Context scheme view alone, with no composed context', async () => {
+        // A scheme view drives the marking surface and leaves the composed
+        // context null, rather than being wrapped in a synthetic Context that
+        // claims guide and access surfaces the host never supplied.
         await component.init(container, engine, { initialValue: 'c1' });
 
         expect(component.getAssertions()[0].conceptId).toBe('c1');
@@ -202,63 +201,12 @@ describe('ReadOnlyComponentBase', () => {
         ).toBeNull();
     });
 
-    it('uses unaddressed operations when a Context wraps a full local adapter', async () => {
-        const validate = vi.fn(engine.validate.bind(engine));
-        engine.validate = validate as SchemeEngineAdapter['validate'];
-
-        await component.init(container, toCtx(engine), {
-            initialValue: 'c1',
-            schemeId: 'test',
-        });
-
-        expect(validate).toHaveBeenCalledWith('c1', {
-            outputFormat: 'default',
-            context: undefined,
-        });
-        expect(validate).not.toHaveBeenCalledWith(
-            'c1',
-            'test',
-            expect.anything(),
+    it('refuses to mount without a Context', async () => {
+        // There is no registry to discover one from: a component marks with
+        // the Context it is handed, or not at all.
+        await expect(component.init(container, null)).rejects.toThrow(
+            /no Context available/,
         );
-    });
-
-    it('refuses to pair an injected bare adapter with an unrelated ancestor context', async () => {
-        // The engine the component renders from and the context it reads
-        // guide and access from have to be the same composition. An ancestor
-        // provider registered for a different one is not a match, and pairing
-        // them would show wrong content instead of raising anything.
-        const provider = document.createElement('div');
-        provider.setAttribute('data-ezclassify-context', 'other-composition');
-        provider.appendChild(container);
-        document.body.appendChild(provider);
-        registerContext('other-composition', toCtx(createMockEngine()));
-
-        await component.init(container, engine, { initialValue: 'c1' });
-
-        expect(
-            (component as unknown as { context: unknown }).context,
-        ).toBeNull();
-
-        clearContextRegistry();
-        provider.remove();
-    });
-
-    it('pairs an injected bare adapter with the ancestor context composed around it', async () => {
-        const ctx = toCtx(engine);
-        const provider = document.createElement('div');
-        provider.setAttribute('data-ezclassify-context', 'same-composition');
-        provider.appendChild(container);
-        document.body.appendChild(provider);
-        registerContext('same-composition', ctx);
-
-        await component.init(container, ctx.scheme, { initialValue: 'c1' });
-
-        expect((component as unknown as { context: unknown }).context).toBe(
-            ctx,
-        );
-
-        clearContextRegistry();
-        provider.remove();
     });
 
     it('calls setup() after init', async () => {

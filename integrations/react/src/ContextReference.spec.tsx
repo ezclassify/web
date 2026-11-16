@@ -3,22 +3,17 @@
  *
  * Two levels: the emitted markup (proving the binding is a thin map onto the
  * controller's declarative attributes, not a re-implementation), and a full
- * end-to-end pass under a real provider where the ambient scanner enhances the
- * host and the vanilla controller derives its tabs.
+ * end-to-end pass inside a real root, which enhances the host and the vanilla
+ * controller derives its tabs.
  */
 
-import { describe, it, expect } from 'vitest';
+import { beforeAll, describe, it, expect } from 'vitest';
 import { render, waitFor, act } from '@testing-library/react';
 import { createElement, useState, type ReactNode } from 'react';
-import yaml from 'js-yaml';
-import { Context } from '@ezclassify/engine';
-import {
-    cedarValleySchemeYaml,
-    cedarValleyGuideYaml,
-    cedarValleyAccessYaml,
-} from '@ezclassify/example-schemes/cedar-valley';
-import { EzClassifyProvider, useSchemeEngine } from './index';
+import type { EzClassifyClient } from '@ezclassify/rest-client';
+import { EzClassify, EzClassifyProvider } from './index';
 import { ContextReference } from './ContextReference';
+import { connectDemoContext } from '../../../test-support/demo-runtime';
 
 if (typeof window !== 'undefined' && !window.matchMedia) {
     Object.defineProperty(window, 'matchMedia', {
@@ -31,12 +26,8 @@ if (typeof window !== 'undefined' && !window.matchMedia) {
     });
 }
 
-function fullContext(): Context {
-    return Context.fromComponents({
-        scheme: yaml.load(cedarValleySchemeYaml),
-        guides: [yaml.load(cedarValleyGuideYaml)],
-        access: yaml.load(cedarValleyAccessYaml),
-    });
+async function fullContext(): Promise<EzClassifyClient> {
+    return await connectDemoContext({ contextId: 'cedar-valley' });
 }
 
 describe('React <ContextReference> markup', () => {
@@ -93,12 +84,11 @@ describe('React <ContextReference> markup', () => {
     });
 });
 
-describe('React <ContextReference> under a provider', () => {
-    it('is enhanced by the ambient scanner into a tabbed drawer', async () => {
+describe('React <ContextReference> in a root', () => {
+    it('is enhanced by its root into a tabbed drawer', async () => {
         function Host(): ReactNode {
-            const bound = useSchemeEngine();
             return createElement(
-                bound.Container,
+                EzClassify,
                 {},
                 createElement(
                     ContextReference,
@@ -115,7 +105,7 @@ describe('React <ContextReference> under a provider', () => {
         const { container } = render(
             createElement(
                 EzClassifyProvider,
-                { engine: fullContext() },
+                { context: await fullContext() },
                 createElement(Host),
             ),
         );
@@ -147,7 +137,10 @@ describe('React <ContextReference> under a provider', () => {
  * committed binding: enhancement happens, then React mutates its children.
  */
 describe('React <ContextReference> reactive lifecycle', () => {
-    const ctx = fullContext();
+    let ctx: EzClassifyClient;
+    beforeAll(async () => {
+        ctx = await fullContext();
+    });
 
     interface HarnessApi {
         setShowDev: (v: boolean) => void;
@@ -161,7 +154,6 @@ describe('React <ContextReference> reactive lifecycle', () => {
     }: {
         controls: (api: HarnessApi) => void;
     }): ReactNode {
-        const bound = useSchemeEngine();
         const [showDev, setShowDev] = useState(true);
         const [showOps, setShowOps] = useState(false);
         const [swap, setSwap] = useState(false);
@@ -188,7 +180,7 @@ describe('React <ContextReference> reactive lifecycle', () => {
         const children = swap ? [ops, dev] : [dev, ops];
 
         return createElement(
-            bound.Container,
+            EzClassify,
             {},
             createElement(ContextReference, { open: true }, children),
         );
@@ -199,7 +191,7 @@ describe('React <ContextReference> reactive lifecycle', () => {
         const { container } = render(
             createElement(
                 EzClassifyProvider,
-                { engine: ctx },
+                { context: ctx },
                 createElement(Harness, {
                     controls: (a) => {
                         api = a;
@@ -267,9 +259,8 @@ describe('React <ContextReference> reactive lifecycle', () => {
 
     it('unmounts the whole drawer without throwing', async () => {
         function DrawerHost(): ReactNode {
-            const bound = useSchemeEngine();
             return createElement(
-                bound.Container,
+                EzClassify,
                 {},
                 createElement(
                     ContextReference,
@@ -291,7 +282,7 @@ describe('React <ContextReference> reactive lifecycle', () => {
         const { container } = render(
             createElement(
                 EzClassifyProvider,
-                { engine: fullContext() },
+                { context: await fullContext() },
                 createElement(Parent),
             ),
         );

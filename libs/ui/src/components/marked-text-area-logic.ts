@@ -21,23 +21,13 @@ export interface RepairSegment {
     repaired: boolean;
 }
 
-/** Minimal scan-result shape needed by {@link keepLeadingPartMarks}. */
-export interface ScannedMarking {
-    /** Character offset of the wrapped marking's opening delimiter. */
-    start: number;
-}
-
 /**
- * Match the genuine leading part mark at the very start of a field value.
+ * Match the wrapped mark at the very start of a field value.
  *
- * A scheme's `embeddedMarking` wrapper pattern is often written with a greedy
- * quantifier (e.g. `\((.+)\)`). Run greedily against a field whose prose
- * contains a later closing delimiter, e.g. "(A) note: see section (b) below."
- * The match spans from the leading "(" all the way to the prose paren, so the
- * marking chip swallows the whole sentence. The leading part mark is only the
- * first wrapped token, so match it minimally: anchor at the start and make the
- * pattern's quantifiers reluctant. Falls back to the unmodified, start-anchored
- * pattern when the reluctant form does not match at index 0.
+ * The scheme's `embeddedMarking` pattern is applied as written, anchored at the
+ * start, the way the engine's scan reads it. A greedy pattern such as
+ * `\((.+)\)` therefore reaches the last closing delimiter on the line, as it
+ * does in the scan.
  *
  * @param value - The field value
  * @param pattern - The scheme's embeddedMarking regex source
@@ -45,53 +35,13 @@ export interface ScannedMarking {
  */
 export function matchLeadingMark(value: string, pattern: string): string {
     if (!value || !pattern) return '';
-    // Anchor at start so we only ever accept a leading mark.
     const anchored = pattern.startsWith('^') ? pattern : `^(?:${pattern})`;
-    // Make greedy quantifiers reluctant so the FIRST closing delimiter wins, not
-    // the last. Only the bare quantifiers are touched (a following '?' means it is
-    // already reluctant/optional and is left alone).
-    const reluctant = anchored.replace(/([.\])])([+*])(?![?])/g, '$1$2?');
-    for (const src of [reluctant, anchored]) {
-        try {
-            const m = new RegExp(src).exec(value);
-            if (m && m.index === 0 && m[0]) return m[0];
-        } catch {
-            /* malformed transform, try the next candidate */
-        }
+    try {
+        const m = new RegExp(anchored).exec(value);
+        return m?.[0] ?? '';
+    } catch {
+        return '';
     }
-    return '';
-}
-
-/**
- * Keep only wrapped markings that sit at the start of a line (a genuine
- * leading/explicit part mark), discarding ones embedded mid-prose.
- *
- * The engine's scan walks the whole field text with the scheme's wrapper
- * pattern (parenthesized tokens), so ordinary prose that happens to contain a
- * parenthesized abbreviation or citation, e.g. "OCA/EO 13526, §1.2(a)", gets
- * matched as a part mark in addition to the field's real leading "(U)". A
- * marked field carries at most one part mark per line/paragraph and it always
- * leads that line; a wrapped token that appears _after_ non-blank text on its
- * line is prose, not a marking.
- *
- * A marking qualifies when everything between the start of its line and the
- * mark's opening delimiter is whitespace. This preserves multi-paragraph fields
- * (each paragraph's leading mark starts its own line) while dropping the
- * citation/abbreviation false positives.
- *
- * @param scanned - Wrapped scan results in document order (each carries
- *   `start`)
- * @param text - The full field text the offsets index into
- */
-export function keepLeadingPartMarks<T extends ScannedMarking>(
-    scanned: T[],
-    text: string,
-): T[] {
-    return scanned.filter((r) => {
-        const lineStart = text.lastIndexOf('\n', r.start - 1) + 1;
-        // Genuine leading mark: only whitespace precedes it on its own line.
-        return text.slice(lineStart, r.start).trim().length === 0;
-    });
 }
 
 /**
@@ -115,14 +65,35 @@ export function extractInner(
 }
 
 /**
+ * The delimiters an embedded marking template writes around the marking, so a
+ * field draws the scheme's own and never assumes a parenthesis.
+ *
+ * @param template - The embedded marking template (e.g. "({marking}) ")
+ * @returns The text before the marking, and the text after it less the trailing
+ *   space that parts the mark from the text; both empty for a template with no
+ *   marking slot
+ */
+export function templateDelimiters(template: string): {
+    open: string;
+    close: string;
+} {
+    const slot = '{marking}';
+    const at = template.indexOf(slot);
+    if (at < 0) return { open: '', close: '' };
+    return {
+        open: template.slice(0, at),
+        close: template.slice(at + slot.length).trimEnd(),
+    };
+}
+
+/**
  * Write a rendered part marking as it appears in the field.
  *
  * Most schemes render a part marking bare ("S//NF") and the embedded template
  * adds the wrapper. A scheme may instead spell the wrapper in the part view
  * itself, so a concept renders as "(gluten)": that rendering already is one
  * whole embedded mark, and wrapping it again would write "((gluten))". The
- * pattern that belongs to the template decides, read the way a leading mark is
- * read, so a greedy pattern cannot take "(A)//(B)" for a single mark.
+ * pattern that belongs to the template decides, read as a leading mark is.
  *
  * @param rendered - The engine's rendering of the part marking
  * @param template - The embedded marking template (e.g. "({marking}) ")
@@ -183,24 +154,61 @@ export function fixesNeedingCorrection<T extends CorrectableChange>(
 }
 
 /**
- * Patch textarea content when repair changed any marking's rendered form.
- * Returns the new value, cumulative drift, and whether any patch was applied.
+ * The markings an edit touched, as indices into the new list.
  *
- * @param segments - The current marking segments with repair flags
+ * The marks the edit left alone are the run both lists share at the start and
+ * the run they share at the end; whatever lies between is what the user typed,
+ * replaced or inserted. Matching by position alone would count every mark after
+ * an inserted paragraph as edited, because each one moved.
+ *
+ * @param previous - The markings as written before the edit, in text order
+ * @param next - The markings as written after it, in text order
+ * @returns The indices into `next` of the markings the edit wrote, ascending
+ */
+export function editedMarkingIndices(
+    previous: readonly string[],
+    next: readonly string[],
+): number[] {
+    const shared = Math.min(previous.length, next.length);
+    let head = 0;
+    while (head < shared && previous[head] === next[head]) head++;
+    let tail = 0;
+    while (
+        tail < shared - head &&
+        previous[previous.length - 1 - tail] === next[next.length - 1 - tail]
+    ) {
+        tail++;
+    }
+    const edited: number[] = [];
+    for (let i = head; i < next.length - tail; i++) edited.push(i);
+    return edited;
+}
+
+/**
+ * Patch textarea content when repair changed any marking's rendered form.
+ * Returns the new value, where the caret goes in it, and whether any patch was
+ * applied.
+ *
+ * @param segments - The current marking segments with repair flags, in text
+ *   order
  * @param textareaValue - The current textarea value
  * @param embeddedTemplate - The embedded marking template (e.g. "({marking}) ")
  * @param embeddedPattern - The embedded marking pattern declared with the
  *   template, so a rendering that already carries its wrapper is not wrapped
  *   twice
+ * @param caret - The caret's offset in `textareaValue`. It moves with the
+ *   repairs made ahead of it and stays put for the ones after it.
  */
 export function applyRepairs(
     segments: RepairSegment[],
     textareaValue: string,
     embeddedTemplate: string,
     embeddedPattern?: string,
-): { value: string; drift: number; patched: boolean } {
+    caret = 0,
+): { value: string; caret: number; patched: boolean } {
     let v = textareaValue;
     let drift = 0;
+    let movedCaret = caret;
     let patched = false;
 
     for (const seg of segments) {
@@ -215,11 +223,13 @@ export function applyRepairs(
         const adjStart = seg.start + drift;
         const adjEnd = seg.end + drift;
         v = v.slice(0, adjStart) + corrected + v.slice(adjEnd);
-        drift += corrected.length - (seg.end - seg.start);
+        const change = corrected.length - (seg.end - seg.start);
+        drift += change;
+        if (seg.end <= caret) movedCaret += change;
         patched = true;
     }
 
-    return { value: v, drift, patched };
+    return { value: v, caret: movedCaret, patched };
 }
 
 /** What a mark with something to say tells the user about itself. */

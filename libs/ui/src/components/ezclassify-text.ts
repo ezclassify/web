@@ -14,20 +14,25 @@
  * would be a lot of churn).
  */
 
-import type { Assertion, ValidationError } from '@ezclassify/types';
+import type {
+    Assertion,
+    ProcessingContext,
+    RenderAssessment,
+    ValidationError,
+} from '@ezclassify/types';
 import type {
     ComponentInstance,
     ComponentOptions,
     ComponentEngineSource,
     ComponentSchemeEngine,
 } from './component-base-readonly';
+import { resolveProfile, resolveSchemeEngine } from './component-base-readonly';
 import {
-    isAddressableSchemeEngine,
-    resolveContextSource,
-    resolveProfile,
-    resolveSchemeEngine,
-} from './component-base-readonly';
+    renderViewRefusalMessages,
+    renderViewRefused,
+} from '../render-refusal';
 import textCss from './ezclassify-text.css?inline';
+import { assertWritesScopes, viewOutputOf } from '../format-resolver';
 import { adoptStyles, type AdoptedStyles } from '../styles/adopt';
 
 const EZCLASSIFY_TEXT_CSS: string = textCss;
@@ -71,65 +76,68 @@ type AnyOnChange = (
  */
 export class EzClassifyText implements ComponentInstance {
     private engine!: ComponentSchemeEngine;
-    private schemeAddressing = false;
     private host!: HTMLElement;
     private options: EzClassifyTextOptions = {};
     private formatId!: string;
     private schemeId!: string;
-    private roleContext: { role: 'whole' | 'part' } | undefined;
+    /** The part context every read carries; undefined for a whole. */
+    private resolveRoleContext: (() => ProcessingContext) | undefined;
     private assertions: Assertion[] = [];
     private rendered = '';
     private valid = true;
     private errors: ValidationError[] = [];
     private adoptedStyle: AdoptedStyles | null = null;
     private destroyed = false;
+    /** The last write of the facts was refused, so `valid` says that. */
+    private refused = false;
 
     async init(
         container: HTMLDivElement,
         engineOrContext?: ComponentEngineSource | null,
         options?: ComponentOptions,
     ): Promise<void> {
-        this.engine = resolveSchemeEngine(
-            container,
-            engineOrContext,
-            'EzClassifyText',
-        );
-        this.schemeAddressing =
-            resolveContextSource(container, engineOrContext) === null &&
-            isAddressableSchemeEngine(this.engine);
+        this.engine = resolveSchemeEngine(engineOrContext, 'EzClassifyText');
         this.host = container;
         this.options = (options ?? {}) as EzClassifyTextOptions;
-        this.schemeId = resolveProfile(
-            container,
-            this.engine,
-            options,
-            this.schemeAddressing,
-        );
+        this.schemeId = resolveProfile(this.engine);
 
-        const role = container.getAttribute('data-ezclassify-role');
-        if (role === 'whole' || role === 'part') this.roleContext = { role };
+        // Roles come from structure: a host inside a whole, or one naming its
+        // whole with `data-ezclassify-part-of`, holds a part. `role="part"`
+        // remains only for a part whose whole is not on the page. Any other
+        // host reads with no role, which the engine reads as a whole.
+        const readsAsPart =
+            container.getAttribute('data-ezclassify-role') === 'part' ||
+            options?.holdsPart === true;
+        this.resolveRoleContext = options?.resolveContext
+            ? () => options.resolveContext?.() ?? { role: 'part' }
+            : readsAsPart
+              ? () => ({ role: 'part' })
+              : undefined;
 
-        const schemeMeta = this.schemeAddressing
-            ? this.engine.getSchemeMeta(this.schemeId)
-            : this.engine.getSchemeMeta();
+        const schemeMeta = this.engine.getSchemeMeta();
+        const scopes = this.options.scopes ?? [];
         if (options?.formatId) {
             this.formatId = options.formatId;
-        } else if (
-            role === 'part' ||
-            (role !== 'whole' && options?.holdsPart)
-        ) {
+        } else if (scopes.length > 0) {
+            // A host that names scopes holds what they write.
+            this.formatId = viewOutputOf(schemeMeta, scopes, readsAsPart);
+        } else if (readsAsPart) {
             this.formatId =
                 schemeMeta.defaultPartRenderFormat ??
-                schemeMeta.defaultRenderFormat ??
-                '';
-        } else if (role === 'whole') {
-            this.formatId =
-                schemeMeta.defaultWholeRenderFormat ??
                 schemeMeta.defaultRenderFormat ??
                 '';
         } else {
             this.formatId = schemeMeta.defaultRenderFormat ?? '';
         }
+        // The host's text is one string, so several scopes need one format
+        // that writes them all.
+        assertWritesScopes(
+            this.engine,
+            this.engine.getScheme().categories,
+            this.formatId,
+            scopes,
+            'EzClassifyText',
+        );
 
         container.setAttribute('data-ezclassify', '');
 
@@ -181,14 +189,14 @@ export class EzClassifyText implements ComponentInstance {
             format: this.formatId,
         });
         if ('rendered' in result) {
-            this.rendered = result.rendered;
+            this.applyWrite(result);
             this.applyValidationClasses();
             this.emitChange();
         } else {
             result.then(
                 (r) => {
                     if (this.destroyed) return;
-                    this.rendered = r.rendered;
+                    this.applyWrite(r);
                     this.applyValidationClasses();
                     this.emitChange();
                 },
@@ -272,9 +280,17 @@ export class EzClassifyText implements ComponentInstance {
             );
             if (this.destroyed) return;
             this.assertions = result.assertions ?? [];
-            this.rendered = result.rendered ?? '';
             this.valid = result.valid !== false;
             this.errors = result.errors ?? [];
+            this.refused = false;
+            // A refused write is the engine's marker: the text this host
+            // holds stands, and the host says it could not be written.
+            if (renderViewRefused(result)) {
+                this.rendered = text;
+                this.refuse(result, this.errors);
+            } else {
+                this.rendered = result.rendered ?? '';
+            }
         } catch (err) {
             // Engine errors are treated as a hard-invalid marking: keep the prior
             // assertions empty so we don't leak stale state into the aggregate,
@@ -300,6 +316,38 @@ export class EzClassifyText implements ComponentInstance {
         this.host.textContent = this.rendered;
         this.applyValidationClasses();
         this.emitChange();
+    }
+
+    /** Take a write of the facts; a refused one leaves the text standing. */
+    private applyWrite(write: {
+        rendered: string;
+        assessment?: RenderAssessment;
+    }): void {
+        if (renderViewRefused(write)) {
+            this.refuse(write);
+            return;
+        }
+        this.rendered = write.rendered;
+        if (this.refused) {
+            this.refused = false;
+            this.valid = true;
+            this.errors = [];
+        }
+    }
+
+    /** Hold the host invalid, with why its marking could not be written. */
+    private refuse(
+        write: { assessment?: RenderAssessment },
+        errors: readonly ValidationError[] = [],
+    ): void {
+        this.refused = true;
+        this.valid = false;
+        this.errors = [
+            ...errors,
+            ...renderViewRefusalMessages(this.formatId, write).map(
+                (message) => ({ constraintId: '_refused', message }),
+            ),
+        ];
     }
 
     private applyValidationClasses(): void {
@@ -352,25 +400,27 @@ export class EzClassifyText implements ComponentInstance {
     }
 
     /**
-     * Engine.validate with the host's role, addressed to this host's scheme
-     * where it can be. The host displays a marking and corrects nothing, so it
-     * asks the reader's call.
+     * Engine.validate with the host's role. The host displays a marking and
+     * corrects nothing, so it asks the reader's call.
      */
     private callValidate(input: string, options?: { outputFormat?: string }) {
-        const merged = this.roleContext
-            ? { ...options, context: this.roleContext }
-            : options;
-        if (this.schemeAddressing && isAddressableSchemeEngine(this.engine)) {
-            return this.engine.validate(input, this.schemeId, merged);
-        }
-        return this.engine.validate(input, merged);
+        const context = this.resolveRoleContext?.();
+        // A host that names one scope holds that scope's surface, and is read
+        // as it; one naming several holds the marking they write together.
+        const surface = this.options.scope;
+        const merged = {
+            ...options,
+            ...(context ? { context } : {}),
+            ...(surface ? { surface } : {}),
+        };
+        return this.engine.validate(
+            input,
+            Object.keys(merged).length > 0 ? merged : undefined,
+        );
     }
 
     private callRender(assertions: Assertion[], options?: { format?: string }) {
         const format = options?.format;
-        if (this.schemeAddressing) {
-            return this.engine.render(assertions, format, this.schemeId);
-        }
         return this.engine.render(assertions, format);
     }
 

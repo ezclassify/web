@@ -1,8 +1,8 @@
 /**
  * Shared base for the framework `EzClassifyStore` adapters.
  *
- * This base owns engine-facing commits, aggregate and whole-rollup recomputes,
- * facet refreshes and publication cycle protection.
+ * This base owns engine-facing commits, level and whole rollups, facet
+ * refreshes and publication cycle protection.
  *
  * Each adapter supplies only a {@link ReactiveCell} factory for marking,
  * aggregate, and whole-rollup state; the cell hides whether reads/writes go
@@ -30,7 +30,7 @@
  *   two layers (see {@link recompose}) and composes the marking again, and only
  *   the newest composition commits, so an older answer never lands over a newer
  *   layer and a hung call holds nothing up;
- * - The page aggregate and each whole rollup: a revision, already present;
+ * - Each level rollup and each whole rollup: a revision;
  * - Facet refreshes: a per-marking revision.
  *
  * Every superseded call is also aborted through the `signal` its adapter option
@@ -55,18 +55,23 @@ import {
 // import back into it would make the cycle real and TDZ the class binding.
 // Runtime helpers come from ./store-shared, which imports no store class.
 import type {
+    EzClassifyAggregate,
     EzClassifyState,
     EzClassifyStore,
     EzClassifyStoreAggregateResult,
+    EzClassifyStoreBuckets,
     EzClassifyStoreEngine,
     EzClassifyStoreProcessResult,
     FacetState,
     PublishSource,
 } from './ezclassify-store';
 import {
+    EMPTY_EZCLASSIFY_AGGREGATE,
     EMPTY_EZCLASSIFY_STATE,
     EMPTY_FACET_STATE,
+    SOLE_BUCKET,
     facetStateEqual,
+    type BucketKey,
 } from './store-shared';
 
 /**
@@ -82,6 +87,69 @@ import {
 interface ScopeIndex {
     defaultScope: string | undefined;
     byCategory: Map<string, string>;
+}
+
+/**
+ * One bucket's engine and what the store has read from its scheme metadata. The
+ * scheme a bucket reads by does not change over the store's lifetime, so each
+ * value is read once.
+ */
+interface ResolvedBucket {
+    engine: EzClassifyStoreEngine;
+    /**
+     * The format the bucket's whole markings are written in, if the host names
+     * one.
+     */
+    format?: string;
+    /** `null` until first read. */
+    scopeIndex: ScopeIndex | null;
+    /** `undefined` until read, `null` when the scheme names none. */
+    partFormat: string | null | undefined;
+    /** `undefined` until read, `null` when the scheme names none. */
+    wholeFormat: string | null | undefined;
+}
+
+/** A level of the rollup tree: a collection id, or `null` for the page. */
+type LevelId = string | null;
+
+/** What one level rollup sends the engine, per bucket. */
+interface LevelInputs {
+    /** Contributor fact sets per bucket, in document order. */
+    sets: Map<BucketKey, Assertion[][]>;
+    /**
+     * Buckets missing a contributor: a failed read, a partial read, a held
+     * rollup.
+     */
+    stale: Set<BucketKey>;
+}
+
+/**
+ * A comparable reading of a rolled-up state: what a listener or a parent level
+ * would see change.
+ */
+function rollupDigest(state: EzClassifyState): string {
+    return JSON.stringify([
+        state.rendered,
+        state.valid,
+        state.stale === true,
+        state.assertions.map(assertionFactKey),
+        state.errors,
+        state.displayColor ?? null,
+    ]);
+}
+
+function aggregateDigest(aggregate: EzClassifyAggregate): string {
+    return JSON.stringify(
+        [...aggregate.byBucket]
+            .sort(([left], [right]) =>
+                left < right ? -1 : left > right ? 1 : 0,
+            )
+            .map(([bucket, state]) => [bucket, rollupDigest(state)]),
+    );
+}
+
+function isEmptyState(state: EzClassifyState): boolean {
+    return state.rendered === '' && state.assertions.length === 0;
 }
 
 /**
@@ -451,8 +519,13 @@ interface FacetEntry {
  * to control teardown-time cell writes.
  */
 export abstract class BaseEzClassifyStore implements EzClassifyStore {
-    protected readonly engine: EzClassifyStoreEngine;
-    protected readonly format?: string;
+    private readonly buckets: EzClassifyStoreBuckets;
+    private readonly resolvedBuckets = new Map<BucketKey, ResolvedBucket>();
+    /**
+     * Markings `setBucket` placed; every other marking is in the default
+     * bucket.
+     */
+    private readonly bucketByMarking = new Map<string, BucketKey>();
 
     private readonly markings = new Map<string, MarkingEntry>();
     /**
@@ -476,20 +549,43 @@ export abstract class BaseEzClassifyStore implements EzClassifyStore {
     private readonly incompleteContributors = new Map<string, string | null>();
     /** Rollups asked for while a contributor was unsettled. */
     private readonly heldWholeRollups = new Set<string>();
-    private aggregateHeld = false;
-    private readonly entryCollections = new Map<string, readonly string[]>();
-    private readonly entryCollectionListeners = new Map<
+    private readonly heldLevels = new Set<LevelId>();
+    private readonly entryLists = new Map<string, readonly string[]>();
+    private readonly entryListListeners = new Map<
         string,
         Set<{
             listener: (ids: readonly string[]) => void;
             source?: PublishSource;
         }>
     >();
-    private readonly aggregateCell: ReactiveCell<EzClassifyState>;
-    private readonly aggregateListeners = new Set<
-        (state: EzClassifyState) => void
+    /** Each declared collection with its parent, `null` for the page. */
+    private readonly collections = new Map<string, string | null>();
+    /** Wholes `setMembership` placed in a collection. */
+    private readonly membershipByMarking = new Map<string, string>();
+    private readonly noRollupMarkings = new Set<string>();
+    /** Document order of node ids; `null` orders them by id. */
+    private documentOrder: ((left: string, right: string) => number) | null =
+        null;
+    /**
+     * One cell per level a view reads: the page (`null`), each collection, and
+     * each whole whose parts rollup is read through `getAggregate`.
+     */
+    private readonly levelCells = new Map<
+        LevelId,
+        ReactiveCell<EzClassifyAggregate>
+    >();
+    private readonly levelListeners = new Map<
+        LevelId,
+        Set<(aggregate: EzClassifyAggregate) => void>
     >();
     private readonly partOfByMarking = new Map<string, string>();
+    /** Parts with no whole on the page: see {@link setStandalonePart}. */
+    private readonly standaloneParts = new Set<string>();
+    /**
+     * The output a marking's `rendered` is written in when the field that owns
+     * it names one: see {@link setRenderedOutput}.
+     */
+    private readonly renderedOutputs = new Map<string, string>();
     /**
      * Observed context provenance is positive evidence of dependence, including
      * a stand-in that takes the whole's list. Absence cannot prove
@@ -505,8 +601,8 @@ export abstract class BaseEzClassifyStore implements EzClassifyStore {
         string,
         Set<(state: EzClassifyState) => void>
     >();
-    /** Latest-wins guards for asynchronous aggregate computations. */
-    private aggregateRevision = 0;
+    /** Latest-wins guards for asynchronous rollup computations. */
+    private readonly levelRevisions = new Map<LevelId, number>();
     private readonly wholeRollupRevisions = new Map<string, number>();
     /** Latest-wins guard for the per-marking facet fan-out. */
     private readonly facetRevisions = new Map<string, number>();
@@ -523,7 +619,7 @@ export abstract class BaseEzClassifyStore implements EzClassifyStore {
     private readonly publishAborts = new Map<string, AbortController>();
     private readonly facetAborts = new Map<string, AbortController>();
     private readonly wholeRollupAborts = new Map<string, AbortController>();
-    private aggregateAbort: AbortController | null = null;
+    private readonly levelAborts = new Map<LevelId, AbortController>();
     /**
      * Facet state: markingId → categoryId → cell + listeners. The cell is the
      * state; the listener set is a view over it, so a framework that can read
@@ -549,26 +645,44 @@ export abstract class BaseEzClassifyStore implements EzClassifyStore {
         Map<string, string>
     >();
     protected destroyed = false;
-    // Resolved lazily on the first assertion publish and memoized: the scheme
-    // bound to a store does not change over its lifetime, and getSchemeMeta /
-    // listCategories walk the whole category set. `null` = not yet computed. The
-    // resolved value is always a real index; the capabilities are required, so
-    // there is no "routing off" sentinel.
-    private scopeIndexCache: ScopeIndex | null = null;
-    /**
-     * Memoized part-surface format from the scheme metadata, resolved on first
-     * use. `undefined` = not yet read, `null` = read and the scheme names none.
-     * The scheme bound to a store does not change over its lifetime.
-     */
-    private partFormatCache: string | null | undefined = undefined;
-    /** The whole entries' format, memoized the same way. */
-    private wholeFormatCache: string | null | undefined = undefined;
 
-    constructor(engine: EzClassifyStoreEngine, options?: { format?: string }) {
-        assertLosslessCapabilities(engine);
-        this.engine = engine;
-        this.format = options?.format;
-        this.aggregateCell = this.createCell(EMPTY_EZCLASSIFY_STATE);
+    /**
+     * @param engines - The engine every marking is read by, or `{ buckets }`
+     *   when markings are read in several buckets (see
+     *   {@link EzClassifyStoreBuckets}).
+     * @param options.format - The format whole markings are written in, for a
+     *   store over one engine. With `buckets`, each bucket names its own.
+     * @throws When an engine lacks a capability lossless transport needs, or
+     *   `format` is given with `buckets`.
+     */
+    constructor(
+        engines: EzClassifyStoreEngine | { buckets: EzClassifyStoreBuckets },
+        options?: { format?: string },
+    ) {
+        if ('buckets' in engines) {
+            if (options?.format !== undefined) {
+                throw new Error(
+                    '[ezclassify] EzClassifyStore: with buckets, each bucket names its own format; the store-wide format option does not apply.',
+                );
+            }
+            this.buckets = engines.buckets;
+        } else {
+            const sole = { engine: engines, format: options?.format };
+            this.buckets = {
+                defaultBucket: SOLE_BUCKET,
+                resolve: (bucket) => {
+                    if (bucket !== SOLE_BUCKET) {
+                        throw new Error(
+                            '[ezclassify] EzClassifyStore: a store over one engine holds only its sole bucket.',
+                        );
+                    }
+                    return sole;
+                },
+            };
+            // Refused at construction, before any marking needs it.
+            this.resolveBucket(SOLE_BUCKET);
+        }
+        this.levelCells.set(null, this.createCell(EMPTY_EZCLASSIFY_AGGREGATE));
         idleWatches.set(this, {
             busy: () => this.publishAborts.size > 0,
             composing: (id) => this.publishAborts.has(id),
@@ -598,13 +712,14 @@ export abstract class BaseEzClassifyStore implements EzClassifyStore {
 
     /**
      * Hook invoked at the end of {@link destroy}, before the internal maps are
-     * cleared, while cells still hold their values. Default zeroes the
-     * aggregate and whole-rollup cells. Angular overrides this to a no-op:
-     * writing a signal during teardown re-triggers its effect scheduler, which
-     * re-enters a destroyed store. The component tree is going away anyway.
+     * cleared, while cells still hold their values. Default zeroes the level
+     * and whole-rollup cells. Angular overrides this to a no-op: writing a
+     * signal during teardown re-triggers its effect scheduler, which re-enters
+     * a destroyed store. The component tree is going away anyway.
      */
     protected onDestroy(): void {
-        this.aggregateCell.set(EMPTY_EZCLASSIFY_STATE);
+        for (const cell of this.levelCells.values())
+            cell.set(EMPTY_EZCLASSIFY_AGGREGATE);
         for (const cell of this.wholeRollupCells.values())
             cell.set(EMPTY_EZCLASSIFY_STATE);
     }
@@ -617,9 +732,14 @@ export abstract class BaseEzClassifyStore implements EzClassifyStore {
         return this.ensureEntry(id).cell;
     }
 
-    /** Live cell for the page-level aggregate. */
-    protected aggregateStateCell(): ReactiveCell<EzClassifyState> {
-        return this.aggregateCell;
+    /**
+     * Live cell for a level's rollup: the page when `nodeId` is omitted, else a
+     * collection, or a whole for its parts rollup (see {@link getAggregate}).
+     */
+    protected aggregateStateCell(
+        nodeId?: string,
+    ): ReactiveCell<EzClassifyAggregate> {
+        return this.ensureLevelCell(nodeId ?? null);
     }
 
     /** Live cell for a per-whole rollup. */
@@ -666,18 +786,7 @@ export abstract class BaseEzClassifyStore implements EzClassifyStore {
 
     requestOutput(id: string, output: string): () => void {
         this.assertAlive();
-        const declared = (this.engine.getSchemeMeta().formats ?? []).map(
-            (layout) => layout.id,
-        );
-        if (!declared.includes(output)) {
-            const listed =
-                declared.length > 0
-                    ? declared.map((one) => `"${one}"`).join(', ')
-                    : 'none';
-            throw new Error(
-                `${this.storeLabel()}: requestOutput("${output}") names an output the scheme does not declare. It declares ${listed}.`,
-            );
-        }
+        this.assertDeclaredOutput(id, output, 'requestOutput');
         let held = this.outputRequests.get(id);
         if (!held) {
             held = new Map();
@@ -695,6 +804,25 @@ export abstract class BaseEzClassifyStore implements EzClassifyStore {
             else current.delete(output);
             if (current.size === 0) this.outputRequests.delete(id);
         };
+    }
+
+    /** Throw unless the scheme of `id`'s bucket declares `output`. */
+    private assertDeclaredOutput(
+        id: string,
+        output: string,
+        caller: string,
+    ): void {
+        const declared = (
+            this.bucketOf(id).engine.getSchemeMeta().formats ?? []
+        ).map((layout) => layout.id);
+        if (declared.includes(output)) return;
+        const listed =
+            declared.length > 0
+                ? declared.map((one) => `"${one}"`).join(', ')
+                : 'none';
+        throw new Error(
+            `${this.storeLabel()}: ${caller}("${output}") names an output the scheme does not declare. It declares ${listed}.`,
+        );
     }
 
     /**
@@ -725,11 +853,13 @@ export abstract class BaseEzClassifyStore implements EzClassifyStore {
         source?: PublishSource,
     ): Promise<void> {
         if (this.destroyed) return Promise.reject(this.destroyedError());
+        const unplaced = this.unplacedError(id);
+        if (unplaced) return Promise.reject(unplaced);
         this.materializeAggregateEdit(id);
         const { edits } = this.layersOf(id);
         edits.rendered = { text: rendered };
         for (const categoryId of edits.categories.keys()) {
-            if (this.isDefaultScope(categoryId))
+            if (this.isDefaultScope(id, categoryId))
                 edits.categories.delete(categoryId);
         }
         // An empty string states nothing in either scope.
@@ -776,6 +906,8 @@ export abstract class BaseEzClassifyStore implements EzClassifyStore {
         options?: { categories?: readonly string[] },
     ): Promise<void> {
         if (this.destroyed) return Promise.reject(this.destroyedError());
+        const unplaced = this.unplacedError(id);
+        if (unplaced) return Promise.reject(unplaced);
         // A field that read this part against its whole says so before the
         // engine answers, so a whole that changes meanwhile reads it again.
         if (assertions.some(takenFromWhole)) this.standInParts.add(id);
@@ -799,6 +931,8 @@ export abstract class BaseEzClassifyStore implements EzClassifyStore {
         source?: PublishSource,
     ): Promise<void> {
         if (this.destroyed) return Promise.reject(this.destroyedError());
+        const unplaced = this.unplacedError(id);
+        if (unplaced) return Promise.reject(unplaced);
         const { edits } = this.layersOf(id);
         edits.aggregate = assertionSets.map((set) => [...set]);
         delete edits.rendered;
@@ -839,6 +973,8 @@ export abstract class BaseEzClassifyStore implements EzClassifyStore {
      */
     seedRendered(id: string, rendered: string): Promise<void> {
         if (this.destroyed) return Promise.reject(this.destroyedError());
+        const unplaced = this.unplacedError(id);
+        if (unplaced) return Promise.reject(unplaced);
         this.layersOf(id).baseline = { text: rendered };
         return this.recompose(id);
     }
@@ -850,6 +986,8 @@ export abstract class BaseEzClassifyStore implements EzClassifyStore {
      */
     seedAssertions(id: string, assertions: Assertion[]): Promise<void> {
         if (this.destroyed) return Promise.reject(this.destroyedError());
+        const unplaced = this.unplacedError(id);
+        if (unplaced) return Promise.reject(unplaced);
         this.layersOf(id).baseline = { assertions };
         return this.recompose(id);
     }
@@ -857,11 +995,10 @@ export abstract class BaseEzClassifyStore implements EzClassifyStore {
     /**
      * Release a marking whose host has left the page: drop its baseline and its
      * edits and commit the empty marking, under a composition newer than
-     * anything in flight, so it leaves the page aggregate and the next seed
-     * under the same id starts from its own served value. A runtime torn down
-     * over hosts that stay on the page releases nothing; the next runtime seeds
-     * the same hosts under the same edits. A destroyed store has nothing to
-     * release.
+     * anything in flight, so it leaves its rollups and the next seed under the
+     * same id starts from its own served value. A runtime torn down over hosts
+     * that stay on the page releases nothing; the next runtime seeds the same
+     * hosts under the same edits. A destroyed store has nothing to release.
      */
     releaseSeed(id: string): void {
         if (this.destroyed) return;
@@ -910,7 +1047,7 @@ export abstract class BaseEzClassifyStore implements EzClassifyStore {
             } else if (composition.kind === 'aggregate') {
                 const whole = this.wholeContextOf(id);
                 const result = await answerOrAbort(
-                    this.engine.aggregateAssertions(
+                    this.bucketOf(id).engine.aggregateAssertions(
                         composition.contributors.map(withoutTakenFromWhole),
                         {
                             outputFormat: this.formatFor(id),
@@ -941,7 +1078,7 @@ export abstract class BaseEzClassifyStore implements EzClassifyStore {
                 // their sources, rather than silently dropping the unread text.
                 const edits = this.layersOf(id).edits;
                 for (const category of edits.categories.keys())
-                    if (this.isDefaultScope(category))
+                    if (this.isDefaultScope(id, category))
                         edits.categories.delete(category);
                 state = {
                     ...composition.layer.read!,
@@ -960,7 +1097,7 @@ export abstract class BaseEzClassifyStore implements EzClassifyStore {
                     layer.read = {
                         ...state,
                         assertions: state.assertions.filter((a) =>
-                            this.isDefaultScope(a.categoryId),
+                            this.isDefaultScope(id, a.categoryId),
                         ),
                     };
                 }
@@ -1000,6 +1137,10 @@ export abstract class BaseEzClassifyStore implements EzClassifyStore {
             // computed now.
             if (failed) {
                 this.refreshStaleFacets(id);
+                // A first read that failed leaves its rollups missing it, and
+                // they say so even when nothing else would compute them again.
+                if (this.failedMarkings.has(id))
+                    this.recomputeAround(id, this.levelOfWhole(id));
                 // No commit is coming to ask for the rollups this read held.
                 this.rerunHeldRollups();
             }
@@ -1018,7 +1159,7 @@ export abstract class BaseEzClassifyStore implements EzClassifyStore {
         const edits = this.layers.get(id)?.edits;
         if (!edits || edits.categories.size === 0) return;
         for (const categoryId of edits.categories.keys()) {
-            if (!this.isDefaultScope(categoryId)) continue;
+            if (!this.isDefaultScope(id, categoryId)) continue;
             edits.categories.set(
                 categoryId,
                 state.assertions.filter((a) => a.categoryId === categoryId),
@@ -1049,11 +1190,11 @@ export abstract class BaseEzClassifyStore implements EzClassifyStore {
             (defaultScope: boolean) =>
             (categoryId: string): boolean =>
                 edits.categories.has(categoryId) &&
-                this.isDefaultScope(categoryId) === defaultScope;
+                this.isDefaultScope(id, categoryId) === defaultScope;
         const baselineScoped =
             baseline && 'assertions' in baseline && edits.rendered?.text !== ''
                 ? baseline.assertions.filter(
-                      (a) => !this.isDefaultScope(a.categoryId),
+                      (a) => !this.isDefaultScope(id, a.categoryId),
                   )
                 : [];
         const scoped = withCategoriesFrom(
@@ -1068,7 +1209,7 @@ export abstract class BaseEzClassifyStore implements EzClassifyStore {
         let defaults: Assertion[] = [];
         if (stated && 'assertions' in stated) {
             defaults = stated.assertions.filter((a) =>
-                this.isDefaultScope(a.categoryId),
+                this.isDefaultScope(id, a.categoryId),
             );
         } else if (stated?.text) {
             if (!editsDefaultScope)
@@ -1121,9 +1262,9 @@ export abstract class BaseEzClassifyStore implements EzClassifyStore {
         return layers;
     }
 
-    /** Whether a category belongs to the scheme's default scope. */
-    private isDefaultScope(categoryId: string): boolean {
-        const index = this.resolveScopeIndex();
+    /** Whether a category belongs to the default scope of the marking's scheme. */
+    private isDefaultScope(id: string, categoryId: string): boolean {
+        const index = this.resolveScopeIndex(id);
         const scope = index.byCategory.get(categoryId);
         return scope === undefined || scope === index.defaultScope;
     }
@@ -1141,8 +1282,9 @@ export abstract class BaseEzClassifyStore implements EzClassifyStore {
         scoped: Assertion[],
     ): MarkingRead {
         const whole = this.wholeContextOf(id);
+        const { engine } = this.bucketOf(id);
         const processText = (text: string) =>
-            this.engine.process(text, {
+            engine.process(text, {
                 outputFormat: this.formatFor(id),
                 ...this.outputsFor(id),
                 ...(whole ? { context: whole } : {}),
@@ -1171,7 +1313,7 @@ export abstract class BaseEzClassifyStore implements EzClassifyStore {
                     recognition: result.recognition,
                 };
                 const defaultScope = read.assertions.filter((a) =>
-                    this.isDefaultScope(a.categoryId),
+                    this.isDefaultScope(id, a.categoryId),
                 );
                 if (this.isNewest(id, publish.sequence)) {
                     this.noteStandIn(
@@ -1212,13 +1354,14 @@ export abstract class BaseEzClassifyStore implements EzClassifyStore {
     ): MarkingRead {
         const { defaultScopeAssertions, scopedAssertions } = partitionByScope(
             intended,
-            this.resolveScopeIndex(),
+            this.resolveScopeIndex(id),
         );
         // A part's values taken from its whole are not sent back: the engine
         // takes them again from the whole as it stands now.
         const whole = this.wholeContextOf(id);
+        const { engine } = this.bucketOf(id);
         const processFacts = (assertions: Assertion[]) =>
-            this.engine.process(withoutTakenFromWhole(assertions), {
+            engine.process(withoutTakenFromWhole(assertions), {
                 outputFormat: this.formatFor(id),
                 ...this.outputsFor(id),
                 ...(whole ? { context: whole } : {}),
@@ -1258,15 +1401,28 @@ export abstract class BaseEzClassifyStore implements EzClassifyStore {
         };
     }
 
-    getAggregate(): EzClassifyState {
-        return this.aggregateCell.get();
+    getAggregate(nodeId?: string): EzClassifyAggregate {
+        return this.ensureLevelCell(nodeId ?? null).get();
     }
 
-    subscribeAggregate(listener: (state: EzClassifyState) => void): () => void {
+    subscribeAggregate(
+        listener: (aggregate: EzClassifyAggregate) => void,
+        nodeId?: string,
+    ): () => void {
         this.assertAlive();
-        this.aggregateListeners.add(listener);
+        const level = nodeId ?? null;
+        this.ensureLevelCell(level);
+        let listeners = this.levelListeners.get(level);
+        if (!listeners) {
+            listeners = new Set();
+            this.levelListeners.set(level, listeners);
+        }
+        listeners.add(listener);
         return () => {
-            this.aggregateListeners.delete(listener);
+            const current = this.levelListeners.get(level);
+            if (!current) return;
+            current.delete(listener);
+            if (current.size === 0) this.levelListeners.delete(level);
         };
     }
 
@@ -1279,6 +1435,8 @@ export abstract class BaseEzClassifyStore implements EzClassifyStore {
             this.standInParts.delete(markingId);
             this.rolesChanged(markingId);
             void this.recomputeWholeRollup(prev);
+            // It is a whole of its own again, and contributes to its level.
+            void this.recomputeLevel(this.levelOfWhole(markingId));
             return;
         }
         if (prev === wholeId) return;
@@ -1286,6 +1444,138 @@ export abstract class BaseEzClassifyStore implements EzClassifyStore {
         this.rolesChanged(markingId);
         if (prev && prev !== wholeId) void this.recomputeWholeRollup(prev);
         void this.recomputeWholeRollup(wholeId);
+        // A whole that became a part no longer contributes to its level, and
+        // the level its new whole sits in now holds a whole with parts.
+        if (prev === undefined)
+            void this.recomputeLevel(this.levelOfWhole(markingId));
+        void this.recomputeLevel(this.levelOfWhole(wholeId));
+    }
+
+    setStandalonePart(markingId: string, standalone: boolean): void {
+        this.assertAlive();
+        if (this.standaloneParts.has(markingId) === standalone) return;
+        if (standalone) this.standaloneParts.add(markingId);
+        else this.standaloneParts.delete(markingId);
+        this.rolesChanged(markingId);
+        void this.recomputeLevel(this.levelOfWhole(markingId));
+    }
+
+    setRenderedOutput(markingId: string, output: string | null): void {
+        // A field torn down after its store has nothing to put back.
+        if (this.destroyed && output === null) return;
+        this.assertAlive();
+        if ((this.renderedOutputs.get(markingId) ?? null) === output) return;
+        if (output === null) this.renderedOutputs.delete(markingId);
+        else {
+            this.assertDeclaredOutput(markingId, output, 'setRenderedOutput');
+            this.renderedOutputs.set(markingId, output);
+        }
+        // What was written in the old output is written again in the new
+        // one. An empty marking has nothing to write; its next change is
+        // written in the new output.
+        this.dropReadings(markingId);
+        const held = this.get(markingId);
+        if (
+            this.hasCompositionInFlight(markingId) ||
+            (this.committedMarkings.has(markingId) &&
+                (held.assertions.length > 0 || held.rendered !== ''))
+        )
+            this.recompose(markingId).catch(() => {});
+    }
+
+    setBucket(markingId: string, bucket: BucketKey): void {
+        this.assertAlive();
+        if (this.bucketKeyOf(markingId) === bucket) {
+            this.bucketByMarking.set(markingId, bucket);
+            return;
+        }
+        // Refuses a bucket the instance does not hold before anything moves.
+        this.resolveBucket(bucket);
+        const before = this.levelOfWhole(markingId);
+        this.bucketByMarking.set(markingId, bucket);
+        // Read by other rules now: what it read before says nothing.
+        this.dropReadings(markingId);
+        if (this.layers.has(markingId))
+            this.recompose(markingId).catch(() => {});
+        this.recomputeAround(markingId, before);
+    }
+
+    registerCollection(collectionId: string, parentId: string | null): void {
+        this.assertAlive();
+        if (!collectionId)
+            throw new Error(`${this.storeLabel()}: a collection needs an id.`);
+        for (
+            let level: string | null = parentId;
+            level !== null;
+            level = this.collections.get(level) ?? null
+        ) {
+            if (level === collectionId) {
+                throw new Error(
+                    `${this.storeLabel()}: collection "${collectionId}" cannot be inside itself.`,
+                );
+            }
+        }
+        const declared = this.collections.has(collectionId);
+        const previousParent = declared
+            ? this.parentLevel(collectionId)
+            : undefined;
+        if (declared && this.collections.get(collectionId) === parentId) return;
+        this.collections.set(collectionId, parentId);
+        // Its members rolled up into the page while it was undeclared.
+        void this.recomputeLevel(collectionId);
+        if (previousParent !== undefined)
+            void this.recomputeLevel(previousParent);
+        void this.recomputeLevel(this.parentLevel(collectionId));
+        void this.recomputeLevel(null);
+    }
+
+    unregisterCollection(collectionId: string): void {
+        this.assertAlive();
+        if (!this.collections.has(collectionId)) return;
+        const parent = this.parentLevel(collectionId);
+        this.collections.delete(collectionId);
+        this.levelRevisions.set(
+            collectionId,
+            (this.levelRevisions.get(collectionId) ?? 0) + 1,
+        );
+        this.levelAborts.get(collectionId)?.abort();
+        this.levelAborts.delete(collectionId);
+        this.heldLevels.delete(collectionId);
+        this.writeLevel(collectionId, EMPTY_EZCLASSIFY_AGGREGATE);
+        void this.recomputeLevel(parent);
+        void this.recomputeLevel(null);
+    }
+
+    setMembership(markingId: string, collectionId: string | null): void {
+        this.assertAlive();
+        const before = this.levelOfWhole(markingId);
+        if ((this.membershipByMarking.get(markingId) ?? null) === collectionId)
+            return;
+        if (collectionId === null || collectionId === '')
+            this.membershipByMarking.delete(markingId);
+        else this.membershipByMarking.set(markingId, collectionId);
+        const after = this.levelOfWhole(markingId);
+        if (after === before) return;
+        void this.recomputeLevel(before);
+        void this.recomputeLevel(after);
+    }
+
+    setNoRollup(markingId: string, noRollup: boolean): void {
+        this.assertAlive();
+        if (this.noRollupMarkings.has(markingId) === noRollup) return;
+        if (noRollup) this.noRollupMarkings.add(markingId);
+        else this.noRollupMarkings.delete(markingId);
+        this.recomputeAround(markingId, this.levelOfWhole(markingId));
+    }
+
+    setDocumentOrder(
+        compare: ((left: string, right: string) => number) | null,
+    ): void {
+        this.assertAlive();
+        this.documentOrder = compare;
+        for (const wholeId of new Set(this.partOfByMarking.values()))
+            void this.recomputeWholeRollup(wholeId);
+        for (const level of this.allLevels()) void this.recomputeLevel(level);
     }
 
     /** @internal */
@@ -1307,9 +1597,14 @@ export abstract class BaseEzClassifyStore implements EzClassifyStore {
         // Computed again rather than only flagged: clearing must also drop a
         // flag a computed value carries, and the computation is held like any
         // other while a contributor is still reading.
-        void this.recomputeAggregate();
-        for (const whole of new Set([previous, wholeId]))
-            if (whole !== null) void this.recomputeWholeRollup(whole);
+        for (const whole of new Set([previous, wholeId])) {
+            if (whole === null)
+                void this.recomputeLevel(this.levelOfWhole(contributorId));
+            else {
+                void this.recomputeWholeRollup(whole);
+                void this.recomputeLevel(this.levelOfWhole(whole));
+            }
+        }
     }
 
     getWholeRollup(wholeId: string): EzClassifyState {
@@ -1369,36 +1664,35 @@ export abstract class BaseEzClassifyStore implements EzClassifyStore {
     }
 
     /**
-     * Current immutable ordered membership; markings remain in the normal
+     * Current immutable ordered entry list; markings remain in the normal
      * store.
      */
-    getEntryIds(collectionId: string): readonly string[] | undefined {
-        return this.entryCollections.get(collectionId);
+    getEntryIds(editorId: string): readonly string[] | undefined {
+        return this.entryLists.get(editorId);
     }
 
     /**
-     * Commit collection membership without parsing text or duplicating marking
+     * Commit an editor's entry list without parsing text or duplicating marking
      * state.
      */
     setEntryIds(
-        collectionId: string,
+        editorId: string,
         entryIds: readonly string[],
         source?: PublishSource,
     ): void {
         this.assertAlive();
         if (
-            !collectionId ||
+            !editorId ||
             entryIds.some(
-                (id) =>
-                    typeof id !== 'string' || !id.trim() || id === collectionId,
+                (id) => typeof id !== 'string' || !id.trim() || id === editorId,
             ) ||
             new Set(entryIds).size !== entryIds.length
         ) {
             throw new Error(
-                'Marking entries require unique nonempty IDs distinct from the collection.',
+                'Marking entries require unique nonempty IDs distinct from their editor.',
             );
         }
-        const previous = this.getEntryIds(collectionId);
+        const previous = this.getEntryIds(editorId);
         if (
             previous &&
             previous.length === entryIds.length &&
@@ -1406,34 +1700,35 @@ export abstract class BaseEzClassifyStore implements EzClassifyStore {
         )
             return;
         const snapshot = Object.freeze([...entryIds]);
-        this.entryCollections.set(collectionId, snapshot);
-        for (const subscription of this.entryCollectionListeners.get(
-            collectionId,
-        ) ?? []) {
-            if (this.entryCollections.get(collectionId) !== snapshot) break;
+        this.entryLists.set(editorId, snapshot);
+        for (const subscription of this.entryListListeners.get(editorId) ??
+            []) {
+            if (this.entryLists.get(editorId) !== snapshot) break;
             if (source && source.token === subscription.source?.token) continue;
             subscription.listener(snapshot);
         }
     }
 
-    /** Subscribe first, then read membership so hydration cannot miss a commit. */
+    /**
+     * Subscribe first, then read the entry list so hydration cannot miss a
+     * commit.
+     */
     subscribeEntries(
-        collectionId: string,
+        editorId: string,
         listener: (ids: readonly string[]) => void,
         source?: PublishSource,
     ): () => void {
         this.assertAlive();
-        let listeners = this.entryCollectionListeners.get(collectionId);
+        let listeners = this.entryListListeners.get(editorId);
         if (!listeners) {
             listeners = new Set();
-            this.entryCollectionListeners.set(collectionId, listeners);
+            this.entryListListeners.set(editorId, listeners);
         }
         const subscription = { listener, source };
         listeners.add(subscription);
         return () => {
             listeners.delete(subscription);
-            if (!listeners.size)
-                this.entryCollectionListeners.delete(collectionId);
+            if (!listeners.size) this.entryListListeners.delete(editorId);
         };
     }
 
@@ -1447,8 +1742,7 @@ export abstract class BaseEzClassifyStore implements EzClassifyStore {
         for (const controller of this.facetAborts.values()) controller.abort();
         for (const controller of this.wholeRollupAborts.values())
             controller.abort();
-        this.aggregateAbort?.abort();
-        this.aggregateAbort = null;
+        for (const controller of this.levelAborts.values()) controller.abort();
         this.onDestroy();
         idleWatches.get(this)?.waiting.clear();
         this.markings.clear();
@@ -1456,9 +1750,19 @@ export abstract class BaseEzClassifyStore implements EzClassifyStore {
         this.failedMarkings.clear();
         this.incompleteContributors.clear();
         this.heldWholeRollups.clear();
-        this.entryCollections.clear();
-        this.entryCollectionListeners.clear();
-        this.aggregateListeners.clear();
+        this.heldLevels.clear();
+        this.entryLists.clear();
+        this.entryListListeners.clear();
+        this.levelListeners.clear();
+        this.levelCells.clear();
+        this.levelRevisions.clear();
+        this.levelAborts.clear();
+        this.collections.clear();
+        this.membershipByMarking.clear();
+        this.noRollupMarkings.clear();
+        this.standaloneParts.clear();
+        this.renderedOutputs.clear();
+        this.bucketByMarking.clear();
         this.partOfByMarking.clear();
         this.standInParts.clear();
         this.layers.clear();
@@ -1579,13 +1883,16 @@ export abstract class BaseEzClassifyStore implements EzClassifyStore {
     /**
      * The render format one marking entry is published in.
      *
-     * A store carries at most one format, the one the host page authors in, and
-     * that is the WHOLE surface's format. Without one, a whole entry is written
-     * in the scheme's default format, which is what every view showing the
-     * marking's `rendered` reads it as. Naming it matters for a scheme that
+     * A bucket carries at most one format, the one the host page authors in,
+     * and that is the WHOLE surface's format. Without one, a whole entry is
+     * written in the scheme's default format, which is what every view showing
+     * the marking's `rendered` reads it as. Naming it matters for a scheme that
      * writes each role in a view of its own: a publish that names no format is
      * written in the view of whatever role its text reads as, so part-spelled
      * text would put a part's spelling in a whole marking.
+     *
+     * A marking whose own field names its output ({@link setRenderedOutput}) is
+     * written in that output, whatever its role.
      *
      * A marking registered through {@link setPartOf} is not on that surface: it
      * is a part of another marking, and a scheme writes its parts in its own
@@ -1595,19 +1902,23 @@ export abstract class BaseEzClassifyStore implements EzClassifyStore {
      * what a scheme with one surface means.
      */
     private formatFor(id: string): string | undefined {
-        if (!this.partOfByMarking.has(id)) {
-            if (this.format) return this.format;
-            if (this.wholeFormatCache === undefined) {
-                this.wholeFormatCache =
-                    this.engine.getSchemeMeta().defaultRenderFormat ?? null;
+        // The field that owns the marking writes it in this output.
+        const owned = this.renderedOutputs.get(id);
+        if (owned !== undefined) return owned;
+        const bucket = this.bucketOf(id);
+        if (!this.partOfByMarking.has(id) && !this.standaloneParts.has(id)) {
+            if (bucket.format) return bucket.format;
+            if (bucket.wholeFormat === undefined) {
+                bucket.wholeFormat =
+                    bucket.engine.getSchemeMeta().defaultRenderFormat ?? null;
             }
-            return this.wholeFormatCache ?? undefined;
+            return bucket.wholeFormat ?? undefined;
         }
-        if (this.partFormatCache === undefined) {
-            this.partFormatCache =
-                this.engine.getSchemeMeta().defaultPartRenderFormat ?? null;
+        if (bucket.partFormat === undefined) {
+            bucket.partFormat =
+                bucket.engine.getSchemeMeta().defaultPartRenderFormat ?? null;
         }
-        return this.partFormatCache ?? this.format;
+        return bucket.partFormat ?? bucket.format;
     }
 
     /**
@@ -1620,12 +1931,12 @@ export abstract class BaseEzClassifyStore implements EzClassifyStore {
     }
 
     /**
-     * Resolve (and memoize) the per-category scope routing from the engine's
-     * scheme metadata. Always returns a real index, `getSchemeMeta` and
-     * `listCategories` are required capabilities (validated in the
-     * constructor), so there is no null path: a scheme with no declared scopes
-     * simply yields an empty `byCategory`, routing everything to the default
-     * scope by data.
+     * Resolve (and memoize, per bucket) the per-category scope routing of the
+     * marking's scheme from the engine's scheme metadata. Always returns a real
+     * index, `getSchemeMeta` and `listCategories` are required capabilities
+     * (validated when the bucket resolves), so there is no null path: a scheme
+     * with no declared scopes simply yields an empty `byCategory`, routing
+     * everything to the default scope by data.
      *
      * A category is default-scope when it declares no explicit `scopes`, or
      * when its explicit scopes include the scheme's default scope. Otherwise it
@@ -1635,12 +1946,11 @@ export abstract class BaseEzClassifyStore implements EzClassifyStore {
      * scope; an explicitly scoped category belongs to exactly the scopes it
      * names.
      */
-    private resolveScopeIndex(): ScopeIndex {
-        if (this.scopeIndexCache !== null) {
-            return this.scopeIndexCache;
-        }
-        const meta = this.engine.getSchemeMeta();
-        const categories = this.engine.listCategories();
+    private resolveScopeIndex(id: string): ScopeIndex {
+        const bucket = this.bucketOf(id);
+        if (bucket.scopeIndex !== null) return bucket.scopeIndex;
+        const meta = bucket.engine.getSchemeMeta();
+        const categories = bucket.engine.listCategories();
         const defaultScope = meta.defaultScope;
         const byCategory = new Map<string, string>();
         for (const c of categories) {
@@ -1651,9 +1961,53 @@ export abstract class BaseEzClassifyStore implements EzClassifyStore {
             // exact non-default scope id is retained so consumers can read it.
             byCategory.set(c.id, c.scopes[0]);
         }
-        const index: ScopeIndex = { defaultScope, byCategory };
-        this.scopeIndexCache = index;
-        return index;
+        bucket.scopeIndex = { defaultScope, byCategory };
+        return bucket.scopeIndex;
+    }
+
+    /**
+     * The bucket key of a marking: where `setBucket` placed it, else the
+     * default bucket. Undefined when it was not placed and there is no
+     * default.
+     */
+    private bucketKeyOf(id: string): BucketKey | undefined {
+        return this.bucketByMarking.get(id) ?? this.buckets.defaultBucket;
+    }
+
+    /**
+     * The refusal for a seed or publish to a marking no bucket holds, or
+     * `undefined` when it has one.
+     */
+    private unplacedError(id: string): Error | undefined {
+        if (this.bucketKeyOf(id) !== undefined) return undefined;
+        return new Error(
+            `${this.storeLabel()}: marking "${id}" is in no bucket. The store holds several and names no default, so it is not read by whichever rules come first.`,
+        );
+    }
+
+    /** The bucket a marking is read in. Throws when it is in none. */
+    private bucketOf(id: string): ResolvedBucket {
+        const key = this.bucketKeyOf(id);
+        if (key === undefined) throw this.unplacedError(id)!;
+        return this.resolveBucket(key);
+    }
+
+    /** One bucket, resolved and checked on first use. */
+    private resolveBucket(key: BucketKey): ResolvedBucket {
+        let bucket = this.resolvedBuckets.get(key);
+        if (!bucket) {
+            const { engine, format } = this.buckets.resolve(key);
+            assertLosslessCapabilities(engine);
+            bucket = {
+                engine,
+                ...(format !== undefined ? { format } : {}),
+                scopeIndex: null,
+                partFormat: undefined,
+                wholeFormat: undefined,
+            };
+            this.resolvedBuckets.set(key, bucket);
+        }
+        return bucket;
     }
 
     private fromProcessResult(
@@ -1713,9 +2067,12 @@ export abstract class BaseEzClassifyStore implements EzClassifyStore {
             }
             l.fn(state);
         }
-        void this.recomputeAggregate();
+        // A part reaches its level only through its whole's rollup; a whole
+        // contributes its stated value to its level directly.
         const partOfWhole = this.partOfByMarking.get(id);
         if (partOfWhole) void this.recomputeWholeRollup(partOfWhole);
+        else if (!this.standaloneParts.has(id))
+            void this.recomputeLevel(this.levelOfWhole(id));
         // Recompose only when contribution rules can read the changed whole.
         // Coverage diagnostics are refreshed independently by the bound views.
         if (wholeReading(state) !== before && this.hasDependentParts(id)) {
@@ -1764,12 +2121,12 @@ export abstract class BaseEzClassifyStore implements EzClassifyStore {
      * and notify its listeners, diffing so an unchanged category is neither
      * rewritten nor re-notified.
      *
-     * Latest-wins by revision, like the aggregate and whole-rollup recomputes.
-     * Two commits in quick succession open two overlapping fan-outs, and over a
-     * wire the older one can resolve last; without the guard every facet picker
-     * would end up showing the allowable options of a superseded marking state
-     * until the next commit happened to fix it. The superseded fan-out is also
-     * aborted, so its requests stop traveling.
+     * Latest-wins by revision, like the level and whole rollups. Two commits in
+     * quick succession open two overlapping fan-outs, and over a wire the older
+     * one can resolve last; without the guard every facet picker would end up
+     * showing the allowable options of a superseded marking state until the
+     * next commit happened to fix it. The superseded fan-out is also aborted,
+     * so its requests stop traveling.
      */
     private async refreshFacets(
         markingId: string,
@@ -1796,6 +2153,7 @@ export abstract class BaseEzClassifyStore implements EzClassifyStore {
         this.facetAborts.set(markingId, controller);
 
         const suggestResultsPerCategory = await this.suggestForFacets(
+            markingId,
             categoryIds,
             state,
             controller.signal,
@@ -1860,21 +2218,26 @@ export abstract class BaseEzClassifyStore implements EzClassifyStore {
      * @returns One entry per requested category, positionally aligned.
      */
     private async suggestForFacets(
+        markingId: string,
         categoryIds: string[],
         committed: EzClassifyState,
         signal: AbortSignal,
     ): Promise<(Suggestion[] | null)[]> {
+        // A marking in no bucket has no rules to offer options by.
+        if (this.bucketKeyOf(markingId) === undefined)
+            return categoryIds.map(() => null);
+        const { engine, format } = this.bucketOf(markingId);
         // What the marking states: values a part took from its whole are the
         // whole's, and the engine is never handed them back.
         const state = {
             ...committed,
             assertions: withoutTakenFromWhole(committed.assertions),
         };
-        const scopeIndex = this.resolveScopeIndex();
+        const scopeIndex = this.resolveScopeIndex(markingId);
         const scopeOf = (categoryId: string): string | undefined =>
             scopeIndex.byCategory.get(categoryId) ?? scopeIndex.defaultScope;
 
-        if (this.engine.suggestForCategories) {
+        if (engine.suggestForCategories) {
             // One call per distinct scope, not per category: the batch option
             // bag carries a single scope, and a marking's categories can span
             // an alternate scope (an authority block) as well as the default.
@@ -1890,11 +2253,11 @@ export abstract class BaseEzClassifyStore implements EzClassifyStore {
                 Array.from(byScope, async ([scope, group]) => {
                     try {
                         const results = await Promise.resolve(
-                            this.engine.suggestForCategories!(
+                            engine.suggestForCategories!(
                                 state.assertions,
                                 group,
                                 {
-                                    outputFormat: this.format,
+                                    outputFormat: format,
                                     surface: scope,
                                     signal,
                                 },
@@ -1928,7 +2291,7 @@ export abstract class BaseEzClassifyStore implements EzClassifyStore {
             );
         }
 
-        if (!this.engine.suggest) return categoryIds.map(() => null);
+        if (!engine.suggest) return categoryIds.map(() => null);
         return Promise.all(
             categoryIds.map(async (categoryId) => {
                 const contextAssertions = state.assertions.filter(
@@ -1936,8 +2299,8 @@ export abstract class BaseEzClassifyStore implements EzClassifyStore {
                 );
                 try {
                     const result = await Promise.resolve(
-                        this.engine.suggest!(contextAssertions, {
-                            outputFormat: this.format,
+                        engine.suggest!(contextAssertions, {
+                            outputFormat: format,
                             surface: scopeOf(categoryId),
                             signal,
                         }),
@@ -1983,12 +2346,13 @@ export abstract class BaseEzClassifyStore implements EzClassifyStore {
      * The context one marking is read in when it is a part: see
      * {@link wholeContext}, for its {@link setPartOf} parent. A part whose whole
      * holds nothing yet is still read as a part, so a rule that asks about the
-     * whole is unresolved rather than judged by the whole rules.
+     * whole is unresolved rather than judged by the whole rules, and so is one
+     * with no whole on the page.
      */
     private wholeContextOf(id: string): ProcessingContext | undefined {
         const wholeId = this.partOfByMarking.get(id);
-        if (!wholeId) return undefined;
-        return this.wholeContext(wholeId) ?? { role: 'part' };
+        if (wholeId) return this.wholeContext(wholeId) ?? { role: 'part' };
+        return this.standaloneParts.has(id) ? { role: 'part' } : undefined;
     }
 
     /**
@@ -2043,7 +2407,9 @@ export abstract class BaseEzClassifyStore implements EzClassifyStore {
     private contributionDependsOnWhole(partId: string): boolean {
         if (this.standInParts.has(partId)) return true;
         try {
-            return this.engine.getSchemeMeta().roleAware !== false;
+            return (
+                this.bucketOf(partId).engine.getSchemeMeta().roleAware !== false
+            );
         } catch {
             return true;
         }
@@ -2070,68 +2436,390 @@ export abstract class BaseEzClassifyStore implements EzClassifyStore {
         else this.standInParts.delete(id);
     }
 
+    // -----------------------------------------------------------------------
+    // The rollup tree
+    // -----------------------------------------------------------------------
+
+    /** The level a whole rolls up into: its declared collection, else the page. */
+    private levelOfWhole(id: string): LevelId {
+        const collection = this.membershipByMarking.get(id);
+        return collection !== undefined && this.collections.has(collection)
+            ? collection
+            : null;
+    }
+
+    /** The level a collection rolls up into: its declared parent, else the page. */
+    private parentLevel(collectionId: string): LevelId {
+        const parent = this.collections.get(collectionId) ?? null;
+        return parent !== null && this.collections.has(parent) ? parent : null;
+    }
+
+    private allLevels(): LevelId[] {
+        return [null, ...this.collections.keys()];
+    }
+
+    private hasParts(wholeId: string): boolean {
+        for (const parent of this.partOfByMarking.values())
+            if (parent === wholeId) return true;
+        return false;
+    }
+
     /**
-     * The whole the page aggregate reads its parts against. One aggregate call
-     * takes one whole, so there is one only while every marking on the page is
-     * that whole or one of its parts. Otherwise there is none, and a part that
-     * stands for its whole's values contributes only what it wrote. The whole
-     * is then a contributor too, read in its own value like its parts.
+     * Whether a marking is kept out of every level. Only a whole with no parts
+     * is: anywhere else `no-rollup` would drop content (see
+     * {@link setNoRollup}).
      */
-    private sharedWholeContext(): ProcessingContext | undefined {
-        const wholes = new Set(this.partOfByMarking.values());
-        if (wholes.size !== 1) return undefined;
-        const [wholeId] = wholes;
-        for (const [id, entry] of this.markings) {
-            if (entry.cell.get().assertions.length === 0) continue;
-            if (id !== wholeId && this.partOfByMarking.get(id) !== wholeId) {
-                return undefined;
-            }
-        }
-        return this.wholeContext(wholeId);
+    private keptOut(id: string): boolean {
+        return (
+            this.noRollupMarkings.has(id) &&
+            !this.partOfByMarking.has(id) &&
+            !this.hasParts(id)
+        );
     }
 
-    private async recomputeAggregate(): Promise<void> {
+    /**
+     * The bucket a whole and its parts are read in: the whole's own, else the
+     * default, else that of its first placed part (a whole that is only named,
+     * holding parts of one bucket).
+     */
+    private wholeBucketKey(wholeId: string): BucketKey | undefined {
+        const own = this.bucketKeyOf(wholeId);
+        if (own !== undefined) return own;
+        for (const [partId, parent] of this.partOfByMarking) {
+            if (parent !== wholeId) continue;
+            const key = this.bucketByMarking.get(partId);
+            if (key !== undefined) return key;
+        }
+        return undefined;
+    }
+
+    /**
+     * The wholes a level holds: every marking that is not a part of any kind,
+     * and every id a part names as its whole, placed in this level.
+     */
+    private wholesIn(level: LevelId): string[] {
+        const ids = new Set<string>([
+            ...this.markings.keys(),
+            ...this.layers.keys(),
+            ...this.partOfByMarking.values(),
+        ]);
+        return [...ids].filter(
+            (id) =>
+                !this.partOfByMarking.has(id) &&
+                !this.standaloneParts.has(id) &&
+                this.levelOfWhole(id) === level,
+        );
+    }
+
+    private childCollections(level: LevelId): string[] {
+        return [...this.collections.keys()].filter(
+            (id) => this.parentLevel(id) === level,
+        );
+    }
+
+    /**
+     * Ids sorted in document order, or by id when the runtime gave none. Either
+     * way the engine gets the same sets in the same order for the same tree,
+     * whichever field finished mounting first.
+     */
+    private inDocumentOrder<T extends { id: string }>(nodes: T[]): T[] {
+        const compare = this.documentOrder;
+        return [...nodes].sort((left, right) =>
+            compare
+                ? compare(left.id, right.id)
+                : left.id < right.id
+                  ? -1
+                  : left.id > right.id
+                    ? 1
+                    : 0,
+        );
+    }
+
+    /** A whole's parts rollup, as a level with one bucket. */
+    private wholeView(wholeId: string): EzClassifyAggregate {
+        const state = this.wholeRollupCells.get(wholeId)?.get();
+        const key = this.wholeBucketKey(wholeId);
+        if (
+            !state ||
+            key === undefined ||
+            (isEmptyState(state) && !state.stale)
+        )
+            return EMPTY_EZCLASSIFY_AGGREGATE;
+        return { byBucket: new Map([[key, state]]) };
+    }
+
+    private ensureLevelCell(level: LevelId): ReactiveCell<EzClassifyAggregate> {
+        let cell = this.levelCells.get(level);
+        if (!cell) {
+            cell = this.createCell(
+                level !== null && !this.collections.has(level)
+                    ? this.wholeView(level)
+                    : EMPTY_EZCLASSIFY_AGGREGATE,
+            );
+            this.levelCells.set(level, cell);
+        }
+        return cell;
+    }
+
+    /** Commit a level's rollup and tell its listeners. */
+    private writeLevel(level: LevelId, aggregate: EzClassifyAggregate): void {
+        const cell = this.ensureLevelCell(level);
+        if (cell.get() === aggregate) return;
+        cell.set(aggregate);
+        for (const listener of this.levelListeners.get(level) ?? [])
+            listener(aggregate);
+    }
+
+    /** Bring a whole's level-shaped view up to its parts rollup. */
+    private refreshWholeView(wholeId: string): void {
+        if (this.collections.has(wholeId) || !this.levelCells.has(wholeId))
+            return;
+        const next = this.wholeView(wholeId);
+        const current = this.levelCells.get(wholeId)!.get();
+        if (aggregateDigest(next) === aggregateDigest(current)) return;
+        this.writeLevel(wholeId, next);
+    }
+
+    /**
+     * Compute again everything a change to one marking's role, bucket or
+     * membership can reach: its whole's rollup when it is a part, its own and
+     * its level's otherwise.
+     */
+    private recomputeAround(id: string, levelBefore: LevelId): void {
+        const whole = this.partOfByMarking.get(id);
+        if (whole !== undefined) {
+            void this.recomputeWholeRollup(whole);
+            void this.recomputeLevel(this.levelOfWhole(whole));
+            return;
+        }
+        if (this.hasParts(id)) void this.recomputeWholeRollup(id);
+        void this.recomputeLevel(levelBefore);
+        const levelAfter = this.levelOfWhole(id);
+        if (levelAfter !== levelBefore) void this.recomputeLevel(levelAfter);
+    }
+
+    /**
+     * Roll up one level: the page, or a declared collection. Its members are
+     * read as wholes, with no context. Each whole contributes its stated value
+     * and its whole rollup, each child collection its own rollup, all as facts,
+     * per bucket. A level that comes out unchanged stops there; one that
+     * changed asks its parent again.
+     */
+    private async recomputeLevel(level: LevelId): Promise<void> {
         if (this.destroyed) return;
-        const revision = ++this.aggregateRevision;
-        this.aggregateAbort?.abort();
-        // The commit that settles the last contributor computes it.
-        this.aggregateHeld = !this.contributorsSettled(null);
-        if (this.aggregateHeld) return;
-        const controller = new AbortController();
-        this.aggregateAbort = controller;
-        // Single suspension point: see rollupResult. Awaiting a delegated async
-        // helper instead would add a microtask tick, desyncing observers that read
-        // a cell right after `await publishRendered(...)`.
-        const next = await this.rollupResult(
-            this.gatherContributors(null),
-            this.sharedWholeContext(),
-        );
-        if (revision !== this.aggregateRevision || this.destroyed) return;
-        if (this.aggregateAbort === controller) this.aggregateAbort = null;
-        // A contributor started reading again while this was on the wire.
-        if (!this.contributorsSettled(null)) {
-            this.aggregateHeld = true;
+        if (level !== null && !this.collections.has(level)) return;
+        const revision = (this.levelRevisions.get(level) ?? 0) + 1;
+        this.levelRevisions.set(level, revision);
+        this.levelAborts.get(level)?.abort();
+        this.levelAborts.delete(level);
+        // The answer that settles the last contributor computes it.
+        if (!this.levelSettled(level)) {
+            this.heldLevels.add(level);
             return;
         }
-        const resolved = this.flagMissing(
-            null,
-            next ?? this.heldState(this.aggregateCell.get()),
-        );
-        if (resolved === null || this.staysEmpty(this.aggregateCell, resolved))
+        this.heldLevels.delete(level);
+        const controller = new AbortController();
+        this.levelAborts.set(level, controller);
+        const inputs = this.gatherLevel(level);
+        // Single suspension point: see rollupResult.
+        const results = await this.rollupLevel(inputs);
+        if (revision !== this.levelRevisions.get(level) || this.destroyed)
             return;
-        this.aggregateCell.set(resolved);
-        this.fireAggregate(resolved);
+        if (this.levelAborts.get(level) === controller)
+            this.levelAborts.delete(level);
+        // A contributor started reading again while this was on the wire.
+        if (!this.levelSettled(level)) {
+            this.heldLevels.add(level);
+            return;
+        }
+        const current = this.ensureLevelCell(level).get();
+        const next = this.resolveLevel(current, results, inputs);
+        if (aggregateDigest(next) !== aggregateDigest(current)) {
+            this.writeLevel(level, next);
+            if (level !== null)
+                void this.recomputeLevel(this.parentLevel(level));
+        }
+        this.rerunHeldRollups();
     }
 
-    private fireAggregate(state: EzClassifyState): void {
-        for (const l of this.aggregateListeners) l(state);
+    /**
+     * Whether every contributor to a level has settled: each whole it holds has
+     * nothing pending, nor has its parts rollup, and each child collection
+     * holds its own settled rollup.
+     */
+    private levelSettled(level: LevelId): boolean {
+        for (const wholeId of this.wholesIn(level)) {
+            if (this.keptOut(wholeId)) continue;
+            if (!this.settled(wholeId) || this.wholeRollupPending(wholeId))
+                return false;
+        }
+        for (const child of this.childCollections(level))
+            if (this.levelPending(child)) return false;
+        return true;
     }
 
+    private levelPending(level: LevelId): boolean {
+        return (
+            this.heldLevels.has(level) ||
+            this.levelAborts.has(level) ||
+            !this.levelSettled(level)
+        );
+    }
+
+    private wholeRollupPending(wholeId: string): boolean {
+        if (!this.hasParts(wholeId)) return false;
+        return (
+            this.heldWholeRollups.has(wholeId) ||
+            this.wholeRollupAborts.has(wholeId) ||
+            !this.contributorsSettled(wholeId)
+        );
+    }
+
+    /**
+     * What a level sends the engine, per bucket, in document order, and which
+     * of its buckets miss a contributor.
+     */
+    private gatherLevel(level: LevelId): LevelInputs {
+        const sets = new Map<BucketKey, Assertion[][]>();
+        const stale = new Set<BucketKey>();
+        const touch = (bucket: BucketKey): Assertion[][] => {
+            let list = sets.get(bucket);
+            if (!list) {
+                list = [];
+                sets.set(bucket, list);
+            }
+            return list;
+        };
+        const incompleteWholes = new Set(this.incompleteContributors.values());
+        const nodes = this.inDocumentOrder([
+            ...this.wholesIn(level).map((id) => ({ id, collection: false })),
+            ...this.childCollections(level).map((id) => ({
+                id,
+                collection: true,
+            })),
+        ]);
+        for (const node of nodes) {
+            if (node.collection) {
+                for (const [bucket, state] of this.ensureLevelCell(
+                    node.id,
+                ).get().byBucket) {
+                    const list = touch(bucket);
+                    if (state.assertions.length) list.push(state.assertions);
+                    if (state.stale) stale.add(bucket);
+                }
+                continue;
+            }
+            const wholeId = node.id;
+            if (this.keptOut(wholeId)) continue;
+            const bucket = this.wholeBucketKey(wholeId);
+            if (bucket === undefined) continue;
+            const stated = this.markings.get(wholeId)?.cell.get().assertions;
+            if (stated?.length) touch(bucket).push(stated);
+            if (this.hasParts(wholeId)) {
+                const rollup = this.wholeRollupCells.get(wholeId)?.get();
+                if (rollup?.assertions.length)
+                    touch(bucket).push(rollup.assertions);
+                if (rollup?.stale) stale.add(bucket);
+                // No-rollup on a whole with parts would drop its content.
+                if (this.noRollupMarkings.has(wholeId)) stale.add(bucket);
+            }
+            if (
+                this.failedMarkings.has(wholeId) ||
+                incompleteWholes.has(wholeId)
+            )
+                stale.add(bucket);
+        }
+        // A source that read only part of itself, rolling up into this level.
+        for (const [contributorId, wholeId] of this.incompleteContributors) {
+            if (wholeId !== null || this.levelOfWhole(contributorId) !== level)
+                continue;
+            const bucket = this.bucketKeyOf(contributorId);
+            if (bucket !== undefined) stale.add(bucket);
+            else for (const held of sets.keys()) stale.add(held);
+        }
+        return { sets, stale };
+    }
+
+    /**
+     * One aggregate call per bucket that has contributors. Synchronous when
+     * every engine answers synchronously, so a level costs one microtask like a
+     * whole rollup does.
+     */
+    private rollupLevel(
+        inputs: LevelInputs,
+    ):
+        | Map<BucketKey, EzClassifyState | null>
+        | Promise<Map<BucketKey, EzClassifyState | null>> {
+        const entries: Array<
+            [
+                BucketKey,
+                EzClassifyState | null | Promise<EzClassifyState | null>,
+            ]
+        > = [];
+        for (const [bucket, sets] of inputs.sets) {
+            if (sets.length === 0) continue;
+            entries.push([
+                bucket,
+                this.rollupResult(this.resolveBucket(bucket), sets),
+            ]);
+        }
+        if (!entries.some(([, result]) => result instanceof Promise))
+            return new Map(
+                entries as Array<[BucketKey, EzClassifyState | null]>,
+            );
+        return Promise.all(
+            entries.map(
+                async ([bucket, result]) => [bucket, await result] as const,
+            ),
+        ).then((settled) => new Map(settled));
+    }
+
+    /**
+     * A level's new rollup from its engine answers. A bucket whose call failed
+     * holds its last value, flagged stale (see {@link heldState}); a bucket
+     * missing a contributor is flagged stale, and appears even when nothing
+     * else in it contributes. A bucket with no contributors leaves the level.
+     */
+    private resolveLevel(
+        current: EzClassifyAggregate,
+        results: Map<BucketKey, EzClassifyState | null>,
+        inputs: LevelInputs,
+    ): EzClassifyAggregate {
+        const byBucket = new Map<BucketKey, EzClassifyState>();
+        for (const [bucket, sets] of inputs.sets) {
+            let state: EzClassifyState;
+            if (sets.length === 0) {
+                if (!inputs.stale.has(bucket)) continue;
+                state = EMPTY_EZCLASSIFY_STATE;
+            } else {
+                state =
+                    results.get(bucket) ??
+                    this.heldState(
+                        current.byBucket.get(bucket) ?? EMPTY_EZCLASSIFY_STATE,
+                    ) ??
+                    current.byBucket.get(bucket)!;
+            }
+            if (inputs.stale.has(bucket) && !state.stale)
+                state = { ...state, stale: true };
+            byBucket.set(bucket, state);
+        }
+        for (const bucket of inputs.stale) {
+            if (!byBucket.has(bucket))
+                byBucket.set(bucket, {
+                    ...EMPTY_EZCLASSIFY_STATE,
+                    stale: true,
+                });
+        }
+        return byBucket.size === 0 ? EMPTY_EZCLASSIFY_AGGREGATE : { byBucket };
+    }
+
+    /** Roll up the parts of one whole, read against the whole's value. */
     private async recomputeWholeRollup(wholeId: string): Promise<void> {
         if (this.destroyed) return;
         const revision = (this.wholeRollupRevisions.get(wholeId) ?? 0) + 1;
         this.wholeRollupRevisions.set(wholeId, revision);
         this.wholeRollupAborts.get(wholeId)?.abort();
+        this.wholeRollupAborts.delete(wholeId);
         // The commit that settles the last part computes it.
         if (!this.contributorsSettled(wholeId)) {
             this.heldWholeRollups.add(wholeId);
@@ -2140,10 +2828,18 @@ export abstract class BaseEzClassifyStore implements EzClassifyStore {
         this.heldWholeRollups.delete(wholeId);
         const controller = new AbortController();
         this.wholeRollupAborts.set(wholeId, controller);
-        const next = await this.rollupResult(
-            this.gatherContributors(wholeId),
-            this.wholeContext(wholeId),
-        );
+        const bucket = this.wholeBucketKey(wholeId);
+        const { sets, mismatched } = this.gatherContributors(wholeId, bucket);
+        const next = await (bucket === undefined || sets.length === 0
+            ? EMPTY_EZCLASSIFY_STATE
+            : this.rollupResult(
+                  this.resolveBucket(bucket),
+                  sets,
+                  // Parts of a whole that holds nothing yet are still parts:
+                  // read by the part rules, as each one is on its own (see
+                  // wholeContextOf), never as wholes.
+                  this.wholeContext(wholeId) ?? { role: 'part' },
+              ));
         if (
             revision !== this.wholeRollupRevisions.get(wholeId) ||
             this.destroyed
@@ -2156,15 +2852,24 @@ export abstract class BaseEzClassifyStore implements EzClassifyStore {
             return;
         }
         const cell = this.ensureWholeRollupCell(wholeId);
+        const before = cell.get();
         const resolved = this.flagMissing(
             wholeId,
-            next ?? this.heldState(cell.get()),
+            next ?? this.heldState(before),
+            mismatched,
         );
-        if (resolved === null || this.staysEmpty(cell, resolved)) return;
-        cell.set(resolved);
-        const set = this.wholeRollupListeners.get(wholeId);
-        if (!set) return;
-        for (const l of set) l(resolved);
+        if (resolved !== null && !this.staysEmpty(cell, resolved)) {
+            cell.set(resolved);
+            for (const l of this.wholeRollupListeners.get(wholeId) ?? [])
+                l(resolved);
+        }
+        // The whole's level reads this rollup as facts; an unchanged one
+        // changes nothing above it.
+        if (rollupDigest(cell.get()) !== rollupDigest(before)) {
+            this.refreshWholeView(wholeId);
+            void this.recomputeLevel(this.levelOfWhole(wholeId));
+        }
+        this.rerunHeldRollups();
     }
 
     /**
@@ -2207,30 +2912,18 @@ export abstract class BaseEzClassifyStore implements EzClassifyStore {
     }
 
     /**
-     * Whether every contributor to a rollup has settled (see {@link settled}). A
-     * rollup is computed only from settled contributors, so the values it
-     * combines, and the requests that carry them, depend on the markings and
-     * not on the order the engine answered their reads in. Each contributor's
-     * commit, and each failed read, asks for the rollup again, so the answer
-     * that settles the last one computes it.
-     *
-     * With `wholeId` null the contributors are the page aggregate's: every
-     * registered part and every marking something has seeded or published.
-     * Otherwise they are the parts registered under `wholeId` and the whole
-     * itself, since a whole rollup reads its parts against the whole's value.
+     * Whether every contributor to a whole's rollup has settled (see
+     * {@link settled}): the parts registered under it and the whole itself,
+     * since its parts are read against the whole's value. A rollup is computed
+     * only from settled contributors, so the values it combines, and the
+     * requests that carry them, depend on the markings and not on the order the
+     * engine answered their reads in. Each contributor's commit, and each
+     * failed read, asks for the rollup again, so the answer that settles the
+     * last one computes it.
      */
-    private contributorsSettled(wholeId: string | null): boolean {
+    private contributorsSettled(wholeId: string): boolean {
         for (const [partId, parent] of this.partOfByMarking) {
-            if (
-                (wholeId === null || parent === wholeId) &&
-                !this.settled(partId)
-            )
-                return false;
-        }
-        if (wholeId === null) {
-            for (const id of this.layers.keys())
-                if (!this.settled(id)) return false;
-            return true;
+            if (parent === wholeId && !this.settled(partId)) return false;
         }
         return this.settled(wholeId);
     }
@@ -2250,72 +2943,84 @@ export abstract class BaseEzClassifyStore implements EzClassifyStore {
         return this.committedMarkings.has(id) || this.failedMarkings.has(id);
     }
 
-    /** Ask again for every rollup held while a contributor was unsettled. */
+    /**
+     * Ask again for every rollup held while a contributor was unsettled: whole
+     * rollups first, since the levels above them read them.
+     */
     private rerunHeldRollups(): void {
-        if (this.aggregateHeld) void this.recomputeAggregate();
         for (const wholeId of [...this.heldWholeRollups])
             void this.recomputeWholeRollup(wholeId);
+        for (const level of [...this.heldLevels])
+            void this.recomputeLevel(level);
     }
 
     /**
-     * A rollup computed while a contributor's first read failed is missing that
-     * contributor, and one computed over a contributor that read only part of
-     * its source is missing the rest, so either says it is held rather than
-     * current.
+     * A whole rollup computed while a part's first read failed is missing that
+     * part, one computed over a contributor that read only part of its source
+     * is missing the rest, and one that had to leave out a part of another
+     * bucket, or a part kept out of rollups, is missing that part. Each says it
+     * is held rather than current.
      */
     private flagMissing(
-        wholeId: string | null,
+        wholeId: string,
         state: EzClassifyState | null,
+        mismatched: boolean,
     ): EzClassifyState | null {
         if (!state || state.stale) return state;
+        if (mismatched) return { ...state, stale: true };
         for (const id of this.failedMarkings) {
-            const parent = this.partOfByMarking.get(id);
-            if (wholeId === null ? true : parent === wholeId)
+            if (this.partOfByMarking.get(id) === wholeId)
                 return { ...state, stale: true };
         }
         for (const parent of this.incompleteContributors.values()) {
-            if (wholeId === null ? true : parent === wholeId)
+            if (parent === wholeId) return { ...state, stale: true };
+        }
+        for (const id of this.noRollupMarkings) {
+            if (this.partOfByMarking.get(id) === wholeId)
                 return { ...state, stale: true };
         }
         return state;
     }
 
     /**
-     * Collect contributor assertion sets. With `wholeId` null, every marking
-     * contributes (page aggregate); otherwise only the markings whose
-     * `setPartOf` named `wholeId` contribute (whole rollup).
-     *
-     * Only structured assertion sets are gathered: rollup runs through
+     * The parts of a whole, as structured assertion sets in document order.
+     * Only structured sets are gathered: rollup runs through
      * `aggregateAssertions`, never rendered strings, so alternate-scope
-     * categories and capture values survive the rollup. Sets are ordered by
-     * marking id.
+     * categories and capture values survive the rollup. A part placed in
+     * another bucket than its whole is left out (`mismatched`): its facts are
+     * read by other rules.
      */
-    private gatherContributors(wholeId: string | null): Assertion[][] {
-        const ids =
-            wholeId === null
-                ? [...this.markings.keys()]
-                : [...this.partOfByMarking]
-                      .filter(([, parent]) => parent === wholeId)
-                      .map(([markingId]) => markingId);
-        // Registration order follows whichever field finished mounting first.
-        // Sorting by id gives the engine the same sets in the same order for the
-        // same markings on every load.
-        const assertionSets: Assertion[][] = [];
-        for (const id of ids.sort()) {
+    private gatherContributors(
+        wholeId: string,
+        bucket: BucketKey | undefined,
+    ): { sets: Assertion[][]; mismatched: boolean } {
+        const parts = this.inDocumentOrder(
+            [...this.partOfByMarking]
+                .filter(([, parent]) => parent === wholeId)
+                .map(([id]) => ({ id })),
+        );
+        const sets: Assertion[][] = [];
+        let mismatched = false;
+        for (const { id } of parts) {
             const assertions = this.markings.get(id)?.cell.get().assertions;
-            if (assertions?.length) assertionSets.push(assertions);
+            if (this.bucketKeyOf(id) !== bucket) {
+                if (this.layers.has(id) || assertions?.length)
+                    mismatched = true;
+                continue;
+            }
+            if (assertions?.length) sets.push(assertions);
         }
-        return assertionSets;
+        return { sets, mismatched };
     }
 
     /**
-     * Combine contributor assertion sets into a single rolled-up state via
-     * `engine.aggregateAssertions`: the only rollup path. There is no
+     * Combine contributor assertion sets into a single rolled-up state via the
+     * bucket engine's `aggregateAssertions`: the only rollup path. There is no
      * rendered-string fallback: `aggregateAssertions` is a required capability
-     * (validated in the constructor), so aggregating over structured assertions
-     * is always available and authored alternate-scope categories + capture
-     * values survive the rollup. Returns the empty state when there are no
-     * contributors, and `null` when the engine could not answer: an empty
+     * (validated when the bucket resolves), so aggregating over structured
+     * assertions is always available and authored alternate-scope categories +
+     * capture values survive the rollup. Returns the empty state when there are
+     * no contributors, and `null` when the engine could not answer: an empty
      * rollup and a failed one are different facts, and the caller holds the
      * last good value for the second (see {@link heldState}).
      *
@@ -2324,10 +3029,13 @@ export abstract class BaseEzClassifyStore implements EzClassifyStore {
      * exactly once. Wrapping this in its own `async` function would add a
      * second microtask tick to the fire-and-forget recompute, so a consumer
      * reading a cell right after `await publishRendered(...)` would see a stale
-     * value; the per-framework adapters awaited the engine call inline before
-     * this was extracted, and that timing is preserved here.
+     * value.
+     *
+     * @param whole - The whole the contributors are parts of. Omitted for a
+     *   level, whose contributors are wholes.
      */
     private rollupResult(
+        bucket: ResolvedBucket,
         contributors: Assertion[][],
         whole?: ProcessingContext,
     ): EzClassifyState | null | Promise<EzClassifyState | null> {
@@ -2341,14 +3049,14 @@ export abstract class BaseEzClassifyStore implements EzClassifyStore {
             withoutTakenFromWhole(set),
         );
         const opts = {
-            ...(this.format ? { outputFormat: this.format } : {}),
+            ...(bucket.format ? { outputFormat: bucket.format } : {}),
             ...(whole ? { context: whole } : {}),
         };
         let result:
             | EzClassifyStoreAggregateResult
             | Promise<EzClassifyStoreAggregateResult>;
         try {
-            result = this.engine.aggregateAssertions(assertionSets, opts);
+            result = bucket.engine.aggregateAssertions(assertionSets, opts);
         } catch {
             return null;
         }

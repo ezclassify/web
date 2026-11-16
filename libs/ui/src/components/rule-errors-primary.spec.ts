@@ -1,30 +1,37 @@
 import { describe, it, expect, vi } from 'vitest';
-import { Context } from '@ezclassify/engine';
+import type { EzClassifyClient } from '@ezclassify/rest-client';
 import type { Assertion } from '@ezclassify/types';
 import { SingleSelect } from './single-select';
+import {
+    connectDemoContext,
+    demoRuntimeSettled,
+} from '../../../../test-support/demo-runtime';
 
-function makeEngine(withTextInput = false, calendarValue = false): Context {
-    return Context.fromComponents({
-        scheme: {
+async function makeEngine(
+    withTextInput = false,
+    calendarValue = false,
+): Promise<EzClassifyClient> {
+    return await connectDemoContext({
+        draft: {
             scheme: {
-                id: 'test-select',
-                version: '1.0.0',
-                name: 'Test Select',
-                description: '',
-                data: {
-                    categories: [
-                        {
-                            id: 'level',
-                            label: 'Level',
-                            required: false,
-                            single: true,
-                            rollup: 'max',
-                            position: 0,
-                            hierarchy_root: true,
-                        },
-                    ],
-                    concepts: {
-                        inline: [
+                scheme: {
+                    id: 'test-select',
+                    version: '1.0.0',
+                    name: 'Test Select',
+                    description: '',
+                    data: {
+                        categories: [
+                            {
+                                id: 'level',
+                                label: 'Level',
+                                required: false,
+                                single: true,
+                                rollup: 'max',
+                                position: 0,
+                                hierarchy_root: true,
+                            },
+                        ],
+                        concepts: [
                             {
                                 id: 'level-1',
                                 name: 'Level 1',
@@ -86,24 +93,22 @@ function makeEngine(withTextInput = false, calendarValue = false): Context {
                             },
                         ],
                     },
-                },
-                rules: [],
-                rollup_pipelines: [],
-                parse: {
-                    case_sensitive: false,
-                    strip_whitespace: true,
-                },
-                render: {
-                    default: 'default',
-                    formats: [
-                        {
-                            id: 'default',
-                            surface: 'marking',
-                            mode: 'inline',
-                            separator: '//',
-                            fields: [{ category: 'level', separator: '//' }],
-                        },
-                    ],
+                    rules: [],
+                    rollup_pipelines: [],
+                    render: {
+                        default: 'default',
+                        formats: [
+                            {
+                                id: 'default',
+                                surface: 'marking',
+                                mode: 'inline',
+                                separator: '//',
+                                fields: [
+                                    { category: 'level', separator: '//' },
+                                ],
+                            },
+                        ],
+                    },
                 },
             },
         },
@@ -112,7 +117,7 @@ function makeEngine(withTextInput = false, calendarValue = false): Context {
 
 describe('authoritative primary field errors', () => {
     it('shows a real invalid calendar value and clears the error after correction', async () => {
-        const context = makeEngine(true, true);
+        const context = await makeEngine(true, true);
         const raw: Assertion = {
             conceptId: 'level-3',
             categoryId: 'level',
@@ -136,6 +141,7 @@ describe('authoritative primary field errors', () => {
         const component = new SingleSelect();
         await component.init(target, context);
         component.setAssertions([raw]);
+        await demoRuntimeSettled();
         const input = target.querySelector<HTMLInputElement>(
             '.select-card-text-field',
         )!;
@@ -176,7 +182,7 @@ describe('authoritative primary field errors', () => {
     });
 
     it('shows the real canonical partial-recognition error without inventing a rule message', async () => {
-        const context = makeEngine();
+        const context = await makeEngine();
         const reading = await context.scheme!.process('L1 extra');
         expect(reading.inputWasValid).toBe(false);
         expect(reading.recognition?.status).toBe('partial');

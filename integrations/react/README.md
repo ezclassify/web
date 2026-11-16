@@ -8,137 +8,92 @@ React marking controls backed by one application-owned EzClassify REST client.
 npm install @ezclassify/react @ezclassify/ui @ezclassify/rest-client
 ```
 
+## Mark one field
+
+Provide the client once, at the root of the app:
+
+```tsx
+createRoot(el).render(
+    <EzClassifyProvider context={client}>
+        <App />
+    </EzClassifyProvider>,
+);
+```
+
+Wrap each document in `<EzClassify>` and mark its fields with attributes:
+
+```tsx
+<EzClassify>
+    <form>
+        <input name="marking" data-ezclassify-controller="marking" />
+    </form>
+</EzClassify>
+```
+
+Each `<EzClassify>` owns the store for the fields inside it and releases it
+when it unmounts.
+
 ## Mark a Document and Its Parts
 
-Use one form store to connect the document marking, individual part markings,
-and marked text. The document's MarkingField edits its authored whole marking.
-Other MarkingFields, TagInputs, MarkedInputs and the portions inside a
-MarkedTextArea contribute as parts of that whole. A preview reads the authored
-whole; a separate rollup shows what the parts require.
+`data-ezclassify-whole="document"` on the form says the form holds the
+`document` marking and its parts. The field with `id="document"` is the whole.
+Every other marked field inside the form is a part: the attachment
+MarkingField, the summary TagInput, the title MarkedInput and each portion in
+the body MarkedTextArea. A `source` banner shows the authored whole, and an
+`aggregate` banner shows what the parts require.
 
 This example uses the public `cedar-valley@1.0.0` Context, including its
 parenthesized inline markings. Its whole and part formats are chosen from
 Context metadata.
 
-Start the Cedar Valley replay server first. It answers recorded requests for
-Cedar Valley, a fictional school district's teaching policy, over real HTTP, so
-the form works before you have a runtime. `--cors-origin` is your dev server's
-exact origin; `http://localhost:5173` is the Vite default.
+Start the free developer runtime first. It serves the public demo Contexts,
+Cedar Valley (a fictional school district's teaching policy) among them, over
+real HTTP, so the form works before you have a runtime of your own.
+`EZCLASSIFY_DEMO_ALLOWED_ORIGINS` is your dev server's exact origin; `http://localhost:5173` is the Vite default.
 
 ```bash
-npx @ezclassify/conformance-server --scenario cedar-valley --port 4010 \
-  --cors-origin http://localhost:5173
+docker run --rm -p 3000:8080 \
+  -e EZCLASSIFY_DEMO_ALLOWED_ORIGINS=http://localhost:5173 \
+  ghcr.io/ezclassify/developer-runtime
 ```
 
 The complete app is in [`examples/react-example`](https://github.com/ezclassify/web/tree/main/examples/react-example).
 
-Create the client once during application startup and share it through
-ordinary React context:
-
-```ts
-// src/client-context.ts
-import { createContext, useContext } from 'react';
-import type { EzClassifyClient } from '@ezclassify/rest-client';
-
-export const ClientContext = createContext<EzClassifyClient | null>(null);
-export function useClient(): EzClassifyClient {
-    const client = useContext(ClientContext);
-    if (!client) throw new Error('Missing EzClassify client');
-    return client;
-}
-```
+Create the client once during application startup and hand it to
+`EzClassifyProvider`:
 
 ```tsx
 // src/main.tsx
 import { createRoot } from 'react-dom/client';
 import { connectContext } from '@ezclassify/rest-client';
-import { App } from './App';
-import { ClientContext } from './client-context';
+import { EzClassifyProvider } from '@ezclassify/react';
+import { DocumentForm } from './DocumentForm';
 
 const client = await connectContext({
-    baseUrl: import.meta.env.VITE_EZCLASSIFY_URL ?? 'http://127.0.0.1:4010',
+    baseUrl: import.meta.env.VITE_EZCLASSIFY_URL ?? 'http://localhost:3000',
     contextId: 'cedar-valley',
     contextVersion: '1.0.0',
 });
-const root = createRoot(document.getElementById('app')!);
-root.render(
-    <ClientContext.Provider value={client}>
-        <App />
-    </ClientContext.Provider>,
+createRoot(document.getElementById('app')!).render(
+    <EzClassifyProvider context={client}>
+        <DocumentForm />
+    </EzClassifyProvider>,
 );
-```
-
-```tsx
-// src/App.tsx
-import { DocumentEditor } from './DocumentEditor';
-export function App() {
-    return <DocumentEditor />;
-}
 ```
 
 The page contains `<div id="app"></div>`. Show startup failures through your
 application's error UI. `VITE_EZCLASSIFY_URL` names the server when you start
-Vite; without it, the app connects to the replay server above.
-
-Each document editor scopes one `ReactEzClassifyStore` to its controls through
-`EzClassifyProvider`. Closing this document releases its store; other features keep using the
-application client.
-
-```tsx
-// src/DocumentEditor.tsx
-import { EzClassifyProvider } from '@ezclassify/react';
-import { useClient } from './client-context';
-import { DocumentForm } from './DocumentForm';
-
-export function DocumentEditor() {
-    const client = useClient();
-    return (
-        <EzClassifyProvider engine={client}>
-            <DocumentForm />
-        </EzClassifyProvider>
-    );
-}
-```
-
-`useSchemeEngine()` reuses that document store. `Container` scopes the controls
-to this form and makes the same store available to its descendants.
+Vite; without it, the app connects to the developer runtime above.
 
 ```tsx
 // src/DocumentForm.tsx
-import { useSyncExternalStore } from 'react';
-import {
-    useEzClassify,
-    useEzClassifyStore,
-    useSchemeEngine,
-} from '@ezclassify/react';
-
-function DocumentSummary() {
-    const [document, setDocument] = useEzClassify('document');
-    const store = useEzClassifyStore();
-    const parts = useSyncExternalStore(
-        (notify) => store.subscribeWholeRollup('document', () => notify()),
-        () => store.getWholeRollup('document'),
-        () => store.getWholeRollup('document'),
-    );
-    return (
-        <aside aria-label="Document marking state">
-            <p>Authored document: {document.rendered || 'Not marked'}</p>
-            <p>
-                Computed parts: {parts.rendered || 'No marked parts'}
-                {parts.stale ? ' (refresh failed)' : ''}
-            </p>
-            <button type="button" onClick={() => setDocument('CONFIDENTIAL')}>
-                Set document to CONFIDENTIAL
-            </button>
-        </aside>
-    );
-}
+import { EzClassify } from '@ezclassify/react';
+import { DocumentState } from './DocumentState';
 
 export function DocumentForm() {
-    const { Container } = useSchemeEngine();
     return (
-        <Container>
-            <form>
+        <EzClassify>
+            <form data-ezclassify-whole="document">
                 <label htmlFor="document">Document marking</label>
                 <input
                     type="text"
@@ -157,7 +112,6 @@ export function DocumentForm() {
                     name="attachmentMarking"
                     defaultValue="PUBLIC"
                     data-ezclassify-controller="marking"
-                    data-ezclassify-part-of="document"
                 />
                 <label htmlFor="summary">Summary marking (TagInput)</label>
                 <input
@@ -165,7 +119,6 @@ export function DocumentForm() {
                     name="summaryMarking"
                     defaultValue="CONFIDENTIAL"
                     data-ezclassify-controller="tags"
-                    data-ezclassify-part-of="document"
                 />
                 <label htmlFor="title">Title (MarkedInput)</label>
                 <input
@@ -174,7 +127,6 @@ export function DocumentForm() {
                     name="title"
                     defaultValue="(PUBLIC) District report"
                     data-ezclassify-controller="marked-input"
-                    data-ezclassify-part-of="document"
                 />
                 <label htmlFor="body">Body (MarkedTextArea)</label>
                 <textarea
@@ -184,7 +136,6 @@ export function DocumentForm() {
                         '(INTERNAL) Planning notes.\n(PUBLIC) Published background.'
                     }
                     data-ezclassify-controller="marked-textarea"
-                    data-ezclassify-part-of="document"
                 />
 
                 <p>Document preview</p>
@@ -197,9 +148,9 @@ export function DocumentForm() {
                     data-ezclassify-controller="banner"
                     data-ezclassify-aggregate="document"
                 />
-                <DocumentSummary />
+                <DocumentState />
             </form>
-        </Container>
+        </EzClassify>
     );
 }
 ```
@@ -207,21 +158,53 @@ export function DocumentForm() {
 The initial whole is INTERNAL while the summary part is CONFIDENTIAL. The
 computed parts rollup consequently differs from the authored whole. The whole
 MarkingField checks its current value against its parts and displays the
-engine's errors and proposed fixes. Changing the whole to CONFIDENTIAL through
-the custom button writes the same store that its MarkingField and preview read.
-The engine determines whether any chosen whole covers all current parts.
+engine's errors and proposed fixes. The engine determines whether any chosen
+whole covers all current parts.
 
-`data-ezclassify-part-of="document"` creates the part relationship; it does not
-replace the author's document marking with the computed rollup. The
-MarkedTextArea registers its individual portions beneath that whole. Its body
-text stays in the textarea's value. MarkedInput enhances a text input with one logical line of marked text.
+The `whole` container creates the part relationship; it does not replace the
+author's document marking with the computed rollup. The MarkedTextArea
+registers its individual portions beneath that whole. Its body text stays in
+the textarea's value. MarkedInput enhances a text input with one logical line
+of marked text.
 
-The replay records this form used as written: focus each control, browse each
+### Read and Write the State in Code
+
+The form needs no code. `DocumentState` shows how a component inside
+`<EzClassify>` reads and writes the same store the controls use.
+`useEzClassify(id)` returns a marking's state and a setter, and
+`useEzClassifyRollup(id)` returns the rollup of a whole's parts:
+
+```tsx
+// src/DocumentState.tsx
+import { useEzClassify, useEzClassifyRollup } from '@ezclassify/react';
+
+export function DocumentState() {
+    const [whole, setWhole] = useEzClassify('document');
+    const parts = useEzClassifyRollup('document');
+    return (
+        <aside aria-label="Document marking state">
+            <p>Authored document: {whole.rendered || 'Not marked'}</p>
+            <p>
+                Computed parts: {parts.rendered || 'No marked parts'}
+                {parts.stale ? ' (refresh failed)' : ''}
+            </p>
+            <button type="button" onClick={() => setWhole('CONFIDENTIAL')}>
+                Set document to CONFIDENTIAL
+            </button>
+        </aside>
+    );
+}
+```
+
+Changing the whole to CONFIDENTIAL through the button writes the same store
+that its MarkingField and preview read.
+
+Try this form as written: focus each control, browse each
 picker, open the marking popup in the title and body (Ctrl+Enter, or Cmd+Enter
 on macOS), select **Set document to CONFIDENTIAL**, then change the title to
 `(PUBLIC) District report card` and the body's first line to
 `(CONFIDENTIAL) Planning notes.` The whole ends at CONFIDENTIAL and covers its
-parts. Other values need your runtime.
+parts. The runtime applies the Context's real rules, so other values work too.
 
 ### Switch to Your Runtime
 
@@ -241,16 +224,48 @@ const client = await connectContext({
 });
 ```
 
+## Larger Pages
+
+Folders, several Contexts, a crosswalk's second scheme, a part outside its
+whole's container and a submitted page marking are all attributes. The
+[`@ezclassify/ui` README](https://github.com/ezclassify/web/blob/main/libs/ui/README.md#larger-pages)
+shows each one; the markup is the same in React.
+
+For several Contexts, pass them all to the provider under keys you choose, and
+name the key on each section with `data-ezclassify-context`:
+
+```tsx
+<EzClassifyProvider contexts={{ district, records }}>
+    <App />
+</EzClassifyProvider>
+```
+
+On a page whose markup you can't edit, a component inside `<EzClassify>` marks
+up the elements it finds through the runtime, as the
+[pages you can't edit](https://github.com/ezclassify/web/blob/main/libs/ui/README.md#pages-you-cant-edit) section shows:
+
+```tsx
+const ui = useEzClassifyUI();
+useEffect(() => {
+    const summary = document.getElementById('summary');
+    if (!ui || !summary) return;
+    ui.add(summary, 'marking');
+    return () => ui.remove(summary);
+}, [ui]);
+```
+
 ## Read, Write, and Save State
 
 `useEzClassify(id)` supplies a marking snapshot and rendered-text setter.
-`useEzClassifyStore()` exposes the same store for subscriptions and asynchronous
-writes: `publishRendered(id, text)` edits the default scope;
-`publishAssertions(id, assertions)` edits structured assertions.
+`useEzClassifyStore()` exposes the store of the nearest `<EzClassify>` for
+subscriptions and asynchronous writes: `publishRendered(id, text)` edits the
+default scope; `publishAssertions(id, assertions)` edits structured assertions.
 `seedAssertions(id, assertions)` loads a document's baseline; subsequent edits
 stay on top of that baseline. Seed when opening a document, then publish user
 and application edits. For a document whose state your application already
-owns, pass its `ReactEzClassifyStore` through the provider's `store` prop.
+owns, pass its `ReactEzClassifyStore` through the `store` prop of
+`<EzClassify>`. UI outside the form that needs the same state belongs inside
+the same `<EzClassify>`.
 
 For example, persist a marking's full assertion set with your document:
 
@@ -263,28 +278,27 @@ On opening that document with its fresh form store, load those assertions with
 `await store.seedAssertions('document', savedAssertions)`. `savedAssertions` is
 the assertion array loaded from your document persistence. Save the native
 marked text fields as document content too, so their prose and inline markings
-remain available when rebuilding the form.
-Keep assertions
-when persisting structured marking state: a displayed format may omit
-alternate-scope categories or captured values. Native form values retain the
-editable text, including the full prose in marked input/textarea controls.
+remain available when rebuilding the form. Keep assertions when persisting
+structured marking state: a displayed format may omit alternate-scope
+categories or captured values. Native form values retain the editable text,
+including the full prose in marked input/textarea controls. A marking that
+code seeds or saves needs an `id` on its field.
 
-`getWholeRollup('document')` and `subscribeWholeRollup('document', listener)`
-read only that document's parts. `getAggregate()` and `subscribeAggregate()`
-combine every marking in the store, including the authored whole and unrelated
-markings; this page-wide aggregate answers a different question. A rolled-up
-state with `stale: true` retains its last successful value after a failed
-refresh; show that uncertainty rather than treating it as fresh.
+`useEzClassifyRollup(id)` reads the rollup of the whole or collection `id`;
+with no id it reads the page. A rolled-up state with `stale: true` retains its
+last successful value after a failed refresh; show that uncertainty rather than
+treating it as fresh. `useEzClassifyUI()` returns the mounted instance for code
+that needs it directly, such as `add` and `remove` above.
 
 The store's `valid` and `errors` describe the marking itself; they do not
-include the whole's coverage of its parts. The
-whole MarkingField's contextual comparison with its parts also owns its own
-errors and fixes; a preview or plain string comparison does not replace it.
+include the whole's coverage of its parts. The whole MarkingField's contextual
+comparison with its parts also owns its own errors and fixes; a preview or
+plain string comparison does not replace it.
 
 At application/session teardown, unmount the React root and then destroy the
-shared client. The document provider releases its store when it unmounts. Closing an individual
-control releases its UI subscriptions while the rest of the form keeps its
-store and client.
+shared client. Each `<EzClassify>` releases its store when it unmounts. Closing
+an individual control releases its UI subscriptions while the rest of the form
+keeps its store and client.
 
 ## Presentation
 
@@ -293,6 +307,10 @@ the Context default, or select a format declared by your Context through
 `data-ezclassify-format`. The [attribute reference](https://github.com/ezclassify/web/blob/main/libs/ui/docs/attributes.md)
 and [binding model](https://github.com/ezclassify/web/blob/main/libs/ui/docs/binding-model.md) describe the complete
 control and store contracts.
+
+A root restarts its runtime when `options.colorMap` or `options.favorites` is a
+new object. Define them once, as a module constant or with `useMemo`, instead
+of writing them inline in a component that re-renders.
 
 ## License
 

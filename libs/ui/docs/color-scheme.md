@@ -50,13 +50,6 @@ The tables list default light-theme values. Theme selectors can change them;
 | `--ez-dropdown-selected`   | `color-mix(in srgb, var(--ez-color-success, #22c55e) 10%, transparent)` | Background for already-selected items in multi-select |
 | `--ez-dropdown-group-bg`   | `rgba(0,0,0,0.04)`                                                      | Background for group headers in dropdowns and matrix  |
 
-## Marking Label
-
-| Variable                     | Default   | Description                                        |
-| ---------------------------- | --------- | -------------------------------------------------- |
-| `--ez-marking-label-default` | `#6b7280` | Default background color for the marking label bar |
-| `--ez-marking-label-text`    | `#ffffff` | Text color on the marking label bar                |
-
 ## Tags
 
 TagInput chips (`.proto-tag`) render as filled pills: a category-colored
@@ -76,6 +69,17 @@ The remove (×) control has no separate color variable: it always inherits
 `currentColor` from the chip (`--ez-tag-color` or the category text color),
 so it stays legible against whatever background is in play, category-colored
 or not.
+
+## Status Mark
+
+The EzClassify mark in a field's chrome. It is muted while the field has
+nothing to say and strong once the field has a message for the user: a fix
+EzClassify applied, or an error.
+
+| Variable                        | Default (light) | Description                                                                                         |
+| ------------------------------- | --------------- | --------------------------------------------------------------------------------------------------- |
+| `--ez-status-mark-color`        | `#9ca3af`       | The mark while the field has nothing to say                                                         |
+| `--ez-status-mark-strong-color` | `currentColor`  | The mark while the field has a message; `var(--ez-color-primary, #fdb827)`, gold, on a dark palette |
 
 ## Keyboard Hints
 
@@ -101,12 +105,15 @@ Tokens shared by both `Handbook` and `AccessHandbook` components.
 
 ## Typography
 
-| Variable           | Default   | Description                       |
-| ------------------ | --------- | --------------------------------- |
-| `--ez-font-family` | `inherit` | Font family for all form controls |
-| `--ez-font-size`   | `inherit` | Base font size                    |
-| `--ez-font-weight` | `inherit` | Base font weight                  |
-| `--ez-line-height` | `inherit` | Base line height                  |
+Field text takes its control's font. Library chrome takes the page font,
+overridable with `--ez-font-family`.
+
+| Variable           | Default   | Description                    |
+| ------------------ | --------- | ------------------------------ |
+| `--ez-font-family` | `inherit` | Font family for library chrome |
+| `--ez-font-size`   | `inherit` | Base font size                 |
+| `--ez-font-weight` | `inherit` | Base font weight               |
+| `--ez-line-height` | `inherit` | Base line height               |
 
 ## Spacing
 

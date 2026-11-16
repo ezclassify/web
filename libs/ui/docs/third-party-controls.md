@@ -21,11 +21,11 @@ or forwarding `data-*` attributes.
 
 ## Native select
 
-A native select does not need a custom adapter. Bind it in place:
+A native select does not need a custom adapter or a controller. Name the
+marking and category, and it binds in place:
 
 ```html
 <select
-    data-ezclassify-bind
     data-ezclassify-facet-of="document-marking"
     data-ezclassify-category="handling"
     multiple></select>
@@ -129,8 +129,9 @@ function destroy() {
 
 ## Native text input binding
 
-`data-ezclassify-bind` with `data-ezclassify-bound-to` remains the concise
-option for a raw marking input. Native selects use `data-ezclassify-facet-of`
+A raw text input with `data-ezclassify-bound-to` edits that marking in place.
+A raw input that is a marking of its own carries `data-ezclassify-marking`, and
+its DOM `id` is the marking id. Native selects use `data-ezclassify-facet-of`
 and `data-ezclassify-category` as shown above. A composite control that renders
 portals, hides its native input, or does not forward attributes should use its
 framework adapter or the universal adapter.

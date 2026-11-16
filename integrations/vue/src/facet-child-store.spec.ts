@@ -1,19 +1,21 @@
 /**
- * A child's `useEzClassifyFacet` binds to the store `useEzClassify` provides
- * during setup, before the parent mounts. Mounting must keep that store for an
- * unchanged engine, or the child's facet is left subscribed to a destroyed
- * store: loading forever, with no options.
+ * A child's `useEzClassifyFacet` binds to the store its `<EzClassify>` root
+ * provides during setup, before the root mounts its scanner. The scanner must
+ * seed that same store, or the child's facet is left on a store nothing drives:
+ * loading forever, with no options.
  */
 import { describe, it, expect, afterEach } from 'vitest';
-import { defineComponent, h, nextTick, type ShallowRef } from 'vue';
+import { defineComponent, h, inject, nextTick } from 'vue';
 import { mount, type VueWrapper } from '@vue/test-utils';
-import { loadCedarValley } from '@ezclassify/example-schemes/cedar-valley';
 import {
-    useEzClassify,
+    createEzClassify,
+    EzClassify,
     useEzClassifyFacet,
+    VueRefStoreKey,
     type UseEzClassifyFacetReturn,
     type VueRefStore,
 } from './index';
+import { connectDemoContext } from '../../../test-support/demo-runtime';
 
 /** Flush the async component-init chain and the rollup debounce behind it. */
 async function settle(): Promise<void> {
@@ -33,44 +35,53 @@ afterEach(() => {
     root = undefined;
 });
 
-describe('useEzClassify with a facet in a child component', () => {
-    it('keeps the setup-time store, so the child facet loads and a pick renders', async () => {
+describe('<EzClassify> with a facet in a child component', () => {
+    it('drives the setup-time store, so the child facet loads and a pick renders', async () => {
         root = document.createElement('div');
         document.body.appendChild(root);
         const mountRoot = root;
         let facet!: UseEzClassifyFacetReturn;
-        let store!: ShallowRef<VueRefStore | null>;
+        let setupStore: VueRefStore | undefined;
 
         const Child = defineComponent({
             setup() {
+                setupStore = inject(VueRefStoreKey);
                 facet = useEzClassifyFacet('document-marking', 'handling');
                 return () => h('div');
             },
         });
-        const Parent = defineComponent({
+        const App = defineComponent({
             setup() {
-                ({ store } = useEzClassify(loadCedarValley(), {
-                    root: mountRoot,
-                }));
                 return () =>
-                    h('div', [
-                        h('input', {
-                            'type': 'hidden',
-                            'id': 'document-marking',
-                            'value': 'INTERNAL',
-                            'data-ezclassify-rendered': '',
-                        }),
-                        h(Child),
-                    ]);
+                    h(EzClassify, null, {
+                        default: () => [
+                            h('input', {
+                                'type': 'hidden',
+                                'id': 'document-marking',
+                                'value': 'INTERNAL',
+                                'data-ezclassify-marking': '',
+                            }),
+                            h(Child),
+                        ],
+                    });
             },
         });
 
-        wrapper = mount(Parent, { attachTo: mountRoot });
-        const setupStore = store.value;
+        wrapper = mount(App, {
+            attachTo: mountRoot,
+            global: {
+                plugins: [
+                    createEzClassify({
+                        context: await connectDemoContext({
+                            contextId: 'cedar-valley',
+                        }),
+                    }),
+                ],
+            },
+        });
         await settle();
 
-        expect(setupStore).not.toBeNull();
-        expect(store.value).toBe(setupStore);
+        expect(setupStore).toBeDefined();
         expect(facet.loading.value).toBe(false);
         expect(facet.options.value.length).toBeGreaterThan(0);
 

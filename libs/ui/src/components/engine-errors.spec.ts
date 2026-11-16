@@ -1,60 +1,67 @@
 import { afterEach, expect, it, vi } from 'vitest';
-import { Context } from '@ezclassify/engine';
-import type { LocalSchemeEngineAdapter } from '@ezclassify/types';
+import { openContext } from '../../test-fixtures/context-doubles';
+import type { RemoteContextSchemeEngineAdapter } from '@ezclassify/types';
 import { MarkedInput } from './marked-input';
 import { MarkedTextArea } from './marked-text-area';
+import { connectDemoContext } from '../../../../test-support/demo-runtime';
 
 /** An adapter that supplies multiple engine errors to both marked fields. */
-function adapter() {
-    const context = Context.fromComponents({
-        scheme: {
-            scheme: {
-                id: 'error-visibility',
-                version: '1.0.0',
-                name: 'Error visibility',
-                data: {
-                    categories: [
-                        {
-                            id: 'kind',
-                            label: 'Kind',
-                            single: true,
-                            rollup: 'max',
+async function adapter() {
+    const context = openContext(
+        await connectDemoContext({
+            draft: {
+                scheme: {
+                    scheme: {
+                        id: 'error-visibility',
+                        version: '1.0.0',
+                        name: 'Error visibility',
+                        description: 'Error visibility test fixture.',
+                        data: {
+                            categories: [
+                                {
+                                    id: 'kind',
+                                    label: 'Kind',
+                                    single: true,
+                                    rollup: 'max',
+                                },
+                            ],
+                            concepts: [
+                                {
+                                    id: 'A',
+                                    rank: 1,
+                                    name: 'Alpha',
+                                    categories: ['kind'],
+                                    views: { default: 'A' },
+                                },
+                            ],
                         },
-                    ],
-                    concepts: {
-                        inline: [
+                        rules: [],
+                        embedded_marking: [
                             {
-                                id: 'A',
-                                rank: 1,
-                                name: 'Alpha',
-                                categories: ['kind'],
-                                views: { default: 'A' },
+                                pattern: '\\(([^)]+)\\)',
+                                template: '({marking}) ',
                             },
                         ],
+                        render: {
+                            default: 'part',
+                            formats: [
+                                {
+                                    id: 'part',
+                                    surface: 'marking',
+                                    mode: 'inline',
+                                    fields: [{ category: 'kind' }],
+                                },
+                            ],
+                        },
                     },
                 },
-                rules: [],
-                embedded_marking: [
-                    { pattern: '\\(([^)]+)\\)', template: '({marking}) ' },
-                ],
-                render: {
-                    default: 'part',
-                    formats: [
-                        {
-                            id: 'part',
-                            surface: 'marking',
-                            mode: 'inline',
-                            fields: [{ category: 'kind' }],
-                        },
-                    ],
-                },
             },
-        },
-    });
-    const engine = context.scheme as LocalSchemeEngineAdapter;
+        }),
+    );
+    const engine = context.scheme as RemoteContextSchemeEngineAdapter;
     const process = engine.process.bind(engine);
-    vi.spyOn(engine, 'process').mockImplementation((input, options) => ({
-        ...process(input, options),
+    vi.spyOn(engine, 'process').mockImplementation(async (input, options) => ({
+        ...(await process(input, options)),
         valid: false,
         errors: [
             { constraintId: 'check-overall', message: 'First engine error.' },
@@ -65,8 +72,8 @@ function adapter() {
         ],
     }));
     const validate = engine.validate.bind(engine);
-    vi.spyOn(engine, 'validate').mockImplementation((input, options) => ({
-        ...validate(input, options),
+    vi.spyOn(engine, 'validate').mockImplementation(async (input, options) => ({
+        ...(await validate(input, options)),
         valid: false,
         errors: [
             { constraintId: 'check-overall', message: 'First engine error.' },
@@ -98,7 +105,7 @@ it.each([
     document.body.append(host);
     const component = new Component();
     mounted.push(component);
-    await component.init(host, adapter());
+    await component.init(host, await adapter());
     await vi.waitFor(() => {
         const report = [
             host.textContent,

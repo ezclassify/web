@@ -98,7 +98,10 @@ export function indexCoverageTargets(ctx: FormsContext): CoverageTargetIndex {
             ctx.mounted.get(el)?.authorsWhole !== false,
         );
     }
-    for (const field of ctx.fields) add(field, true, false, false);
+    // A hidden input has no field to take the correction. Its whole can still
+    // be authored through a component bound to it, indexed above.
+    for (const field of ctx.fields)
+        add(field, field.type !== 'hidden', false, false);
 
     return {
         writable(wholeId, parent) {

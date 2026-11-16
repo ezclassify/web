@@ -9,6 +9,7 @@ import {
     type ReactiveCell,
 } from './base-ezclassify-store';
 import { createLatencyEngineHarness } from './latency-engine-harness';
+import { levelState, onLevelState } from './page-rollup-harness';
 
 class TestStore extends BaseEzClassifyStore {
     protected createCell<T>(initial: T): ReactiveCell<T> {
@@ -69,8 +70,16 @@ describe('rollups over settled contributors', () => {
             [{ categoryId: 'cat', conceptId: 'b' }],
             [{ categoryId: 'cat', conceptId: 'c' }],
         ]);
-        // One whole rollup and one page aggregate, both over all three parts.
-        expect(inOrder).toEqual([complete, complete]);
+        const wholeFacts = JSON.stringify([
+            [
+                { categoryId: 'cat', conceptId: 'a' },
+                { categoryId: 'cat', conceptId: 'b' },
+                { categoryId: 'cat', conceptId: 'c' },
+            ],
+        ]);
+        // One whole rollup over all three parts, then the page over that
+        // rollup's facts: parts never reach the page directly.
+        expect(inOrder).toEqual([complete, wholeFacts]);
         expect(await rollupRequestsAnswering([2, 1, 0])).toEqual(inOrder);
         expect(await rollupRequestsAnswering([1, 2, 0])).toEqual(inOrder);
     });
@@ -114,7 +123,7 @@ describe('rollups over settled contributors', () => {
         const rollup = store.getWholeRollup('whole');
         expect(rollup.rendered).toBe('cat:a cat:c');
         expect(rollup.stale).toBe(true);
-        expect(store.getAggregate().stale).toBe(true);
+        expect(levelState(store).stale).toBe(true);
         store.destroy();
     });
 
@@ -137,7 +146,7 @@ describe('rollups over settled contributors', () => {
         const rollup = store.getWholeRollup('whole');
         expect(rollup.rendered).toBe('cat:a cat:b cat:c');
         expect(rollup.stale).toBe(true);
-        expect(store.getAggregate().stale).toBe(true);
+        expect(levelState(store).stale).toBe(true);
         // A whole it does not feed is current.
         expect(store.getWholeRollup('other').stale).toBeUndefined();
 
@@ -147,7 +156,7 @@ describe('rollups over settled contributors', () => {
             'cat:a cat:b cat:c',
         );
         expect(store.getWholeRollup('whole').stale).toBeUndefined();
-        expect(store.getAggregate().stale).toBeUndefined();
+        expect(levelState(store).stale).toBeUndefined();
         store.destroy();
     });
 
@@ -173,7 +182,7 @@ describe('rollups over settled contributors', () => {
         await harness.settleAll();
         // part-a keeps its committed value; part-b's raise reaches the rollup.
         expect(store.getWholeRollup('whole').rendered).toBe('cat:x cat:z');
-        expect(store.getAggregate().rendered).toBe('cat:x cat:z');
+        expect(levelState(store).rendered).toBe('cat:x cat:z');
         store.destroy();
     });
 
@@ -207,7 +216,7 @@ describe('rollups over settled contributors', () => {
         // part-a was registered and never asked for: nothing is coming for
         // it, so it holds neither rollup.
         expect(store.getWholeRollup('whole').rendered).toBe('cat:y');
-        expect(store.getAggregate().rendered).toBe('cat:y');
+        expect(levelState(store).rendered).toBe('cat:y');
         expect(store.getWholeRollup('whole').stale).toBeUndefined();
         void store.seedRendered('part-a', 'cat:x');
         await harness.flush();
@@ -215,7 +224,7 @@ describe('rollups over settled contributors', () => {
         expect(harness.pending('aggregateAssertions')).toHaveLength(0);
         await harness.settleAll();
         expect(store.getWholeRollup('whole').rendered).toBe('cat:x cat:y');
-        expect(store.getAggregate().rendered).toBe('cat:x cat:y');
+        expect(levelState(store).rendered).toBe('cat:x cat:y');
         void store.publishRendered('part-a', 'cat:z');
         await harness.settleAll();
         expect(store.getWholeRollup('whole').rendered).toBe('cat:z cat:y');
@@ -230,7 +239,7 @@ describe('rollups over settled contributors', () => {
         store.subscribeWholeRollup('whole', (state) =>
             wholeRollups.push(state.rendered),
         );
-        store.subscribeAggregate((state) => aggregates.push(state.rendered));
+        onLevelState(store, (state) => aggregates.push(state.rendered));
         store.setPartOf('part-a', 'whole');
         store.setPartOf('part-b', 'whole');
         await harness.settleAll();

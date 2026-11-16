@@ -95,8 +95,9 @@ export function mockProcessResult(
 }
 
 /**
- * What a scan returns when it read the whole document: the markings it found
- * and a limit report that says nothing stopped it.
+ * What a scan returns when it read the whole document: the markings it found,
+ * no wrapped marks it could not read, and a limit report that says nothing
+ * stopped it.
  *
  * @param results - The markings the mocked scan found, in document order
  * @returns A complete scan outcome
@@ -106,6 +107,7 @@ export function mockScanOutcome(
 ): ScanOutcome {
     return {
         results: [...results],
+        unread: [],
         limits: { status: 'complete', regionsFound: results.length },
     };
 }

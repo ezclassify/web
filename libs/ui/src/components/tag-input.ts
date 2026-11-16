@@ -24,7 +24,6 @@
 
 import type { SchemeMetaView } from '@ezclassify/types';
 import { teardownAfterWrite } from './teardown-write';
-import { heightAtLeastFloor } from './dom-helpers';
 import { ComponentBase, type ComponentOptions } from './component-base';
 import { createKeyboardHints, COMPONENT_CSS } from './component-utils';
 import tagInputCss from './tag-input.css?inline';
@@ -36,12 +35,15 @@ import {
     type ChipKeyboardContext,
 } from './tag-input-keyboard';
 import { renderTagChips } from './tag-input-renderer';
+import { inWrittenOrder } from '../written-concept';
+import { scopesOfCategory } from '../scopes';
 import { ensureStatusMark, setStatusMarkFixes } from './status-mark';
 import {
-    ensureFieldDrawer,
-    setFieldDrawerOrientation,
-    syncFieldDrawerTheme,
-} from './field-chrome-drawer';
+    applyFieldFrame,
+    mirrorHostFrame,
+    mountFieldChrome,
+    type FieldChrome,
+} from './field-chrome';
 import {
     ensureFavoritesButton,
     schemeOffersPresets,
@@ -60,8 +62,8 @@ import { ComposerView, accessibleLabel } from './composer/composer-view';
 export class TagInput extends ComponentBase {
     private inputWrap!: HTMLDivElement;
     private filterInput!: HTMLInputElement;
-    /** The ★ drawer hosting the status mark + favorites button. */
-    private drawer!: HTMLElement;
+    /** The inline chrome: status mark, ★ favorites button, clear. */
+    private chrome: FieldChrome | null = null;
     private favoritesPanel: FavoritesPanel | null = null;
     private hintsEl!: HTMLElement;
     private wrapOuter!: HTMLDivElement;
@@ -78,8 +80,6 @@ export class TagInput extends ComponentBase {
     private _pendingFocusConceptId: string | null = null;
     private controller!: ComposerController;
     private view!: ComposerView;
-    /** Whether the composer is open below the field (drawer goes on top). */
-    private composerBelow = false;
     /** Filter-input prompt shown once a marking is present (search hint). */
     private searchPlaceholder = '';
     /**
@@ -88,7 +88,7 @@ export class TagInput extends ComponentBase {
      * hint.
      */
     private emptyPlaceholder = '';
-    private hostStyleObserver: MutationObserver | null = null;
+    private stopHostFrame: () => void = () => {};
 
     /** CSS for TagInput (exported for external injection) */
     static readonly CSS: string = COMPONENT_CSS + tagInputCss;
@@ -98,9 +98,8 @@ export class TagInput extends ComponentBase {
         return meta.defaultWholeRenderFormat ?? meta.defaultRenderFormat ?? '';
     }
 
-    protected override clearButtonMount(): HTMLElement {
-        this.inputWrap.classList.add('ez-has-clear');
-        return this.inputWrap;
+    protected override clearButtonMount(): HTMLElement | null {
+        return this.chrome?.element ?? null;
     }
 
     protected override hasClearValue(): boolean {
@@ -125,6 +124,7 @@ export class TagInput extends ComponentBase {
         // Input wrapper (chips + filter input)
         this.inputWrap = document.createElement('div');
         this.inputWrap.className = 'tag-input-wrap';
+        applyFieldFrame(this.inputWrap, this.options.root ?? this.container);
         this.inputWrap.setAttribute('role', 'group');
         this.inputWrap.setAttribute(
             'aria-label',
@@ -212,20 +212,22 @@ export class TagInput extends ComponentBase {
             this.onFilterPaste(e),
         );
 
-        // Keyboard hints for the chips. Built here (once) but mounted by
-        // renderField() into the ★ drawer, at the drawer's LEFT edge. The
-        // data-ezclassify-no-hints opt-out keeps it hidden.
-        this.hintsEl = createKeyboardHints([
-            { keys: '←→', action: t('hint.navigateTags') },
-            { keys: 'Del', action: t('hint.removeTag') },
-        ]);
-        if (this.options.hints === false) this.hintsEl.style.display = 'none';
-
         // Keep the field in normal flow; the composer portals to
         // document.body and positions in viewport coordinates.
         this.wrapOuter = document.createElement('div');
         this.wrapOuter.style.position = 'relative';
         this.wrapOuter.appendChild(this.inputWrap);
+
+        // Keyboard hints for the chips, in a quiet row under the field the way
+        // the marked fields show theirs. The data-ezclassify-no-hints opt-out
+        // keeps it hidden.
+        this.hintsEl = createKeyboardHints([
+            { keys: '←→', action: t('hint.navigateTags') },
+            { keys: 'Del', action: t('hint.removeTag') },
+        ]);
+        this.hintsEl.classList.add('tag-input-hints');
+        if (this.options.hints === false) this.hintsEl.style.display = 'none';
+        this.wrapOuter.appendChild(this.hintsEl);
         this.container.appendChild(this.wrapOuter);
         this.followHostAppearance();
 
@@ -251,11 +253,7 @@ export class TagInput extends ComponentBase {
                 ? (conceptId, categoryId) =>
                       this.resolveConceptDescription(conceptId, categoryId)
                 : undefined,
-            onPlacement: (open, side) => {
-                this.composerBelow = open && side === 'below';
-                this.setEditorOpen(open);
-                this.syncDrawerOrientation();
-            },
+            onPlacement: (open) => this.setReportInField(open),
         });
         this.container.appendChild(this.view.announcer);
         this.wrapOuter.insertAdjacentElement('afterend', this.view.note);
@@ -282,12 +280,14 @@ export class TagInput extends ComponentBase {
         this.destroyClearButton();
         this.removeRuleErrors();
         this._destroyed = true;
-        this.hostStyleObserver?.disconnect();
-        this.hostStyleObserver = null;
+        this.stopHostFrame();
+        this.stopHostFrame = () => {};
         this.view.destroy();
         this.controller.dispose();
         this.favoritesPanel?.destroy();
         this.favoritesPanel = null;
+        this.chrome?.destroy();
+        this.chrome = null;
         this.container.innerHTML = '';
     }
 
@@ -296,6 +296,34 @@ export class TagInput extends ComponentBase {
             return;
         }
         this.renderField();
+    }
+
+    /**
+     * The order the chips' categories go in: the order this field's output
+     * writes them on each scope it writes (see `inWrittenOrder`), the scopes in
+     * the order the field lists them, so a value sits where the marking writes
+     * it whether the marking writes it or holds it unwritten.
+     */
+    private chipCategoryOrder(): string[] {
+        const ids = this.scheme.categories.map((category) => category.id);
+        const writing = this.conceptWriting();
+        if (!writing) return ids;
+        const { scopes } = writing.field;
+        if (scopes.length === 0) return inWrittenOrder(writing, undefined, ids);
+        const ordered = scopes.flatMap((scope) =>
+            inWrittenOrder(
+                writing,
+                scope,
+                this.scheme.categories
+                    .filter((category) =>
+                        scopesOfCategory(category, this.schemeMeta).includes(
+                            scope,
+                        ),
+                    )
+                    .map((category) => category.id),
+            ),
+        );
+        return [...new Set([...ordered, ...ids])];
     }
 
     private renderField(): void {
@@ -315,9 +343,14 @@ export class TagInput extends ComponentBase {
             colorFrom: this.colorFrom,
             colorCoding: this.options.colorCoding,
             unprinted: this.unprinted,
+            unwritten: this.unwrittenFact(),
+            categoryOrder: this.chipCategoryOrder(),
             unread: this.unreadText,
             onRemoveAssertion: (c, f) => this.removeAssertion(c, f),
-            onReprocess: () => this.reprocess(),
+            onReprocess: () => {
+                this.beginUserEdit();
+                this.reprocess();
+            },
             onChipClick: (_el, i) => this.focusChip(i),
             onChipKeydown: (e, el) => this.onChipKeydown(e, el),
             onChipBlur: () => {
@@ -327,8 +360,8 @@ export class TagInput extends ComponentBase {
                     }
                 }, 150);
             },
-            onChipCreated: (el, conceptId, categoryId) =>
-                this.attachConceptTooltip(el, conceptId, categoryId),
+            onChipCreated: (el, conceptId, categoryId, reason) =>
+                this.attachConceptTooltip(el, conceptId, categoryId, reason),
         });
 
         this.updateFilterPlaceholder();
@@ -337,31 +370,20 @@ export class TagInput extends ComponentBase {
         this.controller.syncCommitted();
 
         // One status mark per field, mutated in place (Enhancement Status
-        // Indicator contract). ensure() is idempotent and re-mounts after any
-        // render pass that wiped the wrap, so marks can never stack. The mark +
-        // ★ favorites button live in a small drawer attached to the field's
-        // bottom-right edge rather than floating over the chips, mirroring to
-        // the top when the field's own dropdown flips open above (see
-        // syncDrawerOrientation). Host appearance and the drawer's attached
-        // surface are synchronized together by followHostAppearance().
-        this.drawer = ensureFieldDrawer(this.inputWrap, {
+        // Indicator contract). The mark, ★ favorites button and clear sit
+        // inline at the field's trailing edge; the wrap reserves the room they
+        // take so chips and the filter never run under them. The chrome is
+        // mounted once, after the filter, where a render pass never reaches.
+        this.chrome ??= mountFieldChrome(this.inputWrap, {
             root: this.options.root,
         });
-        this.syncDrawerAppearance();
-        // Hints (built in init()) sit at the drawer's LEFT edge, status mark
-        // + ★ button at the right: DOM order alone gets that in a
-        // shrink-wrapped flex row, so this just has to run before the mark/★
-        // are appended below. insertBefore no-ops when hintsEl is already the
-        // first child, so this is safe to repeat on every render pass.
-        if (this.drawer.firstChild !== this.hintsEl) {
-            this.drawer.insertBefore(this.hintsEl, this.drawer.firstChild);
-        }
-        ensureStatusMark(this.drawer, {
+        ensureStatusMark(this.chrome.status, {
             shape: 'chrome',
             root: this.options.root,
             shouldShowTooltip: () => this.shouldShowTooltip(),
+            ...this.statusMarkUndo(),
         });
-        setStatusMarkFixes(this.drawer, this.getAppliedFixes());
+        setStatusMarkFixes(this.chrome.status, this.fieldStatusChanges());
         // The ★ mounts on host favorites wiring OR scheme-declared presets
         // (ensureFavoritesButton owns the OR); favoritesHost tolerates an
         // undefined config, running the panel read-only in that case.
@@ -370,7 +392,7 @@ export class TagInput extends ComponentBase {
             schemeOffersPresets(this.scheme, this.options.scope)
         ) {
             this.favoritesPanel = ensureFavoritesButton(
-                this.drawer,
+                this.chrome.status,
                 this.favoritesHost(this.options.favorites),
             );
             this.favoritesPanel?.syncStar();
@@ -401,111 +423,15 @@ export class TagInput extends ComponentBase {
 
     /** Keep native form styling on its replacement, including nested themes. */
     private followHostAppearance(): void {
-        const host = getMountHost(this.container) ?? this.enhancedInput;
-        // A hidden data field has no visual contract to preserve. Explicit
-        // styled-input opt-in keeps the library's own field palette/sizing.
-        if (
-            !(host instanceof HTMLInputElement) ||
-            host.type === 'hidden' ||
-            this.options.styleInputs
-        )
-            return;
-        const sync = () => {
-            const styles = window.getComputedStyle(host);
-            // The wrap's own stylesheet floor, read before the host's values
-            // are written over it: the field family's single-line height.
-            this.inputWrap.style.minHeight = '';
-            const floor = window.getComputedStyle(this.inputWrap).minHeight;
-            const explicitPalette =
-                !!this.options.theme ||
-                this.container.hasAttribute('data-color-scheme');
-            for (const property of [
-                'boxSizing',
-                'backgroundColor',
-                'color',
-                'font',
-                'lineHeight',
-                'borderWidth',
-                'borderStyle',
-                'borderColor',
-                'borderRadius',
-                'marginTop',
-                'marginBottom',
-                'minHeight',
-                'paddingTop',
-                'paddingBottom',
-                'paddingLeft',
-            ] as const) {
-                this.inputWrap.style[property] =
-                    explicitPalette &&
-                    ['backgroundColor', 'color', 'borderColor'].includes(
-                        property,
-                    )
-                        ? ''
-                        : styles[property];
-            }
-            // The floor is the wrap's outer height; a content-box wrap
-            // measures min-height inside the host padding and border it
-            // just took on.
-            const wrap = window.getComputedStyle(this.inputWrap);
-            const chrome =
-                wrap.boxSizing === 'border-box'
-                    ? 0
-                    : [
-                          wrap.paddingTop,
-                          wrap.paddingBottom,
-                          wrap.borderTopWidth,
-                          wrap.borderBottomWidth,
-                      ].reduce(
-                          (sum, length) => sum + (parseFloat(length) || 0),
-                          0,
-                      );
-            this.inputWrap.style.minHeight = heightAtLeastFloor(
-                styles.minHeight,
-                `${Math.max(0, (parseFloat(floor) || 0) - chrome)}px`,
-            );
-            // The native padding remains the baseline; the status mark must
-            // still have its own lane beside wrapping chips and the filter.
-            this.inputWrap.style.paddingRight = `max(${styles.paddingRight || '0px'}, 2.5rem)`;
-            this.syncDrawerAppearance();
-        };
-        sync();
-        if (typeof MutationObserver === 'undefined') return;
-        this.hostStyleObserver = new MutationObserver(sync);
-        this.hostStyleObserver.observe(this.container, {
-            attributes: true,
-            attributeFilter: ['data-color-scheme'],
-        });
-        for (
-            let ancestor: HTMLElement | null = host;
-            ancestor;
-            ancestor = ancestor.parentElement
-        ) {
-            this.hostStyleObserver.observe(ancestor, {
-                attributes: true,
-                attributeFilter: [
-                    'style',
-                    'class',
-                    'data-theme',
-                    'data-bs-theme',
-                    'data-color-scheme',
-                ],
-            });
-        }
-    }
-
-    private syncDrawerAppearance(): void {
-        if (!this.drawer) return;
-        if (!this.inputWrap.style.backgroundColor) {
-            this.drawer.style.backgroundColor = '';
-            this.drawer.style.removeProperty('--ez-field-drawer-border-color');
-            return;
-        }
-        const styles = window.getComputedStyle(this.inputWrap);
-        syncFieldDrawerTheme(this.drawer, {
-            backgroundColor: styles.backgroundColor,
-            borderColor: styles.borderColor,
-        });
+        this.stopHostFrame = mirrorHostFrame(
+            this.inputWrap,
+            getMountHost(this.container) ?? this.enhancedInput,
+            {
+                container: this.container,
+                styleInputs: this.options.styleInputs,
+                explicitPalette: () => !!this.options.theme,
+            },
+        );
     }
 
     /**
@@ -655,27 +581,8 @@ export class TagInput extends ComponentBase {
         if (!this.controller.isOpen) void this.view.open('typing');
     }
 
-    /**
-     * Mirror the ★ drawer to the edge OPPOSITE the composer, so the two never
-     * occupy the same space. A visible validation error also occupies the
-     * bottom edge: the drawer must never hide the message the user is being
-     * asked to fix.
-     */
-    private syncDrawerOrientation(): void {
-        if (!this.drawer) return;
-        setFieldDrawerOrientation(
-            this.drawer,
-            this.composerBelow || this.hasVisibleValidationErrors()
-                ? 'top'
-                : 'bottom',
-        );
-    }
-
     protected override onRuleErrorsChanged(): void {
         this.view?.refreshValidity();
-        // Errors can arrive before setup() builds the drawer (initial value
-        // processing); orientation syncs on first render then.
-        if (this.drawer) this.syncDrawerOrientation();
     }
 
     /**
@@ -711,7 +618,10 @@ export class TagInput extends ComponentBase {
                     this.assertions.length > 0 &&
                     !this.container.hasAttribute('data-ezclassify-invalid'),
             }),
-            onApply: (marking) => void this.setValue(marking),
+            onApply: (marking) => {
+                this.beginUserEdit();
+                void this.setValue(marking);
+            },
             focusField: () => this.filterInput.focus(),
         };
     }

@@ -4,7 +4,7 @@ import {
     runEzClassifyStoreConformance,
     runEzClassifyStoreBudgetConformance,
     runEzClassifyStoreSeedConformance,
-} from '@ezclassify/testing-utils';
+} from '../../../../test-support/store-conformance';
 import { loadMultiScopeRegression } from '../../test-fixtures/load-multi-scope-regression';
 import {
     VanillaEzClassifyStore,
@@ -12,6 +12,8 @@ import {
 } from './ezclassify-store';
 import type { SchemeEngineAdapter } from '@ezclassify/types';
 import { EMPTY_RENDER_ASSESSMENT } from '../engine-result-mock';
+import { levelState, onLevelState } from './page-rollup-harness';
+import { demoRuntimeSettled } from '../../../../test-support/demo-runtime';
 
 function passThrough(): EzClassifyStoreEngine {
     return createPassThroughEngine();
@@ -37,11 +39,11 @@ runEzClassifyStoreSeedConformance(
 // page-classification banners depend on.
 describe('VanillaEzClassifyStore: page aggregate vs whole-rollup', () => {
     /**
-     * Drain enough microtasks for the chained recompute promises
-     * (`recomputeAggregate` and `recomputeWholeRollup`) to settle.
+     * Drain enough microtasks for the chained recompute promises (the whole
+     * rollup, then the page that reads it) to settle.
      */
     const flush = async () => {
-        for (let i = 0; i < 4; i++) await Promise.resolve();
+        await demoRuntimeSettled();
     };
 
     it('page aggregate includes the whole, the parts, and standalone markings', async () => {
@@ -53,7 +55,7 @@ describe('VanillaEzClassifyStore: page aggregate vs whole-rollup', () => {
         await store.publishRendered('p2', 'origin:army');
         await store.publishRendered('side', 'tag:standalone');
         await flush();
-        const agg = store.getAggregate();
+        const agg = levelState(store);
         for (const expected of [
             'level:public',
             'level:secret',
@@ -88,7 +90,7 @@ describe('VanillaEzClassifyStore: page aggregate vs whole-rollup', () => {
         store.setPartOf('p1', 'doc');
         const aggCb = vi.fn();
         const docRollupCb = vi.fn();
-        store.subscribeAggregate(aggCb);
+        onLevelState(store, aggCb);
         store.subscribeWholeRollup('doc', docRollupCb);
         aggCb.mockClear();
         docRollupCb.mockClear();
@@ -109,7 +111,7 @@ describe('VanillaEzClassifyStore: page aggregate vs whole-rollup', () => {
         // see a page-aggregate movement, not a whole-rollup tick.
         const aggCb = vi.fn();
         const docRollupCb = vi.fn();
-        store.subscribeAggregate(aggCb);
+        onLevelState(store, aggCb);
         store.subscribeWholeRollup('doc', docRollupCb);
         aggCb.mockClear();
         docRollupCb.mockClear();
@@ -128,22 +130,22 @@ describe('VanillaEzClassifyStore: page aggregate vs whole-rollup', () => {
 // would give these tests the wrong level (or empty).
 describe('VanillaEzClassifyStore: aggregate uses engine.aggregate', () => {
     const flush = async () => {
-        for (let i = 0; i < 4; i++) await Promise.resolve();
+        await demoRuntimeSettled();
     };
 
     it('two standalone markings with different tiers → page aggregate is the max level', async () => {
         const store = new VanillaEzClassifyStore(
-            loadMultiScopeRegression() as unknown as EzClassifyStoreEngine,
+            (await loadMultiScopeRegression()) as unknown as EzClassifyStoreEngine,
         );
         await store.publishRendered('low', 'STUDENTS');
         await store.publishRendered('high', 'DISTRICT COORDINATORS');
         await flush();
-        expect(store.getAggregate().rendered).toBe('DISTRICT COORDINATORS');
+        expect(levelState(store).rendered).toBe('DISTRICT COORDINATORS');
     });
 
     it('three parts under one whole → getWholeRollup returns max level', async () => {
         const store = new VanillaEzClassifyStore(
-            loadMultiScopeRegression() as unknown as EzClassifyStoreEngine,
+            (await loadMultiScopeRegression()) as unknown as EzClassifyStoreEngine,
         );
         store.setPartOf('p1', 'doc');
         store.setPartOf('p2', 'doc');
@@ -159,7 +161,7 @@ describe('VanillaEzClassifyStore: aggregate uses engine.aggregate', () => {
 
     it('three parts under one whole → page aggregate also reaches max level', async () => {
         const store = new VanillaEzClassifyStore(
-            loadMultiScopeRegression() as unknown as EzClassifyStoreEngine,
+            (await loadMultiScopeRegression()) as unknown as EzClassifyStoreEngine,
         );
         store.setPartOf('p1', 'doc');
         store.setPartOf('p2', 'doc');
@@ -171,7 +173,7 @@ describe('VanillaEzClassifyStore: aggregate uses engine.aggregate', () => {
         await store.publishRendered('p3', 'DISTRICT COORDINATORS');
         await flush();
         // Page aggregate = whole + all parts. Max level wins: STATE ASSESSMENT STAFF.
-        expect(store.getAggregate().rendered).toBe('STATE ASSESSMENT STAFF');
+        expect(levelState(store).rendered).toBe('STATE ASSESSMENT STAFF');
         // Whole-rollup = parts only (doc excluded per binding-model §1.x). Max of parts: DISTRICT_COORDINATORS.
         expect(store.getWholeRollup('doc').rendered).toBe(
             'DISTRICT COORDINATORS',
@@ -190,7 +192,7 @@ describe('VanillaEzClassifyStore: aggregate uses engine.aggregate', () => {
 // should never go through that round-trip.
 describe('VanillaEzClassifyStore: aggregateAssertions skips string round-trip', () => {
     const flush = async () => {
-        for (let i = 0; i < 4; i++) await Promise.resolve();
+        await demoRuntimeSettled();
     };
 
     // Engine where `aggregate(strings)` is intentionally broken, only
@@ -246,7 +248,7 @@ describe('VanillaEzClassifyStore: aggregateAssertions skips string round-trip', 
         await store.publishRendered('a', 'level:secret');
         await store.publishRendered('b', 'origin:army');
         await flush();
-        const agg = store.getAggregate();
+        const agg = levelState(store);
         expect(agg.rendered).toContain('level:secret');
         expect(agg.rendered).toContain('origin:army');
     });
@@ -343,7 +345,7 @@ describe('VanillaEzClassifyStore: required capabilities (no lossy fallback)', ()
 
 describe('VanillaEzClassifyStore: subscribeFacet: suggest call budget per marking change', () => {
     const flush = async () => {
-        for (let i = 0; i < 8; i++) await Promise.resolve();
+        await demoRuntimeSettled();
     };
 
     it('calls suggest once per subscribed category (own-category exclusion fix)', async () => {
@@ -453,12 +455,12 @@ describe('VanillaEzClassifyStore: subscribeFacet: suggest call budget per markin
 
 describe('VanillaEzClassifyStore: subscribeFacet: sibling-gating and no-churn', () => {
     const flush = async () => {
-        for (let i = 0; i < 6; i++) await Promise.resolve();
+        await demoRuntimeSettled();
     };
 
     it('from_school facet is notified when level changes to the gating value', async () => {
         const engine =
-            loadMultiScopeRegression() as unknown as EzClassifyStoreEngine &
+            (await loadMultiScopeRegression()) as unknown as EzClassifyStoreEngine &
                 SchemeEngineAdapter;
         const store = new VanillaEzClassifyStore(engine);
 
@@ -499,7 +501,7 @@ describe('VanillaEzClassifyStore: subscribeFacet: sibling-gating and no-churn', 
 
     it('unaffected facet is not notified when its allowable set is unchanged', async () => {
         const engine =
-            loadMultiScopeRegression() as unknown as EzClassifyStoreEngine &
+            (await loadMultiScopeRegression()) as unknown as EzClassifyStoreEngine &
                 SchemeEngineAdapter;
         const store = new VanillaEzClassifyStore(engine);
 

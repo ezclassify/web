@@ -1,0 +1,1355 @@
+{
+    "engineVersion": "1.0.0-dev.30",
+    "openapiVersion": "1.0.0-dev.30",
+    "responses": {
+        "1c386dce0927d39c6157705a4c5eed3c37cba3726d7d4c990414939aaf91d68b": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "cedar-valley-handling",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "cedar-valley-handling-guide",
+                            "kind": "guide",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "cedar-valley-handling-access",
+                            "kind": "access",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "cedar-valley-handling",
+                            "kind": "context",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "cedar-valley-handling",
+                    "requestedVersion": "1.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "categories": [
+                        {
+                            "id": "protection",
+                            "items": [
+                                {
+                                    "dependsOn": [],
+                                    "dependsOnNames": [],
+                                    "id": "public",
+                                    "isComputed": false,
+                                    "keywords": [
+                                        "published lunch menu",
+                                        "school calendar",
+                                        "released practice questions",
+                                        "approved for public release"
+                                    ],
+                                    "matcherLabels": [],
+                                    "name": "Public",
+                                    "outcomeText": "PUBLIC",
+                                    "overrideNames": [],
+                                    "overrides": [],
+                                    "rationale": "Public is a positive approval for this exact version; an unmarked file is not public."
+                                },
+                                {
+                                    "dependsOn": [],
+                                    "dependsOnNames": [],
+                                    "id": "internal",
+                                    "isComputed": false,
+                                    "keywords": [
+                                        "staff plan",
+                                        "district memo",
+                                        "routine operations",
+                                        "bus operations schedule"
+                                    ],
+                                    "matcherLabels": [],
+                                    "name": "Internal",
+                                    "outcomeText": "INTERNAL",
+                                    "overrideNames": [],
+                                    "overrides": [],
+                                    "rationale": "Routine district work that has not been approved for public distribution is Internal."
+                                },
+                                {
+                                    "dependsOn": [],
+                                    "dependsOnNames": [],
+                                    "id": "confidential",
+                                    "isComputed": false,
+                                    "keywords": [
+                                        "student record",
+                                        "employee evaluation",
+                                        "supplier bid",
+                                        "purchasing notes"
+                                    ],
+                                    "matcherLabels": [],
+                                    "name": "Confidential",
+                                    "outcomeText": "CONFIDENTIAL",
+                                    "overrideNames": [],
+                                    "overrides": [],
+                                    "rationale": "Private records and active purchasing material need confirmed record or business authorization from the host."
+                                },
+                                {
+                                    "dependsOn": [],
+                                    "dependsOnNames": [],
+                                    "id": "restricted",
+                                    "isComputed": false,
+                                    "keywords": [
+                                        "live assessment",
+                                        "answer key",
+                                        "building access code",
+                                        "active investigation"
+                                    ],
+                                    "matcherLabels": [],
+                                    "name": "Restricted",
+                                    "outcomeText": "RESTRICTED",
+                                    "overrideNames": [],
+                                    "overrides": [],
+                                    "rationale": "Safety, investigation, and live-assessment material needs explicit assignment from the host."
+                                }
+                            ],
+                            "label": "1. Protection"
+                        },
+                        {
+                            "id": "handling",
+                            "items": [
+                                {
+                                    "dependsOn": [],
+                                    "dependsOnNames": [],
+                                    "id": "do-not-forward",
+                                    "isComputed": false,
+                                    "keywords": [
+                                        "do not forward",
+                                        "ask before sharing"
+                                    ],
+                                    "matcherLabels": [],
+                                    "name": "Do not forward",
+                                    "outcomeText": "DO_NOT_FORWARD",
+                                    "overrideNames": [],
+                                    "overrides": [],
+                                    "rationale": "This is a human instruction; the marking does not technically block forwarding."
+                                },
+                                {
+                                    "dependsOn": [],
+                                    "dependsOnNames": [],
+                                    "id": "redact-before-release",
+                                    "isComputed": false,
+                                    "keywords": [
+                                        "redact before release",
+                                        "public copy"
+                                    ],
+                                    "matcherLabels": [],
+                                    "name": "Redact before release",
+                                    "outcomeText": "REDACT_BEFORE_RELEASE",
+                                    "overrideNames": [],
+                                    "overrides": [],
+                                    "rationale": "Create and approve a separate redacted public version; this copy remains protected."
+                                },
+                                {
+                                    "dependsOn": [],
+                                    "dependsOnNames": [],
+                                    "id": "keep-sealed",
+                                    "isComputed": false,
+                                    "keywords": [
+                                        "keep sealed",
+                                        "open at scheduled time"
+                                    ],
+                                    "matcherLabels": [],
+                                    "name": "Keep sealed",
+                                    "outcomeText": "KEEP_SEALED",
+                                    "overrideNames": [],
+                                    "overrides": [],
+                                    "rationale": "The custodian controls the opening event outside the marking engine."
+                                },
+                                {
+                                    "dependsOn": [],
+                                    "dependsOnNames": [],
+                                    "id": "collect-after-use",
+                                    "isComputed": false,
+                                    "keywords": [
+                                        "collect after use",
+                                        "return every copy"
+                                    ],
+                                    "matcherLabels": [],
+                                    "name": "Collect after use",
+                                    "outcomeText": "COLLECT_AFTER_USE",
+                                    "overrideNames": [],
+                                    "overrides": [],
+                                    "rationale": "The custodian records collection outside the marking engine."
+                                }
+                            ],
+                            "label": "2. Handling instructions"
+                        }
+                    ],
+                    "description": "Suggests a protection level and any applicable human handling instructions. The host application remains responsible for identity, authorization, and completion of the instructed action.",
+                    "id": "cedar-valley-handling-guide",
+                    "name": "Cedar Valley: Protection and Handling Guide",
+                    "uncategorized": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "4a5a60ddae11cc12a381ff2955576e97d2e813dcbf679b4b225c8faed061bc73": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "cedar-valley-handling",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "cedar-valley-handling-guide",
+                            "kind": "guide",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "cedar-valley-handling-access",
+                            "kind": "access",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "cedar-valley-handling",
+                            "kind": "context",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "cedar-valley-handling",
+                    "requestedVersion": "1.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "RESTRICTED",
+                            "confidence": "certain",
+                            "source": "aggregate"
+                        }
+                    ],
+                    "displayColor": {
+                        "background": "#c62828",
+                        "text": "#ffffff"
+                    },
+                    "errors": [],
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "RESTRICTED",
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "4cf6101cbd86b7db512e576990bd8da4389928a75592d409d3230a2f7ec90594": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "cedar-valley-handling",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "cedar-valley-handling-guide",
+                            "kind": "guide",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "cedar-valley-handling-access",
+                            "kind": "access",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "cedar-valley-handling",
+                            "kind": "context",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "cedar-valley-handling",
+                    "requestedVersion": "1.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "level": {
+                        "suggestions": [
+                            {
+                                "categoryId": "level",
+                                "conceptId": "PUBLIC",
+                                "description": "Public",
+                                "group": "Protection",
+                                "label": "PUBLIC",
+                                "name": "Public",
+                                "order": 0,
+                                "selected": false,
+                                "views": {
+                                    "default": "PUBLIC",
+                                    "long": "PUBLIC",
+                                    "short": "P"
+                                }
+                            },
+                            {
+                                "categoryId": "level",
+                                "conceptId": "INTERNAL",
+                                "description": "Internal",
+                                "group": "Protection",
+                                "label": "INTERNAL",
+                                "name": "Internal",
+                                "order": 0,
+                                "selected": false,
+                                "views": {
+                                    "default": "INTERNAL",
+                                    "long": "INTERNAL",
+                                    "short": "I"
+                                }
+                            },
+                            {
+                                "categoryId": "level",
+                                "conceptId": "CONFIDENTIAL",
+                                "description": "Confidential",
+                                "group": "Protection",
+                                "label": "CONFIDENTIAL",
+                                "name": "Confidential",
+                                "order": 0,
+                                "selected": false,
+                                "views": {
+                                    "default": "CONFIDENTIAL",
+                                    "long": "CONFIDENTIAL",
+                                    "short": "C"
+                                }
+                            },
+                            {
+                                "categoryId": "level",
+                                "conceptId": "RESTRICTED",
+                                "description": "Restricted",
+                                "group": "Protection",
+                                "label": "RESTRICTED",
+                                "name": "Restricted",
+                                "order": 0,
+                                "selected": false,
+                                "views": {
+                                    "default": "RESTRICTED",
+                                    "long": "RESTRICTED",
+                                    "short": "R"
+                                }
+                            }
+                        ],
+                        "warnings": []
+                    }
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "72337ff16642df96f178f09c585924ef23cd767ee3456a8d497080c274ed1165": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "cedar-valley-handling",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "cedar-valley-handling-guide",
+                            "kind": "guide",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "cedar-valley-handling-access",
+                            "kind": "access",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "cedar-valley-handling",
+                            "kind": "context",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "cedar-valley-handling",
+                    "requestedVersion": "1.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "PUBLIC",
+                            "confidence": "certain",
+                            "source": "user"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            { "categoryId": "level", "conceptId": "PUBLIC" }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "displayColor": {
+                        "background": "#2e7d32",
+                        "text": "#ffffff"
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "PUBLIC",
+                    "renders": {},
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "8a002d6b3622a2be61210196e783845a1bb5f70f441db0896415053364e7f155": {
+            "body": [],
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "8b4839135153986be9f2d453a4f51a3856396607f8a61e916ba4361e8a1ea48d": {
+            "body": {
+                "colorFrom": "level",
+                "defaultRenderFormat": "default",
+                "defaultScope": "marking",
+                "description": "Adds four human handling instructions to the four protection levels. Handling instructions combine by union and do not themselves forward, redact, seal, collect, or prove a host action. This is a standalone fictional teaching example.",
+                "id": "cedar-valley-handling",
+                "name": "Cedar Valley: Protection and Handling",
+                "referenceSurfaceLabel": {
+                    "plural": "Handbooks",
+                    "singular": "Handbook"
+                },
+                "roleAware": false,
+                "version": "1.0.0",
+                "vocabulary": {
+                    "marking": {
+                        "plural": "File Markings",
+                        "singular": "File Marking"
+                    }
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "9231236e6bf85f48db9ffefc77031da85137d13b04ceb4b75e4e4d6f10875268": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "cedar-valley-handling",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "cedar-valley-handling-guide",
+                            "kind": "guide",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "cedar-valley-handling-access",
+                            "kind": "access",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "cedar-valley-handling",
+                            "kind": "context",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "cedar-valley-handling",
+                    "requestedVersion": "1.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [
+                        {
+                            "categoryId": "level",
+                            "constraintId": "protection-level-required",
+                            "message": "Choose a protection level."
+                        }
+                    ],
+                    "inputWasValid": false,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "",
+                    "renders": {},
+                    "valid": false,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "96838e9e187637c0129040d986c2b31030d78fcb7b1c9e07bc48a1973a6df5e7": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "cedar-valley-handling",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "cedar-valley-handling-guide",
+                            "kind": "guide",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "cedar-valley-handling-access",
+                            "kind": "access",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "cedar-valley-handling",
+                            "kind": "context",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "cedar-valley-handling",
+                    "requestedVersion": "1.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "RESTRICTED",
+                            "confidence": "certain",
+                            "source": "user"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            { "categoryId": "level", "conceptId": "RESTRICTED" }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "displayColor": {
+                        "background": "#c62828",
+                        "text": "#ffffff"
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "RESTRICTED",
+                    "renders": {},
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "a5c046b9895ea4313f76e378e2945db4b0b0a72d091b531dcd187cbddfac1af0": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "cedar-valley-handling",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "cedar-valley-handling-guide",
+                            "kind": "guide",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "cedar-valley-handling-access",
+                            "kind": "access",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "cedar-valley-handling",
+                            "kind": "context",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "cedar-valley-handling",
+                    "requestedVersion": "1.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "level": {
+                        "suggestions": [
+                            {
+                                "categoryId": "level",
+                                "conceptId": "PUBLIC",
+                                "description": "Public",
+                                "group": "Protection",
+                                "label": "PUBLIC",
+                                "name": "Public",
+                                "order": 0,
+                                "selected": false,
+                                "views": {
+                                    "default": "PUBLIC",
+                                    "long": "PUBLIC",
+                                    "short": "P"
+                                }
+                            },
+                            {
+                                "categoryId": "level",
+                                "conceptId": "INTERNAL",
+                                "description": "Internal",
+                                "group": "Protection",
+                                "label": "INTERNAL",
+                                "name": "Internal",
+                                "order": 0,
+                                "selected": false,
+                                "views": {
+                                    "default": "INTERNAL",
+                                    "long": "INTERNAL",
+                                    "short": "I"
+                                }
+                            },
+                            {
+                                "categoryId": "level",
+                                "conceptId": "CONFIDENTIAL",
+                                "description": "Confidential",
+                                "group": "Protection",
+                                "label": "CONFIDENTIAL",
+                                "name": "Confidential",
+                                "order": 0,
+                                "selected": false,
+                                "views": {
+                                    "default": "CONFIDENTIAL",
+                                    "long": "CONFIDENTIAL",
+                                    "short": "C"
+                                }
+                            },
+                            {
+                                "categoryId": "level",
+                                "conceptId": "RESTRICTED",
+                                "description": "Restricted",
+                                "group": "Protection",
+                                "label": "RESTRICTED",
+                                "name": "Restricted",
+                                "order": 0,
+                                "selected": false,
+                                "views": {
+                                    "default": "RESTRICTED",
+                                    "long": "RESTRICTED",
+                                    "short": "R"
+                                }
+                            }
+                        ],
+                        "warnings": []
+                    }
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "b2dfd3b8df0a924610a250cbade8a466e3f067a92dcf28b1c06074feb5cd310c": {
+            "body": {
+                "access": {
+                    "id": "cedar-valley-handling-access",
+                    "resolvedVersion": "1.0.0",
+                    "version": "1.0.0"
+                },
+                "description": "Explore Cedar Valley protection plus four human handling instructions. The marking records the instruction; the host carries out and records the action.",
+                "guides": [
+                    {
+                        "id": "cedar-valley-handling-guide",
+                        "resolvedVersion": "1.0.0",
+                        "version": "1.0.0"
+                    }
+                ],
+                "id": "cedar-valley-handling",
+                "scheme": {
+                    "id": "cedar-valley-handling",
+                    "resolvedVersion": "1.0.0",
+                    "version": "1.0.0"
+                },
+                "schemes": [
+                    {
+                        "id": "cedar-valley-handling",
+                        "roles": ["primary"],
+                        "selector": "cedar-valley-handling",
+                        "version": "1.0.0"
+                    }
+                ],
+                "version": "1.0.0"
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "b408142a11bcfbecd6d8cb5ddee8ca5081e9e166ed584bff4b856935e2fa2181": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "cedar-valley-handling",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "cedar-valley-handling-guide",
+                            "kind": "guide",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "cedar-valley-handling-access",
+                            "kind": "access",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "cedar-valley-handling",
+                            "kind": "context",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "cedar-valley-handling",
+                    "requestedVersion": "1.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "level": {
+                        "suggestions": [
+                            {
+                                "categoryId": "level",
+                                "conceptId": "PUBLIC",
+                                "description": "Public",
+                                "group": "Protection",
+                                "label": "PUBLIC",
+                                "name": "Public",
+                                "order": 0,
+                                "selected": false,
+                                "views": {
+                                    "default": "PUBLIC",
+                                    "long": "PUBLIC",
+                                    "short": "P"
+                                }
+                            },
+                            {
+                                "categoryId": "level",
+                                "conceptId": "INTERNAL",
+                                "description": "Internal",
+                                "group": "Protection",
+                                "label": "INTERNAL",
+                                "name": "Internal",
+                                "order": 0,
+                                "selected": false,
+                                "views": {
+                                    "default": "INTERNAL",
+                                    "long": "INTERNAL",
+                                    "short": "I"
+                                }
+                            },
+                            {
+                                "categoryId": "level",
+                                "conceptId": "CONFIDENTIAL",
+                                "description": "Confidential",
+                                "group": "Protection",
+                                "label": "CONFIDENTIAL",
+                                "name": "Confidential",
+                                "order": 0,
+                                "selected": false,
+                                "views": {
+                                    "default": "CONFIDENTIAL",
+                                    "long": "CONFIDENTIAL",
+                                    "short": "C"
+                                }
+                            },
+                            {
+                                "categoryId": "level",
+                                "conceptId": "RESTRICTED",
+                                "description": "Restricted",
+                                "group": "Protection",
+                                "label": "RESTRICTED",
+                                "name": "Restricted",
+                                "order": 0,
+                                "selected": false,
+                                "views": {
+                                    "default": "RESTRICTED",
+                                    "long": "RESTRICTED",
+                                    "short": "R"
+                                }
+                            }
+                        ],
+                        "warnings": []
+                    }
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "b589879497c750827ebbc7e03aebe287b87be2fabe3d28f6879bbbed421cad5b": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "cedar-valley-handling",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "cedar-valley-handling-guide",
+                            "kind": "guide",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "cedar-valley-handling-access",
+                            "kind": "access",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "cedar-valley-handling",
+                            "kind": "context",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "cedar-valley-handling",
+                    "requestedVersion": "1.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "RESTRICTED",
+                            "confidence": "certain",
+                            "source": "aggregate"
+                        }
+                    ],
+                    "displayColor": {
+                        "background": "#c62828",
+                        "text": "#ffffff"
+                    },
+                    "errors": [],
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "RESTRICTED",
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "b93804af64f1f20888903204638513a54e5bb14575db901cf554f4f1b3ce53f4": {
+            "body": [
+                {
+                    "aliases": ["public"],
+                    "categories": ["level"],
+                    "color": { "background": "#2e7d32", "text": "#ffffff" },
+                    "definition": "This exact version is approved for anyone to read or share. An unmarked file is not automatically public.",
+                    "guidance": "Use for a published lunch menu, school calendar, or released practice questions.",
+                    "id": "PUBLIC",
+                    "name": "Public",
+                    "parents": [],
+                    "position": 0,
+                    "rank": -100,
+                    "views": {
+                        "default": "PUBLIC",
+                        "long": "PUBLIC",
+                        "short": "P"
+                    }
+                },
+                {
+                    "aliases": ["internal"],
+                    "categories": ["level"],
+                    "color": { "background": "#1565c0", "text": "#ffffff" },
+                    "definition": "Routine Cedar Valley business that has not been approved for public distribution.",
+                    "guidance": "Use for a staff plan, district memo, or bus operations schedule without student names or home addresses.",
+                    "id": "INTERNAL",
+                    "name": "Internal",
+                    "parents": [],
+                    "position": 0,
+                    "rank": 100,
+                    "views": {
+                        "default": "INTERNAL",
+                        "long": "INTERNAL",
+                        "short": "I"
+                    }
+                },
+                {
+                    "aliases": ["confidential"],
+                    "categories": ["level"],
+                    "color": { "background": "#6a1b9a", "text": "#ffffff" },
+                    "definition": "Private information that must be protected from unauthorized disclosure.",
+                    "guidance": "Use for student records, employee evaluations, or nonpublic purchasing information. The host application still verifies the reader’s record relationship or approved business purpose.",
+                    "id": "CONFIDENTIAL",
+                    "name": "Confidential",
+                    "parents": [],
+                    "position": 0,
+                    "rank": 200,
+                    "views": {
+                        "default": "CONFIDENTIAL",
+                        "long": "CONFIDENTIAL",
+                        "short": "C"
+                    }
+                },
+                {
+                    "aliases": ["restricted"],
+                    "categories": ["level"],
+                    "color": { "background": "#c62828", "text": "#ffffff" },
+                    "definition": "Information needing the strongest protection because disclosure could compromise safety, an investigation, or an assessment.",
+                    "guidance": "Use for building access codes, an active investigation file, or live assessment questions. The host application verifies explicit assignment to the file, case, assessment, or team.",
+                    "id": "RESTRICTED",
+                    "name": "Restricted",
+                    "parents": [],
+                    "position": 0,
+                    "rank": 300,
+                    "views": {
+                        "default": "RESTRICTED",
+                        "long": "RESTRICTED",
+                        "short": "R"
+                    }
+                },
+                {
+                    "aliases": ["do not forward", "no forward"],
+                    "categories": ["handling"],
+                    "definition": "Do not pass this copy on. Ask the owner before distributing it further.",
+                    "guidance": "A human instruction for material such as an internal purchasing memo circulated for review. The marking does not technically block forwarding.",
+                    "id": "DO_NOT_FORWARD",
+                    "name": "Do not forward",
+                    "parents": [],
+                    "position": 0,
+                    "views": {
+                        "default": "DO NOT FORWARD",
+                        "long": "DO NOT FORWARD",
+                        "short": "NO FWD"
+                    }
+                },
+                {
+                    "aliases": ["redact before release", "redact"],
+                    "categories": ["handling"],
+                    "definition": "Remove protected information and obtain approval for a separate public version. This copy stays protected.",
+                    "guidance": "A human instruction for material such as a purchasing report with private contact or payment information. The marking does not perform redaction.",
+                    "id": "REDACT_BEFORE_RELEASE",
+                    "name": "Redact before release",
+                    "parents": [],
+                    "position": 0,
+                    "views": {
+                        "default": "REDACT BEFORE RELEASE",
+                        "long": "REDACT BEFORE RELEASE",
+                        "short": "REDACT"
+                    }
+                },
+                {
+                    "aliases": ["keep sealed", "sealed"],
+                    "categories": ["handling"],
+                    "definition": "Keep the packet closed until its authorized opening time or event.",
+                    "guidance": "A human instruction for a live assessment packet awaiting its scheduled session. The marking does not run a clock or verify the seal.",
+                    "id": "KEEP_SEALED",
+                    "name": "Keep sealed",
+                    "parents": [],
+                    "position": 0,
+                    "views": {
+                        "default": "KEEP SEALED",
+                        "long": "KEEP SEALED",
+                        "short": "SEALED"
+                    }
+                },
+                {
+                    "aliases": ["collect after use", "collect"],
+                    "categories": ["handling"],
+                    "definition": "Collect every issued copy after the authorized activity and return it to its custodian.",
+                    "guidance": "A human instruction for controlled packets or temporary plans. The marking does not prove that every copy was returned.",
+                    "id": "COLLECT_AFTER_USE",
+                    "name": "Collect after use",
+                    "parents": [],
+                    "position": 0,
+                    "views": {
+                        "default": "COLLECT AFTER USE",
+                        "long": "COLLECT AFTER USE",
+                        "short": "COLLECT"
+                    }
+                }
+            ],
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "bd787a19bc76a75c70b7b1ed90f09931159e7e0a636590d11e5be089a9f00d66": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "cedar-valley-handling",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "cedar-valley-handling-guide",
+                            "kind": "guide",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "cedar-valley-handling-access",
+                            "kind": "access",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "cedar-valley-handling",
+                            "kind": "context",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "cedar-valley-handling",
+                    "requestedVersion": "1.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "RESTRICTED",
+                            "confidence": "certain",
+                            "source": "aggregate"
+                        }
+                    ],
+                    "displayColor": {
+                        "background": "#c62828",
+                        "text": "#ffffff"
+                    },
+                    "errors": [],
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "RESTRICTED",
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "bed3feff9416b54d45ef539a30f3d9620df63f0e701f7a29ed30de336f7139a7": {
+            "body": [{ "id": "marking", "label": "File marking" }],
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "cca25b95ef3b2e17e34ddabbc679a3e84faded6dc55243df3168822e94098673": {
+            "body": [
+                {
+                    "id": "level",
+                    "label": "Protection",
+                    "position": 0,
+                    "required": true,
+                    "rollup": "max",
+                    "single": true
+                },
+                {
+                    "id": "handling",
+                    "label": "Handling",
+                    "position": 1,
+                    "required": false,
+                    "rollup": "union",
+                    "single": false,
+                    "sort": "alphabetical"
+                }
+            ],
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "d2ec8af01372ab445d929af01fcd22b5e8db83ea9ba7e6824e06b3fb49ae31a9": {
+            "body": [
+                {
+                    "categoryOrder": ["level", "handling"],
+                    "categorySeparators": { "handling": "/", "level": "/" },
+                    "id": "default",
+                    "mode": "inline",
+                    "separator": "//",
+                    "separatorBefore": { "handling": "//" },
+                    "surface": "marking",
+                    "view": "default"
+                },
+                {
+                    "categoryOrder": ["level", "handling"],
+                    "categorySeparators": { "handling": "/", "level": "/" },
+                    "id": "short",
+                    "mode": "inline",
+                    "separator": "//",
+                    "separatorBefore": { "handling": "//" },
+                    "surface": "marking",
+                    "view": "short"
+                },
+                {
+                    "categoryOrder": ["level", "handling"],
+                    "categorySeparators": { "handling": ", ", "level": ", " },
+                    "id": "instructions",
+                    "mode": "inline",
+                    "separator": " // ",
+                    "separatorBefore": { "handling": " // " },
+                    "surface": "marking",
+                    "view": "long"
+                }
+            ],
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "d365f7f797717c833ff061bab6aef2e4eebab3821be7321075606b120f0582c6": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "cedar-valley-handling",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "cedar-valley-handling-guide",
+                            "kind": "guide",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "cedar-valley-handling-access",
+                            "kind": "access",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "cedar-valley-handling",
+                            "kind": "context",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "cedar-valley-handling",
+                    "requestedVersion": "1.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "RESTRICTED",
+                            "confidence": "certain",
+                            "source": "aggregate"
+                        }
+                    ],
+                    "displayColor": {
+                        "background": "#c62828",
+                        "text": "#ffffff"
+                    },
+                    "errors": [],
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "RESTRICTED",
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "d77822e31ffdd1d8aac1f3f69c488b79075ebce9a36bb77b9288cef315d36831": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "cedar-valley-handling",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "cedar-valley-handling-guide",
+                            "kind": "guide",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "cedar-valley-handling-access",
+                            "kind": "access",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "cedar-valley-handling",
+                            "kind": "context",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "cedar-valley-handling",
+                    "requestedVersion": "1.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "RESTRICTED",
+                            "confidence": "certain",
+                            "source": "aggregate"
+                        }
+                    ],
+                    "displayColor": {
+                        "background": "#c62828",
+                        "text": "#ffffff"
+                    },
+                    "errors": [],
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "RESTRICTED",
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "e070dec6e78862435e7c23c92a6e4a93a9667377aed0b78b533966687028c314": {
+            "body": {
+                "abiVersion": "v1",
+                "engineSha": "",
+                "engineVersion": "1.0.0-dev.30",
+                "gitTag": "",
+                "openapiVersion": "1.0.0-dev.30",
+                "status": "ok"
+            },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "ef614d2d3b17d60654fadacda264424c69a478ee7c01a7ddead4103826beb790": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "cedar-valley-handling",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "cedar-valley-handling-guide",
+                            "kind": "guide",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "cedar-valley-handling-access",
+                            "kind": "access",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "cedar-valley-handling",
+                            "kind": "context",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "cedar-valley-handling",
+                    "requestedVersion": "1.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "RESTRICTED",
+                            "confidence": "certain",
+                            "source": "aggregate"
+                        }
+                    ],
+                    "displayColor": {
+                        "background": "#c62828",
+                        "text": "#ffffff"
+                    },
+                    "errors": [],
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "RESTRICTED",
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "fd65724d5d9d59d68c5377655cd2bda7ab1f0c6000491665c9ee2a1b953d36af": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "cedar-valley-handling",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "cedar-valley-handling-guide",
+                            "kind": "guide",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "cedar-valley-handling-access",
+                            "kind": "access",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "cedar-valley-handling",
+                            "kind": "context",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "cedar-valley-handling",
+                    "requestedVersion": "1.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "RESTRICTED",
+                            "confidence": "certain",
+                            "source": "aggregate"
+                        }
+                    ],
+                    "displayColor": {
+                        "background": "#c62828",
+                        "text": "#ffffff"
+                    },
+                    "errors": [],
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "RESTRICTED",
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        }
+    }
+}

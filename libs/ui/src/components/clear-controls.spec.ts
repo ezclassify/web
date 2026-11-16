@@ -1,12 +1,12 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { Context } from '@ezclassify/engine';
+import { asContext } from '../../test-fixtures/as-context';
+import { openContext } from '../../test-fixtures/context-doubles';
 import type { ComponentInstance, ComponentOptions } from './component-base';
 import { MarkingField } from './marking-field';
 import { TagInput } from './tag-input';
 import { SingleSelect } from './single-select';
 import { CategoryChecklist } from './category-checklist';
 import { CategorySelector } from './category-selector';
-import { DualPane } from './dual-pane';
 import { DecisionFlow } from './decision-flow';
 import { MarkedInput } from './marked-input';
 import { MarkedTextArea } from './marked-text-area';
@@ -18,58 +18,66 @@ import {
     openSurface,
     press,
 } from './composer/composer-harness';
+import { connectDemoContext } from '../../../../test-support/demo-runtime';
 
-function engine() {
-    return Context.fromComponents({
-        scheme: {
-            scheme: {
-                id: 'clear-fields',
-                name: 'Field Clear Test',
-                version: '1.0.0',
-                data: {
-                    concepts: {
-                        inline: ['LOW', 'HIGH'].map((id, index) => ({
-                            id,
-                            name: id,
-                            views: { default: id },
-                            categories: ['level'],
-                            parents: [],
-                            aliases: [],
-                            position: index,
-                            rank: index,
-                        })),
+async function engine() {
+    return openContext(
+        await connectDemoContext({
+            draft: {
+                scheme: {
+                    scheme: {
+                        id: 'clear-fields',
+                        name: 'Field Clear Test',
+                        description: 'Field Clear Test test fixture.',
+                        version: '1.0.0',
+                        data: {
+                            concepts: ['LOW', 'HIGH'].map((id, index) => ({
+                                id,
+                                name: id,
+                                views: { default: id },
+                                categories: ['level'],
+                                parents: [],
+                                aliases: [],
+                                position: index,
+                                rank: index,
+                            })),
+                            categories: [
+                                {
+                                    id: 'level',
+                                    label: 'Level',
+                                    single: true,
+                                    required: false,
+                                    rollup: 'max',
+                                    position: 0,
+                                },
+                            ],
+                        },
+                        rules: [],
+                        embedded_marking: [
+                            {
+                                pattern: '\\(([^)]+)\\)',
+                                template: '({marking}) ',
+                            },
+                        ],
+                        render: {
+                            default: 'portion',
+                            formats: [
+                                {
+                                    id: 'portion',
+                                    surface: 'marking',
+                                    mode: 'inline',
+                                    separator: '//',
+                                    fields: [
+                                        { category: 'level', separator: '/' },
+                                    ],
+                                },
+                            ],
+                        },
                     },
-                    categories: [
-                        {
-                            id: 'level',
-                            label: 'Level',
-                            single: true,
-                            required: false,
-                            rollup: 'max',
-                            position: 0,
-                        },
-                    ],
-                },
-                rules: [],
-                embedded_marking: [
-                    { pattern: '\\(([^)]+)\\)', template: '({marking}) ' },
-                ],
-                parse: { case_sensitive: false, strip_whitespace: true },
-                render: {
-                    default: 'portion',
-                    formats: [
-                        {
-                            id: 'portion',
-                            surface: 'marking',
-                            mode: 'inline',
-                            separator: '//',
-                            fields: [{ category: 'level', separator: '/' }],
-                        },
-                    ],
                 },
             },
-        },
-    }).scheme;
+        }),
+    ).scheme;
 }
 
 const fields: {
@@ -82,7 +90,6 @@ const fields: {
     { name: 'TagInput', create: () => new TagInput() },
     { name: 'SingleSelect', create: () => new SingleSelect() },
     { name: 'CategorySelector', create: () => new CategorySelector() },
-    { name: 'DualPane', create: () => new DualPane() },
     { name: 'DecisionFlow', create: () => new DecisionFlow() },
     { name: 'MarkedInput', create: () => new MarkedInput(), body: true },
     { name: 'MarkedTextArea', create: () => new MarkedTextArea(), body: true },
@@ -102,7 +109,9 @@ describe('editable component clear controls', () => {
         root.setAttribute('data-ezclassify-decisionflow-categories', '[]');
         document.body.appendChild(root);
         mounted = new DecisionFlow();
-        await expect(mounted.init(root, engine())).resolves.toBeUndefined();
+        await expect(
+            mounted.init(root, await engine()),
+        ).resolves.toBeUndefined();
         expect(root.querySelector('.ez-clear-button')).toBeNull();
     });
 
@@ -111,7 +120,7 @@ describe('editable component clear controls', () => {
         document.body.appendChild(root);
         root.innerHTML = '<input value="LOW">';
         mounted = new CategoryChecklist();
-        await mounted.init(root, engine(), {
+        await mounted.init(root, await engine(), {
             categoryId: 'level',
             initialValue: 'LOW',
         });
@@ -131,7 +140,7 @@ describe('editable component clear controls', () => {
             root.innerHTML = '<input value="LOW">';
             document.body.appendChild(root);
             mounted = field.create();
-            await mounted.init(root, engine(), { initialValue: 'LOW' });
+            await mounted.init(root, await engine(), { initialValue: 'LOW' });
             const editor = root.querySelector<HTMLElement>(
                 '.marking-field-host, .tag-input-filter, select',
             )!;
@@ -151,7 +160,7 @@ describe('editable component clear controls', () => {
     }
 
     for (const field of fields) {
-        it(`${field.name} clears its native value and notifies the host`, async () => {
+        it(`${field.name} clears its native value, notifies the host, and puts it back on undo`, async () => {
             const root = document.createElement('div');
             document.body.appendChild(root);
             root.innerHTML =
@@ -167,7 +176,7 @@ describe('editable component clear controls', () => {
                 if (!field.body) native.value = rendered;
             });
             mounted = field.create();
-            await mounted.init(root, engine(), {
+            await mounted.init(root, await engine(), {
                 ...field.options,
                 initialValue: field.body ? undefined : 'LOW',
                 onChange: changed,
@@ -205,8 +214,32 @@ describe('editable component clear controls', () => {
             expect(
                 changed.mock.calls.length + input.mock.calls.length,
             ).toBeGreaterThan(0);
-            expect(button.getAttribute('aria-disabled')).toBe('true');
             expect(root.querySelector('.ez-composer:not([hidden])')).toBeNull();
+            // The × is now the undo of that clear, in the same place.
+            expect(root.querySelectorAll('.ez-clear-button')).toHaveLength(1);
+            expect(button.getAttribute('aria-label')).toBe('Undo clear');
+            expect(button.title).toBe('Undo clear');
+            expect(button.getAttribute('aria-disabled')).toBe('false');
+
+            button.click();
+            const restored = field.body ? '(LOW) A note.' : 'LOW';
+            await vi.waitFor(() => expect(native.value).toBe(restored));
+            if (field.name === 'MarkedTextArea') {
+                await vi.waitFor(() =>
+                    expect(
+                        (mounted as MarkedTextArea).getSegments(),
+                    ).toHaveLength(1),
+                );
+            } else {
+                await vi.waitFor(() =>
+                    expect(mounted!.getAssertions()).not.toHaveLength(0),
+                );
+            }
+            // Undone, the offer is over: the slot is the × again.
+            await vi.waitFor(() =>
+                expect(button.getAttribute('aria-label')).toMatch(/^Clear /),
+            );
+            expect(button.getAttribute('aria-disabled')).toBe('false');
         });
     }
 });
@@ -215,7 +248,7 @@ it('does not restore a previous async read after Clear', async () => {
     const root = document.createElement('div');
     document.body.appendChild(root);
     root.innerHTML = '<input value="LOW">';
-    const source = engine();
+    const source = await engine();
     mounted = new MarkingField();
     await mounted.init(root, source, { initialValue: 'LOW' });
     const result = await source.process('HIGH');
@@ -239,7 +272,7 @@ it('clears an unfinished composer draft without committing or reopening it', asy
     document.body.appendChild(root);
     root.innerHTML = '<input value="LOW">';
     mounted = new MarkingField();
-    await mounted.init(root, engine(), { initialValue: 'LOW' });
+    await mounted.init(root, await engine(), { initialValue: 'LOW' });
     const field = root.querySelector<HTMLTextAreaElement>(
         '.marking-field-host',
     )!;
@@ -252,15 +285,49 @@ it('clears an unfinished composer draft without committing or reopening it', asy
     expect(field.value).toBe('');
     expect(mounted.getAssertions()).toEqual([]);
     expect(openSurface()).toBeNull();
-    expect(document.activeElement).toBe(clear);
+    // A keyboard clear leaves focus in the field, not on the undo that took
+    // the ×'s place.
+    expect(document.activeElement).toBe(field);
+    expect(clear.getAttribute('aria-label')).toBe('Undo clear');
+
+    // The undo puts back the marking and the text as it was typed.
+    clear.click();
+    await vi.waitFor(() => expect(field.value).toBe('unrecognized'));
+    expect(mounted.getRendered()).toBe('LOW');
+    expect(document.activeElement).toBe(field);
+});
+
+it('says what a clear and its undo did, and a double click does not take the clear straight back', async () => {
+    const root = document.createElement('div');
+    document.body.appendChild(root);
+    root.innerHTML = '<input value="LOW">';
+    mounted = new MarkingField();
+    await mounted.init(root, await engine(), { initialValue: 'LOW' });
+    const clear = root.querySelector<HTMLButtonElement>('.ez-clear-button')!;
+    const said = () => clear.querySelector('[role="status"]')!.textContent;
+
+    clear.dispatchEvent(new MouseEvent('click', { bubbles: true, detail: 1 }));
+    // The second click of a double click lands on the undo in its place.
+    clear.dispatchEvent(new MouseEvent('click', { bubbles: true, detail: 2 }));
+    await vi.waitFor(() =>
+        expect(said()).toBe('Marking cleared. Undo is available.'),
+    );
+    expect(mounted.getRendered()).toBe('');
+    expect(clear.getAttribute('aria-label')).toBe('Undo clear');
+
+    clear.dispatchEvent(new MouseEvent('click', { bubbles: true, detail: 1 }));
+    await vi.waitFor(() => expect(said()).toBe('Marking restored.'));
+    expect(mounted.getRendered()).toBe('LOW');
 });
 
 it('clears both bound views through the normal store path', async () => {
     const root = document.createElement('div');
     document.body.appendChild(root);
     root.innerHTML =
-        '<input id="doc" value="LOW" data-ezclassify-rendered><input data-ezclassify-controller="marking" data-ezclassify-bound-to="doc"><input data-ezclassify-controller="tags" data-ezclassify-bound-to="doc">';
-    const forms = new EzClassifyUI(engine() as never, { root });
+        '<input id="doc" value="LOW" data-ezclassify-marking><input data-ezclassify-controller="marking" data-ezclassify-bound-to="doc"><input data-ezclassify-controller="tags" data-ezclassify-bound-to="doc">';
+    const forms = new EzClassifyUI(asContext((await engine()) as never), {
+        root,
+    });
     try {
         await vi.waitFor(() =>
             expect(root.querySelectorAll('.ez-clear-button').length).toBe(2),
@@ -280,13 +347,65 @@ it('clears both bound views through the normal store path', async () => {
     }
 });
 
+it('offers the undo of a clear in every view bound to the marking, until the marking next changes', async () => {
+    const root = document.createElement('div');
+    document.body.appendChild(root);
+    root.innerHTML =
+        '<input id="doc" value="LOW" data-ezclassify-marking><input data-ezclassify-controller="marking" data-ezclassify-bound-to="doc"><input data-ezclassify-controller="tags" data-ezclassify-bound-to="doc">';
+    const forms = new EzClassifyUI(asContext((await engine()) as never), {
+        root,
+    });
+    const labels = () =>
+        [...root.querySelectorAll('.ez-clear-button')].map((button) =>
+            button.getAttribute('aria-label'),
+        );
+    try {
+        await vi.waitFor(() => expect(labels()).toHaveLength(2));
+        await vi.waitFor(() =>
+            expect(forms.store.get('doc').rendered).toBe('LOW'),
+        );
+        const [fieldClear, tagsClear] = [
+            ...root.querySelectorAll<HTMLButtonElement>('.ez-clear-button'),
+        ];
+        fieldClear.click();
+        await vi.waitFor(() =>
+            expect(forms.store.get('doc').rendered).toBe(''),
+        );
+        // The offer belongs to the marking, so the other view shows it too.
+        expect(labels()).toEqual(['Undo clear', 'Undo clear']);
+
+        tagsClear.click();
+        await vi.waitFor(() =>
+            expect(forms.store.get('doc').rendered).toBe('LOW'),
+        );
+        expect(labels()).toEqual(['Clear marking', 'Clear marking']);
+
+        // Cleared again, then the marking changes from somewhere else once
+        // the author has moved on: the offer ends in every view.
+        fieldClear.click();
+        await vi.waitFor(() =>
+            expect(forms.store.get('doc').rendered).toBe(''),
+        );
+        expect(labels()).toEqual(['Undo clear', 'Undo clear']);
+        document.body.dispatchEvent(
+            new Event('pointerdown', { bubbles: true }),
+        );
+        await forms.store.publishRendered('doc', 'HIGH');
+        await vi.waitFor(() =>
+            expect(labels()).toEqual(['Clear marking', 'Clear marking']),
+        );
+    } finally {
+        forms.destroy();
+    }
+});
+
 for (const attribute of ['disabled', 'readonly']) {
     it(`does not clear a ${attribute} host`, async () => {
         const root = document.createElement('div');
         document.body.appendChild(root);
         root.innerHTML = `<input ${attribute} value="LOW">`;
         mounted = new MarkingField();
-        await mounted.init(root, engine());
+        await mounted.init(root, await engine());
         const clear =
             root.querySelector<HTMLButtonElement>('.ez-clear-button')!;
         expect(clear.disabled).toBe(true);
@@ -299,7 +418,7 @@ it('clears textarea portions and unregisters their store children without a runt
     const root = document.createElement('div');
     document.body.appendChild(root);
     root.innerHTML = '<textarea>(LOW) A note.</textarea>';
-    const source = engine();
+    const source = await engine();
     const unregister = vi.fn();
     const field = new MarkedTextArea();
     mounted = field;
@@ -324,7 +443,7 @@ it('clears an unfinished TagInput query when no marking has been committed', asy
     document.body.appendChild(root);
     root.innerHTML = '<input value="">';
     mounted = new TagInput();
-    await mounted.init(root, engine());
+    await mounted.init(root, await engine());
     const field = root.querySelector<HTMLInputElement>('.tag-input-filter')!;
     field.focus();
     typeText(field, 'unrecognized');
@@ -344,7 +463,7 @@ it('can edit a new first portion after clearing an open textarea editor', async 
     root.innerHTML = '<textarea>(LOW) A note.</textarea>';
     const field = new MarkedTextArea();
     mounted = field;
-    await field.init(root, engine());
+    await field.init(root, await engine());
     const input = root.querySelector<HTMLTextAreaElement>('textarea')!;
     await wait(250);
     input.focus();
@@ -378,7 +497,7 @@ it('does not restore a previous read after another bound view clears the marking
     const root = document.createElement('div');
     document.body.appendChild(root);
     root.innerHTML = '<input value="LOW">';
-    const source = engine();
+    const source = await engine();
     const field = new MarkingField();
     mounted = field;
     await field.init(root, source, { initialValue: 'LOW' });
@@ -404,7 +523,7 @@ it('clears a new uncommitted textarea marking without leaving its wrapper on scr
     root.innerHTML = '<textarea></textarea>';
     const field = new MarkedTextArea();
     mounted = field;
-    await field.init(root, engine());
+    await field.init(root, await engine());
     const input = root.querySelector<HTMLTextAreaElement>('textarea')!;
     input.focus();
     press(input, 'Enter', { ctrlKey: true });

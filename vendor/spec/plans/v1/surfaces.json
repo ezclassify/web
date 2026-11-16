@@ -390,6 +390,104 @@
             "fixture": "ref-surfaces-1",
             "method": "validate",
             "name": "surfaces-validate-undecided-role-raises-no-role-departure"
+        },
+        {
+            "args": [
+                [
+                    {
+                        "categoryId": "level",
+                        "conceptId": "CONFIDENTIAL",
+                        "confidence": "certain",
+                        "source": "user"
+                    },
+                    {
+                        "categoryId": "keep",
+                        "conceptId": "KEEP_7Y",
+                        "confidence": "certain",
+                        "source": "user"
+                    }
+                ],
+                "sensitivity/full"
+            ],
+            "expect": {
+                "result": "CONFIDENTIAL"
+            },
+            "fixture": "ref-surfaces-1",
+            "method": "render",
+            "name": "surfaces-render-address-writes-that-output-alone"
+        },
+        {
+            "args": [
+                [
+                    {
+                        "categoryId": "level",
+                        "conceptId": "CONFIDENTIAL",
+                        "confidence": "certain",
+                        "source": "user"
+                    },
+                    {
+                        "categoryId": "keep",
+                        "conceptId": "KEEP_7Y",
+                        "confidence": "certain",
+                        "source": "user"
+                    }
+                ],
+                "retention"
+            ],
+            "expect": {
+                "result": "KEEP 7 YEARS"
+            },
+            "fixture": "ref-surfaces-1",
+            "method": "render",
+            "name": "surfaces-render-surface-id-writes-its-default-alone"
+        },
+        {
+            "args": [
+                [
+                    {
+                        "categoryId": "level",
+                        "conceptId": "CONFIDENTIAL",
+                        "confidence": "certain",
+                        "source": "user"
+                    },
+                    {
+                        "categoryId": "keep",
+                        "conceptId": "KEEP_7Y",
+                        "confidence": "certain",
+                        "source": "user"
+                    }
+                ]
+            ],
+            "expect": {
+                "result": "CONFIDENTIAL\nKEEP 7 YEARS"
+            },
+            "fixture": "ref-surfaces-1",
+            "method": "render",
+            "name": "surfaces-render-unnamed-output-writes-each-surface-default"
+        },
+        {
+            "args": [
+                [
+                    {
+                        "categoryId": "level",
+                        "conceptId": "CONFIDENTIAL",
+                        "confidence": "certain",
+                        "source": "user"
+                    },
+                    {
+                        "categoryId": "keep",
+                        "conceptId": "KEEP_7Y",
+                        "confidence": "certain",
+                        "source": "user"
+                    }
+                ]
+            ],
+            "expect": {
+                "result": "CONFIDENTIAL // KEEP 7 YEARS"
+            },
+            "fixture": "ref-surfaces-2",
+            "method": "render",
+            "name": "surfaces-render-default-writing-every-scope-is-written-alone"
         }
     ],
     "slice": "engine"

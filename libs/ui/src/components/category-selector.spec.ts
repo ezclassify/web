@@ -5,7 +5,7 @@ import {
 } from './category-selector';
 import type { SchemeEngineAdapter, Assertion } from '@ezclassify/types';
 import type { SchemePublicView } from '@ezclassify/types';
-import { Context } from '@ezclassify/engine';
+import { schemeOnlyContext } from '../../test-fixtures/context-doubles';
 import { mockRenderFormats } from '../render-format-layout-mock';
 
 /** Create a minimal mock engine with configurable categories and concepts */
@@ -116,6 +116,7 @@ function createMockEngine(
             defaultRenderFormat: scheme.defaultRenderFormat ?? 'default',
             formats: mockRenderFormats(scheme.formats ?? []),
             scopes: scheme.scopes ?? [],
+            defaultScope: scheme.defaultScope,
         }),
         listCategories: () => scheme.categories ?? [],
         getConceptsInCategory: (catId: string) =>
@@ -160,7 +161,7 @@ function createMockEngine(
     } as unknown as SchemeEngineAdapter;
 }
 
-const toCtx = (eng: unknown) => Context.fromSchemeEngine(eng as never);
+const toCtx = (eng: unknown) => schemeOnlyContext(eng as never);
 describe('CategorySelector', () => {
     let container: HTMLDivElement;
     let engine: SchemeEngineAdapter;
@@ -191,6 +192,79 @@ describe('CategorySelector', () => {
         expect(
             container.querySelectorAll('.category-selector-row'),
         ).toHaveLength(0);
+    });
+
+    it("puts each category's name on its own line above its buttons, with the suite chrome ending the first line", async () => {
+        await init();
+        const body = container.querySelector('.category-selector-body')!;
+        expect(body.classList.contains('ez-field-frame')).toBe(true);
+        const rows = [
+            ...container.querySelectorAll<HTMLElement>(
+                '.category-selector-row',
+            ),
+        ];
+        for (const row of rows) {
+            // Name line first, then the buttons: never side by side.
+            expect(row.children[0].className).toBe('category-selector-head');
+            expect(row.children[1].className).toBe('category-selector-options');
+        }
+        const firstHead = rows[0].querySelector('.category-selector-head')!;
+        const chrome = firstHead.querySelector('.ez-field-chrome')!;
+        expect(chrome.querySelector('.ez-status-mark')).not.toBeNull();
+        expect(chrome.querySelector('.ez-clear-button')).not.toBeNull();
+        // One chrome for the control, however many categories it shows.
+        expect(container.querySelectorAll('.ez-field-chrome')).toHaveLength(1);
+        // A rebuild keeps the same chrome at the first line's end.
+        rows[0]
+            .querySelector<HTMLButtonElement>('.category-selector-btn')!
+            .click();
+        await new Promise((resolve) => setTimeout(resolve, 0));
+        expect(
+            container.querySelector(
+                '.category-selector-row .category-selector-head .ez-field-chrome',
+            ),
+        ).toBe(chrome);
+    });
+
+    it("marks a facet's status only with fixes to its own category", async () => {
+        await init({ facetOf: 'doc', categoryId: 'f1' });
+        const mark = () =>
+            container.querySelector<HTMLElement>('.ez-status-mark')!;
+        const state = (categoryId: string) => ({
+            rendered: 'Low',
+            renders: {},
+            valid: true,
+            errors: [],
+            assertions: [
+                {
+                    conceptId: 'c1',
+                    categoryId: 'f1',
+                    confidence: 'certain' as const,
+                    source: 'user' as const,
+                },
+                // What the fix added is in the marking.
+                {
+                    conceptId: 'x',
+                    categoryId,
+                    confidence: 'inferred' as const,
+                    source: 'infer' as const,
+                    sourceRule: `adds-${categoryId}`,
+                },
+            ],
+            appliedFixes: [
+                {
+                    ruleId: `adds-${categoryId}`,
+                    action: 'add',
+                    add: [{ categoryId, conceptId: 'x' }],
+                    message: `Added to ${categoryId}`,
+                },
+            ],
+        });
+        // A fix to another category is not this facet's to explain.
+        selector.applyStoreState(state('f2') as never);
+        expect(mark().classList.contains('ez-status-mark--unseen')).toBe(false);
+        selector.applyStoreState(state('f1') as never);
+        expect(mark().classList.contains('ez-status-mark--unseen')).toBe(true);
     });
 
     it('should render category rows for each category', async () => {
@@ -746,6 +820,162 @@ describe('CategorySelector', () => {
             await init();
             const rows = container.querySelectorAll('.category-selector-row');
             expect(rows.length).toBe(2);
+        });
+    });
+
+    describe('scope', () => {
+        /** Two categories: f1 on the marking as a whole, f2 in severity. */
+        function scopedEngine(): SchemeEngineAdapter {
+            const base = createMockEngine().getScheme();
+            return createMockEngine({
+                defaultScope: 'default',
+                scopes: [
+                    { id: 'default', label: 'Default' },
+                    { id: 'severity', label: 'Severity' },
+                ],
+                categories: base.categories.map((category) =>
+                    category.id === 'f2'
+                        ? { ...category, scopes: ['severity'] }
+                        : category,
+                ),
+            } as Partial<SchemePublicView>);
+        }
+
+        const rowIds = () =>
+            [
+                ...container.querySelectorAll<HTMLElement>(
+                    '[role="radiogroup"], [role="group"]',
+                ),
+            ].map((row) => row.dataset.categoryId);
+
+        it('lists only the default scope when the host names none', async () => {
+            engine = scopedEngine();
+            await init();
+            expect(rowIds()).toEqual(['f1']);
+        });
+
+        it('lists only the scope the host names', async () => {
+            engine = scopedEngine();
+            await init({ scope: 'severity' });
+            expect(rowIds()).toEqual(['f2']);
+        });
+
+        it('lists the surface its format writes when the host names no scope', async () => {
+            engine = scopedEngine();
+            const meta = engine.getSchemeMeta();
+            const formats = [
+                ...(meta.formats ?? []),
+                {
+                    ...(meta.formats ?? [])[0],
+                    id: 'severity-format',
+                    surface: 'severity',
+                },
+            ];
+            engine.getSchemeMeta = () => ({ ...meta, formats });
+            await init({ formatId: 'severity-format' });
+            expect(rowIds()).toEqual(['f2']);
+        });
+
+        it('lists a category bound by facet whatever its scope', async () => {
+            engine = scopedEngine();
+            await init({ categoryId: 'f2' });
+            expect(rowIds()).toEqual(['f2']);
+        });
+    });
+
+    describe('a selection the engine cannot write', () => {
+        const MARKER = '[unrepresentable:ambiguous-representation]';
+
+        /** Refuses any selection holding concept c2; writes the rest. */
+        function refusingEngine(): SchemeEngineAdapter {
+            const refusing = createMockEngine();
+            const process = refusing.process as unknown as (
+                input: string,
+                options?: { assertions?: Assertion[] },
+            ) => Record<string, unknown>;
+            refusing.process = vi.fn(
+                (input: string, options?: { assertions?: Assertion[] }) => {
+                    const result = process(input, options);
+                    const refused = options?.assertions?.some(
+                        (a) => a.conceptId === 'c2',
+                    );
+                    return {
+                        ...result,
+                        errors: [],
+                        rendered: refused ? MARKER : result.rendered,
+                        assessment: {
+                            emitted: [],
+                            omitted: [],
+                            collapsed: [],
+                            conflicts: [],
+                            unrepresentable: refused
+                                ? [
+                                      {
+                                          output: 'default',
+                                          reason: 'ambiguous-representation',
+                                      },
+                                  ]
+                                : [],
+                        },
+                    };
+                },
+            ) as unknown as SchemeEngineAdapter['process'];
+            return refusing;
+        }
+
+        const click = (conceptId: string) =>
+            container
+                .querySelector<HTMLButtonElement>(
+                    `[data-concept-id="${conceptId}"]`,
+                )!
+                .click();
+
+        it('keeps the value and says why through the status', async () => {
+            engine = refusingEngine();
+            const onChange = vi.fn();
+            await init({ onChange });
+
+            click('c1');
+            expect(selector.getRendered()).toBe('c1');
+
+            click('c2');
+
+            expect(selector.getRendered()).toBe('c1');
+            expect(onChange).toHaveBeenLastCalledWith(expect.anything(), 'c1');
+            expect(container.hasAttribute('data-ezclassify-invalid')).toBe(
+                true,
+            );
+            expect(document.body.textContent).toContain(
+                'ambiguous-representation',
+            );
+            expect(document.body.textContent).not.toContain(MARKER);
+        });
+
+        it('leaves saying why to the field that shows the marking, on a facet', async () => {
+            engine = refusingEngine();
+            await init({ facetOf: 'whole' });
+
+            click('c2');
+
+            expect(container.hasAttribute('data-ezclassify-invalid')).toBe(
+                false,
+            );
+        });
+
+        it('clears the status once the selection can be written', async () => {
+            engine = refusingEngine();
+            await init();
+            click('c2');
+            expect(container.hasAttribute('data-ezclassify-invalid')).toBe(
+                true,
+            );
+
+            click('c1');
+
+            expect(selector.getRendered()).toBe('c1');
+            expect(container.hasAttribute('data-ezclassify-invalid')).toBe(
+                false,
+            );
         });
     });
 });

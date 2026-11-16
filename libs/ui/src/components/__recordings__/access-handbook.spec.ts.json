@@ -1,0 +1,477 @@
+{
+    "engineVersion": "1.0.0-dev.30",
+    "openapiVersion": "1.0.0-dev.30",
+    "responses": {
+        "09adf23ac490a0e3551865adcb4a469994a39c40525b6aa5b437c8ba1f5de034": {
+            "body": [
+                {
+                    "categoryOrder": ["level"],
+                    "categorySeparators": { "level": "/" },
+                    "id": "default",
+                    "mode": "inline",
+                    "separator": "//",
+                    "surface": "marking",
+                    "view": "default"
+                },
+                {
+                    "categoryOrder": ["level"],
+                    "categorySeparators": { "level": "/" },
+                    "id": "short",
+                    "mode": "inline",
+                    "separator": "//",
+                    "surface": "marking",
+                    "view": "short"
+                },
+                {
+                    "categoryOrder": ["level"],
+                    "categorySeparators": { "level": ", " },
+                    "id": "instructions",
+                    "mode": "inline",
+                    "separator": " // ",
+                    "surface": "marking",
+                    "view": "long"
+                }
+            ],
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "0f9a69d200fe60b1fc0dabefd7f611abd56d737d1ed524e34b318a5091cf0625": {
+            "body": {
+                "access": {
+                    "id": "cedar-valley-protection-access",
+                    "resolvedVersion": "1.0.0",
+                    "version": "1.0.0"
+                },
+                "description": "Start with Cedar Valley protection: one scheme, one guide, and an access policy that compares a trusted host-provided clearance.",
+                "guides": [
+                    {
+                        "id": "cedar-valley-protection-guide",
+                        "resolvedVersion": "1.0.0",
+                        "version": "1.0.0"
+                    }
+                ],
+                "id": "cedar-valley-protection",
+                "scheme": {
+                    "id": "cedar-valley-protection",
+                    "resolvedVersion": "1.0.0",
+                    "version": "1.0.0"
+                },
+                "schemes": [
+                    {
+                        "id": "cedar-valley-protection",
+                        "roles": ["primary"],
+                        "selector": "cedar-valley-protection",
+                        "version": "1.0.0"
+                    }
+                ],
+                "version": "1.0.0"
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "2b0da9d579ac3ff270c6954038da518f5a95798ffaa84167170d6d73461c4665": {
+            "body": {
+                "rules": [
+                    {
+                        "access": {
+                            "id": "cedar-valley-protection-access",
+                            "kind": "access",
+                            "version": "1.0.0"
+                        },
+                        "attributesNeeded": ["clearance"],
+                        "dependsOn": [],
+                        "name": "Protection clearance",
+                        "overrides": [],
+                        "requirementText": "clearance >= data.level",
+                        "rule": {
+                            "artifact": {
+                                "id": "cedar-valley-protection-access",
+                                "kind": "access",
+                                "version": "1.0.0"
+                            },
+                            "ruleDigest": "sha256:695046be33d972bc212bb29fe1295cfa937710c86e750c912a8c0a1b35b913f0",
+                            "ruleId": "protection-clearance"
+                        },
+                        "scheme": {
+                            "id": "cedar-valley-protection",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        "whenText": "data.level min rank 1"
+                    }
+                ]
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "2e1f43873701d983b601b6741ad3f5b07a42ab06cf7934b86433d50aa1c06729": {
+            "body": {
+                "id": "test-access",
+                "scheme": {
+                    "id": "test-access",
+                    "resolvedVersion": "1.0.0",
+                    "version": "1.0.0"
+                },
+                "schemes": [
+                    {
+                        "id": "test-access",
+                        "roles": ["primary"],
+                        "selector": "test-access",
+                        "version": "1.0.0"
+                    }
+                ],
+                "version": "1.0.0"
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "3d9a3eba6543f6cc2dec598f0c251be09ca2bb82b3d11d365521687a40ae3fbd": {
+            "body": {
+                "contextId": "sbx-9922f0b6597001b244b024c86997af0b0400c03b8731da73a50170ac21e4405a"
+            },
+            "method": "PUT",
+            "statusCode": 200
+        },
+        "3e4bc2466452452c262b5acdd45286ff0a78fa53df2565828189e670d6f8149d": {
+            "body": [
+                {
+                    "aliases": [],
+                    "categories": ["level"],
+                    "id": "l1",
+                    "name": "L1",
+                    "parents": [],
+                    "position": 1,
+                    "rank": 0,
+                    "views": { "default": "L1" }
+                }
+            ],
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "4604ef004cfafb410c6ba7f4774ad01f23238326ce040723aec0f51af9885f5f": {
+            "body": {
+                "colorFrom": "level",
+                "defaultRenderFormat": "default",
+                "defaultScope": "marking",
+                "description": "Start here. Four protection levels describe how closely a Cedar Valley file must be protected and roll up by maximum sensitivity. The companion access policy separately compares a trusted host-provided clearance. This is a fictional teaching example, not district policy.",
+                "id": "cedar-valley-protection",
+                "name": "Cedar Valley: Protection",
+                "referenceSurfaceLabel": {
+                    "plural": "Handbooks",
+                    "singular": "Handbook"
+                },
+                "roleAware": false,
+                "version": "1.0.0",
+                "vocabulary": {
+                    "marking": {
+                        "plural": "File Markings",
+                        "singular": "File Marking"
+                    }
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "56e77905d02e53836177f091280923b44921842550ade54a2b8cbc1bc9e79a47": {
+            "body": [
+                {
+                    "hierarchyRoot": true,
+                    "id": "level",
+                    "label": "Level",
+                    "position": 0,
+                    "required": false,
+                    "rollup": "max",
+                    "single": true
+                }
+            ],
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "6247af58809851783872b981fda840879a249471a44d664a08da4f7c2352f639": {
+            "body": [
+                {
+                    "aliases": ["public"],
+                    "categories": ["level"],
+                    "color": { "background": "#2e7d32", "text": "#ffffff" },
+                    "definition": "This exact version is approved for anyone to read or share. An unmarked file is not automatically public.",
+                    "guidance": "Use for a published lunch menu, school calendar, or released practice questions.",
+                    "id": "PUBLIC",
+                    "name": "Public",
+                    "parents": [],
+                    "position": 0,
+                    "rank": -100,
+                    "views": {
+                        "default": "PUBLIC",
+                        "long": "PUBLIC",
+                        "short": "P"
+                    }
+                },
+                {
+                    "aliases": ["internal"],
+                    "categories": ["level"],
+                    "color": { "background": "#1565c0", "text": "#ffffff" },
+                    "definition": "Routine Cedar Valley business that has not been approved for public distribution.",
+                    "guidance": "Use for a staff plan, district memo, or bus operations schedule without student names or home addresses.",
+                    "id": "INTERNAL",
+                    "name": "Internal",
+                    "parents": [],
+                    "position": 0,
+                    "rank": 100,
+                    "views": {
+                        "default": "INTERNAL",
+                        "long": "INTERNAL",
+                        "short": "I"
+                    }
+                },
+                {
+                    "aliases": ["confidential"],
+                    "categories": ["level"],
+                    "color": { "background": "#6a1b9a", "text": "#ffffff" },
+                    "definition": "Private information that must be protected from unauthorized disclosure.",
+                    "guidance": "Use for student records, employee evaluations, or nonpublic purchasing information. The host application still verifies the reader’s record relationship or approved business purpose.",
+                    "id": "CONFIDENTIAL",
+                    "name": "Confidential",
+                    "parents": [],
+                    "position": 0,
+                    "rank": 200,
+                    "views": {
+                        "default": "CONFIDENTIAL",
+                        "long": "CONFIDENTIAL",
+                        "short": "C"
+                    }
+                },
+                {
+                    "aliases": ["restricted"],
+                    "categories": ["level"],
+                    "color": { "background": "#c62828", "text": "#ffffff" },
+                    "definition": "Information needing the strongest protection because disclosure could compromise safety, an investigation, or an assessment.",
+                    "guidance": "Use for building access codes, an active investigation file, or live assessment questions. The host application verifies explicit assignment to the file, case, assessment, or team.",
+                    "id": "RESTRICTED",
+                    "name": "Restricted",
+                    "parents": [],
+                    "position": 0,
+                    "rank": 300,
+                    "views": {
+                        "default": "RESTRICTED",
+                        "long": "RESTRICTED",
+                        "short": "R"
+                    }
+                }
+            ],
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "7453a5c5a9206ea640170cc8c04aefbeae636d066b0194dfe04ded07b3d5ebf2": {
+            "body": [
+                {
+                    "id": "level",
+                    "label": "Protection",
+                    "position": 0,
+                    "required": true,
+                    "rollup": "max",
+                    "single": true
+                }
+            ],
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "8cb9ebecb82314273ded7ee0c96d5c45ae7a6a841594e7a185f2c03d216dbccc": {
+            "body": [{ "id": "marking", "label": "File marking" }],
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "8fb08adeec8945e5c2a6960166b033672594bfd6d596ff8f4f7c96993b951a28": {
+            "body": [],
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "90ee1759b34bb7be96576d6a6fd7fd0bafb270fcbb4110706d5d842e2a7205ae": {
+            "body": [],
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "95b6b3e6a3c9a0c7fdc24f60de33e8b66a09e5ffe76f245e3f3fde6eec16139a": {
+            "body": {
+                "defaultRenderFormat": "default",
+                "description": "",
+                "id": "test-access",
+                "name": "Test",
+                "referenceSurfaceLabel": {
+                    "plural": "Handbooks",
+                    "singular": "Handbook"
+                },
+                "roleAware": false,
+                "version": "1.0.0"
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "a0d87fe4ce0313f745c4b7c91d73a3b6a20f6399dc1d8ce6be08135490ca2d7a": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "cedar-valley-protection",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "cedar-valley-protection-guide",
+                            "kind": "guide",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "cedar-valley-protection-access",
+                            "kind": "access",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "cedar-valley-protection",
+                            "kind": "context",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "cedar-valley-protection",
+                    "requestedVersion": "latest",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "categories": [
+                        {
+                            "id": "protection",
+                            "items": [
+                                {
+                                    "dependsOn": [],
+                                    "dependsOnNames": [],
+                                    "id": "public",
+                                    "isComputed": false,
+                                    "keywords": [
+                                        "published lunch menu",
+                                        "school calendar",
+                                        "released practice questions",
+                                        "approved for public release"
+                                    ],
+                                    "matcherLabels": [],
+                                    "name": "Public",
+                                    "outcomeText": "PUBLIC",
+                                    "overrideNames": [],
+                                    "overrides": [],
+                                    "rationale": "Public is a positive approval for this exact version; an unmarked file is not public."
+                                },
+                                {
+                                    "dependsOn": [],
+                                    "dependsOnNames": [],
+                                    "id": "internal",
+                                    "isComputed": false,
+                                    "keywords": [
+                                        "staff plan",
+                                        "district memo",
+                                        "routine operations",
+                                        "bus operations schedule"
+                                    ],
+                                    "matcherLabels": [],
+                                    "name": "Internal",
+                                    "outcomeText": "INTERNAL",
+                                    "overrideNames": [],
+                                    "overrides": [],
+                                    "rationale": "Routine district work that has not been approved for public distribution is Internal."
+                                },
+                                {
+                                    "dependsOn": [],
+                                    "dependsOnNames": [],
+                                    "id": "confidential",
+                                    "isComputed": false,
+                                    "keywords": [
+                                        "student record",
+                                        "employee evaluation",
+                                        "supplier bid",
+                                        "purchasing notes"
+                                    ],
+                                    "matcherLabels": [],
+                                    "name": "Confidential",
+                                    "outcomeText": "CONFIDENTIAL",
+                                    "overrideNames": [],
+                                    "overrides": [],
+                                    "rationale": "Private records and active purchasing material need confirmed record or business authorization from the host."
+                                },
+                                {
+                                    "dependsOn": [],
+                                    "dependsOnNames": [],
+                                    "id": "restricted",
+                                    "isComputed": false,
+                                    "keywords": [
+                                        "live assessment",
+                                        "answer key",
+                                        "building access code",
+                                        "active investigation"
+                                    ],
+                                    "matcherLabels": [],
+                                    "name": "Restricted",
+                                    "outcomeText": "RESTRICTED",
+                                    "overrideNames": [],
+                                    "overrides": [],
+                                    "rationale": "Safety, investigation, and live-assessment material needs explicit assignment from the host."
+                                }
+                            ],
+                            "label": "1. Protection"
+                        }
+                    ],
+                    "description": "Suggests one protection level from document language. Suggestions are prompts for an author to review, not proof that a file is public or that a reader is authorized.",
+                    "id": "cedar-valley-protection-guide",
+                    "name": "Cedar Valley: Protection Guide",
+                    "uncategorized": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "b617f63c67289f6d8fc7b00a19043defd5bcd60010e5e4ec218938f35b3c6b7f": {
+            "body": [],
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "ca93cb8953e04a02ea59545a6344b7b85d93e030031d38c377ff226b5021460e": {
+            "body": [
+                {
+                    "categoryOrder": ["level"],
+                    "categorySeparators": { "level": "//" },
+                    "categoryViews": { "level": "default" },
+                    "id": "default",
+                    "mode": "inline",
+                    "separator": "//",
+                    "surface": "marking"
+                }
+            ],
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "e070dec6e78862435e7c23c92a6e4a93a9667377aed0b78b533966687028c314": {
+            "body": {
+                "abiVersion": "v1",
+                "engineSha": "",
+                "engineVersion": "1.0.0-dev.30",
+                "gitTag": "",
+                "openapiVersion": "1.0.0-dev.30",
+                "status": "ok"
+            },
+            "method": "GET",
+            "statusCode": 200
+        }
+    }
+}

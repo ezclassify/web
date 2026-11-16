@@ -83,7 +83,7 @@
         {
             "args": ["ZZZMISS"],
             "expect": {
-                "rendered": "",
+                "rendered": "ZZZMISS",
                 "valid": false
             },
             "fixture": "ref-scheme-1",
@@ -116,7 +116,8 @@
                 ],
                 "errors": [
                     {
-                        "constraintId": "single-category:level"
+                        "categoryId": "level",
+                        "constraintId": "_single-category:level"
                     }
                 ],
                 "rendered": "LOW/HIGH",

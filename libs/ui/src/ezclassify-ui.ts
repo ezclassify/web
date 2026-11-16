@@ -18,8 +18,8 @@
  */
 import { acceptedValue, judgedAsHeld } from './loaded-value';
 import {
-    type ContextAdapter,
     type Assertion as EngineAssertion,
+    type ContextSchemeEngineAdapter,
     type RenderAssessment,
     type RenderResult,
 } from '@ezclassify/types';
@@ -30,11 +30,18 @@ import {
     tearingDownRuntime,
 } from './components/teardown-write';
 import type { ComponentInstance } from './components/component-base';
+import type { ComponentSchemeEngine } from './components/component-base-readonly';
 import {
-    isAddressableSchemeEngine,
-    isComponentContextAdapter,
-    type ComponentSchemeEngine,
-} from './components/component-base-readonly';
+    ContextResolutionError,
+    ContextSet,
+    contextForScheme,
+    contextStoreBuckets,
+    PRIMARY_SCHEME_SELECTOR,
+    schemeEngineOf,
+    SINGLE_CONTEXT_KEY,
+    type EzClassifyContexts,
+    type ResolvedContext,
+} from './context-binding';
 import type { FavoritesConfig } from './components/favorites-panel';
 import {
     cleanupTooltipForRoot,
@@ -43,8 +50,11 @@ import {
 import { HiddenAssertionField } from './components/hidden-assertion-field';
 import type { MarkedTextArea } from './components/marked-text-area';
 import { EMPTY_VALUE } from './text-utils';
-import { t } from './i18n';
-import type { FieldAssertion } from './forms/types';
+import type {
+    BucketScheme,
+    FieldAssertion,
+    RollupOutputError,
+} from './forms/types';
 import { cssEscape } from './forms/types';
 import * as state from './forms/state';
 import * as dom from './forms/dom';
@@ -56,24 +66,68 @@ import {
     type ControllerName,
     scanElements,
     observeNewElements,
+    flushObserver,
     harvestControllerOptions,
+    isBehaviorBound,
     isOwnedBy,
+    readBinding,
+    EZ_SELECTOR,
     MOUNT_ROOT_ATTR,
 } from './element-scanner';
+import {
+    classify,
+    describeCollection,
+    errorLevelOf,
+    isMarkingController,
+    isMarkingHost,
+    listsBuckets,
+    placeNestedRoot,
+    COLLECTION_ATTR,
+    CONTEXT_ATTR,
+    MARKING_ATTR,
+    PART_OF_ATTR,
+    SCHEME_ATTR,
+    type BindingNode,
+    type HostError,
+    type HostErrorCode,
+} from './binding-model';
+import type { StatusBannerBucket } from './components/status-banner';
+import { bucketKey, bucketParts, type BucketKey } from './store/store-shared';
+import { reportPublishFailure } from './store/publish-failure';
 import {
     parseComponentOptions,
     resolveNativeInput,
     createMountContainer,
     createComponent,
+    createHostComponent,
     buildComponentOptions,
 } from './component-factory';
 import {
+    TranslateHostError,
+    isTranslatedView,
+    type TranslatedView,
+} from './components/translated-view';
+import type { ContextReference } from './components/context-reference';
+import {
+    assertWritesScopes,
     defaultSurfaceOf,
     holdsPart,
     resolveFormatAttr,
     resolveOutput,
+    showsStandalonePart,
+    viewOutputOf,
     wholeOfShownMarking,
 } from './format-resolver';
+import {
+    factsInScopes,
+    factsOfScopeSet,
+    factsOutsideScopes,
+    inDeclarationOrder,
+    parseScopeList,
+    reachesPastScopes,
+    scopeSetOf,
+    writesCategoryOf,
+} from './scopes';
 import { renderViewRefusalMessages, renderViewRefused } from './render-refusal';
 import {
     setMountOwner,
@@ -86,6 +140,7 @@ import type { ChildWhole } from './mount-rollup-registry';
 import {
     VanillaEzClassifyStore,
     EMPTY_EZCLASSIFY_STATE,
+    type EzClassifyAggregate,
     type EzClassifyState,
     type EzClassifyStore,
     type PublishSource,
@@ -96,6 +151,112 @@ import {
 } from './store/base-ezclassify-store';
 import { clearWholeReadGate, setWholeReadGate } from './whole-read-gate';
 import { createEzClassifyFacetBinding } from './facet-binding';
+import { MarkingUndo, valueSignature } from './components/marking-undo';
+import {
+    resolveAddedAttributes,
+    restoreAddedAttributes,
+    writeAddedAttributes,
+    type AddedAttributes,
+    type EzClassifyAttributes,
+} from './added-attributes';
+
+/**
+ * The buckets of a level a view shows, in the store's order: those its own
+ * `context` / `scheme` attributes name (every bucket when it names neither),
+ * holding a marking or flagged stale. A bucket that misses a contributor stays,
+ * so it never reads as empty.
+ */
+function shownBuckets(
+    aggregate: EzClassifyAggregate,
+    named: readonly BucketKey[],
+): Array<[BucketKey, EzClassifyState]> {
+    return Array.from(aggregate.byBucket.entries()).filter(
+        ([key, state]) =>
+            named.includes(key) &&
+            (state.rendered !== '' ||
+                state.assertions.length > 0 ||
+                state.stale === true),
+    );
+}
+
+/**
+ * A marking as some of its scheme's scopes write it: the facts that belong to
+ * those scopes, written in `format` when given, else in the default output of
+ * the first of them for the role. Several scopes are written only by an output
+ * that writes every one of them (see `assertWritesScopes`).
+ *
+ * @param engine - The scheme view the marking is in
+ * @param assertions - The marking's facts
+ * @param scopes - The scope ids to write
+ * @param format - The output to write them in, if the view names one
+ * @param part - Whether the marking is a part
+ * @returns The text; empty when no fact belongs to the scopes, and null when
+ *   facts do but the output cannot or will not write them, so the view can say
+ *   its value is incomplete instead of showing a blank as if nothing were
+ *   there
+ */
+async function writeFactsInScopes(
+    engine: ContextSchemeEngineAdapter,
+    assertions: readonly EngineAssertion[],
+    scopes: readonly string[],
+    format: string | null,
+    part: boolean,
+): Promise<string | null> {
+    const meta = engine.getSchemeMeta();
+    const categories = engine.listCategories();
+    const facts = factsInScopes(assertions, categories, scopes, meta);
+    if (facts.length === 0) return '';
+    const output = format || viewOutputOf(meta, scopes, part);
+    try {
+        // A view checks its own scheme when it mounts. A level view also
+        // shows buckets of other schemes, which only a write can check.
+        assertWritesScopes(engine, categories, output, scopes, 'view');
+        const written = await Promise.resolve(engine.render(facts, output));
+        return renderViewRefused(written) ? null : written.rendered;
+    } catch {
+        return null;
+    }
+}
+
+/**
+ * The scopes a view writes a marking's facts in, or none when the marking's own
+ * text already is what the view shows. A view that lists scopes writes those.
+ * One that lists none shows the scheme's default scope, which the marking's
+ * text holds alone only while no fact reaches another scope: a rolled-up
+ * marking names no output, so it is written on every surface its facts reach.
+ *
+ * @param engine - The scheme view the marking is in
+ * @param listed - The scope ids the view lists
+ * @param assertions - The marking's facts
+ * @returns The scope ids to write, or empty to show the marking's text
+ */
+function scopesToWrite(
+    engine: ContextSchemeEngineAdapter,
+    listed: readonly string[],
+    assertions: readonly EngineAssertion[],
+): string[] {
+    if (listed.length > 0) return [...listed];
+    const meta = engine.getSchemeMeta();
+    const scopes = scopeSetOf(listed, meta);
+    return scopes.length > 0 &&
+        reachesPastScopes(assertions, engine.listCategories(), scopes, meta)
+        ? scopes
+        : [];
+}
+
+/**
+ * Host errors that refuse an element for what it names elsewhere on the page,
+ * so they can clear, or arise, when that other element comes, goes or is
+ * renamed.
+ */
+const REFERENCE_ERRORS: ReadonlySet<string> = new Set<HostErrorCode>([
+    'whole-missing',
+    'member-of-unknown',
+    'part-of-not-whole',
+    'part-of-across-contexts',
+    'no-rollup-on-whole-with-parts',
+    'duplicate-marking-id',
+]);
 
 /**
  * Warn-once tracking for the scope-mismatch advisory, keyed by the offending
@@ -117,7 +278,23 @@ interface StoreBinding {
     lastSeenViewSignature: string;
     viewRequest: number;
     lastSeenFacetSig: string;
+    /**
+     * The view, a decision flow, states facts outside the scheme's default
+     * scope. Text carries only the default scope, so from the first such
+     * publish on, the binding publishes the view's facts instead of its text.
+     */
+    publishesFacts: boolean;
     publish(assertions: EngineAssertion[], rendered: string): void;
+}
+
+/** A resolved Context and scheme, as a host error names it. */
+function describeBucket(resolved: ResolvedContext): string {
+    const scheme = resolved.primary
+        ? 'the primary scheme'
+        : `scheme '${resolved.schemeSelector}'`;
+    return resolved.contextKey
+        ? `${scheme} of Context '${resolved.contextKey}'`
+        : scheme;
 }
 
 /** Stable identity for one retained render, including refusal assessment. */
@@ -131,7 +308,12 @@ function renderViewSignature(view: RenderResult | undefined): string {
  * the same signature mean nothing changed and the publish can be skipped
  * without re-triggering listeners.
  */
-function signAssertions(assertions: EngineAssertion[]): string {
+function signAssertions(
+    assertions: readonly Pick<
+        EngineAssertion,
+        'conceptId' | 'categoryId' | 'value'
+    >[],
+): string {
     return assertions
         .map((a) => `${a.conceptId}|${a.categoryId}|${a.value ?? ''}`)
         .sort()
@@ -139,20 +321,26 @@ function signAssertions(assertions: EngineAssertion[]): string {
 }
 
 /**
- * Top-level controller that binds an engine adapter to DOM input fields,
+ * Top-level controller that binds one or more Contexts to DOM input fields,
  * managing tag inputs, validation, and rollup.
+ *
+ * Initialize it with the page's Context, or with `{ contexts }` keyed by the
+ * names `data-ezclassify-context` uses when the page marks under several (see
+ * `context-binding.ts`).
  *
  * The runtime state the extracted forms modules read and write (`FormsContext`)
  * lives on the instance but is marked internal, so it is stripped from the
- * published declarations. Integrators get the constructor, the bound engine,
- * store and root, readiness, the registered components, rollup recalculation
- * and reads, assertion reads, clipboard copy, and teardown.
+ * published declarations. Integrators get the constructor, the store and root,
+ * readiness, the registered components, rollup recalculation and reads,
+ * assertion reads, clipboard copy, and teardown.
  */
 export class EzClassifyUI {
-    /** The scheme engine this runtime drives, unwrapped from a Context. */
-    engine: ComponentSchemeEngine;
-    /** @internal */
-    schemeAddressing: boolean;
+    /**
+     * The Contexts this runtime marks with, and how an element picks one.
+     *
+     * @internal
+     */
+    readonly contexts: ContextSet;
     /**
      * The element this runtime scans and owns. Events, scoped styles and the
      * mount boundary all hang off it.
@@ -171,7 +359,7 @@ export class EzClassifyUI {
      */
     store: EzClassifyStore;
     /**
-     * Marking-ids whose host element (carrying `data-ezclassify-rendered`)
+     * Marking-ids whose host element (a marking host, see `binding-model.ts`)
      * exists in the scanned tree. Views naming a marking-id not in this set are
      * not registered with the store; they're free-floating hints, not binding
      * edges (e.g. the library/pantry pages use `facet-of="doc-section"` as a
@@ -201,6 +389,14 @@ export class EzClassifyUI {
     private storeUnsubscribers = new Map<HTMLElement, () => void>();
     /** Per whole field: the subscription that re-reads it when a part changes. */
     private partUnsubscribers = new Map<HTMLElement, () => void>();
+    /**
+     * Per store marking: the undo every field bound to it shares, fed the
+     * marking's commits, and how many fields hold it.
+     */
+    private readonly markingUndos = new Map<
+        string,
+        { undo: MarkingUndo; users: number; stop: () => void }
+    >();
     /** Per part field: the subscription that re-reads it when its whole changes. */
     private wholeUnsubscribers = new Map<HTMLElement, () => void>();
     /**
@@ -217,12 +413,23 @@ export class EzClassifyUI {
     private draftHosts = new WeakMap<object, string>();
     /** @internal */
     fields: HTMLInputElement[] = [];
-    /** @internal */
-    rollupField: HTMLInputElement | null = null;
-    /** @internal */
+    /**
+     * The format whole markings are written in when a field names none: the
+     * host's `format` option, else the only Context's scheme default. With
+     * several Contexts and no host format it is empty; see {@link formatsOf}.
+     *
+     * @internal
+     */
     defaultFormat: string;
-    /** @internal */
+    /**
+     * The format a part is written in when a field names none, by the same rule
+     * as {@link defaultFormat}.
+     *
+     * @internal
+     */
     defaultPartFormat: string;
+    /** The host's `format` option, applied in every Context. */
+    private readonly hostFormat: string | undefined;
     /** @internal */
     tooltipConceptProperty?: string;
     /** @internal */
@@ -268,8 +475,6 @@ export class EzClassifyUI {
     /** @internal */
     partOfMap = new Map<HTMLElement, string>();
     /** @internal */
-    targetMap = new Map<HTMLElement, string>();
-    /** @internal */
     aggregates = new Map<
         string,
         {
@@ -310,7 +515,6 @@ export class EzClassifyUI {
     isReady = false;
     /** Style elements injected by this instance, tracked for cleanup */
     private adoptedStyles: AdoptedStyles[] = [];
-    private _context: ContextAdapter | null = null;
     /**
      * Per-instance counter for synthetic ids assigned to text controllers whose
      * host element has no `id`. Local to this EzClassifyUI so multiple mounts
@@ -326,21 +530,48 @@ export class EzClassifyUI {
      */
     private readonly incompleteScans = new Map<string, string | null>();
     /**
-     * First-part-binding MarkedTextAreas whose last scan read no portion, each
-     * with the marking its first portion is bound to. Nothing has read what
-     * that marking now holds, so its views say it may be incomplete.
+     * Elements whose markup the binding model refused, each with the
+     * contributors that hold the levels above it incomplete in the store: one
+     * in the collection it sits in, and one in the whole that encloses it, if
+     * any. Such an element stays unenhanced until its markup changes.
      */
-    private readonly unreadFirstParts = new Map<string, string>();
+    private readonly hostErrors = new Map<
+        HTMLElement,
+        {
+            error: HostError | RollupOutputError;
+            contributors: Array<{ id: string; wholeId: string | null }>;
+        }
+    >();
     /**
-     * Views mirroring a marking (`data-ezclassify-source`), by marking id, each
-     * as a callback that tells the view again whether the marking is unread.
+     * While markup that names other elements is read again, the message each of
+     * those elements was refused with before, so a refusal that stands
+     * unchanged is not reported twice.
      */
-    private readonly sourceIncompleteViews = new Map<string, Set<() => void>>();
-    /** Whether the rollup field last showed an incomplete rollup. */
+    private rereadErrors: ReadonlyMap<HTMLElement, string> | null = null;
+    /** Where each scanned element sits in the marking tree, as last derived. */
+    private readonly bindingNodes = new Map<HTMLElement, BindingNode>();
+    /**
+     * Collection containers this runtime declared to the store, with the id
+     * each was declared under, so a container that leaves or is renamed is
+     * removed under the id the store knows.
+     */
+    private readonly collections = new Map<HTMLElement, string>();
+    /**
+     * How many times each marking host has been registered. A teardown whose
+     * store release lands after the host was registered again (a structural
+     * change derives a subtree again in place) leaves the new registration.
+     */
+    private readonly hostEpochs = new WeakMap<HTMLElement, number>();
+    /**
+     * Hosts whose plain-input validation helper owns their value, so the host
+     * write-back does not also write into them.
+     */
+    private readonly helperInputs = new WeakSet<HTMLElement>();
+    /** Whether the outputs last showed an incomplete rollup. */
     private rollupIncompleteShown = false;
-    /** The custom validity message this runtime set on the rollup field. */
-    private rollupValidity: string | null = null;
-    /** Stops the page-aggregate subscription behind the rollup field's flag. */
+    /** What {@link add} wrote on each element, for {@link remove}. */
+    private readonly addedAttributes = new Map<HTMLElement, AddedAttributes>();
+    /** Stops the page-aggregate subscription that refreshes the outputs. */
     private unsubscribeIncomplete: (() => void) | null = null;
     private readonly _textIdSalt = Math.random().toString(36).slice(2, 8);
     /**
@@ -367,11 +598,19 @@ export class EzClassifyUI {
      */
     private _lastChildSig = new Map<string, string>();
 
+    /**
+     * @param contexts - The page's Context, or `{ contexts }` with each Context
+     *   under the key `data-ezclassify-context` names it by. With several
+     *   Contexts there is no default: markup assigns every marked element to
+     *   one, and an element no ancestor assigns is a host error.
+     * @param options - Presentation defaults, the root to scan (default
+     *   `document.body`) and an optional store.
+     * @throws TypeError when `contexts` is neither shape
+     */
     constructor(
-        engine: ComponentSchemeEngine | ContextAdapter,
+        contexts: EzClassifyContexts,
         options?: {
             format?: string;
-            rollupId?: string;
             colorMap?: RenderColorMap;
             tooltipConceptProperty?: string;
             root?: HTMLElement;
@@ -385,74 +624,45 @@ export class EzClassifyUI {
             favorites?: FavoritesConfig;
         },
     ) {
-        // Whichever half the host injected is the half the controller holds.
-        // A bare scheme adapter is not promoted into a synthetic context:
-        // wrapping it would claim guide and access surfaces the host never
-        // supplied, and constructing the wrapper needs an engine this package
-        // is not allowed to import.
-        if (isComponentContextAdapter(engine)) {
-            this._context = engine;
-            this.engine = engine.scheme;
-        } else {
-            this.engine = engine;
-            this._context = null;
-        }
-        this.schemeAddressing =
-            this._context === null && isAddressableSchemeEngine(this.engine);
+        this.contexts = ContextSet.from(contexts);
+        // Selectors other than the primary resolve against each Context's
+        // scheme list. A local Context lists synchronously; a remote one
+        // answers from the description it cached when it connected.
+        const listing = this.contexts.load();
         this.root = options?.root ?? document.body;
         // Stamp the ownership boundary marker. Every element whose nearest
         // `data-ezclassify-mount-root` ancestor is THIS id is owned by this
         // instance; the scanner skips the rest. This is what stops an enclosing
         // instance from re-enhancing a field a nested instance already owns.
         this.root.setAttribute(MOUNT_ROOT_ATTR, this._instanceId);
-        const meta = this.engine.getSchemeMeta();
-        this.defaultFormat = options?.format ?? meta.defaultRenderFormat ?? '';
         // The host's format is the one it authors whole markings in. A part is
-        // written in the scheme's part default, as the store writes it.
+        // written in the scheme's part default, as the store writes it. With
+        // several Contexts each bucket takes its scheme's defaults instead
+        // (see formatsOf); the host's format, when given, applies to all.
+        const meta = this.contexts.single
+            ? this.contexts.get(SINGLE_CONTEXT_KEY)!.scheme.getSchemeMeta()
+            : undefined;
+        this.hostFormat = options?.format;
+        this.defaultFormat = options?.format ?? meta?.defaultRenderFormat ?? '';
         this.defaultPartFormat =
-            meta.defaultPartRenderFormat ?? this.defaultFormat;
+            meta?.defaultPartRenderFormat ?? this.defaultFormat;
         if (options?.colorMap) this.colorMap = options.colorMap;
         if (options?.tooltipConceptProperty)
             this.tooltipConceptProperty = options.tooltipConceptProperty;
         if (options?.favorites) this.favorites = options.favorites;
         this.store =
-            options?.store ??
-            new VanillaEzClassifyStore(
-                this.engine,
-                options?.format ? { format: options.format } : undefined,
-            );
+            options?.store ?? this.createStore(contexts, options?.format);
 
-        const rollupId = options?.rollupId ?? 'ezclassify-rollup';
-        const existingSink = this.root.querySelector(
-            '#' + cssEscape(rollupId),
-        ) as HTMLInputElement | null;
-        // Reuse an existing #<rollupId> ONLY when it is OWNED by this instance,
-        // i.e. its nearest [data-ezclassify-mount-root] ancestor is this root, not
-        // a nested child scope's root. The default rollupId ('ezclassify-rollup')
-        // is shared, so a nested instance whose root sits inside a parent that
-        // already created that sink would otherwise hijack the parent's sink and
-        // write the child's value into it (a nested scope's default-id
-        // collision). Ownership (not a direct-child check) keeps each scope's sink
-        // its own while still honoring a consumer that placed the sink deep in the
-        // single-mount tree.
-        let rollupEl =
-            existingSink && isOwnedBy(existingSink, this._instanceId)
-                ? existingSink
-                : null;
-        if (!rollupEl) {
-            rollupEl = document.createElement('input');
-            rollupEl.type = 'hidden';
-            rollupEl.id = rollupId;
-            rollupEl.name = rollupId;
-            this.root.appendChild(rollupEl);
-        }
-        this.rollupField = rollupEl;
-        // A page aggregate the store holds as stale (a contributor whose read
-        // failed, or one that read only part of its source) makes the rollup
-        // this scope shows incomplete too, whether or not its value moves.
-        this.unsubscribeIncomplete = this.store.subscribeAggregate(() =>
-            this.refreshIncomplete(),
-        );
+        // Every level's rollup lives in the store. When the page level moves
+        // (any level below it moving moves the page), the outputs the host
+        // placed are shown again, and a level the store holds as stale (a
+        // contributor whose read failed, or one that read only part of its
+        // source) makes those outputs incomplete whether or not a value moved.
+        this.unsubscribeIncomplete = this.store.subscribeAggregate(() => {
+            this.refreshIncomplete();
+            if (!this._destroyed && !this.initializing)
+                void rollup.updateRollup(this);
+        });
 
         // Register this instance in the cross-instance mount-rollup registry. The
         // ancestry edge (which parent scope this child contributes its whole into)
@@ -463,18 +673,9 @@ export class EzClassifyUI {
         registry.registerReleaser(this._instanceId, {
             releaseElement: (host) => this.releaseElement(host),
             refreshIncomplete: () => this.refreshIncomplete(),
+            reportHostError: (error) => this.reportHostError(error),
         });
-        const parentRootEl = this.root.parentElement?.closest(
-            '[' + MOUNT_ROOT_ATTR + ']',
-        ) as HTMLElement | null;
-        const parentId = parentRootEl?.getAttribute(MOUNT_ROOT_ATTR) ?? null;
-        if (parentId && parentId !== this._instanceId) {
-            registry.addChild(
-                parentId,
-                this._instanceId,
-                this.asRegistryChild(),
-            );
-        }
+        this.registerWithParentScope();
         // Reclaim-on-register: an ancestor instance constructed BEFORE this one
         // already enhanced the hosts now enclosed by this root (the outer-first
         // race; the region mounts before the field). Release each such host from
@@ -489,13 +690,27 @@ export class EzClassifyUI {
         this.observeDOM();
         this.injectScopedStyles();
 
+        // An element that declares a scheme selector waits for its Context's
+        // scheme list (see resolveContext); once every list is in, the tree
+        // is read again so those elements mount. Already-mounted elements are
+        // skipped by the mount guards.
+        const listed =
+            listing instanceof Promise
+                ? listing.then(() => {
+                      if (!this._destroyed) this.enhance();
+                  })
+                : undefined;
+
         // Wait for all component inits to complete, then seed the store from any
         // pre-existing host values, wire host write-back, and run a single rollup.
         // Guard: if destroy() was called before inits finish, skip the post-init
         // work, including the ready event, which would otherwise fire on a
         // torn-down instance.
-        Promise.all(this._pendingInits).then(async () => {
-            if (!this.rollupField) return;
+        const mounted = listed
+            ? listed.then(() => Promise.all(this._pendingInits))
+            : Promise.all(this._pendingInits);
+        mounted.then(async () => {
+            if (this._destroyed) return;
             this.initializing = false;
             this._pendingInits = [];
             this.wireHostWriteback();
@@ -505,6 +720,262 @@ export class EzClassifyUI {
             rollup.updateRollup(this);
             this.fireReady();
         });
+    }
+
+    /**
+     * The scheme view of the instance's only Context.
+     *
+     * An instance with several Contexts has no instance-wide scheme: every
+     * element marks with the Context it resolves (see {@link resolveContext}),
+     * so reading this there is a defect in the caller and throws rather than
+     * answering with one Context's rules for another's markup.
+     *
+     * @internal
+     */
+    get engine(): ComponentSchemeEngine {
+        const only = this.contexts.single
+            ? this.contexts.get(SINGLE_CONTEXT_KEY)
+            : undefined;
+        if (!only) {
+            throw new ContextResolutionError(
+                'context-unresolved',
+                "[ezclassify] This EzClassifyUI holds several Contexts, so it has no single scheme; resolve the element's Context instead.",
+                null,
+            );
+        }
+        return only.scheme;
+    }
+
+    /**
+     * The store this instance creates when the host passes none: one bucket per
+     * (Context, scheme) pair that markup resolves, each read by that scheme's
+     * view. With one Context its primary scheme is the default bucket; with
+     * several there is none.
+     */
+    private createStore(
+        source: EzClassifyContexts,
+        format: string | undefined,
+    ): EzClassifyStore {
+        return new VanillaEzClassifyStore({
+            buckets: contextStoreBuckets(source, { format }),
+        });
+    }
+
+    /**
+     * The Context and scheme `el` marks with.
+     *
+     * @throws ContextResolutionError when markup resolves none
+     * @internal
+     */
+    resolveContext(el: Element): ResolvedContext {
+        const host = this.boundMarkingHostOf(el);
+        if (!host)
+            return listsBuckets(el)
+                ? this.contexts.resolveBucketList(el, this.root)
+                : this.contexts.resolve(el, this.root);
+        // A view bound to a marking marks in that marking's Context and
+        // scheme, wherever the view sits. Read by its own placement, a view
+        // outside the marking's data-ezclassify-scheme subtree would parse
+        // the marking in another scheme and write that reading back.
+        const resolved = this.contexts.resolve(host, this.root);
+        this.refuseDisagreeingView(el, host, resolved);
+        return resolved;
+    }
+
+    /**
+     * The marking host a view's `data-ezclassify-bound-to`,
+     * `data-ezclassify-facet-of` or `data-ezclassify-source` names, or null
+     * when `el` shows none.
+     */
+    private boundMarkingHostOf(el: Element): Element | null {
+        const id =
+            el.getAttribute('data-ezclassify-bound-to') ??
+            el.getAttribute('data-ezclassify-facet-of') ??
+            el.getAttribute('data-ezclassify-source');
+        if (!id || id === el.id) return null;
+        return this.markingHosts.get(id) ?? null;
+    }
+
+    /**
+     * Refuse a bound view whose own markup selects another Context or scheme
+     * than the marking it binds. Markup the view does not declare follows the
+     * marking.
+     *
+     * @throws ContextResolutionError when the view's declared Context or scheme
+     *   disagrees with its marking's
+     */
+    private refuseDisagreeingView(
+        el: Element,
+        host: Element,
+        marking: ResolvedContext,
+    ): void {
+        const declaresContext =
+            this.contexts.declaredContextKey(el, this.root) !== null;
+        const declaresScheme =
+            this.contexts.declaredSchemeSelector(el, this.root) !== null;
+        if (!declaresContext && !declaresScheme) return;
+        const own = this.contexts.resolve(el, this.root);
+        if (
+            own.contextKey === marking.contextKey &&
+            (!declaresScheme || own.bucket === marking.bucket)
+        )
+            return;
+        throw new ContextResolutionError(
+            'context-unresolved',
+            `This view binds the marking '${host.id}', which marks in ${describeBucket(marking)}, ` +
+                `but its own markup selects ${describeBucket(own)}. ` +
+                'Move the view, or remove the data-ezclassify-context or data-ezclassify-scheme that disagrees.',
+            el,
+        );
+    }
+
+    /**
+     * Every Context this instance holds, as a reference drawer takes them: the
+     * only Context, or each under the key markup names it by.
+     */
+    private referenceSource(): EzClassifyContexts {
+        if (this.contexts.single) return this.contexts.get(SINGLE_CONTEXT_KEY)!;
+        return { contexts: Object.fromEntries(this.contexts.entries()) };
+    }
+
+    /**
+     * Resolve the Context a component on `el` mounts with, or report `el` as a
+     * host error and answer null. An element waiting on its Context's scheme
+     * list answers null without an error: the tree is read again once the list
+     * is in.
+     */
+    private contextForMount(el: HTMLElement): ResolvedContext | null {
+        try {
+            const resolved = this.resolveContext(el);
+            schemeEngineOf(resolved, el);
+            return resolved;
+        } catch (err) {
+            if (!(err instanceof ContextResolutionError)) throw err;
+            if (err.code === 'scheme-pending') return null;
+            this.reportHostError(
+                {
+                    code: 'context-unresolved',
+                    message: `[ezclassify] ${err.message}`,
+                    element: el,
+                },
+                null,
+            );
+            return null;
+        }
+    }
+
+    /**
+     * The formats a field on `el` writes when it names none: the host's
+     * `format` option for whole markings, else its Context scheme's default,
+     * and that scheme's part default for parts.
+     *
+     * @internal
+     */
+    formatsOf(el: Element): { whole: string; part: string } {
+        const meta = schemeEngineOf(
+            this.resolveContext(el),
+            el,
+        ).getSchemeMeta();
+        const whole = this.hostFormat ?? meta.defaultRenderFormat ?? '';
+        return { whole, part: meta.defaultPartRenderFormat ?? whole };
+    }
+
+    /** Scheme operations per bucket, so each bucket keeps one identity. */
+    private readonly bucketSchemes = new Map<BucketKey, BucketScheme>();
+
+    /**
+     * The scheme operations for the bucket `el` reads in.
+     *
+     * @throws ContextResolutionError when `el` resolves no markable scheme
+     * @internal
+     */
+    schemeOf(el: HTMLElement): BucketScheme {
+        const resolved = this.resolveContext(el);
+        const known = this.bucketSchemes.get(resolved.bucket);
+        if (known) return known;
+        const engine = schemeEngineOf(resolved, el);
+        const scheme: BucketScheme = {
+            bucket: resolved.bucket,
+            adapter: engine,
+            process: (input, options) => engine.process(input, options),
+            validate: (input, options) => engine.validate(input, options),
+            checkCoverage: (children, parent, options) =>
+                engine.checkCoverage(children, parent, options),
+            getSchemeMeta: () => engine.getSchemeMeta(),
+        };
+        this.bucketSchemes.set(resolved.bucket, scheme);
+        return scheme;
+    }
+
+    /**
+     * The buckets a Context key and a scheme selector name, `null` naming any.
+     *
+     * @internal
+     */
+    bucketsNamed(
+        contextKey: string | null,
+        schemeSelector: string | null,
+    ): readonly BucketKey[] {
+        return this.contexts.bucketsNamed(contextKey, schemeSelector);
+    }
+
+    /**
+     * What a level view prints to name a bucket: its scheme's name, after the
+     * Context key when the instance holds several Contexts. A scheme other than
+     * the Context's primary is named by its own view, or by its selector when
+     * that view cannot describe it.
+     */
+    private bucketLabel(bucket: BucketKey): string {
+        const { contextKey, schemeSelector } = bucketParts(bucket);
+        let name = schemeSelector;
+        try {
+            name =
+                this.bucketEngine(bucket)?.getSchemeMeta().name ||
+                schemeSelector;
+        } catch {
+            // A label never fails the view it names.
+        }
+        return contextKey ? `${contextKey}: ${name}` : name;
+    }
+
+    /**
+     * The scheme view a bucket marks in, or null when its Context is gone.
+     *
+     * @throws ContextResolutionError when the Context no longer offers the
+     *   bucket's scheme
+     */
+    private bucketEngine(bucket: BucketKey): ContextSchemeEngineAdapter | null {
+        const { contextKey, schemeSelector } = bucketParts(bucket);
+        const context = this.contexts.get(contextKey);
+        if (!context) return null;
+        return schemeEngineOf({
+            contextKey,
+            context,
+            schemeSelector,
+            primary: schemeSelector === PRIMARY_SCHEME_SELECTOR,
+            bucket,
+        });
+    }
+
+    /**
+     * The store's rollup of one level, by bucket: `null` for the instance root,
+     * else a collection's or a whole's id.
+     *
+     * @internal
+     */
+    aggregateOf(
+        levelId: string | null,
+    ): ReadonlyMap<BucketKey, EzClassifyState> {
+        return this.store.getAggregate(levelId ?? undefined).byBucket;
+    }
+
+    /**
+     * True once this instance has been torn down.
+     *
+     * @internal
+     */
+    get destroyed(): boolean {
+        return this._destroyed;
     }
 
     /**
@@ -673,13 +1144,13 @@ export class EzClassifyUI {
     }
 
     /**
-     * Subscribe each writable `data-ezclassify-rendered` host to its store
-     * entry so commits (whether `publishRendered` or `publishAssertions` from
-     * sibling views) reflect in the host's `.value`. That's what makes the
-     * hidden-input pattern from `docs/binding-model.md` §3 integrate with
-     * native `FormData`: server submits see the current rendered string even
-     * when authoring happens through a bound-to tag input or facet pickers. It
-     * also unblocks `forms/rollup`'s facet-group contribution row, which reads
+     * Subscribe each writable `data-ezclassify-marking` host to its store entry
+     * so commits (whether `publishRendered` or `publishAssertions` from sibling
+     * views) reflect in the host's `.value`. That's what makes the hidden-input
+     * pattern from `docs/binding-model.md` §3 integrate with native `FormData`:
+     * server submits see the current rendered string even when authoring
+     * happens through a bound-to tag input or facet pickers. It also unblocks
+     * `forms/rollup`'s facet-group contribution row, which reads
      * `parentEl.value` for the parent marking.
      *
      * Skipped:
@@ -689,8 +1160,9 @@ export class EzClassifyUI {
      *   `hidden` / `marked-textarea` controllers manage their own value path.
      *   Doubling up here would be redundant and risks a write race.
      * - Hosts that aren't writable elements (`input` / `textarea`). The aggregate
-     *   banner pattern uses `<div data-ezclassify-rendered>` and has no
-     *   `.value` to write.
+     *   A non-input marking host has no `.value` to write.
+     * - Inputs whose validation helper is wired to the store: the helper writes
+     *   the marking in the input's own format.
      *
      * Cycle protection: programmatic `.value =` assignment does not fire
      * `input` / `change` events in any browser, so there's no DOM-side path
@@ -707,14 +1179,21 @@ export class EzClassifyUI {
             if (host.tagName !== 'INPUT' && host.tagName !== 'TEXTAREA')
                 continue;
             if (this.storeUnsubscribers.has(host)) continue;
+            if (this.helperInputs.has(host)) continue;
             const writableHost = host as HTMLInputElement | HTMLTextAreaElement;
             const unsubscribe = this.store.subscribe(
                 id,
                 (state: EzClassifyState) => {
-                    if (writableHost.value === state.rendered) return;
+                    // A refused state's text is the engine's marker. Nobody
+                    // reads this host but the form it submits with, so it
+                    // holds nothing rather than the last marking, and says so.
+                    const refused = renderViewRefused(state);
+                    host.toggleAttribute('data-ezclassify-invalid', refused);
+                    const next = refused ? '' : state.rendered;
+                    if (writableHost.value === next) return;
                     host.dataset.ezState = 'sync';
                     try {
-                        writableHost.value = state.rendered;
+                        writableHost.value = next;
                     } finally {
                         delete host.dataset.ezState;
                     }
@@ -731,12 +1210,38 @@ export class EzClassifyUI {
         }
     }
 
+    /**
+     * Whether a facet is where its marking's refusal is said: the first facet
+     * of a marking no field shows. A field showing the marking says why it
+     * could not be written; a hidden host cannot.
+     */
+    private facetSpeaksFor(facet: HTMLElement, markingId: string): boolean {
+        const shows = (el: Element) => {
+            const controller = el.getAttribute('data-ezclassify-controller');
+            return controller
+                ? controller !== 'hidden'
+                : (el as HTMLInputElement).type !== 'hidden';
+        };
+        const host = this.markingHosts.get(markingId);
+        if (host && shows(host)) return false;
+        const id = cssEscape(markingId);
+        const views = this.root.querySelectorAll(
+            `[data-ezclassify-bound-to="${id}"]`,
+        );
+        if (Array.from(views).some(shows)) return false;
+        return (
+            this.root.querySelector(`[data-ezclassify-facet-of="${id}"]`) ===
+            facet
+        );
+    }
+
     private enhance(): void {
         // Discover marking-id host elements first so the view pass can validate
         // bound-to / facet-of references against a known set. An attribute that
         // points at a missing host stays as a free-floating hint (no store edge);
         // attributes that point at a real host get wired through the store.
         this.collectMarkingHosts(this.root);
+        this.orderByDocument();
         scanElements(
             this.root,
             this._instanceId,
@@ -758,41 +1263,409 @@ export class EzClassifyUI {
             },
             (el, controller, options) =>
                 this.attachView(el, controller, options),
-            (el) => this.teardownElement(el),
+            (el) => {
+                this.teardownElement(el);
+                this.clearHostError(el);
+                this.bindingNodes.delete(el);
+                // An element that left the root is no longer this instance's;
+                // what add wrote on it stays, as its markup.
+                this.addedAttributes.delete(el);
+                const collection = this.collections.get(el);
+                if (collection !== undefined) {
+                    this.store.unregisterCollection(collection);
+                    this.collections.delete(el);
+                }
+            },
+            (el) => this.rederive(el),
+            () => this.rederiveDependents(),
         );
     }
 
-    /** Index named marking data and standalone controls before attaching views. */
+    /**
+     * Index the marking hosts under `root` before attaching views, so a view
+     * that names a host can find it whatever the document order. A marking host
+     * with no DOM id gets a generated one; a host whose markup the binding
+     * model refuses is not indexed (see {@link nodeOf}).
+     */
     private collectMarkingHosts(root: HTMLElement): void {
         const index = (el: HTMLElement) => {
             if (!isOwnedBy(el, this._instanceId)) return;
-            const controller = el.getAttribute('data-ezclassify-controller');
-            const inferred = this.isStandaloneMarkingHost(el, controller);
-            if (!el.hasAttribute('data-ezclassify-rendered') && !inferred)
-                return;
-            if (!el.id && inferred)
+            if (!isMarkingHost(el)) return;
+            if (!el.id) {
+                const controller =
+                    el.getAttribute('data-ezclassify-controller') ?? 'marking';
                 el.id = `__ez-${controller}-${this._textIdSalt}-${this._textIdCounter++}`;
-            if (!el.id) return;
-            this.validMarkingIds.add(el.id);
+            }
+            const node = this.nodeOf(el);
+            if (node.error) return;
+            // A marking id names one marking. A second host under an id a
+            // live host already holds would write another Context's (or
+            // another field's) value into it, so it is refused.
+            const holder = this.markingHosts.get(el.id);
+            if (holder && holder !== el && holder.isConnected) {
+                this.reportHostError(
+                    {
+                        code: 'duplicate-marking-id',
+                        message: `[ezclassify] Two marking hosts use the id "${el.id}". A marking id names one marking; give each host its own id.`,
+                        element: el,
+                    },
+                    null,
+                );
+                return;
+            }
+            this.hostEpochs.set(el, (this.hostEpochs.get(el) ?? 0) + 1);
             this.markingHosts.set(el.id, el);
+            this.validMarkingIds.add(el.id);
         };
         index(root);
         root.querySelectorAll<HTMLElement>(
-            '[data-ezclassify-rendered], [data-ezclassify-controller]',
+            `[${MARKING_ATTR}], [data-ezclassify-controller]`,
         ).forEach(index);
     }
 
-    private isStandaloneMarkingHost(
+    /**
+     * Derive where `el` sits in the marking tree, record it, and report a host
+     * error when its markup is refused. Reporting is idempotent per element.
+     */
+    private nodeOf(el: HTMLElement): BindingNode {
+        const node = classify(el, this.root);
+        this.bindingNodes.set(el, node);
+        if (node.error) this.reportHostError(node.error, node.wholeId ?? null);
+        return node;
+    }
+
+    /**
+     * Where `el` sits in the marking tree, as last derived; undefined for an
+     * element this runtime has not scanned. The roll-up reads contributors
+     * through it: a view, an ignored element or a refused one never
+     * contributes.
+     *
+     * @internal
+     */
+    bindingNodeOf(el: HTMLElement): BindingNode | undefined {
+        return this.bindingNodes.get(el);
+    }
+
+    /**
+     * Whether `el`'s marking feeds the levels above it.
+     *
+     * @internal
+     */
+    isContributor(el: HTMLElement): boolean {
+        return this.bindingNodes.get(el)?.contributes === true;
+    }
+
+    /**
+     * Record a host error: the element stays unenhanced, an
+     * `ezclassify:host-error` event says why, and the levels above it read as
+     * incomplete until its markup changes: the collection it sits in, and the
+     * whole that encloses it (see {@link errorLevelOf}), with every level above
+     * those. The roll-up reports the outputs it refuses to fill the same way.
+     *
+     * @param error - What is refused, and on which element
+     * @param wholeId - The whole whose rollup the element would have fed, when
+     *   the markup names one; otherwise the enclosing `whole` container's
+     * @internal
+     */
+    reportHostError(
+        error: HostError | RollupOutputError,
+        wholeId: string | null = null,
+    ): void {
+        if (this._destroyed || this.hostErrors.has(error.element)) return;
+        const level = errorLevelOf(error.element, this.root);
+        const whole = wholeId ?? level.wholeId;
+        const next = () =>
+            `__ez-host-error-${this._textIdSalt}-${this._textIdCounter++}`;
+        const contributors: Array<{ id: string; wholeId: string | null }> = [
+            { id: next(), wholeId: null },
+            ...(whole ? [{ id: next(), wholeId: whole }] : []),
+        ];
+        this.hostErrors.set(error.element, { error, contributors });
+        // Placed before it is flagged, so its level is computed once.
+        this.store.setMembership(contributors[0].id, level.collectionId);
+        for (const contributor of contributors)
+            this.store.setIncompleteContributor?.(
+                contributor.id,
+                contributor.wholeId,
+                true,
+            );
+        if (this.rereadErrors?.get(error.element) === error.message) {
+            this.refreshIncomplete();
+            return;
+        }
+        console.error(error.message);
+        error.element.dispatchEvent(
+            new CustomEvent('ezclassify:host-error', {
+                bubbles: true,
+                composed: true,
+                detail: { code: error.code, message: error.message },
+            }),
+        );
+        this.refreshIncomplete();
+    }
+
+    /** Forget the host error recorded for `el`, if any. */
+    private clearHostError(el: HTMLElement): void {
+        const entry = this.hostErrors.get(el);
+        if (!entry) return;
+        this.hostErrors.delete(el);
+        this.releaseErrorContributors(entry.contributors);
+        this.refreshIncomplete();
+    }
+
+    /** Clear the store's record of a host error's contributors. */
+    private releaseErrorContributors(
+        contributors: ReadonlyArray<{ id: string; wholeId: string | null }>,
+    ): void {
+        for (const contributor of contributors)
+            this.store.setIncompleteContributor?.(
+                contributor.id,
+                contributor.wholeId,
+                false,
+            );
+        this.store.setMembership(contributors[0].id, null);
+    }
+
+    /**
+     * Declare a `data-ezclassify-collection` container to the store, inside its
+     * parent collection or the page. A refused one is a host error.
+     */
+    private registerCollectionOf(el: HTMLElement): void {
+        const node = describeCollection(el, this.root);
+        if (!node) return;
+        if (node.error) {
+            this.reportHostError(node.error, null);
+            return;
+        }
+        const previous = this.collections.get(el);
+        if (previous !== undefined && previous !== node.id)
+            this.store.unregisterCollection(previous);
+        this.collections.set(el, node.id!);
+        this.store.registerCollection(node.id!, node.collectionId ?? null);
+    }
+
+    /**
+     * Place a marking host's marking in the store: a part under its whole, a
+     * whole in its collection, each in the bucket its Context and scheme
+     * resolve to.
+     */
+    private placeMarking(
         el: HTMLElement,
-        controller: string | null,
-    ): boolean {
-        return (
-            ['text', 'marked-input', 'marking', 'tags'].includes(
-                controller ?? '',
-            ) &&
-            !['bound-to', 'facet-of', 'source', 'aggregate'].some((name) =>
-                el.hasAttribute(`data-ezclassify-${name}`),
+        node: BindingNode,
+        bucket: BucketKey,
+    ): void {
+        const id = el.id;
+        if (!id || !this.validMarkingIds.has(id)) return;
+        try {
+            this.store.setBucket(id, bucket);
+        } catch (err) {
+            // A store the host built may hold fewer buckets than the markup
+            // names, such as one over a Context's primary scheme alone. The
+            // marking is refused on its element, never read in another bucket.
+            this.reportHostError(
+                {
+                    code: 'context-unresolved',
+                    message: `[ezclassify] marking "${id}" is in a bucket the store cannot read: ${err instanceof Error ? err.message : String(err)}`,
+                    element: el,
+                },
+                null,
+            );
+            return;
+        }
+        // Set before its whole goes and cleared after one comes, so a marking
+        // is never a whole of the level in between.
+        const standalone = node.kind === 'part' && node.wholeId === undefined;
+        if (standalone) this.store.setStandalonePart(id, true);
+        if (node.kind === 'part') {
+            this.store.setPartOf(id, node.wholeId ?? null);
+        } else if (node.kind === 'whole') {
+            this.store.setPartOf(id, null);
+            this.store.setMembership(id, node.collectionId ?? null);
+            this.store.setNoRollup(id, !node.contributes);
+        }
+        if (!standalone) this.store.setStandalonePart(id, false);
+    }
+
+    /**
+     * Order the store's contributors as their elements stand in the document,
+     * so a roll-up that keeps the first or last value reads the page's order.
+     */
+    private orderByDocument(): void {
+        const elementOf = (id: string): Element | undefined => {
+            const host = this.markingHosts.get(id);
+            if (host) return host;
+            const scope = this.scopeWholes.get(id);
+            if (scope) return scope.root;
+            for (const [el, collection] of this.collections)
+                if (collection === id) return el;
+            return undefined;
+        };
+        this.store.setDocumentOrder((left, right) => {
+            const a = elementOf(left);
+            const b = elementOf(right);
+            if (!a || !b || a === b)
+                return left < right ? -1 : left > right ? 1 : 0;
+            return a.compareDocumentPosition(b) &
+                Node.DOCUMENT_POSITION_FOLLOWING
+                ? -1
+                : 1;
+        });
+    }
+
+    /**
+     * Derive the subtree under `el` again after a structural attribute changed
+     * (see {@link rederiveScope}), and then each part elsewhere on the page that
+     * names a whole inside it: whether that part is accepted depends on where
+     * its whole now sits.
+     */
+    private rederive(el: HTMLElement): void {
+        if (this._destroyed) return;
+        this.rederiveScope(el);
+        if (!this.root.contains(el)) return;
+        const wholes = new Set<string>();
+        for (const host of [
+            el,
+            ...Array.from(el.querySelectorAll<HTMLElement>('[id]')),
+        ])
+            if (host.id) wholes.add(host.id);
+        for (const part of Array.from(
+            this.root.querySelectorAll<HTMLElement>(`[${PART_OF_ATTR}]`),
+        )) {
+            if (el.contains(part)) continue;
+            const named = part.getAttribute(PART_OF_ATTR)?.trim();
+            if (named && wholes.has(named)) this.rederiveScope(part);
+        }
+    }
+
+    /**
+     * Derive again the markup whose reading depends on other elements, after
+     * elements that carry ids or collections came, went or were renamed: each
+     * element refused for what it names (a missing whole or collection, a whole
+     * of another Context, an id another host holds), and each part whose whole
+     * has left the page.
+     */
+    private rederiveDependents(): void {
+        if (this._destroyed) return;
+        const stale = new Set<HTMLElement>();
+        for (const [el, { error }] of this.hostErrors)
+            if (REFERENCE_ERRORS.has(error.code)) stale.add(el);
+        for (const [el, node] of this.bindingNodes)
+            if (
+                node.kind === 'part' &&
+                !node.error &&
+                node.wholeId &&
+                !el.ownerDocument.getElementById(node.wholeId)
             )
+                stale.add(el);
+        // Reading an element again that is still refused for the same reason
+        // tells the host nothing new.
+        const before = new Map<HTMLElement, string>();
+        for (const el of stale) {
+            const message = this.hostErrors.get(el)?.error.message;
+            if (message !== undefined) before.set(el, message);
+        }
+        this.rereadErrors = before;
+        try {
+            for (const el of stale)
+                if (el.isConnected && this.root.contains(el))
+                    this.rederiveScope(el);
+        } finally {
+            this.rereadErrors = null;
+        }
+    }
+
+    /**
+     * Derive the subtree under `el` again: tear down what this runtime built
+     * there and scan it afresh, so every host reads its new place in the tree.
+     * Hosts keep their DOM and their committed values; a draft is kept through
+     * teardown.
+     */
+    private rederiveScope(el: HTMLElement): void {
+        if (this._destroyed) return;
+        const scope = el === this.root || this.root.contains(el) ? el : null;
+        if (!scope) return;
+        // The scope itself counts when it still declares a binding, and when it
+        // has stopped declaring one this runtime had read: its enhancement goes.
+        const scopeRead =
+            scope !== this.root &&
+            (isBehaviorBound(scope) ||
+                this.isBuilt(scope) ||
+                this.bindingNodes.has(scope) ||
+                this.hostErrors.has(scope));
+        const affected = [
+            ...(scopeRead ? [scope] : []),
+            ...Array.from(scope.querySelectorAll<HTMLElement>(EZ_SELECTOR)),
+        ].filter((host) => isOwnedBy(host, this._instanceId));
+        for (const host of affected) {
+            if (this.isBuilt(host)) this.teardownElement(host);
+            this.clearHostError(host);
+            this.bindingNodes.delete(host);
+        }
+        for (const [container, id] of Array.from(this.collections))
+            if (scope.contains(container)) {
+                this.store.unregisterCollection(id);
+                this.collections.delete(container);
+            }
+        this.collectMarkingHosts(scope);
+        const behave = (host: HTMLElement, binding: BehaviorBinding) =>
+            this.bindBehavior(host, binding);
+        const view = (
+            host: HTMLElement,
+            controller: ControllerName,
+            options: Record<string, string>,
+        ) => this.attachView(host, controller, options);
+        if (scope !== this.root && isBehaviorBound(scope)) {
+            behave(scope, readBinding(scope));
+            const controller = scope.getAttribute('data-ezclassify-controller');
+            if (controller)
+                view(
+                    scope,
+                    controller as ControllerName,
+                    harvestControllerOptions(
+                        scope,
+                        controller as ControllerName,
+                    ),
+                );
+        }
+        scanElements(scope, this._instanceId, behave, view);
+        if (!this.initializing) rollup.updateRollup(this);
+    }
+
+    /** Whether this runtime built anything for `host`. */
+    private isBuilt(host: HTMLElement): boolean {
+        return (
+            this.mounted.has(host) ||
+            this.fields.includes(host as HTMLInputElement) ||
+            this.plainBehaviorCleanups.has(host) ||
+            this.storeUnsubscribers.has(host) ||
+            this.partOfMap.has(host) ||
+            (!!host.id && this.markingHosts.get(host.id) === host)
+        );
+    }
+
+    /**
+     * Join the enclosing instance's tree, inferred from the DOM: the nearest
+     * mount root above this one is the parent scope, and this scope's wholes
+     * are members of the parent's nearest collection enclosing this root. A
+     * disjoint mount has no parent and contributes to nothing. A root inside a
+     * `whole` container cannot be placed: the parent records a host error and
+     * this scope contributes nothing to it.
+     */
+    private registerWithParentScope(): void {
+        const parentRootEl = this.root.parentElement?.closest(
+            '[' + MOUNT_ROOT_ATTR + ']',
+        ) as HTMLElement | null;
+        const parentId = parentRootEl?.getAttribute(MOUNT_ROOT_ATTR) ?? null;
+        if (!parentRootEl || !parentId || parentId === this._instanceId) return;
+        const placed = placeNestedRoot(this.root, parentRootEl);
+        if (placed.error) {
+            registry.instanceById(parentId)?.reportHostError?.(placed.error);
+            return;
+        }
+        registry.addChild(
+            parentId,
+            this._instanceId,
+            this.asRegistryChild(placed.collectionId),
         );
     }
 
@@ -801,10 +1674,10 @@ export class EzClassifyUI {
     // ---------------------------------------------------------------------------
 
     /**
-     * This scope's last-computed per-scheme rendered wholes. The upstream
-     * contribution payload, read by a parent scope's rollup pass.
+     * This scope's last-computed page rollup, one whole per bucket. The
+     * upstream contribution payload, read by a parent scope's rollup pass.
      */
-    private _renderedByScheme = new Map<string, string>();
+    private _childWholes = new Map<BucketKey, ChildWhole>();
 
     /**
      * Run this scope's rollup immediately (no debounce). Invoked by a child's
@@ -814,22 +1687,133 @@ export class EzClassifyUI {
      * @internal
      */
     flushRollupNow(): void {
+        this.syncChildScopes();
         void rollup.flushRollupNow(this);
     }
 
     /**
-     * Receive this scope's per-scheme rendered wholes at the end of each rollup
-     * run. Record them, and, if the contribution changed (signature guard),
-     * synchronously notify the parent scope to re-aggregate. The signature
-     * guard prevents republish thrash when nothing actually moved.
+     * The wholes nested scopes contribute, by the marking id this scope's store
+     * holds each under: one per child scope and bucket.
+     */
+    private readonly scopeWholes = new Map<
+        string,
+        { key: string; root: HTMLElement; signature: string }
+    >();
+    private scopeWholeCounter = 0;
+
+    /**
+     * Carry each nested scope's rolled-up wholes into this scope's store, as
+     * wholes of the collection the scope sits in. A scope's page rollup is a
+     * whole in this tree: the store reads its facts the way it reads any
+     * whole's, in the same bucket, so a nested island and a field beside it
+     * roll up together and different buckets never merge. A whole a scope no
+     * longer contributes leaves the store.
+     *
+     * A child that holds one Context is read in the Context this scope resolves
+     * where the child's root stands. A child that names its Contexts by key is
+     * read under the same keys. A child this scope cannot place is a host error
+     * on the child's root, and this scope's levels read as incomplete.
+     */
+    private syncChildScopes(): void {
+        if (this._destroyed) return;
+        const live = new Set<string>();
+        const idByKey = new Map<string, string>();
+        for (const [id, whole] of this.scopeWholes) idByKey.set(whole.key, id);
+        for (const child of registry.childrenOf(this._instanceId)) {
+            for (const whole of child.childWholes().values()) {
+                const bucket = this.parentBucketOf(child, whole.bucket);
+                if (bucket === undefined) continue;
+                const key = `${child.instanceId}\u001f${bucket}`;
+                let id = idByKey.get(key);
+                if (!id) {
+                    id = `__ez-scope-${this._textIdSalt}-${this.scopeWholeCounter++}`;
+                    idByKey.set(key, id);
+                }
+                live.add(id);
+                const signature = signAssertions(whole.assertions);
+                const known = this.scopeWholes.get(id);
+                if (known?.signature === signature) continue;
+                if (!known) {
+                    this.store.setBucket(id, bucket);
+                    this.store.setMembership(id, child.collectionId);
+                }
+                this.scopeWholes.set(id, {
+                    key,
+                    root: child.root,
+                    signature,
+                });
+                void this.store
+                    .seedAssertions(id, whole.assertions)
+                    .catch((error: unknown) =>
+                        reportPublishFailure('nested scope', id, error),
+                    );
+            }
+        }
+        for (const id of Array.from(this.scopeWholes.keys())) {
+            if (live.has(id)) continue;
+            this.scopeWholes.delete(id);
+            this.store.releaseSeed(id);
+        }
+    }
+
+    /**
+     * The bucket in this scope a nested scope's bucket is read in, or
+     * undefined, after reporting a host error on the child's root, when this
+     * scope holds no such Context.
+     */
+    private parentBucketOf(
+        child: registry.RegistryChild,
+        childBucket: BucketKey,
+    ): BucketKey | undefined {
+        const { contextKey, schemeSelector } = bucketParts(childBucket);
+        let key = contextKey;
+        if (contextKey === SINGLE_CONTEXT_KEY) {
+            const resolved = this.contextForMount(child.root);
+            if (!resolved) return undefined;
+            key = resolved.contextKey;
+        }
+        const bucket = bucketKey(key, schemeSelector);
+        if (this.bucketsNamed(key, schemeSelector || null).includes(bucket))
+            return bucket;
+        this.reportHostError(
+            {
+                code: 'context-unresolved',
+                message: `[ezclassify] A nested EzClassifyUI marks in ${contextKey ? `Context '${contextKey}'` : 'its Context'}${schemeSelector ? `, scheme '${schemeSelector}'` : ''}, which this EzClassifyUI does not hold.`,
+                element: child.root,
+            },
+            null,
+        );
+        return undefined;
+    }
+
+    /**
+     * Receive this scope's page rollup, one whole per bucket, at the end of
+     * each rollup run. Record it, and, if the contribution changed (signature
+     * guard), synchronously notify the parent scope to re-aggregate. The
+     * signature guard prevents republish thrash when nothing actually moved.
      *
      * @internal
      */
-    onRollupComputed(renderedByScheme: Map<string, string>): void {
-        this._renderedByScheme = new Map(renderedByScheme);
-        // Build a stable signature of the per-scheme contribution.
-        const sig = Array.from(renderedByScheme.entries())
-            .map(([s, r]) => `${s}=${r}`)
+    onRollupComputed(
+        byBucket: ReadonlyMap<
+            BucketKey,
+            { rendered: string; assertions: EngineAssertion[] }
+        >,
+    ): void {
+        const wholes = new Map<BucketKey, ChildWhole>();
+        for (const [bucket, level] of byBucket)
+            wholes.set(bucket, {
+                bucket,
+                rendered: level.rendered,
+                assertions: level.assertions,
+            });
+        this._childWholes = wholes;
+        // A stable signature of the contribution: its facts, per bucket.
+        const sig = Array.from(wholes.values())
+            .map(
+                (whole) =>
+                    `${whole.bucket}=${signAssertions(whole.assertions)}`,
+            )
             .sort()
             .join('|');
         const prev = this._lastChildSig.get('@self');
@@ -840,15 +1824,19 @@ export class EzClassifyUI {
 
     /**
      * Whether the rollup this scope shows may be missing markings: a
-     * MarkedTextArea in it did not read all of its text, the store holds the
-     * page aggregate as stale, or a scope nested inside it says the same of the
-     * whole it contributes. A scope being torn down contributes nothing.
+     * MarkedTextArea in it did not read all of its text, an element's markup
+     * was refused, the store holds the page aggregate as stale, or a scope
+     * nested inside it says the same of the whole it contributes. A scope being
+     * torn down contributes nothing.
      */
     private rollupIncomplete(): boolean {
         if (this._destroyed) return false;
         return (
             this.incompleteScans.size > 0 ||
-            this.store.getAggregate().stale === true ||
+            this.hostErrors.size > 0 ||
+            Array.from(this.store.getAggregate().byBucket.values()).some(
+                (bucket) => bucket.stale === true,
+            ) ||
             registry
                 .childrenOf(this._instanceId)
                 .some((child) => child.incomplete?.() === true)
@@ -856,20 +1844,18 @@ export class EzClassifyUI {
     }
 
     /**
-     * Carry {@link rollupIncomplete} to the rollup field: while the rollup it
-     * holds may be missing markings, the field is invalid (custom validity and
-     * `aria-invalid`), and the enclosing scope is told so it can say the same
-     * of the whole it builds from this one. Clearing removes only the message
-     * this runtime set. Reads no engine: it only reports what is known.
+     * Carry {@link rollupIncomplete} to the outputs the host placed: while the
+     * rollup they hold may be missing markings, each is invalid (custom
+     * validity and `aria-invalid`), and the enclosing scope is told so it can
+     * say the same of the whole it builds from this one. Reads no engine: it
+     * only reports what is known.
      *
      * @internal
      */
     refreshIncomplete(fromRollup = false): void {
-        const field = this.rollupField;
-        if (!field) return;
         const incomplete = this.rollupIncomplete();
         if (incomplete === this.rollupIncompleteShown) return;
-        // Raised at once, cleared only by a rollup pass: the field may still
+        // Raised at once, cleared only by a rollup pass: an output may still
         // hold the value computed while something was unread, and only a pass
         // run after that recomputes it. Ask for one rather than wait for it.
         if (!incomplete && !fromRollup) {
@@ -878,51 +1864,30 @@ export class EzClassifyUI {
             return;
         }
         this.rollupIncompleteShown = incomplete;
-        if (incomplete) {
-            this.rollupValidity = t('rollup.incomplete');
-            field.setCustomValidity(this.rollupValidity);
-            field.setAttribute('aria-invalid', 'true');
-        } else {
-            // A field barred from constraint validation (the default hidden
-            // input) reports no message, so only a validated field can show
-            // that a host replaced this one.
-            if (
-                this.rollupValidity !== null &&
-                (!field.willValidate ||
-                    field.validationMessage === this.rollupValidity)
-            )
-                field.setCustomValidity('');
-            this.rollupValidity = null;
-            field.removeAttribute('aria-invalid');
-        }
+        rollup.setOutputsIncomplete(this, incomplete);
         registry.notifyParentIncomplete(this._instanceId);
     }
 
-    /** Tell every view mirroring `markingId` again whether it is unread. */
-    private refreshSourceViews(markingId: string): void {
-        for (const refresh of this.sourceIncompleteViews.get(markingId) ?? [])
-            refresh();
-    }
-
-    /** Whether a first-part-binding textarea left `markingId` unread. */
-    private markingUnread(markingId: string): boolean {
-        for (const bound of this.unreadFirstParts.values())
-            if (bound === markingId) return true;
-        return false;
-    }
-
-    /** The registry view of this instance: its current per-scheme wholes. */
-    private asRegistryChild(): registry.RegistryChild {
+    /**
+     * The registry view of this instance: its current wholes, one per bucket,
+     * as members of `collectionId` in the parent's tree.
+     */
+    private asRegistryChild(
+        collectionId: string | null,
+    ): registry.RegistryChild {
         return {
             instanceId: this._instanceId,
-            // What this scope's rollup field shows: raised at once, cleared by
+            root: this.root,
+            collectionId,
+            // What this scope's outputs show: raised at once, cleared by
             // the pass that recomputes the whole the parent reads.
             incomplete: () => !this._destroyed && this.rollupIncompleteShown,
-            childWholesByScheme: (): Map<string, ChildWhole> => {
-                const out = new Map<string, ChildWhole>();
-                for (const [schemeId, rendered] of this._renderedByScheme) {
-                    if (!rendered) continue;
-                    out.set(schemeId, { schemeId, rendered, assertions: [] });
+            childWholes: (): Map<BucketKey, ChildWhole> => {
+                const out = new Map<BucketKey, ChildWhole>();
+                for (const [bucket, whole] of this._childWholes) {
+                    if (!whole.rendered && whole.assertions.length === 0)
+                        continue;
+                    out.set(bucket, whole);
                 }
                 return out;
             },
@@ -1055,10 +2020,11 @@ export class EzClassifyUI {
         // Recurse the removed subtree first: a removed container must release every
         // enhanced descendant, not just its top node.
         host.querySelectorAll<HTMLElement>(
-            '[data-ezclassify-controller], [data-ezclassify-rendered]',
+            `[data-ezclassify-controller], [${MARKING_ATTR}]`,
         ).forEach((desc) => {
             if (desc !== host) this.teardownElement(desc);
         });
+        const epoch = this.hostEpochs.get(host);
 
         const input = host as HTMLInputElement;
 
@@ -1094,7 +2060,6 @@ export class EzClassifyUI {
 
         // Relationship maps.
         this.partOfMap.delete(host);
-        this.targetMap.delete(host);
 
         // Plain-behavior cleanups.
         const plainCleanup = this.plainBehaviorCleanups.get(host);
@@ -1135,9 +2100,13 @@ export class EzClassifyUI {
             // subscribers see it leave the aggregate, and forget the marking
             // id. Routed through the store, never a hostless parent-store
             // marking.
+            // A structural change may have registered the host again while
+            // its draft was being written; that registration stays.
+            if (this.hostEpochs.get(host) !== epoch) return;
             if (host.id && this.validMarkingIds.has(host.id)) {
                 this.store.setPartOf(host.id, null);
                 this.store.releaseSeed(host.id);
+                this.store.setStandalonePart(host.id, false);
                 this.markingHosts.delete(host.id);
                 this.validMarkingIds.delete(host.id);
                 this.seededMarkings.delete(host.id);
@@ -1149,9 +2118,15 @@ export class EzClassifyUI {
         if (write) void write.then(releaseStore);
         else releaseStore();
 
-        // Remove the orphan mount sibling if it is still attached.
+        // Remove the orphan mount sibling if it is still attached. A host that
+        // stays on the page (its markup changed, or `remove` was called) is
+        // shown again; a mount that still applies hides it when it remounts.
         const sibling = host.nextElementSibling as HTMLElement | null;
-        if (sibling?.hasAttribute('data-ezclassify-mount')) sibling.remove();
+        if (sibling?.hasAttribute('data-ezclassify-mount')) {
+            sibling.remove();
+            if (host.isConnected && host.style.display === 'none')
+                host.style.display = '';
+        }
 
         clearMountOwner(host);
 
@@ -1160,12 +2135,19 @@ export class EzClassifyUI {
     }
 
     /**
-     * Behavior pass: register engine wiring for an element. Tracks part-of /
-     * target relationships and (for plain inputs without a controller)
-     * registers the element as a rollup-contributing field. Never mutates the
-     * DOM beyond the single status wrapper required for plain enhanced inputs.
+     * Behavior pass: register engine wiring for an element. The binding model
+     * says where the element sits in the marking tree; a refused element is
+     * left unenhanced. Records part and whole placement in the store, and (for
+     * a plain marking input without a controller) registers the element as a
+     * rollup-contributing field. Never mutates the DOM beyond the single status
+     * wrapper required for plain enhanced inputs.
      */
     private bindBehavior(el: HTMLElement, binding: BehaviorBinding): void {
+        if (el.hasAttribute(COLLECTION_ATTR)) this.registerCollectionOf(el);
+        // Markup already refused (a duplicate marking id) stays unenhanced.
+        if (this.hostErrors.has(el)) return;
+        const node = this.nodeOf(el);
+        if (node.error) return;
         // A newly inserted sibling view can precede its host in the observer's
         // scan. Index its existing target before wiring the subscription.
         const targetId = binding.boundTo ?? binding.facetOf ?? binding.source;
@@ -1175,24 +2157,28 @@ export class EzClassifyUI {
             );
             if (target) this.collectMarkingHosts(target);
         }
-        if (binding.partOf) {
-            this.partOfMap.set(el, binding.partOf);
-            // Mirror the relationship into the store so whole-rollup subscribers can
-            // see this element contribute. Safe to call even when the element is
-            // not yet a registered marking host, setPartOf is idempotent and the
-            // store falls back to empty until a publish lands.
-            if (el.id && this.validMarkingIds.has(el.id))
-                this.store.setPartOf(el.id, binding.partOf);
-        }
+        // A part's whole comes from structure: its `whole` container or its
+        // `part-of`. A body editor that is not a marking itself routes its
+        // portions to the whole it sits in the same way.
+        if (node.kind === 'part' || node.kind === 'whole') {
+            // A marking is read in the bucket its Context and scheme resolve
+            // to. Markup that resolves none is a host error on the element,
+            // never a throw out of the scan; one still waiting on its
+            // Context's scheme list is read again once the list is in.
+            const resolved = this.contextForMount(el);
+            if (!resolved) return;
+            if (node.wholeId) this.partOfMap.set(el, node.wholeId);
+            this.placeMarking(el, node, resolved.bucket);
+        } else if (node.wholeId) this.partOfMap.set(el, node.wholeId);
         // A marking host with no controller is mounted by this step, after its
-        // part edge so its first read already reads it as a part.
+        // placement so its first read already reads it as a part.
         if (
             el.id &&
             this.markingHosts.get(el.id) === el &&
+            this.validMarkingIds.has(el.id) &&
             !el.hasAttribute('data-ezclassify-controller')
         )
             this.seedOnMount(el.id, el);
-        if (binding.target) this.targetMap.set(el, binding.target);
 
         // Non-input elements with data-ezclassify-source (e.g. <output>) mirror
         // a named marking's rendered string by subscribing to the in-memory store.
@@ -1203,6 +2189,10 @@ export class EzClassifyUI {
         // a subscription (storeUnsubscribers would be overwritten without calling
         // the old unsub). The two paths must be mutually exclusive per element.
         const hasController = !!el.getAttribute('data-ezclassify-controller');
+        if (isTranslatedView(el)) {
+            this.attachTranslatedView(el);
+            return;
+        }
         if (
             binding.source &&
             el.tagName !== 'INPUT' &&
@@ -1211,8 +2201,27 @@ export class EzClassifyUI {
         ) {
             const sourceId = binding.source;
             if (this.validMarkingIds.has(sourceId)) {
+                // A mirror that names scopes shows those scopes' own output,
+                // as a text view does (see writeInScopes): an authority block
+                // mirror shows the authority block, not the banner. Only the
+                // newest state's write is shown.
+                const viewScopes = parseScopeList(
+                    el.getAttribute('data-ezclassify-scope'),
+                );
+                let scopedWrite = 0;
                 const update = (s: EzClassifyState) => {
-                    el.textContent = s.rendered || EMPTY_VALUE;
+                    const write = ++scopedWrite;
+                    if (viewScopes.length === 0 || renderViewRefused(s)) {
+                        el.textContent = s.rendered || EMPTY_VALUE;
+                        return;
+                    }
+                    void this.writeInScopes(el, s.assertions, viewScopes)
+                        .catch(() => null)
+                        .then((text) => {
+                            if (write !== scopedWrite || this._destroyed)
+                                return;
+                            el.textContent = text || EMPTY_VALUE;
+                        });
                 };
                 const unsub = this.store.subscribe(sourceId, update);
                 this.storeUnsubscribers.set(el, unsub);
@@ -1221,15 +2230,13 @@ export class EzClassifyUI {
             return;
         }
 
-        // A plain <input> that's behavior-bound but has no controller becomes a
-        // rollup-contributing field directly. The view-pass tag-input path
-        // handles its own `this.fields` registration below.
+        // A native select that is a facet of a marking is a category picker:
+        // nothing else it could be, so it needs no opt-in.
         const controllerName = el.getAttribute('data-ezclassify-controller');
         const isPlainBehavior = !controllerName;
         if (
             isPlainBehavior &&
             el.tagName === 'SELECT' &&
-            binding.bind &&
             binding.facetOf &&
             binding.category &&
             this.validMarkingIds.has(binding.facetOf)
@@ -1241,9 +2248,20 @@ export class EzClassifyUI {
             );
             return;
         }
+        // A plain marking <input> with no controller is a rollup-contributing
+        // field; a view never is. A visible text input that is a marking, or
+        // edits one (`bound-to`), gets the validation helper; a hidden,
+        // checkbox or radio input only holds a value.
         if (isPlainBehavior && el.tagName === 'INPUT') {
             const input = el as HTMLInputElement;
-            if (!this.fields.includes(input)) this.fields.push(input);
+            const holdsMarking = node.kind === 'part' || node.kind === 'whole';
+            if (holdsMarking && !this.fields.includes(input))
+                this.fields.push(input);
+            const helped =
+                (holdsMarking || !!binding.boundTo) &&
+                input.type !== 'hidden' &&
+                input.type !== 'checkbox' &&
+                input.type !== 'radio';
             // Re-entrancy guard, and it must come BEFORE the wrap below.
             // `plainBehaviorCleanups` is this path's record of "already
             // enhanced": every bind branch registers an entry (even the input
@@ -1260,22 +2278,23 @@ export class EzClassifyUI {
             // check has to precede the DOM mutation: the identical guard
             // inside attachPlainInputBehavior sits after it and stops only the
             // duplicate listener wiring, not the wrapping.
-            if (binding.bind && !this.plainBehaviorCleanups.has(input)) {
+            if (helped && !this.plainBehaviorCleanups.has(input)) {
                 const priorParent = input.parentNode;
                 const nextSibling = input.nextSibling;
                 const statusWrap = document.createElement('span');
+                // Its layout is status-mark.css's, adopted with the mark.
                 statusWrap.className = 'ez-plain-field-wrap';
-                statusWrap.style.position = 'relative';
-                statusWrap.style.display = 'inline-block';
                 priorParent?.insertBefore(statusWrap, input);
                 statusWrap.appendChild(input);
                 ensureStatusMark(statusWrap, {
                     shape: 'input',
                     root: this.root,
                 });
-                // When bound-to names a registered marking, wire two-way store sync so
-                // sibling views (tag inputs, etc.) stay in step with this plain input.
-                const boundId = binding.boundTo;
+                // Wire two-way store sync with the marking the input holds or
+                // edits, so sibling views (tag inputs, etc.) stay in step with
+                // it and its commits reach the levels above it.
+                const boundId =
+                    binding.boundTo ?? (holdsMarking ? input.id : undefined);
                 const sb =
                     boundId && this.validMarkingIds.has(boundId)
                         ? this.makeStoreBinding(
@@ -1285,6 +2304,7 @@ export class EzClassifyUI {
                               undefined,
                           )
                         : null;
+                if (sb) this.helperInputs.add(input);
                 this.attachPlainInputBehavior(input, binding, sb);
                 const priorCleanup = this.plainBehaviorCleanups.get(input);
                 this.plainBehaviorCleanups.set(input, () => {
@@ -1383,9 +2403,10 @@ export class EzClassifyUI {
     }
 
     /**
-     * Wire the behavior-only `data-ezclassify-bind` path for plain inputs. When
-     * `storeBinding` is provided the input participates in a named marking via
-     * the store (publishes on commit, reflects sibling view commits back in).
+     * Wire a plain input that holds or views a marking without a controller.
+     * When `storeBinding` is provided the input participates in a named marking
+     * via the store (publishes on commit, reflects sibling view commits back
+     * in).
      */
     private attachPlainInputBehavior(
         input: HTMLInputElement,
@@ -1408,11 +2429,12 @@ export class EzClassifyUI {
         // sibling commits in this format. An input bound to a marking shows the
         // store's committed state, so its spelling is resolved to the output
         // the store's publishes can write.
-        const renderedIn = holdsPart(input)
-            ? this.defaultPartFormat
-            : this.defaultFormat;
+        const formats = this.formatsOf(input);
+        const renderedIn = holdsPart(input) ? formats.part : formats.whole;
         const spelled = resolveFormatAttr(input) || renderedIn;
-        const output = storeBinding ? this.outputNamed(spelled) : undefined;
+        const output = storeBinding
+            ? this.outputNamed(input, spelled)
+            : undefined;
         const fmt = output ?? spelled;
         // While this input commits, the store's answer to its own publish is
         // painted by the commit, which announces it the way a host form expects.
@@ -1435,15 +2457,12 @@ export class EzClassifyUI {
             fmt === renderedIn
                 ? { rendered: s.rendered, assessment: s.assessment }
                 : s.renders[fmt];
+        /** The scheme view of the Context this input resolves. */
+        const engineOf = () =>
+            schemeEngineOf(this.resolveContext(input), input);
         /** Write a committed state's facts in this input's format. */
-        const writeFacts = (s: EzClassifyState): Promise<RenderResult> =>
-            Promise.resolve(
-                this.schemeAddressing &&
-                    binding.scheme &&
-                    isAddressableSchemeEngine(this.engine)
-                    ? this.engine.render(s.assertions, fmt, binding.scheme)
-                    : this.engine.render(s.assertions, fmt),
-            );
+        const writeFacts = async (s: EzClassifyState): Promise<RenderResult> =>
+            engineOf().render(s.assertions, fmt);
         /**
          * Commit typed text as the marking's state: one publish, which is the
          * read every view of the marking shares, then that state as this input
@@ -1475,13 +2494,7 @@ export class EzClassifyUI {
         };
 
         const processText = (text: string) =>
-            this.schemeAddressing &&
-            binding.scheme &&
-            isAddressableSchemeEngine(this.engine)
-                ? this.engine.process(text, binding.scheme, {
-                      outputFormat: fmt,
-                  })
-                : this.engine.process(text, { outputFormat: fmt });
+            engineOf().process(text, { outputFormat: fmt });
 
         const commitValue = async (): Promise<void> => {
             const raw = input.value;
@@ -1496,7 +2509,6 @@ export class EzClassifyUI {
                         detail: {
                             assertions: [],
                             rendered: '',
-                            target: this.targetMap.get(input),
                         },
                     }),
                 );
@@ -1560,7 +2572,6 @@ export class EzClassifyUI {
                     detail: {
                         assertions: result.assertions,
                         rendered,
-                        target: this.targetMap.get(input),
                     },
                 }),
             );
@@ -1570,7 +2581,6 @@ export class EzClassifyUI {
             void commitValue();
         };
         input.addEventListener('blur', handleBlur);
-
         let storeUnsub: (() => void) | undefined;
         if (storeBinding) {
             // Reflect commits from other views (tag inputs, etc.) back into the input.
@@ -1723,9 +2733,15 @@ export class EzClassifyUI {
      * Undefined for a spelling only the engine can resolve, such as a format
      * that is one of a view's forms: such a field writes the committed facts
      * itself.
+     *
+     * @param el - The field, whose Context's scheme lists the outputs
+     * @param spelling - The format the field names
      */
-    private outputNamed(spelling: string): string | undefined {
-        const meta = this.engine.getSchemeMeta();
+    private outputNamed(el: HTMLElement, spelling: string): string | undefined {
+        const meta = schemeEngineOf(
+            this.resolveContext(el),
+            el,
+        ).getSchemeMeta();
         const outputs = meta.formats ?? [];
         return resolveOutput(
             outputs,
@@ -1820,7 +2836,185 @@ export class EzClassifyUI {
     }
 
     /**
-     * Warn when a control names a scope its category does not belong to.
+     * Whether a view's facts include one of a scope other than the scheme's
+     * default, by the scope its category belongs to.
+     *
+     * @param el - The view's host
+     * @param assertions - The facts the view publishes
+     */
+    private statesOtherScopes(
+        el: HTMLElement,
+        assertions: readonly EngineAssertion[],
+    ): boolean {
+        if (assertions.length === 0) return false;
+        const engine = schemeEngineOf(this.resolveContext(el), el);
+        const meta = engine.getSchemeMeta();
+        if (!meta.defaultScope) return false;
+        return reachesPastScopes(
+            assertions,
+            engine.listCategories(),
+            [meta.defaultScope],
+            meta,
+        );
+    }
+
+    /**
+     * The facts of a marking a component shows: those of the scopes it writes,
+     * the scheme's default scope when it lists none. A scheme with no default
+     * scope writes its marking whole, so every fact is shown.
+     *
+     * @param el - The component's host
+     * @param assertions - The marking's facts
+     */
+    private factsOfOwnScopes(
+        el: HTMLElement,
+        assertions: readonly EngineAssertion[],
+    ): EngineAssertion[] {
+        if (assertions.length === 0) return [];
+        const engine = schemeEngineOf(this.resolveContext(el), el);
+        return factsOfScopeSet(
+            assertions,
+            parseScopeList(el.getAttribute('data-ezclassify-scope')),
+            engine.listCategories(),
+            engine.getSchemeMeta(),
+        );
+    }
+
+    /**
+     * The categories a view writes: those of the scopes it lists, the scheme's
+     * default scope when it lists none, every category when the scheme declares
+     * no scopes.
+     *
+     * @param el - The view's host
+     */
+    private categoriesWritten(el: HTMLElement): string[] {
+        const engine = schemeEngineOf(this.resolveContext(el), el);
+        const categories = engine.listCategories();
+        const writes = writesCategoryOf(
+            parseScopeList(el.getAttribute('data-ezclassify-scope')),
+            categories,
+            engine.getSchemeMeta(),
+        );
+        return categories
+            .map((category) => category.id)
+            .filter((id) => writes(id));
+    }
+
+    /**
+     * Whether a view writes scopes other than the scheme's default scope alone,
+     * so its text is not the marking's default-scope text.
+     *
+     * @param el - The view's host
+     */
+    private writesPastDefaultScope(el: HTMLElement): boolean {
+        const listed = parseScopeList(el.getAttribute('data-ezclassify-scope'));
+        if (listed.length === 0) return false;
+        const meta = schemeEngineOf(
+            this.resolveContext(el),
+            el,
+        ).getSchemeMeta();
+        return listed.length > 1 || listed[0] !== meta.defaultScope;
+    }
+
+    /**
+     * The facts a view's publish leaves in the store: the held facts of the
+     * scopes it does not write, which its own facts cannot state (see
+     * {@link factsOutsideScopes}).
+     *
+     * @param el - The view's host
+     * @param held - The marking's facts in the store
+     * @param own - The facts the view publishes
+     */
+    private factsOfOtherScopes(
+        el: HTMLElement,
+        held: readonly EngineAssertion[],
+        own: readonly EngineAssertion[],
+    ): EngineAssertion[] {
+        if (held.length === 0) return [];
+        const engine = schemeEngineOf(this.resolveContext(el), el);
+        const meta = engine.getSchemeMeta();
+        return factsOutsideScopes(
+            held,
+            own,
+            engine.listCategories(),
+            scopeSetOf(
+                parseScopeList(el.getAttribute('data-ezclassify-scope')),
+                meta,
+            ),
+            meta,
+        );
+    }
+
+    /**
+     * A view's marking as the scopes it names write it: the facts that belong
+     * to those scopes, written in the output of the first of them in the
+     * scheme's declaration order, the view's own `data-ezclassify-format` when
+     * it names one. A marking spans its scopes, and the text a view of one
+     * scope reads is that scope's own surface, not the marking's whole text: an
+     * authority view shows the authority block, not the classification line
+     * beside it. Empty when no fact belongs to the named scopes.
+     *
+     * @param el - The view's host
+     * @param assertions - The marking's facts
+     * @param scopes - The scope ids the view names
+     * @returns The text the view shows, or null when the facts of the scopes
+     *   could not be written (see `writeFactsInScopes`)
+     */
+    private writeInScopes(
+        el: HTMLElement,
+        assertions: readonly EngineAssertion[],
+        scopes: readonly string[],
+    ): Promise<string | null> {
+        return writeFactsInScopes(
+            schemeEngineOf(this.resolveContext(el), el),
+            assertions,
+            scopes,
+            resolveFormatAttr(el),
+            holdsPart(el),
+        );
+    }
+
+    /**
+     * One bucket of a level view's marking as the scopes the view names write
+     * it, in that bucket's own scheme (see {@link writeInScopes}). The view's
+     * `data-ezclassify-format` applies to a bucket whose scheme lists that
+     * output; another bucket takes its own scheme's default for the scopes.
+     * Null, as for a write that fails, for a bucket with facts whose scheme no
+     * longer resolves.
+     *
+     * @param el - The view's host
+     * @param bucket - The bucket
+     * @param assertions - The bucket's facts
+     * @param scopes - The scope ids the view names
+     */
+    private writeBucketInScopes(
+        el: HTMLElement,
+        bucket: BucketKey,
+        assertions: readonly EngineAssertion[],
+        scopes: readonly string[],
+    ): Promise<string | null> {
+        const engine = this.bucketEngine(bucket);
+        if (!engine) return Promise.resolve(assertions.length > 0 ? null : '');
+        const meta = engine.getSchemeMeta();
+        const format = resolveFormatAttr(el);
+        const listed =
+            format &&
+            resolveOutput(
+                meta.formats ?? [],
+                format,
+                inDeclarationOrder(scopes, meta)[0],
+            ) !== undefined;
+        return writeFactsInScopes(
+            engine,
+            assertions,
+            scopes,
+            listed ? format : null,
+            false,
+        );
+    }
+
+    /**
+     * Warn when a control names only scopes its category does not belong to.
      *
      * `data-ezclassify-scope` on a control says which scope the author means
      * that control to author in. It is not what routes the assertions: the
@@ -1839,33 +3033,40 @@ export class EzClassifyUI {
      * Warn-once per element, like the scanner's own advisories.
      *
      * @param el - The control host being enhanced.
-     * @param opts - Its parsed options, carrying the declared scope and
+     * @param opts - Its parsed options, carrying the listed scopes and the
      *   category.
      */
     private warnOnScopeMismatch(
         el: HTMLElement,
         opts: Record<string, unknown>,
     ): void {
-        const declaredScope = opts.scope;
+        const listed = Array.isArray(opts.scopes)
+            ? (opts.scopes as string[])
+            : [];
         const categoryId = opts.categoryId;
-        if (typeof declaredScope !== 'string' || !declaredScope) return;
+        if (listed.length === 0) return;
         if (typeof categoryId !== 'string' || !categoryId) return;
         if (warnedScopeMismatch.has(el)) return;
 
-        const category = this.engine
+        const engine = schemeEngineOf(this.resolveContext(el), el);
+        const category = engine
             .listCategories()
             .find((c) => c.id === categoryId);
         // An unknown category is a different mistake, and the components report
         // it themselves with better context than this could.
         if (!category) return;
-        if (category.scopes?.includes(declaredScope)) return;
-
-        const defaultScope = this.engine.getSchemeMeta().defaultScope;
-        if (declaredScope === defaultScope) return;
+        const defaultScope = engine.getSchemeMeta().defaultScope;
+        if (
+            listed.some(
+                (scope) =>
+                    category.scopes?.includes(scope) || scope === defaultScope,
+            )
+        )
+            return;
 
         warnedScopeMismatch.add(el);
         console.warn(
-            `[ezclassify] control declares data-ezclassify-scope="${declaredScope}" for ` +
+            `[ezclassify] control declares data-ezclassify-scope="${listed.join(' ')}" for ` +
                 `category "${categoryId}", but the loaded scheme reports that category in ` +
                 `${category.scopes?.length ? `scope(s) ${category.scopes.join(', ')}` : 'no scope of its own'}. ` +
                 'Scope routing follows the scheme, not this attribute, so assertions from this ' +
@@ -1881,11 +3082,95 @@ export class EzClassifyUI {
      * create its mount container, and wire onChange callbacks. Called after
      * `bindBehavior` so the behavior layer is already in place.
      */
+    /**
+     * Mount a `data-ezclassify-translate` view: the marking it shows (its
+     * `source`) or the level it shows (its `aggregate`), in the bucket the view
+     * resolves, translated through the crosswalk it names. A view never
+     * contributes. Markup it refuses (a form control or controller host, no
+     * Context, no crosswalk to use) is a host error.
+     */
+    private attachTranslatedView(el: HTMLElement): void {
+        if (this.hostErrors.has(el) || this.mounted.has(el)) return;
+        const owner = getMountOwner(el);
+        if (owner && owner !== this._instanceId) return;
+        const resolved = this.contextForMount(el);
+        if (!resolved) return;
+        setMountOwner(el, this._instanceId);
+        const component = createHostComponent(el, null) as TranslatedView;
+        const container = createMountContainer(el, null);
+        this.mounted.set(el, component);
+        const show = (s: EzClassifyState) => {
+            component.setIncomplete(s.stale === true);
+            component.setAssertions(s.assertions);
+        };
+        const wire = () => {
+            if (this._destroyed || this.mounted.get(el) !== component) return;
+            if (el.hasAttribute('data-ezclassify-aggregate')) {
+                const raw =
+                    el.getAttribute('data-ezclassify-aggregate')?.trim() ?? '';
+                const levelId = (raw === 'true' ? '' : raw) || undefined;
+                const apply = (aggregate: EzClassifyAggregate) =>
+                    show(
+                        aggregate.byBucket.get(resolved.bucket) ?? {
+                            ...EMPTY_EZCLASSIFY_STATE,
+                        },
+                    );
+                this.storeUnsubscribers.set(
+                    el,
+                    this.store.subscribeAggregate(apply, levelId),
+                );
+                apply(this.store.getAggregate(levelId));
+                return;
+            }
+            const source = el.getAttribute('data-ezclassify-source');
+            if (source && this.validMarkingIds.has(source)) {
+                this.storeUnsubscribers.set(
+                    el,
+                    this.store.subscribe(source, show),
+                );
+                show(this.store.get(source));
+            }
+        };
+        const init = component
+            .init(container, resolved.context, {
+                schemeSelector: resolved.primary
+                    ? undefined
+                    : resolved.schemeSelector,
+            })
+            .then(wire)
+            .catch((err: unknown) => {
+                if (!(err instanceof TranslateHostError)) {
+                    console.error(
+                        '[ezclassify] A translated view failed to mount on',
+                        el,
+                        err,
+                    );
+                    return;
+                }
+                this.mounted.delete(el);
+                this.destroySafely(component);
+                this.reportHostError(
+                    {
+                        code: 'translate-refused',
+                        message: `[ezclassify] ${err.message}`,
+                        element: el,
+                    },
+                    null,
+                );
+            });
+        this._pendingInits.push(init);
+    }
+
     private attachView(
         el: HTMLElement,
         controller: ControllerName,
         rawOptions: Record<string, string>,
     ): void {
+        // Markup the binding model refused stays unenhanced.
+        if (this.hostErrors.has(el)) return;
+        // A translated view mounts on the behavior pass, whatever controller
+        // its host also names (the view refuses one as a host error).
+        if (isTranslatedView(el)) return;
         // Defense-in-depth claim guard (non-optional): if this host is already
         // owned by a DIFFERENT live instance, do not re-enhance it. The scanner
         // boundary is the primary defense; this guards the residual races (a stale
@@ -1893,6 +3178,17 @@ export class EzClassifyUI {
         // handled by the dedup guards below.
         const currentOwner = getMountOwner(el);
         if (currentOwner && currentOwner !== this._instanceId) return;
+
+        // The Context the component marks with, from the nearest
+        // `data-ezclassify-context` (or the only Context) and the nearest
+        // `data-ezclassify-scheme` (or the primary scheme). An element that
+        // resolves none stays unenhanced as a host error. A reference drawer
+        // shows every Context the instance holds and marks in none, so it
+        // resolves no Context of its own.
+        if (this.mounted.has(el)) return;
+        const drawer = controller === 'context-reference';
+        const resolved = drawer ? null : this.contextForMount(el);
+        if (!drawer && !resolved) return;
 
         // Skip duplicates
         if (controller === 'tags') {
@@ -1922,25 +3218,20 @@ export class EzClassifyUI {
 
         // Marking-id this view binds through the store. `bound-to` means the
         // whole marking; `facet-of` means one category slice. Either resolves
-        // to a host element with `data-ezclassify-rendered`; if the host isn't
-        // present in the DOM (free-floating hint), `storeBinding` stays null
-        // and the view contributes through the rollup only.
+        // to a marking host; if the host isn't present in the DOM
+        // (free-floating hint), `storeBinding` stays null.
         //
-        // Standalone controls are indexed before the view pass, including any
-        // source view that precedes its control in DOM order.
-        const autoSelfHost = this.isStandaloneMarkingHost(el, controller);
-
-        // A controller hosted on its OWN `data-ezclassify-rendered` element (no
-        // bound-to / facet-of) self-publishes under its own id. This is the
-        // path the MarkedTextArea uses for its per-part hidden fields; each
-        // hidden box is a marking object in its own right (binding-model §16),
-        // and its commits need to land in the store so the page aggregate and
-        // its parent's whole-rollup pick them up. Standalone marking controllers take the same self-renders path implicitly,
-        // they don't require the consumer to write `data-ezclassify-rendered`.
+        // Marking hosts are indexed before the view pass, including any source
+        // view that precedes its control in DOM order.
+        //
+        // A controller that is a marking host (no bound-to / facet-of)
+        // self-publishes under its own id. This is the path the MarkedTextArea
+        // uses for its per-part hidden fields; each hidden box is a marking
+        // object in its own right (binding-model §16), and its commits need to
+        // land in the store so the levels above it pick them up. Marking
+        // controllers take the same path without `data-ezclassify-marking`.
         const selfRenderedId =
-            (el.hasAttribute('data-ezclassify-rendered') || autoSelfHost) &&
-            el.id &&
-            this.validMarkingIds.has(el.id)
+            isMarkingHost(el) && el.id && this.validMarkingIds.has(el.id)
                 ? el.id
                 : undefined;
         const storeMarkingId = boundToId ?? facetOfId ?? selfRenderedId;
@@ -1983,6 +3274,8 @@ export class EzClassifyUI {
             el.hasAttribute('data-marked-textarea-field')
         ) {
             this.publishStructurally(storeBinding);
+        } else if (storeBinding && controller === 'hidden' && !facetOfId) {
+            this.publishUnwrittenFacts(storeBinding);
         }
 
         // Parse the harvested options bag into typed component options.
@@ -2021,11 +3314,10 @@ export class EzClassifyUI {
                 this.settingValue = false;
             }
             rollup.updateRollup(this);
-            const target = this.targetMap.get(el);
             el.dispatchEvent(
                 new CustomEvent('ezclassify:change', {
                     bubbles: true,
-                    detail: { assertions, rendered, target },
+                    detail: { assertions, rendered },
                 }),
             );
             // marked-textarea publishes from its own input listener; its
@@ -2061,6 +3353,17 @@ export class EzClassifyUI {
                 this.store
                     .get(facetOfId)
                     .assertions.filter((a) => a.categoryId !== facetCategory);
+            // Named now: by the time a refusal is said, the Context may be gone.
+            const writes =
+                resolveFormatAttr(el) ||
+                this.formatsOf(el)[holdsPart(el) ? 'part' : 'whole'];
+            componentOpts.resolveFacetRefusal = () => {
+                const held = this.store.get(facetOfId);
+                return renderViewRefused(held) &&
+                    this.facetSpeaksFor(el, facetOfId)
+                    ? renderViewRefusalMessages(writes, held)
+                    : [];
+            };
         }
 
         const wholeId = facetOfId ? undefined : storeMarkingId;
@@ -2092,6 +3395,10 @@ export class EzClassifyUI {
                 }
                 return { role: 'part' };
             };
+        } else if (showsStandalonePart(el)) {
+            // With no whole on the page, rules that ask about the whole stay
+            // unresolved and the whole's own rules never judge the part.
+            componentOpts.resolveContext = () => ({ role: 'part' });
         }
 
         // TagInput-specific options. The explicit render format is not among
@@ -2100,13 +3407,6 @@ export class EzClassifyUI {
         // whole-format resolution still applies when none is declared and every
         // other controller honors the attribute the same way.
         if (controller === 'tags') {
-            const scope = el.getAttribute('data-ezclassify-scope');
-            if (scope) componentOpts.scope = scope;
-            const collapseAttr = rawOptions['collapse-at'];
-            if (collapseAttr) {
-                const n = parseInt(collapseAttr, 10);
-                if (Number.isFinite(n)) componentOpts.collapseThreshold = n;
-            }
             // Category color coding is on by default; author opts out with
             // data-ezclassify-tags-color-coding="false".
             if ('color-coding' in rawOptions)
@@ -2114,60 +3414,29 @@ export class EzClassifyUI {
                     rawOptions['color-coding'] !== 'false';
         }
 
-        // Hidden / marked-textarea pass their controller-specific `format` option
-        // through as the render format / hidden-render format respectively.
-        if (
-            controller === 'hidden' &&
-            typeof rawOptions['format'] === 'string' &&
-            !componentOpts.formatId
-        ) {
-            componentOpts.formatId = rawOptions['format'];
-        }
-        if (
-            controller === 'marked-textarea' &&
-            typeof rawOptions['format'] === 'string'
-        ) {
-            componentOpts.hiddenFormat = rawOptions['format'];
-        }
-
         // Marked-textarea specific options. Per binding-model §16, hidden part
         // markings are part-of the textarea's own marking (not the page rollup).
         // Resolve which marking the parts chain into, in priority order:
         //   1. data-ezclassify-bound-to=X: the textarea writes to X
-        //   2. data-ezclassify-rendered + el.id: the textarea IS marking el.id
-        //   3. data-ezclassify-part-of=X: the textarea is a pass-through
-        //      to X (it isn't itself a marking host), so parts chain straight
-        //      up to X. Without this, a textarea with only part-of would route
-        //      parts to its DOM id, leaving X's whole-rollup empty.
+        //   2. data-ezclassify-marking + el.id: the textarea IS marking el.id
+        //   3. the whole it sits in (its `whole` container or `part-of`): the
+        //      textarea is a pass-through to that whole (it isn't itself a
+        //      marking host), so parts chain straight up to it. Without this,
+        //      its parts would route to its DOM id, leaving the whole's rollup
+        //      empty.
         //   4. el.id: fallback for parts that
         //      have no declared parent.
         if (controller === 'marked-textarea') {
             componentOpts.entryStoreManaged =
                 !!storeBinding &&
-                !el.hasAttribute('data-ezclassify-first-part-binding') &&
                 !!(
                     this.store.getEntryIds &&
                     this.store.setEntryIds &&
                     this.store.subscribeEntries
                 );
-            // `data-ezclassify-first-part-binding="<id>"` wires only the first
-            // part the MTA creates to the named marking id. Subsequent parts
-            // are standalone; they don't contribute to that marking. This lets a
-            // part-marked body demonstrate that each part is its own marking
-            // while still keeping one anchor part in sync with a shared view.
-            const firstPartBindingId = el.getAttribute(
-                'data-ezclassify-first-part-binding',
-            );
-            const hasSelfRenderedHost = el.hasAttribute(
-                'data-ezclassify-rendered',
-            );
             const textareaMarkingId =
-                // When first-part-binding is active, don't promote bound-to to partOfId,
-                // the textarea itself doesn't bind, only its first hidden part does.
-                (firstPartBindingId
-                    ? null
-                    : el.getAttribute('data-ezclassify-bound-to')) ||
-                (hasSelfRenderedHost ? el.id : undefined) ||
+                el.getAttribute('data-ezclassify-bound-to') ||
+                (isMarkingHost(el) ? el.id : undefined) ||
                 partOfId ||
                 el.id;
             if (textareaMarkingId) componentOpts.partOfId = textareaMarkingId;
@@ -2179,10 +3448,7 @@ export class EzClassifyUI {
             const contributorId =
                 el.id ||
                 `__ez-marked-textarea-${this._textIdSalt}-${this._textIdCounter++}`;
-            componentOpts.onScanCompleteness = (
-                complete: boolean,
-                firstPortionRead: boolean,
-            ) => {
+            componentOpts.onScanCompleteness = (complete: boolean) => {
                 // destroy() clears every record itself: the store can outlive
                 // this runtime, and a record left behind would flag rollups no
                 // field can clear.
@@ -2195,28 +3461,8 @@ export class EzClassifyUI {
                     wholeId,
                     !complete,
                 );
-                // The marking the first portion is bound to holds what that
-                // portion last committed. A scan that read no portion has not
-                // read what it holds now, so its views say it may be
-                // incomplete.
-                if (firstPartBindingId) {
-                    const unread = !complete && !firstPortionRead;
-                    if (unread !== this.unreadFirstParts.has(contributorId)) {
-                        if (unread)
-                            this.unreadFirstParts.set(
-                                contributorId,
-                                firstPartBindingId,
-                            );
-                        else this.unreadFirstParts.delete(contributorId);
-                        this.refreshSourceViews(firstPartBindingId);
-                    }
-                }
                 this.refreshIncomplete();
             };
-
-            // Track the first hidden field to reset the binding slot when it is torn down
-            // and a new first part is created after the user edits the body.
-            let firstPartEl: HTMLElement | null = null;
 
             componentOpts.registerHiddenField = (
                 hiddenEl: HTMLElement,
@@ -2229,31 +3475,12 @@ export class EzClassifyUI {
                     'data-ezclassify-controller',
                 );
                 if (ctrl === 'hidden') {
-                    // First-part-binding: the first hidden field binds directly to the
-                    // designated marking id. Later parts stay standalone; they don't
-                    // contribute to that marking (no part-of, no bound-to to sharedId).
-                    if (firstPartBindingId && !firstPartEl) {
-                        hiddenEl.setAttribute(
-                            'data-ezclassify-bound-to',
-                            firstPartBindingId,
-                        );
-                        hiddenEl.removeAttribute('data-ezclassify-part-of');
-                        firstPartEl = hiddenEl;
-                    }
                     // Register this part as a marking host before bindBehavior runs so
                     // attachView's self-rendered path sees its id in validMarkingIds and
                     // wires it through the store. Without this step the part's edits
                     // never enter the page aggregate or its parent's whole-rollup.
                     this.collectMarkingHosts(hiddenEl);
-                    this.bindBehavior(hiddenEl, {
-                        bind: hiddenEl.hasAttribute('data-ezclassify-bind'),
-                        partOf:
-                            hiddenEl.getAttribute('data-ezclassify-part-of') ??
-                            undefined,
-                        target:
-                            hiddenEl.getAttribute('data-ezclassify-target') ??
-                            undefined,
-                    });
+                    this.bindBehavior(hiddenEl, readBinding(hiddenEl));
                     this.attachView(
                         hiddenEl,
                         'hidden',
@@ -2269,9 +3496,6 @@ export class EzClassifyUI {
                 hiddenEl: HTMLElement,
             ): void => {
                 if (this._destroyed) return;
-                // Reset the first-part slot so the next registerHiddenField call
-                // re-wires the first available part as the primary bound part.
-                if (hiddenEl === firstPartEl) firstPartEl = null;
                 // Tear down the per-part store wiring the registerHiddenField path
                 // set up. Order matters: drop the part-of edge first so any
                 // recompute triggered by the publish below isn't using a stale parent.
@@ -2290,8 +3514,9 @@ export class EzClassifyUI {
                     this.storeUnsubscribers.delete(hiddenEl);
                 }
                 this.partOfMap.delete(hiddenEl);
-                this.targetMap.delete(hiddenEl);
                 this.mounted.delete(hiddenEl);
+                this.bindingNodes.delete(hiddenEl);
+                this.clearHostError(hiddenEl);
             };
         }
 
@@ -2304,13 +3529,18 @@ export class EzClassifyUI {
         if (storeBinding && !facetOfId && storeMarkingId)
             this.draftHosts.set(component, storeMarkingId);
 
-        // Hand the component the same source the host injected: the composed
-        // context when there is one, the bare scheme adapter otherwise.
-        const initPromise = component.init(
-            container,
-            this._context ?? this.engine,
-            componentOpts,
-        );
+        // The component marks with the Context its element resolved.
+        const initPromise = drawer
+            ? (component as ContextReference).init(
+                  container,
+                  this.referenceSource(),
+                  componentOpts,
+              )
+            : component.init(
+                  container,
+                  contextForScheme(resolved!, el),
+                  componentOpts,
+              );
 
         if (componentOpts.resolveParts && wholeId) {
             // A part committing changes what the whole has to cover, so the
@@ -2491,11 +3721,18 @@ export class EzClassifyUI {
                     ? null
                     : el.getAttribute('data-ezclassify-source');
                 // A view that can say its value may be missing markings (the
-                // banner) is told so: a rollup the store flags stale, or a
-                // marking bound to text nobody has read.
+                // banner) is told so: a value the store flags stale.
                 const showIncomplete = (
                     component as { setIncomplete?: (value: boolean) => void }
                 ).setIncomplete?.bind(component);
+                // A view that names scopes shows those scopes' own output (see
+                // writeInScopes). Only the newest state's write is shown.
+                const writesText =
+                    controller === 'text' || controller === 'banner';
+                const viewScopes = writesText
+                    ? parseScopeList(el.getAttribute('data-ezclassify-scope'))
+                    : [];
+                let scopedWrite = 0;
                 const applyState = (s: EzClassifyState) => {
                     // Body editors (marked-input, marked-textarea) own their content,
                     // pushing aggregate/source state into them would overwrite the user's
@@ -2506,21 +3743,56 @@ export class EzClassifyUI {
                         controller === 'marked-textarea'
                     )
                         return;
-                    showIncomplete?.(
-                        s.stale === true ||
-                            (source !== null && this.markingUnread(source)),
-                    );
+                    // A refused state's text is the engine's marker, which no
+                    // view reads: the text says the facts could not be written,
+                    // and a banner shows no marking and says it may be missing.
+                    const refused = renderViewRefused(s);
+                    showIncomplete?.(s.stale === true || refused);
                     // setAssertions() only re-renders; it never reads the marking,
                     // so read-derived state freezes at mount time: the text
                     // controller's validity/aria-invalid, and the banner's
                     // displayColor for rule-driven schemes. Route both through
                     // setValue(rendered), which reads the marking with validate,
                     // so that state tracks.
-                    if (
+                    const write = ++scopedWrite;
+                    // A view writes its own scopes, the default one when it
+                    // lists none (see scopesToWrite).
+                    const scopes =
+                        writesText && !refused
+                            ? scopesToWrite(
+                                  schemeEngineOf(this.resolveContext(el), el),
+                                  viewScopes,
+                                  s.assertions ?? [],
+                              )
+                            : viewScopes;
+                    if (refused && controller === 'text') {
+                        component!.setAssertions(s.assertions ?? []);
+                    } else if (
+                        scopes.length > 0 &&
+                        typeof component.setValue === 'function'
+                    ) {
+                        const setValue = component.setValue.bind(component);
+                        void this.writeInScopes(
+                            el,
+                            refused ? [] : s.assertions,
+                            scopes,
+                        )
+                            .catch(() => null)
+                            .then((text) => {
+                                if (write !== scopedWrite || this._destroyed)
+                                    return;
+                                // Facts the scopes hold but no write shows
+                                // leave the view's value incomplete.
+                                if (text === null) showIncomplete?.(true);
+                                void setValue(text ?? '');
+                            });
+                    } else if (
                         (controller === 'text' || controller === 'banner') &&
                         typeof component.setValue === 'function'
                     ) {
-                        void component.setValue(s.rendered ?? '');
+                        void component.setValue(
+                            refused ? '' : (s.rendered ?? ''),
+                        );
                     } else {
                         component!.setAssertions(s.assertions ?? []);
                     }
@@ -2532,22 +3804,119 @@ export class EzClassifyUI {
                     const rawWhole =
                         el.getAttribute('data-ezclassify-aggregate')?.trim() ??
                         '';
-                    const wholeId = rawWhole === 'true' ? '' : rawWhole;
-                    if (wholeId) {
-                        // Per-whole rollup: parts only.
-                        const unsub = this.store.subscribeWholeRollup(
-                            wholeId,
-                            applyState,
+                    // The level: a whole (its parts' rollup), a collection (its
+                    // members'), or the page when the value is empty.
+                    const levelId =
+                        (rawWhole === 'true' ? '' : rawWhole) || undefined;
+                    // A level view filters buckets by its own attributes only:
+                    // a default set on an outer element must not hide a bucket.
+                    const named = () =>
+                        this.bucketsNamed(
+                            el.getAttribute(CONTEXT_ATTR),
+                            el.getAttribute(SCHEME_ATTR),
                         );
-                        this.storeUnsubscribers.set(el, unsub);
-                        applyState(this.store.getWholeRollup(wholeId));
-                    } else {
-                        // Page aggregate: everything.
-                        const unsub = this.store.subscribeAggregate(applyState);
-                        this.storeUnsubscribers.set(el, unsub);
-                        applyState(this.store.getAggregate());
-                    }
-                    el.setAttribute('data-ezclassify-no-rollup', '');
+                    const showsBuckets = (
+                        component as {
+                            setBuckets?: (
+                                buckets: readonly StatusBannerBucket[],
+                            ) => void;
+                        }
+                    ).setBuckets?.bind(component);
+                    const applyLevel = (aggregate: EzClassifyAggregate) => {
+                        const buckets = named();
+                        const shown = shownBuckets(aggregate, buckets);
+                        // A view that can name buckets names each one whenever
+                        // the level could hold more than one, so a lone marking
+                        // never reads as the only Context's.
+                        if (
+                            buckets.length > 1 &&
+                            shown.length > 0 &&
+                            showsBuckets
+                        ) {
+                            // Every bucket on its own labeled line, in its own
+                            // scheme's colors. Buckets never merge.
+                            const lines = shown.map(([key, state]) => ({
+                                key,
+                                label: this.bucketLabel(key),
+                                rendered: state.rendered,
+                                colors: state.displayColor ?? null,
+                                stale: state.stale === true,
+                            }));
+                            showIncomplete?.(
+                                shown.some(([, state]) => state.stale === true),
+                            );
+                            // Each bucket is shown as the view's scopes write
+                            // it in its own scheme: the listed ones, else that
+                            // scheme's default (see scopesToWrite).
+                            const bucketScopes = shown.map(([key, state]) => {
+                                if (viewScopes.length > 0) return viewScopes;
+                                const engine = this.bucketEngine(key);
+                                return engine && !renderViewRefused(state)
+                                    ? scopesToWrite(
+                                          engine,
+                                          viewScopes,
+                                          state.assertions,
+                                      )
+                                    : [];
+                            });
+                            if (bucketScopes.every((s) => s.length === 0)) {
+                                showsBuckets(lines);
+                                return;
+                            }
+                            // Shown once every write lands.
+                            const write = ++scopedWrite;
+                            void Promise.all(
+                                shown.map(([key, state], at) =>
+                                    bucketScopes[at]!.length === 0
+                                        ? Promise.resolve(lines[at]!.rendered)
+                                        : this.writeBucketInScopes(
+                                              el,
+                                              key,
+                                              renderViewRefused(state)
+                                                  ? []
+                                                  : state.assertions,
+                                              bucketScopes[at]!,
+                                          ).catch(() => null),
+                                ),
+                            ).then((texts) => {
+                                if (write !== scopedWrite || this._destroyed)
+                                    return;
+                                // A bucket with facts that no write shows is a
+                                // blank line, so the view says it may be
+                                // missing markings.
+                                showIncomplete?.(
+                                    lines.some((line) => line.stale) ||
+                                        texts.some((text) => text === null),
+                                );
+                                showsBuckets(
+                                    lines.map((line, at) => ({
+                                        ...line,
+                                        rendered: texts[at] ?? '',
+                                    })),
+                                );
+                            });
+                            return;
+                        }
+                        showsBuckets?.([]);
+                        if (shown.length <= 1) {
+                            applyState(
+                                shown[0]?.[1] ?? { ...EMPTY_EZCLASSIFY_STATE },
+                            );
+                            return;
+                        }
+                        // Several buckets and a view that shows one: showing
+                        // any one of them would hide the others.
+                        applyState({
+                            ...EMPTY_EZCLASSIFY_STATE,
+                            stale: true,
+                        });
+                    };
+                    const unsub = this.store.subscribeAggregate(
+                        applyLevel,
+                        levelId,
+                    );
+                    this.storeUnsubscribers.set(el, unsub);
+                    applyLevel(this.store.getAggregate(levelId));
                 } else {
                     if (source) {
                         // A marking-id reference: mirror that named marking.
@@ -2556,21 +3925,7 @@ export class EzClassifyUI {
                                 source,
                                 applyState,
                             );
-                            let views = this.sourceIncompleteViews.get(source);
-                            if (!views) {
-                                views = new Set();
-                                this.sourceIncompleteViews.set(source, views);
-                            }
-                            const refresh = () =>
-                                showIncomplete?.(
-                                    this.store.get(source).stale === true ||
-                                        this.markingUnread(source),
-                                );
-                            views.add(refresh);
-                            this.storeUnsubscribers.set(el, () => {
-                                unsub();
-                                views.delete(refresh);
-                            });
+                            this.storeUnsubscribers.set(el, unsub);
                             applyState(this.store.get(source));
                         }
                         // Free-floating hint: no marking host registered. Leave blank.
@@ -2623,7 +3978,11 @@ export class EzClassifyUI {
             lastSeenViewSignature: '',
             viewRequest: 0,
             lastSeenFacetSig: '',
+            publishesFacts: false,
             publish: (assertions: EngineAssertion[], rendered: string) => {
+                // A torn-down runtime publishes nothing; the Context it read
+                // through may be gone with it.
+                if (this._destroyed) return;
                 if (isFacet) {
                     const cat = category ?? '';
                     const filtered = assertions.filter(
@@ -2645,8 +4004,69 @@ export class EzClassifyUI {
                         )
                         .catch(() => {});
                 } else {
+                    // A marking's text states its default scope only, so a
+                    // view of other scopes, one whose facts reach past the
+                    // default (a decision flow across scopes, a text field
+                    // holding a fact of another scope), or one bound to a
+                    // marking that holds facts of other scopes publishes its
+                    // facts, which keep every scope. Its text would lose them.
+                    handle.publishesFacts ||=
+                        this.writesPastDefaultScope(el) ||
+                        this.statesOtherScopes(el, assertions) ||
+                        this.statesOtherScopes(
+                            el,
+                            this.store.get(markingId).assertions,
+                        );
+                    if (handle.publishesFacts) {
+                        // The view states the facts of its own scopes only,
+                        // so the store keeps the ones of every other scope.
+                        const facts = [
+                            ...this.factsOfOtherScopes(
+                                el,
+                                this.store.get(markingId).assertions,
+                                assertions,
+                            ),
+                            ...assertions,
+                        ];
+                        const sig = signAssertions(facts);
+                        if (sig === handle.lastSeenFacetSig) return;
+                        handle.lastSeenFacetSig = sig;
+                        handle.lastSeenRendered = rendered;
+                        this.store
+                            .publishAssertions(markingId, facts, token)
+                            .catch(() => {});
+                        return;
+                    }
                     if (rendered === handle.lastSeenRendered) return;
                     handle.lastSeenRendered = rendered;
+                    // A value the engine read in full goes to the store as
+                    // its facts. Its text would be read again as stated
+                    // throughout, so a value a rule added would reach every
+                    // other view as the author's own, with no change to
+                    // explain. Text the engine could not read stays text, on
+                    // either side: a marking whose text the store could not
+                    // read takes no category edit (see publishAssertions), so
+                    // only a text replaces it.
+                    const view: ComponentInstance | undefined =
+                        this.mounted.get(el) ??
+                        this.autocompleters.get(el as HTMLInputElement);
+                    const held = this.store.get(markingId).recognition;
+                    if (
+                        assertions.length > 0 &&
+                        view?.readsWhole?.() &&
+                        (held === undefined || held.status === 'complete')
+                    ) {
+                        // The view states every category it writes, as its
+                        // text would: one it left empty is cleared, and one
+                        // equal to the committed value still replaces an edit
+                        // on the wire.
+                        this.store
+                            .publishAssertions(markingId, assertions, token, {
+                                categories: this.categoriesWritten(el),
+                            })
+                            .catch(() => {});
+                        return;
+                    }
                     this.store
                         .publishRendered(markingId, rendered, token)
                         .catch(() => {});
@@ -2704,13 +4124,7 @@ export class EzClassifyUI {
         category: string | undefined,
     ): void {
         const host = binding.token.token as HTMLElement;
-        if (
-            !isFacet &&
-            this.isStandaloneMarkingHost(
-                host,
-                host.getAttribute('data-ezclassify-controller'),
-            )
-        )
+        if (!isFacet && isMarkingController(host))
             binding.lastSeenRendered = component.getRendered();
         const applyState = (state: EzClassifyState) => {
             if (isFacet) {
@@ -2731,9 +4145,26 @@ export class EzClassifyUI {
                     source: 'user' as const,
                 }));
                 component.setAssertions(promoted);
+            } else if (binding.publishesFacts) {
+                // The view publishes facts, so its own echo is the same facts.
+                const sig = signAssertions(state.assertions);
+                if (sig === binding.lastSeenFacetSig) return;
+                binding.lastSeenFacetSig = sig;
+                binding.lastSeenRendered = state.rendered;
+                if (!state.valid && component.applyStoreState) {
+                    component.applyStoreState(state);
+                    return;
+                }
+                component.setAssertions(
+                    this.factsOfOwnScopes(host, state.assertions ?? []),
+                );
             } else {
                 if (state.rendered === binding.lastSeenRendered) return;
-                binding.lastSeenRendered = state.rendered;
+                // A refused state's text is the engine's marker. The field
+                // still holds its last value, so that stays the value this
+                // binding has seen and the field's echo of it publishes nothing.
+                if (!renderViewRefused(state))
+                    binding.lastSeenRendered = state.rendered;
                 // Unknown text has no assertion identity. Keep the canonical
                 // reading intact so a receiver cannot echo a shortened or
                 // empty marking over the input the engine refused.
@@ -2754,7 +4185,15 @@ export class EzClassifyUI {
                 // the receiver's view format. Interactive components reprocess the
                 // assertions and the binding's lastSeenRendered guard absorbs that
                 // subscriber-driven onChange echo.
-                component.setAssertions(state.assertions ?? []);
+                //
+                // A component shows the facts of the scopes it writes, the
+                // scheme's default scope when it lists none, whatever else the
+                // marking holds. Its echo of them states the same marking, so
+                // the facts guard absorbs it once its publish keeps the rest.
+                binding.lastSeenFacetSig = signAssertions(state.assertions);
+                component.setAssertions(
+                    this.factsOfOwnScopes(host, state.assertions ?? []),
+                );
             }
         };
 
@@ -2764,6 +4203,17 @@ export class EzClassifyUI {
             binding.token,
         );
         this.hydrateFromStore(binding.markingId, applyState);
+
+        // Whether a marking could be written is known once the store has
+        // committed it, and a facet's own publish is not echoed back to it, so
+        // this listens with no publisher's identity.
+        const refreshRefusal = isFacet
+            ? component.refreshFacetRefusal?.bind(component)
+            : undefined;
+        const unsubRefusal = refreshRefusal
+            ? this.store.subscribe(binding.markingId, refreshRefusal)
+            : undefined;
+        refreshRefusal?.();
 
         // Wire the per-category facet allowability subscription for facet pickers.
         // The store owns the suggest traffic for every subscribed category on a
@@ -2786,10 +4236,48 @@ export class EzClassifyUI {
             );
         }
 
+        const releaseUndo = component.shareUndo
+            ? this.shareMarkingUndo(component, binding.markingId)
+            : undefined;
+
         this.storeUnsubscribers.set(binding.token.token as HTMLElement, () => {
             unsubState();
+            unsubRefusal?.();
             unsubFacet?.();
+            releaseUndo?.();
         });
+    }
+
+    /**
+     * Give a field the undo of the store marking it is bound to: one per
+     * marking, so every field bound to it shows the same offer, and it hears
+     * every value the store commits for the marking, whichever field or host
+     * wrote it.
+     *
+     * @returns Releases the field's hold; the last release stops listening
+     */
+    private shareMarkingUndo(
+        component: ComponentInstance,
+        markingId: string,
+    ): () => void {
+        let entry = this.markingUndos.get(markingId);
+        if (!entry) {
+            const undo = new MarkingUndo();
+            const stop = this.store.subscribe(markingId, (state) =>
+                undo.observe(valueSignature(state.rendered, state.assertions)),
+            );
+            entry = { undo, users: 0, stop };
+            this.markingUndos.set(markingId, entry);
+        }
+        const held = entry;
+        held.users++;
+        component.shareUndo!(held.undo);
+        return () => {
+            if (--held.users > 0) return;
+            held.stop();
+            if (this.markingUndos.get(markingId) === held)
+                this.markingUndos.delete(markingId);
+        };
     }
 
     /**
@@ -2809,7 +4297,6 @@ export class EzClassifyUI {
                 'A bound MarkedTextArea requires store.publishAggregate to preserve the engine aggregate verdict.',
             );
         const collections =
-            !textarea.hasAttribute('data-ezclassify-first-part-binding') &&
             this.store.getEntryIds &&
             this.store.setEntryIds &&
             this.store.subscribeEntries
@@ -3113,6 +4600,26 @@ export class EzClassifyUI {
     }
 
     /**
+     * A hidden field holds no text for facts the engine could not write, and
+     * publishing the empty text would drop them. Those facts go to the store as
+     * they are, unless the store already holds them.
+     */
+    private publishUnwrittenFacts(binding: StoreBinding): void {
+        const publishText = binding.publish;
+        binding.publish = (assertions: EngineAssertion[], rendered: string) => {
+            if (rendered || assertions.length === 0) {
+                publishText(assertions, rendered);
+                return;
+            }
+            const held = this.store.get(binding.markingId).assertions;
+            if (signAssertions(held) === signAssertions(assertions)) return;
+            this.store
+                .publishAssertions(binding.markingId, assertions, binding.token)
+                .catch(() => {});
+        };
+    }
+
+    /**
      * Wire a MarkedInput's bound-to seam. Unlike plain components whose store
      * subscriber calls setValue (which replaces the whole input value),
      * MarkedInput carries free text after the marking: e.g. "(U) report title".
@@ -3138,6 +4645,14 @@ export class EzClassifyUI {
         binding: StoreBinding,
     ): void {
         this.publishStructurally(binding);
+        // The field's own marking is written in the output the field shows,
+        // so a view reading the store's `rendered` sees what the field does.
+        const host = binding.token.token as HTMLElement;
+        const owned =
+            host.id === binding.markingId
+                ? component.writtenOutput?.()
+                : undefined;
+        if (owned) this.store.setRenderedOutput(binding.markingId, owned);
 
         const applyState = (state: EzClassifyState) => {
             if (state.rendered === binding.lastSeenRendered) return;
@@ -3145,15 +4660,17 @@ export class EzClassifyUI {
             // The store reflecting the field's own marking back (the host seed,
             // or its own publish) changes nothing the field holds. Applying it
             // would rewrite the author's mark as the repaired render and clear
-            // the errors the engine reported on what the author wrote.
+            // the errors the engine reported on what the author wrote. The
+            // field holds the facts of its own scopes only.
+            const own = this.factsOfOwnScopes(host, state.assertions ?? []);
             if (
-                signAssertions(state.assertions ?? []) ===
+                signAssertions(own) ===
                 signAssertions(component.getAssertions() as EngineAssertion[])
             )
                 return;
             // setAssertions rebuilds input.value as "<new-marking> <existing-free-text>".
             // setValue would replace the entire value with just the rendered string.
-            component.setAssertions(state.assertions ?? []);
+            component.setAssertions(own);
         };
 
         const unsubscribe = this.store.subscribe(
@@ -3162,10 +4679,10 @@ export class EzClassifyUI {
             binding.token,
         );
         this.hydrateFromStore(binding.markingId, applyState);
-        this.storeUnsubscribers.set(
-            binding.token.token as HTMLElement,
-            unsubscribe,
-        );
+        this.storeUnsubscribers.set(host, () => {
+            unsubscribe();
+            if (owned) this.store.setRenderedOutput(binding.markingId, null);
+        });
     }
 
     /**
@@ -3194,17 +4711,14 @@ export class EzClassifyUI {
     }
 
     /**
-     * Force an immediate rollup recalculation and return the rendered
-     * aggregate.
+     * Show every level's rollup in the outputs the host placed now, without
+     * waiting for the next change. The rollups themselves live in the store:
+     * read them with `store.getAggregate(levelId?)`.
+     *
+     * @returns Resolves once the outputs show the store's current rollups
      */
-    recalculate(): string {
-        rollup.updateRollup(this);
-        return this.rollupField?.value ?? '';
-    }
-
-    /** Return the current rollup value without triggering a recalculation. */
-    getRollup(): string {
-        return this.rollupField?.value ?? '';
+    recalculate(): Promise<void> {
+        return rollup.flushRollupNow(this);
     }
 
     /** Get all assertions across every field and component, deduplicated. */
@@ -3232,42 +4746,6 @@ export class EzClassifyUI {
                 });
             }
         }
-        return result;
-    }
-
-    /**
-     * Get assertions grouped by target element ID (from data-ezclassify-target
-     * attributes). Returns a Map where keys are target IDs and values are
-     * assertion arrays. Elements without `data-ezclassify-target` are grouped
-     * under the empty string key.
-     */
-    getAssertionsByTarget(): Map<string, FieldAssertion[]> {
-        const result = new Map<string, FieldAssertion[]>();
-
-        const addToTarget = (
-            targetId: string,
-            assertions: FieldAssertion[],
-        ) => {
-            if (assertions.length === 0) return;
-            const existing = result.get(targetId) ?? [];
-            existing.push(...assertions);
-            result.set(targetId, existing);
-        };
-
-        // From fields
-        for (const f of this.fields) {
-            const targetId = this.targetMap.get(f) ?? '';
-            const stored = this.fieldAssertions.get(f);
-            if (stored) addToTarget(targetId, stored);
-        }
-
-        // From components
-        for (const [el, comp] of this.mounted) {
-            const targetId = this.targetMap.get(el) ?? '';
-            const assertions = state.toFieldAssertions(comp.getAssertions());
-            addToTarget(targetId, assertions);
-        }
-
         return result;
     }
 
@@ -3301,6 +4779,87 @@ export class EzClassifyUI {
         this.markingHosts.clear();
         this.seededMarkings.clear();
         this.initialSeeds = [];
+        // The wholes nested scopes contributed belong to this scope's tree.
+        for (const id of this.scopeWholes.keys()) store.releaseSeed(id);
+        this.scopeWholes.clear();
+    }
+
+    /**
+     * Enhance an element already on the page, for a page whose markup you
+     * cannot edit (a SharePoint or Jira page, say). Writes
+     * `data-ezclassify-controller` and the given attributes onto `element`,
+     * then reads it, so it ends exactly as if the page's HTML had declared
+     * them: a marking inside a `data-ezclassify-whole` container is a part of
+     * that whole, one inside a collection is a member, and one inside a
+     * `data-ezclassify-ignore` region is refused with an
+     * `ezclassify:host-error` event like any marked element there.
+     *
+     * Calling it again on the same element replaces what the earlier call
+     * wrote.
+     *
+     * ```ts
+     * ui.add(titleInput, 'marking');
+     * ui.add(bodyInput, 'marking', { partOf: 'document' });
+     * ```
+     *
+     * @param element - An element inside this instance's root
+     * @param controller - The controller to mount, as
+     *   `data-ezclassify-controller` names it (`'marking'`, `'banner'`, ...)
+     * @param attributes - Further attributes, keyed by name after
+     *   `data-ezclassify-` in camelCase: `{ partOf: 'document' }` writes
+     *   `data-ezclassify-part-of="document"`, `{ noRollup: true }` a
+     *   presence-only one
+     * @throws TypeError when the controller is unknown or an attribute key is
+     *   not one `add` can write
+     * @throws Error when this instance is destroyed, or `element` is not inside
+     *   its root or belongs to a nested instance
+     */
+    add(
+        element: HTMLElement,
+        controller: ControllerName,
+        attributes?: EzClassifyAttributes,
+    ): void {
+        if (this._destroyed)
+            throw new Error(
+                '[ezclassify] add() was called on a destroyed EzClassifyUI.',
+            );
+        if (
+            !(element instanceof HTMLElement) ||
+            element === this.root ||
+            !this.root.contains(element) ||
+            !isOwnedBy(element, this._instanceId)
+        )
+            throw new Error(
+                "[ezclassify] add() takes an element inside this EzClassifyUI's root, outside any nested root.",
+            );
+        const resolved = resolveAddedAttributes(controller, attributes);
+        const previous = this.addedAttributes.get(element);
+        if (previous) restoreAddedAttributes(element, previous);
+        const record: AddedAttributes = new Map();
+        writeAddedAttributes(element, resolved, record);
+        this.addedAttributes.set(element, record);
+        // The observer reads the change the way it reads any script's; flushing
+        // it now makes the element's enhancement synchronous with this call.
+        if (this.domObserver) flushObserver(this.domObserver);
+    }
+
+    /**
+     * Undo {@link add}: take off the attributes it wrote on `element`, put back
+     * any value the page had there, and tear down the enhancement. The element
+     * then reads as its own markup says. An element `add` never touched is left
+     * alone.
+     *
+     * @param element - An element passed to {@link add}
+     */
+    remove(element: HTMLElement): void {
+        const record = this.addedAttributes.get(element);
+        if (!record) return;
+        this.addedAttributes.delete(element);
+        restoreAddedAttributes(element, record);
+        // The observer derives the element again from what is left, which
+        // tears down the enhancement add built. An element that left the root
+        // was torn down when it left, and is no longer recorded.
+        if (this.domObserver) flushObserver(this.domObserver);
     }
 
     /**
@@ -3318,11 +4877,21 @@ export class EzClassifyUI {
      */
     destroy(): void {
         this._destroyed = true;
+        // Stop hearing the store first. Releasing this instance's markings
+        // below commits them empty, and a store its host owns lives on: a view
+        // still listening would read again through a Context that may already
+        // be gone with this instance.
+        this.storeUnsubscribers.forEach((unsubscribe) => unsubscribe());
+        this.storeUnsubscribers.clear();
+        this.partUnsubscribers.forEach((unsubscribe) => unsubscribe());
+        this.partUnsubscribers.clear();
+        this.wholeUnsubscribers.forEach((unsubscribe) => unsubscribe());
+        this.wholeUnsubscribers.clear();
         // Zero out this scope's contribution, notify the parent to re-aggregate
         // (the page banner loses this scope's whole) while the edge still exists,
         // THEN drop the edge from the registry.
-        const hadParentContribution = this._renderedByScheme.size > 0;
-        this._renderedByScheme = new Map();
+        const hadParentContribution = this._childWholes.size > 0;
+        this._childWholes = new Map();
         if (hadParentContribution) registry.notifyParent(this._instanceId);
         // A destroyed scope reports itself complete, so the enclosing scope
         // stops counting what this one could not read.
@@ -3346,9 +4915,12 @@ export class EzClassifyUI {
         // The cache is keyed by schemeId, so a live-edit host that mutates a
         // scheme under the same id (for example a live scheme editor) would otherwise get
         // stale coverage/process results carried across an unmount/remount.
-        // Only this instance's engine partition goes: a peer context on the
+        // Only this instance's Context partitions go: a peer instance on the
         // same page keeps the work it has already done.
-        rollup.clearRollupProcessCache(this.engine);
+        for (const [, context] of this.contexts.entries())
+            rollup.clearRollupProcessCache(context.scheme);
+        for (const { adapter } of this.bucketSchemes.values())
+            rollup.clearRollupProcessCache(adapter);
         dom.hideConceptTooltip(this);
         this.releaseSeeds();
         for (const [contributorId, wholeId] of this.incompleteScans)
@@ -3358,8 +4930,13 @@ export class EzClassifyUI {
                 false,
             );
         this.incompleteScans.clear();
-        this.unreadFirstParts.clear();
-        this.sourceIncompleteViews.clear();
+        for (const { contributors } of this.hostErrors.values())
+            this.releaseErrorContributors(contributors);
+        this.hostErrors.clear();
+        this.bindingNodes.clear();
+        for (const id of this.collections.values())
+            this.store.unregisterCollection(id);
+        this.collections.clear();
         // Release cross-instance ownership of every host this instance enhanced so a
         // remount on the same DOM (StrictMode), or a peer instance, can re-claim
         // them. Done before the component/field maps are cleared below.
@@ -3395,19 +4972,9 @@ export class EzClassifyUI {
                 }
                 mount.remove();
             });
-        // Remove the rollup hidden input if we created it
-        if (this.rollupField) {
-            this.rollupField.remove();
-        }
         this.aggregates.clear();
         this.plainBehaviorCleanups.forEach((cleanup) => cleanup());
         this.plainBehaviorCleanups.clear();
-        this.storeUnsubscribers.forEach((unsubscribe) => unsubscribe());
-        this.storeUnsubscribers.clear();
-        this.partUnsubscribers.forEach((unsubscribe) => unsubscribe());
-        this.partUnsubscribers.clear();
-        this.wholeUnsubscribers.forEach((unsubscribe) => unsubscribe());
-        this.wholeUnsubscribers.clear();
         this.wholeCommits.clear();
         // Clean up scoped tooltips
         cleanupTooltipForRoot(this.root);
@@ -3415,6 +4982,10 @@ export class EzClassifyUI {
         for (const adopted of this.adoptedStyles) adopted.release();
         this.adoptedStyles = [];
         this.fields = [];
-        this.rollupField = null;
+        // What add wrote goes with the runtime that wrote it. Last, so the
+        // mount cleanup above still finds the controllers it restores.
+        for (const [element, record] of this.addedAttributes)
+            restoreAddedAttributes(element, record);
+        this.addedAttributes.clear();
     }
 }

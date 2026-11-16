@@ -2,11 +2,6 @@
 **/dist/**
 **/__snapshots__/**
 
-# Compiled schematics output (gitignored; appears locally after an angular
-# build and would otherwise trip format:check).
-integrations/angular/schematics/**/*.js
-integrations/angular/schematics/**/*.d.ts
-
 # Test fixtures are intentional, literal-match data (golden vectors, hash
 # vectors, manifests that tests string-match against). Reformatting them (quote
 # style, JSON key sort) silently breaks tests, so Prettier must leave them alone,

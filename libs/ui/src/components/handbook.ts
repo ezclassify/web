@@ -10,7 +10,8 @@
  * them, filtering categories and concepts to the active scope using the same
  * rules as the engine's suggestion system. A profile overview section at the
  * top shows the profile's name, version, description, and guidance before the
- * category list.
+ * category list, led by the scheme document's overall marking when it is
+ * marked.
  *
  * Categories start collapsed. When a search filter is active, matching concepts
  * inside collapsed categories are revealed.
@@ -22,13 +23,15 @@ import type {
     ConceptView,
 } from '@ezclassify/types';
 import {
-    isAddressableSchemeEngine,
     ReadOnlyComponentBase,
     type ComponentEngineSource,
     type ComponentOptions,
 } from './component-base-readonly';
 import { createAnnouncer, announce } from './component-utils';
-import { resolveReferenceSurfaceOverride } from './browser-component-base';
+import {
+    buildOverallMarking,
+    resolveReferenceSurfaceOverride,
+} from './browser-component-base';
 import handbookCss from './handbook.css?inline';
 
 /** Structured description data for a single concept entry. */
@@ -47,12 +50,47 @@ interface ProfileLike {
     categories: CategoryView[];
 }
 
-/** Minimal engine adapter shape for getConceptsInCategory. */
-interface ConceptsInCategoryProvider {
-    getConceptsInCategory?(
-        categoryId: string,
-        opts: { nested: true },
-    ): Array<{ concept: ConceptView; depth: number }> | undefined;
+/**
+ * Order a category's concepts as a tree: each concept follows its broader
+ * concept (`parents`) and carries its depth below it. Concepts whose broader
+ * concept is outside the category are roots. Siblings keep their position
+ * order, and a concept reachable from two parents appears once, under the first
+ * one reached.
+ */
+function nestConcepts(
+    concepts: ConceptView[],
+): Array<{ concept: ConceptView; depth: number }> {
+    const index = new Map(concepts.map((c, i) => [c.id, i]));
+    const children: number[][] = concepts.map(() => []);
+    const hasParent = concepts.map(() => false);
+    concepts.forEach((concept, i) => {
+        for (const parent of concept.parents) {
+            const p = index.get(parent);
+            if (p === undefined) continue;
+            children[p].push(i);
+            hasParent[i] = true;
+        }
+    });
+    const seen = concepts.map(() => false);
+    const out: Array<{ concept: ConceptView; depth: number }> = [];
+    const walk = (root: number): void => {
+        const pending: Array<[number, number]> = [[root, 0]];
+        while (pending.length > 0) {
+            const [i, depth] = pending.pop()!;
+            if (seen[i]) continue;
+            seen[i] = true;
+            out.push({ concept: concepts[i], depth });
+            for (const child of [...children[i]].reverse()) {
+                pending.push([child, depth + 1]);
+            }
+        }
+    };
+    hasParent.forEach((has, i) => {
+        if (!has) walk(i);
+    });
+    // A cycle has no root; its members still appear, as roots.
+    concepts.forEach((_, i) => walk(i));
+    return out;
 }
 
 /**
@@ -86,13 +124,11 @@ function entryInScope(
 }
 
 /**
- * Build handbook entries from scheme data. When an adapter with
- * `getConceptsInCategory` is provided it's used for hierarchical ordering;
- * otherwise concepts fall back to position-sorted flat rows.
+ * Build handbook entries from scheme data, one category at a time, with each
+ * category's concepts in tree order (see {@link nestConcepts}).
  */
 function buildEntries(
     scheme: ProfileLike,
-    engine: ConceptsInCategoryProvider | undefined,
     categoryFilter?: string[],
 ): EntryData[] {
     const entries: EntryData[] = [];
@@ -103,25 +139,16 @@ function buildEntries(
     }
 
     for (const category of categories) {
-        const hierarchical = engine?.getConceptsInCategory?.(category.id, {
-            nested: true,
-        });
-        if (hierarchical) {
-            for (const node of hierarchical) {
-                entries.push({
-                    concept: node.concept,
-                    category,
-                    rules: null,
-                    depth: node.depth,
-                });
-            }
-            continue;
-        }
         const concepts = scheme.concepts
             .filter((c) => c.categories.includes(category.id))
             .sort((a, b) => a.position - b.position);
-        for (const concept of concepts) {
-            entries.push({ concept, category, rules: null, depth: 0 });
+        for (const node of nestConcepts(concepts)) {
+            entries.push({
+                concept: node.concept,
+                category,
+                rules: null,
+                depth: node.depth,
+            });
         }
     }
 
@@ -218,11 +245,7 @@ export class Handbook extends ReadOnlyComponentBase {
         const opts = this.options as HandbookOptions;
 
         // Build all entries without rules (lazy-loaded when visible)
-        this.allEntries = buildEntries(
-            this.scheme,
-            this.engine as ConceptsInCategoryProvider,
-            opts.categoryFilter,
-        );
+        this.allEntries = buildEntries(this.scheme, opts.categoryFilter);
 
         // Pre-expand categories only when explicitly requested
         if (opts.expandAll) {
@@ -413,6 +436,13 @@ export class Handbook extends ReadOnlyComponentBase {
     private renderOverview(): HTMLDivElement {
         const el = document.createElement('div');
         el.className = 'ez-handbook__overview';
+
+        // A marked scheme document carries its own overall marking.
+        const marking = buildOverallMarking(
+            'ez-handbook__overview-marking',
+            this.scheme.marking,
+        );
+        if (marking) el.appendChild(marking);
 
         const name = document.createElement('div');
         name.className = 'ez-handbook__overview-name';
@@ -625,19 +655,11 @@ export class Handbook extends ReadOnlyComponentBase {
         for (const entry of entries) {
             if (entry.rules !== null) continue;
 
-            const result =
-                this.schemeAddressing && isAddressableSchemeEngine(this.engine)
-                    ? this.engine.describeConcept(
-                          entry.concept.id,
-                          entry.category.id,
-                          this.schemeId,
-                          conceptProp,
-                      )
-                    : this.engine.describeConcept(
-                          entry.concept.id,
-                          entry.category.id,
-                          conceptProp,
-                      );
+            const result = this.engine.describeConcept(
+                entry.concept.id,
+                entry.category.id,
+                conceptProp,
+            );
 
             if (result && typeof result === 'object' && !('then' in result)) {
                 // Sync engine: populate immediately

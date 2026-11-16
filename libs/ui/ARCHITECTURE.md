@@ -64,11 +64,10 @@ moves it; a host that asks for more height keeps it.
 
 Standalone MarkingField and TagInput controllers register their own marking
 identity from the native input's id, generating one when it has none. They do
-not require a hidden rendered
-field or a redundant `data-ezclassify-rendered` attribute. Explicit
+not need a hidden field or a `data-ezclassify-marking` attribute. Explicit
 `data-ezclassify-bound-to` still selects a separate marking when the host
-application needs one; hidden and plain rendered fields retain their own
-`data-ezclassify-rendered` declaration.
+application needs one; a marking with no controller, hidden or plain, declares
+itself with `data-ezclassify-marking`.
 
 EzClassify events are additive. `ezclassify:change` carries both `detail.rendered` and `detail.assertions` for hosts that want to subscribe to structured changes and persist assertions instead of the rendered string. Using those events is optional; it must never be required to recover the field's current rendered value or observe an ordinary value change.
 
@@ -93,19 +92,28 @@ Configuration stays narrow. Subjective and optional helper surfaces, such as too
 
 ### Enhancement Status Indicator
 
-Every enhanced input and textarea, including a data-only field, has one EzClassify status mark: the 3-bar-plus-sparkle brand glyph. MarkedInput and MarkedTextArea put it in their existing bottom hint row, right-aligned opposite the ⌘+Enter tip; MarkingField and TagInput put it in a small ★ drawer attached to the field's bottom-right edge (mirroring to the top-right when the field's own composer opens _below_ it: the drawer always sits on the edge OPPOSITE the composer, never the same one, see `field-chrome-drawer.ts`). On the top edge the drawer hangs into the label's line, so it carries only the mark and ★ there; TagInput's key hints show on the bottom edge only. The one remaining absolutely-positioned placement (an input's right edge) belongs to the plain, chrome-less `<input>` binding path in `ezclassify-ui.ts`: a bare field with no hint row or drawer of its own to fold the mark into.
+Every enhanced input and textarea, including a data-only field, has one EzClassify status mark: the 3-bar-plus-sparkle brand glyph. MarkingField, TagInput, MarkedInput and MarkedTextArea put it in their inline chrome (`field-chrome.ts`): one row inside the field's trailing edge holding the mark, the ★ favorites button where it applies, and clear. The row sits in the same place at rest and while the field is focused, centered on a single-line field and pinned to the first line of a text area. It measures how far it reaches into the field and publishes that as `--ez-field-chrome-inline-size` on the field's wrap; the field's text layers reserve that much trailing padding, so text, wrapped lines and chips never run under it, and the reserve follows the row when its contents change. The one remaining absolutely-positioned placement (an input's right edge) belongs to the plain, chrome-less `<input>` binding path in `ezclassify-ui.ts`: a bare field with no chrome row of its own to fold the mark into.
 
-- **Quiet** is the default: the whole glyph sits muted. It means the field is enhanced by EzClassify and nothing has been fixed. A proposed fix does not change the mark; only an applied fix does.
-- **Unseen**: EzClassify applied a fix the user has not yet been shown. The sparkle turns accent-colored, a small corner dot appears, and the sparkle pulses on an interval (disabled under `prefers-reduced-motion`, where the dot alone carries the state).
-- **Seen**: the fix tooltip has actually presented, past its hover-intent delay, or the mark was focused. The dot clears and the pulse stops; the accent sparkle persists as "done and known."
+- **Quiet** is the default: the whole glyph sits muted (`--ez-status-mark-color`). It means the field is enhanced by EzClassify and nothing has been fixed. A proposed fix does not change the mark; only an applied fix does.
+- The glyph is the logo, so its bars and sparkle always share one color; a state never colors the sparkle on its own.
+- Every other state means the field has a message for the user, and the glyph turns strong (`--ez-status-mark-strong-color`): the field's text color on a light palette, gold on a dark one. The accessible label then carries the message too.
+- **Unseen**: a marking rule changed the marking and the user has not yet been shown what. The whole mark is strong and the number of changes stands on the icon's leading side, so the icon keeps its place when the number goes and never moves out from under the pointer that opened the list. Its label says so: "1 change made by a marking rule, not yet reviewed", or "{n} changes made by marking rules, not yet reviewed".
+- **Seen**: the list has actually presented, past its hover-intent delay, or the mark was focused. The number goes; the strong mark persists as "done and known", and the label drops ", not yet reviewed".
 - **Error**: the field could not check all of its text, as when a
-  MarkedTextArea's scan stops before the end of the body. The sparkle takes the
-  error color and the popover and accessible label lead with the reason, ahead
+  MarkedTextArea's scan stops before the end of the body. The whole mark takes
+  the error color and the popover and accessible label lead with the reason, ahead
   of any fixes. It overrides the fix states and needs no acknowledgment: it
   clears when its cause does. The tooltip opt-out never hides it.
 - A fix not yet shown re-arms unseen even if the field was previously seen. Clearing the fix set (a clean reprocess) returns to quiet and forgets what was shown, so the next fix starts unseen again. State is per-field, in-memory only.
 - A field always has one status mark. Multiple fixes never create a stack of icons.
-- Hovering (past hover-intent) or focusing an active mark explains every change the engine made: each `Change` once, as the change's own `message`. The field writes none of the words itself; a change says only what the engine's message says. One rule that removes three concepts made three changes and lists three lines; reading the same text again does not repeat a line.
+- Hovering (past hover-intent) or focusing an active mark explains every change EzClassify made to what the author chose, one line per change to the marking: "Added {value} to {Category}.", "Removed {value} from {Category}." or "Replaced {old} with {new} in {Category}.", where a value is its concept as the field writes it (see "How a field names a concept") and a category is its label, with "Rule: {rule}" small and muted under it. A change that adds or removes nothing (a spelling or order the reading went through) keeps the engine's `message`, and an engine-owned id (one beginning with `_`) names no rule. Two rules that add the same concept made one change and list one line, under the first rule; one rule that removes three concepts made three changes and lists three lines; reading the same text again does not repeat a line. Seen and unseen follow the same identity, so a change already shown stays seen when another rule makes it again.
+- A field that holds several markings (MarkedTextArea) still has one mark and counts every change in it, and its list puts each marking's changes under a small muted heading naming that marking as the text now writes it, in the order of the text. The same change made to two markings is two changes. Only a marking with changes gets a heading, and a list of changes to one marking needs none.
+- While the marking offers the undo of the author's last edit (see "Undo"), the list ends with one button, "Undo last edit", described as "Puts the marking back to what it was before your last edit." Tab from the pressed mark reaches it.
+- A value a rule added that the author has not reviewed yet is drawn in the family's inferred style wherever the field shows the marking as text: MarkingField's painted text and DecisionFlow's value line put it in italics over a dashed rule until the mark's list has been shown. TagInput's chips and DecisionFlow's options draw every derived fact that way for good (see "Marking state is a display of the engine result"); an option another choice includes is described "Included by {choice}".
+- The mark lists only what the field's scopes write or what it changed: a change to a category of a scope the field does not write is left out, and so is an applied change the value has moved on from, an addition the field no longer holds or a removal whose concept it holds again.
+- The author signs what the marking writes, so the mark lists only changes to what it writes. Which facts it writes is read from the engine's render assessments (`emitted`, `omitted`, `collapsed`; see `written-facts.ts`), never from concept ids: a fact a rule derived that the marking does not write (a member collapsed into its group's written name, a default no output prints) changed nothing the author sees and is not listed, even when `appliedFixes` names it. A result whose only changes are such facts leaves the mark quiet, so it offers no undo either. A value a rule added that the marking does write is listed and counted whether or not the author wrote it. A field that shows its marking in several forms (DecisionFlow writes each scope in that scope's own output) counts a change to any of them; a form speaks only for the categories of its own surface.
+- A field that shows each fact (TagInput's chips, DecisionFlow's dots, a picker's rows) also explains a written fact a rule filled in that no applied change names, as one more change worded as an addition like any other. A text field (MarkedInput, MarkedTextArea, MarkingField) shows only its text, so it lists only the engine's applied changes. A category's default and a value a part takes from its whole are not changes.
+- The popover opens outside the field's box (the suite frame, or the text field's wrap) and its error list: below them, above them, or beside them when neither has room, judged inside any ancestor that clips the field before the viewport alone. It never covers the field it explains: where no side has room it closes instead. In DecisionFlow the open step and its options are part of the field.
 
 The indicator communicates state; it is not a per-fix activity feed.
 
@@ -141,43 +149,71 @@ field's typing, accept, commit, blur or Escape path.
 
 ### Rollup Observes Native Inputs
 
-`forms/rollup.ts` aggregates native input values, component renderings, and
-nested scopes' rolled-up wholes into per-profile markings. Changes schedule a
-debounced pass. Facet groups contribute their combined parent marking when one
-is present.
-
-The marking store has a separate path in `store/base-ezclassify-store.ts`: it
-collects committed assertion sets and calls `aggregateAssertions()` for page
-aggregates and whole rollups. It does not reparse rendered strings, so
+`forms/rollup.ts` reads native input values, component renderings and nested
+roots' wholes, and passes each level's contributions to the store as facts.
+Changes schedule a debounced pass. The store (`store/base-ezclassify-store.ts`)
+computes every level from committed assertion sets with
+`aggregateAssertions()`. It does not reparse rendered strings, so
 render-suppressed assertions and captured values survive aggregation.
 
-- Collect each input's resolved profile id and rendered string.
-- Group values by profile id.
-- Call `engine.aggregate(values, options)` for each scheme group. An addressable
-  adapter also receives the scheme id; a Context-bound adapter omits it.
-- Write each group's result to `data-rendered-<schemeId>` on the rollup target.
-- Set `rollup.value` to the only contributing scheme's rendering, or prefer the
-  default scheme among multiple contributors. Without a contributing default,
-  use the first contributing scheme.
-- Emit `ezclassify:rollup` with `detail.byScheme` (a `{ schemeId: rendered }` map) so multi-scheme pages can read every group's output without parsing attributes. The event also carries `detail.rendered`, `detail.contributions`, and `detail.assertions`.
+- The binding classifier (`binding-model.ts`) places each element: a part in
+  its whole, a whole in its collection, a collection in its parent, a view
+  nowhere. It reads structure and element attributes, never marking text.
+- A view never contributes. An `aggregate` output's own value is never read
+  back into a rollup, so a rollup can always go down.
+- A level combines its member wholes (each one's value and its parts rollup)
+  and its child collections' rollups, in document order. Parts reach a level
+  only through their whole.
+- `scope` never excludes a field. Alternate-scope assertions stay out of the
+  whole-marking rollup because the store splits each assertion set by the
+  categories' declared scopes.
+- `no-rollup` keeps a live non-content control, such as a filter picker, out of
+  every level. It is refused on a part and on a whole with parts.
+- Each output the host placed (a controller-less `aggregate` element) gets its
+  level's value in its bucket: a hidden input holds it and any other element
+  shows it as text. The library adds no input of its own.
+- Each change emits `ezclassify:rollup` on the level's element (the instance
+  root for the page, a collection's container, a whole's host). `detail.level`
+  names the level (`null` for the page) and `detail.buckets` lists each bucket
+  as `{ context, scheme, rendered, assertions, stale }`, with `null` for the
+  only Context and for a Context's primary scheme.
 
-#### Multi-profile rollup contract
+#### Multi-Context rollup contract
 
-Each enhanced component carries a resolved `schemeId` (set during `init` via
-`resolveProfile(container, engine, options)`). Resolution order (implemented in `resolveProfile` in `components/component-base-readonly.ts`):
+One instance holds every Context on the page: `new EzClassifyUI(context)` for
+one, and `new EzClassifyUI({ contexts })` for several, keyed by the names the
+markup uses. Each marking is read in one bucket, the pair
+(Context key, Context-local scheme selector), written as
+`${contextKey}\u001f${schemeSelector}`.
 
-1. `data-ezclassify-scheme` on the host element or closest ancestor, then
-   `options.schemeId`.
-2. A Context-bound adapter uses `getScheme().id` and rejects a requested id
-   that differs from that bound scheme.
-3. An addressable adapter uses an explicit request, then its default scheme.
-   Without scheme-list introspection, its bound `getScheme().id` is used;
-   with exactly one listed scheme, that scheme is selected.
-4. Multiple listed schemes without a request or default cause an error that
-   names the available ids.
-
-The rollup never produces a merged cross-profile rendering; profiles are
-independent at render time by design.
+1. The Context is `data-ezclassify-context` on the host or its nearest
+   ancestor. With one Context it is that Context. With several and no ancestor
+   attribute it is a host error; no key is a default by position.
+2. The scheme is `data-ezclassify-scheme` on the host or its nearest ancestor:
+   the selector the Context's `describeSchemes` and REST `?scheme=` use, not a
+   global scheme id. Without it, the Context's primary scheme. Each bucket is
+   read by the Context's view of its scheme (`context.scheme` for the
+   primary, `context.schemes.get(selector)` for another), and a selector the
+   Context does not hold is a host error.
+3. A part is read in its whole's bucket. A `part-of` that crosses Contexts or
+   schemes is a host error.
+4. Every level keeps one rollup per bucket and never produces a merged
+   rendering across buckets. Two Contexts that carry the same scheme stay
+   separate, and the process cache is partitioned by adapter for the same
+   reason.
+5. A level view shows every non-empty or stale bucket, labeled whenever the
+   level can hold more than one, unless its own
+   `context` or `scheme` attribute picks one. It never filters by an inherited
+   attribute. An output that holds one value names its bucket with its own
+   attributes when the level has several, or it is a host error; the decision
+   is static at mount.
+6. A collection's `context` is the default for fields inside it, never a
+   membership filter.
+7. Guides and access policies need no selector. A Context holds at most one
+   access policy, and its guides side by side: a scan across guides tags each
+   hit with its `guideId`, the guidebook shows one section per guide, and the
+   guide helper evaluates selections qualified by guide, so a hit and its
+   outcome always name the guide they came from.
 
 ### Rollups read settled values
 
@@ -197,10 +233,10 @@ anyone comparing two loads of the same form.
   registering parts before anything is asked for them makes no whole field
   read itself again. A whole rollup's
   contributors are the parts registered under it and the whole itself; the
-  page aggregate's are every registered part and every seeded or published
-  marking. A rollup of a contributor set with a read still pending is never
+  page aggregate's, and each collection's, are its member wholes (each one's
+  value and its whole rollup) and its child collections. A rollup of a contributor set with a read still pending is never
   sent; the answer that settles the last contributor computes it. Contributor
-  sets go to `aggregateAssertions` in marking-id order. A contributor whose
+  sets go to `aggregateAssertions` in document order. A contributor whose
   first read fails counts as settled: the rollup is computed without it and
   flagged `stale`.
 - A MarkedTextArea whose scan did not read its whole text (the scan's
@@ -222,15 +258,12 @@ anyone comparing two loads of the same form.
       the field that the textarea is described by, and once through a polite
       live region when it appears. It sets the textarea's custom validity and
       `aria-invalid`, clearing only a message it set.
-    - In first-part-binding mode, a scan that read no portion leaves the marking
-      the first portion is bound to unread: banners mirroring that marking say
-      it may be incomplete until a scan reads the first portion.
 - A rollup on display says when it may be missing markings. A banner showing a
   `stale` rollup keeps its value and adds a visible, announced statement that it
-  may be incomplete. The runtime's rollup field is invalid (custom validity and
-  `aria-invalid`) while its scope has an incomplete MarkedTextArea, the store
-  holds the page aggregate as stale, or a nested scope's whole is incomplete; a
-  scope built from an incomplete inner whole is incomplete too. The flag is
+  may be incomplete. An `aggregate` output the host placed is invalid (custom
+  validity and `aria-invalid`) while its level has an incomplete MarkedTextArea,
+  the store holds the level as stale, or a nested root's whole is incomplete; a
+  level built from an incomplete inner level is incomplete too. The flag is
   raised at once and cleared only by the rollup pass that recomputes the value,
   which it asks for. Raising it sends no engine request.
 - The store sets no timer. Every `EzClassifyStoreEngine` call resolves or
@@ -282,8 +315,8 @@ text can request gated rows. For a part, contextual offerings come from
 reading still in flight. Additive drafts also call `validate()` before
 `process()`; facets with sibling assertions perform another judging read.
 
-DecisionFlow and DualPane share the composer's suggestion catalog and Context
-binding. They load or refresh cached offerings on focus, query and navigation
+DecisionFlow shares the composer's suggestion catalog and Context
+binding. It loads or refresh cached offerings on focus, query and navigation
 input, pointer interaction, and completion of a user edit. Setup, rendering, and
 external assertion updates do not request suggestions; rendering consumes the
 cache. A changed Context invalidates the cache for the next interaction.
@@ -291,6 +324,25 @@ cache. A changed Context invalidates the cache for the next interaction.
 Store-backed facets still refresh availability when subscribers arrive and
 markings commit. That current path does not meet the lazy-suggestion requirement
 above; it does not authorize adding eager calls.
+
+### How a field names a concept
+
+A field names a concept the way its marking writes it, and one function,
+`writtenConcept` in `src/written-concept.ts`, decides that for DecisionFlow's
+options, its dots and every status mark's change list. The concept is written
+in the output the field writes for the concept's scope: the output the field
+names, when that output writes the scope, else the scheme's default output for
+the scope and the field's role (whole or part). That output writes the category
+in the view it names for it, and a concept with no spelling in that view in its
+`default` view, as the engine does. A concept that output gives no spelling
+reads as the scheme's default output for the scope writes it, and failing that
+as its name, so no option is ever empty. A value-taking concept's views are
+templates, so it reads as its name. Everything comes from the scheme: a short
+form for a concept whose spelling is a sentence is scheme data, not a UI rule.
+
+A DecisionFlow option carries the concept's name, when it differs from the
+label, and its definition as its tooltip and description. An option too long
+for its row takes a row of its own and wraps.
 
 ### A part's excess over its whole is the part's own result
 
@@ -336,24 +388,26 @@ processing is a separate `Change` in `appliedFixes` (`ruleId`, `action`,
   (an invalid marking, or one with unread text) shows that state's errors and
   ways to fix, so every field bound to the marking offers the same fixes.
 - The list sits inside the field's own wrapper, after the editable surface and
-  before its chrome (the ★ drawer, or the marked fields' hint row), so Tab goes
-  field, fixes, chrome. MarkingField's drawer moves to the top edge while the
-  list is showing, so it never covers it. TagInput keeps its chrome inside the
-  chip box, so its list still follows the box.
-- The status mark's "EzClassify fixed this marking" popover closes when the
+  before what follows it (the inline chrome, or the marked input's hint row),
+  so Tab goes field, fixes, chrome. The chrome sits inside the field's trailing
+  edge, so it never covers the list. TagInput keeps its chrome inside the chip
+  box, so its list still follows the box.
+- The status mark's list of changes closes when the
   field's value is rendered again or when focus or a press goes outside the
-  field, and it moves above the mark (or closes) rather than cover the list.
+  field. In DecisionFlow, whose presses open steps without changing the value,
+  a press anywhere but its chrome closes it too. It opens clear of the field and the list together, and closes rather
+  than cover the list when no side has room.
 
 ### Whole-over-parts coverage has one source
 
-An authored whole is checked against its parts when one or more fields name
-it with `data-ezclassify-part-of="<whole-id>"`. No second annotation is
-required. A writable controller can represent the whole directly with that id
+An authored whole is checked against its parts when it has any: fields inside
+its `data-ezclassify-whole` container, or naming it with
+`data-ezclassify-part-of`. No second annotation is required. A writable controller can represent the whole directly with that id
 or through `data-ezclassify-bound-to="<whole-id>"`. Each whole gets its
 coverage finding from exactly one place:
 
 - A whole field that judges its parts itself (the runtime gave it
-  `resolveParts`; see below) shows the engine's `part-coverage` error and its
+  `resolveParts`; see below) shows the engine's `_part-coverage` error and its
   fix paths under the field, with the rest of its rule errors. The rollup adds
   nothing beside it: no notice and no correction action. It still dispatches
   `ezclassify:validation` on the whole and records the whole's coverage state.
@@ -379,7 +433,7 @@ fix it proposes, so a raise never lands below what a part needs.
 
 - The runtime gives a field bound to a whole a `resolveParts` option. It reads
   the current markings of the same contributors the store rolls up for that
-  whole (every registered marking whose `part-of` names it), at call time:
+  whole (every registered part of it), at call time:
   the store's committed value for a part the store holds, the field's
   rendering for any other. Blank parts are left out; none at all means no
   `parts` key.
@@ -411,7 +465,7 @@ It only means the part cannot be compared with the whole.
   MarkedTextArea does the same per mark: a mark that raises keeps what the
   scan found and is flagged with the message, and the other marks read.
 - MarkedInput reads its leading mark as a part the same way MarkedTextArea
-  reads its portions: with the whole's context when it is `part-of` a whole.
+  reads its portions: with the whole's context when it is a part of a whole.
   A MarkedInput that is its own marking host tells the store which whole it
   belongs to when it registers, so its commits reach the whole's rollup
   listeners and the whole field reads again.
@@ -424,8 +478,11 @@ It only means the part cannot be compared with the whole.
 - While the whole is not a valid marking the engine returns each part's
   result with a warning (reserved rule id `_whole_unverified`). A part with
   no whole at all reads the same way: a rule that asks about the whole is
-  unresolved, so the part is valid and carries the warning. Engine
-  warnings show after the rule errors in the warning color, set
+  unresolved, so the part is valid and carries the warning. A part that
+  writes a stand-in for its whole's values is the exception: without a valid
+  whole the engine refuses it (`_stand_in_requires_whole`), the field shows
+  that error like any other, and the part reads again once a valid whole
+  arrives. Engine warnings show after the rule errors in the warning color, set
   `data-ezclassify-warning` on the field, and never set
   `data-ezclassify-invalid` or offer a fix. In MarkedTextArea the chip is
   underlined in the warning color and the caret tooltip gives the reason.
@@ -460,11 +517,54 @@ field in both focus states, independently of the status icon's helper tray.
 Marking controls clear their value through the ordinary host/store write path;
 a facet clears only its category. MarkedInput and MarkedTextArea clear their
 entire text, including embedded markings. Clearing discards any open draft,
-invalidates pending reads, and returns a click or tap to the resting state.
-Keyboard activation retains focus on the action. Neither opens the editor or
-the on-screen keyboard. Disabled and read-only hosts cannot be
-cleared. Empty controls retain the action's place and expose `aria-disabled`.
+invalidates pending reads, and returns a click or tap to the resting state,
+opening neither the editor nor the on-screen keyboard. Keyboard activation puts
+focus in the field. Disabled and read-only hosts cannot be cleared. Empty controls retain the action's place and expose `aria-disabled`.
 Read-only displays and headless fields have no clear control.
+
+DecisionFlow's × is named and titled "Clear the whole marking": it clears
+every scope the flow writes, and the flow stays on its step. There is no clear
+for one step. Pressing a chosen option again un-chooses it, on a single-choice
+step too, whose options are toggle buttons with at most one pressed; a value
+step is cleared by emptying its box. Un-choosing a required step is allowed,
+and the step then shows under "Missing:".
+
+After a clear the × becomes the undo of that clear, in the same place and at
+the same size, named and titled "Undo clear". No toast, line or text in the
+field says so. A keyboard clear leaves focus in the field, not on the undo,
+which is the next Tab stop; an undo returns focus to the field. The live region
+says "Marking cleared. Undo is available." and then "Marking restored." When
+the offer ends (see "Undo") the slot is the × again. A second click of a
+double click is not an undo.
+
+### Undo
+
+`components/marking-undo.ts` is one marking's one-level undo. "Undo" always
+means: put the marking back to what it was before the author's last action. A
+clear is one such action; every other edit (a pick, a removed chip, a commit,
+a pressed fix, a favorite applied) is another. Undoing one rule's change on its
+own is not offered.
+
+- The offer belongs to the marking. Every field the runtime binds to a store
+  marking shares that marking's `MarkingUndo` (`shareUndo`), so all of them show
+  it: the × of each turns to undo after a clear, and each status mark's list
+  ends with "Undo last edit". A field with no store marking keeps its own.
+- The field that acted keeps the snapshot, because only it knows what it took:
+  the facts it held (put back as facts, so the engine derives and explains the
+  same changes again), or the text when the engine could not read all of it,
+  and for a clear, a draft typed into it, which comes back as typed.
+- The offer lasts until the marking next changes, from that field or any
+  other bound to it, or until the field that made it is destroyed. There is no
+  timer and no expiry on blur. An action's own consequences (the engine's
+  answer, the store's commit, a step it made irrelevant) arrive before the
+  author does anything else, so the value is followed until the author next
+  presses a key or a pointer; after that any different value ends the offer.
+  A shared undo hears the store's commits; a field's own hears its values.
+  The next action replaces it.
+- Ctrl+Z or Cmd+Z anywhere in the field performs it while it is offered,
+  unless the author has typed text not yet committed, which the platform's own
+  undo takes. Otherwise the platform's undo is untouched. An undo of an edit
+  says "Last edit undone."
 
 ### No Cascading
 
@@ -492,16 +592,16 @@ resolution can add calls. The following describes current implementation paths
 and their differences from that budget; it does not relax the budget or the
 lazy-suggestion and render-purity rules.
 
-| Path                            | Engine work                                                                                                                  |
-| ------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| Shared-base initial read        | Nonempty text uses `validate()` for read-only components or `process()` for editable components; empty text skips that read. |
-| Whole-marking composer draft    | `process()` reads the draft with committed render-suppressed facts carried forward.                                          |
-| Additive composer draft         | Nonempty text uses `validate()` before `process()` to combine it with committed assertions.                                  |
-| Facet composer draft            | Sibling assertions can require a second `process()` to judge the combined marking.                                           |
-| Composer offerings              | Cached base catalog, contextual refresh when draft assertions change, and gated-query requests.                              |
-| DecisionFlow/DualPane offerings | Shared catalog and contextual offerings loaded or refreshed by user interaction; rendering uses cached results.              |
-| DOM form rollup                 | `aggregate()` per contributing scheme, plus facet-group aggregation and cached validation reads where needed.                |
-| Marking-store rollup            | `aggregateAssertions()` over committed contributors; subscribed facets can also refresh availability.                        |
+| Path                         | Engine work                                                                                                                  |
+| ---------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| Shared-base initial read     | Nonempty text uses `validate()` for read-only components or `process()` for editable components; empty text skips that read. |
+| Whole-marking composer draft | `process()` reads the draft with committed render-suppressed facts carried forward.                                          |
+| Additive composer draft      | Nonempty text uses `validate()` before `process()` to combine it with committed assertions.                                  |
+| Facet composer draft         | Sibling assertions can require a second `process()` to judge the combined marking.                                           |
+| Composer offerings           | Cached base catalog, contextual refresh when draft assertions change, and gated-query requests.                              |
+| DecisionFlow offerings       | Shared catalog and contextual offerings loaded or refreshed by user interaction; rendering uses cached results.              |
+| DOM form rollup              | `aggregate()` per contributing scheme, plus facet-group aggregation and cached validation reads where needed.                |
+| Marking-store rollup         | `aggregateAssertions()` over committed contributors; subscribed facets can also refresh availability.                        |
 
 Whole/part validation, dependent-field refresh, and remote metadata resolution
 can add calls. A commit may reuse a settled composer reading; it does not always
@@ -553,8 +653,6 @@ store, goes through `loaded-value.ts`:
   refer to the input, so the held text is read once to obtain its current
   offsets. That reading supplies its judgment and recognition. The value,
   assertions with their sources, and applied fixes stay from the first read.
-  `assertionsBeforeRepair` is diagnostic history and never seeds an edit or
-  triggers another read.
 - The status mark lists the fixes the first read applied (see "Enhancement
   Status Indicator") and keeps them while the field holds that value, through
   echoes of it from the store; a different value starts the list over.
@@ -563,15 +661,26 @@ store, goes through `loaded-value.ts`:
   flagged pill after the chips.
 
 The store holds the same accepted value. Fields publish and seed what they
-hold; nothing hands the store the author's original text in its place.
+hold; nothing hands the store the author's original text in its place. A field
+bound to a whole marking publishes its facts when the engine read its value in
+full, so who stated each fact reaches every other view: read back from its text,
+a value a rule added would read as the author's own and no view could explain
+it. A value with text the engine could not read is published as its text, the
+only place that text is kept.
 
 Render-suppressed assertions remain in structured state independently of the
-text shown in the field. TagInput shows them as chips drawn faded, from the
-reading's render assessment (`omitted`), which is the engine's own declaration
-of what the written marking leaves out; it never decides that from a concept
-id. A chip the engine derived (`infer`, `default`, `context`, or `repair` with
-a `sourceRule`) is dashed and has no remove button, and the chip keys skip it;
-a solid chip is a fact the author stated.
+text shown in the field. TagInput reads what the written marking leaves out
+from the render assessment (`omitted`, `collapsed`), the engine's own
+declaration of it; it never decides that from a concept id. A fact the engine
+derived that the marking does not write, such as a member collapsed into its
+group's written name or a default no output prints, is drawn faded, and its
+tooltip and accessible name say why the marking holds it: "Included by
+{choice}" for a collapsed member, naming the value it is written under, and
+"Default {category}, not written in the marking" for a default. It is never a
+change on the status mark. A fact the author stated that the marking leaves
+out is drawn faded too. A chip the engine derived (`infer`, `default`,
+`context`, or `repair` with a `sourceRule`) is dashed and has no remove button,
+and the chip keys skip it; a solid chip is a fact the author stated.
 
 This does not authorize rewriting prose: MarkedInput and MarkedTextArea
 separately scan their embedded markings and manage their own body-text editors.
@@ -599,11 +708,10 @@ onAssertionEdit()
 
 DOM updateRollup()
   ├── Debounce (skip while initializing)
-  ├── Collect native values, component renderings and nested-scope wholes
-  ├── Aggregate contributions by scheme
-  ├── Update per-scheme attributes and publish wholes to the parent scope
-  ├── If native rollup value changed: write it and emit input/change
-  ├── Emit ezclassify:rollup, including when its primary value is unchanged
+  ├── Collect native values, component renderings and nested-root wholes
+  ├── Hand each level's contributions to the store as facts, per bucket
+  ├── Write each host-placed output; emit input/change when its value changed
+  ├── Emit ezclassify:rollup on each level whose rollup changed
   └── Validate parent-child relationships even when rendering is unchanged
 ```
 
@@ -635,7 +743,7 @@ process call; it is a lookup over published data, not an evaluation.
 
 Current implementations do not all follow that shared precedence:
 
-- AssertionCard and StatusBanner's boundary mode use the host override before
+- StatusBanner's boundary mode uses the host override before
   the adapter color, then the declared scheme color and category palette.
 - StatusBanner's full-marking mode takes the adapter's `displayColor` before
   consulting the host `colorMap`, and stays neutral when neither the adapter,

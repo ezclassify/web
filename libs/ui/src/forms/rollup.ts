@@ -1,29 +1,37 @@
-import type { FormsContext, FieldAssertion } from './types';
+import type {
+    BucketAggregate,
+    BucketScheme,
+    FieldAssertion,
+    FormsContext,
+    RollupOutputErrorCode,
+} from './types';
 import {
     roleNoun,
     type Assertion,
-    type AggregateResult,
     type CoverageReport,
     type ProcessResult,
     type ValidationError,
-    type Vocabulary,
 } from '@ezclassify/types';
 import type { EzClassifyState } from '../store/ezclassify-store';
-import { cssEscape } from './types';
+import { bucketParts, type BucketKey } from '../store/store-shared';
+import {
+    COLLECTION_ATTR,
+    CONTEXT_ATTR,
+    CONTROLLER_ATTR,
+    SCHEME_ATTR,
+    viewAttrOf,
+} from '../binding-model';
+import { showsStandalonePart } from '../format-resolver';
 import { getFormat, toFieldAssertions } from './state';
 import { showCopiedIndicator } from './dom';
-import { getMountHost } from '../mount-host-registry';
-import * as registry from '../mount-rollup-registry';
+import { isOwnedBy } from '../element-scanner';
+import { TRANSLATE_ATTRIBUTE } from '../components/translated-view';
+import { t } from '../i18n';
 import {
     indexCoverageTargets,
     removeCoverageAction,
     syncCoverageAction,
 } from '../components/coverage-action';
-import {
-    defaultSchemeOf,
-    isAddressableSchemeEngine,
-    resolveProfile,
-} from '../components/component-base-readonly';
 
 /**
  * Construct a DOM event from the target element's own realm.
@@ -65,100 +73,57 @@ function realmEvent(
     return new Ctor(type, init);
 }
 
-/** One contributing field's identity and value in the rollup. */
-export interface ContributionDescriptor {
-    /** The field's rendered (or raw) value that was contributed. */
-    value: string;
+/** One bucket of a level, as the `ezclassify:rollup` event carries it. */
+export interface RollupBucketDetail {
+    /** The Context key, or `null` for an instance built from one Context. */
+    context: string | null;
+    /** The Context-local scheme selector, or `null` for its primary scheme. */
+    scheme: string | null;
+    rendered: string;
+    assertions: Assertion[];
     /**
-     * The id of the source element. For hidden synthetic inputs inside a
-     * marked-textarea, this resolves to the parent textarea's id; not the
-     * hidden field's auto-generated id.
+     * The rollup may be missing markings: a contributor's read failed or read
+     * only part of its source, so this is the last value the store could
+     * compute.
      */
-    sourceId: string;
-    /**
-     * A human-readable label for the source element. Resolution order:
-     * aria-label → <label for=id> text → placeholder → id.
-     */
-    sourceLabel: string;
-    /** Data-ezclassify-controller value of the source element, or null. */
-    controller: string | null;
+    stale: boolean;
 }
 
 /**
- * Resolve a display label for an element. Priority: aria-label → <label for=id>
- * text → placeholder → id.
+ * The `ezclassify:rollup` event detail. One event fires on a level's element
+ * (the instance root for the page, a collection's container, a whole's host)
+ * each time that level's rollup changes.
  */
-function resolveLabel(el: HTMLElement): string {
-    const aria = el.getAttribute('aria-label');
-    if (aria) return aria;
-    const id = el.id;
-    if (id) {
-        const doc = el.ownerDocument ?? document;
-        const label = doc.querySelector<HTMLElement>(
-            `label[for="${cssEscape(id)}"]`,
-        );
-        const labelText = label?.textContent?.trim();
-        if (labelText) return labelText;
-    }
-    const placeholder = (el as HTMLInputElement).placeholder;
-    if (placeholder) return placeholder;
-    return id ?? '';
-}
-
-/**
- * Resolve the field a contribution is attributed to.
- *
- * A controller can contribute through synthetic fields it keeps inside its own
- * mount container (a marked text area keeps one hidden field per marking it
- * finds in the body text). The person-facing field is the host the mount was
- * created for, which the mount-host registry records. DOM position cannot name
- * it: a text editor field moves its host into a wrapper, and a host page can
- * place other elements between that wrapper and the mount.
- */
-function resolveContributionSource(el: HTMLElement): {
-    sourceId: string;
-    sourceLabel: string;
-    controller: string | null;
-} {
-    const mount = el.closest<HTMLElement>('[data-ezclassify-mount]');
-    const host = mount ? getMountHost(mount) : undefined;
-    if (mount && host) {
-        return {
-            sourceId: host.id ?? '',
-            sourceLabel: resolveLabel(host),
-            controller:
-                host.getAttribute('data-ezclassify-controller') ??
-                mount.getAttribute('data-ezclassify-mount'),
-        };
-    }
-    return {
-        sourceId: el.id ?? '',
-        sourceLabel: resolveLabel(el),
-        controller: el.getAttribute('data-ezclassify-controller'),
-    };
+export interface RollupEventDetail {
+    /** The level: `null` for the instance root, else a whole or collection id. */
+    level: string | null;
+    /**
+     * Every bucket of the level that holds a contributor or misses one, in the
+     * store's order. Buckets never merge.
+     */
+    buckets: RollupBucketDetail[];
 }
 
 //
-// The rollup flow validates a tree of related markings on every form change:
-// one `process()` per parent, one per child pair. With N parts + M unique
-// parents, one keystroke can produce O(N+M) engine calls, and every call is a
-// network round-trip under EzClassifyClient.
+// The coverage pass reads each whole and each of its parts on every form
+// change: one `process()` per whole, one per part. With N parts and M wholes,
+// one keystroke can produce O(N+M) engine calls, and every call is a network
+// round-trip under a remote Context.
 //
 // We cache the result of `process(rendered, { format, context })` keyed by the
-// tuple (schemeId, rendered, role, partOfRendered). The cache is LRU with a
-// cap of 256 entries, large enough to hold the common work of a form session
-// (typically 10–30 distinct markings × 2 roles), small enough to survive long
+// tuple (bucket, rendered, role, partOfRendered, format). The cache is LRU with
+// a cap of 256 entries, large enough to hold the common work of a form session
+// (typically 10-30 distinct markings x 2 roles), small enough to survive long
 // sessions without leaking memory. Cleared on session destroy and exposed as
 // `clearRollupProcessCache()` for tests.
 //
-// Each engine gets its own partition. A page may register several contexts, and
-// two of them can carry the same scheme id over a different guide or access
-// composition, which is exactly what decides whether a marking validates. A
-// single shared table keyed on the scheme id alone would hand one context's
-// answer to the other, and one context's teardown would throw away every other
-// context's work.
+// Each adapter gets its own partition. Two Contexts can carry the same scheme
+// over a different guide or access composition, which is exactly what decides
+// whether a marking validates. A single shared table would hand one Context's
+// answer to the other, and one Context's teardown would throw away every other
+// Context's work.
 interface ProcessCacheKey {
-    schemeId: string;
+    bucket: BucketKey;
     rendered: string;
     role: 'whole' | 'part';
     partOfRendered: string;
@@ -167,59 +132,59 @@ interface ProcessCacheKey {
 
 const MAX_CACHE_ENTRIES = 256;
 
-/** One LRU table per engine, plus the generation it was created under. */
-interface EnginePartition {
+/** One LRU table per adapter, plus the generation it was created under. */
+interface AdapterPartition {
     generation: number;
     entries: Map<string, ProcessResult>;
     pending: Map<string, Promise<ProcessResult>>;
 }
 
-const processCaches = new WeakMap<object, EnginePartition>();
+const processCaches = new WeakMap<object, AdapterPartition>();
 
 // Bumped by a clear-all. Partitions are held weakly, so there is no list to walk
 // and no way to empty them one by one; a stale generation retires a partition on
-// its next use instead. Holding the engines strongly to get that list would keep
-// a destroyed session's engine and its results alive.
+// its next use instead. Holding the adapters strongly to get that list would
+// keep a destroyed session's adapter and its results alive.
 let cacheGeneration = 0;
 
-/** The cache for `engine`, rebuilt if a clear-all has happened since. */
-function partitionFor(engine: object): EnginePartition {
-    const existing = processCaches.get(engine);
+/** The cache for `adapter`, rebuilt if a clear-all has happened since. */
+function partitionFor(adapter: object): AdapterPartition {
+    const existing = processCaches.get(adapter);
     if (existing && existing.generation === cacheGeneration) {
         return existing;
     }
-    const fresh: EnginePartition = {
+    const fresh: AdapterPartition = {
         generation: cacheGeneration,
         entries: new Map<string, ProcessResult>(),
         pending: new Map<string, Promise<ProcessResult>>(),
     };
-    processCaches.set(engine, fresh);
+    processCaches.set(adapter, fresh);
     return fresh;
 }
 
 function cacheKey(k: ProcessCacheKey): string {
-    return `${k.schemeId}\x1f${k.role}\x1f${k.format}\x1f${k.partOfRendered}\x1f${k.rendered}`;
+    return `${k.bucket}\x1f${k.role}\x1f${k.format}\x1f${k.partOfRendered}\x1f${k.rendered}`;
 }
 
 /**
- * Run `engine.process` through the rollup LRU cache so repeated rollup
- * validations of the same (profile, role, rendered, partOf) tuple reuse their
- * prior result instead of re-hitting the engine or the wire.
+ * Run `scheme.process` through the rollup LRU cache so repeated reads of the
+ * same (bucket, role, rendered, partOf) tuple reuse their prior result instead
+ * of re-hitting the engine or the wire.
  */
 export async function processRollupMarking(
-    ctx: FormsContext,
-    schemeId: string,
+    ctx: Pick<FormsContext, 'defaultFormat'>,
+    scheme: BucketScheme,
     rendered: string,
     context: { role: 'whole' | 'part'; partOf?: { rendered: string } },
 ): Promise<ProcessResult> {
     const key = cacheKey({
-        schemeId,
+        bucket: scheme.bucket,
         rendered,
         role: context.role,
         partOfRendered: context.partOf?.rendered ?? '',
         format: ctx.defaultFormat,
     });
-    const partition = partitionFor(ctx.engine);
+    const partition = partitionFor(scheme.adapter);
     const hit = partition.entries.get(key);
     if (hit) {
         // LRU: move to the end
@@ -230,25 +195,20 @@ export async function processRollupMarking(
     const inFlight = partition.pending.get(key);
     if (inFlight) return inFlight;
     const pending = Promise.resolve(
-        ctx.schemeAddressing && isAddressableSchemeEngine(ctx.engine)
-            ? ctx.engine.process(rendered, schemeId, {
-                  outputFormat: ctx.defaultFormat,
-                  context,
-              })
-            : ctx.engine.process(rendered, {
-                  outputFormat: ctx.defaultFormat,
-                  context,
-              }),
+        scheme.process(rendered, {
+            outputFormat: ctx.defaultFormat,
+            context,
+        }),
     )
         .then((result) => {
-            partition.entries.set(key, result as ProcessResult);
+            partition.entries.set(key, result);
             // Evict oldest when over the cap.
             if (partition.entries.size > MAX_CACHE_ENTRIES) {
                 const oldestKey = partition.entries.keys().next().value;
                 if (oldestKey !== undefined)
                     partition.entries.delete(oldestKey);
             }
-            return result as ProcessResult;
+            return result;
         })
         .finally(() => partition.pending.delete(key));
     partition.pending.set(key, pending);
@@ -258,57 +218,34 @@ export async function processRollupMarking(
 /**
  * Clear the rollup process cache.
  *
- * @param engine - Clear only this engine's partition. Omit to clear every
+ * @param adapter - Clear only this adapter's partition. Omit to clear every
  *   partition, which is what a test wants between cases.
  */
-export function clearRollupProcessCache(engine?: object): void {
-    if (engine) {
-        contributionRollups.delete(engine);
-        processCaches.delete(engine);
+export function clearRollupProcessCache(adapter?: object): void {
+    if (adapter) {
+        processCaches.delete(adapter);
         return;
     }
-    contributionRollups = new WeakMap();
     cacheGeneration++;
 }
 
 /**
- * Resolve the profile id for a rollup-contributing element. Components carry
- * their resolved schemeId on a private `schemeId` field (set in init via
- * resolveProfile). Unenhanced inputs use that same resolver so an ambiguous
- * multi-scheme page cannot silently assign them to the primary scheme.
+ * The scheme operations for `el`'s bucket, or `null` when `el` resolves no
+ * Context. Such an element is a host error the binding reports; the rollup
+ * leaves it out rather than read it against a Context it does not belong to.
  */
-function profileIdForElement(ctx: FormsContext, el: HTMLElement): string {
-    const comp =
-        ctx.mounted.get(el) ?? ctx.autocompleters.get(el as HTMLInputElement);
-    // Components carry the resolved schemeId: read it directly.
-    if (comp) {
-        const fromComp = (comp as unknown as { schemeId?: string }).schemeId;
-        if (fromComp) return fromComp;
-    }
-    return resolveProfile(el, ctx.engine, undefined, ctx.schemeAddressing);
-}
-
-/** Set `data-rendered-<schemeId>` on the rollup target; remove stale entries. */
-function setPerProfileRendered(
-    target: HTMLElement,
-    byScheme: Map<string, string>,
-): void {
-    // Remove any data-rendered-* attribute whose scheme isn't in the new set.
-    for (const attr of Array.from(target.attributes)) {
-        if (!attr.name.startsWith('data-rendered-')) continue;
-        const id = attr.name.slice('data-rendered-'.length);
-        if (!byScheme.has(id)) target.removeAttribute(attr.name);
-    }
-    for (const [schemeId, rendered] of byScheme) {
-        target.setAttribute(`data-rendered-${schemeId}`, rendered);
+function schemeFor(ctx: FormsContext, el: HTMLElement): BucketScheme | null {
+    try {
+        return ctx.schemeOf(el);
+    } catch {
+        return null;
     }
 }
 
 /**
- * Group every part-of child by the id of its declared parent marking; see
- * binding-model §2. The map's keys are parent marking-ids (never empty); values
- * are the live child elements that point at that parent. Iteration order
- * matches insertion order in `ctx.partOfMap`.
+ * Group every part by the id of its whole; see binding-model §2. The map's keys
+ * are whole marking ids (never empty); values are the live part elements of
+ * that whole. Iteration order matches insertion order in `ctx.partOfMap`.
  */
 export function partitionContributorsByParent(
     ctx: FormsContext,
@@ -327,9 +264,10 @@ export function partitionContributorsByParent(
 }
 
 /**
- * The marking an element holds, as the rollup reads it: the store's committed
- * value where the store has one (see FormsContext.committedRendering), else an
- * enhanced field's component rendering, or an unenhanced field's own value.
+ * The marking an element holds, as the coverage pass reads it: the store's
+ * committed value where the store has one (see
+ * FormsContext.committedRendering), else an enhanced field's component
+ * rendering, or an unenhanced field's own value.
  */
 export function elementRendered(ctx: FormsContext, el: HTMLElement): string {
     const committed = ctx.committedRendering?.(el);
@@ -349,10 +287,10 @@ function componentOf(ctx: FormsContext, el: HTMLElement) {
  * Get rendered marking for an element (field or component). Returns the
  * rendered string and the assertions.
  */
-async function getElementRendered(
+function getElementRendered(
     ctx: FormsContext,
     el: HTMLElement,
-): Promise<{ rendered: string; assertions: FieldAssertion[] }> {
+): { rendered: string; assertions: FieldAssertion[] } {
     // Every enhanced field has a component with cached assertions; use it
     const comp = componentOf(ctx, el);
     return {
@@ -362,22 +300,27 @@ async function getElementRendered(
 }
 
 /**
- * Build a one-shot id → element index over all fields and components, so a
- * rollup pass that resolves many declared parents (each a
- * `data-ezclassify-part-of` target, identified by its `id`) does one linear
- * build and then O(1) lookups, instead of a per-parent rescan of every field
- * and component (O(parents × elements) → O(elements + parents)). Precedence:
+ * Whether an element is a view: it shows a marking and holds none. A view never
+ * stands in for the marking it shows, so it is never resolved as a whole.
+ */
+function isView(el: HTMLElement): boolean {
+    return viewAttrOf(el) !== null;
+}
+
+/**
+ * Build a one-shot id → marking host index over all fields and components, so a
+ * pass that resolves many wholes does one linear build and then O(1) lookups,
+ * instead of a per-whole rescan of every field and component. Precedence:
  * fields win over components, and the first match for a given id wins within
- * each; so `buildParentIndex(ctx).get(id) ?? null` resolves the whole/context
- * element for a part exactly as a fields-then-components search would.
+ * each. Views are never indexed: a view's id names the view, not a marking.
  */
 function buildParentIndex(ctx: FormsContext): Map<string, HTMLElement> {
     const index = new Map<string, HTMLElement>();
     for (const f of ctx.fields) {
-        if (f.id && !index.has(f.id)) index.set(f.id, f);
+        if (f.id && !index.has(f.id) && !isView(f)) index.set(f.id, f);
     }
     for (const [el] of ctx.mounted) {
-        if (el.id && !index.has(el.id)) index.set(el.id, el);
+        if (el.id && !index.has(el.id) && !isView(el)) index.set(el.id, el);
     }
     return index;
 }
@@ -428,14 +371,11 @@ function dispatchValidation(
             notice.setAttribute('role', 'alert');
             notice.setAttribute('aria-live', 'assertive');
             notice.setAttribute('data-ezclassify', '');
-            // Insert AFTER the visible component: which, for interactive
-            // autocompleters, is a sibling div that declarative-attrs added
-            // immediately after the now-hidden native input. A plain
-            // `closest('[data-ezclassify-mount]')` search walks UP from the
-            // native input and never finds the sibling mount, so the notice
-            // ended up inserted before the mount (i.e., visually ABOVE the
-            // autocomplete). Look at the next sibling first, fall back to
-            // ancestor lookup for read-only components that mount in place.
+            // Insert after the visible component. For an interactive
+            // autocompleter that is a sibling mount placed right after the
+            // hidden native input; walking up with `closest` from the input
+            // would never find it and would put the notice above the field.
+            // Read-only components mount in place, so fall back to ancestors.
             const siblingMount = el.nextElementSibling as HTMLElement | null;
             const isSiblingMount = siblingMount?.hasAttribute(
                 'data-ezclassify-mount',
@@ -472,22 +412,20 @@ interface PendingDebounce {
 const pendingRollupDebounces = new WeakMap<FormsContext, PendingDebounce>();
 let rollupSeq = 0;
 /**
- * Debounce window (ms) for collapsing async rollup bursts: e.g. when multiple
- * hidden fields complete their async renders at slightly different times, we
- * want the rollup to fire ONCE after the last one, not once per completion.
- * Each rollup runs ~5 engine calls, so collapsing 4 bursts into 1 saves ~15
- * round-trips.
+ * Debounce window (ms) for collapsing async bursts: when several fields finish
+ * their reads at slightly different times, the pass runs once after the last
+ * one, not once per completion.
  */
 const ROLLUP_DEBOUNCE_MS = 30;
 
 /**
- * Recalculate the aggregate marking from all visible form fields and
- * components. Debounces async bursts: multiple calls within ROLLUP_DEBOUNCE_MS
- * are collapsed into a single rollup run after the quiet period. Each call's
- * returned promise resolves after that single run completes.
+ * Show the store's rollups on the page and check every whole against its parts.
+ * Debounces async bursts: multiple calls within ROLLUP_DEBOUNCE_MS are
+ * collapsed into a single run after the quiet period. Each call's returned
+ * promise resolves after that single run completes.
  */
 export function updateRollup(ctx: FormsContext): Promise<void> {
-    if (!ctx.rollupField) return Promise.resolve();
+    if (ctx.destroyed) return Promise.resolve();
     if (ctx.initializing) return Promise.resolve();
 
     // A queued edit supersedes work already in flight, even while this edit
@@ -504,8 +442,8 @@ export function updateRollup(ctx: FormsContext): Promise<void> {
             pendingRollupDebounces.delete(ctx);
             // Fire-and-forget: this runs after a debounce timer, possibly once the
             // host has detached the form (or, under a test runner, after teardown).
-            // Swallow any error so a deferred rollup can never surface as an unhandled
-            // rejection; the rollup is display-only and self-heals on the next input.
+            // Swallow any error so a deferred pass can never surface as an
+            // unhandled rejection; the next input runs it again.
             void runRollupNow(ctx)
                 .catch(() => {})
                 .finally(() => {
@@ -517,10 +455,11 @@ export function updateRollup(ctx: FormsContext): Promise<void> {
 }
 
 /**
- * Run a rollup immediately, bypassing the {@link updateRollup} debounce timer.
- * Used by the cross-instance contribution path: when a child scope's whole
- * changes it calls its parent's flush synchronously so the parent re-aggregates
- * within the child's settle window instead of waiting out a second debounce.
+ * Run a pass immediately, bypassing the {@link updateRollup} debounce timer.
+ * Used by the cross-instance contribution path: when a nested instance's rollup
+ * changes it calls its enclosing instance's flush so that instance shows it
+ * within the nested instance's settle window instead of waiting out a second
+ * debounce.
  */
 export function flushRollupNow(ctx: FormsContext): Promise<void> {
     const pending = pendingRollupDebounces.get(ctx);
@@ -538,416 +477,412 @@ export function flushRollupNow(ctx: FormsContext): Promise<void> {
     return run;
 }
 
-let contributionRollups = new WeakMap<
-    object,
-    Map<string, Promise<AggregateResult>>
->();
-
-/**
- * Reuse an unchanged contribution rollup only when the canonical metadata
- * explicitly proves the scheme does not read whole-dependent rules. Coverage
- * remains a separate operation against the current whole. Missing metadata is
- * not evidence of independence, including adapters from an older deployment.
- */
-export function aggregateRollupMarkings(
-    ctx: FormsContext,
-    inputs: string[],
-    schemeId?: string,
-): Promise<AggregateResult> {
-    let independent = false;
-    let identity: [string, string] | undefined;
-    try {
-        const metadata =
-            ctx.schemeAddressing && isAddressableSchemeEngine(ctx.engine)
-                ? ctx.engine.getSchemeMeta(schemeId)
-                : ctx.engine.getSchemeMeta();
-        independent = metadata.roleAware === false;
-        identity = [metadata.id, metadata.version];
-    } catch {
-        /* Unknown adapters must recompute. */
-    }
-    const key = JSON.stringify([
-        identity,
-        schemeId ?? null,
-        ctx.defaultFormat,
-        inputs,
-    ]);
-    let cache = contributionRollups.get(ctx.engine);
-    if (independent && cache?.has(key)) return cache.get(key)!;
-    let result: Promise<AggregateResult>;
-    try {
-        // Invoke now, as the uncached rollup did. Deferring the call itself
-        // changes the ordering of edits and controlled asynchronous aggregates.
-        result = Promise.resolve(
-            ctx.schemeAddressing &&
-                schemeId &&
-                isAddressableSchemeEngine(ctx.engine)
-                ? ctx.engine.aggregate(inputs, schemeId, {
-                      outputFormat: ctx.defaultFormat,
-                  })
-                : ctx.engine.aggregate(inputs, {
-                      outputFormat: ctx.defaultFormat,
-                  }),
-        );
-    } catch (error) {
-        result = Promise.reject(error);
-    }
-    if (independent) {
-        if (!cache) {
-            cache = new Map();
-            contributionRollups.set(ctx.engine, cache);
-        }
-        // A mounted page can edit indefinitely; keep only its recent inputs.
-        if (cache.size >= MAX_CACHE_ENTRIES)
-            cache.delete(cache.keys().next().value!);
-        cache.set(key, result);
-        void result.catch(() => {
-            if (cache?.get(key) === result) cache.delete(key);
-        });
-    }
-    return result;
-}
-
 async function runRollupNow(ctx: FormsContext): Promise<void> {
-    if (!ctx.rollupField) return;
+    if (ctx.destroyed) return;
     if (ctx.initializing) return;
 
     const seq = ++rollupSeq;
     pendingRollups.set(ctx, seq);
-    const isCurrent = () =>
-        !!ctx.rollupField && pendingRollups.get(ctx) === seq;
+    const isCurrent = () => !ctx.destroyed && pendingRollups.get(ctx) === seq;
     await Promise.resolve();
     if (!isCurrent()) return;
-    // Read every contributor from one settled state: a pass taken while a
-    // marking is being read again would combine old and new values, and which
+    // Show every level from one settled state: a pass taken while a marking is
+    // being read again would show old and new values side by side, and which
     // ones depends on the order the engine answered in. The store's return to
     // idle runs the pass.
     if (ctx.whenStoreIdle && !ctx.whenStoreIdle(() => void updateRollup(ctx)))
         return;
 
-    // Collect (rendered, schemeId) pairs from fields and components in the
-    // default scope. Scoped components (authority, declass, etc.) are excluded
-    // because they have their own rollup if needed.
-    const valuesByScheme = new Map<string, string[]>();
-    const contributions: ContributionDescriptor[] = [];
-    const pushValue = (schemeId: string, rendered: string) => {
-        if (!rendered) return;
-        let bucket = valuesByScheme.get(schemeId);
-        if (!bucket) {
-            bucket = [];
-            valuesByScheme.set(schemeId, bucket);
-        }
-        bucket.push(rendered);
-    };
+    // Every value shown below is the store's rollup of contributor facts. No
+    // field's text is read back into a rollup, so an output the host placed can
+    // never feed its own value into the rollup it shows.
+    const parentIndex = buildParentIndex(ctx);
+    const partitions = partitionContributorsByParent(ctx);
+    const levels = collectLevels(ctx, parentIndex, partitions);
+    writeOutputs(ctx, levels, parentIndex);
+    announceLevels(ctx, levels);
 
-    // Group facets by their shared marking ID.
-    // Facet leaves (data-ezclassify-facet-of) are category-scoped views of a
-    // parent marking. Their rendered strings can include sibling categories,
-    // so the parent marking is the one value this group contributes.
-    type FacetGroup = { values: string[]; schemeId: string };
-    const facetParentIndex = buildParentIndex(ctx);
-    const facetGroupsByParent = new Map<string, FacetGroup>();
-    for (const f of ctx.fields) {
-        const parentId = f.getAttribute('data-ezclassify-facet-of');
-        if (!parentId) continue;
-        const g = facetGroupsByParent.get(parentId) ?? {
-            values: [],
-            schemeId: profileIdForElement(ctx, f),
-        };
-        if (!facetParentIndex.has(parentId)) {
-            const raw = f.value.trim();
-            if (raw) g.values.push(raw);
-        }
-        facetGroupsByParent.set(parentId, g);
-    }
-    for (const [el, comp] of ctx.mounted) {
-        const parentId = el.getAttribute('data-ezclassify-facet-of');
-        if (!parentId) continue;
-        const g = facetGroupsByParent.get(parentId) ?? {
-            values: [],
-            schemeId: profileIdForElement(ctx, el),
-        };
-        if (!facetParentIndex.has(parentId)) {
-            const rendered = comp.getRendered();
-            if (rendered) g.values.push(rendered);
-        }
-        facetGroupsByParent.set(parentId, g);
-    }
-    const facetParentIds = new Set(facetGroupsByParent.keys());
-
-    for (const f of ctx.fields) {
-        if (f.hasAttribute('data-ezclassify-no-rollup')) continue;
-        if (f.getAttribute('data-ezclassify-scope')) continue;
-        if (f.getAttribute('data-ezclassify-facet-of')) {
-            continue;
-        }
-        if (f.id && facetParentIds.has(f.id)) continue; // parent: added in facet-group pass below
-        const raw = ctx.committedRendering?.(f) ?? f.value.trim();
-        if (raw) {
-            pushValue(profileIdForElement(ctx, f), raw);
-            contributions.push({ value: raw, ...resolveContributionSource(f) });
-        }
-    }
-
-    for (const [el, comp] of ctx.mounted) {
-        if (el.getAttribute('data-ezclassify-scope')) continue;
-        if (el.hasAttribute('data-ezclassify-no-rollup')) continue;
-        if (el.getAttribute('data-ezclassify-facet-of')) {
-            continue;
-        }
-        if (el.id && facetParentIds.has(el.id)) continue; // parent: added in facet-group pass below
-        const rendered = ctx.committedRendering?.(el) ?? comp.getRendered();
-        if (rendered) {
-            pushValue(profileIdForElement(ctx, el), rendered);
-            contributions.push({
-                value: rendered,
-                ...resolveContributionSource(el),
-            });
-        }
-    }
-
-    // Add one value and contribution row per facet group. The parent is the
-    // canonical combined marking. A sibling facet may still hold its previous
-    // whole-valued render after a change, so aggregating leaves here can make a
-    // lowered tier appear to remain at its old rank. Without a parent, combine
-    // the leaves through the engine before contributing the group.
-    for (const [parentId, group] of facetGroupsByParent) {
-        const parentEl = facetParentIndex.get(parentId) ?? null;
-        if (
-            parentEl?.hasAttribute('data-ezclassify-no-rollup') ||
-            parentEl?.getAttribute('data-ezclassify-scope')
-        ) {
-            continue;
-        }
-        let contribValue: string;
-        let contribSourceId: string;
-        let contribSourceLabel: string;
-        let contribController: string | null;
-
-        if (parentEl) {
-            const parentComp = ctx.mounted.get(parentEl);
-            contribValue = parentComp
-                ? parentComp.getRendered()
-                : ((parentEl as HTMLInputElement).value?.trim() ?? '');
-            const src = resolveContributionSource(parentEl);
-            contribSourceId = src.sourceId;
-            contribSourceLabel = src.sourceLabel;
-            contribController = src.controller;
-        } else {
-            if (group.values.length === 0) continue;
-            // No parent element in the DOM: combine the leaf values for display.
-            const aggResult = await aggregateRollupMarkings(
-                ctx,
-                group.values,
-                group.schemeId,
-            );
-            if (!isCurrent()) return;
-            contribValue = aggResult.rendered;
-            contribSourceId = parentId;
-            contribSourceLabel = parentId;
-            contribController = null;
-        }
-
-        if (!contribValue) continue;
-        pushValue(group.schemeId, contribValue);
-        contributions.push({
-            value: contribValue,
-            sourceId: contribSourceId,
-            sourceLabel: contribSourceLabel,
-            controller: contribController,
-        });
-    }
-
-    // Merge nested child-scope contributions. Each child instance registered
-    // under this scope (inferred DOM ancestry, see mount-rollup-registry) feeds
-    // its already-rolled-up WHOLE, one per scheme id, into this scope's
-    // per-scheme buckets. The child's raw leaf fields are owned solely by the
-    // child (the ownership boundary), so the parent never double-counts them; it
-    // composes the child's whole exactly like the engine's part→whole model.
-    // Distinct scheme ids land in distinct buckets (cross-family independence,
-    // never co-aggregated into one engine.aggregate call); the same scheme id
-    // co-aggregates losslessly.
-    for (const child of registry.childrenOf(ctx.mountInstanceId)) {
-        for (const [schemeId, whole] of child.childWholesByScheme()) {
-            if (!whole.rendered) continue;
-            pushValue(schemeId, whole.rendered);
-            contributions.push({
-                value: whole.rendered,
-                sourceId: child.instanceId,
-                sourceLabel: child.instanceId,
-                controller: null,
-            });
-        }
-    }
-
-    // Re-check rollupField after async operations: it may have been cleared.
+    // What this instance contributes to an enclosing one: its root's rollup,
+    // facts included.
+    ctx.onRollupComputed?.(levels.get(null)?.byBucket ?? new Map());
     if (!isCurrent()) return;
 
-    const renderedByScheme = new Map<string, string>();
-
-    for (const [schemeId, vals] of valuesByScheme) {
-        if (vals.length === 0) continue;
-        const aggregated = await aggregateRollupMarkings(ctx, vals, schemeId);
-        if (!isCurrent()) return;
-        renderedByScheme.set(schemeId, aggregated.rendered);
-    }
-
-    // Choose the value for the rollup input's `.value` field.
-    // Single-scheme contribution → use that scheme's rendered rollup.
-    // Multi-scheme contribution → prefer the engine's default scheme, else the
-    // first contributing scheme, else empty. Combined-render output is deferred.
-    let newValue = '';
-    if (renderedByScheme.size === 1) {
-        newValue = renderedByScheme.values().next().value ?? '';
-    } else if (renderedByScheme.size > 1) {
-        const defaultId = defaultSchemeOf(ctx.engine)?.id;
-        if (defaultId && renderedByScheme.has(defaultId)) {
-            newValue = renderedByScheme.get(defaultId) ?? '';
-        } else {
-            newValue = renderedByScheme.values().next().value ?? '';
-        }
-    }
-
-    // Always update the per-scheme data-rendered-* attributes so multi-scheme
-    // pages can read each scheme's rolled-up marking off the target element.
-    setPerProfileRendered(ctx.rollupField, renderedByScheme);
-
-    // Publish this scope's per-scheme wholes upstream. The owning instance
-    // records them and, if its contribution changed, synchronously re-aggregates
-    // its parent scope (depth-2+ settle): bypassing the parent's debounce so a
-    // leaf edit reaches the page banner within this settle window.
-    ctx.onRollupComputed?.(renderedByScheme);
-    if (!isCurrent()) return;
-
-    const changed = ctx.rollupField.value !== newValue;
-
-    if (changed) {
-        ctx.rollupField.value = newValue;
-        ctx.rollupField.dispatchEvent(
-            realmEvent(ctx.rollupField, 'Event', 'input', { bubbles: true }),
-        );
-        ctx.rollupField.dispatchEvent(
-            realmEvent(ctx.rollupField, 'Event', 'change', { bubbles: true }),
-        );
-        if (!isCurrent()) return;
-        await updateGroupRollups(ctx, isCurrent);
-        if (!isCurrent()) return;
-    }
-
-    // The value is what the scope could read. Whether that is all of it is a
-    // separate fact the rollup field carries as its validity.
+    // The values are what the scope could read. Whether that is all of it is
+    // a separate fact the outputs carry as their validity.
     ctx.refreshIncomplete?.(true);
 
-    // Compute assertions for the aggregated rollup value once so every consumer
-    // gets them from the event instead of re-processing the same string.
-    let rollupAssertions: Assertion[] = [];
-    if (newValue) {
-        let primarySchemeId: string;
-        if (renderedByScheme.size === 1) {
-            primarySchemeId = renderedByScheme.keys().next().value ?? '';
-        } else {
-            const defaultId = defaultSchemeOf(ctx.engine)?.id;
-            primarySchemeId =
-                renderedByScheme.size > 1 &&
-                defaultId &&
-                renderedByScheme.has(defaultId)
-                    ? defaultId
-                    : renderedByScheme.size > 0
-                      ? (renderedByScheme.keys().next().value ?? '')
-                      : (defaultSchemeOf(ctx.engine)?.id ?? '');
-        }
-        try {
-            const processed = await processRollupMarking(
-                ctx,
-                primarySchemeId,
-                newValue,
-                { role: 'whole' },
-            );
-            if (!isCurrent()) return;
-            rollupAssertions = processed.assertions ?? [];
-        } catch {
-            // leave empty, display-only, not load-bearing
-        }
-    }
-
-    // Always dispatch ezclassify:rollup so multi-scheme listeners receive the
-    // updated byScheme map even when the default-scheme rendered value is
-    // unchanged (e.g. adding a second scheme's marking leaves the primary rollup
-    // value the same but adds a new entry to byScheme).
-    ctx.rollupField.dispatchEvent(
-        realmEvent(ctx.rollupField, 'CustomEvent', 'ezclassify:rollup', {
-            bubbles: true,
-            detail: {
-                rendered: newValue,
-                byScheme: Object.fromEntries(renderedByScheme),
-                contributions,
-                assertions: rollupAssertions,
-            },
-        }),
-    );
+    await runPartitionCoverage(ctx, partitions, parentIndex, isCurrent);
     if (!isCurrent()) return;
+    await updateConditionalVisibility(ctx, parentIndex, isCurrent);
+}
 
-    // Always validate parent-child: a parent may have changed even if the rollup didn't.
-    // Per binding-model §16, this runs the partition pass: every distinct parent
-    // declared via data-ezclassify-part-of gets its own checkCoverage call.
-    if (!ctx.initializing) {
-        await runPartitionCoverage(ctx, isCurrent);
-        if (!isCurrent()) return;
-        await updateConditionalVisibility(ctx, isCurrent);
+// ---------------------------------------------------------------------------
+// Levels and the outputs that show them
+// ---------------------------------------------------------------------------
+
+interface Level {
+    /** `null` for the instance root, else the whole or collection id. */
+    id: string | null;
+    /** Where the level's `ezclassify:rollup` event fires. */
+    el: HTMLElement;
+    byBucket: ReadonlyMap<BucketKey, BucketAggregate>;
+}
+
+const AGGREGATE_ATTR = 'data-ezclassify-aggregate';
+
+/** The elements under the instance root that this instance owns. */
+function ownedMatches(ctx: FormsContext, selector: string): HTMLElement[] {
+    const found: HTMLElement[] = [];
+    if (ctx.root.matches(selector)) found.push(ctx.root);
+    for (const el of ctx.root.querySelectorAll<HTMLElement>(selector)) {
+        if (isOwnedBy(el, ctx.mountInstanceId)) found.push(el);
+    }
+    return found;
+}
+
+/**
+ * Every level this instance shows: the instance root, each collection it owns
+ * and each whole with parts, each with the store's rollup by bucket.
+ */
+function collectLevels(
+    ctx: FormsContext,
+    parentIndex: Map<string, HTMLElement>,
+    partitions: Map<string, HTMLElement[]>,
+): Map<string | null, Level> {
+    const levels = new Map<string | null, Level>();
+    levels.set(null, {
+        id: null,
+        el: ctx.root,
+        byBucket: ctx.aggregateOf(null),
+    });
+    for (const el of ownedMatches(ctx, `[${COLLECTION_ATTR}]`)) {
+        if (el === ctx.root) continue;
+        const id = el.getAttribute(COLLECTION_ATTR) ?? '';
+        if (!id || levels.has(id)) continue;
+        levels.set(id, { id, el, byBucket: ctx.aggregateOf(id) });
+    }
+    for (const wholeId of partitions.keys()) {
+        const el = parentIndex.get(wholeId);
+        if (!el || levels.has(wholeId)) continue;
+        levels.set(wholeId, {
+            id: wholeId,
+            el,
+            byBucket: ctx.aggregateOf(wholeId),
+        });
+    }
+    return levels;
+}
+
+/** A level's rollup as the event carries it. */
+function eventDetail(level: Level): RollupEventDetail {
+    const buckets: RollupBucketDetail[] = [];
+    for (const [key, aggregate] of level.byBucket) {
+        const stale = aggregate.stale === true;
+        // A bucket that misses a contributor stays, so it never reads as empty.
+        if (!aggregate.rendered && aggregate.assertions.length === 0 && !stale)
+            continue;
+        const { contextKey, schemeSelector } = bucketParts(key);
+        buckets.push({
+            context: contextKey || null,
+            scheme: schemeSelector || null,
+            rendered: aggregate.rendered,
+            assertions: aggregate.assertions,
+            stale,
+        });
+    }
+    return { level: level.id, buckets };
+}
+
+/** The last detail each level announced, by instance, to skip repeats. */
+const announced = new WeakMap<FormsContext, Map<string | null, string>>();
+
+/**
+ * Fire `ezclassify:rollup` on each level whose rollup changed since the last
+ * pass, and on each level the first time it is seen.
+ */
+function announceLevels(
+    ctx: FormsContext,
+    levels: Map<string | null, Level>,
+): void {
+    let last = announced.get(ctx);
+    if (!last) {
+        last = new Map();
+        announced.set(ctx, last);
+    }
+    for (const id of [...last.keys()]) if (!levels.has(id)) last.delete(id);
+    for (const level of levels.values()) {
+        const detail = eventDetail(level);
+        const signature = JSON.stringify(detail);
+        if (last.get(level.id) === signature) continue;
+        last.set(level.id, signature);
+        level.el.dispatchEvent(
+            realmEvent(level.el, 'CustomEvent', 'ezclassify:rollup', {
+                bubbles: true,
+                detail,
+            }),
+        );
+    }
+}
+
+/** How one output resolved: the bucket it shows, or why it shows none. */
+type OutputResolution =
+    | { level: string | null; bucket: BucketKey }
+    | { error: RollupOutputErrorCode; message: string };
+
+/**
+ * The level an output names. A bare attribute (or `"true"`, as a framework
+ * writes a boolean) is the instance root: moving the markup can only widen what
+ * it shows, never lower it.
+ */
+function outputLevel(el: HTMLElement): string | null {
+    const value = (el.getAttribute(AGGREGATE_ATTR) ?? '').trim();
+    return value === '' || value === 'true' ? null : value;
+}
+
+/**
+ * Resolve an output's bucket. Its own `data-ezclassify-context` and
+ * `data-ezclassify-scheme` filter the buckets this instance can hold; an
+ * inherited one never does, so a default set on an outer element cannot hide a
+ * bucket from the page. Exactly one bucket may remain: an output holds one
+ * marking, and choosing one of several for it would submit one scheme's value
+ * as the page's.
+ */
+function resolveOutput(
+    ctx: FormsContext,
+    el: HTMLElement,
+    levels: Map<string | null, Level>,
+    parentIndex: Map<string, HTMLElement>,
+): OutputResolution {
+    const level = outputLevel(el);
+    if (level !== null && !levels.has(level) && !parentIndex.has(level)) {
+        return {
+            error: 'aggregate-level-unknown',
+            message: `data-ezclassify-aggregate="${level}" names no whole or collection.`,
+        };
+    }
+    const candidates = ctx.bucketsNamed(
+        el.getAttribute(CONTEXT_ATTR),
+        el.getAttribute(SCHEME_ATTR),
+    );
+    if (candidates.length === 1) return { level, bucket: candidates[0] };
+    if (candidates.length === 0) {
+        return {
+            error: 'aggregate-bucket-unknown',
+            message:
+                'data-ezclassify-aggregate names a Context or scheme this page does not hold.',
+        };
+    }
+    return {
+        error: 'aggregate-bucket-ambiguous',
+        message:
+            'data-ezclassify-aggregate matches several Contexts or schemes on this page: name one with its own data-ezclassify-context and data-ezclassify-scheme.',
+    };
+}
+
+/** What the runtime last wrote on each output. */
+interface OutputState {
+    /** The resolution's identity, so a host error is reported once. */
+    resolutionKey: string;
+    /** The bucket shown, when the output resolved one. */
+    bucket?: BucketKey;
+    /** The level shown, when the output resolved one. */
+    level?: string | null;
+    /** The host-error message, when it did not. */
+    error?: string;
+    /** The custom-validity message this runtime set, if any. */
+    validity: string | null;
+}
+
+const outputStates = new WeakMap<HTMLElement, OutputState>();
+
+/** Whether each instance's rollup may be missing markings it could not read. */
+const instanceIncomplete = new WeakMap<FormsContext, boolean>();
+
+function holdsValue(el: HTMLElement): el is HTMLInputElement {
+    return el.tagName === 'INPUT' || el.tagName === 'TEXTAREA';
+}
+
+/**
+ * Every output this instance owns: an aggregate element with no controller and
+ * no translation, both of which mount a view that shows the level itself.
+ */
+function ownedOutputs(ctx: FormsContext): HTMLElement[] {
+    return ownedMatches(
+        ctx,
+        `[${AGGREGATE_ATTR}]:not([${CONTROLLER_ATTR}]):not([${TRANSLATE_ATTRIBUTE}])`,
+    );
+}
+
+/**
+ * Write each output the host placed: an input holds its level's value in its
+ * bucket and any other element shows it as text. An output names its bucket
+ * with its own `data-ezclassify-context` and `data-ezclassify-scheme`, so a
+ * page with several buckets places one output per bucket it submits.
+ */
+function writeOutputs(
+    ctx: FormsContext,
+    levels: Map<string | null, Level>,
+    parentIndex: Map<string, HTMLElement>,
+): void {
+    for (const el of ownedOutputs(ctx)) {
+        const resolution = resolveOutput(ctx, el, levels, parentIndex);
+        const resolutionKey = JSON.stringify(resolution);
+        const previous = outputStates.get(el);
+        const state: OutputState = {
+            resolutionKey,
+            validity: previous?.validity ?? null,
+        };
+        outputStates.set(el, state);
+        if ('error' in resolution) {
+            state.error = resolution.message;
+            writeOutputValue(el, '');
+            applyOutputValidity(ctx, el, state, false);
+            if (previous?.resolutionKey !== resolutionKey)
+                ctx.reportHostError?.({
+                    code: resolution.error,
+                    message: resolution.message,
+                    element: el,
+                });
+            continue;
+        }
+        state.bucket = resolution.bucket;
+        state.level = resolution.level;
+        const aggregate =
+            levels.get(resolution.level)?.byBucket.get(resolution.bucket) ??
+            ctx.aggregateOf(resolution.level).get(resolution.bucket);
+        writeOutputValue(el, aggregate?.rendered ?? '');
+        applyOutputValidity(ctx, el, state, aggregate?.stale === true);
+    }
+}
+
+/** Write an output's value, announcing a change the way an edit would. */
+function writeOutputValue(el: HTMLElement, rendered: string): void {
+    if (holdsValue(el)) {
+        if (el.value === rendered) return;
+        el.value = rendered;
+        el.dispatchEvent(realmEvent(el, 'Event', 'input', { bubbles: true }));
+        el.dispatchEvent(realmEvent(el, 'Event', 'change', { bubbles: true }));
+    } else if (el.textContent !== rendered) {
+        el.textContent = rendered;
     }
 }
 
 /**
- * Per-parent coverage pass: multi-whole partitioning (binding-model §2/§7). For
- * each declared parent marking, group its child contributors, run one
- * `engine.checkCoverage(children, parent)` call per group, write the parent's
- * computed state into `ctx.aggregates`, and dispatch coverage events on the
- * child elements. Parent-side changes propagate here too, when a parent's
- * rendered string shifts, every child currently pointing at it is re-checked
- * and the failing ones receive a fresh `ezclassify:coverage-error` event
- * without any silent child mutation (§7 forbids that).
+ * Carry an output's state as its validity: a host error, or a value that may be
+ * missing markings (the instance could not read everything, or the store holds
+ * this bucket from an earlier rollup). Clearing removes only the message this
+ * runtime set, so a host's own message survives.
+ */
+function applyOutputValidity(
+    ctx: FormsContext,
+    el: HTMLElement,
+    state: OutputState,
+    stale: boolean,
+): void {
+    const message =
+        state.error ??
+        (stale || instanceIncomplete.get(ctx) === true
+            ? t('rollup.incomplete')
+            : null);
+    const field = holdsValue(el) ? el : null;
+    if (message) {
+        field?.setCustomValidity(message);
+        el.setAttribute('aria-invalid', 'true');
+        state.validity = message;
+        return;
+    }
+    if (state.validity !== null) {
+        // A field barred from constraint validation (a hidden input) reports no
+        // message, so only a validated field can show that a host replaced
+        // this one.
+        if (
+            field &&
+            (!field.willValidate || field.validationMessage === state.validity)
+        )
+            field.setCustomValidity('');
+        el.removeAttribute('aria-invalid');
+        state.validity = null;
+    }
+}
+
+/**
+ * Mark every output this instance owns as possibly missing markings, or clear
+ * that. The instance calls it from `refreshIncomplete` with what it knows it
+ * could not read: a text area that did not scan all of its text, an aggregate
+ * the store holds as stale, or a nested instance that says the same.
+ */
+export function setOutputsIncomplete(
+    ctx: FormsContext,
+    incomplete: boolean,
+): void {
+    instanceIncomplete.set(ctx, incomplete);
+    for (const el of ownedOutputs(ctx)) {
+        const state = outputStates.get(el);
+        if (!state) continue;
+        const stale =
+            state.bucket !== undefined && state.level !== undefined
+                ? ctx.aggregateOf(state.level).get(state.bucket)?.stale === true
+                : false;
+        applyOutputValidity(ctx, el, state, stale);
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Each whole against its parts
+// ---------------------------------------------------------------------------
+
+/**
+ * Per-whole coverage pass: multi-whole partitioning (binding-model §2/§7). For
+ * each whole, read its parts in the part role against it, run one
+ * `checkCoverage(parts, whole)` call, write the whole's computed state into
+ * `ctx.aggregates`, and dispatch coverage events on the parts. A change to the
+ * whole is checked here too: when the whole's rendered string shifts, every
+ * part currently in it is re-checked and the failing ones receive a fresh
+ * `ezclassify:coverage-error` event without any silent change to the part (§7
+ * forbids that).
+ *
+ * A whole and its parts read in one bucket. A part whose Context or scheme
+ * differs from its whole's is a host error the binding reports; it is not read
+ * against a whole of another rule set.
  */
 async function runPartitionCoverage(
     ctx: FormsContext,
+    partitions: Map<string, HTMLElement[]>,
+    parentIndex: Map<string, HTMLElement>,
     isCurrent: () => boolean,
 ): Promise<void> {
-    const partitions = partitionContributorsByParent(ctx);
     if (partitions.size === 0) return;
     if (!ctx.aggregates) ctx.aggregates = new Map();
 
     type ParentBucket = {
         parentEl: HTMLElement;
         parentId: string;
+        scheme: BucketScheme;
         parentRendered: string;
         childEls: HTMLElement[];
         childRendereds: string[];
-        childAssertions: Map<HTMLElement, FieldAssertion[]>;
     };
 
     const buckets: ParentBucket[] = [];
     const reportByParent = new Map<HTMLElement, CoverageReport | null>();
-    const parentIndex = buildParentIndex(ctx);
 
-    for (const [parentId, childEls] of partitions) {
+    for (const [parentId, partEls] of partitions) {
         const parentEl = parentIndex.get(parentId) ?? null;
         if (!parentEl) continue;
-        const parentInfo = await getElementRendered(ctx, parentEl);
-        if (!isCurrent()) return;
-        const childRendereds: string[] = [];
-        const childAssertions = new Map<HTMLElement, FieldAssertion[]>();
-        for (const childEl of childEls) {
-            const r = await getElementRendered(ctx, childEl);
-            if (!isCurrent()) return;
-            childRendereds.push(r.rendered);
-            childAssertions.set(childEl, r.assertions);
-        }
+        const scheme = schemeFor(ctx, parentEl);
+        if (!scheme) continue;
+        const childEls = partEls.filter(
+            (el) => schemeFor(ctx, el)?.bucket === scheme.bucket,
+        );
         buckets.push({
             parentEl,
             parentId,
-            parentRendered: parentInfo.rendered,
+            scheme,
+            parentRendered: getElementRendered(ctx, parentEl).rendered,
             childEls,
-            childRendereds,
-            childAssertions,
+            childRendereds: childEls.map(
+                (el) => getElementRendered(ctx, el).rendered,
+            ),
         });
     }
 
@@ -967,7 +902,7 @@ async function runPartitionCoverage(
             try {
                 const result = await processRollupMarking(
                     ctx,
-                    profileIdForElement(ctx, bucket.parentEl),
+                    bucket.scheme,
                     bucket.parentRendered,
                     { role: 'whole' },
                 );
@@ -988,7 +923,6 @@ async function runPartitionCoverage(
                 reportByParent.set(bucket.parentEl, null);
                 return;
             }
-            const schemeId = profileIdForElement(ctx, bucket.parentEl);
             const nonEmptyChildren = bucket.childRendereds.filter((c) => !!c);
             if (nonEmptyChildren.length === 0) {
                 reportByParent.set(bucket.parentEl, null);
@@ -996,19 +930,11 @@ async function runPartitionCoverage(
             }
             try {
                 const report = await Promise.resolve(
-                    ctx.schemeAddressing &&
-                        isAddressableSchemeEngine(ctx.engine)
-                        ? ctx.engine.checkCoverage(
-                              nonEmptyChildren,
-                              bucket.parentRendered,
-                              schemeId,
-                              { outputFormat: ctx.defaultFormat },
-                          )
-                        : ctx.engine.checkCoverage(
-                              nonEmptyChildren,
-                              bucket.parentRendered,
-                              { outputFormat: ctx.defaultFormat },
-                          ),
+                    bucket.scheme.checkCoverage(
+                        nonEmptyChildren,
+                        bucket.parentRendered,
+                        { outputFormat: ctx.defaultFormat },
+                    ),
                 );
                 reportByParent.set(bucket.parentEl, report);
             } catch {
@@ -1042,29 +968,25 @@ async function runPartitionCoverage(
             continue;
         }
         let actionReport = reportByParent.get(bucket.parentEl) ?? null;
-        const nonEmptyChildren = bucket.childRendereds.filter(Boolean);
         if (
             !bucket.parentRendered &&
-            nonEmptyChildren.length > 0 &&
+            bucket.childRendereds.some(Boolean) &&
             coverageTargets.hasInteractiveAuthor(bucket.parentId)
         ) {
-            const schemeId = profileIdForElement(ctx, bucket.parentEl);
-            const aggregate = await aggregateRollupMarkings(
-                ctx,
-                nonEmptyChildren,
-                schemeId,
-            );
-            if (!isCurrent()) return;
-            if (aggregate.rendered) {
+            // The store's rollup of the parts' facts, in the whole's bucket.
+            const parts = ctx
+                .aggregateOf(bucket.parentId)
+                .get(bucket.scheme.bucket);
+            if (parts?.rendered) {
                 // An empty whole lacks everything its parts need and carries
                 // nothing of its own, so nothing is in excess.
                 actionReport = {
                     covered: false,
-                    missing: aggregate.assertions ?? [],
+                    missing: parts.assertions,
                     missingLabels: [],
                     excess: [],
                     excessLabels: [],
-                    rendered: aggregate.rendered,
+                    rendered: parts.rendered,
                 };
             }
         }
@@ -1077,9 +999,9 @@ async function runPartitionCoverage(
         );
     }
 
-    // Publish per-parent aggregate state. Each parent's EzClassifyState reflects
-    // its own coverage outcome; a failed coverage marks the parent's slot
-    // invalid without touching any child marking (§7).
+    // Publish per-whole state. Each whole's EzClassifyState reflects its own
+    // coverage outcome; a failed coverage marks the whole's slot invalid without
+    // touching any part (§7).
     for (const bucket of buckets) {
         if (!isCurrent()) return;
         const report = reportByParent.get(bucket.parentEl) ?? null;
@@ -1093,18 +1015,16 @@ async function runPartitionCoverage(
         };
         ctx.aggregates.set(bucket.parentId, { el: bucket.parentEl, state });
         dispatchParentValidation(
-            ctx,
-            bucket.parentEl,
-            bucket.parentRendered,
+            bucket,
             renderedForState,
             report,
             !owned.has(bucket.parentEl),
         );
     }
 
-    // Per-child validation: dispatch the general ezclassify:validation event,
-    // plus ezclassify:coverage-error per binding-model §7 when a child
-    // contributes to a failed coverage check.
+    // Per-part validation: dispatch the general ezclassify:validation event,
+    // plus ezclassify:coverage-error per binding-model §7 when a part exceeds
+    // its whole.
     await validateChildrenAgainstParents(
         ctx,
         buckets,
@@ -1114,13 +1034,16 @@ async function runPartitionCoverage(
 }
 
 function dispatchParentValidation(
-    ctx: FormsContext,
-    parentEl: HTMLElement,
-    parentRendered: string,
+    bucket: {
+        parentEl: HTMLElement;
+        parentRendered: string;
+        scheme: BucketScheme;
+    },
     rolledUp: string,
     report: CoverageReport | null,
     notice: boolean,
 ): void {
+    const { parentEl, parentRendered } = bucket;
     if (!parentRendered || !rolledUp || !report) {
         dispatchValidation(parentEl, {
             valid: true,
@@ -1137,12 +1060,7 @@ function dispatchParentValidation(
         });
         return;
     }
-    const schemeId = profileIdForElement(ctx, parentEl);
-    const meta = ctx.schemeAddressing
-        ? ctx.engine.getScheme(schemeId)
-        : ctx.engine.getSchemeMeta();
-    const vocabulary = (meta as unknown as { vocabulary?: Vocabulary })
-        .vocabulary;
+    const vocabulary = bucket.scheme.getSchemeMeta().vocabulary;
     const wholeLabel = roleNoun(vocabulary, 'whole');
     const partLabel = roleNoun(vocabulary, 'part');
     const excess =
@@ -1179,23 +1097,23 @@ function dispatchParentValidation(
 const EXCEEDS_WHOLE = '_exceeds_whole';
 
 /**
- * Per-partition child validation. Walks the buckets produced by
- * `runPartitionCoverage`, reads each child through the engine with its declared
- * parent as `partOf` context (cached), and dispatches the general
- * `ezclassify:validation` event on each child, plus the coverage-specific
- * `ezclassify:coverage-error` event on each child that exceeds its parent.
+ * Per-whole part validation. Reads each part through the engine in the part
+ * role with its whole as `partOf` (cached), and dispatches the general
+ * `ezclassify:validation` event on each part, plus the coverage-specific
+ * `ezclassify:coverage-error` event on each part that exceeds its whole.
  *
- * Whether a child exceeds its parent is the child's own result: the engine
- * reports it as the part's `_exceeds_whole` error. The rollup attributes
- * nothing itself, so a child under a clean parent stays clean when an unrelated
- * parent on the same page fails coverage, and a child is never faulted for a
- * finding no single part causes, which stays on the parent.
+ * Whether a part exceeds its whole is the part's own result: the engine reports
+ * it as the part's `_exceeds_whole` error. The rollup attributes nothing
+ * itself, so a part under a clean whole stays clean when an unrelated whole on
+ * the same page fails coverage, and a part is never faulted for a finding no
+ * single part causes, which stays on the whole.
  */
 async function validateChildrenAgainstParents(
     ctx: FormsContext,
     buckets: Array<{
         parentEl: HTMLElement;
         parentId: string;
+        scheme: BucketScheme;
         parentRendered: string;
         childEls: HTMLElement[];
         childRendereds: string[];
@@ -1209,10 +1127,6 @@ async function validateChildrenAgainstParents(
     };
     const childProcessed = new Map<HTMLElement, ChildInfo>();
 
-    // Process each child once with its parent's rendered string as partOf
-    // context; preserves the engine's parent-aware validation path
-    // (e.g. country inheritance) and lets the rollup process-cache reuse
-    // results across passes.
     await Promise.all(
         buckets.flatMap((bucket) =>
             bucket.childEls.map(async (childEl, i) => {
@@ -1227,7 +1141,7 @@ async function validateChildrenAgainstParents(
                 try {
                     processed = await processRollupMarking(
                         ctx,
-                        profileIdForElement(ctx, childEl),
+                        bucket.scheme,
                         childRendered,
                         partContext,
                     );
@@ -1287,8 +1201,8 @@ async function validateChildrenAgainstParents(
             );
 
             // Binding-model §7: every failure surfaces as ezclassify:coverage-error
-            // on the child. The library never mutates the child to fit a changed
-            // parent; the author resolves the conflict.
+            // on the part. The library never changes the part to fit a changed
+            // whole; the author resolves the conflict.
             childEl.dispatchEvent(
                 realmEvent(
                     childEl,
@@ -1310,18 +1224,10 @@ async function validateChildrenAgainstParents(
     }
 }
 
-/**
- * Show/hide elements based on whether a parent element has specific concept
- * assertions.
- *
- * Elements with
- * `data-ezclassify-show-when-parent-has="parentId:CONCEPT1,CONCEPT2"` are shown
- * when the parent has ANY of the listed concepts, hidden otherwise.
- *
- * Elements with
- * `data-ezclassify-hide-when-parent-has="parentId:CONCEPT1,CONCEPT2"` are
- * hidden when the parent has ANY of the listed concepts, shown otherwise.
- */
+// ---------------------------------------------------------------------------
+// Conditional sections
+// ---------------------------------------------------------------------------
+
 /** Clear assertions from all ezclassify components inside an element */
 function clearChildComponentAssertions(
     ctx: FormsContext,
@@ -1334,15 +1240,26 @@ function clearChildComponentAssertions(
     }
 }
 
-async function processConditionalElements(
+/**
+ * Show/hide elements based on whether a marking has specific concept
+ * assertions.
+ *
+ * Elements with
+ * `data-ezclassify-show-when-parent-has="markingId:CONCEPT1,CONCEPT2"` are
+ * shown when the marking has ANY of the listed concepts, hidden otherwise.
+ *
+ * Elements with
+ * `data-ezclassify-hide-when-parent-has="markingId:CONCEPT1,CONCEPT2"` are
+ * hidden when the marking has ANY of the listed concepts, shown otherwise.
+ */
+function processConditionalElements(
     ctx: FormsContext,
+    parentIndex: Map<string, HTMLElement>,
     selector: string,
     showWhenMatch: boolean,
     isCurrent: () => boolean,
-): Promise<void> {
+): void {
     const els = ctx.root.querySelectorAll<HTMLElement>(`[${selector}]`);
-    if (els.length === 0) return;
-    const parentIndex = buildParentIndex(ctx);
     for (const el of els) {
         if (!isCurrent()) return;
         const attr = el.getAttribute(selector);
@@ -1360,8 +1277,7 @@ async function processConditionalElements(
             continue;
         }
 
-        const parent = await getElementRendered(ctx, parentEl);
-        if (!isCurrent()) return;
+        const parent = getElementRendered(ctx, parentEl);
         const hasAnyConcept = parent.assertions.some((a) =>
             concepts.includes(a.conceptId),
         );
@@ -1378,99 +1294,28 @@ async function processConditionalElements(
 
 async function updateConditionalVisibility(
     ctx: FormsContext,
+    parentIndex: Map<string, HTMLElement>,
     isCurrent: () => boolean,
 ): Promise<void> {
-    await processConditionalElements(
+    processConditionalElements(
         ctx,
+        parentIndex,
         'data-ezclassify-show-when-parent-has',
         true,
         isCurrent,
     );
     if (!isCurrent()) return;
-    await processConditionalElements(
+    processConditionalElements(
         ctx,
+        parentIndex,
         'data-ezclassify-hide-when-parent-has',
         false,
         isCurrent,
     );
 }
 
-async function updateGroupRollups(
-    ctx: FormsContext,
-    isCurrent: () => boolean,
-): Promise<void> {
-    const groups = new Map<string, HTMLInputElement[]>();
-    for (const field of ctx.fields) {
-        const group = field.getAttribute('data-ezclassify-group');
-        if (group) {
-            const list = groups.get(group) ?? [];
-            list.push(field);
-            groups.set(group, list);
-        }
-    }
-
-    for (const [groupName, groupFields] of groups) {
-        if (!isCurrent()) return;
-        const rollupEl = ctx.root.querySelector(
-            '#' + cssEscape(groupName + '-rollup'),
-        ) as HTMLInputElement | null;
-        if (!rollupEl) continue;
-
-        const values: string[] = [];
-        const contributions: ContributionDescriptor[] = [];
-        for (const f of groupFields) {
-            const raw = f.value.trim();
-            if (raw) {
-                values.push(raw);
-                contributions.push({
-                    value: raw,
-                    ...resolveContributionSource(f),
-                });
-            }
-        }
-
-        let assertions: Assertion[] = [];
-        const byScheme: Record<string, string> = {};
-        if (values.length === 0) {
-            rollupEl.value = '';
-        } else {
-            // Group rollup uses the rollup target's own scheme id when set, else the
-            // engine default. Per-group rollups don't currently mix schemes.
-            const groupProfileId =
-                rollupEl.getAttribute('data-ezclassify-scheme') ??
-                defaultSchemeOf(ctx.engine)?.id;
-            const aggregated = await aggregateRollupMarkings(
-                ctx,
-                values,
-                groupProfileId,
-            );
-            if (!isCurrent()) return;
-            rollupEl.value = aggregated.rendered;
-            assertions = aggregated.assertions ?? [];
-            if (groupProfileId) {
-                byScheme[groupProfileId] = aggregated.rendered;
-            }
-        }
-        rollupEl.dispatchEvent(
-            realmEvent(rollupEl, 'Event', 'change', { bubbles: true }),
-        );
-
-        rollupEl.dispatchEvent(
-            realmEvent(rollupEl, 'CustomEvent', 'ezclassify:rollup', {
-                bubbles: true,
-                detail: {
-                    rendered: rollupEl.value,
-                    byScheme,
-                    contributions,
-                    assertions,
-                },
-            }),
-        );
-    }
-}
-
 /**
- * Copy the field's rendered marking, profile metadata, and assertions to the
+ * Copy the field's rendered marking, scheme metadata, and assertions to the
  * clipboard.
  */
 export async function copyMarkingToClipboard(
@@ -1479,22 +1324,26 @@ export async function copyMarkingToClipboard(
 ): Promise<void> {
     const lastValid = ctx.lastValidated.get(field) ?? field.value.trim();
     if (!lastValid) return;
+    const scheme = schemeFor(ctx, field);
+    if (!scheme) return;
 
     const format = getFormat(ctx, field);
-    const schemeId = profileIdForElement(ctx, field);
     // Copying reads the stored marking; nothing here corrects it.
     const result = await Promise.resolve(
-        ctx.schemeAddressing && isAddressableSchemeEngine(ctx.engine)
-            ? ctx.engine.validate(lastValid, schemeId, { outputFormat: format })
-            : ctx.engine.validate(lastValid, { outputFormat: format }),
+        scheme.validate(lastValid, {
+            outputFormat: format,
+            ...(showsStandalonePart(field)
+                ? { context: { role: 'part' as const } }
+                : {}),
+        }),
     );
-    const scheme = ctx.engine.getScheme(schemeId);
+    const meta = scheme.getSchemeMeta();
     const assertions = result.assertions.map((a) => a.conceptId).join(', ');
 
     const text = [
         result.rendered,
         '---',
-        `Scheme: ${scheme.name} v${scheme.version}`,
+        `Scheme: ${meta.name} v${meta.version}`,
         `Format: ${format}`,
         `Assertions: ${assertions}`,
         `Valid: ${result.valid}`,

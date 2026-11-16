@@ -13,8 +13,7 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import yaml from 'js-yaml';
-import { Context } from '@ezclassify/engine';
+import type { EzClassifyClient } from '@ezclassify/rest-client';
 import type {
     ContextAdapter,
     GuideStructuralView,
@@ -24,10 +23,13 @@ import type {
 import { ContextReference } from './context-reference';
 import { createAsyncMockEngine } from './async-engine-mock';
 import {
-    cedarValleySchemeYaml,
-    cedarValleyGuideYaml,
-    cedarValleyAccessYaml,
-} from '@ezclassify/example-schemes/cedar-valley';
+    connectDemoContext,
+    demoRuntimeSettled,
+} from '../../../../test-support/demo-runtime';
+import {
+    referenceGuide,
+    referenceScheme,
+} from '../../test-fixtures/reference-documents';
 
 // JSDOM doesn't define matchMedia; stub it once.
 if (typeof window !== 'undefined' && !window.matchMedia) {
@@ -41,33 +43,29 @@ if (typeof window !== 'undefined' && !window.matchMedia) {
     });
 }
 
-function fullCtx(): Context {
-    return Context.fromComponents({
-        scheme: yaml.load(cedarValleySchemeYaml),
-        guides: [yaml.load(cedarValleyGuideYaml)],
-        access: yaml.load(cedarValleyAccessYaml),
+async function fullCtx(): Promise<EzClassifyClient> {
+    return await connectDemoContext({ contextId: 'cedar-valley' });
+}
+
+async function schemeOnlyCtx(): Promise<EzClassifyClient> {
+    return await connectDemoContext({
+        draft: { scheme: referenceScheme() },
     });
 }
 
-function schemeOnlyCtx(): Context {
-    return Context.fromComponents({ scheme: yaml.load(cedarValleySchemeYaml) });
-}
-
-function schemeGuideCtx(): Context {
-    return Context.fromComponents({
-        scheme: yaml.load(cedarValleySchemeYaml),
-        guides: [yaml.load(cedarValleyGuideYaml)],
+async function schemeGuideCtx(): Promise<EzClassifyClient> {
+    return await connectDemoContext({
+        draft: { scheme: referenceScheme(), guides: [referenceGuide()] },
     });
 }
 
 /** Two guides in one context; both feed a SINGLE guidebook tab by design. */
-function twoGuideCtx(): Context {
-    const g1 = yaml.load(cedarValleyGuideYaml) as { guide: { id: string } };
-    const g2 = yaml.load(cedarValleyGuideYaml) as { guide: { id: string } };
-    g2.guide.id = `${g2.guide.id}-2`;
-    return Context.fromComponents({
-        scheme: yaml.load(cedarValleySchemeYaml),
-        guides: [g1, g2],
+async function twoGuideCtx(): Promise<EzClassifyClient> {
+    const g1 = referenceGuide();
+    const g2 = referenceGuide();
+    g2.guide['id'] = `${String(g2.guide['id'])}-2`;
+    return await connectDemoContext({
+        draft: { scheme: referenceScheme(), guides: [g1, g2] },
     });
 }
 
@@ -140,20 +138,11 @@ function remoteCtx(opts: {
         attributesNeeded: ['clearance'],
         dependsOn: [],
         overrides: [],
-        lines: [],
     };
 
-    // The access surface is ALWAYS constructed (client fidelity). Its inventory
-    // reports the real composition: rules, empty, or an absent-artifact route
-    // that rejects.
-    const listAccessRuleIds = (): Promise<string[]> => {
-        if (opts.access === 'rules') return Promise.resolve(['need-clearance']);
-        if (opts.access === 'empty') return Promise.resolve([]);
-        return Promise.reject(
-            new Error('404: no access policy in this context'),
-        );
-    };
-
+    // The access surface is ALWAYS constructed (client fidelity). Its rule
+    // listing reports the real composition: rules, empty, or an
+    // absent-artifact route that rejects.
     return {
         connected: true,
         compositionPresence: {
@@ -170,17 +159,16 @@ function remoteCtx(opts: {
         } as never,
         access: {
             schemeId: 'test-async',
-            listAccessRuleIds,
             describeAllAccessRules: () =>
                 opts.access === 'rules'
                     ? Promise.resolve([accessRule])
                     : opts.access === 'empty'
                       ? Promise.resolve([])
                       : Promise.reject(new Error('404: no access policy')),
+            describeAccessMarking: () => Promise.resolve(undefined),
         } as never,
         describeSchemes: () => Promise.resolve([]),
         audit: () => Promise.resolve({} as never),
-        assessDocumentAccess: () => Promise.resolve({} as never),
         checkContextAccess: () => Promise.resolve({} as never),
         accessRequirements: () => Promise.resolve({} as never),
         translate: () => Promise.resolve({} as never),
@@ -247,8 +235,8 @@ describe('ContextReference', () => {
     });
 
     describe('built-in tab derivation (local composition)', () => {
-        it('renders handbook + guidebook + access for a full context', () => {
-            component.init(container, fullCtx());
+        it('renders handbook + guidebook + access for a full context', async () => {
+            component.init(container, await fullCtx());
             expect(tabIds(container)).toEqual([
                 'handbook',
                 'guidebook',
@@ -256,32 +244,33 @@ describe('ContextReference', () => {
             ]);
         });
 
-        it('renders only the handbook tab for a scheme-only context', () => {
-            component.init(container, schemeOnlyCtx());
+        it('renders only the handbook tab for a scheme-only context', async () => {
+            component.init(container, await schemeOnlyCtx());
             expect(tabIds(container)).toEqual(['handbook']);
         });
 
-        it('renders handbook + guidebook when there is a guide but no access', () => {
-            component.init(container, schemeGuideCtx());
+        it('renders handbook + guidebook when there is a guide but no access', async () => {
+            component.init(container, await schemeGuideCtx());
             expect(tabIds(container)).toEqual(['handbook', 'guidebook']);
         });
 
-        it('feeds every loaded guide into ONE guidebook tab', () => {
-            component.init(container, twoGuideCtx());
+        it('feeds every loaded guide into ONE guidebook tab', async () => {
+            component.init(container, await twoGuideCtx());
             const ids = tabIds(container);
             expect(ids.filter((id) => id === 'guidebook')).toHaveLength(1);
         });
 
         it('mounts the composed reference components into the panels', async () => {
-            component.init(container, fullCtx());
+            component.init(container, await fullCtx());
+            await demoRuntimeSettled();
             expect(container.querySelector('.ez-handbook')).toBeTruthy();
             expect(container.querySelector('.ez-guidebook')).toBeTruthy();
             await flush();
             expect(container.querySelector('.ez-access-handbook')).toBeTruthy();
         });
 
-        it('makes the host element itself the drawer root', () => {
-            component.init(container, schemeOnlyCtx());
+        it('makes the host element itself the drawer root', async () => {
+            component.init(container, await schemeOnlyCtx());
             expect(container.classList.contains('ez-context-ref')).toBe(true);
             expect(container.getAttribute('role')).toBe('region');
         });
@@ -292,7 +281,10 @@ describe('ContextReference', () => {
     describe('remote built-in presence from resolved composition', () => {
         it('shows ONLY handbook for a remote scheme-only context without probing access', async () => {
             const remote = remoteCtx({ guides: 0, access: 'absent' });
-            const accessProbe = vi.spyOn(remote.access!, 'listAccessRuleIds');
+            const accessProbe = vi.spyOn(
+                remote.access!,
+                'describeAllAccessRules',
+            );
             component.init(container, remote);
             expect(tabIds(container)).toEqual(['handbook']);
             await flush();
@@ -354,7 +346,7 @@ describe('ContextReference', () => {
     // so a framework can add/remove/reorder/update/unmount it without the drawer
     // moving DOM out from under its renderer.
     describe('custom tabs projected in place', () => {
-        it('projects a marked child as a tab WITHOUT moving it out of the host', () => {
+        it('projects a marked child as a tab WITHOUT moving it out of the host', async () => {
             const custom = addCustomChild(
                 container,
                 'developers',
@@ -362,7 +354,7 @@ describe('ContextReference', () => {
                 'host-owned panel content',
             );
 
-            component.init(container, schemeOnlyCtx());
+            component.init(container, await schemeOnlyCtx());
 
             expect(tabIds(container)).toEqual(['handbook', 'developers']);
             // The node was NOT relocated: it is still a DIRECT child of the host,
@@ -382,7 +374,7 @@ describe('ContextReference', () => {
                 'developers',
                 'Developers',
             );
-            component.init(container, schemeOnlyCtx());
+            component.init(container, await schemeOnlyCtx());
             expect(tabIds(container)).toEqual(['handbook', 'developers']);
 
             // A framework re-render removes the node; the host is its true parent,
@@ -393,7 +385,7 @@ describe('ContextReference', () => {
         });
 
         it('reflects a custom tab ADDED to the host after mount', async () => {
-            component.init(container, schemeOnlyCtx());
+            component.init(container, await schemeOnlyCtx());
             expect(tabIds(container)).toEqual(['handbook']);
 
             addCustomChild(container, 'developers', 'Developers');
@@ -404,7 +396,7 @@ describe('ContextReference', () => {
         it('reflects reordering of custom tabs after mount', async () => {
             addCustomChild(container, 'a', 'Alpha');
             addCustomChild(container, 'b', 'Bravo');
-            component.init(container, schemeOnlyCtx());
+            component.init(container, await schemeOnlyCtx());
             expect(tabIds(container)).toEqual(['handbook', 'a', 'b']);
 
             // Move Alpha after Bravo (a framework reorder). Both stay direct
@@ -415,13 +407,13 @@ describe('ContextReference', () => {
             expect(tabIds(container)).toEqual(['handbook', 'b', 'a']);
         });
 
-        it('keeps the same DOM node across content updates (no reparent)', () => {
+        it('keeps the same DOM node across content updates (no reparent)', async () => {
             const custom = addCustomChild(
                 container,
                 'developers',
                 'Developers',
             );
-            component.init(container, schemeOnlyCtx());
+            component.init(container, await schemeOnlyCtx());
             const before = custom.parentElement;
             // A framework content update mutates the node's children in place.
             custom.appendChild(document.createTextNode(' more'));
@@ -429,9 +421,9 @@ describe('ContextReference', () => {
             expect(custom.parentElement).toBe(container);
         });
 
-        it('reads the custom label and interleaves via the tabs allowlist', () => {
+        it('reads the custom label and interleaves via the tabs allowlist', async () => {
             addCustomChild(container, 'developers', 'Developers');
-            component.init(container, fullCtx(), {
+            component.init(container, await fullCtx(), {
                 tabs: ['developers', 'access', 'handbook'],
             } as never);
             expect(tabIds(container)).toEqual([
@@ -441,13 +433,13 @@ describe('ContextReference', () => {
             ]);
         });
 
-        it('hides a custom node suppressed by the allowlist (never stray content)', () => {
+        it('hides a custom node suppressed by the allowlist (never stray content)', async () => {
             const custom = addCustomChild(
                 container,
                 'developers',
                 'Developers',
             );
-            component.init(container, schemeOnlyCtx(), {
+            component.init(container, await schemeOnlyCtx(), {
                 tabs: ['handbook'],
             } as never);
             expect(tabIds(container)).toEqual(['handbook']);
@@ -463,14 +455,14 @@ describe('ContextReference', () => {
         it('rejects a custom id that claims a reserved built-in id', async () => {
             addCustomChild(container, 'handbook', 'Fake Handbook');
             await expect(
-                component.init(container, schemeOnlyCtx()),
+                component.init(container, await schemeOnlyCtx()),
             ).rejects.toThrow(/reserved/);
         });
 
         it('rejects a malformed custom id', async () => {
             addCustomChild(container, 'has spaces', 'Bad');
             await expect(
-                component.init(container, schemeOnlyCtx()),
+                component.init(container, await schemeOnlyCtx()),
             ).rejects.toThrow(/valid tab id/);
         });
 
@@ -478,22 +470,22 @@ describe('ContextReference', () => {
             addCustomChild(container, 'dev', 'One');
             addCustomChild(container, 'dev', 'Two');
             await expect(
-                component.init(container, schemeOnlyCtx()),
+                component.init(container, await schemeOnlyCtx()),
             ).rejects.toThrow(/duplicate custom tab id/);
         });
 
         it('rejects a duplicated id in the tabs allowlist', async () => {
             await expect(
-                component.init(container, schemeOnlyCtx(), {
+                component.init(container, await schemeOnlyCtx(), {
                     tabs: ['handbook', 'handbook'],
                 } as never),
             ).rejects.toThrow(/allowlist/);
         });
 
-        it('accepts distinct valid custom ids', () => {
+        it('accepts distinct valid custom ids', async () => {
             addCustomChild(container, 'dev-tools', 'Dev');
             addCustomChild(container, 'ops2', 'Ops');
-            component.init(container, schemeOnlyCtx());
+            component.init(container, await schemeOnlyCtx());
             expect(tabIds(container)).toEqual([
                 'handbook',
                 'dev-tools',
@@ -511,7 +503,7 @@ describe('ContextReference', () => {
                 .spyOn(console, 'error')
                 .mockImplementation(() => {});
             addCustomChild(container, 'dev', 'One');
-            component.init(container, schemeOnlyCtx());
+            component.init(container, await schemeOnlyCtx());
             expect(tabIds(container)).toEqual(['handbook', 'dev']);
 
             // A later render adds a second node claiming the same id. The drawer
@@ -529,15 +521,15 @@ describe('ContextReference', () => {
     });
 
     describe('tabs allowlist (presentation-only order + suppression)', () => {
-        it('reorders and suppresses built-in tabs without touching the context', () => {
-            component.init(container, fullCtx(), {
+        it('reorders and suppresses built-in tabs without touching the context', async () => {
+            component.init(container, await fullCtx(), {
                 tabs: ['access', 'handbook'],
             } as never);
             expect(tabIds(container)).toEqual(['access', 'handbook']);
         });
 
-        it('accepts a comma-separated string allowlist (declarative path)', () => {
-            component.init(container, fullCtx(), {
+        it('accepts a comma-separated string allowlist (declarative path)', async () => {
+            component.init(container, await fullCtx(), {
                 tabs: 'handbook,access',
             } as never);
             expect(tabIds(container)).toEqual(['handbook', 'access']);
@@ -545,8 +537,8 @@ describe('ContextReference', () => {
     });
 
     describe('per-tab labels', () => {
-        it('applies a per-tab label override', () => {
-            component.init(container, schemeOnlyCtx(), {
+        it('applies a per-tab label override', async () => {
+            component.init(container, await schemeOnlyCtx(), {
                 tabLabels: { handbook: 'Manual' },
             } as never);
             expect(tabLabels(container)).toContain('Manual');
@@ -554,8 +546,8 @@ describe('ContextReference', () => {
     });
 
     describe('presentation', () => {
-        it('applies placement, size, and per-side offsets on the host', () => {
-            component.init(container, schemeOnlyCtx(), {
+        it('applies placement, size, and per-side offsets on the host', async () => {
+            component.init(container, await schemeOnlyCtx(), {
                 placement: 'left',
                 size: '24rem',
                 offset: { top: '60px' },
@@ -571,15 +563,15 @@ describe('ContextReference', () => {
             ).toBe('60px');
         });
 
-        it('defaults placement to right', () => {
-            component.init(container, schemeOnlyCtx());
+        it('defaults placement to right', async () => {
+            component.init(container, await schemeOnlyCtx());
             expect(
                 container.getAttribute('data-ez-context-ref-placement'),
             ).toBe('right');
         });
 
-        it('applies a named preset theme inline on the host', () => {
-            component.init(container, schemeOnlyCtx(), {
+        it('applies a named preset theme inline on the host', async () => {
+            component.init(container, await schemeOnlyCtx(), {
                 theme: 'government',
             } as never);
             expect(container.style.getPropertyValue('--ez-font-family')).toBe(
@@ -589,8 +581,8 @@ describe('ContextReference', () => {
     });
 
     describe('open / closed', () => {
-        it('offers an internal native close button and returns focus to the retained launcher', () => {
-            component.init(container, schemeOnlyCtx());
+        it('offers an internal native close button and returns focus to the retained launcher', async () => {
+            component.init(container, await schemeOnlyCtx());
             const close = container.querySelector<HTMLButtonElement>(
                 '.ez-context-ref__close',
             )!;
@@ -626,8 +618,10 @@ describe('ContextReference', () => {
             ).toBeNull();
         });
 
-        it('closes with Escape from the internal close button and restores launcher focus', () => {
-            component.init(container, schemeOnlyCtx(), { open: true } as never);
+        it('closes with Escape from the internal close button and restores launcher focus', async () => {
+            component.init(container, await schemeOnlyCtx(), {
+                open: true,
+            } as never);
             const close = container.querySelector<HTMLButtonElement>(
                 '.ez-context-ref__close',
             )!;
@@ -645,22 +639,26 @@ describe('ContextReference', () => {
             expect(document.activeElement).toBe(handle);
         });
 
-        it('starts closed by default', () => {
-            component.init(container, schemeOnlyCtx());
+        it('starts closed by default', async () => {
+            component.init(container, await schemeOnlyCtx());
             expect(container.getAttribute('data-ez-context-ref-open')).toBe(
                 'false',
             );
         });
 
-        it('opens for the declarative presence-only attribute (empty string)', () => {
-            component.init(container, schemeOnlyCtx(), { open: '' } as never);
+        it('opens for the declarative presence-only attribute (empty string)', async () => {
+            component.init(container, await schemeOnlyCtx(), {
+                open: '',
+            } as never);
             expect(container.getAttribute('data-ez-context-ref-open')).toBe(
                 'true',
             );
         });
 
-        it('starts open when requested and toggles via the handle', () => {
-            component.init(container, schemeOnlyCtx(), { open: true } as never);
+        it('starts open when requested and toggles via the handle', async () => {
+            component.init(container, await schemeOnlyCtx(), {
+                open: true,
+            } as never);
             expect(container.getAttribute('data-ez-context-ref-open')).toBe(
                 'true',
             );
@@ -676,8 +674,8 @@ describe('ContextReference', () => {
     });
 
     describe('accessibility', () => {
-        it('exposes tablist / tab / tabpanel roles with roving tabindex', () => {
-            component.init(container, fullCtx());
+        it('exposes tablist / tab / tabpanel roles with roving tabindex', async () => {
+            component.init(container, await fullCtx());
             const tablist = container.querySelector(
                 '.ez-context-ref__tablist[role="tablist"]',
             );
@@ -704,8 +702,8 @@ describe('ContextReference', () => {
             expect(panels).toHaveLength(3);
         });
 
-        it('shows only the active tabpanel', () => {
-            component.init(container, fullCtx());
+        it('shows only the active tabpanel', async () => {
+            component.init(container, await fullCtx());
             const panels = Array.from(
                 container.querySelectorAll<HTMLElement>(
                     '.ez-context-ref__tabpanel',
@@ -716,8 +714,8 @@ describe('ContextReference', () => {
             expect(visible[0].id).toBe('ez-context-ref-panel-handbook');
         });
 
-        it('navigates tabs with ArrowRight and moves selection', () => {
-            component.init(container, fullCtx());
+        it('navigates tabs with ArrowRight and moves selection', async () => {
+            component.init(container, await fullCtx());
             const tablist =
                 container.querySelector<HTMLElement>('[role="tablist"]')!;
             tablist.dispatchEvent(
@@ -734,14 +732,14 @@ describe('ContextReference', () => {
     });
 
     describe('teardown', () => {
-        it('strips its chrome and un-projects custom nodes, leaving them in place', () => {
+        it('strips its chrome and un-projects custom nodes, leaving them in place', async () => {
             const custom = addCustomChild(
                 container,
                 'developers',
                 'Developers',
             );
 
-            component.init(container, schemeOnlyCtx());
+            component.init(container, await schemeOnlyCtx());
             component.destroy();
 
             // The host survives (the framework owns it); only our enhancement is

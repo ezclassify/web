@@ -1,0 +1,671 @@
+{
+    "engineVersion": "1.0.0-dev.30",
+    "openapiVersion": "1.0.0-dev.30",
+    "responses": {
+        "08a5c449c9bf63a2793de0e6a68f0615ca4cf2f9a6fb6530e28fe615bbf11d1b": {
+            "body": {
+                "id": "test-select",
+                "scheme": {
+                    "id": "test-select",
+                    "resolvedVersion": "1.0.0",
+                    "version": "1.0.0"
+                },
+                "schemes": [
+                    {
+                        "id": "test-select",
+                        "roles": ["primary"],
+                        "selector": "test-select",
+                        "version": "1.0.0"
+                    }
+                ],
+                "version": "1.0.0"
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "0a669b76bf1936e442f84e6be5168170c6f8104d7f4e96e5d73f14f55c8badbc": {
+            "body": [
+                {
+                    "categoryOrder": ["level"],
+                    "categorySeparators": { "level": "//" },
+                    "categoryViews": { "level": "default" },
+                    "id": "default",
+                    "mode": "inline",
+                    "separator": "//",
+                    "surface": "marking"
+                }
+            ],
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "1cb44f8505484bf9eb40e7e682cb125ae4aeb8055ea859d561f19407dd061f74": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "test-select",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "test-select",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "level-3",
+                            "confidence": "certain",
+                            "source": "user",
+                            "value": "2035-09-30"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            {
+                                "categoryId": "level",
+                                "conceptId": "level-3",
+                                "value": "2035-09-30"
+                            }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "20350930",
+                    "renders": {},
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "2b8d9ef4b82c9a9135bc8e945beac4ec1e38dcdce2e16abd6d6085372f85f7c9": {
+            "body": [],
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "3a0b9bf665bffb128d7985bd5e0e8fe07579e22046b554a3941504299c240467": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "test-select",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "test-select",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [
+                        {
+                            "affectedConcepts": ["level-3"],
+                            "categoryId": "level",
+                            "constraintId": "_invalid_assertion_value",
+                            "message": "Level 3 cannot hold the value \"20350231\": 2035-02 has 28 days.."
+                        }
+                    ],
+                    "inputWasValid": false,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "",
+                    "renders": {},
+                    "valid": false,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "474a97cc049cdf9283b92abfdf646bd711c72bab8d5cc28fbc7cb26e43755430": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "test-select",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "test-select",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [
+                        {
+                            "affectedConcepts": ["level-3"],
+                            "categoryId": "level",
+                            "constraintId": "_invalid_assertion_value",
+                            "message": "Level 3 cannot hold the value \"20350231\": 2035-02 has 28 days.."
+                        }
+                    ],
+                    "inputWasValid": false,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "",
+                    "renders": {},
+                    "valid": false,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "4afc53063a127ca98057e98087e7be13496eb8b05d4f7a48cc181d43e77fef6f": {
+            "body": [
+                {
+                    "aliases": [],
+                    "categories": ["level"],
+                    "definition": "Choose this level for the first tier.",
+                    "id": "level-1",
+                    "name": "Level 1",
+                    "parents": [],
+                    "position": 1,
+                    "rank": 0,
+                    "views": { "default": "L1" }
+                },
+                {
+                    "aliases": [],
+                    "categories": ["level"],
+                    "id": "level-2",
+                    "name": "Level 2",
+                    "parents": [],
+                    "position": 2,
+                    "rank": 1,
+                    "views": { "default": "L2" }
+                },
+                {
+                    "aliases": [],
+                    "categories": ["level"],
+                    "id": "level-3",
+                    "name": "Level 3",
+                    "parents": [],
+                    "position": 3,
+                    "rank": 2,
+                    "views": { "default": "L3" }
+                }
+            ],
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "595a9c02e1689c14fa99b89dd29fd1c78778267086c78b11d31920f181b15393": {
+            "body": {
+                "id": "test-select",
+                "scheme": {
+                    "id": "test-select",
+                    "resolvedVersion": "1.0.0",
+                    "version": "1.0.0"
+                },
+                "schemes": [
+                    {
+                        "id": "test-select",
+                        "roles": ["primary"],
+                        "selector": "test-select",
+                        "version": "1.0.0"
+                    }
+                ],
+                "version": "1.0.0"
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "6bf8ad71990f471f4c9727af529bd8f7798cedc82c68b900d2a1a24877c9f370": {
+            "body": {
+                "contextId": "sbx-263638ce4badfe4a7a5915b5ae344b38f2688dd46dc155684ea2c411a00cc205"
+            },
+            "method": "PUT",
+            "statusCode": 200
+        },
+        "7863029ff95439c2f2ad31bad77b8ada9719ed39864f70994e8a5069c02d8aa2": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "test-select",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "test-select",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "level-1",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            { "categoryId": "level", "conceptId": "level-1" }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [
+                        {
+                            "affectedConcepts": ["level-1"],
+                            "constraintId": "_recognition_incomplete",
+                            "message": "Only part of the input reads as a marking in the \"default\" format; the rest is not recognized."
+                        },
+                        {
+                            "constraintId": "_unmatched_token",
+                            "message": "\"extra\" was not recognized: it matched no known concept and will be kept visible in the rendered marking."
+                        }
+                    ],
+                    "inputWasValid": false,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "recognition": {
+                        "corrections": [],
+                        "inputFormat": "default",
+                        "status": "partial",
+                        "surface": "marking",
+                        "unmatched": [{ "end": 8, "start": 3, "text": "extra" }]
+                    },
+                    "rendered": "L1//extra",
+                    "renders": {},
+                    "valid": false,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "7ca01bab083f9fce42ad1d539dd219c150d6207939e055ae2a52a3439d04c817": {
+            "body": {
+                "defaultRenderFormat": "default",
+                "description": "",
+                "id": "test-select",
+                "name": "Test Select",
+                "referenceSurfaceLabel": {
+                    "plural": "Handbooks",
+                    "singular": "Handbook"
+                },
+                "roleAware": false,
+                "version": "1.0.0"
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "871223e6292fbd1748f424af64f649ad642e7db675d6aa0f23666a496fd275f4": {
+            "body": [
+                {
+                    "categoryOrder": ["level"],
+                    "categorySeparators": { "level": "//" },
+                    "categoryViews": { "level": "default" },
+                    "id": "default",
+                    "mode": "inline",
+                    "separator": "//",
+                    "surface": "marking"
+                }
+            ],
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "8f76cd0b616fe251980f08bc0c653790cf3f56f3114a34b258b57a5ce7036165": {
+            "body": [],
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "8fa6ace0d919eb52f942143680f71d44cb5c7514b021c2d1a188cdf3d516fa95": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "test-select",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "test-select",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "level-1",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            { "categoryId": "level", "conceptId": "level-1" }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [
+                        {
+                            "affectedConcepts": ["level-1"],
+                            "constraintId": "_recognition_incomplete",
+                            "message": "Only part of the input reads as a marking in the \"default\" format; the rest is not recognized."
+                        },
+                        {
+                            "constraintId": "_unmatched_token",
+                            "message": "\"extra\" was not recognized: it matched no known concept and will be kept visible in the rendered marking."
+                        }
+                    ],
+                    "inputWasValid": false,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "recognition": {
+                        "corrections": [],
+                        "inputFormat": "default",
+                        "status": "partial",
+                        "surface": "marking",
+                        "unmatched": [{ "end": 9, "start": 4, "text": "extra" }]
+                    },
+                    "rendered": "L1//extra",
+                    "renders": {},
+                    "valid": false,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "9f51ff7d54b54d84ebf307d3042c10aa26dbed977d5f09e57e220cbd541230b9": {
+            "body": {
+                "contextId": "sbx-745bc923f68dbe609c85523463b0e77e8df5712f274fbb07dcaee8fb877d1fb0"
+            },
+            "method": "PUT",
+            "statusCode": 200
+        },
+        "a8604ff5acc3da96d3e1eba937c8c80226c0731ab1d9e11d70c6b43463307427": {
+            "body": [
+                {
+                    "hierarchyRoot": true,
+                    "id": "level",
+                    "label": "Level",
+                    "position": 0,
+                    "required": false,
+                    "rollup": "max",
+                    "single": true
+                }
+            ],
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "ba2330c29ece9c91816f7c363ac4a70458dca74034df219fd4d25b4e45ecfc74": {
+            "body": [],
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "bc4524ffa087a66001f6421514b3a5ac0bad496118e944aac1f65e5ca9bb01ce": {
+            "body": {
+                "defaultRenderFormat": "default",
+                "description": "",
+                "id": "test-select",
+                "name": "Test Select",
+                "referenceSurfaceLabel": {
+                    "plural": "Handbooks",
+                    "singular": "Handbook"
+                },
+                "roleAware": false,
+                "version": "1.0.0"
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "c87162c366e98f25ee70b40bc11ad526a322ec8383a1939981c32d3852e0e96e": {
+            "body": [
+                {
+                    "hierarchyRoot": true,
+                    "id": "level",
+                    "label": "Level",
+                    "position": 0,
+                    "required": false,
+                    "rollup": "max",
+                    "single": true
+                }
+            ],
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "ce6122441458adedae519e77c59f78b944b711472aa3f6b506aaedf45b873745": {
+            "body": [],
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "e070dec6e78862435e7c23c92a6e4a93a9667377aed0b78b533966687028c314": {
+            "body": {
+                "abiVersion": "v1",
+                "engineSha": "",
+                "engineVersion": "1.0.0-dev.30",
+                "gitTag": "",
+                "openapiVersion": "1.0.0-dev.30",
+                "status": "ok"
+            },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "e305a952b03498e1a4f4a71b0b7dd575b7f225b6aea40bc0b12cb45b7a90c1a6": {
+            "body": [
+                {
+                    "aliases": [],
+                    "categories": ["level"],
+                    "definition": "Choose this level for the first tier.",
+                    "id": "level-1",
+                    "name": "Level 1",
+                    "parents": [],
+                    "position": 1,
+                    "rank": 0,
+                    "views": { "default": "L1" }
+                },
+                {
+                    "aliases": [],
+                    "categories": ["level"],
+                    "id": "level-2",
+                    "name": "Level 2",
+                    "parents": [],
+                    "position": 2,
+                    "rank": 1,
+                    "views": { "default": "L2" }
+                },
+                {
+                    "aliases": [],
+                    "categories": ["level"],
+                    "id": "level-3",
+                    "name": "Level 3",
+                    "parents": [],
+                    "position": 3,
+                    "rank": 2,
+                    "textInput": {
+                        "encoding": {
+                            "accepts": ["YYYYMMDD", "YYYY-MM-DD"],
+                            "canonical": "YYYY-MM-DD",
+                            "type": "calendar-date",
+                            "views": { "default": "YYYYMMDD" }
+                        },
+                        "label": "Review date",
+                        "placeholder": "YYYYMMDD",
+                        "required": true
+                    },
+                    "views": { "default": "{value}" }
+                }
+            ],
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "e53cca200acef7155af80c3ddc1c8bdeb2e47fca59ef5eaa03d0f6949388b53d": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "test-select",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "test-select",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "level-1",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            { "categoryId": "level", "conceptId": "level-1" }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [
+                        {
+                            "affectedConcepts": ["level-1"],
+                            "constraintId": "_recognition_incomplete",
+                            "message": "Only part of the input reads as a marking in the \"default\" format; the rest is not recognized."
+                        },
+                        {
+                            "constraintId": "_unmatched_token",
+                            "message": "\"extra\" was not recognized: it matched no known concept and will be kept visible in the rendered marking."
+                        }
+                    ],
+                    "inputWasValid": false,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "recognition": {
+                        "corrections": [],
+                        "inputFormat": "default",
+                        "status": "partial",
+                        "surface": "marking",
+                        "unmatched": [{ "end": 8, "start": 3, "text": "extra" }]
+                    },
+                    "rendered": "L1//extra",
+                    "renders": {},
+                    "valid": false,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "eb4fcbaf1830a31a16a434361a6f5f7550f41ee874686c8b7c8e6a420a9fd36e": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "test-select",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "test-select",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "level-3",
+                            "confidence": "certain",
+                            "source": "user",
+                            "value": "2035-12-31"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            {
+                                "categoryId": "level",
+                                "conceptId": "level-3",
+                                "value": "2035-12-31"
+                            }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "20351231",
+                    "renders": {},
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        }
+    }
+}

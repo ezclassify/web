@@ -170,9 +170,8 @@ describe('ensureFavoritesButton', () => {
     });
 
     it('mounts with the chrome shape: no self-positioning, a caller-owned container places it', () => {
-        // The button always sits in normal flow as a flex child of a
-        // caller-owned chrome container (a hint-row slot or the ★ drawer); it
-        // never self-positions absolutely over the field.
+        // The button always sits in normal flow as a flex child of the
+        // field's inline chrome; it never self-positions over the field.
         const panel = ensureFavoritesButton(wrap, makeHost());
         expect(
             panel!.button.classList.contains('ez-favorites-button--chrome'),
@@ -320,6 +319,27 @@ describe('open()', () => {
 
         expect(panel.isOpen()).toBe(false);
         expect(announcer.textContent).not.toContain('favorite');
+    });
+});
+
+describe('the dropdown font', () => {
+    it('takes the page font around its root, not a field face its button sits in', async () => {
+        // jsdom does not inherit fonts: the root carries the family a browser
+        // would inherit from the page, and the chrome wrap a monospace face
+        // as if it sat inside a field's mirrored text layer.
+        const field = document.createElement('div');
+        field.setAttribute('data-ezclassify', '');
+        field.style.fontFamily = 'Georgia, serif';
+        document.body.appendChild(field);
+        field.appendChild(wrap);
+        wrap.style.font = '13px "SF Mono", monospace';
+        const panel = ensureFavoritesButton(wrap, makeHost())!;
+        await panel.open();
+        const dropdown = document.body.querySelector<HTMLElement>(
+            '.ez-favorites-panel',
+        )!;
+        expect(dropdown.parentElement).toBe(document.body);
+        expect(getComputedStyle(dropdown).fontFamily).toBe('Georgia, serif');
     });
 });
 

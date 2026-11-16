@@ -1,0 +1,245 @@
+{
+    "engineVersion": "1.0.0-dev.30",
+    "openapiVersion": "1.0.0-dev.30",
+    "responses": {
+        "152a6e01339571634a17521eb4315af3a565d0a240d9a9166b906d181340e942": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "error-visibility",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "error-visibility",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "kind",
+                            "conceptId": "A",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [{ "categoryId": "kind", "conceptId": "A" }],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "recognition": {
+                        "corrections": [],
+                        "inputFormat": "part",
+                        "status": "complete",
+                        "surface": "marking",
+                        "unmatched": []
+                    },
+                    "rendered": "A",
+                    "renders": {},
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "323b5667be889d4a37029f3d89cc9bb3e0234c9e1e200f5baf9f2ac0604beac1": {
+            "body": [],
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "88ab0e475bfd769a398092a95f1466157561ac595b138b934f420fb64bcb6c9f": {
+            "body": [],
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "9ab7ee38f2b97748459e1c0b63a8124711cbffa4d03755558ffbbeffe394ce83": {
+            "body": {
+                "defaultRenderFormat": "part",
+                "description": "Error visibility test fixture.",
+                "embeddedMarking": [
+                    { "pattern": "\\(([^)]+)\\)", "template": "({marking}) " }
+                ],
+                "id": "error-visibility",
+                "name": "Error visibility",
+                "referenceSurfaceLabel": {
+                    "plural": "Handbooks",
+                    "singular": "Handbook"
+                },
+                "roleAware": false,
+                "version": "1.0.0"
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "a757338586b0964e69e4e141e8bbe6ae7989f860e9650201758a25c4cd27fefe": {
+            "body": [
+                {
+                    "id": "kind",
+                    "label": "Kind",
+                    "required": false,
+                    "rollup": "max",
+                    "single": true
+                }
+            ],
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "b05d32118a41475dc498965ddb427559eecb025661c185dbd48c32fb42102a50": {
+            "body": [
+                {
+                    "categoryOrder": ["kind"],
+                    "categoryViews": { "kind": "default" },
+                    "id": "part",
+                    "mode": "inline",
+                    "surface": "marking"
+                }
+            ],
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "c6d30393bd83ad9f6bf0bc04b885698becad7c80ce2a2ad5caff9c03fa3052f3": {
+            "body": [
+                {
+                    "aliases": [],
+                    "categories": ["kind"],
+                    "id": "A",
+                    "name": "Alpha",
+                    "parents": [],
+                    "position": 0,
+                    "rank": 1,
+                    "views": { "default": "A" }
+                }
+            ],
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "d1c11196a3eff0e5e89484167aaabc248c79ed6e90aea747c6931d017d8b31b5": {
+            "body": {
+                "id": "error-visibility",
+                "scheme": {
+                    "id": "error-visibility",
+                    "resolvedVersion": "1.0.0",
+                    "version": "1.0.0"
+                },
+                "schemes": [
+                    {
+                        "id": "error-visibility",
+                        "roles": ["primary"],
+                        "selector": "error-visibility",
+                        "version": "1.0.0"
+                    }
+                ],
+                "version": "1.0.0"
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "d70754d067467875e0d9fb5ef55349ca475034bcd1298a96b00b627d191b12bd": {
+            "body": {
+                "contextId": "sbx-685190a5d220e086927f69930f18d6242c27467fdc526103c6c3e11b48ef43ef"
+            },
+            "method": "PUT",
+            "statusCode": 200
+        },
+        "e070dec6e78862435e7c23c92a6e4a93a9667377aed0b78b533966687028c314": {
+            "body": {
+                "abiVersion": "v1",
+                "engineSha": "",
+                "engineVersion": "1.0.0-dev.30",
+                "gitTag": "",
+                "openapiVersion": "1.0.0-dev.30",
+                "status": "ok"
+            },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "eb3ec352ebdb3a9ac2ff58b29ff345aec74e689df1991730d8e4322502e73653": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "error-visibility",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "error-visibility",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "limits": { "regionsFound": 1, "status": "complete" },
+                    "results": [
+                        {
+                            "end": 3,
+                            "inner": "A",
+                            "marking": "(A)",
+                            "result": {
+                                "appliedFixes": [],
+                                "assertions": [
+                                    {
+                                        "categoryId": "kind",
+                                        "conceptId": "A",
+                                        "confidence": "certain",
+                                        "source": "parse"
+                                    }
+                                ],
+                                "assessment": {
+                                    "collapsed": [],
+                                    "conflicts": [],
+                                    "emitted": [
+                                        {
+                                            "categoryId": "kind",
+                                            "conceptId": "A"
+                                        }
+                                    ],
+                                    "omitted": [],
+                                    "unrepresentable": []
+                                },
+                                "errors": [],
+                                "inputWasValid": true,
+                                "notices": [],
+                                "recognition": {
+                                    "inputFormat": "part",
+                                    "status": "complete",
+                                    "surface": "marking",
+                                    "unmatched": []
+                                },
+                                "rendered": "A",
+                                "valid": true,
+                                "warnings": []
+                            },
+                            "role": "part",
+                            "start": 0,
+                            "type": "part",
+                            "wrapped": true
+                        }
+                    ],
+                    "unread": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        }
+    }
+}

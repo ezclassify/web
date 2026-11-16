@@ -7,6 +7,8 @@ import type {
 import type { SchemePublicView } from '@ezclassify/types';
 import { mockAssertion, mockProcessResult } from './engine-result-mock';
 import { mockRenderFormats } from './render-format-layout-mock';
+import { asContext } from '../test-fixtures/as-context';
+import { SOLE_BUCKET } from './store/store-shared';
 
 // We need to mock CSS imports before importing EzClassifyUI
 vi.mock('./components/tag-input.css?inline', () => ({
@@ -15,7 +17,6 @@ vi.mock('./components/tag-input.css?inline', () => ({
 vi.mock('./components/single-select.css?inline', () => ({ default: '' }));
 vi.mock('./components/category-checklist.css?inline', () => ({ default: '' }));
 vi.mock('./components/category-selector.css?inline', () => ({ default: '' }));
-vi.mock('./components/assertion-card.css?inline', () => ({ default: '' }));
 vi.mock('./components/status-banner.css?inline', () => ({ default: '' }));
 vi.mock('./components/component-utils.css?inline', () => ({ default: '' }));
 vi.mock('./styles.css?inline', () => ({ default: '' }));
@@ -212,7 +213,7 @@ describe('Declarative attribute system (EzClassifyUI)', () => {
      */
     async function createForms(options?: Record<string, unknown>) {
         const { EzClassifyUI } = await import('./ezclassify-ui');
-        return new EzClassifyUI(engine, options as any);
+        return new EzClassifyUI(asContext(engine), options as any);
     }
 
     it('ezclassify-tags on an <input> creates a TagInput', async () => {
@@ -268,15 +269,6 @@ describe('Declarative attribute system (EzClassifyUI)', () => {
             ).toBe('short');
         });
 
-        it('lets the controller-prefixed option win over the bare attribute', async () => {
-            expect(
-                await mountedFormatId({
-                    'data-ezclassify-format': 'short',
-                    'data-ezclassify-select-format': 'banner',
-                }),
-            ).toBe('banner');
-        });
-
         it('leaves the scheme default in place when neither spelling is present', async () => {
             expect(await mountedFormatId({})).toBe('default');
         });
@@ -304,7 +296,7 @@ describe('Declarative attribute system (EzClassifyUI)', () => {
     it('ezclassify-checklist="category_id" on a <fieldset> creates a CategoryChecklist with correct categoryId', async () => {
         const fieldset = document.createElement('fieldset');
         fieldset.setAttribute('data-ezclassify-controller', 'checklist');
-        fieldset.setAttribute('data-ezclassify-checklist-category', 'level');
+        fieldset.setAttribute('data-ezclassify-category', 'level');
         document.body.appendChild(fieldset);
 
         const forms = await createForms();
@@ -334,22 +326,6 @@ describe('Declarative attribute system (EzClassifyUI)', () => {
         expect(forms.components.has(fieldset)).toBe(true);
         const mount = fieldset.nextElementSibling;
         expect(mount?.getAttribute('data-ezclassify-mount')).toBe('selector');
-
-        forms.destroy();
-    });
-
-    it('ezclassify-card on a <div> creates an AssertionCard', async () => {
-        const div = document.createElement('div');
-        div.setAttribute('data-ezclassify-controller', 'card');
-        document.body.appendChild(div);
-
-        const forms = await createForms();
-
-        // Read-only components mount directly on the div (no hiding)
-        expect(div.style.display).not.toBe('none');
-        expect(forms.components.has(div)).toBe(true);
-        // The div itself is the container (no mount div created)
-        expect(div.getAttribute('data-ezclassify')).toBe('');
 
         forms.destroy();
     });
@@ -408,7 +384,7 @@ describe('Declarative attribute system (EzClassifyUI)', () => {
     it('data-show-preview flag is passed as showPreview: true', async () => {
         const fieldset = document.createElement('fieldset');
         fieldset.setAttribute('data-ezclassify-controller', 'checklist');
-        fieldset.setAttribute('data-ezclassify-checklist-category', 'level');
+        fieldset.setAttribute('data-ezclassify-category', 'level');
         fieldset.setAttribute('data-ezclassify-checklist-show-preview', '');
         document.body.appendChild(fieldset);
 
@@ -470,24 +446,29 @@ describe('Declarative attribute system (EzClassifyUI)', () => {
     it('attribute value on ezclassify-checklist is passed as categoryId', async () => {
         const fieldset = document.createElement('fieldset');
         fieldset.setAttribute('data-ezclassify-controller', 'checklist');
-        fieldset.setAttribute('data-ezclassify-checklist-category', 'level');
+        fieldset.setAttribute('data-ezclassify-category', 'level');
         document.body.appendChild(fieldset);
 
         const forms = await createForms();
 
         // Verify the checklist rendered concepts from the 'level' category
         const mount = fieldset.nextElementSibling as HTMLElement;
-        const heading = mount?.querySelector('.category-checklist-header h3');
+        const heading = mount?.querySelector('.category-checklist-name');
         expect(heading?.textContent).toBe('Level');
 
         forms.destroy();
     });
 
-    it('component onChange triggers rollup update', async () => {
+    it('a checklist bound to a marking moves the page rollup', async () => {
+        const marking = document.createElement('input');
+        marking.type = 'hidden';
+        marking.id = 'doc';
+        marking.setAttribute('data-ezclassify-marking', '');
         const fieldset = document.createElement('fieldset');
         fieldset.setAttribute('data-ezclassify-controller', 'checklist');
-        fieldset.setAttribute('data-ezclassify-checklist-category', 'level');
-        document.body.appendChild(fieldset);
+        fieldset.setAttribute('data-ezclassify-category', 'level');
+        fieldset.setAttribute('data-ezclassify-bound-to', 'doc');
+        document.body.append(marking, fieldset);
 
         const forms = await createForms();
 
@@ -501,13 +482,13 @@ describe('Declarative attribute system (EzClassifyUI)', () => {
         checkbox.checked = true;
         checkbox.dispatchEvent(new Event('change', { bubbles: true }));
 
-        // Wait for debounced rollup to complete
-        await new Promise((r) => setTimeout(r, 50));
-
-        // The rollup field should have been updated
-        expect(forms.rollupField).not.toBeNull();
-        // aggregate was called
-        expect(engine.aggregate).toHaveBeenCalled();
+        // The checklist's pick reaches the page rollup in the store.
+        await vi.waitFor(() =>
+            expect(
+                forms.store.getAggregate().byBucket.get(SOLE_BUCKET)?.rendered,
+            ).toBe('A'),
+        );
+        expect(engine.aggregateAssertions).toHaveBeenCalled();
 
         forms.destroy();
     });
@@ -515,7 +496,7 @@ describe('Declarative attribute system (EzClassifyUI)', () => {
     it('component onChange dispatches ezclassify:change custom event', async () => {
         const fieldset = document.createElement('fieldset');
         fieldset.setAttribute('data-ezclassify-controller', 'checklist');
-        fieldset.setAttribute('data-ezclassify-checklist-category', 'level');
+        fieldset.setAttribute('data-ezclassify-category', 'level');
         document.body.appendChild(fieldset);
 
         const forms = await createForms();
@@ -586,7 +567,7 @@ describe('Declarative attribute system (EzClassifyUI)', () => {
 
         const fieldset = document.createElement('fieldset');
         fieldset.setAttribute('data-ezclassify-controller', 'checklist');
-        fieldset.setAttribute('data-ezclassify-checklist-category', 'level');
+        fieldset.setAttribute('data-ezclassify-category', 'level');
         document.body.appendChild(fieldset);
 
         const div = document.createElement('div');
@@ -601,13 +582,12 @@ describe('Declarative attribute system (EzClassifyUI)', () => {
 
         expect(forms.components.size).toBe(0);
         expect(forms.fields.length).toBe(0);
-        expect(forms.rollupField).toBeNull();
     });
 
     it('does not double-register a component when the same element has already been tracked', async () => {
         const fieldset = document.createElement('fieldset');
         fieldset.setAttribute('data-ezclassify-controller', 'checklist');
-        fieldset.setAttribute('data-ezclassify-checklist-category', 'level');
+        fieldset.setAttribute('data-ezclassify-category', 'level');
         document.body.appendChild(fieldset);
 
         const forms = await createForms();
@@ -653,90 +633,11 @@ describe('Declarative attribute system (EzClassifyUI)', () => {
         forms.destroy();
     });
 
-    it('reads ezclassify-for attribute on components and tracks in targetMap', async () => {
-        const select = document.createElement('select');
-        select.setAttribute('data-ezclassify-controller', 'select');
-        select.setAttribute('data-ezclassify-select-category', 'level');
-        select.setAttribute('data-ezclassify-target', 'section-1');
-        document.body.appendChild(select);
-
-        const forms = await createForms();
-        expect(forms.targetMap.get(select)).toBe('section-1');
-
-        forms.destroy();
-    });
-
-    it('reads ezclassify-for attribute on autocomplete fields and tracks in targetMap', async () => {
-        const input = document.createElement('input');
-        input.type = 'text';
-        input.setAttribute('data-ezclassify-controller', 'tags');
-        input.setAttribute('data-ezclassify-target', 'para-2');
-        document.body.appendChild(input);
-
-        const forms = await createForms();
-        expect(forms.targetMap.get(input)).toBe('para-2');
-
-        forms.destroy();
-    });
-
-    it('getAssertionsByTarget returns grouped assertions', async () => {
-        const input1 = document.createElement('input');
-        input1.type = 'text';
-        input1.setAttribute('data-ezclassify-controller', 'tags');
-        input1.setAttribute('data-ezclassify-target', 'para-1');
-        document.body.appendChild(input1);
-
-        const input2 = document.createElement('input');
-        input2.type = 'text';
-        input2.setAttribute('data-ezclassify-controller', 'tags');
-        input2.setAttribute('data-ezclassify-target', 'para-2');
-        document.body.appendChild(input2);
-
-        const forms = await createForms();
-        const byTarget = forms.getAssertionsByTarget();
-        // Should return a Map (may be empty if no values entered)
-        expect(byTarget instanceof Map).toBe(true);
-
-        forms.destroy();
-    });
-
-    it('ezclassify:change event includes target in detail', async () => {
-        const select = document.createElement('select');
-        select.setAttribute('data-ezclassify-controller', 'select');
-        select.setAttribute('data-ezclassify-select-category', 'level');
-        select.setAttribute('data-ezclassify-target', 'section-3');
-        document.body.appendChild(select);
-
-        const forms = await createForms();
-
-        const changePromise = new Promise<CustomEvent>((resolve) => {
-            select.addEventListener('ezclassify:change', (e) =>
-                resolve(e as CustomEvent),
-            );
-        });
-
-        // Selecting a concept fires onChange, which re-emits ezclassify:change
-        // carrying the configured target from the data-ezclassify-target attribute.
-        const mount = select.nextElementSibling as HTMLElement;
-        const picker = mount.querySelector(
-            '.select-dropdown',
-        ) as HTMLSelectElement;
-        picker.value = 'A';
-        picker.dispatchEvent(new Event('change', { bubbles: true }));
-
-        const event = await changePromise;
-        expect(event.detail.target).toBe('section-3');
-
-        forms.destroy();
-    });
-
     describe('behavior-only elements (no controller)', () => {
         /**
          * Wrap the host element in a dedicated <section> so we can assert that
          * the behavior pass leaves the section's child list untouched (no mount
-         * container injection). The framework still appends a rollup hidden
-         * input to the scanner's root (document.body), that's the engine
-         * wiring, not view treatment for our test element.
+         * container injection).
          */
         function wrap(el: HTMLElement): HTMLDivElement {
             const wrapper = document.createElement('div');
@@ -746,11 +647,11 @@ describe('Declarative attribute system (EzClassifyUI)', () => {
             return wrapper;
         }
 
-        it('an input with only data-ezclassify-bind is tracked without view injection', async () => {
+        it('an input with only data-ezclassify-marking is tracked without view injection', async () => {
             const input = document.createElement('input');
             input.type = 'text';
             input.id = 'plain';
-            input.setAttribute('data-ezclassify-bind', '');
+            input.setAttribute('data-ezclassify-marking', '');
             const wrapper = wrap(input);
 
             const forms = await createForms();
@@ -781,10 +682,9 @@ describe('Declarative attribute system (EzClassifyUI)', () => {
             marking.type = 'hidden';
             marking.id = 'document-marking';
             marking.value = 'A';
-            marking.setAttribute('data-ezclassify-rendered', '');
+            marking.setAttribute('data-ezclassify-marking', '');
 
             const select = document.createElement('select');
-            select.setAttribute('data-ezclassify-bind', '');
             select.setAttribute('data-ezclassify-facet-of', 'document-marking');
             select.setAttribute('data-ezclassify-category', 'level');
             select.append(new Option('Pick a level', ''));
@@ -817,38 +717,23 @@ describe('Declarative attribute system (EzClassifyUI)', () => {
             forms.destroy();
         });
 
-        it('a behavior-only input with data-ezclassify-target tracks the target but injects no view', async () => {
-            const input = document.createElement('input');
-            input.id = 'targeted';
-            input.setAttribute('data-ezclassify-bind', '');
-            input.setAttribute('data-ezclassify-target', 'banner-target');
-            const wrapper = wrap(input);
-
-            const forms = await createForms();
-
-            // Behavior: target relationship is tracked, field is registered.
-            expect(forms.targetMap.get(input)).toBe('banner-target');
-            expect(forms.fields).toContain(input);
-            // View: zero injected DOM in the host element's container.
-            expect(forms.components.has(input)).toBe(false);
-            expect(wrapper.children.length).toBe(1);
-
-            forms.destroy();
-        });
-
         it('a behavior-only element with data-ezclassify-part-of tracks the relationship without view', async () => {
             const input = document.createElement('input');
             input.id = 'portion';
-            input.setAttribute('data-ezclassify-bind', '');
+            input.setAttribute('data-ezclassify-marking', '');
             input.setAttribute('data-ezclassify-part-of', 'whole-banner');
             const wrapper = wrap(input);
+            const whole = document.createElement('input');
+            whole.id = 'whole-banner';
+            whole.setAttribute('data-ezclassify-marking', '');
+            wrapper.appendChild(whole);
 
             const forms = await createForms();
 
             expect(forms.partOfMap.get(input)).toBe('whole-banner');
             expect(forms.fields).toContain(input);
             expect(forms.components.has(input)).toBe(false);
-            expect(wrapper.children.length).toBe(1);
+            expect(wrapper.children.length).toBe(2);
 
             forms.destroy();
         });
@@ -858,7 +743,7 @@ describe('Declarative attribute system (EzClassifyUI)', () => {
             const input = document.createElement('input');
             input.type = 'text';
             input.id = 'plain-rollup';
-            input.setAttribute('data-ezclassify-bind', '');
+            input.setAttribute('data-ezclassify-marking', '');
             input.setAttribute('data-ezclassify-category', 'level');
             wrapper.appendChild(input);
             document.body.appendChild(wrapper);
@@ -896,86 +781,76 @@ describe('Declarative attribute system (EzClassifyUI)', () => {
                     });
                 });
 
-            const forms = await createForms({
-                root: document.body,
-                rollupId: 'main-rollup',
-            });
+            const rollup = document.createElement('input');
+            rollup.type = 'hidden';
+            rollup.setAttribute('data-ezclassify-aggregate', '');
+            document.body.appendChild(rollup);
+
+            const forms = await createForms({ root: document.body });
             await new Promise((resolve) => setTimeout(resolve, 0));
 
             expect(forms.fields).toContain(input);
 
             input.value = 'option a';
             input.dispatchEvent(new FocusEvent('blur', { bubbles: true }));
-            await new Promise((resolve) => setTimeout(resolve, 50));
+            await vi.waitFor(() => expect(rollup.value).toBe('A'));
 
-            const rollup =
-                document.body.querySelector<HTMLInputElement>('#main-rollup');
-            expect(processSpy).toHaveBeenCalledWith('option a', {
-                outputFormat: 'default',
-            });
+            expect(processSpy).toHaveBeenCalledWith(
+                'option a',
+                expect.objectContaining({ outputFormat: 'default' }),
+            );
             expect(input.value).toBe('A');
-            expect(rollup?.value).toBe('A');
             expect(wrapper.hasAttribute('data-ezclassify-invalid')).toBe(false);
 
             forms.destroy();
         });
 
         it('data-ezclassify-format overrides the render format on a behavior-only input', async () => {
-            // The 'short' format renders the level concept lowercased; 'default'
-            // renders it uppercased. The override must drive BOTH the engine call
-            // and the committed input value.
+            // The 'short' format writes the level concept lowercased; 'default'
+            // writes it uppercased. The input shows the committed facts written
+            // in its own format.
             const wrapper = document.createElement('div');
             const input = document.createElement('input');
             input.type = 'text';
             input.id = 'fmt-input';
-            input.setAttribute('data-ezclassify-bind', '');
+            input.setAttribute('data-ezclassify-marking', '');
             input.setAttribute('data-ezclassify-category', 'level');
             input.setAttribute('data-ezclassify-format', 'short');
             wrapper.appendChild(input);
             document.body.appendChild(wrapper);
 
-            const processSpy = vi
-                .spyOn(engine, 'process')
-                .mockImplementation(
-                    (value: unknown, options?: { outputFormat?: string }) => {
-                        const fmt = options?.outputFormat;
-                        return mockProcessResult({
-                            assertions: [
-                                mockAssertion({
-                                    conceptId: 'A',
-                                    categoryId: 'level',
-                                }),
-                            ],
-                            // 'short' lowercases, anything else uppercases, so the asserted
-                            // value proves which format was actually used.
-                            rendered: fmt === 'short' ? 'a' : 'A',
-                            recognition: {
-                                status: 'complete',
-                                inputFormat: 'default',
-                                surface: 'default',
-                                unmatched: [],
-                                corrections: [],
-                            },
-                        });
-                    },
-                );
+            const renderSpy = vi.spyOn(engine, 'render').mockImplementation(
+                (assertions: Assertion[], format?: string) =>
+                    ({
+                        rendered:
+                            format === 'short'
+                                ? assertions
+                                      .map((a) => a.conceptId.toLowerCase())
+                                      .join('')
+                                : assertions.map((a) => a.conceptId).join(''),
+                        assessment: {
+                            notices: [],
+                            errors: [],
+                            valid: true,
+                            complete: true,
+                            appliedFixes: [],
+                            conflicts: [],
+                            unrepresentable: [],
+                        },
+                    }) as unknown as ReturnType<SchemeEngineAdapter['render']>,
+            );
 
-            const forms = await createForms({
-                root: document.body,
-                rollupId: 'fmt-rollup',
-            });
+            const forms = await createForms({ root: document.body });
             await new Promise((resolve) => setTimeout(resolve, 0));
 
             input.value = 'A';
             input.dispatchEvent(new FocusEvent('blur', { bubbles: true }));
-            await new Promise((resolve) => setTimeout(resolve, 50));
+            await vi.waitFor(() => expect(input.value).toBe('a'));
 
-            // Engine was called with the per-input override format, not the scheme default.
-            expect(processSpy).toHaveBeenCalledWith('A', {
-                outputFormat: 'short',
-            });
-            // Committed value reflects the override format.
-            expect(input.value).toBe('a');
+            expect(renderSpy).toHaveBeenCalledWith(
+                [expect.objectContaining({ conceptId: 'A' })],
+                'short',
+            );
 
             forms.destroy();
         });
@@ -987,7 +862,7 @@ describe('Declarative attribute system (EzClassifyUI)', () => {
             const input = document.createElement('input');
             input.type = 'text';
             input.id = 'no-fmt-input';
-            input.setAttribute('data-ezclassify-bind', '');
+            input.setAttribute('data-ezclassify-marking', '');
             input.setAttribute('data-ezclassify-category', 'level');
             wrapper.appendChild(input);
             document.body.appendChild(wrapper);
@@ -1016,19 +891,17 @@ describe('Declarative attribute system (EzClassifyUI)', () => {
                     },
                 );
 
-            const forms = await createForms({
-                root: document.body,
-                rollupId: 'no-fmt-rollup',
-            });
+            const forms = await createForms({ root: document.body });
             await new Promise((resolve) => setTimeout(resolve, 0));
 
             input.value = 'A';
             input.dispatchEvent(new FocusEvent('blur', { bubbles: true }));
-            await new Promise((resolve) => setTimeout(resolve, 50));
-
-            expect(processSpy).toHaveBeenCalledWith('A', {
-                outputFormat: 'default',
-            });
+            await vi.waitFor(() =>
+                expect(processSpy).toHaveBeenCalledWith(
+                    'A',
+                    expect.objectContaining({ outputFormat: 'default' }),
+                ),
+            );
             expect(input.value).toBe('A');
 
             forms.destroy();
@@ -1036,7 +909,7 @@ describe('Declarative attribute system (EzClassifyUI)', () => {
 
         it('a behavior-only element with a non-input tag receives no field registration', async () => {
             const div = document.createElement('div');
-            div.setAttribute('data-ezclassify-bind', '');
+            div.setAttribute('data-ezclassify-marking', '');
             div.setAttribute('data-ezclassify-category', 'level');
             const wrapper = wrap(div);
 

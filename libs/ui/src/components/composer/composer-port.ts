@@ -27,6 +27,7 @@ import {
     type ComposerEngineBinding,
 } from './composer-reading';
 import { addUserAssertion } from '../assertion-addition';
+import { takenFromWhole } from '../../assertion-identity';
 import { removeAssertionCascade } from '../assertion-removal';
 import {
     getPublicFormatSeparators,
@@ -34,6 +35,8 @@ import {
     type FormatLayoutSource,
 } from '../../format-layout';
 import { defaultSurfaceOf } from '../../format-resolver';
+import { renderViewRefusalMessages } from '../../render-refusal';
+import { categoriesByScope, scopeLabel, type ScopeSource } from '../../scopes';
 
 /** What a field provides for its composer port. Read on every call. */
 export interface ComposerPortField {
@@ -42,14 +45,19 @@ export interface ComposerPortField {
     /** The engine calls, in the field's own format and context. */
     readonly binding: ComposerEngineBinding;
     scheme(): Pick<SchemePublicView, 'categories' | 'concepts'>;
-    /** The scheme metadata the field's render formats come from. */
-    meta(): FormatLayoutSource;
+    /** The scheme metadata the field's render formats and scopes come from. */
+    meta(): FormatLayoutSource & ScopeSource;
     formatId(): string;
     /**
      * The surface the field declares it authors, with `data-ezclassify-scope`.
      * Without one, the field writes the surface of its format.
      */
     scope?(): string | undefined;
+    /**
+     * The scope ids the field lists with `data-ezclassify-scope`. A field that
+     * lists several edits the categories of every one of them.
+     */
+    scopes?(): readonly string[];
     /** The one category the field is bound to, if any. */
     categoryId?(): string | undefined;
     /** See ComposerPort.suggestions. */
@@ -77,7 +85,7 @@ export interface ComposerPortField {
  * @param surface - The scope id of the surface the field writes
  * @param defaultSurface - The scope id of the scheme's default surface
  */
-function ownedElsewhere(
+export function ownedElsewhere(
     category: { scopes?: readonly string[] },
     surface: string | undefined,
     defaultSurface: string | undefined,
@@ -87,6 +95,27 @@ function ownedElsewhere(
         return defaultSurface !== undefined && surface !== defaultSurface;
     }
     return !category.scopes.includes(surface);
+}
+
+/**
+ * The surfaces deciding which categories a field edits, for
+ * {@link ownedElsewhere}: the one it declares, else the one its format writes,
+ * and the scheme's default.
+ *
+ * @param meta - The scheme metadata the field's render formats come from
+ * @param formatId - The field's format
+ * @param scope - The surface the field declares, if any
+ */
+export function fieldSurfaces(
+    meta: FormatLayoutSource,
+    formatId: string,
+    scope: string | undefined,
+): { surface: string | undefined; defaultSurface: string | undefined } {
+    const outputs = meta.formats ?? [];
+    return {
+        surface: scope ?? outputs.find((f) => f.id === formatId)?.surface,
+        defaultSurface: defaultSurfaceOf(outputs, meta.defaultRenderFormat),
+    };
 }
 
 /**
@@ -130,6 +159,21 @@ export function createComposerPort(field: ComposerPortField): ComposerPort {
             proposedFixes: (whole.proposedFixes ?? []) as Fix[],
         };
     };
+    /**
+     * The facts a write hands the engine: what the author stated and, for a
+     * part read in its whole, the values the engine takes from that whole for
+     * them. A format that writes one word for a whole's values needs those
+     * values in hand to write it. The engine decides which values it takes,
+     * none without a valid whole, and the format leaves them out of the text.
+     */
+    const writable = async (
+        assertions: readonly Assertion[],
+    ): Promise<Assertion[]> => {
+        const stated = statedAssertions(assertions);
+        if (!field.binding.readsInWhole?.()) return stated;
+        const read = await field.binding.process('', { chosen: stated });
+        return [...stated, ...read.assertions.filter(takenFromWhole)];
+    };
     /** What a facet stores: its own category only. */
     const owned = (reading: ComposerReading): ComposerReading => {
         const category = field.ownCategory?.();
@@ -139,13 +183,6 @@ export function createComposerPort(field: ComposerPortField): ComposerPort {
         return {
             ...reading,
             assertions: mine(reading.assertions),
-            ...(reading.assertionsBeforeRepair
-                ? {
-                      assertionsBeforeRepair: mine(
-                          reading.assertionsBeforeRepair,
-                      ),
-                  }
-                : {}),
         };
     };
     return {
@@ -156,19 +193,38 @@ export function createComposerPort(field: ComposerPortField): ComposerPort {
                           field.binding,
                           text,
                           field.committed().assertions,
+                          field.formatId(),
                       )
                     : await readAdditiveDraft(
                           field.binding,
                           text,
                           base ?? [],
                           add,
+                          field.formatId(),
                       ),
             ),
         write: field.binding.write
-            ? (assertions) => field.binding.write!(statedAssertions(assertions))
+            ? async (assertions) => {
+                  const written = await field.binding.write!(
+                      await writable(assertions),
+                  );
+                  const refusal = renderViewRefusalMessages(
+                      field.formatId(),
+                      written,
+                  );
+                  return refusal.length > 0
+                      ? { rendered: '', refusal }
+                      : { rendered: written.rendered };
+              }
             : undefined,
         render: async (assertions) =>
-            judged(await renderAssertions(field.binding, assertions)),
+            judged(
+                await renderAssertions(
+                    field.binding,
+                    assertions,
+                    field.formatId(),
+                ),
+            ),
         suggestions: (live) => field.suggestions(live),
         gated: (query, live) => field.gated(query, live),
         committed: () => field.committed(),
@@ -182,13 +238,30 @@ export function createComposerPort(field: ComposerPortField): ComposerPort {
         categories: () => {
             const bound = field.categoryId?.();
             const meta = field.meta();
-            const outputs = meta.formats ?? [];
-            const surface =
-                field.scope?.() ??
-                outputs.find((f) => f.id === field.formatId())?.surface;
-            const defaultSurface = defaultSurfaceOf(
-                outputs,
-                meta.defaultRenderFormat,
+            const listed = field.scopes?.() ?? [];
+            if (listed.length > 1) {
+                // A field across scopes edits each scope's categories, scope
+                // by scope, and names the scope each one belongs to.
+                return categoriesByScope(
+                    field
+                        .scheme()
+                        .categories.filter((c) => !bound || c.id === bound),
+                    listed,
+                    meta,
+                ).flatMap((group) =>
+                    group.categories.map((c) => ({
+                        id: c.id,
+                        label: c.label,
+                        single: c.single === true,
+                        required: c.required === true,
+                        scope: scopeLabel(group.scope, meta),
+                    })),
+                );
+            }
+            const { surface, defaultSurface } = fieldSurfaces(
+                meta,
+                field.formatId(),
+                field.scope?.(),
             );
             const order = new Map(
                 getPublicFormatLayout(meta, field.formatId()).categoryOrder.map(

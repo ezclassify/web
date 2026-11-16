@@ -24,6 +24,11 @@ export function createTag(opts: {
     /** The rendered marking leaves the fact out: drawn faded. */
     unprinted?: boolean;
     /**
+     * Why the marking holds the fact without writing it, for a derived fact. It
+     * names the chip in place of the generic "not shown" suffix.
+     */
+    reason?: string;
+    /**
      * When false, the chip is not category-colored: it stays a neutral
      * `.proto-tag` surface with inherited text, no filled background. Defaults
      * to true (filled pill: category-color background with the caller's
@@ -58,7 +63,11 @@ export function createTag(opts: {
         'aria-label',
         accessibleName +
             (opts.inferred ? t('aria.inferredSuffix') : '') +
-            (opts.unprinted ? t('aria.unprintedSuffix') : ''),
+            (opts.reason
+                ? `, ${opts.reason}`
+                : opts.unprinted
+                  ? t('aria.unprintedSuffix')
+                  : ''),
     );
     tag.dataset.conceptId = opts.conceptId;
     tag.dataset.categoryId = opts.categoryId;
@@ -75,6 +84,7 @@ export function createTag(opts: {
     }
 
     const label = document.createElement('span');
+    label.className = 'proto-tag-label';
     label.textContent = opts.label;
     tag.appendChild(label);
 

@@ -1,7 +1,7 @@
 import {
     ContextReference,
     ContextReferenceTab,
-    EzClassifyProvider,
+    EzClassify,
     ReactEzClassifyStore,
     useEzClassifyFacet,
 } from '@ezclassify/react';
@@ -25,7 +25,7 @@ const rendered: ReactNode = (
     </ContextReference>
 );
 function OwnedStore({ store }: { store: ReactEzClassifyStore }) {
-    return <EzClassifyProvider store={store}>{rendered}</EzClassifyProvider>;
+    return <EzClassify store={store}>{rendered}</EzClassify>;
 }
 function Facet() {
     const facet = useEzClassifyFacet('document', 'level');

@@ -47,18 +47,4 @@ describe('typecheck coverage', () => {
         // that silence loud.
         expect(missing).toEqual([]);
     });
-
-    it('the lane-aware typecheck keeps its generated config out of git', () => {
-        const gitignore = readFileSync(
-            path.join(repoRoot, '.gitignore'),
-            'utf8',
-        );
-        const script = readFileSync(
-            path.join(repoRoot, 'scripts', 'typecheck-specs.mjs'),
-            'utf8',
-        );
-        const generated = 'tsconfig.spec.lane.json';
-        expect(script).toContain(generated);
-        expect(gitignore).toContain(generated);
-    });
 });

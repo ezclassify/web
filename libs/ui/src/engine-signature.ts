@@ -1,82 +1,57 @@
 /**
- * Framework-agnostic "did the engine argument change?" helper.
+ * Framework-agnostic "did the Context argument change?" helper.
  *
  * Every framework binding (`@ezclassify/react`, `@ezclassify/vue`,
- * `@ezclassify/angular`) faces the same problem: the natural way to pass an
- * engine into the binding is to compose a context inline, in the render body or
- * the template expression.
+ * `@ezclassify/angular`) faces the same problem: the natural way to pass a
+ * Context into the binding is to compose it inline, in the render body or the
+ * template expression.
  *
- * A context factory mints a brand-new wrapper object on every call, so the
- * binding sees a "new" engine on every render / change-detection pass even when
- * the underlying scheme/guide/access adapters are identical. Keying
+ * A Context factory mints a brand-new wrapper object on every call, so the
+ * binding sees a "new" Context on every render / change-detection pass even
+ * when the underlying scheme/guide/access views are identical. Keying
  * re-initialization on the wrapper's identity therefore causes spurious
- * teardown+rebuild churn (and, in React, an outright re-render storm: see
- * `integrations/react/src/useStableEngineArg.ts`).
+ * teardown+rebuild churn (and, in React, an outright re-render storm).
  *
- * So the bindings key on the engine's _structural signature_: its component
- * adapters plus spec id/version, rather than the disposable wrapper. The same
- * adapter instances mean the same loaded engine. This module is the single
- * shared definition of that signature so the three bindings agree on what
- * "changed" means; React's `useStableEngineArg` consumes it directly, and the
- * Vue/Angular call sites reference it (see their inline comments).
+ * So the bindings key on the Context's _structural signature_: its component
+ * views plus its resolved id and version, rather than the disposable wrapper.
+ * The same views mean the same loaded Context. This module is the single shared
+ * definition of that signature so the three bindings agree on what "changed"
+ * means. A binding given several Contexts signs each one under its key.
  *
- * Limit: a context built inline from _freshly constructed_ child engines on
- * every pass still yields new component identities and cannot be deduplicated
- * here without hashing document content (which risks dropping real updates).
- * Memoizing the child engine at the call site remains the consumer's job.
+ * Limit: a Context built inline from _freshly constructed_ views on every pass
+ * still yields new component identities and cannot be deduplicated here without
+ * hashing document content (which risks dropping real updates). Memoizing the
+ * Context at the call site remains the consumer's job.
  */
-import {
-    isContextAdapter,
-    type ContextAdapter,
-    type ContextMetadata,
-    type RemoteContextSchemeEngineAdapter,
-    type SchemeEngineAdapter,
-} from '@ezclassify/types';
-
-/** The engine argument shape the framework bindings accept. */
-export type EngineArg =
-    | SchemeEngineAdapter
-    | RemoteContextSchemeEngineAdapter
-    | ContextAdapter
-    | null;
-
-/** Narrow any supported engine argument to a composed context. */
-export function isEngineContext(
-    engine: Exclude<EngineArg, null>,
-): engine is ContextAdapter {
-    return 'scheme' in engine && isContextAdapter(engine as ContextAdapter);
-}
+import type { ContextAdapter, ContextMetadata } from '@ezclassify/types';
 
 /**
- * Spec identity a composition may carry alongside its sub-adapters. Optional on
- * purpose: it is a property of contexts that were resolved from a spec, not
+ * Spec identity a composition may carry alongside its views. Optional on
+ * purpose: it is a property of Contexts that were resolved from a spec, not
  * part of the {@link ContextAdapter} contract, and a host's own implementation
  * is free not to have one.
  */
 type SpecIdentified = { readonly metadata?: ContextMetadata };
 
 /**
- * Build the list of values whose change counts as a "real" change to the engine
- * argument.
+ * The values whose change counts as a "real" change to a Context argument: its
+ * scheme, guide and access views, plus its id and resolved version when
+ * present; not the wrapper's own identity.
  *
- * For a composed context we key on its components: scheme, guide, access
- * adapters, plus spec id/version when present; not the wrapper's own identity.
- * A bare scheme adapter has no wrapper to see through, so the value itself is
- * the unit of identity.
+ * @param context - The Context, or null when none is bound yet
  */
-export function contextSignature(engine: EngineArg): readonly unknown[] {
-    if (engine == null) return [null];
-    if (isEngineContext(engine)) {
-        const metadata = (engine as ContextAdapter & SpecIdentified).metadata;
-        return [
-            engine.scheme,
-            engine.guide,
-            engine.access,
-            metadata?.id,
-            metadata?.resolvedVersion,
-        ];
-    }
-    return [engine];
+export function contextSignature(
+    context: ContextAdapter | null,
+): readonly unknown[] {
+    if (context == null) return [null];
+    const metadata = (context as ContextAdapter & SpecIdentified).metadata;
+    return [
+        context.scheme,
+        context.guide,
+        context.access,
+        metadata?.id,
+        metadata?.resolvedVersion,
+    ];
 }
 
 /** Element-wise `Object.is` comparison of two signatures. */

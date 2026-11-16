@@ -12,7 +12,6 @@ await buildLib({
     external: [
         '@playwright/test',
         '@axe-core/playwright',
-        '@ezclassify/testing-utils',
         'node:*',
         'fs',
         'path',

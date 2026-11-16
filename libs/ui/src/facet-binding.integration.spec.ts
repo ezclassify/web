@@ -1,16 +1,20 @@
-import { describe, expect, it } from 'vitest';
-import { Context } from '@ezclassify/engine';
-import scheme from '@ezclassify/example-schemes/schemes/cedar-valley-handling@1.0.0.json';
-import { loadCedarValley } from '@ezclassify/example-schemes/cedar-valley';
+import { beforeAll, describe, expect, it } from 'vitest';
 import {
     EzClassifyUI,
     VanillaEzClassifyStore,
     createEzClassifyFacetBinding,
 } from '@ezclassify/ui';
+import { asContext } from '../test-fixtures/as-context';
+import {
+    connectDemoContext,
+    demoRuntimeSettled,
+} from '../../../test-support/demo-runtime';
 
 describe('third-party control integration', () => {
     it('drives native single and multiple selects without controller attributes', async () => {
-        const context = Context.fromComponents({ scheme });
+        const context = await connectDemoContext({
+            contextId: 'cedar-valley-handling',
+        });
         const store = new VanillaEzClassifyStore(context.scheme);
         const tierBinding = createEzClassifyFacetBinding(
             store,
@@ -116,7 +120,9 @@ describe('third-party control integration', () => {
     });
 
     it('gives a binding created on an already-resolved facet the same values as the first', async () => {
-        const context = Context.fromComponents({ scheme });
+        const context = await connectDemoContext({
+            contextId: 'cedar-valley-handling',
+        });
         const store = new VanillaEzClassifyStore(context.scheme);
 
         const first = createEzClassifyFacetBinding(store, 'document', 'level');
@@ -162,13 +168,10 @@ function runtimeReady(root: HTMLElement): Promise<void> {
     );
 }
 
-/**
- * Wait for a runtime's seed, then let the edits that land on top of it finish.
- * The in-process engine answers synchronously, so one macrotask drains them.
- */
+/** Wait for a runtime's seed, then let the edits that land on top of it finish. */
 async function settle(ready: Promise<void>): Promise<void> {
     await ready;
-    await new Promise<void>((tick) => setTimeout(tick, 0));
+    await demoRuntimeSettled();
 }
 
 /** A marking host served with `value`, the way a page renders one. */
@@ -176,7 +179,7 @@ function markingHost(value: string): HTMLInputElement {
     const host = document.createElement('input');
     host.type = 'hidden';
     host.id = 'doc-marking';
-    host.setAttribute('data-ezclassify-rendered', '');
+    host.setAttribute('data-ezclassify-marking', '');
     host.value = value;
     return host;
 }
@@ -187,11 +190,12 @@ function markingHost(value: string): HTMLInputElement {
  * after it. `pickFirst` picks before the runtime exists at all; otherwise the
  * test picks while the runtime is still initializing its fields.
  */
-function mountPage(served: string, pickFirst = false) {
+async function mountPage(served: string, pickFirst = false) {
     const root = document.createElement('div');
     root.appendChild(markingHost(served));
     document.body.appendChild(root);
-    const engine = loadCedarValley();
+    const engine = (await connectDemoContext({ contextId: 'cedar-valley' }))
+        .scheme;
     const store = new VanillaEzClassifyStore(engine);
     const binding = createEzClassifyFacetBinding(
         store,
@@ -203,7 +207,7 @@ function mountPage(served: string, pickFirst = false) {
     );
     if (pickFirst) void binding.setSelected(['CONFIDENTIAL']);
     const ready = runtimeReady(root);
-    const ui = new EzClassifyUI(engine, { root, store });
+    const ui = new EzClassifyUI(asContext(engine), { root, store });
     return {
         store,
         binding,
@@ -219,7 +223,7 @@ function mountPage(served: string, pickFirst = false) {
 
 describe('facet binding before the runtime has seeded the store', () => {
     it('lands the pick on top of the other served categories', async () => {
-        const page = mountPage('INTERNAL//DO NOT FORWARD');
+        const page = await mountPage('INTERNAL//DO NOT FORWARD');
         void page.binding.setSelected(['CONFIDENTIAL']);
         await settle(page.ready);
 
@@ -230,7 +234,7 @@ describe('facet binding before the runtime has seeded the store', () => {
     });
 
     it('keeps a pick made before the runtime exists', async () => {
-        const page = mountPage('INTERNAL//DO NOT FORWARD', true);
+        const page = await mountPage('INTERNAL//DO NOT FORWARD', true);
         await settle(page.ready);
 
         expect(page.store.get('doc-marking').rendered).toBe(
@@ -246,7 +250,11 @@ describe('facet binding before the runtime has seeded the store', () => {
  * document under the same marking id.
  */
 describe('a store shared by one page after another', () => {
-    const engine = loadCedarValley();
+    let engine: Awaited<ReturnType<typeof connectDemoContext>>['scheme'];
+    beforeAll(async () => {
+        engine = (await connectDemoContext({ contextId: 'cedar-valley' }))
+            .scheme;
+    });
 
     function openPage(store: VanillaEzClassifyStore, served: string) {
         const root = document.createElement('div');
@@ -254,7 +262,7 @@ describe('a store shared by one page after another', () => {
         root.appendChild(host);
         document.body.appendChild(root);
         const ready = runtimeReady(root);
-        const ui = new EzClassifyUI(engine, { root, store });
+        const ui = new EzClassifyUI(asContext(engine), { root, store });
         return {
             host,
             ready,
@@ -290,7 +298,7 @@ describe('a store shared by one page after another', () => {
         root.appendChild(markingHost('INTERNAL//DO NOT FORWARD'));
         document.body.appendChild(root);
         const firstReady = runtimeReady(root);
-        const first = new EzClassifyUI(engine, { root, store });
+        const first = new EzClassifyUI(asContext(engine), { root, store });
         await settle(firstReady);
         const committed: string[] = [];
         store.subscribe('doc-marking', (state) =>
@@ -307,7 +315,7 @@ describe('a store shared by one page after another', () => {
         );
         await binding.setSelected(['CONFIDENTIAL']);
         const secondReady = runtimeReady(root);
-        const second = new EzClassifyUI(engine, { root, store });
+        const second = new EzClassifyUI(asContext(engine), { root, store });
         await settle(secondReady);
 
         expect(committed.length).toBeGreaterThan(0);
@@ -340,7 +348,7 @@ describe('a store shared by one page after another', () => {
         const root = document.createElement('div');
         root.appendChild(markingHost('INTERNAL//DO NOT FORWARD'));
         document.body.appendChild(root);
-        const runtime = new EzClassifyUI(engine, { root, store });
+        const runtime = new EzClassifyUI(asContext(engine), { root, store });
         // Let the fields initialize and the seed go on the wire.
         for (let i = 0; i < 3; i++)
             await new Promise<void>((tick) => setTimeout(tick, 0));
@@ -361,7 +369,7 @@ describe('a store shared by one page after another', () => {
         root.appendChild(markingHost('INTERNAL//DO NOT FORWARD'));
         document.body.appendChild(root);
         const firstReady = runtimeReady(root);
-        const first = new EzClassifyUI(engine, { root, store });
+        const first = new EzClassifyUI(asContext(engine), { root, store });
         await settle(firstReady);
         const binding = createEzClassifyFacetBinding(
             store,
@@ -374,7 +382,7 @@ describe('a store shared by one page after another', () => {
         await settle(Promise.resolve());
 
         const secondReady = runtimeReady(root);
-        const second = new EzClassifyUI(engine, { root, store });
+        const second = new EzClassifyUI(asContext(engine), { root, store });
         await settle(secondReady);
 
         expect(store.get('doc-marking').rendered).toBe(
@@ -394,7 +402,10 @@ describe('a store shared by one page after another', () => {
         root.appendChild(first);
         document.body.appendChild(root);
         const firstReady = runtimeReady(root);
-        const firstRuntime = new EzClassifyUI(engine, { root, store });
+        const firstRuntime = new EzClassifyUI(asContext(engine), {
+            root,
+            store,
+        });
         await settle(firstReady);
         const binding = createEzClassifyFacetBinding(
             store,
@@ -413,7 +424,10 @@ describe('a store shared by one page after another', () => {
         firstRuntime.destroy();
         await settle(Promise.resolve());
         const secondReady = runtimeReady(root);
-        const secondRuntime = new EzClassifyUI(engine, { root, store });
+        const secondRuntime = new EzClassifyUI(asContext(engine), {
+            root,
+            store,
+        });
         await settle(secondReady);
 
         expect(store.get('doc-marking').rendered).toBe(
@@ -431,7 +445,10 @@ describe('a store shared by one page after another', () => {
         root.appendChild(first);
         document.body.appendChild(root);
         const firstReady = runtimeReady(root);
-        const firstRuntime = new EzClassifyUI(engine, { root, store });
+        const firstRuntime = new EzClassifyUI(asContext(engine), {
+            root,
+            store,
+        });
         await settle(firstReady);
         // A section rendered conditionally, after the runtime is ready.
         first.appendChild(markingHost('INTERNAL'));
@@ -454,7 +471,10 @@ describe('a store shared by one page after another', () => {
         second.appendChild(markingHost('RESTRICTED//DO NOT FORWARD'));
         root.appendChild(second);
         const secondReady = runtimeReady(root);
-        const secondRuntime = new EzClassifyUI(engine, { root, store });
+        const secondRuntime = new EzClassifyUI(asContext(engine), {
+            root,
+            store,
+        });
         await settle(secondReady);
 
         expect(store.get('doc-marking').rendered).toBe(

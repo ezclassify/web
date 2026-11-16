@@ -15,6 +15,15 @@
     background: var(--ez-handbook-overview-bg, rgba(0, 0, 0, 0.02));
 }
 
+.ez-handbook__overview-marking {
+    font-weight: 700;
+    font-size: 0.75rem;
+    letter-spacing: 0.02em;
+    color: var(--ez-color-text, #111);
+    margin-bottom: 0.25rem;
+    overflow-wrap: anywhere;
+}
+
 .ez-handbook__overview-name {
     font-weight: 700;
     font-size: 1rem;
@@ -376,6 +385,7 @@
         color: CanvasText;
         forced-color-adjust: none;
     }
+    .ez-handbook__overview-marking,
     .ez-handbook__overview-name {
         color: CanvasText;
     }

@@ -31,6 +31,13 @@
  * in the host's options; a domain-neutral component never compiles one domain's
  * words in as its defaults.
  *
+ * Level views: a banner on `data-ezclassify-aggregate` shows a level (the page,
+ * a collection or a whole's parts), and its accessible name says which level
+ * before the marking. On a page with several Contexts or schemes, the runtime
+ * hands it every bucket at that level through {@link StatusBanner.setBuckets},
+ * and it shows each non-empty one on its own labeled line. Buckets never merge
+ * and none is hidden: the banner shows what each one holds.
+ *
  * Affix support: Setting `affix: 'top'` or `affix: 'bottom'` (via
  * `data-ezclassify-banner-affix`) makes the banner `position: fixed`. The page
  * is responsible for adding matching body padding (e.g. `body { padding-top:
@@ -53,7 +60,6 @@
  */
 
 import {
-    isAddressableSchemeEngine,
     ReadOnlyComponentBase,
     type ComponentOptions,
     type ComponentEngineSource,
@@ -65,6 +71,8 @@ import {
     type ValidationError,
 } from '@ezclassify/types';
 import { resolveMarkingColor } from '../color-resolver';
+import { viewOutputOf } from '../format-resolver';
+import { getMountHost } from '../mount-host-registry';
 import { EMPTY_VALUE } from '../text-utils';
 import { t } from '../i18n';
 import statusBannerCss from './status-banner.css?inline';
@@ -86,6 +94,34 @@ const BANNER_TERMS: Record<string, { singular: string; plural: string }> = {
 export interface StatusBannerColors {
     background: string;
     text: string;
+}
+
+/**
+ * One bucket a level view shows: the rolled-up marking of one Context and
+ * scheme at that level.
+ */
+export interface StatusBannerBucket {
+    /** The bucket key: the Context key and scheme selector. */
+    key: string;
+    /** What the banner prints beside the marking to name the bucket. */
+    label: string;
+    /**
+     * The bucket's rendered marking. An empty bucket is not shown unless it is
+     * {@link stale}.
+     */
+    rendered: string;
+    /**
+     * Whether the bucket may be missing markings. A stale bucket with nothing
+     * rendered is still shown, labeled, as not read, so a Context whose
+     * markings went unread never drops off the banner.
+     */
+    stale?: boolean;
+    /**
+     * Colors for the bucket's marking, from its own scheme. The banner reads
+     * none itself: a bucket of another scheme never wears this banner's
+     * scheme's colors. Without them the line is neutral.
+     */
+    colors?: StatusBannerColors | null;
 }
 
 /** Options accepted by StatusBanner. */
@@ -156,10 +192,25 @@ export class StatusBanner extends ReadOnlyComponentBase {
     private _overBoundarySeq = 0;
     /** Whether the value on display is incomplete (see setIncomplete). */
     private _incomplete = false;
+    /**
+     * The buckets on display when the view shows several (see setBuckets); null
+     * while it shows its own one marking.
+     */
+    private _buckets: readonly StatusBannerBucket[] | null = null;
 
-    /** Banner is a whole-document context: use the scheme's whole-role default. */
+    /**
+     * Banner is a whole-document context: use the scheme's whole-role default,
+     * on the surface of the scopes it names when it names any.
+     */
     protected override resolveDefaultFormatId(meta: SchemeMetaView): string {
+        const scopes = this.options.scopes;
+        if (scopes?.length) return viewOutputOf(meta, scopes, false);
         return meta.defaultWholeRenderFormat ?? meta.defaultRenderFormat ?? '';
+    }
+
+    /** A banner shows its marking as one line of text. */
+    protected override writesScopesAsText(): boolean {
+        return true;
     }
 
     override async init(
@@ -221,7 +272,9 @@ export class StatusBanner extends ReadOnlyComponentBase {
     }
 
     protected render(): void {
-        if (this._boundaryMode) {
+        if (this._buckets) {
+            this.renderBuckets(this._buckets);
+        } else if (this._boundaryMode) {
             this.renderBoundaryMode();
         } else if (this.bannerOptions.categoryId) {
             this.renderSingleConcept();
@@ -245,6 +298,107 @@ export class StatusBanner extends ReadOnlyComponentBase {
         if (incomplete === this._incomplete) return;
         this._incomplete = incomplete;
         if (this.bannerEl) this.render();
+    }
+
+    /**
+     * Show several buckets at this banner's level, each on its own labeled
+     * line. The runtime calls it when the level holds more than one Context or
+     * scheme; an empty list returns the banner to its own one marking, which
+     * `setValue` keeps current.
+     *
+     * The banner reads none of these markings: each was rendered by its own
+     * bucket's Context, and only that Context could read it.
+     *
+     * @param buckets - Every bucket at the level, in the order to show them
+     * @internal
+     */
+    setBuckets(buckets: readonly StatusBannerBucket[]): void {
+        this._buckets = buckets.length > 0 ? [...buckets] : null;
+        if (this.bannerEl) this.render();
+    }
+
+    /** Render each non-empty or stale bucket as a labeled line. */
+    private renderBuckets(buckets: readonly StatusBannerBucket[]): void {
+        const size = this.bannerOptions.size ?? 'prominent';
+        const shown = buckets.filter(
+            (bucket) => bucket.rendered.trim() || bucket.stale === true,
+        );
+        const level = this.levelLabel();
+        this.bannerEl.setAttribute('role', 'status');
+        this.bannerEl.setAttribute('aria-live', 'polite');
+        this.bannerEl.style.removeProperty('--ez-banner-bg');
+        this.bannerEl.style.removeProperty('--ez-banner-text');
+        this.bannerEl.innerHTML = '';
+
+        if (shown.length === 0) {
+            this.bannerEl.className = `status-banner status-banner--${size} status-banner--empty`;
+            const label = document.createElement('div');
+            label.className = 'status-banner-label';
+            label.textContent = t('banner.noMarking');
+            this.bannerEl.appendChild(label);
+            this.bannerEl.setAttribute(
+                'aria-label',
+                level
+                    ? `${level}: ${t('banner.noMarking')}`
+                    : t('banner.noMarking'),
+            );
+            return;
+        }
+
+        this.bannerEl.className = `status-banner status-banner--${size} status-banner--buckets`;
+        const lines: string[] = [];
+        for (const bucket of shown) {
+            const row = document.createElement('div');
+            row.className = bucket.colors
+                ? 'status-banner-bucket status-banner--colored'
+                : 'status-banner-bucket';
+            row.dataset.bucket = bucket.key;
+            if (bucket.colors) {
+                row.style.setProperty(
+                    '--ez-banner-bg',
+                    bucket.colors.background,
+                );
+                row.style.setProperty('--ez-banner-text', bucket.colors.text);
+            }
+            const name = document.createElement('span');
+            name.className = 'status-banner-bucket-label';
+            name.textContent = bucket.label;
+            const marking = document.createElement('span');
+            marking.className = 'status-banner-label';
+            const text = bucket.rendered.trim()
+                ? bucket.rendered
+                : t('banner.bucketNotRead');
+            marking.textContent = text;
+            row.append(name, marking);
+            this.bannerEl.appendChild(row);
+            lines.push(`${bucket.label}: ${text}`);
+        }
+        const summary = lines.join('; ');
+        this.bannerEl.setAttribute(
+            'aria-label',
+            level ? `${level}. ${summary}` : summary,
+        );
+    }
+
+    /**
+     * Name the level this banner shows, for its accessible name: the page for a
+     * bare `data-ezclassify-aggregate`, or the named whole or collection by its
+     * own accessible label, falling back to its id. Null when the banner
+     * mirrors one marking rather than a level.
+     */
+    private levelLabel(): string | null {
+        const host = getMountHost(this.container) ?? this.container;
+        if (!host.hasAttribute('data-ezclassify-aggregate')) return null;
+        const raw = host.getAttribute('data-ezclassify-aggregate')?.trim();
+        // React writes a bare boolean attribute as "true".
+        const id = raw === 'true' ? '' : (raw ?? '');
+        if (!id) return t('banner.pageMarking');
+        const doc = host.ownerDocument ?? document;
+        const target = doc.getElementById(id);
+        return t('banner.levelMarking').replace(
+            '{name}',
+            (target && accessibleLabelOf(target)) || id,
+        );
     }
 
     /** Append the incomplete statement to whatever the mode just rendered. */
@@ -289,10 +443,16 @@ export class StatusBanner extends ReadOnlyComponentBase {
             this.bannerEl.style.removeProperty('--ez-banner-text');
             const label = document.createElement('div');
             label.className = 'status-banner-label';
-            label.textContent = 'No marking';
+            label.textContent = t('banner.noMarking');
             this.bannerEl.appendChild(label);
-            this.appendSubtitle('No marking');
-            this.bannerEl.setAttribute('aria-label', 'No marking');
+            this.appendSubtitle(t('banner.noMarking'));
+            const level = this.levelLabel();
+            this.bannerEl.setAttribute(
+                'aria-label',
+                level
+                    ? `${level}: ${t('banner.noMarking')}`
+                    : t('banner.noMarking'),
+            );
             return;
         }
 
@@ -316,7 +476,11 @@ export class StatusBanner extends ReadOnlyComponentBase {
         this.bannerEl.appendChild(label);
 
         this.appendSubtitle(rendered);
-        this.bannerEl.setAttribute('aria-label', rendered);
+        const level = this.levelLabel();
+        this.bannerEl.setAttribute(
+            'aria-label',
+            level ? `${level}: ${rendered}` : rendered,
+        );
     }
 
     /** Append the configured subtitle, if any, for full-marking rendering. */
@@ -660,17 +824,28 @@ export class StatusBanner extends ReadOnlyComponentBase {
         return this.resolveSchemeColor() ?? null;
     }
 
-    /** Shim for engine.checkCoverage: threads schemeId on multi-scheme adapters. */
+    /** Engine.checkCoverage in this banner's format. */
     private callCheckCoverage(children: string[], parent: string) {
         const opts = { outputFormat: this.formatId };
-        if (this.schemeAddressing && isAddressableSchemeEngine(this.engine)) {
-            return this.engine.checkCoverage(
-                children,
-                parent,
-                this.schemeId,
-                opts,
-            );
-        }
         return this.engine.checkCoverage(children, parent, opts);
     }
+}
+
+/**
+ * An element's own accessible label: `aria-label`, the text `aria-labelledby`
+ * names, or a form control's first `<label>`. Empty when it has none.
+ */
+function accessibleLabelOf(element: HTMLElement): string {
+    const aria = element.getAttribute('aria-label')?.trim();
+    if (aria) return aria;
+    const doc = element.ownerDocument ?? document;
+    const labelledBy = element
+        .getAttribute('aria-labelledby')
+        ?.split(/\s+/)
+        .map((id) => doc.getElementById(id)?.textContent?.trim() ?? '')
+        .filter(Boolean)
+        .join(' ');
+    if (labelledBy) return labelledBy;
+    const labels = (element as HTMLInputElement).labels;
+    return labels?.[0]?.textContent?.trim() ?? '';
 }

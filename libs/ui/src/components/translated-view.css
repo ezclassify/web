@@ -1,0 +1,44 @@
+/* TranslatedView: a marking shown through a crosswalk, with what did not carry */
+
+.ez-translated-view {
+    display: inline-flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    font: inherit;
+    color: inherit;
+}
+
+.ez-translated-view__marking {
+    font-weight: 600;
+}
+
+.ez-translated-view__marking[aria-invalid='true'] {
+    color: var(--ez-color-error, #b91c1c);
+}
+
+.ez-translated-view__note {
+    font-size: 0.8125rem;
+    color: var(--ez-color-text-muted, #475569);
+}
+
+.ez-translated-view__note:empty,
+.ez-translated-view__list:empty {
+    display: none;
+}
+
+.ez-translated-view__list {
+    margin: 0;
+    padding-left: 1.25rem;
+    font-size: 0.8125rem;
+    color: var(--ez-color-text-muted, #475569);
+}
+
+.ez-translated-view__disposition {
+    font-weight: 600;
+}
+
+.ez-translated-view[data-status='forbidden'] .ez-translated-view__note,
+.ez-translated-view[data-status='invalid-source'] .ez-translated-view__note,
+.ez-translated-view[data-status='error'] .ez-translated-view__note {
+    color: var(--ez-color-error, #b91c1c);
+}

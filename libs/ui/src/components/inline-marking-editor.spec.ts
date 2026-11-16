@@ -7,9 +7,15 @@
  * proven across all four fields in `composer/composer-contract.spec.ts`.
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import { dirname, join } from 'node:path';
 import { InlineMarkingEditor } from './inline-marking-editor';
-import { Context } from '@ezclassify/engine';
-import type { Assertion, LocalSchemeEngineAdapter } from '@ezclassify/types';
+import { schemeOnlyContext } from '../../test-fixtures/context-doubles';
+import type {
+    Assertion,
+    RemoteContextSchemeEngineAdapter,
+} from '@ezclassify/types';
 import {
     activeRow,
     allSurfaces,
@@ -23,10 +29,14 @@ import {
     typeText,
     wait,
 } from './composer/composer-harness';
+import {
+    connectDemoContext,
+    demoRuntimeSettled,
+} from '../../../../test-support/demo-runtime';
 
-const toCtx = (eng: unknown) => Context.fromSchemeEngine(eng as never);
+const toCtx = (eng: unknown) => schemeOnlyContext(eng as never);
 
-function createRealEngine(): LocalSchemeEngineAdapter {
+async function createRealEngine(): Promise<RemoteContextSchemeEngineAdapter> {
     const concepts = [
         {
             id: 'U',
@@ -153,76 +163,77 @@ function createRealEngine(): LocalSchemeEngineAdapter {
             position: 4,
         },
     ];
-    return Context.fromComponents({
-        scheme: {
-            scheme: {
-                id: 'ime-test',
-                version: '1.0.0',
-                name: 'InlineMarkingEditor Test',
-                data: { concepts: { inline: concepts }, categories },
-                rules: [
-                    {
-                        id: 'rel-countries-require-rel',
-                        when: {
-                            category: 'rel_countries',
-                            is: 'has_content',
-                        },
-                        action: 'require',
-                        target: 'REL',
-                        category: 'caveat',
-                    },
-                ],
-                parse: {
-                    case_sensitive: false,
-                    strip_whitespace: true,
-                },
-                render: {
-                    default: 'default',
-                    formats: [
-                        {
-                            id: 'default',
-                            surface: 'marking',
-                            mode: 'inline',
-                            separator: '//',
-                            // Deliberately binds no field to 'branch':
-                            // that category's concept is
-                            // certain/asserted but never rendered.
-                            //
-                            // REL heads rel_countries, so a header and
-                            // the list it heads are paired in the
-                            // format tree: one fixed-concept field
-                            // beside one list field.
-                            fields: [
-                                {
-                                    category: 'level',
-                                    separator: '/',
+    return (
+        await connectDemoContext({
+            draft: {
+                scheme: {
+                    scheme: {
+                        id: 'ime-test',
+                        version: '1.0.0',
+                        name: 'InlineMarkingEditor Test',
+                        description: 'InlineMarkingEditor Test test fixture.',
+                        data: { concepts: concepts, categories },
+                        rules: [
+                            {
+                                id: 'rel-countries-require-rel',
+                                when: {
+                                    category: 'rel_countries',
+                                    is: 'has_content',
                                 },
+                                action: 'require',
+                                target: 'REL',
+                                category: 'caveat',
+                            },
+                        ],
+                        render: {
+                            default: 'default',
+                            formats: [
                                 {
-                                    category: 'caveat',
-                                    separator: '/',
-                                    exclude_concepts: ['REL'],
-                                },
-                                {
-                                    name: 'Releasability phrase',
+                                    id: 'default',
+                                    surface: 'marking',
+                                    mode: 'inline',
                                     separator: '//',
+                                    // Deliberately binds no field to 'branch':
+                                    // that category's concept is
+                                    // certain/asserted but never rendered.
+                                    //
+                                    // REL heads rel_countries, so a header and
+                                    // the list it heads are paired in the
+                                    // format tree: one fixed-concept field
+                                    // beside one list field.
                                     fields: [
                                         {
-                                            concept: 'REL',
-                                            category: 'caveat',
+                                            category: 'level',
+                                            separator: '/',
                                         },
                                         {
-                                            category: 'rel_countries',
+                                            category: 'caveat',
                                             separator: '/',
+                                            exclude_concepts: ['REL'],
+                                        },
+                                        {
+                                            name: 'Releasability phrase',
+                                            separator: '//',
+                                            fields: [
+                                                {
+                                                    concept: 'REL',
+                                                    category: 'caveat',
+                                                },
+                                                {
+                                                    category: 'rel_countries',
+                                                    separator: '/',
+                                                },
+                                            ],
                                         },
                                     ],
                                 },
                             ],
                         },
-                    ],
+                    },
                 },
             },
-        },
-    }).scheme as LocalSchemeEngineAdapter;
+        })
+    ).scheme as RemoteContextSchemeEngineAdapter;
 }
 
 function assertionsFor(ids: string[]): Assertion[] {
@@ -255,9 +266,8 @@ async function open(
     options: Partial<Parameters<InlineMarkingEditor['init']>[3]> = {},
 ): Promise<{ editor: InlineMarkingEditor; input: HTMLInputElement }> {
     editor = new InlineMarkingEditor();
-    await editor.init(container, toCtx(createRealEngine()), initial, {
+    await editor.init(container, toCtx(await createRealEngine()), initial, {
         formatId: 'default',
-        schemeId: 'ime-test',
         assertions: ids.length ? assertionsFor(ids) : undefined,
         root,
         ...options,
@@ -297,6 +307,36 @@ describe('InlineMarkingEditor', () => {
         expect(container.querySelector('.inline-editor-wrap')).not.toBeNull();
         expect(input.type).toBe('text');
         expect(input.className).toBe('inline-editor-input');
+    });
+
+    it('centers its chevron on the closing delimiter the host draws, however many glyphs it has', async () => {
+        const { editor } = await open();
+        const chevron = container.querySelector('.inline-editor-chevron')!;
+        const anchor = chevron.parentElement!;
+        // The chevron stays inside the editor's mount, so a press on it is a
+        // press inside the editor.
+        expect(anchor.classList).toContain('inline-editor-chevron-anchor');
+        expect(container.contains(anchor)).toBe(true);
+
+        // The anchor holds the very text the host draws after the mount, so
+        // it is as wide as those glyphs and the chevron centers on all of them.
+        for (const delimiter of [')', ']]', ' »']) {
+            const close = editor.closeDelimiter(delimiter);
+            expect(close.textContent).toBe(delimiter);
+            expect(anchor.textContent).toBe(delimiter);
+            expect(anchor.classList).not.toContain(
+                'inline-editor-chevron-anchor--bare',
+            );
+        }
+
+        // A template with no closing delimiter gives the chevron nothing to
+        // stand on but the text, so the stylesheet does not draw it.
+        expect(editor.closeDelimiter('').textContent).toBe('');
+        expect(anchor.textContent).toBe('');
+        expect(anchor.classList).toContain(
+            'inline-editor-chevron-anchor--bare',
+        );
+        expect(anchor.querySelector('.inline-editor-chevron')).toBe(chevron);
     });
 
     it('rounds the editor hit width up so punctuation cannot click through to the host field', async () => {
@@ -418,9 +458,8 @@ describe('InlineMarkingEditor', () => {
             // the editor's first frame: the sheet it opens keeps focus.
             const late = new InlineMarkingEditor();
             editor = late;
-            await late.init(container, toCtx(createRealEngine()), '', {
+            await late.init(container, toCtx(await createRealEngine()), '', {
                 formatId: 'default',
-                schemeId: 'ime-test',
                 root,
                 openList: false,
             });
@@ -659,8 +698,10 @@ describe('InlineMarkingEditor under the commit table', () => {
         expect(editor.getRendered()).toBe('S//SI');
         await type(input, 'S//');
         rowFor('NF')!.click();
+        await demoRuntimeSettled();
         await wait(40);
         press(input, 'Enter');
+        await demoRuntimeSettled();
         await wait(80);
 
         // SI is gone; MAIN survives (carried forward, still invisible to the
@@ -743,5 +784,35 @@ describe('InlineMarkingEditor under the commit table', () => {
         expect(onCancel).not.toHaveBeenCalled();
         press(input, 'Escape');
         expect(onCancel).toHaveBeenCalled();
+    });
+});
+
+describe('InlineMarkingEditor chevron placement', () => {
+    it('positions the chevron from the anchor, never from a one-glyph estimate', () => {
+        const css = readFileSync(
+            join(
+                dirname(fileURLToPath(import.meta.url)),
+                'inline-marking-editor.css',
+            ),
+            'utf8',
+        ).replace(/\/\*[\s\S]*?\*\//g, '');
+        const rule = (selector: string) =>
+            css.match(
+                new RegExp(
+                    `(?:^|\\})\\s*${selector.replace(/[.]/g, '\\$&')}\\s*\\{([^}]*)\\}`,
+                ),
+            )?.[1] ?? '';
+        const anchor = rule('.inline-editor-chevron-anchor');
+        expect(anchor).toMatch(/position:\s*absolute/);
+        expect(anchor).toMatch(/left:\s*100%/);
+        expect(anchor).toMatch(/visibility:\s*hidden/);
+        const chevron = rule('.inline-editor-chevron');
+        expect(chevron).toMatch(/left:\s*50%/);
+        expect(chevron).toMatch(/transform:\s*translate\(-50%, -50%\)/);
+        expect(chevron).toMatch(/visibility:\s*visible/);
+        expect(chevron).not.toMatch(/em\)/);
+        expect(
+            rule('.inline-editor-chevron-anchor--bare .inline-editor-chevron'),
+        ).toMatch(/display:\s*none/);
     });
 });

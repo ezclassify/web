@@ -1,4 +1,6 @@
-import { Context } from '@ezclassify/engine';
+import type { EzClassifyClient } from '@ezclassify/rest-client';
+import { connectDemoContext } from '../../../test-support/demo-runtime';
+import { openContext, type OpenContext } from './context-doubles';
 
 /**
  * `JOINT ` ahead of a marking with joint owners, and ahead of a part that
@@ -75,6 +77,7 @@ export const WHOLE_STAND_IN_SCHEME = {
         id: 'whole-stand-in',
         version: '1.0.0',
         name: 'Whole stand-in',
+        description: 'A whole whose partners a part may stand in for.',
         role_aware: true,
         role_detection: {
             whole: { views: ['banner'] },
@@ -118,56 +121,54 @@ export const WHOLE_STAND_IN_SCHEME = {
                     rollup: 'pipeline',
                 },
             ],
-            concepts: {
-                inline: [
-                    {
-                        id: 'LOW',
-                        name: 'Low',
-                        categories: ['level'],
-                        rank: 1,
-                        views: { default: 'LOW', portion: 'L' },
-                    },
-                    {
-                        id: 'HIGH',
-                        name: 'High',
-                        categories: ['level'],
-                        rank: 2,
-                        views: { default: 'HIGH', portion: 'H' },
-                    },
-                    {
-                        id: 'SHARE',
-                        name: 'Share',
-                        categories: ['handling'],
-                        views: 'SHARE',
-                        stands_for_whole: 'partners',
-                    },
-                    {
-                        id: 'CLOSED',
-                        name: 'Closed',
-                        categories: ['handling'],
-                        views: 'CLOSED',
-                    },
-                    ...['ALPHA', 'BRAVO', 'CHARLIE'].map((id) => ({
-                        id,
-                        name: `Partner ${id}`,
-                        categories: ['partners'],
-                        views: id,
-                    })),
-                    ...['NORTH', 'SOUTH'].map((id) => ({
-                        id,
-                        name: `Owner ${id}`,
-                        categories: ['owners'],
-                        views: id,
-                    })),
-                    {
-                        id: 'JOINT-AS-WHOLE',
-                        name: 'Joint, owners as in the whole',
-                        categories: ['owner_shorthand'],
-                        views: 'JOINT',
-                        stands_for_whole: 'owners',
-                    },
-                ],
-            },
+            concepts: [
+                {
+                    id: 'LOW',
+                    name: 'Low',
+                    categories: ['level'],
+                    rank: 1,
+                    views: { default: 'LOW', portion: 'L' },
+                },
+                {
+                    id: 'HIGH',
+                    name: 'High',
+                    categories: ['level'],
+                    rank: 2,
+                    views: { default: 'HIGH', portion: 'H' },
+                },
+                {
+                    id: 'SHARE',
+                    name: 'Share',
+                    categories: ['handling'],
+                    views: 'SHARE',
+                    stands_for_whole: 'partners',
+                },
+                {
+                    id: 'CLOSED',
+                    name: 'Closed',
+                    categories: ['handling'],
+                    views: 'CLOSED',
+                },
+                ...['ALPHA', 'BRAVO', 'CHARLIE'].map((id) => ({
+                    id,
+                    name: `Partner ${id}`,
+                    categories: ['partners'],
+                    views: id,
+                })),
+                ...['NORTH', 'SOUTH'].map((id) => ({
+                    id,
+                    name: `Owner ${id}`,
+                    categories: ['owners'],
+                    views: id,
+                })),
+                {
+                    id: 'JOINT-AS-WHOLE',
+                    name: 'Joint, owners as in the whole',
+                    categories: ['owner_shorthand'],
+                    views: 'JOINT',
+                    stands_for_whole: 'owners',
+                },
+            ],
         },
         rules: [
             {
@@ -233,17 +234,16 @@ export const WHOLE_STAND_IN_SCHEME = {
         ],
         named_conditions: {
             'joint-ownership': {
-                category_id: 'owners',
+                category: 'owners',
                 operator: 'count_gte',
                 value: 2,
             },
             'joint-as-whole': {
-                category_id: 'owner_shorthand',
+                category: 'owner_shorthand',
                 operator: 'has_concept',
                 value: 'JOINT-AS-WHOLE',
             },
         },
-        parse: { case_sensitive: false, strip_whitespace: true },
         render: {
             default: 'banner',
             formats: [
@@ -305,7 +305,17 @@ export const CLOSED_WHOLE = 'HIGH//CLOSED';
 /** A jointly owned whole that names two partners. */
 export const JOINT_WHOLE = 'JOINT HIGH NORTH SOUTH//SHARE WITH ALPHA, BRAVO';
 
-/** A Context over {@link WHOLE_STAND_IN_SCHEME}. */
-export function wholeStandInContext() {
-    return Context.fromComponents({ scheme: WHOLE_STAND_IN_SCHEME as never });
+/** One draft connection per spec file; every call opens a fresh view of it. */
+let connection: Promise<EzClassifyClient> | undefined;
+
+/**
+ * A Context over {@link WHOLE_STAND_IN_SCHEME}, sent to the demo runtime through
+ * its draft door. Each call returns a new open Context over the one connection,
+ * so a spy on one does not reach another.
+ */
+export async function wholeStandInContext(): Promise<OpenContext> {
+    connection ??= connectDemoContext({
+        draft: { scheme: WHOLE_STAND_IN_SCHEME },
+    });
+    return openContext(await connection);
 }

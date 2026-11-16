@@ -1,9 +1,9 @@
 /**
  * Unit tests for the cross-instance mount-rollup registry, the leaf module that
- * carries a nested child scope's per-scheme whole up to its parent scope. Pure
- * data-structure tests (no engine / DOM), covering the cross-family
- * independence rule: distinct scheme ids are carried as SEPARATE buckets and
- * never co-mingled.
+ * carries a nested child scope's whole, per bucket, up to its parent scope.
+ * Pure data-structure tests (no engine), covering bucket independence: two
+ * buckets are carried separately and never co-mingled, including one scheme
+ * read under two Contexts.
  */
 
 import { describe, it, expect, beforeEach } from 'vitest';
@@ -17,27 +17,36 @@ import {
     type RegistryChild,
     type ChildWhole,
 } from './mount-rollup-registry';
+import { bucketKey, type BucketKey } from './store/store-shared';
 
-function makeChild(id: string, wholes: Array<[string, string]>): RegistryChild {
+function makeChild(
+    id: string,
+    wholes: Array<[BucketKey, string]>,
+    collectionId: string | null = null,
+): RegistryChild {
     return {
         instanceId: id,
-        childWholesByScheme: () => {
-            const m = new Map<string, ChildWhole>();
-            for (const [schemeId, rendered] of wholes) {
-                m.set(schemeId, { schemeId, rendered, assertions: [] });
+        root: document.createElement('div'),
+        collectionId,
+        childWholes: () => {
+            const m = new Map<BucketKey, ChildWhole>();
+            for (const [bucket, rendered] of wholes) {
+                m.set(bucket, { bucket, rendered, assertions: [] });
             }
             return m;
         },
     };
 }
 
+const S1 = bucketKey('', 's1');
+
 describe('mount-rollup-registry', () => {
     beforeEach(() => __resetMountRollupRegistry());
 
     it('childrenOf returns only the children of the named parent', () => {
-        addChild('parent-A', 'child-1', makeChild('child-1', [['s1', 'HIGH']]));
-        addChild('parent-A', 'child-2', makeChild('child-2', [['s1', 'LOW']]));
-        addChild('parent-B', 'child-3', makeChild('child-3', [['s1', 'MED']]));
+        addChild('parent-A', 'child-1', makeChild('child-1', [[S1, 'HIGH']]));
+        addChild('parent-A', 'child-2', makeChild('child-2', [[S1, 'LOW']]));
+        addChild('parent-B', 'child-3', makeChild('child-3', [[S1, 'MED']]));
 
         expect(childrenOf('parent-A').map((c) => c.instanceId)).toEqual([
             'child-1',
@@ -49,28 +58,36 @@ describe('mount-rollup-registry', () => {
         expect(childrenOf('nobody')).toEqual([]);
     });
 
-    it('carries distinct scheme ids as separate buckets (cross-family independence)', () => {
+    it('carries one scheme under two Contexts as two buckets', () => {
+        const capco = bucketKey('capco', 'tier');
+        const cui = bucketKey('cui', 'tier');
         addChild(
             'parent',
             'child',
             makeChild('child', [
-                ['cedar-valley-protection', 'DISTRICT COORDINATORS'],
-                ['tlp', 'TLP:AMBER'],
+                [capco, 'HIGH'],
+                [cui, 'LOW'],
             ]),
         );
 
         const [child] = childrenOf('parent');
-        const wholes = child.childWholesByScheme();
-        // Two distinct scheme ids → two distinct entries, never merged into one.
+        const wholes = child.childWholes();
         expect(wholes.size).toBe(2);
-        expect(wholes.get('cedar-valley-protection')?.rendered).toBe(
-            'DISTRICT COORDINATORS',
-        );
-        expect(wholes.get('tlp')?.rendered).toBe('TLP:AMBER');
+        expect(wholes.get(capco)?.rendered).toBe('HIGH');
+        expect(wholes.get(cui)?.rendered).toBe('LOW');
+    });
+
+    it('keeps the collection a child is a member of in its parent', () => {
+        addChild('parent', 'a', makeChild('a', [[S1, 'X']], 'folderA'));
+        addChild('parent', 'b', makeChild('b', [[S1, 'Y']]));
+        expect(childrenOf('parent').map((c) => c.collectionId)).toEqual([
+            'folderA',
+            null,
+        ]);
     });
 
     it('removeChild drops the edge', () => {
-        addChild('parent', 'child', makeChild('child', [['s1', 'X']]));
+        addChild('parent', 'child', makeChild('child', [[S1, 'X']]));
         expect(childrenOf('parent')).toHaveLength(1);
         removeChild('child');
         expect(childrenOf('parent')).toHaveLength(0);
@@ -81,7 +98,7 @@ describe('mount-rollup-registry', () => {
         registerFlusher('parent', () => {
             flushed++;
         });
-        addChild('parent', 'child', makeChild('child', [['s1', 'X']]));
+        addChild('parent', 'child', makeChild('child', [[S1, 'X']]));
         notifyParent('child');
         expect(flushed).toBe(1);
     });

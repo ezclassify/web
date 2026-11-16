@@ -17,19 +17,38 @@ export const defaultLocale = {
     'mark.warningLabel': 'Marking has a warning: {messages} Activate to edit.',
     'mark.scanIncomplete':
         'The scan did not read the whole text, so some markings were not checked.',
+    'mark.added': 'Added {value} to {category}.',
+    'mark.removed': 'Removed {value} from {category}.',
+    'mark.replaced': 'Replaced {old} with {new} in {category}.',
+    'mark.rule': 'Rule: {rule}',
+    'mark.changesOne': '1 change made by a marking rule',
+    'mark.changesMany': '{count} changes made by marking rules',
+    'mark.notReviewed': ', not yet reviewed',
+    'mark.undoLastEdit': 'Undo last edit',
+    'mark.undoLastEditDescription':
+        'Puts the marking back to what it was before your last edit.',
     'rollup.incomplete':
         'Some markings were not read, so this marking may be incomplete.',
+    'banner.noMarking': 'No marking',
+    'banner.pageMarking': 'Page marking',
+    'banner.levelMarking': '{name} marking',
+    'banner.bucketNotRead': 'Not read',
 
     'placeholder.searchInput': 'Type to search, \u2191\u2193 to browse',
     'placeholder.searchInputTouch': 'Search\u2026',
 
     'aria.markingInput': 'Marking input',
+    'aria.showSuggestions': 'Show suggestions',
     'aria.searchMarkings': 'Search markings',
     'aria.selectedMarkingsAndSearch': 'Selected markings and search',
     'aria.removeTag': 'Remove {name}',
     'aria.inferredSuffix': ' (inferred)',
+    'flow.includedBy': 'Included by {choice}',
+    'tag.defaultUnwritten': 'Default {category}, not written in the marking',
+    'tag.unwritten': 'Not written in the marking',
     'aria.unprintedSuffix': ' (not shown in the marking)',
     'aria.unreadSuffix': ' (not recognized)',
+    'aria.overallMarkingPrefix': 'Overall marking: ',
     'aria.favorites': 'Favorites',
     'aria.favoritesActive': 'Favorites (current marking is saved)',
 
@@ -56,8 +75,12 @@ export const defaultLocale = {
     'a11y.composer.countOne': '1 suggestion',
     'a11y.composer.savesAs': 'Saves as {rendered}',
     'a11y.composer.set': 'Marking set to {rendered}',
-    'a11y.composer.cleared': 'Marking cleared',
+    'a11y.composer.cleared': 'Marking cleared. Undo is available.',
+    'a11y.markingRestored': 'Marking restored.',
+    'a11y.lastEditUndone': 'Last edit undone.',
     'aria.clearMarking': 'Clear marking',
+    'aria.clearWholeMarking': 'Clear the whole marking',
+    'aria.undoClear': 'Undo clear',
     'aria.clearText': 'Clear text',
     'a11y.composer.notSaved': 'Not saved. {problem}',
     'a11y.composer.reverted': 'Changes discarded',
@@ -106,6 +129,19 @@ export const defaultLocale = {
     'composer.cancel': 'Cancel',
 
     'fix.heading': 'Ways to fix',
+
+    'translate.notCarried': 'Not carried',
+    'translate.notSelected': 'Not selected',
+    'translate.forbidden': 'The crosswalk forbids translating this marking.',
+    'translate.invalidSource':
+        'The marking does not read, so it was not translated.',
+    'translate.targetInvalid': 'The translated marking does not stand.',
+    'translate.failed': 'The marking could not be translated.',
+    'translate.disposition.review': 'needs review',
+    'translate.disposition.omit': 'omitted',
+    'translate.disposition.forbid': 'forbidden',
+    'translate.disposition.unmapped': 'no mapping',
+    'translate.disposition.not-selected': 'not selected',
 } as const;
 
 type LocaleKeys = keyof typeof defaultLocale;

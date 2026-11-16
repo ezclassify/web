@@ -8,6 +8,8 @@
  * markup), the same path every real consumer uses; this also exercises the
  * "tags" controller registration in component-factory/element-scanner.
  */
+import { asContext } from '../../test-fixtures/as-context';
+import { expectInlineChrome, markTone } from '../../test-fixtures/field-chrome';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import {
     allSurfaces,
@@ -23,10 +25,11 @@ import {
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
-import type { LocalSchemeEngineAdapter } from '@ezclassify/types';
+import type { RemoteContextSchemeEngineAdapter } from '@ezclassify/types';
 import { EzClassifyUI } from '../ezclassify-ui';
 import { TagInput } from './tag-input';
-import { Context } from '@ezclassify/engine';
+import type { EzClassifyClient } from '@ezclassify/rest-client';
+import { connectDemoContext } from '../../../../test-support/demo-runtime';
 
 function wait(ms = 60): Promise<void> {
     return new Promise((r) => setTimeout(r, ms));
@@ -39,167 +42,169 @@ function wait(ms = 60): Promise<void> {
  * test scheme, since TagInput inherits the identical whole-marking value
  * contract.
  */
-function createTestEngine(): LocalSchemeEngineAdapter {
-    return Context.fromComponents({
-        scheme: {
-            scheme: {
-                id: 'ti-test',
-                version: '1.0.0',
-                name: 'TagInput Test',
-                data: {
-                    concepts: {
-                        inline: [
-                            {
-                                id: 'U',
-                                name: 'Unclassified',
-                                views: { default: 'UNCLASSIFIED' },
-                                categories: ['level'],
-                                parents: [],
-                                aliases: [],
-                                position: 1,
-                                rank: 1,
-                            },
-                            {
-                                id: 'S',
-                                name: 'Secret',
-                                views: { default: 'SECRET' },
-                                categories: ['level'],
-                                parents: [],
-                                aliases: [],
-                                position: 2,
-                                rank: 2,
-                            },
-                            {
-                                id: 'NF',
-                                name: 'No Foreign',
-                                views: { default: 'NOFORN' },
-                                categories: ['caveat'],
-                                parents: [],
-                                aliases: [],
-                                position: 1,
-                                rank: 1,
-                            },
-                            {
-                                id: 'ORCON',
-                                name: 'Originator Controlled',
-                                views: { default: 'ORCON' },
-                                categories: ['caveat'],
-                                parents: [],
-                                aliases: [],
-                                position: 2,
-                                rank: 1,
-                            },
-                            {
-                                id: 'REL',
-                                name: 'Releasable',
-                                views: { default: 'REL' },
-                                categories: ['caveat'],
-                                parents: [],
-                                aliases: [],
-                                position: 3,
-                                rank: 1,
-                            },
-                            {
-                                id: 'USA',
-                                name: 'United States',
-                                views: { default: 'USA' },
-                                categories: ['rel_countries'],
-                                parents: [],
-                                aliases: [],
-                                position: 1,
-                                rank: 1,
-                            },
-                            {
-                                id: 'GBR',
-                                name: 'United Kingdom',
-                                views: { default: 'GBR' },
-                                categories: ['rel_countries'],
-                                parents: [],
-                                aliases: [],
-                                position: 2,
-                                rank: 1,
-                            },
-                        ],
-                    },
-                    categories: [
-                        {
-                            id: 'level',
-                            label: 'Level',
-                            required: false,
-                            single: true,
-                            rollup: 'max',
-                            position: 1,
-                        },
-                        {
-                            id: 'caveat',
-                            label: 'Caveat',
-                            required: false,
-                            single: false,
-                            rollup: 'union',
-                            position: 2,
-                        },
-                        {
-                            id: 'rel_countries',
-                            label: 'REL Countries',
-                            required: false,
-                            single: false,
-                            rollup: 'union',
-                            position: 3,
-                        },
-                    ],
-                },
-                rules: [
-                    {
-                        id: 'rel-countries-require-rel',
-                        when: {
-                            category: 'rel_countries',
-                            is: 'has_content',
-                        },
-                        action: 'require',
-                        target: 'REL',
-                        category: 'caveat',
-                    },
-                ],
-                parse: {
-                    case_sensitive: false,
-                    strip_whitespace: true,
-                },
-                render: {
-                    default: 'default',
-                    formats: [
-                        {
-                            id: 'default',
-                            surface: 'marking',
-                            mode: 'inline',
-                            separator: '//',
-                            // REL heads rel_countries. A header and the list it
-                            // heads are paired in the format tree: one
-                            // fixed-concept field beside one list field.
-                            fields: [
-                                { category: 'level', separator: '/' },
+async function createTestEngine(): Promise<RemoteContextSchemeEngineAdapter> {
+    return (
+        await connectDemoContext({
+            draft: {
+                scheme: {
+                    scheme: {
+                        id: 'ti-test',
+                        version: '1.0.0',
+                        name: 'TagInput Test',
+                        description: 'TagInput Test test fixture.',
+                        data: {
+                            concepts: [
                                 {
-                                    category: 'caveat',
-                                    separator: '/',
-                                    exclude_concepts: ['REL'],
+                                    id: 'U',
+                                    name: 'Unclassified',
+                                    views: { default: 'UNCLASSIFIED' },
+                                    categories: ['level'],
+                                    parents: [],
+                                    aliases: [],
+                                    position: 1,
+                                    rank: 1,
                                 },
                                 {
-                                    name: 'Releasability phrase',
+                                    id: 'S',
+                                    name: 'Secret',
+                                    views: { default: 'SECRET' },
+                                    categories: ['level'],
+                                    parents: [],
+                                    aliases: [],
+                                    position: 2,
+                                    rank: 2,
+                                },
+                                {
+                                    id: 'NF',
+                                    name: 'No Foreign',
+                                    views: { default: 'NOFORN' },
+                                    categories: ['caveat'],
+                                    parents: [],
+                                    aliases: [],
+                                    position: 1,
+                                    rank: 1,
+                                },
+                                {
+                                    id: 'ORCON',
+                                    name: 'Originator Controlled',
+                                    views: { default: 'ORCON' },
+                                    categories: ['caveat'],
+                                    parents: [],
+                                    aliases: [],
+                                    position: 2,
+                                    rank: 1,
+                                },
+                                {
+                                    id: 'REL',
+                                    name: 'Releasable',
+                                    views: { default: 'REL' },
+                                    categories: ['caveat'],
+                                    parents: [],
+                                    aliases: [],
+                                    position: 3,
+                                    rank: 1,
+                                },
+                                {
+                                    id: 'USA',
+                                    name: 'United States',
+                                    views: { default: 'USA' },
+                                    categories: ['rel_countries'],
+                                    parents: [],
+                                    aliases: [],
+                                    position: 1,
+                                    rank: 1,
+                                },
+                                {
+                                    id: 'GBR',
+                                    name: 'United Kingdom',
+                                    views: { default: 'GBR' },
+                                    categories: ['rel_countries'],
+                                    parents: [],
+                                    aliases: [],
+                                    position: 2,
+                                    rank: 1,
+                                },
+                            ],
+                            categories: [
+                                {
+                                    id: 'level',
+                                    label: 'Level',
+                                    required: false,
+                                    single: true,
+                                    rollup: 'max',
+                                    position: 1,
+                                },
+                                {
+                                    id: 'caveat',
+                                    label: 'Caveat',
+                                    required: false,
+                                    single: false,
+                                    rollup: 'union',
+                                    position: 2,
+                                },
+                                {
+                                    id: 'rel_countries',
+                                    label: 'REL Countries',
+                                    required: false,
+                                    single: false,
+                                    rollup: 'union',
+                                    position: 3,
+                                },
+                            ],
+                        },
+                        rules: [
+                            {
+                                id: 'rel-countries-require-rel',
+                                when: {
+                                    category: 'rel_countries',
+                                    is: 'has_content',
+                                },
+                                action: 'require',
+                                target: 'REL',
+                                category: 'caveat',
+                            },
+                        ],
+                        render: {
+                            default: 'default',
+                            formats: [
+                                {
+                                    id: 'default',
+                                    surface: 'marking',
+                                    mode: 'inline',
                                     separator: '//',
+                                    // REL heads rel_countries. A header and the list it
+                                    // heads are paired in the format tree: one
+                                    // fixed-concept field beside one list field.
                                     fields: [
-                                        { concept: 'REL', category: 'caveat' },
+                                        { category: 'level', separator: '/' },
                                         {
-                                            category: 'rel_countries',
+                                            category: 'caveat',
                                             separator: '/',
+                                            exclude_concepts: ['REL'],
+                                        },
+                                        {
+                                            name: 'Releasability phrase',
+                                            separator: '//',
+                                            fields: [
+                                                {
+                                                    concept: 'REL',
+                                                    category: 'caveat',
+                                                },
+                                                {
+                                                    category: 'rel_countries',
+                                                    separator: '/',
+                                                },
+                                            ],
                                         },
                                     ],
                                 },
                             ],
                         },
-                    ],
+                    },
                 },
             },
-        },
-    }).scheme as LocalSchemeEngineAdapter;
+        })
+    ).scheme as RemoteContextSchemeEngineAdapter;
 }
 
 /**
@@ -209,16 +214,17 @@ function createTestEngine(): LocalSchemeEngineAdapter {
  * `data-ezclassify-*` attribute equivalent, the same reasoning
  * `inline-marking-editor.spec.ts` already documents for its own direct mounts.
  */
-function createTestContext(): Context {
-    return Context.fromComponents({
-        scheme: {
+async function createTestContext(): Promise<EzClassifyClient> {
+    return await connectDemoContext({
+        draft: {
             scheme: {
-                id: 'ti-fav-test',
-                version: '1.0.0',
-                name: 'TagInput Favorites Test',
-                data: {
-                    concepts: {
-                        inline: [
+                scheme: {
+                    id: 'ti-fav-test',
+                    version: '1.0.0',
+                    name: 'TagInput Favorites Test',
+                    description: 'TagInput Favorites Test test fixture.',
+                    data: {
+                        concepts: [
                             {
                                 id: 'S',
                                 name: 'Secret',
@@ -240,45 +246,41 @@ function createTestContext(): Context {
                                 rank: 1,
                             },
                         ],
+                        categories: [
+                            {
+                                id: 'level',
+                                label: 'Level',
+                                required: false,
+                                single: true,
+                                rollup: 'max',
+                                position: 1,
+                            },
+                            {
+                                id: 'caveat',
+                                label: 'Caveat',
+                                required: false,
+                                single: false,
+                                rollup: 'union',
+                                position: 2,
+                            },
+                        ],
                     },
-                    categories: [
-                        {
-                            id: 'level',
-                            label: 'Level',
-                            required: false,
-                            single: true,
-                            rollup: 'max',
-                            position: 1,
-                        },
-                        {
-                            id: 'caveat',
-                            label: 'Caveat',
-                            required: false,
-                            single: false,
-                            rollup: 'union',
-                            position: 2,
-                        },
-                    ],
-                },
-                rules: [],
-                parse: {
-                    case_sensitive: false,
-                    strip_whitespace: true,
-                },
-                render: {
-                    default: 'default',
-                    formats: [
-                        {
-                            id: 'default',
-                            surface: 'marking',
-                            mode: 'inline',
-                            separator: '//',
-                            fields: [
-                                { category: 'level', separator: '/' },
-                                { category: 'caveat', separator: '/' },
-                            ],
-                        },
-                    ],
+                    rules: [],
+                    render: {
+                        default: 'default',
+                        formats: [
+                            {
+                                id: 'default',
+                                surface: 'marking',
+                                mode: 'inline',
+                                separator: '//',
+                                fields: [
+                                    { category: 'level', separator: '/' },
+                                    { category: 'caveat', separator: '/' },
+                                ],
+                            },
+                        ],
+                    },
                 },
             },
         },
@@ -331,7 +333,9 @@ async function mountTagInput(
     initialValue = '',
 ): Promise<{ input: HTMLInputElement; tags: TagInput }> {
     root.innerHTML = `<input id="ti" type="text" data-ezclassify-controller="tags" value="${initialValue}" />`;
-    forms = new EzClassifyUI(createTestEngine() as never, { root });
+    forms = new EzClassifyUI(asContext((await createTestEngine()) as never), {
+        root,
+    });
     await wait();
     const input = document.getElementById('ti') as HTMLInputElement;
     const tags = (
@@ -353,7 +357,9 @@ async function mountTagInputWith(
     initialValue = '',
 ): Promise<{ input: HTMLInputElement; tags: TagInput }> {
     root.innerHTML = `<input id="ti" type="text" ${controllerAttrs} value="${initialValue}" />`;
-    forms = new EzClassifyUI(createTestEngine() as never, { root });
+    forms = new EzClassifyUI(asContext((await createTestEngine()) as never), {
+        root,
+    });
     await wait();
     const input = document.getElementById('ti') as HTMLInputElement;
     const tags = (
@@ -400,7 +406,12 @@ describe('TagInput', () => {
             <input style="background-color: pink" />
             <input id="ti" type="text" data-ezclassify-controller="tags"
                 style="background-color: rgb(242, 244, 246); color: rgb(20, 30, 40); border: 2px solid rgb(60, 70, 80); border-radius: 9px; font: 18px Georgia; min-height: 48px" />`;
-        forms = new EzClassifyUI(createTestEngine() as never, { root });
+        forms = new EzClassifyUI(
+            asContext((await createTestEngine()) as never),
+            {
+                root,
+            },
+        );
         await wait();
         const wrap = root.querySelector<HTMLElement>('.tag-input-wrap')!;
         expect(wrap.style.backgroundColor).toBe('rgb(242, 244, 246)');
@@ -410,11 +421,6 @@ describe('TagInput', () => {
         expect(wrap.style.borderRadius).toBe('9px');
         expect(wrap.style.fontFamily).toBe('Georgia');
         expect(wrap.style.minHeight).toBe('48px');
-        const drawer = wrap.querySelector<HTMLElement>('.ez-field-drawer')!;
-        expect(drawer.style.backgroundColor).toBe(wrap.style.backgroundColor);
-        expect(
-            drawer.style.getPropertyValue('--ez-field-drawer-border-color'),
-        ).toBe(wrap.style.borderColor);
     });
 
     it('follows native host style changes and stops observing after teardown', async () => {
@@ -427,10 +433,6 @@ describe('TagInput', () => {
         await wait();
         expect(wrap.style.backgroundColor).toBe('rgb(30, 40, 50)');
         expect(wrap.style.borderColor).toBe('rgb(120, 130, 140)');
-        expect(
-            wrap.querySelector<HTMLElement>('.ez-field-drawer')!.style
-                .backgroundColor,
-        ).toBe('rgb(30, 40, 50)');
         forms!.destroy();
         forms = null;
         expect(input.style.display).not.toBe('none');
@@ -464,7 +466,7 @@ describe('TagInput', () => {
         const component = new TagInput();
         const mount = root.querySelector<HTMLDivElement>('#mount')!;
         try {
-            await component.init(mount, createTestEngine() as never, {
+            await component.init(mount, (await createTestEngine()) as never, {
                 styleInputs: true,
             });
             expect(mount.classList.contains('ez-styled-inputs')).toBe(true);
@@ -483,26 +485,17 @@ describe('TagInput', () => {
         const component = new TagInput();
         const mount = root.querySelector<HTMLDivElement>('#mount')!;
         try {
-            await component.init(mount, createTestEngine() as never, {
+            await component.init(mount, (await createTestEngine()) as never, {
                 colorScheme: 'dark',
             });
             const wrap = mount.querySelector<HTMLElement>('.tag-input-wrap')!;
-            const drawer = wrap.querySelector<HTMLElement>('.ez-field-drawer')!;
             expect(wrap.style.backgroundColor).toBe('');
-            expect(drawer.style.backgroundColor).toBe('');
             component.setColorScheme('auto');
             await wait();
             expect(wrap.style.backgroundColor).toBe('rgb(255, 192, 203)');
-            expect(drawer.style.backgroundColor).toBe(
-                wrap.style.backgroundColor,
-            );
             component.setColorScheme('dark');
             await wait();
             expect(wrap.style.backgroundColor).toBe('');
-            expect(drawer.style.backgroundColor).toBe('');
-            expect(
-                drawer.style.getPropertyValue('--ez-field-drawer-border-color'),
-            ).toBe('');
         } finally {
             component.destroy();
         }
@@ -543,7 +536,8 @@ describe('TagInput', () => {
         expect(tip!.hidden).toBe(false);
 
         chip.dispatchEvent(new Event('mouseleave'));
-        await wait();
+        // It stays a moment, so the pointer can reach it, then closes.
+        await wait(350);
         expect(tip!.hidden).toBe(true);
     });
 
@@ -618,122 +612,49 @@ describe('TagInput', () => {
         expect(rowLabels()).not.toContain('SECRET');
     });
 
-    it('mounts the status mark + favorites button inside a bottom-hanging chrome drawer', async () => {
-        // The mark and ★ button live in a small drawer attached to the field's
-        // bottom-right edge, not floating over the chips.
-        await mountTagInput('');
+    it('keeps the status mark and clear inline at its trailing edge, reserving their room beside the chips', async () => {
+        await mountTagInput('SECRET//NOFORN');
         const wrap = root.querySelector('.tag-input-wrap') as HTMLElement;
-        const drawer = wrap.querySelector(':scope > .ez-field-drawer');
-        expect(drawer).not.toBeNull();
-        expect(drawer!.classList.contains('ez-field-drawer--bottom')).toBe(
-            true,
+        const chrome = expectInlineChrome(wrap, [wrap]);
+        // A valid marking with nothing fixed: the mark has nothing to say.
+        expect(markTone(chrome.querySelector('.ez-status-mark')!)).toBe(
+            'muted',
         );
-        const mark = drawer!.querySelector(':scope > .ez-status-mark');
-        expect(mark).not.toBeNull();
-        expect(mark!.classList.contains('ez-status-mark--chrome')).toBe(true);
+        // The chrome follows the filter, where a render pass never reaches.
+        const filter = wrap.querySelector('.tag-input-filter')!;
+        expect(
+            filter.compareDocumentPosition(
+                wrap.querySelector('.ez-field-chrome')!,
+            ) & Node.DOCUMENT_POSITION_FOLLOWING,
+        ).toBeTruthy();
     });
 
-    it('mirrors the drawer to the top when the dropdown opens below the field (the default), and back on close', async () => {
-        // The drawer sits on the edge opposite the picker. With jsdom's zero-size
-        // layout the picker opens below, so the drawer moves to the free top edge.
+    it('leaves its chrome in place while the picker is open', async () => {
         await mountTagInput('');
         const wrap = root.querySelector('.tag-input-wrap') as HTMLElement;
-        const drawer = wrap.querySelector('.ez-field-drawer') as HTMLElement;
-        const filter = root.querySelector(
+        const chrome = expectInlineChrome(wrap, [wrap]);
+        const atRest = [chrome.className, [...chrome.children]];
+        const filter = wrap.querySelector(
             '.tag-input-filter',
         ) as HTMLInputElement;
-        expect(drawer.classList.contains('ez-field-drawer--bottom')).toBe(true);
 
         filter.focus();
         press(filter, 'ArrowDown');
         await wait();
-
-        const surface = openSurface()!;
-        expect(surface.dataset.side).toBe('below');
-        expect(drawer.classList.contains('ez-field-drawer--top')).toBe(true);
-        expect(drawer.classList.contains('ez-field-drawer--bottom')).toBe(
-            false,
-        );
-
-        await leave(filter);
-
-        expect(drawer.classList.contains('ez-field-drawer--bottom')).toBe(true);
-        expect(drawer.classList.contains('ez-field-drawer--top')).toBe(false);
+        expect(openSurface()).not.toBeNull();
+        expect(expectInlineChrome(wrap, [wrap])).toBe(chrome);
+        expect([chrome.className, [...chrome.children]]).toEqual(atRest);
     });
 
-    it('the drawer classes actually resolve to opposite physical edges (not just opposite names)', () => {
-        // Geometry, not just class names: jsdom has no layout engine and
-        // (per tag-input's own keyboard-hint CSS-source test below) doesn't
-        // apply the author stylesheet cascade to getComputedStyle for a
-        // plain <style> injection, so this reads the real CSS source: same
-        // pattern used there. A class-name assertion alone could pass while
-        // the surface is unusable; this would
-        // catch someone swapping the --top/--bottom rule BODIES (the tests
-        // around this one only prove the JS picks the right CLASS NAME; this
-        // proves that class name still means what it says on screen).
-        const here = dirname(fileURLToPath(import.meta.url));
-        const css = readFileSync(join(here, 'field-chrome-drawer.css'), 'utf8');
-        expect(css).toMatch(
-            /\.ez-field-drawer--bottom\s*\{[^}]*top:\s*calc\(100% - var\(--ez-field-margin-bottom, 0px\)\)/,
-        );
-        expect(css).toMatch(
-            /\.ez-field-drawer--top\s*\{[^}]*bottom:\s*calc\(100% - var\(--ez-field-margin-top, 0px\)\)/,
-        );
-    });
-
-    it('keeps the focus ring inside the field border and continues it onto the drawer', () => {
-        // The inset focus ring stays inside the field border and continues onto
-        // the drawer in either orientation. The drawer carries the same ring
-        // color so the compound shape reads as one highlighted unit.
-        const here = dirname(fileURLToPath(import.meta.url));
-        const css = readFileSync(join(here, 'tag-input.css'), 'utf8');
-        expect(css).toMatch(
-            /\.tag-input-wrap:focus-within:not\(:has\(> \.ez-clear-button:focus\)\)\s*\{[^}]*outline-offset:\s*-2px/,
-        );
-        expect(css).toMatch(
-            /\.tag-input-wrap:focus-within:not\(:has\(> \.ez-clear-button:focus\)\)\s*>\s*\.ez-field-drawer\s*\{[^}]*border-color:/,
-        );
-    });
-
-    it('keeps the drawer at the bottom when the dropdown flips open above the field, so neither hides the other', async () => {
+    it('draws the suite focus ring inside the field border, except while the chrome has focus', async () => {
         await mountTagInput('');
-        const wrap = root.querySelector('.tag-input-wrap') as HTMLElement;
-        const drawer = wrap.querySelector('.ez-field-drawer') as HTMLElement;
-        const filter = root.querySelector(
-            '.tag-input-filter',
-        ) as HTMLInputElement;
-
-        // Pin the field off the bottom of the (jsdom default 768px) viewport
-        // so spaceBelow goes negative and the picker must open above.
-        const offBottom = {
-            top: 900,
-            bottom: 950,
-            left: 10,
-            right: 300,
-            width: 290,
-            height: 50,
-            x: 10,
-            y: 900,
-            toJSON: () => ({}),
-        } as DOMRect;
-        wrap.getBoundingClientRect = () => offBottom;
-        filter.getBoundingClientRect = () => offBottom;
-
-        filter.focus();
-        press(filter, 'ArrowDown');
-        await wait();
-
-        expect(openSurface()!.dataset.side).toBe('above');
-        // The picker occupies the field's TOP edge, so the drawer stays on
-        // the bottom: moving it to the same top edge would bury
-        // it under the opaque, higher-z-index picker.
-        expect(drawer.classList.contains('ez-field-drawer--bottom')).toBe(true);
-        expect(drawer.classList.contains('ez-field-drawer--top')).toBe(false);
-
-        await leave(filter);
-
-        expect(drawer.classList.contains('ez-field-drawer--bottom')).toBe(true);
-        expect(drawer.classList.contains('ez-field-drawer--top')).toBe(false);
+        const wrap = root.querySelector('.tag-input-wrap')!;
+        expect(wrap.classList.contains('ez-field-frame')).toBe(true);
+        const here = dirname(fileURLToPath(import.meta.url));
+        const css = readFileSync(join(here, 'field-chrome.css'), 'utf8');
+        expect(css).toMatch(
+            /\.ez-field-frame:focus-within:not\(:has\(\.ez-field-chrome :focus\)\)\s*\{[^}]*outline-offset:\s*-2px/,
+        );
     });
 
     it('adds an assertion and a chip when a picked suggestion is committed', async () => {
@@ -1255,29 +1176,16 @@ describe('TagInput CSS: keyboard-hint reveal and coarse-pointer chip spacing tar
     const readCss = (name: string): string =>
         readFileSync(join(here, name), 'utf8');
 
-    it('reveals the keyboard hints inside the ★ drawer, not via a hover/focus-within floating pill', () => {
-        // Keyboard hints are visible inside the drawer. Drawer-scoped styling
-        // must not depend on hover or focus-within selectors on the field wrapper.
-        const css = readCss('component-utils.css');
-        expect(css).toContain('.ez-field-drawer > .proto-kbd-hints');
-        expect(css).not.toContain(
-            '.tag-input-wrap:focus-within > .proto-kbd-hints',
-        );
-        expect(css).not.toContain('.tag-input-wrap:hover > .proto-kbd-hints');
-        expect(css).not.toContain('.autocomplete-wrap');
-    });
-
-    it('keeps the key hints off the top-edge drawer, where the label sits', () => {
-        // The drawer mirrors to the top edge while the composer is open below
-        // or an error list is showing, and there it hangs into the label's
-        // line. Only the status mark and star go with it.
-        const css = readCss('component-utils.css');
+    it('shows the chip keys in a row under the field on a keyboard, and none on a touch screen', () => {
+        const css = readCss('tag-input.css');
+        // Both classes, so the row outranks component-utils.css's hidden
+        // default in whichever order a root adopted the two sheets.
         expect(css).toMatch(
-            /\.ez-field-drawer--top > \.proto-kbd-hints \{\s*display: none;/,
+            /\.proto-kbd-hints\.tag-input-hints \{\s*display: flex;/,
         );
-        expect(
-            css.indexOf('.ez-field-drawer--top > .proto-kbd-hints'),
-        ).toBeGreaterThan(css.indexOf('.ez-field-drawer > .proto-kbd-hints'));
+        expect(css).toMatch(
+            /@media \(pointer: coarse\) \{\s*\.proto-kbd-hints\.tag-input-hints \{\s*display: none;/,
+        );
     });
 
     /**
@@ -1287,7 +1195,7 @@ describe('TagInput CSS: keyboard-hint reveal and coarse-pointer chip spacing tar
      * order, including declarations reached only through a matching @media
      * block. This exists because jsdom's `getComputedStyle` does not consult an
      * injected `<style>` element's rules at all here (verified empirically; see
-     * the drawer-geometry test above), so a `getComputedStyle` assertion on a
+     * the CSS source tests above), so a `getComputedStyle` assertion on a
      * mounted component would pass regardless of what the CSS actually says.
      * Walking `CSSStyleSheet. cssRules` directly sidesteps that gap: it's real
      * CSS parsing (jsdom supports it), not layout or style application, so it
@@ -1415,7 +1323,7 @@ describe('TagInput favorites', () => {
         input.type = 'text';
         container.appendChild(input);
         const tags = new TagInput();
-        await tags.init(container, createTestContext(), options);
+        await tags.init(container, await createTestContext(), options);
         return { input, tags };
     }
 
@@ -1480,7 +1388,7 @@ describe('TagInput favorites', () => {
     });
 });
 
-describe('TagInput keyboard hints in the ★ drawer', () => {
+describe('TagInput keyboard hints', () => {
     /** Mount TagInput directly (see createTestContext's doc comment). */
     async function mountDirect(
         options: Parameters<TagInput['init']>[2] = {},
@@ -1491,39 +1399,26 @@ describe('TagInput keyboard hints in the ★ drawer', () => {
         input.type = 'text';
         container.appendChild(input);
         const tags = new TagInput();
-        await tags.init(container, createTestContext(), options);
+        await tags.init(container, await createTestContext(), options);
         return { input, tags };
     }
 
-    it('mounts the hints inside the ★ drawer, ahead of the status mark, not floating over the chips', async () => {
+    it('puts the chip keys in a row right under the field, outside its chrome', async () => {
         await mountDirect();
-        const drawer = root.querySelector('.ez-field-drawer') as HTMLElement;
-        expect(drawer).not.toBeNull();
-        const hints = drawer.querySelector(':scope > .proto-kbd-hints');
-        expect(hints).not.toBeNull();
-        // Hints (left) must precede the status mark (right) as DOM order is
-        // what gives the drawer's shrink-wrapped flex row its "hints left,
-        // status+star right" layout.
-        const statusMark = drawer.querySelector(':scope > .ez-status-mark');
-        expect(statusMark).not.toBeNull();
-        const children = [...drawer.children];
-        expect(children.indexOf(hints as Element)).toBeLessThan(
-            children.indexOf(statusMark as Element),
-        );
-        // Not a direct child of the chip wrap.
         const wrap = root.querySelector('.tag-input-wrap') as HTMLElement;
-        expect(wrap.querySelector(':scope > .proto-kbd-hints')).toBeNull();
+        const hints = wrap.nextElementSibling as HTMLElement;
+        expect(hints.classList.contains('proto-kbd-hints')).toBe(true);
+        expect(hints.classList.contains('tag-input-hints')).toBe(true);
+        expect(hints.textContent).toContain('Del');
+        expect(wrap.querySelector('.proto-kbd-hints')).toBeNull();
     });
 
-    it('honors the no-hints opt-out: hints absent, status mark still present', async () => {
+    it('honors the no-hints opt-out: hints hidden, status mark still present', async () => {
         await mountDirect({ hints: false });
-        const drawer = root.querySelector('.ez-field-drawer') as HTMLElement;
-        const hints = drawer.querySelector(
-            '.proto-kbd-hints',
-        ) as HTMLElement | null;
-        // The element still exists (layout code assumes it does) but is hidden.
-        expect(hints).not.toBeNull();
-        expect(hints!.style.display).toBe('none');
-        expect(drawer.querySelector('.ez-status-mark')).not.toBeNull();
+        const hints = root.querySelector('.tag-input-hints') as HTMLElement;
+        expect(hints.style.display).toBe('none');
+        expect(
+            root.querySelector('.ez-field-chrome .ez-status-mark'),
+        ).not.toBeNull();
     });
 });

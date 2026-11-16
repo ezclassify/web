@@ -3,13 +3,10 @@
     "entryPoints": [
         "libs/*/src",
         "integrations/*/src",
-        "integrations/angular/schematics",
         "scripts",
         "examples/*/src",
         "libs/*/build-*.mjs",
         "integrations/*/build-*.mjs",
-        "vitest.private-runtime.ts",
-        "integrations/angular/clean.mjs",
         "e2e/lanes.mjs",
         "e2e/hosts"
     ],
@@ -18,8 +15,7 @@
         "**/*.test.*",
         "**/*.d.ts",
         "**/__mocks__/**",
-        "**/node_modules/**",
-        "integrations/angular/schematics/**/*.js"
+        "**/node_modules/**"
     ],
     "excludeInternal": false,
     "excludePrivate": false,

@@ -2,7 +2,7 @@
  * Runtime wireup tests for `EzClassifyUI` + `EzClassifyStore` cross-talk.
  *
  * Each spec mounts the scanner's binding pass on a small DOM with
- * `data-ezclassify-rendered` + `data-ezclassify-bound-to` /
+ * `data-ezclassify-marking` + `data-ezclassify-bound-to` /
  * `data-ezclassify-facet-of` siblings, then drives one view's component surface
  * (tag input `setValue` / select `addAssertion`) and asserts the others were
  * fanned the new state through the store.
@@ -23,9 +23,12 @@ import {
 import type { Assertion, ProcessResult, RenderResult } from '@ezclassify/types';
 import type { TagInput } from './components/tag-input';
 import type { SingleSelect } from './components/single-select';
+import { asContext } from '../test-fixtures/as-context';
+import { levelState } from './store/page-rollup-harness';
+import { demoRuntimeSettled } from '../../../test-support/demo-runtime';
 
 const FOUR_FIELDS_HTML = `
-  <input type="hidden" id="doc-marking" data-ezclassify-rendered />
+  <input type="hidden" id="doc-marking" data-ezclassify-marking />
   <input id="ac" data-ezclassify-controller="tags"
          data-ezclassify-bound-to="doc-marking" />
   <input id="level" data-ezclassify-controller="select"
@@ -42,13 +45,15 @@ const FOUR_FIELDS_HTML = `
  */
 async function mountReady(
     root: HTMLElement,
-    engine = loadMultiScopeRegression(),
+    given?: Awaited<ReturnType<typeof loadMultiScopeRegression>>,
 ): Promise<EzClassifyUI> {
+    const engine = given ?? (await loadMultiScopeRegression());
     const ready = new Promise((resolve) =>
         root.addEventListener('ezclassify:ready', resolve, { once: true }),
     );
-    const forms = new EzClassifyUI(engine, { root });
+    const forms = new EzClassifyUI(asContext(engine), { root });
     await ready;
+    await demoRuntimeSettled();
     return forms;
 }
 
@@ -60,12 +65,10 @@ function nextEvent(target: EventTarget, type: string): Promise<Event> {
 }
 
 async function flush(): Promise<void> {
-    // The store's publish path is `engine.process` async + commit; let
-    // microtasks drain a couple of times so subscriber-driven reprocesses
-    // get to run before we assert.
-    for (let i = 0; i < 6; i++) {
-        await Promise.resolve();
-    }
+    // The store's publish path is `engine.process` async + commit, and the
+    // runtime's answers arrive over the wire: wait until every answer the
+    // subscriber-driven reprocesses asked for has landed.
+    await demoRuntimeSettled();
 }
 
 describe('EzClassifyUI store wireup', () => {
@@ -88,13 +91,13 @@ describe('EzClassifyUI store wireup', () => {
     it('indexes standalone marking and tags before source views and contributes once per part', async () => {
         root.innerHTML = `
           <output id="mirror" data-ezclassify-source="part"></output>
-          <input id="whole" type="hidden" data-ezclassify-rendered value="DISTRICT COORDINATORS">
+          <input id="whole" type="hidden" data-ezclassify-marking value="DISTRICT COORDINATORS">
           <input id="part" data-ezclassify-controller="marking" data-ezclassify-part-of="whole" value="DISTRICT COORDINATORS">
           <input id="tags-part" data-ezclassify-controller="tags" data-ezclassify-part-of="whole" value="STUDENTS">
           <input id="bound" data-ezclassify-controller="marking" data-ezclassify-bound-to="part">
           <input id="facet" data-ezclassify-controller="tags" data-ezclassify-facet-of="part" data-ezclassify-category="level">
         `;
-        const engine = loadMultiScopeRegression();
+        const engine = await loadMultiScopeRegression();
         const high = (await engine.process('DISTRICT COORDINATORS')).rendered;
         const low = (await engine.process('STUDENTS')).rendered;
         forms = await mountReady(root, engine);
@@ -169,7 +172,7 @@ describe('EzClassifyUI store wireup', () => {
         const sameStore = forms.store;
         const stableId = categoryHost.id;
         forms.destroy();
-        forms = new EzClassifyUI(loadMultiScopeRegression(), {
+        forms = new EzClassifyUI(asContext(await loadMultiScopeRegression()), {
             root,
             store: sameStore,
         });
@@ -183,14 +186,16 @@ describe('EzClassifyUI store wireup', () => {
         expect(categoryHost.id).toBe(stableId);
     });
 
-    it('exposes a default VanillaEzClassifyStore when none is supplied', () => {
-        forms = new EzClassifyUI(loadMultiScopeRegression(), { root });
+    it('exposes a default VanillaEzClassifyStore when none is supplied', async () => {
+        forms = new EzClassifyUI(asContext(await loadMultiScopeRegression()), {
+            root,
+        });
         expect(forms.store).toBeInstanceOf(VanillaEzClassifyStore);
     });
 
     it('keeps unrecognized store text visible and invalid in both authoring views', async () => {
         root.innerHTML = `
-          <input type="hidden" id="doc-marking" data-ezclassify-rendered />
+          <input type="hidden" id="doc-marking" data-ezclassify-marking />
           <textarea id="marking" data-ezclassify-controller="marking"
                     data-ezclassify-bound-to="doc-marking">UNKNOWN-VOCABULARY</textarea>
           <input id="tags" data-ezclassify-controller="tags"
@@ -252,14 +257,14 @@ describe('EzClassifyUI store wireup', () => {
 
     it('keeps a canonical unknown reading when an older component reprocess finishes later', async () => {
         root.innerHTML = `
-          <input type="hidden" id="doc-marking" data-ezclassify-rendered />
+          <input type="hidden" id="doc-marking" data-ezclassify-marking />
           <textarea id="marking" data-ezclassify-controller="marking"
                     data-ezclassify-bound-to="doc-marking"></textarea>
         `;
-        const engine = loadMultiScopeRegression();
+        const engine = await loadMultiScopeRegression();
         forms = await mountReady(root, engine);
-        const known = engine.process('STUDENTS');
-        const unknown = engine.process('UNKNOWN-VOCABULARY');
+        const known = await engine.process('STUDENTS');
+        const unknown = await engine.process('UNKNOWN-VOCABULARY');
         let finish!: (result: ProcessResult) => void;
         const pending = new Promise<ProcessResult>((resolve) => {
             finish = resolve;
@@ -279,10 +284,10 @@ describe('EzClassifyUI store wireup', () => {
         expect(forms.store.get('doc-marking').valid).toBe(false);
     });
 
-    it('uses the caller-supplied store when one is passed', () => {
-        const engine = loadMultiScopeRegression();
+    it('uses the caller-supplied store when one is passed', async () => {
+        const engine = await loadMultiScopeRegression();
         const store = new VanillaEzClassifyStore(engine);
-        forms = new EzClassifyUI(engine, { root, store });
+        forms = new EzClassifyUI(asContext(engine), { root, store });
         expect(forms.store).toBe(store);
     });
 
@@ -295,14 +300,14 @@ describe('EzClassifyUI store wireup', () => {
         const root2 = document.createElement('div');
         const initialBody = '(STUDENTS) Intro text here.';
         root2.innerHTML = `
-      <input type="hidden" id="doc-marking" data-ezclassify-rendered />
+      <input type="hidden" id="doc-marking" data-ezclassify-marking />
       <input id="ac" data-ezclassify-controller="tags"
              data-ezclassify-bound-to="doc-marking" />
       <textarea id="mta" data-ezclassify-controller="marked-textarea"
                 data-ezclassify-bound-to="doc-marking">${initialBody}</textarea>
     `;
         document.body.appendChild(root2);
-        forms = new EzClassifyUI(loadMultiScopeRegression(), {
+        forms = new EzClassifyUI(asContext(await loadMultiScopeRegression()), {
             root: root2,
         });
         await flush();
@@ -327,7 +332,7 @@ describe('EzClassifyUI store wireup', () => {
         const root2 = document.createElement('div');
         const initialBody = '(STUDENTS) Intro text here.';
         root2.innerHTML = `
-      <input type="hidden" id="doc-marking" data-ezclassify-rendered />
+      <input type="hidden" id="doc-marking" data-ezclassify-marking />
       <textarea id="mta" data-ezclassify-controller="marked-textarea"
                 data-ezclassify-bound-to="doc-marking">${initialBody}</textarea>
     `;
@@ -356,7 +361,7 @@ describe('EzClassifyUI store wireup', () => {
         document.body.innerHTML = '';
         const root2 = document.createElement('div');
         root2.innerHTML = `
-      <input type="hidden" id="doc-marking" data-ezclassify-rendered />
+      <input type="hidden" id="doc-marking" data-ezclassify-marking />
       <textarea id="mta" data-ezclassify-controller="marked-textarea"
                 data-ezclassify-bound-to="doc-marking">(STUDENTS) Intro text.</textarea>
     `;
@@ -400,7 +405,7 @@ describe('EzClassifyUI store wireup', () => {
         document.body.innerHTML = '';
         const root2 = document.createElement('div');
         root2.innerHTML = `
-      <input type="hidden" id="doc-marking" data-ezclassify-rendered />
+      <input type="hidden" id="doc-marking" data-ezclassify-marking />
       <input id="ac" data-ezclassify-controller="tags"
              data-ezclassify-bound-to="doc-marking" />
       <textarea id="mf" data-ezclassify-controller="marking"
@@ -425,7 +430,9 @@ describe('EzClassifyUI store wireup', () => {
     });
 
     it('facet-of → bound-to: a level facet pick reflects on the tag-input view', async () => {
-        forms = new EzClassifyUI(loadMultiScopeRegression(), { root });
+        forms = new EzClassifyUI(asContext(await loadMultiScopeRegression()), {
+            root,
+        });
         await flush();
 
         await forms.store.publishAssertions('doc-marking', [
@@ -445,7 +452,9 @@ describe('EzClassifyUI store wireup', () => {
     });
 
     it('facet-of → facet-of merging: different categories stay isolated; same-category siblings stay in sync', async () => {
-        forms = new EzClassifyUI(loadMultiScopeRegression(), { root });
+        forms = new EzClassifyUI(asContext(await loadMultiScopeRegression()), {
+            root,
+        });
         await flush();
 
         // The level facet publishes STUDENTS; the school facet receives only the school slice
@@ -500,7 +509,9 @@ describe('EzClassifyUI store wireup', () => {
     });
 
     it('source dedup: a publisher does not receive its own commit', async () => {
-        forms = new EzClassifyUI(loadMultiScopeRegression(), { root });
+        forms = new EzClassifyUI(asContext(await loadMultiScopeRegression()), {
+            root,
+        });
         await flush();
 
         // Grab the autocomplete component instance via the runtime's internal map.
@@ -534,7 +545,9 @@ describe('EzClassifyUI store wireup', () => {
     });
 
     it('detaches the native-input listener on destroy so a torn-down autocompleter stops reacting', async () => {
-        forms = new EzClassifyUI(loadMultiScopeRegression(), { root });
+        forms = new EzClassifyUI(asContext(await loadMultiScopeRegression()), {
+            root,
+        });
         await flush();
 
         const acEl = root.querySelector<HTMLInputElement>('#ac')!;
@@ -576,7 +589,7 @@ describe('EzClassifyUI store wireup', () => {
              data-ezclassify-category="level" />
     `;
         document.body.appendChild(root3);
-        forms = new EzClassifyUI(loadMultiScopeRegression(), {
+        forms = new EzClassifyUI(asContext(await loadMultiScopeRegression()), {
             root: root3,
         });
         await flush();
@@ -586,7 +599,9 @@ describe('EzClassifyUI store wireup', () => {
     });
 
     it('writes store rendered state back into the marking host on commit', async () => {
-        forms = new EzClassifyUI(loadMultiScopeRegression(), { root });
+        forms = new EzClassifyUI(asContext(await loadMultiScopeRegression()), {
+            root,
+        });
         await flush();
 
         await forms.store.publishAssertions('doc-marking', [
@@ -604,7 +619,9 @@ describe('EzClassifyUI store wireup', () => {
     });
 
     it('writes back on publishRendered too, not just publishAssertions', async () => {
-        forms = new EzClassifyUI(loadMultiScopeRegression(), { root });
+        forms = new EzClassifyUI(asContext(await loadMultiScopeRegression()), {
+            root,
+        });
         await flush();
 
         await forms.store.publishRendered(
@@ -630,7 +647,9 @@ describe('EzClassifyUI store wireup', () => {
             );
         });
 
-        forms = new EzClassifyUI(loadMultiScopeRegression(), { root });
+        forms = new EzClassifyUI(asContext(await loadMultiScopeRegression()), {
+            root,
+        });
         await ready;
         await flush();
 
@@ -654,11 +673,10 @@ describe('EzClassifyUI store wireup', () => {
         document.body.innerHTML = '';
         const root5 = document.createElement('div');
         root5.innerHTML = `
-      <input id="ac-host" data-ezclassify-controller="tags"
-             data-ezclassify-rendered />
+      <input id="ac-host" data-ezclassify-controller="tags" data-ezclassify-marking />
     `;
         document.body.appendChild(root5);
-        forms = new EzClassifyUI(loadMultiScopeRegression(), {
+        forms = new EzClassifyUI(asContext(await loadMultiScopeRegression()), {
             root: root5,
         });
         await flush();
@@ -687,12 +705,12 @@ describe('EzClassifyUI store wireup', () => {
         document.body.innerHTML = '';
         const root4 = document.createElement('div');
         root4.innerHTML = `
-      <input type="hidden" id="doc-marking" value="STUDENTS" data-ezclassify-rendered />
+      <input type="hidden" id="doc-marking" value="STUDENTS" data-ezclassify-marking />
       <input id="ac" data-ezclassify-controller="tags"
              data-ezclassify-bound-to="doc-marking" />
     `;
         document.body.appendChild(root4);
-        forms = new EzClassifyUI(loadMultiScopeRegression(), {
+        forms = new EzClassifyUI(asContext(await loadMultiScopeRegression()), {
             root: root4,
         });
         await flush();
@@ -705,10 +723,10 @@ describe('EzClassifyUI store wireup', () => {
         document.body.innerHTML = '';
         const root5 = document.createElement('div');
         root5.innerHTML = `
-      <input type="hidden" id="doc-marking" data-ezclassify-rendered />
+      <input type="hidden" id="doc-marking" data-ezclassify-marking />
       <fieldset id="whole-selector" data-ezclassify-controller="selector"
                 data-ezclassify-bound-to="doc-marking"></fieldset>
-      <input id="typed-marking" name="typed-marking" data-ezclassify-bind
+      <input id="typed-marking" name="typed-marking"
              data-ezclassify-bound-to="doc-marking" />
     `;
         document.body.appendChild(root5);
@@ -745,21 +763,24 @@ describe('EzClassifyUI store wireup', () => {
         document.body.innerHTML = '';
         const root5 = document.createElement('div');
         root5.innerHTML = `
-      <input type="hidden" id="doc-marking" data-ezclassify-rendered />
-      <input id="short-view" value="safe prior value" data-ezclassify-bind
+      <input type="hidden" id="doc-marking" data-ezclassify-marking />
+      <input id="short-view" value="safe prior value"
              data-ezclassify-bound-to="doc-marking"
              data-ezclassify-format="short" />
     `;
         document.body.appendChild(root5);
-        const engine = loadMultiScopeRegression();
+        const engine = await loadMultiScopeRegression();
         const originalProcess = engine.process.bind(engine);
         let processCalls = 0;
-        engine.process = ((input: string | Assertion[], ...rest: unknown[]) => {
+        engine.process = (async (
+            input: string | Assertion[],
+            ...rest: unknown[]
+        ) => {
             processCalls += 1;
-            const result = Reflect.apply(originalProcess, engine, [
+            const result = (await Reflect.apply(originalProcess, engine, [
                 input,
                 ...rest,
-            ]) as ProcessResult;
+            ])) as ProcessResult;
             if (!Array.isArray(input)) return result;
             const refused = input[0]?.value === 'REFUSE';
             const invalid = input[0]?.value === 'INVALID';
@@ -808,15 +829,17 @@ describe('EzClassifyUI store wireup', () => {
                     : {},
             };
         }) as typeof engine.process;
-        forms = new EzClassifyUI(engine, { root: root5 });
+        forms = new EzClassifyUI(asContext(engine), { root: root5 });
         await flush();
         processCalls = 0;
         const shortView = root5.querySelector<HTMLInputElement>('#short-view')!;
-        const typedAssertion = {
+        const typedAssertion: Assertion = {
             categoryId: 'level',
             conceptId: 'STUDENTS',
             value: '2030-12-31',
-        } as Assertion;
+            source: 'manual',
+            confidence: 'certain',
+        };
 
         await forms.store.publishAssertions('doc-marking', [typedAssertion]);
         await flush();
@@ -868,30 +891,33 @@ describe('EzClassifyUI store wireup', () => {
         document.body.innerHTML = '';
         const root5 = document.createElement('div');
         root5.innerHTML = `
-      <input type="hidden" id="doc-marking" data-ezclassify-rendered />
-      <input id="short-rollup" value="safe prior value" data-ezclassify-bind
+      <input type="hidden" id="doc-marking" data-ezclassify-marking />
+      <input id="short-rollup" value="safe prior value"
              data-ezclassify-bound-to="doc-marking"
              data-ezclassify-format="short" />
     `;
         document.body.appendChild(root5);
-        const engine = loadMultiScopeRegression();
+        const engine = await loadMultiScopeRegression();
         const originalProcess = engine.process.bind(engine);
         const originalRender = engine.render.bind(engine);
         const renderValues: Array<string | undefined> = [];
         const resolveSlow: Array<(result: RenderResult) => void> = [];
-        engine.process = ((input: string | Assertion[], ...rest: unknown[]) => {
+        engine.process = (async (
+            input: string | Assertion[],
+            ...rest: unknown[]
+        ) => {
             if (!Array.isArray(input))
                 return Reflect.apply(originalProcess, engine, [input, ...rest]);
-            const processed = Reflect.apply(originalProcess, engine, [
+            const processed = (await Reflect.apply(originalProcess, engine, [
                 input,
                 ...rest,
-            ]) as ProcessResult;
+            ])) as ProcessResult;
             return {
                 ...processed,
                 assertions: input,
             };
         }) as typeof engine.process;
-        engine.aggregateAssertions = ((sets: Assertion[][]) => {
+        engine.aggregateAssertions = (async (sets: Assertion[][]) => {
             const assertions = sets.flat();
             const invalid = assertions[0]?.value === 'INVALID';
             return {
@@ -940,7 +966,7 @@ describe('EzClassifyUI store wireup', () => {
                 },
             } satisfies RenderResult;
         }) as typeof engine.render;
-        forms = new EzClassifyUI(engine, { root: root5 });
+        forms = new EzClassifyUI(asContext(engine), { root: root5 });
         await flush();
         const input = root5.querySelector<HTMLInputElement>('#short-rollup')!;
         type AggregateState = EzClassifyState;
@@ -973,7 +999,7 @@ describe('EzClassifyUI store wireup', () => {
                 },
             ]);
             await flush();
-            const aggregate = forms!.store.getAggregate();
+            const aggregate = levelState(forms!.store);
             expect(aggregate.aggregate).toBe(true);
             expect(aggregate.assertions[0]?.value).toBe(value);
             notifyAggregate(aggregate);
@@ -1040,12 +1066,12 @@ describe('EzClassifyUI store wireup', () => {
         document.body.innerHTML = '';
         const root5 = document.createElement('div');
         root5.innerHTML = `
-      <input type="hidden" id="doc-marking" data-ezclassify-rendered />
-      <input id="default-view" data-ezclassify-bind
+      <input type="hidden" id="doc-marking" data-ezclassify-marking />
+      <input id="default-view"
              data-ezclassify-bound-to="doc-marking" />
     `;
         document.body.appendChild(root5);
-        forms = new EzClassifyUI(loadMultiScopeRegression(), {
+        forms = new EzClassifyUI(asContext(await loadMultiScopeRegression()), {
             root: root5,
         });
         await flush();
@@ -1118,7 +1144,9 @@ describe('EzClassifyUI store wireup', () => {
     it('does not produce an unhandled rejection when the store is destroyed before a component onChange fires', async () => {
         // Internal onChange publication catches a destroyed-store rejection.
         // Vitest treats any uncaught rejection as a failure.
-        forms = new EzClassifyUI(loadMultiScopeRegression(), { root });
+        forms = new EzClassifyUI(asContext(await loadMultiScopeRegression()), {
+            root,
+        });
         await flush();
 
         const components = (
@@ -1156,20 +1184,23 @@ describe('EzClassifyUI store wireup', () => {
         document.body.innerHTML = '';
         const root = document.createElement('div');
         root.innerHTML = `
-      <input type="hidden" id="doc-marking" data-ezclassify-rendered />
-      <input id="typed-view" data-ezclassify-bind
+      <input type="hidden" id="doc-marking" data-ezclassify-marking />
+      <input id="typed-view"
              data-ezclassify-bound-to="doc-marking"
              data-ezclassify-format="short" />
     `;
         document.body.appendChild(root);
 
-        const engine = loadMultiScopeRegression();
+        const engine = await loadMultiScopeRegression();
         const originalProcess = engine.process.bind(engine);
-        engine.process = ((input: string | Assertion[], ...rest: unknown[]) => {
-            const result = Reflect.apply(originalProcess, engine, [
+        engine.process = (async (
+            input: string | Assertion[],
+            ...rest: unknown[]
+        ) => {
+            const result = (await Reflect.apply(originalProcess, engine, [
                 input,
                 ...rest,
-            ]) as ProcessResult;
+            ])) as ProcessResult;
             if (Array.isArray(input)) return result;
             const refusal: RenderResult = {
                 rendered: '[unrepresentable:value-lossy]',
@@ -1210,5 +1241,300 @@ describe('EzClassifyUI store wireup', () => {
         expect(typed.value).not.toContain('unrepresentable');
         expect(typed.getAttribute('aria-invalid')).toBe('true');
         expect(typed.validationMessage).toContain('value-lossy');
+    });
+
+    describe('a marking the engine cannot write', () => {
+        const MARKER = '[unrepresentable:ambiguous-representation]';
+
+        /** Refuses any facts whose first value is REFUSE. */
+        async function refusingEngine() {
+            const engine = await loadMultiScopeRegression();
+            const originalProcess = engine.process.bind(engine);
+            engine.process = (async (
+                input: string | Assertion[],
+                ...rest: unknown[]
+            ) => {
+                const result = (await Reflect.apply(originalProcess, engine, [
+                    input,
+                    ...rest,
+                ])) as ProcessResult;
+                const facts = Array.isArray(input)
+                    ? input
+                    : (rest[0] as { assertions?: Assertion[] } | undefined)
+                          ?.assertions;
+                if (facts?.[0]?.value !== 'REFUSE') return result;
+                return {
+                    ...result,
+                    assertions: facts,
+                    rendered: MARKER,
+                    assessment: {
+                        emitted: [],
+                        omitted: [],
+                        collapsed: [],
+                        conflicts: [],
+                        unrepresentable: [
+                            {
+                                output: 'whole',
+                                reason: 'ambiguous-representation',
+                            },
+                        ],
+                    },
+                };
+            }) as typeof engine.process;
+            return engine;
+        }
+
+        const fact = (value: string): Assertion => ({
+            categoryId: 'level',
+            conceptId: 'STUDENTS',
+            value,
+            source: 'manual',
+            confidence: 'certain',
+        });
+
+        it('empties a hidden host and flags it until the marking can be written', async () => {
+            document.body.innerHTML = '';
+            const root5 = document.createElement('div');
+            root5.innerHTML = `<input type="hidden" id="doc-marking" data-ezclassify-marking value="" />`;
+            document.body.appendChild(root5);
+            forms = await mountReady(root5, await refusingEngine());
+            const host = root5.querySelector<HTMLInputElement>('#doc-marking')!;
+            await forms.store.publishRendered(
+                'doc-marking',
+                'DISTRICT COORDINATORS',
+            );
+            await flush();
+            expect(host.value).toBe('DISTRICT COORDINATORS');
+
+            await forms.store.publishAssertions('doc-marking', [
+                fact('REFUSE'),
+            ]);
+            await flush();
+
+            expect(forms.store.get('doc-marking').rendered).toBe(MARKER);
+            expect(host.value).toBe('');
+            expect(host.hasAttribute('data-ezclassify-invalid')).toBe(true);
+
+            await forms.store.publishRendered(
+                'doc-marking',
+                'DISTRICT COORDINATORS',
+            );
+            await flush();
+
+            expect(host.value).toBe('DISTRICT COORDINATORS');
+            expect(host.hasAttribute('data-ezclassify-invalid')).toBe(false);
+        });
+
+        /** Mount a marking host with two facets of it. */
+        async function mountFacets(host: string, category = 'level') {
+            document.body.innerHTML = '';
+            const root5 = document.createElement('div');
+            root5.innerHTML = `${host}
+                <div id="f1" data-ezclassify-controller="selector" data-ezclassify-facet-of="doc-marking" data-ezclassify-category="${category}"></div>
+                <div id="f2" data-ezclassify-controller="selector" data-ezclassify-facet-of="doc-marking" data-ezclassify-category="${category}"></div>`;
+            document.body.appendChild(root5);
+            forms = await mountReady(root5, await refusingEngine());
+            await flush();
+            return root5;
+        }
+
+        const flagged = (root5: HTMLElement) =>
+            [...root5.querySelectorAll('[data-ezclassify-invalid]')].map(
+                (el) => el.closest('[data-ezclassify-mount]') ?? el,
+            ).length;
+
+        it('says why on the first facet of a marking no field shows', async () => {
+            const root5 = await mountFacets(
+                '<input type="hidden" id="doc-marking" data-ezclassify-marking value="" />',
+            );
+
+            await forms!.store.publishAssertions('doc-marking', [
+                fact('REFUSE'),
+            ]);
+            await flush();
+
+            const shown = [
+                ...document.querySelectorAll('.ez-validation-errors'),
+            ].filter((list) => !(list as HTMLElement).hidden);
+            expect(shown).toHaveLength(1);
+            expect(shown[0].textContent).toContain('ambiguous-representation');
+            expect(shown[0].textContent).not.toContain('unrepresentable:');
+            // The hidden host, and the one facet that speaks for it.
+            expect(flagged(root5)).toBe(2);
+
+            await forms!.store.publishRendered(
+                'doc-marking',
+                'DISTRICT COORDINATORS',
+            );
+            await flush();
+
+            expect(flagged(root5)).toBe(0);
+        });
+
+        it('asks no Context why a facet is silent once the Context is gone', async () => {
+            const root5 = document.createElement('div');
+            document.body.innerHTML = '';
+            root5.innerHTML = `<input type="hidden" id="doc-marking" data-ezclassify-marking value="" />
+                <div id="f1" data-ezclassify-controller="selector" data-ezclassify-facet-of="doc-marking" data-ezclassify-category="level"></div>`;
+            document.body.appendChild(root5);
+            const engine = await refusingEngine();
+            forms = await mountReady(root5, engine);
+            const facet = forms.components.get(
+                root5.querySelector<HTMLElement>('#f1')!,
+            )!;
+            engine.getSchemeMeta = () => {
+                throw new Error('This Context has been destroyed.');
+            };
+
+            expect(() => facet.updateValidationErrors!([])).not.toThrow();
+        });
+
+        it('says why on a facet whose own slice the refused marking left alone', async () => {
+            const root5 = await mountFacets(
+                '<input type="hidden" id="doc-marking" data-ezclassify-marking value="" />',
+                'from_school',
+            );
+
+            await forms!.store.publishAssertions('doc-marking', [
+                fact('REFUSE'),
+            ]);
+            await flush();
+
+            expect(flagged(root5)).toBe(2);
+            expect(document.body.textContent).toContain(
+                'ambiguous-representation',
+            );
+        });
+
+        it('shows no marking on a display it cannot write', async () => {
+            document.body.innerHTML = '';
+            const root5 = document.createElement('div');
+            root5.innerHTML = `<input type="hidden" id="doc-marking" data-ezclassify-marking value="" />
+                <div id="b" data-ezclassify-controller="banner" data-ezclassify-bound-to="doc-marking"></div>`;
+            document.body.appendChild(root5);
+            forms = await mountReady(root5, await refusingEngine());
+            await forms.store.publishRendered(
+                'doc-marking',
+                'DISTRICT COORDINATORS',
+            );
+            await flush();
+            expect(root5.querySelector('.status-banner--empty')).toBeNull();
+
+            await forms.store.publishAssertions('doc-marking', [
+                fact('REFUSE'),
+            ]);
+            await flush();
+
+            expect(root5.textContent).not.toContain('unrepresentable');
+            expect(root5.querySelector('.status-banner--empty')).not.toBeNull();
+        });
+
+        it('leaves a facet silent when a field shows the marking', async () => {
+            const root5 = await mountFacets(
+                '<input id="doc-marking" data-ezclassify-marking value="" />',
+            );
+
+            await forms!.store.publishAssertions('doc-marking', [
+                fact('REFUSE'),
+            ]);
+            await flush();
+
+            const host = root5.querySelector<HTMLInputElement>('#doc-marking')!;
+            expect(host.getAttribute('aria-invalid')).toBe('true');
+            expect(host.validationMessage).toContain(
+                'ambiguous-representation',
+            );
+            const facets = root5.querySelectorAll<HTMLElement>(
+                '[data-ezclassify-mount="selector"]',
+            );
+            expect(facets.length).toBeGreaterThan(0);
+            for (const facet of facets)
+                expect(facet.hasAttribute('data-ezclassify-invalid')).toBe(
+                    false,
+                );
+        });
+
+        it('publishes the facts of a hidden controller it cannot write', async () => {
+            document.body.innerHTML = '';
+            const root5 = document.createElement('div');
+            root5.innerHTML = `<input type="hidden" id="h" data-ezclassify-controller="hidden" data-ezclassify-marking value="" />`;
+            document.body.appendChild(root5);
+            const engine = await refusingEngine();
+            const render = engine.render.bind(engine);
+            engine.render = ((assertions: Assertion[], ...rest: unknown[]) =>
+                assertions[0]?.value === 'REFUSE'
+                    ? {
+                          rendered: MARKER,
+                          assessment: {
+                              emitted: [],
+                              omitted: [],
+                              collapsed: [],
+                              conflicts: [],
+                              unrepresentable: [
+                                  {
+                                      output: 'whole',
+                                      reason: 'ambiguous-representation',
+                                  },
+                              ],
+                          },
+                      }
+                    : Reflect.apply(render, engine, [
+                          assertions,
+                          ...rest,
+                      ])) as typeof engine.render;
+            forms = await mountReady(root5, engine);
+            const host = root5.querySelector<HTMLInputElement>('#h')!;
+
+            forms.components.get(host)!.setAssertions([fact('REFUSE')]);
+            await flush();
+
+            const state = forms.store.get('h');
+            expect(state.assertions.map((a) => a.value)).toEqual(['REFUSE']);
+            expect(state.rendered).toBe(MARKER);
+        });
+
+        it('shows no marking on a banner of a marking it cannot write, and says so', async () => {
+            document.body.innerHTML = '';
+            const root5 = document.createElement('div');
+            root5.innerHTML = `<input type="hidden" id="doc-marking" data-ezclassify-marking value="" />
+                <div id="b" data-ezclassify-controller="banner" data-ezclassify-source="doc-marking"></div>
+                <code id="t" data-ezclassify-controller="text" data-ezclassify-source="doc-marking"></code>`;
+            document.body.appendChild(root5);
+            forms = await mountReady(root5, await refusingEngine());
+
+            await forms.store.publishAssertions('doc-marking', [
+                fact('REFUSE'),
+            ]);
+            await flush();
+
+            expect(root5.textContent).not.toContain('unrepresentable');
+            expect(
+                root5.querySelector('.status-banner--incomplete'),
+            ).not.toBeNull();
+            expect(root5.querySelector('.status-banner--empty')).not.toBeNull();
+            expect(
+                root5.querySelector('#t')!.getAttribute('aria-invalid'),
+            ).toBe('true');
+        });
+
+        it('does not publish a selector field back over the marking it could not write', async () => {
+            document.body.innerHTML = '';
+            const root5 = document.createElement('div');
+            root5.innerHTML = `<input id="picked" data-ezclassify-controller="selector" data-ezclassify-marking value="" />`;
+            document.body.appendChild(root5);
+            forms = await mountReady(root5, await refusingEngine());
+            const host = root5.querySelector<HTMLInputElement>('#picked')!;
+            await forms.store.publishAssertions('picked', [fact('KEEP')]);
+            await flush();
+            const held = host.value;
+            const publishRendered = vi.spyOn(forms.store, 'publishRendered');
+
+            await forms.store.publishAssertions('picked', [fact('REFUSE')]);
+            await flush();
+
+            expect(host.value).toBe(held);
+            expect(host.value).not.toContain('unrepresentable');
+            expect(publishRendered).not.toHaveBeenCalled();
+        });
     });
 });

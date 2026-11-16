@@ -5,7 +5,8 @@
  * loaded access policy, grouped into "always-applied" (unconditional) and
  * "conditional" (fired only when the marking contains certain concepts). For
  * each rule it shows the plain-English requirement, the conditional trigger
- * when present, and the user attributes the engine will inspect.
+ * when present, and the user attributes the engine will inspect. The overview
+ * leads with the policy document's overall marking when it carries one.
  *
  * Collapses by default. A search input filters rules across both groups by
  * name, requirement text, and attribute names.
@@ -25,6 +26,7 @@ import {
     type ComponentOptions,
 } from './component-base-readonly';
 import {
+    buildOverallMarking,
     buildSearchInput,
     announceMatchCount,
     resolveReferenceSurfaceOverride,
@@ -151,7 +153,12 @@ export class AccessHandbook extends ReadOnlyComponentBase {
     protected setup(): void {
         this.injectComponentStyles(ACCESS_HANDBOOK_CSS);
 
-        const accessEngine = this.context?.access ?? null;
+        // A remote Context's client always exposes access operations, so the
+        // resolved composition decides whether a policy is attached.
+        const accessEngine =
+            this.context?.compositionPresence?.access === false
+                ? null
+                : (this.context?.access ?? null);
 
         if (!accessEngine) {
             const empty = document.createElement('div');
@@ -170,14 +177,19 @@ export class AccessHandbook extends ReadOnlyComponentBase {
         // would need an access-engine method that describes the rules
         // applicable to one marking.
         //
-        // The rule list is the only thing this panel waits on, and it may be a
-        // promise: an in-process policy answers immediately, a policy behind a
-        // runtime answers over the wire. Resolve it, then build. A rejection
-        // gets its own visible state: an authorization panel that renders as an
-        // empty region on a failed fetch reads as "no rules apply", which is
-        // the opposite of the truth.
-        void Promise.resolve(accessEngine.describeAllAccessRules()).then(
-            (allRules) => this.buildPanel(accessEngine, allRules),
+        // The rule list and the policy's overall marking are all this panel
+        // waits on, and either may be a promise: an in-process policy answers
+        // immediately, a policy behind a runtime answers over the wire. Resolve
+        // both, then build. A rejection gets its own visible state: an
+        // authorization panel that renders as an empty region on a failed fetch
+        // reads as "no rules apply", which is the opposite of the truth, and a
+        // marked policy must not paint as if it carried no marking.
+        void Promise.all([
+            accessEngine.describeAllAccessRules(),
+            accessEngine.describeAccessMarking(),
+        ]).then(
+            ([allRules, marking]) =>
+                this.buildPanel(accessEngine, allRules, marking),
             (error: unknown) => this.buildUnavailable(error),
         );
     }
@@ -213,12 +225,20 @@ export class AccessHandbook extends ReadOnlyComponentBase {
     private buildPanel(
         accessEngine: AccessEngineAdapter,
         allRules: AccessRuleDescription[],
+        policyMarking: string | undefined,
     ): void {
         // A remote policy can answer after the host has already torn the panel
         // down; building into a destroyed container would resurrect it.
         if (this._destroyed) return;
 
         if (allRules.length === 0) {
+            // A policy with no rules is still a marked document.
+            const marking = buildOverallMarking(
+                `${ROOT_CLASS}__overview-marking`,
+                policyMarking,
+            );
+            if (marking) this.container.appendChild(marking);
+
             const empty = document.createElement('div');
             empty.className = `${ROOT_CLASS}__empty`;
             empty.setAttribute('role', 'status');
@@ -253,7 +273,11 @@ export class AccessHandbook extends ReadOnlyComponentBase {
         );
 
         // Overview strip showing policy name + rule count
-        const overview = this.buildOverview(accessEngine, allRules.length);
+        const overview = this.buildOverview(
+            accessEngine,
+            allRules.length,
+            policyMarking,
+        );
         root.appendChild(overview);
 
         // Search
@@ -491,9 +515,16 @@ export class AccessHandbook extends ReadOnlyComponentBase {
     private buildOverview(
         accessEngine: AccessEngineAdapter,
         ruleCount: number,
+        policyMarking: string | undefined,
     ): HTMLElement {
         const el = document.createElement('div');
         el.className = `${ROOT_CLASS}__overview`;
+
+        const marking = buildOverallMarking(
+            `${ROOT_CLASS}__overview-marking`,
+            policyMarking,
+        );
+        if (marking) el.appendChild(marking);
 
         const name = document.createElement('div');
         name.className = `${ROOT_CLASS}__overview-name`;

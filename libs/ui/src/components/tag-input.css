@@ -14,22 +14,13 @@
        after this rule, so nothing downstream can shadow it. */
     column-gap: 0;
     row-gap: 0.375rem;
-    /* Visual properties come from the library's own design-token custom
-       properties, read directly. Reserve the resting status mark's lane in
-       both modes so focusing the field does not reflow its chips. */
-    padding: 0.375rem 2.5rem 0.375rem 0.5rem;
-    background: var(--ez-color-background, inherit);
-    border: 1px solid var(--ez-color-border, #d1d5db);
-    border-radius: var(--ez-border-radius, 0.25rem);
-    color: var(--ez-color-text, inherit);
+    /* The edge, padding, paint and the single-line height come from the
+       suite's field frame (field-chrome.css), or from the host input it
+       enhances. The trailing padding is the inline chrome's reserve, the same
+       at rest and while focused, so focusing the field never reflows its
+       chips. A single row of chips sits centered in a taller host's room. */
     font: inherit;
     cursor: text;
-    /* The single-line height every field in the family shares (see
-       .marking-field-display and .marked-input-display), as an outer height.
-       A host that asks for more keeps it (tag-input.ts mirrors the larger of
-       the two, with the host's own box-sizing), and a single row of chips sits
-       centered in the extra room. */
-    min-height: 2rem;
     align-content: center;
 }
 
@@ -43,25 +34,28 @@
     white-space: normal;
     overflow-wrap: anywhere;
 }
-/* Inset (negative offset), matching MarkingField's own focus ring
-   (marking-field.css): an outward ring would paint 1px past the wrap's own
-   border, straight across the seam where the ★ drawer attaches
-   (field-chrome-drawer.css), cutting behind it instead of joining it:
-   visible on the drawer's --top orientation in particular, since that
-   orientation only ever appears while the field is focused (the dropdown
-   that triggers it can't open otherwise). Kept fully inside the border, the
-   ring can never cross into the drawer's footprint. */
-.tag-input-wrap:focus-within:not(:has(> .ez-clear-button:focus)) {
-    outline: 2px solid var(--ez-color-primary, #fdb827);
-    outline-offset: -2px;
+/* Beside a typed value the chip's name is a concept name such as "Classified
+   By". It breaks only between words and never narrows past its longest
+   word; the value field beside it shrinks instead. */
+.tag-input-wrap > .proto-tag--editable > .proto-tag-label {
+    min-width: auto;
+    overflow-wrap: normal;
 }
 
-/* The drawer itself picks up the same ring color on its own free edges so
-   the compound field+tab shape reads as one continuously highlighted unit,
-   not a highlighted box with a separately-colored tab hanging off it. */
-.tag-input-wrap:focus-within:not(:has(> .ez-clear-button:focus))
-    > .ez-field-drawer {
-    border-color: var(--ez-color-primary, #fdb827);
+/* The chip keys, in a quiet row under the field like the marked fields'
+   keyboard hint. Two classes, so the row shows whatever order the root's
+   stylesheets were adopted in: the composer adopts component-utils.css again
+   while it is open, and its `.proto-kbd-hints { display: none }` would
+   otherwise win on source order and hide the row until it closed. A touch
+   screen has no keys to hint at. */
+.proto-kbd-hints.tag-input-hints {
+    display: flex;
+    margin-top: 0.25rem;
+}
+@media (pointer: coarse) {
+    .proto-kbd-hints.tag-input-hints {
+        display: none;
+    }
 }
 .tag-input-filter {
     flex: 1;
@@ -101,15 +95,6 @@
     }
 }
 @media (forced-colors: active) {
-    .tag-input-wrap {
-        border: 1px solid ButtonText;
-        background: Field;
-        color: FieldText;
-    }
-    .tag-input-wrap:focus-within {
-        outline: 2px solid Highlight;
-        box-shadow: none;
-    }
     .tag-input-filter {
         color: FieldText;
     }

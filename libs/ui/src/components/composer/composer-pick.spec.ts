@@ -9,8 +9,9 @@
  * shaped like a classification banner: one level, a multi-choice control system
  * category and a multi-choice dissemination category.
  */
+import { asContext } from '../../../test-fixtures/as-context';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { Context } from '@ezclassify/engine';
+import { openContext } from '../../../test-fixtures/context-doubles';
 import type { Assertion } from '@ezclassify/types';
 import { EzClassifyUI } from '../../ezclassify-ui';
 import {
@@ -20,8 +21,9 @@ import {
     rowFor,
     wait,
 } from './composer-harness';
+import { connectDemoContext } from '../../../../../test-support/demo-runtime';
 
-function createContext() {
+async function createContext() {
     const concept = (
         id: string,
         label: string,
@@ -37,132 +39,135 @@ function createContext() {
         position,
         rank: position,
     });
-    return Context.fromComponents({
-        scheme: {
-            scheme: {
-                id: 'composer-pick',
-                version: '1.0.0',
-                name: 'Composer Pick',
-                data: {
-                    concepts: {
-                        inline: [
-                            concept('U', 'UNCLASSIFIED', 'level', 1),
-                            concept('S', 'SECRET', 'level', 2),
-                            concept('SI', 'SI', 'control', 1),
-                            concept('TK', 'TK', 'control', 2),
-                            concept('NF', 'NOFORN', 'dissem', 1),
-                            concept('REL', 'REL TO', 'dissem', 2),
-                            concept('DO', 'DISPLAY ONLY', 'dissem', 3),
-                            concept('USA', 'USA', 'rel', 0),
-                            // Two countries that belong to both lists.
+    return openContext(
+        await connectDemoContext({
+            draft: {
+                scheme: {
+                    scheme: {
+                        id: 'composer-pick',
+                        version: '1.0.0',
+                        name: 'Composer Pick',
+                        description: 'Composer Pick test fixture.',
+                        data: {
+                            concepts: [
+                                concept('U', 'UNCLASSIFIED', 'level', 1),
+                                concept('S', 'SECRET', 'level', 2),
+                                concept('SI', 'SI', 'control', 1),
+                                concept('TK', 'TK', 'control', 2),
+                                concept('NF', 'NOFORN', 'dissem', 1),
+                                concept('REL', 'REL TO', 'dissem', 2),
+                                concept('DO', 'DISPLAY ONLY', 'dissem', 3),
+                                concept('USA', 'USA', 'rel', 0),
+                                // Two countries that belong to both lists.
+                                {
+                                    ...concept('AUS', 'AUS', 'rel', 1),
+                                    categories: ['rel', 'disp'],
+                                },
+                                {
+                                    ...concept('CAN', 'CAN', 'rel', 2),
+                                    categories: ['rel', 'disp'],
+                                },
+                            ],
+                            categories: [
+                                {
+                                    id: 'level',
+                                    label: 'Level',
+                                    required: false,
+                                    single: true,
+                                    rollup: 'max',
+                                    position: 1,
+                                },
+                                {
+                                    id: 'control',
+                                    label: 'Control system',
+                                    required: false,
+                                    single: false,
+                                    rollup: 'union',
+                                    position: 2,
+                                },
+                                {
+                                    id: 'dissem',
+                                    label: 'Dissemination',
+                                    required: false,
+                                    single: false,
+                                    rollup: 'union',
+                                    position: 3,
+                                },
+                                {
+                                    id: 'rel',
+                                    label: 'Releasable To',
+                                    required: false,
+                                    single: false,
+                                    rollup: 'intersection',
+                                    position: 4,
+                                },
+                                {
+                                    id: 'disp',
+                                    label: 'Display Only To',
+                                    required: false,
+                                    single: false,
+                                    rollup: 'intersection',
+                                    position: 5,
+                                },
+                            ],
+                        },
+                        // The two values of one category that cannot go together.
+                        rules: [
                             {
-                                ...concept('AUS', 'AUS', 'rel', 1),
-                                categories: ['rel', 'disp'],
+                                id: 'nf-excludes-do',
+                                name: 'NOFORN excludes DISPLAY ONLY',
+                                action: 'exclusive',
+                                target: ['NF', 'DO'],
+                                rank: ['NF', 'DO'],
+                                message:
+                                    'NOFORN cannot be combined with DISPLAY ONLY.',
                             },
+                            // A REL TO list starts with USA: the engine infers it.
                             {
-                                ...concept('CAN', 'CAN', 'rel', 2),
-                                categories: ['rel', 'disp'],
+                                id: 'rel-starts-with-usa',
+                                name: 'REL TO starts with USA',
+                                when: 'REL',
+                                action: 'require',
+                                target: 'USA',
+                                category: 'rel',
                             },
                         ],
-                    },
-                    categories: [
-                        {
-                            id: 'level',
-                            label: 'Level',
-                            required: false,
-                            single: true,
-                            rollup: 'max',
-                            position: 1,
-                        },
-                        {
-                            id: 'control',
-                            label: 'Control system',
-                            required: false,
-                            single: false,
-                            rollup: 'union',
-                            position: 2,
-                        },
-                        {
-                            id: 'dissem',
-                            label: 'Dissemination',
-                            required: false,
-                            single: false,
-                            rollup: 'union',
-                            position: 3,
-                        },
-                        {
-                            id: 'rel',
-                            label: 'Releasable To',
-                            required: false,
-                            single: false,
-                            rollup: 'intersection',
-                            position: 4,
-                        },
-                        {
-                            id: 'disp',
-                            label: 'Display Only To',
-                            required: false,
-                            single: false,
-                            rollup: 'intersection',
-                            position: 5,
-                        },
-                    ],
-                },
-                // The two values of one category that cannot go together.
-                rules: [
-                    {
-                        id: 'nf-excludes-do',
-                        name: 'NOFORN excludes DISPLAY ONLY',
-                        action: 'exclusive',
-                        target: ['NF', 'DO'],
-                        rank: ['NF', 'DO'],
-                        message: 'NOFORN cannot be combined with DISPLAY ONLY.',
-                    },
-                    // A REL TO list starts with USA: the engine infers it.
-                    {
-                        id: 'rel-starts-with-usa',
-                        name: 'REL TO starts with USA',
-                        when: 'REL',
-                        action: 'require',
-                        target: 'USA',
-                        category: 'rel',
-                    },
-                ],
-                parse: { case_sensitive: false, strip_whitespace: true },
-                render: {
-                    default: 'default',
-                    formats: [
-                        {
-                            id: 'default',
-                            surface: 'marking',
-                            mode: 'inline',
-                            separator: '//',
-                            fields: [
-                                { category: 'level', separator: '/' },
-                                { category: 'control', separator: '/' },
+                        render: {
+                            default: 'default',
+                            formats: [
                                 {
-                                    category: 'dissem',
-                                    separator: '/',
-                                    // The country lists are written only
-                                    // under their own dissemination value.
-                                    phrases: [
+                                    id: 'default',
+                                    surface: 'marking',
+                                    mode: 'inline',
+                                    separator: '//',
+                                    fields: [
+                                        { category: 'level', separator: '/' },
+                                        { category: 'control', separator: '/' },
                                         {
-                                            head: 'REL',
-                                            separator: ' ',
-                                            fields: [
+                                            category: 'dissem',
+                                            separator: '/',
+                                            // The country lists are written only
+                                            // under their own dissemination value.
+                                            phrases: [
                                                 {
-                                                    category: 'rel',
-                                                    separator: ', ',
+                                                    head: 'REL',
+                                                    separator: ' ',
+                                                    fields: [
+                                                        {
+                                                            category: 'rel',
+                                                            separator: ', ',
+                                                        },
+                                                    ],
                                                 },
-                                            ],
-                                        },
-                                        {
-                                            head: 'DO',
-                                            separator: ' ',
-                                            fields: [
                                                 {
-                                                    category: 'disp',
-                                                    separator: ', ',
+                                                    head: 'DO',
+                                                    separator: ' ',
+                                                    fields: [
+                                                        {
+                                                            category: 'disp',
+                                                            separator: ', ',
+                                                        },
+                                                    ],
                                                 },
                                             ],
                                         },
@@ -170,11 +175,11 @@ function createContext() {
                                 },
                             ],
                         },
-                    ],
+                    },
                 },
             },
-        },
-    });
+        }),
+    );
 }
 
 let root: HTMLDivElement;
@@ -197,8 +202,10 @@ const START = 'SECRET//SI/TK//NOFORN';
 /** Mount a field holding START and open its list, browsing. */
 async function open(kind: 'marking' | 'tags') {
     const tag = kind === 'tags' ? 'input' : 'textarea';
-    root.innerHTML = `<input type="hidden" id="doc" data-ezclassify-rendered /><label for="f">Marking</label><${tag} id="f" data-ezclassify-controller="${kind}" data-ezclassify-bound-to="doc"></${tag}>`;
-    forms = new EzClassifyUI(createContext() as never, { root });
+    root.innerHTML = `<input type="hidden" id="doc" data-ezclassify-marking /><label for="f">Marking</label><${tag} id="f" data-ezclassify-controller="${kind}" data-ezclassify-bound-to="doc"></${tag}>`;
+    forms = new EzClassifyUI(asContext((await createContext()) as never), {
+        root,
+    });
     await wait();
     await forms.store.publishRendered('doc', START);
     await wait();
@@ -360,7 +367,7 @@ describe('the engine calls one keystroke makes', () => {
         await wait(100);
     }
 
-    it('reads a whole draft with one process call, and asks once what its new facts offer', async () => {
+    it('reads a whole draft with one process call, and asks once more of each kind what its new facts offer', async () => {
         const { input } = await open('marking');
         const engine = forms!.engine;
         const process = vi.spyOn(engine, 'process');
@@ -370,11 +377,21 @@ describe('the engine calls one keystroke makes', () => {
         // A separator ends the word, so nothing is being searched for.
         await type(input, 'SECRET//SI/TK//REL TO/');
 
-        expect(process).toHaveBeenCalledTimes(1);
-        expect(process.mock.calls[0][0]).toBe('SECRET//SI/TK//REL TO/');
-        expect(process.mock.calls[0][1]).not.toHaveProperty('suggestFor');
+        const reads = process.mock.calls.filter(
+            ([, options]) => !(options as { suggestFor?: string[] }).suggestFor,
+        );
+        expect(reads).toHaveLength(1);
+        expect(reads[0][0]).toBe('SECRET//SI/TK//REL TO/');
         expect(validate).not.toHaveBeenCalled();
-        // REL TO is new, so the list asks what the draft offers now.
+        // REL TO is new, so the list asks what the draft offers now: each
+        // single-choice category without its own facts, in one process
+        // call, and the other categories beside every fact.
+        expect(
+            process.mock.calls.filter(
+                ([, options]) =>
+                    (options as { suggestFor?: string[] }).suggestFor,
+            ),
+        ).toHaveLength(1);
         expect(suggest).toHaveBeenCalledTimes(1);
         expect(suggest.mock.calls[0][0] as Assertion[]).toEqual(
             expect.arrayContaining([
@@ -408,10 +425,13 @@ describe('the engine calls one keystroke makes', () => {
         await type(input, 'UNCLASSIFIED ');
 
         expect(validate).toHaveBeenCalledTimes(1);
-        expect(process).toHaveBeenCalledTimes(1);
+        const reads = process.mock.calls.filter(
+            ([, asked]) => !(asked as { suggestFor?: string[] }).suggestFor,
+        );
+        expect(reads).toHaveLength(1);
         // The typed level replaces the held one; the rest of the value goes
         // beside the text as facts already chosen.
-        const [text, options] = process.mock.calls[0];
+        const [text, options] = reads[0];
         expect(text).toBe('UNCLASSIFIED ');
         expect(
             (options as { assertions?: Assertion[] }).assertions

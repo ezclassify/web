@@ -1,99 +1,201 @@
-/* DecisionFlow: sequential decision-point stepper */
+/* DecisionFlow: a guided marking in one field-sized box. The box is the
+   suite's field frame (field-chrome.css). Its first row is one row of dots,
+   a gap between scopes, with the chrome at its trailing end; a flow of one
+   scope shows its marking beside the dots, or under them when it does not
+   fit. Focus or a press opens the current step directly under the dots, and
+   that row never moves. A flow of several scopes shows each scope's caption
+   and value under the step. Nothing is ever shortened: the box grows. */
 
 .ez-decision-flow {
+    /* A dot's target width, and the gap between two scopes' dots. */
+    --ez-decision-flow-dot-width: 1.125rem;
+    --ez-decision-flow-scope-gap: 0.75rem;
     display: flex;
     flex-direction: column;
-    gap: 1rem;
-}
-
-.ez-decision-flow__progress {
-    display: flex;
     gap: 0.25rem;
+}
+
+/* ── First row: the dots, a one-scope marking, the chrome ── */
+.ez-decision-flow__header {
+    display: flex;
+    /* The dots, a one-scope marking and the chrome share one center line. */
     align-items: center;
+    gap: 0.5rem;
+    min-height: 1.5rem;
+}
+.ez-decision-flow__header-main {
+    flex: 1 1 auto;
+    min-width: 0;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    column-gap: 0.75rem;
 }
 
+/* The dots: one row, a gap between scopes. A row too narrow for them wraps
+   only between scopes, and a scope that wraps starts at the row's edge. */
+.ez-decision-flow__progress {
+    flex: 0 0 auto;
+    max-width: 100%;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    row-gap: 0.25rem;
+}
+.ez-decision-flow__progress:has(> .ez-decision-flow__dot-group) {
+    column-gap: var(--ez-decision-flow-scope-gap);
+}
+
+/* A flow across scopes groups its dots by scope, a gap between groups. */
+.ez-decision-flow__dot-group {
+    flex: 0 0 auto;
+    display: inline-flex;
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: 0;
+}
+
+/* A dot is a button: a small visible disc in a larger target. */
 .ez-decision-flow__step-dot {
-    width: 0.625rem;
-    height: 0.625rem;
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--ez-decision-flow-dot-width);
+    height: 1.5rem;
+    padding: 0;
+    margin: 0;
+    flex: 0 0 auto;
+    border: 0;
+    background: transparent;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+}
+.ez-decision-flow__step-dot::before {
+    content: '';
+    width: 0.5rem;
+    height: 0.5rem;
+    box-sizing: border-box;
     border-radius: 50%;
-    background: var(--ez-color-border, #d1d5db);
-    transition: background 0.2s;
+    border: 1.5px solid var(--ez-color-muted, #6b7280);
+    background: transparent;
+    transition: transform 120ms;
+}
+/* Answered: filled with the accent. */
+.ez-decision-flow__step-dot[data-state='answered']::before {
+    border-color: var(--ez-color-primary, #fdb827);
+    background: var(--ez-color-primary, #fdb827);
+}
+/* Answered only by derivation (a default, a rule): the family's inferred
+   style, a dashed accent edge, never the chosen fill. */
+.ez-decision-flow__step-dot[data-state='answered'][data-inferred]::before {
+    border-style: dashed;
+    background: transparent;
+}
+/* Missing an answer the engine asks for: the error color. */
+.ez-decision-flow__step-dot[data-state='missing']::before {
+    border-color: var(--ez-color-error, #b91c1c);
+    background: var(--ez-color-error, #b91c1c);
+}
+/* Optional and unset: dashed, quieter than a step that wants an answer. */
+.ez-decision-flow__step-dot[data-state='optional']::before {
+    border-style: dashed;
+    opacity: 0.8;
+}
+/* The current step: a ring around its disc. */
+.ez-decision-flow__step-dot[data-current]::before {
+    box-shadow:
+        0 0 0 2px var(--ez-color-background, #fff),
+        0 0 0 3.5px var(--ez-color-text, #374151);
+}
+/* Hover, focus or a touch preview grows the dot; its label shows below. */
+.ez-decision-flow__step-dot:hover::before,
+.ez-decision-flow__step-dot:focus-visible::before,
+.ez-decision-flow__step-dot[data-previewing]::before {
+    transform: scale(1.6);
+}
+.ez-decision-flow__step-dot:focus-visible {
+    outline: none;
+}
+.ez-decision-flow__step-dot:focus-visible::before {
+    outline: 2px solid var(--ez-color-primary, #fdb827);
+    outline-offset: 2px;
 }
 
-.ez-decision-flow__step-dot[data-state='complete'] {
-    background: var(--ez-color-primary, #6366f1);
-}
-
-.ez-decision-flow__step-dot[data-state='current'] {
-    background: var(--ez-color-primary, #6366f1);
-    box-shadow: 0 0 0 0.1875rem
-        color-mix(in srgb, var(--ez-color-primary, #6366f1) 30%, transparent);
-}
-
-.ez-decision-flow__step-connector {
-    flex: 0 0 1rem;
-    height: 0.125rem;
-    background: var(--ez-color-border, #d1d5db);
-}
-
-.ez-decision-flow__step-connector[data-state='complete'] {
-    background: var(--ez-color-primary, #6366f1);
-}
-
-.ez-decision-flow__question {
-    padding: 1rem;
-    border: 0.0625rem solid var(--ez-color-border, #d1d5db);
-    border-radius: 0.5rem;
-    background: var(--ez-color-background, #fff);
-}
-
+/* The open step's title: the step's first line, whole, never shortened. */
 .ez-decision-flow__question-label {
+    grid-column: 1 / -1;
+    font-size: 0.8125rem;
     font-weight: 600;
-    font-size: 0.9375rem;
-    color: var(--ez-color-text, #1e293b);
-    /* Reset h3 defaults: element changed from div to h3 for AT heading navigation */
-    margin: 0 0 0.25rem;
+    color: var(--ez-color-text, inherit);
 }
 
-.ez-decision-flow__question-desc {
-    font-size: 0.8125rem;
-    color: var(--ez-color-muted, #64748b);
-    margin-bottom: 0.75rem;
+/* One scope: its marking after the dots, or on its own line under them when
+   it does not fit beside them, wrapping there; never shortened. */
+.ez-decision-flow__rest {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+.ez-decision-flow__rest:empty {
+    display: none;
+}
+
+/* A dot's label, laid over the flow without moving it. */
+.ez-decision-flow__dot-preview {
+    position: absolute;
+    z-index: 5;
+    max-width: min(20rem, calc(100vw - 1rem));
+    padding: 0.25rem 0.5rem;
+    border: 1px solid var(--ez-color-border, #d1d5db);
+    border-radius: var(--ez-border-radius, 0.25rem);
+    background: var(--ez-color-background, #fff);
+    color: var(--ez-color-text, inherit);
+    font-size: 0.75rem;
+    line-height: 1.4;
+    pointer-events: none;
+    white-space: normal;
+}
+.ez-decision-flow__dot-preview[data-state='missing'] {
+    border-color: var(--ez-color-error, #b91c1c);
+}
+.ez-decision-flow__dot-preview[hidden] {
+    display: none;
+}
+
+/* ── The open step: arrows at the inside edges, options between ── */
+.ez-decision-flow__step {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: start;
+    gap: 0.25rem 0.375rem;
+    padding-block: 0.25rem;
+}
+.ez-decision-flow__step[hidden] {
+    display: none;
+}
+.ez-decision-flow__question {
+    min-width: 0;
 }
 
 .ez-decision-flow__options {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.5rem;
+    gap: 0.25rem;
 }
 
-.ez-decision-flow__text-field-wrap {
-    width: 100%;
-}
-
-.ez-decision-flow__text-field {
-    width: 100%;
-    padding: 0.5rem 0.75rem;
-    border: 0.0625rem solid var(--ez-color-border, #d1d5db);
-    border-radius: 0.375rem;
-    background: var(--ez-color-background, #fff);
-    color: var(--ez-color-text, #1e293b);
-    font-size: 0.875rem;
-    box-sizing: border-box;
-}
-
-.ez-decision-flow__text-field:focus {
-    outline: 0.125rem solid var(--ez-color-primary, #6366f1);
-    outline-offset: 0.125rem;
-    border-color: var(--ez-color-primary, #6366f1);
-}
-
+/* An option reads as the marking writes it, which can be a sentence. One too
+   long for the row takes a row of its own, as wide as the step, and its text
+   wraps from the start edge. */
 .ez-decision-flow__option {
-    padding: 0.375rem 0.875rem;
-    border: 0.0625rem solid var(--ez-color-border, #d1d5db);
-    border-radius: 0.375rem;
+    max-width: 100%;
+    min-height: 2rem;
+    padding: 0.25rem 0.625rem;
+    text-align: start;
+    border: 1px solid var(--ez-color-border, #d1d5db);
+    border-radius: var(--ez-border-radius, 0.25rem);
     background: var(--ez-color-background, #fff);
-    color: var(--ez-color-text, #1e293b);
+    color: var(--ez-color-text, inherit);
+    font: inherit;
     font-size: 0.8125rem;
     cursor: pointer;
     transition:
@@ -101,84 +203,261 @@
         border-color 0.15s,
         color 0.15s;
 }
-
 .ez-decision-flow__option:hover {
-    border-color: var(--ez-color-primary, #6366f1);
+    border-color: var(--ez-color-primary, #fdb827);
 }
-
-.ez-decision-flow__option[aria-checked='true'] {
-    background: var(--ez-color-primary, #6366f1);
+/* A toggle of a multiple-choice step carries a check mark while chosen. */
+.ez-decision-flow__option[role='checkbox'][aria-checked='true']::before {
+    content: '\2713\FE0E';
+    margin-inline-end: 0.375rem;
+}
+.ez-decision-flow__option:is([aria-checked='true'], [aria-pressed='true']) {
+    background: var(--ez-color-primary, #fdb827);
     color: var(--ez-color-primary-contrast, #1c1c1c);
-    border-color: var(--ez-color-primary, #6366f1);
+    border-color: var(--ez-color-primary, #fdb827);
 }
-
 .ez-decision-flow__option:focus-visible {
-    outline: 0.125rem solid var(--ez-color-primary, #6366f1);
-    outline-offset: 0.125rem;
+    outline: 2px solid var(--ez-color-primary, #fdb827);
+    outline-offset: 2px;
 }
-
-.ez-decision-flow__nav {
-    display: flex;
-    justify-content: space-between;
-    margin-top: 0.5rem;
+/* An option the marking holds only because the engine derived it (a rule
+   added it, or another choice includes it): the family's inferred style,
+   italic with a dashed edge, never the chosen fill. */
+.ez-decision-flow__option--inferred {
+    font-style: italic;
+    border-style: dashed;
+    border-color: var(--ez-color-primary, #fdb827);
+}
+/* A value in the marking's text that a rule added and the author has not
+   reviewed yet. */
+.ez-decision-flow__value-inferred {
+    font-style: italic;
+    text-decoration: underline dashed;
+    text-decoration-thickness: 0.0625rem;
+    text-underline-offset: 0.1875rem;
 }
 
 .ez-decision-flow__nav-btn {
-    padding: 0.375rem 1rem;
-    border: 0.0625rem solid var(--ez-color-border, #d1d5db);
-    border-radius: 0.375rem;
-    background: var(--ez-color-background, #fff);
-    color: var(--ez-color-text, #1e293b);
-    font-size: 0.8125rem;
-    cursor: pointer;
-    transition: background 0.15s;
-}
-
-.ez-decision-flow__nav-btn:hover {
-    background: var(--ez-color-surface-hover, #f1f5f9);
-}
-
-.ez-decision-flow__nav-btn:disabled {
-    opacity: 0.4;
-    cursor: default;
-}
-
-.ez-decision-flow__nav-btn:focus-visible {
-    outline: 0.125rem solid var(--ez-color-primary, #6366f1);
-    outline-offset: 0.125rem;
-}
-
-.ez-decision-flow__summary {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-    padding: 0.75rem 1rem;
-    border: 0.0625rem solid var(--ez-color-border, #d1d5db);
-    border-radius: 0.375rem;
-    background: var(--ez-color-surface, #f8fafc);
-    font-size: 0.8125rem;
-}
-
-.ez-decision-flow__summary-chip {
+    flex: 0 0 auto;
     display: inline-flex;
     align-items: center;
-    gap: 0.25rem;
-    padding: 0.125rem 0.5rem;
-    border-radius: 0.25rem;
-    background: var(--ez-color-primary, #6366f1);
-    color: var(--ez-color-primary-contrast, #1c1c1c);
-    font-size: 0.75rem;
-    font-weight: 500;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    max-width: 100%;
+    justify-content: center;
+    width: 1.75rem;
+    min-height: 2rem;
+    padding: 0;
+    border: 1px solid transparent;
+    border-radius: var(--ez-border-radius, 0.25rem);
+    background: transparent;
+    color: var(--ez-color-text, inherit);
+    font-size: 1.25rem;
+    line-height: 1;
+    cursor: pointer;
+}
+.ez-decision-flow__nav-btn:hover:not(:disabled) {
+    border-color: var(--ez-color-border, #d1d5db);
+}
+.ez-decision-flow__nav-btn:disabled {
+    opacity: 0.35;
+    cursor: default;
+}
+.ez-decision-flow__nav-btn:focus-visible {
+    outline: 2px solid var(--ez-color-primary, #fdb827);
+    outline-offset: 0;
 }
 
-.ez-decision-flow__summary-chip--empty {
-    background: var(--ez-color-border, #d1d5db);
-    /* Use primary text color for 3:1+ contrast on the border-gray background (#d1d5db → #1e293b ≈ 9.7:1) */
-    color: var(--ez-color-text, #1e293b);
+.ez-decision-flow__text-field-wrap {
+    width: 100%;
+}
+/* The form a value field expects, under it and whole. */
+.ez-decision-flow__text-hint {
+    margin-top: 0.25rem;
+    font-size: 0.75rem;
+    color: var(--ez-color-muted, #6b7280);
+}
+/* The arrow keys move between the dots, so the key hints show only while a
+   dot has focus. */
+.ez-decision-flow:not(:has(.ez-decision-flow__step-dot:focus))
+    ~ .proto-kbd-hints.ez-field-hints {
+    display: none;
+}
+.ez-decision-flow__text-field {
+    width: 100%;
+    min-height: 2rem;
+    padding: 0.25rem 0.5rem;
+    border: 1px solid var(--ez-color-border, #d1d5db);
+    border-radius: var(--ez-border-radius, 0.25rem);
+    background: var(--ez-color-background, #fff);
+    color: var(--ez-color-text, inherit);
+    font: inherit;
+    font-size: 0.875rem;
+    box-sizing: border-box;
+}
+.ez-decision-flow__text-field:focus {
+    outline: 2px solid var(--ez-color-primary, #fdb827);
+    outline-offset: -2px;
+}
+
+/* A chosen value-taking option: its own box in its place among the options,
+   a full line wide, the concept's name a small label on it and the value
+   under the name. A step of several values gives each the same box. */
+.ez-decision-flow__value-option {
+    flex: 1 1 100%;
+    min-width: 0;
+}
+.ez-decision-flow__value-box {
+    display: flex;
+    flex-direction: column;
+    gap: 0.125rem;
+    padding: 0.25rem 0.5rem;
+    border: 1px solid var(--ez-color-primary, #fdb827);
+    border-radius: var(--ez-border-radius, 0.25rem);
+    background: var(--ez-color-background, #fff);
+}
+.ez-decision-flow__value-box:focus-within {
+    outline: 2px solid var(--ez-color-primary, #fdb827);
+    outline-offset: -2px;
+}
+.ez-decision-flow__text-field-wrap > .ez-decision-flow__value-box {
+    border-color: var(--ez-color-border, #d1d5db);
+}
+/* The label on the box. On a chosen option it is still the option, so a press
+   on it works as one. */
+.ez-decision-flow__value-name,
+.ez-decision-flow__option.ez-decision-flow__value-name {
+    align-self: flex-start;
+    min-height: 0;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: var(--ez-color-muted, #6b7280);
+    font: inherit;
+    font-size: 0.75rem;
+    line-height: 1.3;
+}
+.ez-decision-flow__option.ez-decision-flow__value-name:is(
+        [aria-checked='true'],
+        [aria-pressed='true']
+    ) {
+    background: transparent;
+    color: var(--ez-color-muted, #6b7280);
+}
+.ez-decision-flow__option.ez-decision-flow__value-name[role='checkbox']::before {
+    content: none;
+}
+.ez-decision-flow__value-box > .ez-decision-flow__text-field {
+    min-height: 1.5rem;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+}
+.ez-decision-flow__value-box > .ez-decision-flow__text-field:focus {
+    outline: none;
+}
+.ez-decision-flow__value-error {
+    font-size: 0.75rem;
+    color: var(--ez-color-error, #b91c1c);
+}
+.ez-decision-flow__value-error:empty {
+    display: none;
+}
+.ez-decision-flow__text-field[aria-invalid='true'] {
+    border-color: var(--ez-color-error-text, #b91c1c);
+}
+.ez-decision-flow__value-box:has(> [aria-invalid='true']) {
+    border-color: var(--ez-color-error, #b91c1c);
+}
+
+/* An option the marking's current choices rule out: in its place, quieter,
+   and why under the options while it is pointed at, focused or tapped. */
+.ez-decision-flow__option[data-blocked] {
+    border-style: dashed;
+    color: var(--ez-color-muted, #6b7280);
+    cursor: not-allowed;
+}
+.ez-decision-flow__option[data-blocked]:hover {
+    border-color: var(--ez-color-border, #d1d5db);
+}
+.ez-decision-flow__option-reason {
+    margin-top: 0.375rem;
+    font-size: 0.75rem;
+    color: var(--ez-color-muted, #6b7280);
+}
+.ez-decision-flow__option-reason[hidden] {
+    display: none;
+}
+
+/* ── Values: a flow of several scopes shows each scope's caption, its name
+   and error count, and its value under it at full width, under the step. ── */
+.ez-decision-flow__values {
+    display: flex;
+    flex-direction: column;
+    gap: 0.375rem;
+}
+.ez-decision-flow__values[hidden] {
+    display: none;
+}
+.ez-decision-flow__scope-caption {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.5rem;
+    font-size: 0.75rem;
+    color: var(--ez-color-muted, #6b7280);
+}
+/* The open step's scope. */
+.ez-decision-flow__scope-caption[data-current] {
+    color: var(--ez-color-text, inherit);
+    font-weight: 600;
+}
+.ez-decision-flow__value {
+    display: flex;
+    align-items: baseline;
+    gap: 0.5rem;
+    width: 100%;
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: var(--ez-color-text, inherit);
+    font: inherit;
+    font-size: 0.875rem;
+    text-align: start;
+}
+/* Whole: breaks at spaces, line ends and separators, a token only when it is
+   wider than the box. */
+.ez-decision-flow__value-text {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow-wrap: break-word;
+}
+.ez-decision-flow__value-text[data-empty] {
+    color: var(--ez-color-muted, #6b7280);
+}
+/* What is wrong with a value, under it, only while something is: the steps
+   it is missing, each a way to its step, and the engine's other messages. */
+.ez-decision-flow__problems {
+    margin-top: 0.125rem;
+    font-size: 0.8125rem;
+    line-height: 1.4;
+    color: var(--ez-color-error, #b91c1c);
+}
+.ez-decision-flow__missing-step {
+    display: inline;
+    padding: 0;
+    margin: 0;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    cursor: pointer;
+}
+.ez-decision-flow__missing-step:focus-visible {
+    outline: 2px solid var(--ez-color-primary, #fdb827);
+    outline-offset: 1px;
 }
 
 @media (pointer: coarse) {
@@ -186,26 +465,63 @@
     .ez-decision-flow__nav-btn {
         min-height: 2.75rem;
     }
+    /* A dot is a 24px square target with its disc inside, edge to edge
+       with the next, so a two-scope flow fits one line beside the chrome on
+       a phone, even while the status mark shows its count of unreviewed
+       changes. Its margin centers it on the chrome's 44px line; only the
+       square takes a tap. The dots and the chrome keep a smaller gap here:
+       the last disc already sits inside its square's own space. */
+    .ez-decision-flow {
+        --ez-decision-flow-dot-width: 1.5rem;
+        --ez-decision-flow-scope-gap: 0.5rem;
+    }
+    .ez-decision-flow__header {
+        gap: 0.25rem;
+    }
+    .ez-decision-flow__step-dot {
+        height: 1.5rem;
+        margin-block: 0.625rem;
+    }
+    .ez-decision-flow__nav-btn {
+        width: 2.75rem;
+    }
+    .ez-decision-flow__option.ez-decision-flow__value-name {
+        min-height: 1.5rem;
+    }
 }
 
+/* Reduced motion: the dot still grows, without the animation. */
 @media (prefers-reduced-motion: reduce) {
-    .ez-decision-flow__step-dot,
-    .ez-decision-flow__option,
-    .ez-decision-flow__nav-btn {
+    .ez-decision-flow__step-dot::before,
+    .ez-decision-flow__option {
         transition: none;
     }
 }
 
 @media (forced-colors: active) {
-    .ez-decision-flow__option[aria-checked='true'] {
+    .ez-decision-flow__option:is([aria-checked='true'], [aria-pressed='true']) {
         background: Highlight;
         color: HighlightText;
         forced-color-adjust: none;
     }
-
-    .ez-decision-flow__summary-chip {
-        background: Highlight;
-        color: HighlightText;
+    .ez-decision-flow__step-dot::before {
+        border-color: ButtonText;
         forced-color-adjust: none;
+    }
+    .ez-decision-flow__step-dot[data-state='answered']::before {
+        background: Highlight;
+        border-color: Highlight;
+    }
+    .ez-decision-flow__step-dot[data-state='answered'][data-inferred]::before {
+        background: transparent;
+    }
+    .ez-decision-flow__step-dot[data-state='missing']::before {
+        background: Mark;
+        border-color: Mark;
+    }
+    .ez-decision-flow__dot-preview {
+        border: 1px solid CanvasText;
+        background: Canvas;
+        color: CanvasText;
     }
 }

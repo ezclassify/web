@@ -1,0 +1,3434 @@
+{
+    "engineVersion": "1.0.0-dev.30",
+    "openapiVersion": "1.0.0-dev.30",
+    "responses": {
+        "0228a779c02438aba4d8cacbcd2c3cfc27625cba97a3c70241fe3a6f887da776": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "whole-dependency-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "whole-dependency-test",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "values",
+                            "conceptId": "A",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "errors": [],
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "A",
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "037ae8ead141c27315ba64d437e549d53bd8effc531a8feb92f1f3d10197fc5c": {
+            "body": {
+                "contextId": "sbx-80b6913060236d9c4e41538f13fc4c1a3f1016cb26d2419211c961be9b755afe"
+            },
+            "method": "PUT",
+            "statusCode": 200
+        },
+        "04259b21dd18823e1f9aa7a55559f39077df660fd38d8d3c959bdef370055450": {
+            "body": [
+                {
+                    "aliases": [],
+                    "categories": ["head"],
+                    "id": "SAME",
+                    "name": "Same",
+                    "parents": [],
+                    "position": 0,
+                    "views": { "default": "SAME" }
+                },
+                {
+                    "aliases": [],
+                    "categories": ["values"],
+                    "id": "A",
+                    "name": "A",
+                    "parents": [],
+                    "position": 0,
+                    "views": { "default": "A" }
+                },
+                {
+                    "aliases": [],
+                    "categories": ["values"],
+                    "id": "B",
+                    "name": "B",
+                    "parents": [],
+                    "position": 0,
+                    "views": { "default": "B" }
+                }
+            ],
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "084d917343245323dad70fc4d275e241d7dcae60f7194d47e6ed362ff0b5c267": {
+            "body": [
+                {
+                    "id": "head",
+                    "label": "Head",
+                    "required": false,
+                    "rollup": "union",
+                    "single": true
+                },
+                {
+                    "id": "values",
+                    "label": "Values",
+                    "required": false,
+                    "rollup": "union",
+                    "single": false
+                }
+            ],
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "0ae9cd56330678ddec6f6d7f8f4d6b98953ec946cc85cbaff6437ae374d7dc3b": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "whole-dependency-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "whole-dependency-test",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "values",
+                            "conceptId": "A",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "errors": [],
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "A",
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "0c3b81e3e35c2c90aa7e281a43c18ec377805864d7d7b409ed72ea65c1325dfd": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "whole-dependency-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "whole-dependency-test",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "head",
+                            "conceptId": "SAME",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "values",
+                            "conceptId": "A",
+                            "confidence": "inferred",
+                            "source": "aggregate"
+                        },
+                        {
+                            "categoryId": "values",
+                            "conceptId": "B",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "errors": [],
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "SAME/A,B",
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "0e0a990e274b91e6e78fa4b328e6c189f1133f8c5444ed2ad3e3a153ee37d876": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "whole-dependency-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "whole-dependency-test",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "values",
+                            "conceptId": "A",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "errors": [],
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "A",
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "0eaa305ae566172c8d0c996e1982b5efcb1d76c664ff6dcd6c40ed8dda72df06": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "whole-dependency-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "whole-dependency-test",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "head",
+                            "conceptId": "SAME",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "values",
+                            "conceptId": "A",
+                            "confidence": "inferred",
+                            "source": "context"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            { "categoryId": "head", "conceptId": "SAME" },
+                            { "categoryId": "values", "conceptId": "A" }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "recognition": {
+                        "corrections": [],
+                        "inputFormat": "default",
+                        "status": "complete",
+                        "surface": "default",
+                        "unmatched": []
+                    },
+                    "rendered": "SAME/A",
+                    "renders": {},
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "123527089649ff73c7e59a4770847405655f435fce56622ffa0ab4433c5626bf": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "whole-dependency-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "whole-dependency-test",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "values",
+                            "conceptId": "A",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            { "categoryId": "values", "conceptId": "A" }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "recognition": {
+                        "corrections": [],
+                        "inputFormat": "default",
+                        "status": "complete",
+                        "surface": "default",
+                        "unmatched": []
+                    },
+                    "rendered": "A",
+                    "renders": {},
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "1bcc7b6f72ec3fb0e5150f751395621b92187445936dc0f0355a0ab51fed46ea": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "whole-dependency-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "whole-dependency-test",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "values",
+                            "conceptId": "A",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "errors": [],
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "A",
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "20b74ae060180c4c035edebb514b7977379e247ccedd2c4a3d1a799fcafcb9b8": {
+            "body": [
+                {
+                    "categoryOrder": ["head", "values"],
+                    "categorySeparators": { "values": "," },
+                    "categoryViews": { "head": "default", "values": "default" },
+                    "id": "default",
+                    "mode": "inline",
+                    "separator": "/",
+                    "separatorBefore": { "values": "/" },
+                    "surface": "default"
+                }
+            ],
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "2103b90c85202d5e80b4a33f2caa93694e733e41cb37247acce6e010f98fc084": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "whole-dependency-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "whole-dependency-test",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "values",
+                            "conceptId": "A",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "errors": [],
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "A",
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "25e03f49d79d14fc33f8ccaa3175fb37844170b57bcbb0af121e88bda28ab9f3": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "whole-dependency-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "whole-dependency-test",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "values",
+                            "conceptId": "A",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "errors": [],
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "A",
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "26f4dad8c77c0bcb9585a172d889c175ae10818a0b06fa0b4a06d5c126e98f35": {
+            "body": {
+                "id": "whole-dependency-test",
+                "scheme": {
+                    "id": "whole-dependency-test",
+                    "resolvedVersion": "1.0.0",
+                    "version": "1.0.0"
+                },
+                "schemes": [
+                    {
+                        "id": "whole-dependency-test",
+                        "roles": ["primary"],
+                        "selector": "whole-dependency-test",
+                        "version": "1.0.0"
+                    }
+                ],
+                "version": "1.0.0"
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "288e98e307b85124d564f74f4e32fbb06c1ff8b0f459144a6acfb5e9d9db36e1": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "whole-dependency-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "whole-dependency-test",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "head",
+                            "conceptId": "SAME",
+                            "confidence": "certain",
+                            "source": "user"
+                        },
+                        {
+                            "categoryId": "values",
+                            "conceptId": "A",
+                            "confidence": "certain",
+                            "source": "user"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            { "categoryId": "head", "conceptId": "SAME" }
+                        ],
+                        "omitted": [
+                            { "categoryId": "values", "conceptId": "A" }
+                        ],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "SAME",
+                    "renders": {},
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "2c365a7c32dc3d667332336ad111274c5299f3ab49614a17882039e0c664d662": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "whole-dependency-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "whole-dependency-test",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "values",
+                            "conceptId": "A",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "errors": [],
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "A",
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "2f3b1a486532e2aab27f9cebdd897b85fe4690f66d14a6f4412a434951bf46d0": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "whole-dependency-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "whole-dependency-test",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "values",
+                            "conceptId": "A",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "errors": [],
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "A",
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "2fdc474ff46b43d40ae0725d7079e78080229eae9ceeb9da716c9b8a916fd457": {
+            "body": [
+                {
+                    "categoryOrder": ["head"],
+                    "categoryViews": { "head": "default" },
+                    "id": "default",
+                    "mode": "inline",
+                    "separator": "/",
+                    "surface": "default"
+                }
+            ],
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "33f3cb87164a9de1c3627c129911ec97ba08b514f1f7181f365d078640fbf6e8": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "whole-dependency-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "whole-dependency-test",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "head",
+                            "conceptId": "SAME",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "values",
+                            "conceptId": "B",
+                            "confidence": "inferred",
+                            "source": "context"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            { "categoryId": "head", "conceptId": "SAME" },
+                            { "categoryId": "values", "conceptId": "B" }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "recognition": {
+                        "corrections": [],
+                        "inputFormat": "default",
+                        "status": "complete",
+                        "surface": "default",
+                        "unmatched": []
+                    },
+                    "rendered": "SAME/B",
+                    "renders": {},
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "3aa3d35973026014b45e8e82b745e6004c90d98aea4c1b286e6fe19a5b280322": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "whole-dependency-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "whole-dependency-test",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "values",
+                            "conceptId": "A",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "errors": [],
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "A",
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "3b50a7c7136acaed0f1c2b98a6b6aa6b713312c4d39cf0aaec2e86f707d2fe2f": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "whole-dependency-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "whole-dependency-test",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "values",
+                            "conceptId": "A",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "errors": [],
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "A",
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "3bc2a3b577a6a66fa434374464bca059432d242989e02d250cd3893aefe6493f": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "whole-dependency-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "whole-dependency-test",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "values",
+                            "conceptId": "A",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "errors": [],
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "A",
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "4028512183566f215cf36cac3cfd4ab09700fd160f92dbfa7044622b0b47ee58": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "whole-dependency-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "whole-dependency-test",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "values",
+                            "conceptId": "A",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            { "categoryId": "values", "conceptId": "A" }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [
+                        {
+                            "affectedConcepts": ["A"],
+                            "categoryId": "values",
+                            "constraintId": "_exceeds_whole",
+                            "message": "This part exceeds its whole: the whole does not cover A."
+                        }
+                    ],
+                    "inputWasValid": false,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "recognition": {
+                        "corrections": [],
+                        "inputFormat": "default",
+                        "status": "complete",
+                        "surface": "default",
+                        "unmatched": []
+                    },
+                    "rendered": "A",
+                    "renders": {},
+                    "valid": false,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "40d8f45ee068a321aab26c0b9efe94d295c175455db67fe96eb6afa85ffd78c8": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "whole-dependency-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "whole-dependency-test",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "values",
+                            "conceptId": "A",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            { "categoryId": "values", "conceptId": "A" }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "recognition": {
+                        "corrections": [],
+                        "inputFormat": "default",
+                        "status": "complete",
+                        "surface": "default",
+                        "unmatched": []
+                    },
+                    "rendered": "A",
+                    "renders": {},
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "41553702539c2de5358918b9561d886a523b6b352d567ec4da4180b1afcba7cf": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "whole-dependency-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "whole-dependency-test",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "values",
+                            "conceptId": "A",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "errors": [],
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "A",
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "43218ff0a9cf52901231e6fa5822b2ae1c16efe2113903fb9f6f5e062f38781a": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "whole-dependency-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "whole-dependency-test",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "values",
+                            "conceptId": "A",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "errors": [],
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "A",
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "4571edc24a5ec2f8da892817c7c137d3fc0e056c5bc6341edfc3eba95778f706": {
+            "body": [
+                {
+                    "id": "head",
+                    "label": "Head",
+                    "required": false,
+                    "rollup": "union",
+                    "single": true
+                },
+                {
+                    "id": "values",
+                    "label": "Values",
+                    "required": false,
+                    "rollup": "union",
+                    "single": false
+                }
+            ],
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "49dc80eda0462255e9a6aeeab4a5ad95c96974d112badb6447171943352a3d1d": {
+            "body": {
+                "id": "whole-dependency-test",
+                "scheme": {
+                    "id": "whole-dependency-test",
+                    "resolvedVersion": "1.0.0",
+                    "version": "1.0.0"
+                },
+                "schemes": [
+                    {
+                        "id": "whole-dependency-test",
+                        "roles": ["primary"],
+                        "selector": "whole-dependency-test",
+                        "version": "1.0.0"
+                    }
+                ],
+                "version": "1.0.0"
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "4af8a8fe4e8734b276bd424e665d6d4f45cabf0a79a5d97dfd735c8ce91f07ef": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "whole-dependency-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "whole-dependency-test",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "values",
+                            "conceptId": "A",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "errors": [],
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "A",
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "4bedb938ca9dcdcd349030379826c63f00c4d0d88721c2f2d6e3195de211f501": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "whole-dependency-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "whole-dependency-test",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "head",
+                            "conceptId": "SAME",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "values",
+                            "conceptId": "B",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "errors": [],
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "SAME/B",
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "4e03f2f1be76be7d19f96d530c69255768cbfd7da97bb95d92754e24e8404b94": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "whole-dependency-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "whole-dependency-test",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "values",
+                            "conceptId": "A",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "errors": [],
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "A",
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "4ecbce246a7e6bded51373550e6a162de25ede453c3068a6cb77be8911c1f738": {
+            "body": [],
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "4ecc873ff7d63b5e2197d3b823ff32ebc80668af87b3c5f6be3e37d9b8aec409": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "whole-dependency-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "whole-dependency-test",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "head",
+                            "conceptId": "SAME",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "values",
+                            "conceptId": "A",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "errors": [],
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "SAME/A",
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "4f189813e054e2b3bc7bb0dc96e7598f80719d24e4f955bfcc82900264b7d338": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "whole-dependency-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "whole-dependency-test",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "head",
+                            "conceptId": "SAME",
+                            "confidence": "certain",
+                            "source": "user"
+                        },
+                        {
+                            "categoryId": "values",
+                            "conceptId": "A",
+                            "confidence": "certain",
+                            "source": "user"
+                        }
+                    ],
+                    "errors": [],
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "SAME",
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "4fc169faa604b55fc3746b6531fddd33396495410ac05e740cbcbbee89fef538": {
+            "body": {
+                "contextId": "sbx-19a480cce293c73d4cb1b597b43b522eea2209c39d2704528e59913ee6775fc8"
+            },
+            "method": "PUT",
+            "statusCode": 200
+        },
+        "5009c0004a58371833c10a8d76696f77ccd8ed3410be323a5d9cbe0f579a103c": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "whole-dependency-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "whole-dependency-test",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "head",
+                            "conceptId": "SAME",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "values",
+                            "conceptId": "A",
+                            "confidence": "inferred",
+                            "source": "context"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            { "categoryId": "head", "conceptId": "SAME" }
+                        ],
+                        "omitted": [
+                            { "categoryId": "values", "conceptId": "A" }
+                        ],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "recognition": {
+                        "corrections": [],
+                        "inputFormat": "default",
+                        "status": "complete",
+                        "surface": "default",
+                        "unmatched": []
+                    },
+                    "rendered": "SAME",
+                    "renders": {},
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "535f35ef9395d005284e718061b031ec701f5fd2f5720233fe28faaa2af44655": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "whole-dependency-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "whole-dependency-test",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "values",
+                            "conceptId": "A",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "errors": [],
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "A",
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "54a3035f2ca1d6f5dc705c931c0c8cd39954d7219af5500e7781f9516928530a": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "whole-dependency-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "whole-dependency-test",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "values",
+                            "conceptId": "A",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "errors": [],
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "A",
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "56d60a044a082e89280ddd2e5a9ab060526bee8fbbd2b9bb15f8077bc6a85328": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "whole-dependency-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "whole-dependency-test",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "values",
+                            "conceptId": "A",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "errors": [],
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "A",
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "575d615e191b536e3f44714fd585daa1f8901307b1426855f44a5594467b3e0f": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "whole-dependency-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "whole-dependency-test",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "values",
+                            "conceptId": "A",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            { "categoryId": "values", "conceptId": "A" }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "recognition": {
+                        "corrections": [],
+                        "inputFormat": "default",
+                        "status": "complete",
+                        "surface": "default",
+                        "unmatched": []
+                    },
+                    "rendered": "A",
+                    "renders": {},
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "59fae8a8cb44873fca2e4f6778c0444c5015a01634857c2a9f7fa5199414a279": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "whole-dependency-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "whole-dependency-test",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "values",
+                            "conceptId": "A",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "errors": [],
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "A",
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "5e8d255153275a547430ac0309ec7ddfc5dca6c325e873fd62d4716e1823cdbe": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "whole-dependency-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "whole-dependency-test",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "values",
+                            "conceptId": "B",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            { "categoryId": "values", "conceptId": "B" }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "recognition": {
+                        "corrections": [],
+                        "inputFormat": "default",
+                        "status": "complete",
+                        "surface": "default",
+                        "unmatched": []
+                    },
+                    "rendered": "B",
+                    "renders": {},
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "5ecec7bcd814fcf3c7a4145027ddef17c07b7908a6826ae90186ad339be757f1": {
+            "body": {
+                "defaultRenderFormat": "default",
+                "description": "Whole dependency test test fixture.",
+                "id": "whole-dependency-test",
+                "name": "Whole dependency test",
+                "referenceSurfaceLabel": {
+                    "plural": "Handbooks",
+                    "singular": "Handbook"
+                },
+                "roleAware": true,
+                "version": "1.0.0"
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "5f8a422249b891a6306503c407b9735064819cf44cbf006d631ee55416646afd": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "whole-dependency-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "whole-dependency-test",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "values",
+                            "conceptId": "A",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "errors": [],
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "A",
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "64f68e2c194c15aa341a89000bdf0f5cb6637a4465391cbf7cf7d9e2172574ca": {
+            "body": [],
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "66232717619a6c802df807964ed8f0ebea81a3b613cefb1bdb55c11d43c1f794": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "whole-dependency-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "whole-dependency-test",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "values",
+                            "conceptId": "A",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "errors": [],
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "A",
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "68779baaa8d3b55ef1d490328b73e4196d83602afc926b1690a560003e7893fd": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "whole-dependency-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "whole-dependency-test",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "values",
+                            "conceptId": "A",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "errors": [],
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "A",
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "6e7ee17ee2654e3bcbc0d489debd2666f54aaa1f21f117bc08fe49e9025722fe": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "whole-dependency-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "whole-dependency-test",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "values",
+                            "conceptId": "A",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "errors": [],
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "A",
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "73f97edc81f0dc970b3b246a5b11c5538f8ffe0b5b06c7d5a8b212ac196c509e": {
+            "body": [],
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "741a944ff1459f0042dcf0f460f1861cfd0edf8c98091321e4bf86268858a2ce": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "whole-dependency-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "whole-dependency-test",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "head",
+                            "conceptId": "SAME",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "values",
+                            "conceptId": "A",
+                            "confidence": "inferred",
+                            "source": "aggregate"
+                        }
+                    ],
+                    "errors": [],
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "SAME/A",
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "7803009946c2a17206a0b5a560227b02d0ac9f6b458f9dbf7c48214f9cc19a5c": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "whole-dependency-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "whole-dependency-test",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "head",
+                            "conceptId": "SAME",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "errors": [
+                        {
+                            "affectedConcepts": ["SAME"],
+                            "constraintId": "_invalid_contributor",
+                            "message": "Contributor 1 did not produce a complete valid input outcome."
+                        },
+                        {
+                            "affectedConcepts": ["SAME"],
+                            "categoryId": "head",
+                            "constraintId": "_stand_in_requires_whole",
+                            "message": "Contributor 1: SAME stands for the whole's Values, so this part needs a valid whole to take them from."
+                        }
+                    ],
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "SAME",
+                    "valid": false,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "83a2d0331978efd486ef8d35745200f6270be41b3b6ceb87399a046376434a84": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "whole-dependency-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "whole-dependency-test",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "values",
+                            "conceptId": "A",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "errors": [],
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "A",
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "953c5f8dc50931b44a558c5fe91f86832b5a7d59112758d96141a6807467e10a": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "whole-dependency-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "whole-dependency-test",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "values",
+                            "conceptId": "A",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "errors": [],
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "A",
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "95ed7640b0e0e006c03e7f6d13f6263f89605f1788917ab3b1052abac56b6a9d": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "whole-dependency-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "whole-dependency-test",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "values",
+                            "conceptId": "A",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "errors": [],
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "A",
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "985529c10d89a9f570eb5755228b64aac621e29df2cbdb73517be03c720ce02c": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "whole-dependency-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "whole-dependency-test",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "values",
+                            "conceptId": "A",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "errors": [],
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "A",
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "a0d2232879f272214957d46f486ca6c60633524798beec36472a16e150a4eb97": {
+            "body": [],
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "a31a5087e1f7fdfe8ef647a893aa6ed640e9c36bef13dc81dedfe0291488cd98": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "whole-dependency-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "whole-dependency-test",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "values",
+                            "conceptId": "A",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "errors": [],
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "A",
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "a85917cc750a68995969242eb97602f7e0837d4baba7337bbc7192012062cc0b": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "whole-dependency-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "whole-dependency-test",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "values",
+                            "conceptId": "A",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "errors": [],
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "A",
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "aa5c157aa53eaa33a9126b79ef2c3662fe861c471a487de731d740c6d2a5c358": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "whole-dependency-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "whole-dependency-test",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "head",
+                            "conceptId": "SAME",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "values",
+                            "conceptId": "B",
+                            "confidence": "inferred",
+                            "source": "aggregate"
+                        }
+                    ],
+                    "errors": [],
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "SAME",
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "ab4e0c1d41c90737e494d5f2cf06f6315c9103d25e1f5410129af61bec300839": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "whole-dependency-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "whole-dependency-test",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "values",
+                            "conceptId": "A",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            { "categoryId": "values", "conceptId": "A" }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "recognition": {
+                        "corrections": [],
+                        "inputFormat": "default",
+                        "status": "complete",
+                        "surface": "default",
+                        "unmatched": []
+                    },
+                    "rendered": "A",
+                    "renders": {},
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "ac7a5352dedd60abaf2025054b5b25c7e0ca8813f97b8c14726e32a0afb0767c": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "whole-dependency-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "whole-dependency-test",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "head",
+                            "conceptId": "SAME",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "errors": [],
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "SAME",
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "ae4cf9f6ae01175f0b4afb74a46b363bc4278086fbe7cd92505ab36fa99b3221": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "whole-dependency-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "whole-dependency-test",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "values",
+                            "conceptId": "A",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "errors": [],
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "A",
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "b0d82b53f29fc35eae40476a84f2ed1c0fb40f9ca7e0684e50459de00d5d1a6e": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "whole-dependency-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "whole-dependency-test",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "head",
+                            "conceptId": "SAME",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            { "categoryId": "head", "conceptId": "SAME" }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [
+                        {
+                            "affectedConcepts": ["SAME"],
+                            "categoryId": "head",
+                            "constraintId": "_stand_in_requires_whole",
+                            "message": "SAME stands for the whole's Values, so this part needs a valid whole to take them from."
+                        }
+                    ],
+                    "inputWasValid": false,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "recognition": {
+                        "corrections": [],
+                        "inputFormat": "default",
+                        "status": "complete",
+                        "surface": "default",
+                        "unmatched": []
+                    },
+                    "rendered": "SAME",
+                    "renders": {},
+                    "valid": false,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "b25883e8329c0c2b239df2f57800ff6d778766b612c4221f4e4129c134a1887f": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "whole-dependency-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "whole-dependency-test",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "values",
+                            "conceptId": "B",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            { "categoryId": "values", "conceptId": "B" }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "recognition": {
+                        "corrections": [],
+                        "inputFormat": "default",
+                        "status": "complete",
+                        "surface": "default",
+                        "unmatched": []
+                    },
+                    "rendered": "B",
+                    "renders": {},
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "b41565274d9fc058e150c1a2b97cbeaabfefe89b189c42a445d265ed9ecf8b3d": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "whole-dependency-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "whole-dependency-test",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "head",
+                            "conceptId": "SAME",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "values",
+                            "conceptId": "A",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "errors": [],
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "SAME/A",
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "b56bfae73774a6cee5a48ab1866d1f75c2e667606893a292cc1362d49642280f": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "whole-dependency-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "whole-dependency-test",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "values",
+                            "conceptId": "A",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "errors": [],
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "A",
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "b700bbcda91799a760a925090d732fd9e258a5b9d478308985450ab5e13f1ee6": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "whole-dependency-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "whole-dependency-test",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "values",
+                            "conceptId": "A",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "errors": [],
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "A",
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "b763e52bc0b595c47522a9030ab5880b9bab2a8fc3c52f86717d3e38ea9e99f8": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "whole-dependency-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "whole-dependency-test",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "values",
+                            "conceptId": "A",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "errors": [],
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "A",
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "c0b4b0daed6ff50b7b820ac1d95ea3a58386c17323d51233c3f69ca2c49e1d3f": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "whole-dependency-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "whole-dependency-test",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "values",
+                            "conceptId": "A",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "errors": [],
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "A",
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "c0c84c805bda634a54ff467fd275a3c5fdba179142a2b32eb494700b77afb662": {
+            "body": {
+                "contextId": "sbx-073a6b41c74f643ff71054ff169e982e8b2d9d727df1b83795dbb0df69feba01"
+            },
+            "method": "PUT",
+            "statusCode": 200
+        },
+        "c5ff3b740b202c39a137b91df7434fee3f2079b71bd7dbfe5d507451451a3d83": {
+            "body": [
+                {
+                    "id": "head",
+                    "label": "Head",
+                    "required": false,
+                    "rollup": "union",
+                    "single": true
+                },
+                {
+                    "id": "values",
+                    "label": "Values",
+                    "required": false,
+                    "rollup": "union",
+                    "single": false
+                }
+            ],
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "c664081b08458356c14237bb9d680456771f09291c47be80933b3f05fa5bf88e": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "whole-dependency-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "whole-dependency-test",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "values",
+                            "conceptId": "A",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "errors": [],
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "A",
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "c7f59ef4021d876a661f900c78ecf9a2f7847d778f30a57a3af306b6295ff803": {
+            "body": [
+                {
+                    "categoryOrder": ["head", "values"],
+                    "categorySeparators": { "values": "," },
+                    "categoryViews": { "head": "default", "values": "default" },
+                    "id": "default",
+                    "mode": "inline",
+                    "separator": "/",
+                    "separatorBefore": { "values": "/" },
+                    "surface": "default"
+                }
+            ],
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "c812ad34e7637984bde3c59ce4be51c529b96ae0ff8c0cd1e572b5620da78079": {
+            "body": [],
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "cb600e15ec5a147e36c933e40794852a5da220f07faf1c400b96149d85483703": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "whole-dependency-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "whole-dependency-test",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "values",
+                            "conceptId": "A",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "errors": [],
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "A",
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "ce724e366cfe12f9017b73d8cc5eefb75d98a2af0b2d6d12512379f589b3e22d": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "whole-dependency-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "whole-dependency-test",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "head",
+                            "conceptId": "SAME",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "values",
+                            "conceptId": "B",
+                            "confidence": "inferred",
+                            "source": "aggregate"
+                        }
+                    ],
+                    "errors": [],
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "SAME/B",
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "d094dc86de57d97858aaa9d27b22b4f2d73d842db5e604d3629cd2000befc2de": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "whole-dependency-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "whole-dependency-test",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "values",
+                            "conceptId": "A",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "errors": [],
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "A",
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "d0bcac1fa670dde640687b1798a1f61445d1dd62559249d4b13c9b8ea7749322": {
+            "body": {
+                "defaultRenderFormat": "default",
+                "description": "Whole dependency test test fixture.",
+                "id": "whole-dependency-test",
+                "name": "Whole dependency test",
+                "referenceSurfaceLabel": {
+                    "plural": "Handbooks",
+                    "singular": "Handbook"
+                },
+                "roleAware": false,
+                "version": "1.0.0"
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "d6c5786c32196e1fd76ef3a09e8f9160995495417353b7de9b20cb8560c0f9ab": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "whole-dependency-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "whole-dependency-test",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "head",
+                            "conceptId": "SAME",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "values",
+                            "conceptId": "A",
+                            "confidence": "inferred",
+                            "source": "aggregate"
+                        }
+                    ],
+                    "errors": [],
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "SAME",
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "dc0492dcfcdb2160be99b5085fe1ebd5de58fdfb77d2dba9351e3d46ea569a32": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "whole-dependency-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "whole-dependency-test",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "values",
+                            "conceptId": "A",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "errors": [],
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "A",
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "dcd7f005f145664c0d848683614adc8508eca4cbec999d83223a4636627beb3c": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "whole-dependency-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "whole-dependency-test",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "values",
+                            "conceptId": "A",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "errors": [],
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "A",
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "dd87a7de1565e98b8bed589f6d9905f34721ee050e502c022d54959f136c181d": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "whole-dependency-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "whole-dependency-test",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "values",
+                            "conceptId": "A",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "errors": [],
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "A",
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "e070dec6e78862435e7c23c92a6e4a93a9667377aed0b78b533966687028c314": {
+            "body": {
+                "abiVersion": "v1",
+                "engineSha": "",
+                "engineVersion": "1.0.0-dev.30",
+                "gitTag": "",
+                "openapiVersion": "1.0.0-dev.30",
+                "status": "ok"
+            },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "e0cf60e7c6a2e6880cd947ecf5de4703f69ca144c2d9c5e604c7b9947ccb9f8c": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "whole-dependency-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "whole-dependency-test",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "values",
+                            "conceptId": "A",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "errors": [],
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "A",
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "e53c7d897c3ff4f5271190f25545ce15190636bd59b000f4eff5778aa9e07ab3": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "whole-dependency-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "whole-dependency-test",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "values",
+                            "conceptId": "A",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "errors": [],
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "A",
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "e5604a3f34179dd098b8deb374b1a92d32a9ead89e606c2a4fdaaeedbcbbdbcf": {
+            "body": [],
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "e8239d719663932712dbea061ec146375f37578c741d4c8f82d09810890cb917": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "whole-dependency-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "whole-dependency-test",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "values",
+                            "conceptId": "A",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "errors": [],
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "A",
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "eadc84e77a80a38949ddda46e21b1d8eac482713eabc0d188fa1ee24ab5686bb": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "whole-dependency-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "whole-dependency-test",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "head",
+                            "conceptId": "SAME",
+                            "confidence": "certain",
+                            "source": "user"
+                        },
+                        {
+                            "categoryId": "values",
+                            "conceptId": "A",
+                            "confidence": "inferred",
+                            "source": "aggregate"
+                        },
+                        {
+                            "categoryId": "values",
+                            "conceptId": "B",
+                            "confidence": "certain",
+                            "source": "user"
+                        }
+                    ],
+                    "errors": [],
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "SAME",
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "eae55949e05c47592b83789e675bbf88aaf4065dee32743da1d774b573df1d70": {
+            "body": {
+                "id": "whole-dependency-test",
+                "scheme": {
+                    "id": "whole-dependency-test",
+                    "resolvedVersion": "1.0.0",
+                    "version": "1.0.0"
+                },
+                "schemes": [
+                    {
+                        "id": "whole-dependency-test",
+                        "roles": ["primary"],
+                        "selector": "whole-dependency-test",
+                        "version": "1.0.0"
+                    }
+                ],
+                "version": "1.0.0"
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "eb5d4300ede52fc0aa0a69d28093393dd81066c2003cf4b9492ca7a247fc4fe2": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "whole-dependency-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "whole-dependency-test",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "head",
+                            "conceptId": "SAME",
+                            "confidence": "certain",
+                            "source": "user"
+                        },
+                        {
+                            "categoryId": "values",
+                            "conceptId": "A",
+                            "confidence": "certain",
+                            "source": "user"
+                        }
+                    ],
+                    "errors": [],
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "SAME",
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "ef973ca9bbba6fba112d5e6a620561c33edab83f570b7a2b5d75d5e44fbd5cfb": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "whole-dependency-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "whole-dependency-test",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "values",
+                            "conceptId": "A",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "errors": [],
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "A",
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "efead21bf05809f239202911cfb745a42c6aa12d2c2171c843114380eab3bb5a": {
+            "body": [
+                {
+                    "aliases": [],
+                    "categories": ["head"],
+                    "id": "SAME",
+                    "name": "Same",
+                    "parents": [],
+                    "position": 0,
+                    "views": { "default": "SAME" }
+                },
+                {
+                    "aliases": [],
+                    "categories": ["values"],
+                    "id": "A",
+                    "name": "A",
+                    "parents": [],
+                    "position": 0,
+                    "views": { "default": "A" }
+                },
+                {
+                    "aliases": [],
+                    "categories": ["values"],
+                    "id": "B",
+                    "name": "B",
+                    "parents": [],
+                    "position": 0,
+                    "views": { "default": "B" }
+                }
+            ],
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "f092f941ed0933ed344d6d3debce8c38bdb651b1e036fded7708bfb2674b6038": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "whole-dependency-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "whole-dependency-test",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "values",
+                            "conceptId": "A",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "values",
+                            "conceptId": "B",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "errors": [],
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "A,B",
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "f1bdbe6b2ebe6227c0aeb569d2edfc3b3afffbf4290227b18ad815cd355e763d": {
+            "body": {
+                "defaultRenderFormat": "default",
+                "description": "Whole dependency test test fixture.",
+                "id": "whole-dependency-test",
+                "name": "Whole dependency test",
+                "referenceSurfaceLabel": {
+                    "plural": "Handbooks",
+                    "singular": "Handbook"
+                },
+                "roleAware": true,
+                "version": "1.0.0"
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "f64a913af4470db978766e675529cfee16ac83649901ccdcf6a642365c3a4777": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "whole-dependency-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "whole-dependency-test",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "head",
+                            "conceptId": "SAME",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "values",
+                            "conceptId": "B",
+                            "confidence": "inferred",
+                            "source": "context"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            { "categoryId": "head", "conceptId": "SAME" }
+                        ],
+                        "omitted": [
+                            { "categoryId": "values", "conceptId": "B" }
+                        ],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "recognition": {
+                        "corrections": [],
+                        "inputFormat": "default",
+                        "status": "complete",
+                        "surface": "default",
+                        "unmatched": []
+                    },
+                    "rendered": "SAME",
+                    "renders": {},
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "fa45a382b27d2043d43ce3952e7ecc6221d683f8cd93058b2f1c0036ecf33f91": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "whole-dependency-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "whole-dependency-test",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "head",
+                            "conceptId": "SAME",
+                            "confidence": "certain",
+                            "source": "user"
+                        },
+                        {
+                            "categoryId": "values",
+                            "conceptId": "B",
+                            "confidence": "certain",
+                            "source": "user"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            { "categoryId": "head", "conceptId": "SAME" }
+                        ],
+                        "omitted": [
+                            { "categoryId": "values", "conceptId": "B" }
+                        ],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "SAME",
+                    "renders": {},
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "fbecfce5f201a29fa37da6e1df30f6400deff2522745c6cb18fad3785774cd46": {
+            "body": [
+                {
+                    "aliases": [],
+                    "categories": ["head"],
+                    "id": "SAME",
+                    "name": "Same",
+                    "parents": [],
+                    "position": 0,
+                    "views": { "default": "SAME" }
+                },
+                {
+                    "aliases": [],
+                    "categories": ["values"],
+                    "id": "A",
+                    "name": "A",
+                    "parents": [],
+                    "position": 0,
+                    "views": { "default": "A" }
+                },
+                {
+                    "aliases": [],
+                    "categories": ["values"],
+                    "id": "B",
+                    "name": "B",
+                    "parents": [],
+                    "position": 0,
+                    "views": { "default": "B" }
+                }
+            ],
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "fdd697154bacaa0eb8ffa81f1ea10c1af10c83c5a12af507656c578d4f3e4b6c": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "whole-dependency-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "whole-dependency-test",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "head",
+                            "conceptId": "SAME",
+                            "confidence": "certain",
+                            "source": "user"
+                        },
+                        {
+                            "categoryId": "values",
+                            "conceptId": "B",
+                            "confidence": "certain",
+                            "source": "user"
+                        }
+                    ],
+                    "errors": [],
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "SAME",
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        }
+    }
+}

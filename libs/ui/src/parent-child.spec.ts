@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { updateRollup } from './forms/rollup';
-import type { FormsContext } from './forms/types';
+import type { BucketScheme, FormsContext } from './forms/types';
+import { SOLE_BUCKET } from './store/store-shared';
 import type { Assertion } from '@ezclassify/types';
 import { mockRenderFormats } from './render-format-layout-mock';
 
@@ -231,16 +232,6 @@ function createMockEngine(overrides: Record<string, unknown> = {}) {
                 valid: true,
             };
         }),
-        uncoveredAssertions: vi.fn(
-            (candidates: Assertion[], parent: Assertion[]) => {
-                const parentKeys = new Set(
-                    parent.map((a) => `${a.conceptId}::${a.categoryId}`),
-                );
-                return candidates.filter(
-                    (a) => !parentKeys.has(`${a.conceptId}::${a.categoryId}`),
-                );
-            },
-        ),
         checkCoverage: vi.fn(async (children: string[], parent: string) => {
             if (!parent || !Array.isArray(children) || children.length === 0) {
                 return {
@@ -326,12 +317,32 @@ function noticeAfter(el: HTMLElement): HTMLElement | null {
         : null;
 }
 
-function createMockCtx(overrides: Partial<FormsContext> = {}): FormsContext {
+/** The scheme operations the coverage pass reads, answered by `engine`. */
+function bucketScheme(engine: FormsContext['engine']): BucketScheme {
+    const e = engine as unknown as Record<string, (...args: unknown[]) => any>;
     return {
+        bucket: SOLE_BUCKET,
+        adapter: engine,
+        process: (input, options) => e.process(input, options),
+        validate: (input, options) => e.process(input, options),
+        checkCoverage: (children, parent, options) =>
+            e.checkCoverage(children, parent, options),
+        getSchemeMeta: () => e.getSchemeMeta(),
+    };
+}
+
+function createMockCtx(overrides: Partial<FormsContext> = {}): FormsContext {
+    const ctx = {
         engine: createMockEngine(),
+        bucketsNamed: (contextKey: string | null, scheme: string | null) =>
+            contextKey === null && scheme === null ? [SOLE_BUCKET] : [],
+        aggregateOf: () => new Map(),
+        destroyed: false,
+        initializing: false,
+        mountInstanceId: 'instance',
+        aggregates: new Map(),
         root: document.body,
         fields: [],
-        rollupField: null,
         defaultFormat: 'default',
         domObserver: null,
         autocompleters: new Map(),
@@ -345,6 +356,8 @@ function createMockCtx(overrides: Partial<FormsContext> = {}): FormsContext {
         partOfMap: new Map(),
         ...overrides,
     } as FormsContext;
+    ctx.schemeOf ??= () => bucketScheme(ctx.engine);
+    return ctx;
 }
 
 // The coverage reports below have the shape the engine returns for these ISM
@@ -388,8 +401,7 @@ function ctxReporting(
 
 describe('parent-child integration via updateRollup', () => {
     it('dispatches validation event on child with parent', async () => {
-        const rollupField = document.createElement('input');
-        const ctx = createMockCtx({ rollupField });
+        const ctx = createMockCtx();
 
         const parentField = document.createElement('input');
         parentField.id = 'parent-banner';
@@ -440,8 +452,7 @@ describe('parent-child integration via updateRollup', () => {
         // component container as the next sibling. The parent-child notice
         // must land AFTER that sibling mount so it renders BELOW the
         // visible tag input, not between the hidden input and the mount.
-        const rollupField = document.createElement('input');
-        const ctx = createMockCtx({ rollupField });
+        const ctx = createMockCtx();
 
         // Parent: a normal input (no mount wrapper).
         const parentField = document.createElement('input');
@@ -501,8 +512,7 @@ describe('parent-child integration via updateRollup', () => {
     });
 
     it('dispatches validation error when child exceeds parent', async () => {
-        const rollupField = document.createElement('input');
-        const ctx = createMockCtx({ rollupField });
+        const ctx = createMockCtx();
 
         const parentField = document.createElement('input');
         parentField.id = 'doc-banner';
@@ -563,8 +573,7 @@ describe('parent-child integration via updateRollup', () => {
     });
 
     it('no parent attribute means no inheritance or validation', async () => {
-        const rollupField = document.createElement('input');
-        const ctx = createMockCtx({ rollupField });
+        const ctx = createMockCtx();
 
         const field1 = document.createElement('input');
         field1.id = 'field-1';
@@ -597,8 +606,7 @@ describe('parent-child integration via updateRollup', () => {
     });
 
     it('parent change triggers child re-validation on next rollup', async () => {
-        const rollupField = document.createElement('input');
-        const ctx = createMockCtx({ rollupField });
+        const ctx = createMockCtx();
 
         const parentField = document.createElement('input');
         parentField.id = 'parent-doc';
@@ -657,8 +665,7 @@ describe('parent-child integration via updateRollup', () => {
     });
 
     it('passes context with whole marking during validation when child is a part', async () => {
-        const rollupField = document.createElement('input');
-        const ctx = createMockCtx({ rollupField });
+        const ctx = createMockCtx();
 
         const parentField = document.createElement('input');
         parentField.id = 'banner-parent';
@@ -732,8 +739,7 @@ describe('parent-child integration via updateRollup', () => {
     });
 
     it('offers and applies the engine-required whole for any writable controller', async () => {
-        const rollupField = document.createElement('input');
-        const ctx = createMockCtx({ rollupField });
+        const ctx = createMockCtx();
 
         const group = document.createElement('input');
         group.id = 'document-parts';
@@ -759,7 +765,7 @@ describe('parent-child integration via updateRollup', () => {
         ctx.fields.push(child);
         ctx.partOfMap.set(child, 'document-parts');
 
-        document.body.append(group, whole, child, rollupField);
+        document.body.append(group, whole, child);
         await updateRollup(ctx);
 
         const correction = whole.nextElementSibling;
@@ -781,8 +787,23 @@ describe('parent-child integration via updateRollup', () => {
     });
 
     it('offers the computed whole when the authored whole is empty', async () => {
-        const rollupField = document.createElement('input');
-        const ctx = createMockCtx({ rollupField });
+        // The store's parts rollup of the empty whole, in the whole's bucket.
+        const ctx = createMockCtx({
+            aggregateOf: (id: string | null) =>
+                new Map(
+                    id === 'empty-whole'
+                        ? [
+                              [
+                                  SOLE_BUCKET,
+                                  {
+                                      rendered: 'L2',
+                                      assertions: [assertion('L2', 'level')],
+                                  },
+                              ],
+                          ]
+                        : [],
+                ),
+        });
         const wholeHost = document.createElement('input');
         wholeHost.id = 'empty-whole';
         ctx.fields.push(wholeHost);
@@ -803,7 +824,7 @@ describe('parent-child integration via updateRollup', () => {
         ctx.fields.push(child);
         ctx.partOfMap.set(child, 'empty-whole');
 
-        document.body.append(wholeHost, whole, child, rollupField);
+        document.body.append(wholeHost, whole, child);
         await updateRollup(ctx);
 
         const correction = whole.nextElementSibling;
@@ -818,8 +839,7 @@ describe('parent-child integration via updateRollup', () => {
     });
 
     it('adds no notice and no correction to a whole whose field judges its parts itself', async () => {
-        const rollupField = document.createElement('input');
-        const ctx = createMockCtx({ rollupField });
+        const ctx = createMockCtx();
 
         const group = document.createElement('input');
         group.id = 'owned-whole';
@@ -850,7 +870,7 @@ describe('parent-child integration via updateRollup', () => {
             events.push((e as CustomEvent<{ valid: boolean }>).detail),
         );
 
-        document.body.append(group, whole, child, rollupField);
+        document.body.append(group, whole, child);
         await updateRollup(ctx);
 
         expect(document.querySelector('.ez-coverage-action')).toBeNull();
@@ -868,8 +888,7 @@ describe('parent-child integration via updateRollup', () => {
     });
 
     it('still adds the notice and the correction when the whole field does not judge its parts', async () => {
-        const rollupField = document.createElement('input');
-        const ctx = createMockCtx({ rollupField });
+        const ctx = createMockCtx();
 
         // A plain whole field: nothing else reports coverage for it.
         const group = document.createElement('input');
@@ -882,7 +901,7 @@ describe('parent-child integration via updateRollup', () => {
         ctx.fields.push(child);
         ctx.partOfMap.set(child, 'plain-whole');
 
-        document.body.append(group, child, rollupField);
+        document.body.append(group, child);
         await updateRollup(ctx);
 
         const notice = noticeAfter(group);
@@ -896,9 +915,67 @@ describe('parent-child integration via updateRollup', () => {
         document.body.replaceChildren();
     });
 
+    it('mounts no correction on a hidden whole with no bound field', async () => {
+        const ctx = ctxReporting(OVER_RELEASE);
+
+        const hidden = document.createElement('input');
+        hidden.type = 'hidden';
+        hidden.id = 'hidden-whole';
+        hidden.value = 'L1';
+        ctx.fields.push(hidden);
+
+        const child = document.createElement('input');
+        child.value = 'L2';
+        ctx.fields.push(child);
+        ctx.partOfMap.set(child, 'hidden-whole');
+
+        document.body.append(hidden, child);
+        await updateRollup(ctx);
+
+        expect(document.querySelector('.ez-coverage-action')).toBeNull();
+        // Its coverage is still judged, and the host still told.
+        expect(ctx.aggregates?.get('hidden-whole')?.state.valid).toBe(false);
+        document.body.replaceChildren();
+    });
+
+    it('mounts the correction of a hidden whole on the field bound to it', async () => {
+        const ctx = ctxReporting(OVER_RELEASE);
+
+        const hidden = document.createElement('input');
+        hidden.type = 'hidden';
+        hidden.id = 'hidden-whole';
+        hidden.value = 'L1';
+        ctx.fields.push(hidden);
+
+        const bound = document.createElement('input');
+        bound.setAttribute('data-ezclassify-bound-to', 'hidden-whole');
+        ctx.mounted.set(bound, {
+            init: vi.fn(),
+            getAssertions: vi.fn(() => []),
+            setAssertions: vi.fn(),
+            setValue: vi.fn(),
+            destroy: vi.fn(),
+            getRendered: vi.fn(() => 'L1'),
+        });
+
+        const child = document.createElement('input');
+        child.value = 'L2';
+        ctx.fields.push(child);
+        ctx.partOfMap.set(child, 'hidden-whole');
+
+        document.body.append(hidden, bound, child);
+        await updateRollup(ctx);
+
+        const action = document.querySelector(
+            '.ez-coverage-action[data-ezclassify-for="hidden-whole"]',
+        );
+        expect(action).not.toBeNull();
+        expect(bound.nextElementSibling).toBe(action);
+        document.body.replaceChildren();
+    });
+
     it('puts a banner over-release on the banner and leaves the correct portion alone', async () => {
-        const rollupField = document.createElement('input');
-        const ctx = ctxReporting(OVER_RELEASE, { rollupField });
+        const ctx = ctxReporting(OVER_RELEASE);
 
         const banner = document.createElement('input');
         banner.id = 'banner';
@@ -920,7 +997,7 @@ describe('parent-child integration via updateRollup', () => {
             coverageErrors.push(e as CustomEvent),
         );
 
-        document.body.append(banner, portion, rollupField);
+        document.body.append(banner, portion);
         await updateRollup(ctx);
 
         expect(noticeAfter(banner)?.textContent).toBe(
@@ -949,23 +1026,19 @@ describe('parent-child integration via updateRollup', () => {
         // `SECRET//REL TO USA, CAN, GBR` over `(S//NF)`: the portion needs
         // NOFORN the banner lacks, and the banner releases to countries the
         // portion does not allow.
-        const rollupField = document.createElement('input');
-        const ctx = ctxReporting(
-            {
-                covered: false,
-                missing: [assertion('NF', 'dissem')],
-                missingLabels: ['NOFORN'],
-                excess: [
-                    assertion('REL-TO', 'dissem'),
-                    assertion('USA', 'rel_to'),
-                    assertion('CAN', 'rel_to'),
-                    assertion('GBR', 'rel_to'),
-                ],
-                excessLabels: ['REL TO', 'USA', 'CAN', 'GBR'],
-                rendered: 'SECRET//NOFORN',
-            },
-            { rollupField },
-        );
+        const ctx = ctxReporting({
+            covered: false,
+            missing: [assertion('NF', 'dissem')],
+            missingLabels: ['NOFORN'],
+            excess: [
+                assertion('REL-TO', 'dissem'),
+                assertion('USA', 'rel_to'),
+                assertion('CAN', 'rel_to'),
+                assertion('GBR', 'rel_to'),
+            ],
+            excessLabels: ['REL TO', 'USA', 'CAN', 'GBR'],
+            rendered: 'SECRET//NOFORN',
+        });
 
         const banner = document.createElement('input');
         banner.id = 'banner';
@@ -978,7 +1051,7 @@ describe('parent-child integration via updateRollup', () => {
         ctx.fields.push(portion);
         ctx.partOfMap.set(portion, 'banner');
 
-        document.body.append(banner, portion, rollupField);
+        document.body.append(banner, portion);
         await updateRollup(ctx);
 
         expect(noticeAfter(banner)?.textContent).toBe(
@@ -999,8 +1072,7 @@ describe('parent-child integration via updateRollup', () => {
     });
 
     it('keeps a whole and its part in one container on their own notices', async () => {
-        const rollupField = document.createElement('input');
-        const ctx = createMockCtx({ rollupField });
+        const ctx = createMockCtx();
 
         const whole = document.createElement('input');
         whole.id = 'shared-whole';
@@ -1015,7 +1087,7 @@ describe('parent-child integration via updateRollup', () => {
 
         const container = document.createElement('div');
         container.append(whole, part);
-        document.body.append(container, rollupField);
+        document.body.append(container);
         await updateRollup(ctx);
         // A second pass reuses each element's notice rather than the first
         // one it finds in the container.
@@ -1033,8 +1105,7 @@ describe('parent-child integration via updateRollup', () => {
     });
 
     it('never offers a whole correction to a container that does not author a whole', async () => {
-        const rollupField = document.createElement('input');
-        const ctx = createMockCtx({ rollupField });
+        const ctx = createMockCtx();
 
         // A marked-textarea shape: the container's own parts name it as
         // their parent, its rendered value is always empty, and it declares
@@ -1059,7 +1130,7 @@ describe('parent-child integration via updateRollup', () => {
         ctx.fields.push(part);
         ctx.partOfMap.set(part, 'body');
 
-        document.body.append(container, part, rollupField);
+        document.body.append(container, part);
         await updateRollup(ctx);
 
         expect(document.querySelector('.ez-coverage-action')).toBeNull();

@@ -24,6 +24,13 @@ import {
     type ComponentOptions,
 } from './component-base-readonly';
 import { createClearButton, type ClearButton } from './clear-button';
+import { announce, createAnnouncer } from './accessibility-helpers';
+import {
+    isUndoChord,
+    MarkingUndo,
+    valueSignature,
+    type UndoKind,
+} from './marking-undo';
 import { t } from '../i18n';
 import {
     assertDescribesConcepts,
@@ -31,11 +38,34 @@ import {
 } from './concept-description';
 import { removeAssertionCascade } from './assertion-removal';
 import { fixAssertions } from './rule-errors';
-import { recordAppliedFixes } from './status-mark';
-import { assertionFactKey, takenFromWhole } from '../assertion-identity';
+import {
+    dismissStatusMarkPopover,
+    ensureStatusMark,
+    explainedChanges,
+    recordAppliedFixes,
+    setStatusMarkFixes,
+    type StatusMarkOptions,
+} from './status-mark';
+import { factsOfScopeSet, listedScopesOf, writesCategoryOf } from '../scopes';
+import {
+    applyFieldFrame,
+    mountFieldChrome,
+    type FieldChrome,
+} from './field-chrome';
+import {
+    assertionFactKey,
+    derivedAssertion,
+    takenFromWhole,
+} from '../assertion-identity';
 import type { EzClassifyState } from '../store/ezclassify-store';
 import { createComposerPort } from './composer/composer-port';
 import { judgedAsHeld } from '../loaded-value';
+import { renderViewRefused } from '../render-refusal';
+import {
+    coveredCategoriesOf,
+    suggestionSurfaces,
+    type SuggestionSurface,
+} from '../format-resolver';
 import {
     replacesStated,
     statedAssertions,
@@ -70,6 +100,35 @@ export abstract class ComponentBase extends ReadOnlyComponentBase {
     private readonly updateClearButton = () => {
         queueMicrotask(() => this.clearControl?.update());
     };
+    /**
+     * The marking's undo (see marking-undo.ts). A field keeps one of its own
+     * until the runtime binds it to a store marking and shares that marking's
+     * (see {@link shareUndo}).
+     */
+    private undo = new MarkingUndo();
+    /**
+     * Whether the field tells its undo every value it settles on. A shared undo
+     * hears the store instead, which sees every field's values.
+     */
+    private feedsUndo = true;
+    private releaseUndo: (() => void) | null = null;
+    /** Puts back the value the field held when the edit in progress began. */
+    private editStart: (() => Promise<void>) | null = null;
+    /** The value the field last settled on, as {@link valueSignature}. */
+    private settledValue = '';
+    /** Says what an undo did. */
+    private undoAnnouncer: HTMLElement | null = null;
+    /** Where the undo chord is heard: the whole field (see fieldScope). */
+    private undoScope: HTMLElement | null = null;
+    private readonly undoKey = (event: KeyboardEvent) => {
+        if (!isUndoChord(event) || !this.undo.offer) return;
+        // Text typed and not yet committed is the author's last action, so
+        // the platform's own undo takes it back.
+        if (this.hasTypedDraft(event)) return;
+        event.preventDefault();
+        event.stopPropagation();
+        void this.performUndo();
+    };
 
     override async init(
         container: HTMLDivElement,
@@ -77,34 +136,262 @@ export abstract class ComponentBase extends ReadOnlyComponentBase {
         options?: ComponentOptions,
     ): Promise<void> {
         await super.init(container, engine, options);
+        if (this._destroyed) return;
+        this.settledValue = this.valueSignature();
+        this.watchUndo();
+        this.undoScope = this.fieldScope();
+        this.undoScope.addEventListener('keydown', this.undoKey, true);
         const mount = this.clearButtonMount();
+        this.undoAnnouncer = createAnnouncer();
+        (mount ?? this.container).appendChild(this.undoAnnouncer);
         if (!mount) return;
+        // Clear stays the last control of the chrome; the announcer sits
+        // before it.
         this.clearControl = createClearButton({
-            label: t('aria.clearMarking'),
+            label: this.clearLabel(),
             host: this.enhancedInput ?? undefined,
             empty: () => !this.hasClearValue(),
             clear: async () => {
+                this.editStart = null;
+                this.undo.make('clear', this, this.captureValue(true));
                 this.discardDraft();
                 await this.setValue('');
                 this.discardDraft();
             },
+            undoOffer: () => this.undo.offer,
+            undo: () => this.undo.perform(),
+            focusField: () => this.focusField(),
         });
         mount.appendChild(this.clearControl.button);
+        mount.insertBefore(this.undoAnnouncer, this.clearControl.button);
         this.container.addEventListener('input', this.updateClearButton);
     }
 
-    /** Components place clear inside their own stable field chrome. */
-    protected clearButtonMount(): HTMLElement | null {
+    /**
+     * Use the undo of the store marking this field is bound to, which every
+     * field bound to it shares and the runtime feeds the marking's values. The
+     * runtime calls this once the field is wired to the store.
+     *
+     * @internal
+     */
+    shareUndo(undo: MarkingUndo): void {
+        if (undo === this.undo) return;
+        this.undo.end(this);
+        this.undo = undo;
+        this.feedsUndo = false;
+        this.watchUndo();
+    }
+
+    /** Follow the offer of the undo the field uses now. */
+    private watchUndo(): void {
+        this.releaseUndo?.();
+        this.releaseUndo = this.undo.subscribe(() => {
+            this.clearControl?.update();
+        });
+        this.clearControl?.update();
+    }
+
+    /**
+     * The edit the author is making starts now: keep what the field holds, so
+     * once the edit changes it, the marking can go back. Every path an author
+     * edits the value through calls this first; a value the field takes from
+     * its host or its store does not.
+     */
+    protected beginUserEdit(): void {
+        this.editStart ??= this.captureValue();
+    }
+
+    /**
+     * What the field holds now, and how to put it back. A value the engine read
+     * completely goes back as its facts, so what the rules derived from them is
+     * derived again and explained again; text the engine could not read all of
+     * goes back as that text.
+     *
+     * @param clearing - Whether a clear is about to take it, which also takes
+     *   whatever the field has in progress
+     */
+    protected captureValue(_clearing = false): () => Promise<void> {
+        const assertions = this.assertions.map((a) => ({ ...a }));
+        const rendered = this._lastRendered;
+        const asText = this.unreadSpans.length > 0;
+        return async () => {
+            if (this._destroyed) return;
+            this.discardDraft();
+            if (asText) {
+                await this.setValue(rendered);
+                return;
+            }
+            this.invalidateValueRead();
+            if (replacesStated(this.assertions, assertions))
+                this._appliedFixes.clear();
+            this.assertions = assertions;
+            await this.reprocessNow();
+        };
+    }
+
+    /**
+     * Undo the marking's last action, then return to the field and say so.
+     *
+     * @returns Whether there was anything to undo
+     */
+    protected async performUndo(): Promise<boolean> {
+        const kind: UndoKind | undefined = this.undo.offer?.kind;
+        if (!(await this.undo.perform())) return false;
+        if (this._destroyed) return true;
+        this.focusField();
+        if (this.undoAnnouncer)
+            announce(
+                this.undoAnnouncer,
+                t(
+                    kind === 'clear'
+                        ? 'a11y.markingRestored'
+                        : 'a11y.lastEditUndone',
+                ),
+            );
+        return true;
+    }
+
+    /**
+     * What the status mark needs to name the changes in the field's words and
+     * end its list with the undo of the author's last edit while the marking
+     * offers one.
+     */
+    protected statusMarkUndo(): Pick<
+        StatusMarkOptions,
+        'words' | 'undoLastEdit'
+    > {
+        return {
+            words: this.changeWords(),
+            undoLastEdit: () =>
+                this.undo.offer ? () => void this.performUndo() : null,
+        };
+    }
+
+    /**
+     * Whether the key press lands on text the author has typed and not yet
+     * committed: a box inside the field, other than the field's own input, that
+     * holds text.
+     */
+    protected hasTypedDraft(event: KeyboardEvent): boolean {
+        const target = event.target;
+        return (
+            (target instanceof HTMLInputElement ||
+                target instanceof HTMLTextAreaElement) &&
+            target !== this.enhancedInput &&
+            target.value !== ''
+        );
+    }
+
+    /**
+     * The element that holds everything of the field the author works in: its
+     * mount, unless the field draws itself around its host instead.
+     */
+    protected fieldScope(): HTMLElement {
         return this.container;
     }
 
-    /** Keep clear outside content that a render replaces, without a new row. */
-    protected clearButtonFrame(content: HTMLElement): HTMLElement {
-        const frame = document.createElement('div');
-        frame.className = 'ez-clear-frame';
-        content.replaceWith(frame);
-        frame.appendChild(content);
-        return frame;
+    /**
+     * Put focus in the field itself: after a keyboard clear, and after an undo.
+     * The first control in the field's frame that takes focus, outside its
+     * chrome.
+     */
+    protected focusField(): void {
+        const target = [
+            ...this.fieldScope().querySelectorAll<HTMLElement>(
+                'input:not([type="hidden"]), textarea, button, [tabindex]',
+            ),
+        ].find(
+            (el) =>
+                el.tabIndex >= 0 &&
+                !el.matches(':disabled') &&
+                !el.closest('.ez-field-chrome') &&
+                el.offsetParent !== null,
+        );
+        target?.focus({ preventScroll: true });
+    }
+
+    /** The value the field holds, as one comparable string. */
+    private valueSignature(): string {
+        return valueSignature(this._lastRendered, this.assertions);
+    }
+
+    /** The clear control's tooltip and accessible name. */
+    protected clearLabel(): string {
+        return t('aria.clearMarking');
+    }
+
+    /**
+     * Where clear goes: the component's suite chrome when it mounted one (see
+     * {@link mountSuiteChrome}), else the container. A component whose header
+     * already carries a clear action returns null.
+     */
+    protected clearButtonMount(): HTMLElement | null {
+        return this.suiteChrome?.element ?? this.container;
+    }
+
+    /**
+     * The suite's chrome for a control with a header row of its own: the status
+     * mark and, once init finishes, clear, at the row's trailing end. Null
+     * until the component mounts one.
+     */
+    protected suiteChrome: FieldChrome | null = null;
+
+    /** The root the component's styles and overlays live in. */
+    private get styleRoot(): HTMLElement {
+        return this.options.root ?? this.container;
+    }
+
+    /**
+     * Give `frame` the suite's field frame (field-chrome.css): the box an
+     * ordinary input draws, from the library's tokens.
+     */
+    protected applySuiteFrame(frame: HTMLElement): void {
+        applyFieldFrame(frame, this.styleRoot);
+    }
+
+    /**
+     * Mount the suite's chrome at the trailing end of `row`: the same status
+     * mark the text fields carry, and clear after it. A header row takes it in
+     * flow (`'inline'`); a single-line field lays it over its trailing edge
+     * (`'overlay'`), as the text fields do. The chrome is one element for the
+     * component's life; a component that rebuilds its header moves
+     * {@link suiteChrome} into the new row.
+     */
+    protected mountSuiteChrome(
+        row: HTMLElement,
+        placement: 'inline' | 'overlay' = 'inline',
+    ): FieldChrome {
+        if (this.suiteChrome) {
+            row.appendChild(this.suiteChrome.element);
+            return this.suiteChrome;
+        }
+        const chrome = mountFieldChrome(row, {
+            root: this.styleRoot,
+            placement,
+        });
+        ensureStatusMark(chrome.status, {
+            shape: 'chrome',
+            root: this.styleRoot,
+            shouldShowTooltip: () => this.shouldShowTooltip(),
+            ...this.statusMarkUndo(),
+            onReviewChange: () => this.onStatusReviewChange(),
+        });
+        this.suiteChrome = chrome;
+        this.updateSuiteStatusMark();
+        return chrome;
+    }
+
+    /**
+     * What the author has not reviewed of the changes the suite's status mark
+     * lists changed. A control that draws rule-added values differently until
+     * they are reviewed draws them again.
+     */
+    protected onStatusReviewChange(): void {}
+
+    /** Remove the suite's chrome; every component's destroy() calls this. */
+    protected destroySuiteChrome(): void {
+        this.suiteChrome?.destroy();
+        this.suiteChrome = null;
     }
 
     protected hasClearValue(): boolean {
@@ -115,19 +402,96 @@ export abstract class ComponentBase extends ReadOnlyComponentBase {
 
     protected destroyClearButton(): void {
         this.container.removeEventListener('input', this.updateClearButton);
+        this.undoScope?.removeEventListener('keydown', this.undoKey, true);
+        this.undoScope = null;
+        // The snapshot goes with the field that took it.
+        this.undo.end(this);
+        this.releaseUndo?.();
+        this.releaseUndo = null;
+        this.undoAnnouncer?.remove();
+        this.undoAnnouncer = null;
         this.clearControl?.destroy();
         this.clearControl = undefined;
+        this.destroySuiteChrome();
     }
 
     protected override onAssertionsChanged(): void {
+        const value = this.valueSignature();
+        if (value !== this.settledValue) {
+            this.settledValue = value;
+            // The author's edit changed the value: the marking can go back
+            // to what it held when the edit began. Offered before the field
+            // publishes, so the store's commit of it is heard as its result.
+            if (this.editStart) this.undo.make('edit', this, this.editStart);
+            this.editStart = null;
+            if (this.feedsUndo) this.undo.observe(value);
+        }
         super.onAssertionsChanged();
         this.clearControl?.update();
+        // The mark says what EzClassify changed in the value the field holds.
+        this.updateSuiteStatusMark();
+    }
+
+    /**
+     * Show on the suite's status mark what EzClassify changed in what the
+     * control's marking writes: every such change for a control that holds the
+     * whole marking; for a facet, those that changed its own category, the
+     * slice of the marking it holds.
+     */
+    protected updateSuiteStatusMark(): void {
+        if (!this.suiteChrome) return;
+        const category = this.options.facetOf
+            ? this.options.categoryId
+            : undefined;
+        setStatusMarkFixes(
+            this.suiteChrome.status,
+            explainedChanges(this.getAppliedFixes(), this.assertions, {
+                writes: category ? (id) => id === category : undefined,
+                written: this.writtenFact(),
+                showsUnwritten: true,
+            }),
+        );
+    }
+
+    /**
+     * Close the popover the suite's status mark opened, if it is open. A
+     * control whose presses change what it shows without changing its value
+     * calls this for a press anywhere but its chrome.
+     */
+    protected dismissSuiteStatusPopover(): void {
+        const mark = this.suiteChrome?.status.querySelector<HTMLElement>(
+            ':scope > .ez-status-mark',
+        );
+        if (mark) dismissStatusMarkPopover(mark);
+    }
+
+    /**
+     * The changes a text or chip field's status mark explains for the value it
+     * holds: those to what its marking writes that its scopes write or it
+     * changed, and for a field that shows each fact as a chip, the written
+     * facts a rule filled in (see explainedChanges).
+     */
+    protected fieldStatusChanges(): Change[] {
+        return explainedChanges(this.getAppliedFixes(), this.assertions, {
+            writes: writesCategoryOf(
+                listedScopesOf(this.options),
+                this.scheme.categories,
+                this.schemeMeta,
+            ),
+            written: this.writtenFact(),
+            showsUnwritten: !this.writesScopesAsText(),
+        });
     }
     /**
      * Set to true by destroy(): prevents async callbacks from mutating
      * destroyed state
      */
     protected _destroyed = false;
+
+    protected override get abandoned(): boolean {
+        return this._destroyed;
+    }
+
     /**
      * Concept-detail resolution and its result cache for this instance, shared
      * with every other field class via `createConceptDescriber`. Constructed
@@ -137,8 +501,6 @@ export abstract class ComponentBase extends ReadOnlyComponentBase {
      */
     private readonly _conceptDescriber = createConceptDescriber({
         engine: () => this.engine,
-        schemeId: () => this.schemeId,
-        schemeAddressing: () => this.schemeAddressing,
         options: () => this.options,
     });
 
@@ -176,39 +538,110 @@ export abstract class ComponentBase extends ReadOnlyComponentBase {
         recordAppliedFixes(this._appliedFixes, fixes);
     }
 
+    /**
+     * A picker holds the facts of its scope set: the scopes its host lists, the
+     * scheme's default scope when it lists none. A fact of another scope
+     * belongs to the controls that write that scope, so the picker neither
+     * shows it nor states it back, and a value removed or cleared here leaves
+     * it where it is. A facet holds its own category, whatever scope that is
+     * in. A text field holds what its text reads as, which its format decides.
+     */
+    protected override heldFacts(
+        assertions: readonly Assertion[],
+    ): Assertion[] {
+        if (
+            !this.scheme ||
+            !this.schemeMeta ||
+            this.writesScopesAsText() ||
+            this.options.facetOf ||
+            this.options.resolveFacetSiblings
+        )
+            return [...assertions];
+        return factsOfScopeSet(
+            assertions,
+            listedScopesOf(this.options),
+            this.scheme.categories,
+            this.schemeMeta,
+        );
+    }
+
     override setAssertions(assertions: Assertion[]): void {
+        // A value from the host or the store is nobody's edit here.
+        this.editStart = null;
         this.invalidateValueRead();
         // A marking that drops something the field stated replaces its value,
         // and the fixes behind the old value no longer explain it.
-        if (replacesStated(this.assertions, assertions))
-            this._appliedFixes.clear();
-        this.assertions = [...assertions];
+        const held = this.heldFacts(assertions);
+        if (replacesStated(this.assertions, held)) this._appliedFixes.clear();
+        this.assertions = held;
         this.reprocess();
     }
 
     /**
      * Reflect an already evaluated marking, including unrecognized text and
-     * facts outside its rendered scope. Reprocessing only its assertions would
-     * erase the text and publish a different marking back to the store. The
-     * store's judgment of the marking comes with it, so every field bound to it
-     * shows the same errors and ways to fix. The fixes the store's reading
-     * applied are explained too; a state that echoes the value the field holds
-     * keeps the field's own explanation of how that value came about.
+     * facts its text leaves out, of those the field holds (see
+     * {@link heldFacts}). Reprocessing only its assertions would erase the text
+     * and publish a different marking back to the store. The store's judgment
+     * of the marking comes with it, so every field bound to it shows the same
+     * errors and ways to fix. The fixes the store's reading applied are
+     * explained too; a state that echoes the value the field holds keeps the
+     * field's own explanation of how that value came about.
      */
     applyStoreState(state: EzClassifyState): void {
+        this.editStart = null;
         this.invalidateValueRead();
         ++this._reprocessSeq;
         if (this._destroyed) return;
-        const replacesValue = state.rendered !== this._lastRendered;
-        this.assertions = [...state.assertions];
+        // A refused state's text is the engine's marker, not a marking: the
+        // field keeps the value it holds and says why.
+        const refused = renderViewRefused(state);
+        const replacesValue = !refused && state.rendered !== this._lastRendered;
+        this.assertions = this.heldFacts(state.assertions);
         this.failedRead = null;
-        this._lastRendered = state.rendered;
+        if (!refused) this._lastRendered = state.rendered;
         // A structured or computed state has no recognition: nothing was read.
-        this.noteReading(state);
+        // A marking's text states its default scope.
+        this.noteReading(refused ? {} : state, undefined, {
+            surface: this.schemeMeta.defaultScope,
+        });
         this.displayColor = state.displayColor;
         this.recordAppliedFixes(state.appliedFixes ?? [], replacesValue);
-        this.updateValidationErrors(state.errors, state.proposedFixes);
+        if (refused)
+            this.showRenderRefusal(state, state.errors, state.proposedFixes);
+        else this.updateValidationErrors(state.errors, state.proposedFixes);
         this.onAssertionsChanged();
+        if (!refused && !state.assessment) this.assessHeldForm();
+    }
+
+    /** See {@link ComponentInstance.readsWhole}. */
+    readsWhole(): boolean {
+        return this.failedRead === null && !this.sourceUnresolved;
+    }
+
+    /**
+     * Learn which of the held facts the field's form writes, for a state that
+     * came with no assessment of a text: one composed from facts. Only a fact
+     * the engine derived can go unwritten, so a value with none needs no
+     * answer. The field draws its facts and explains its changes again once the
+     * answer lands, unless a newer value has replaced the one it is for.
+     */
+    private assessHeldForm(): void {
+        if (this.writesScopesAsText()) return;
+        const held = [...this.assertions];
+        if (!held.some(derivedAssertion)) return;
+        const seq = this._reprocessSeq;
+        const formatId = this.formatId;
+        void Promise.resolve()
+            .then(() => this.callRender(held, { format: formatId }))
+            .then((written) => {
+                if (seq !== this._reprocessSeq || this._destroyed) return;
+                this.noteHeldForm({ formatId, assessment: written.assessment });
+                this.render();
+                this.updateSuiteStatusMark();
+            })
+            .catch(() => {
+                // Without an answer every held fact counts as written.
+            });
     }
 
     /**
@@ -221,6 +654,7 @@ export abstract class ComponentBase extends ReadOnlyComponentBase {
         value?: string,
         insertIndex?: number,
     ): void {
+        this.beginUserEdit();
         // Single-select categories: remove existing concept before adding the new one
         const category = this.scheme.categories.find(
             (f) => f.id === categoryId,
@@ -273,6 +707,7 @@ export abstract class ComponentBase extends ReadOnlyComponentBase {
     protected override ruleFixHandler(): (fix: Fix) => void {
         return (fix) => {
             if (this._destroyed) return;
+            this.beginUserEdit();
             this.reprocessEdit(fixAssertions(fix));
         };
     }
@@ -286,6 +721,7 @@ export abstract class ComponentBase extends ReadOnlyComponentBase {
         categoryId: string;
         selected?: boolean;
     }): void {
+        this.beginUserEdit();
         if (s.selected) {
             const assertion = this.assertions.find(
                 (a) =>
@@ -466,11 +902,10 @@ export abstract class ComponentBase extends ReadOnlyComponentBase {
             appliedFixes?: Change[];
             proposedFixes?: Fix[];
             warnings?: Warning[];
-            assertionsBeforeRepair?: Assertion[];
             assessment?: RenderAssessment;
         }) => {
             if (seq !== this._reprocessSeq || this._destroyed) return;
-            this.assertions = result.assertions
+            this.assertions = this.heldFacts(result.assertions)
                 .filter((assertion) =>
                     facetCategory
                         ? assertion.categoryId === facetCategory
@@ -484,8 +919,6 @@ export abstract class ComponentBase extends ReadOnlyComponentBase {
                         // An absent attribution is also part of the chosen provenance.
                         if (chosen.sourceRule === undefined)
                             delete settled.sourceRule;
-                        if (chosen.provenance === undefined)
-                            delete settled.provenance;
                         return settled;
                     }
                     // Canonical values can differ from the chosen input. The
@@ -506,10 +939,22 @@ export abstract class ComponentBase extends ReadOnlyComponentBase {
                                 : ('inferred' as const),
                     };
                 });
-            this._lastRendered = result.rendered;
-            this.noteReading(result);
+            // The engine could not write this selection, so its text is the
+            // refusal marker. The field keeps the value it holds; the selection
+            // stays visible so the author can change it, and the status says
+            // why it could not be written.
+            const refused = renderViewRefused(result);
+            if (!refused) this._lastRendered = result.rendered;
+            this.noteReading(refused ? {} : result);
             recordAppliedFixes(this._appliedFixes, result.appliedFixes);
-            if (result.errors)
+            if (refused)
+                this.showRenderRefusal(
+                    result,
+                    result.errors,
+                    result.proposedFixes,
+                    result.warnings,
+                );
+            else if (result.errors)
                 this.updateValidationErrors(
                     result.errors,
                     result.proposedFixes,
@@ -562,6 +1007,7 @@ export abstract class ComponentBase extends ReadOnlyComponentBase {
      * to apply cascades, inference, and defaults.
      */
     protected removeAssertion(conceptId: string, categoryId: string): void {
+        this.beginUserEdit();
         this.reprocessEdit(
             removeAssertionCascade(
                 this.assertions,
@@ -648,15 +1094,26 @@ export abstract class ComponentBase extends ReadOnlyComponentBase {
     /**
      * Attach a concept tooltip to a DOM element. Shows on hover/focus with full
      * concept description including rules.
+     *
+     * @param reason - A line about this element's value that leads the
+     *   description, such as why the marking holds it without writing it
      */
     protected attachConceptTooltip(
         el: HTMLElement,
         conceptId: string,
         categoryId: string,
+        reason?: string,
     ): void {
         attachTooltip(
             el,
-            () => this.resolveConceptDescription(conceptId, categoryId),
+            () => {
+                const description = this.resolveConceptDescription(
+                    conceptId,
+                    categoryId,
+                );
+                if (!reason) return description;
+                return description ? `${reason}\n${description}` : reason;
+            },
             this.options.root,
             () => this.shouldShowTooltip(),
         );
@@ -804,28 +1261,26 @@ export abstract class ComponentBase extends ReadOnlyComponentBase {
                             context: this.getProcessingContext(),
                         }),
                     ),
-                coveredCategories: () => {
-                    const coverage = this.engine.getFormatCoverage?.(
+                coveredCategories: () =>
+                    coveredCategoriesOf(
+                        this.engine,
                         this.formatId,
-                        this.schemeId,
-                    );
-                    return coverage
-                        ? new Set(coverage.coveredCategories)
-                        : undefined;
-                },
-                write: async (assertions) =>
-                    (
-                        await Promise.resolve(
-                            this.callRender([...assertions], {
-                                format: this.formatId,
-                            }),
-                        )
-                    ).rendered,
+                        this.options.scope,
+                    ),
+                write: (assertions) =>
+                    Promise.resolve(
+                        this.callRender([...assertions], {
+                            format: this.formatId,
+                        }),
+                    ),
+                readsInWhole: () =>
+                    this.getProcessingContext()?.partOf !== undefined,
             },
             scheme: () => this.scheme,
             meta: () => this.schemeMeta,
             formatId: () => this.formatId,
             scope: () => this.options.scope,
+            scopes: () => this.options.scopes ?? [],
             categoryId: () => this.options.categoryId,
             suggestions: (live) => this.composerSuggestions(live),
             gated: (query, live) => this.composerGated(query, live),
@@ -849,40 +1304,22 @@ export abstract class ComponentBase extends ReadOnlyComponentBase {
      * the list must show the other choices in a filled single-choice category
      * (a replace row), and which rows are checked comes from the composer's own
      * reading, not from the engine's `selected` flag. Asked again with `live`,
-     * the draft's assertions, for what the scheme offers only in their
-     * context.
+     * the draft's assertions, for what the scheme offers in their context (see
+     * {@link offeredBeside}).
      */
     protected async composerSuggestions(
         live?: readonly Assertion[],
     ): Promise<Suggestion[]> {
-        const context = this.getProcessingContext();
-        const options = {
-            outputFormat: this.formatId,
-            surface: this.options.scope,
-        };
-        const suggestions =
-            context?.role === 'part' || context?.partOf
-                ? Object.values(
-                      (
-                          await Promise.resolve(
-                              this.callProcess('', {
-                                  ...options,
-                                  context,
-                                  assertions: [...(live ?? [])],
-                                  suggestFor: this.engine
-                                      .getScheme(this.schemeId)
-                                      .categories.map(
-                                          (category) => category.id,
-                                      ),
-                              }),
-                          )
-                      ).suggestionsFor ?? {},
-                  ).flatMap((result) => result.suggestions)
-                : (
-                      await Promise.resolve(
-                          this.callSuggest([...(live ?? [])], options),
-                      )
-                  ).suggestions;
+        const categories = this.engine.getScheme().categories.map((c) => ({
+            id: c.id,
+            single: c.single === true,
+        }));
+        const asked = await Promise.all(
+            this.suggestionSurfaces().map((options) =>
+                this.offeredBeside(live ?? [], options, categories),
+            ),
+        );
+        const suggestions = asked.flat();
         const bound = this.options.categoryId;
         return this.disambiguateSuggestions(
             suggestions.filter(
@@ -893,20 +1330,85 @@ export abstract class ComponentBase extends ReadOnlyComponentBase {
         );
     }
 
+    /**
+     * What the scheme offers for `categories` on one surface beside the facts
+     * in `live`. The engine settles the facts first, so what its rules infer
+     * from them (a parent concept a stated child implies) counts. A
+     * single-choice category is then asked without its own facts, so it lists
+     * every option the other categories allow, not only the one it holds: a
+     * choice there replaces its value. Any other category is asked beside every
+     * settled fact, so an option that conflicts with one it holds is not
+     * offered beside it. A part is asked category by category in its whole's
+     * context.
+     */
+    protected async offeredBeside(
+        live: readonly Assertion[],
+        options: SuggestionSurface,
+        categories: readonly { id: string; single: boolean }[],
+    ): Promise<Suggestion[]> {
+        const context = this.getProcessingContext();
+        const part = context?.role === 'part' || !!context?.partOf;
+        if (live.length === 0 && !part)
+            return Promise.resolve(this.callSuggest([], options)).then(
+                (result) => result.suggestions,
+            );
+        const alone = part
+            ? categories.map((c) => c.id)
+            : categories.filter((c) => c.single).map((c) => c.id);
+        const settled = await Promise.resolve(
+            this.callProcess('', {
+                ...options,
+                context,
+                assertions: [...live],
+                ...(alone.length > 0 ? { suggestFor: alone } : {}),
+            }),
+        );
+        const replacing = Object.values(settled.suggestionsFor ?? {}).flatMap(
+            (answer) => answer.suggestions,
+        );
+        if (alone.length === categories.length) return replacing;
+        const asked = new Set(alone);
+        const beside = (
+            await Promise.resolve(
+                this.callSuggest(settled.assertions ?? [...live], options),
+            )
+        ).suggestions.filter((s) => !asked.has(s.categoryId));
+        return [...beside, ...replacing];
+    }
+
     /** Rows the scheme's rules gate for `query` given the live assertions. */
     protected async composerGated(
         query: string,
         live: readonly Assertion[],
     ): Promise<Suggestion[]> {
-        const result = await Promise.resolve(
-            this.callSuggest([...live], {
-                outputFormat: this.formatId,
-                filter: query,
-                surface: this.options.scope,
-                includeGated: true,
-            }),
+        const asked = await Promise.all(
+            this.suggestionSurfaces().map((options) =>
+                Promise.resolve(
+                    this.callSuggest([...live], {
+                        ...options,
+                        filter: query,
+                        includeGated: true,
+                    }),
+                ),
+            ),
         );
-        return result.suggestions.filter((s) => s.gated);
+        return asked.flatMap((result) =>
+            result.suggestions.filter((s) => s.gated),
+        );
+    }
+
+    /**
+     * Where the composer asks what this field offers (see
+     * `suggestionSurfaces`).
+     */
+    private suggestionSurfaces(): SuggestionSurface[] {
+        return suggestionSurfaces(
+            this.schemeMeta,
+            this.formatId,
+            this.options.scope,
+            this.options.scopes,
+            !!this.options.holdsPart,
+        );
     }
 
     /**
@@ -931,16 +1433,23 @@ export abstract class ComponentBase extends ReadOnlyComponentBase {
         reading: ComposerReading,
         commit: ComposerCommit,
     ): Promise<void> {
-        this.assertions = statedAssertions(reading.assertions);
+        this.beginUserEdit();
+        this.assertions = statedAssertions(this.heldFacts(reading.assertions));
         this.recordAppliedFixes(reading.appliedFixes, commit.replaces);
         await this.reprocessNow();
     }
 
     /** Append keyboard hint bar to the container */
+    /**
+     * The control's keys, in the suite's quiet hint row under the control. The
+     * row shows while the control has focus, on a pointer with keys.
+     */
     protected appendKeyboardHints(
         hints: Array<{ keys: string; action: string }>,
     ): void {
-        this.container.appendChild(createKeyboardHints(hints));
+        const row = createKeyboardHints(hints);
+        row.classList.add('ez-field-hints');
+        this.container.appendChild(row);
     }
 
     /** Darken a hex color */

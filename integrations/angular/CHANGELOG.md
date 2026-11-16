@@ -8,6 +8,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## 1.0.0
 
 The first public release. The Angular integration of the EzClassify forms
-library. You name your engine once and the integration mounts the
-`@ezclassify/ui` runtime on native form inputs. It never builds an engine
-itself.
+library. You name your connected Context once with `provideEzClassify`, and
+each `ezClassify` root mounts the `@ezclassify/ui` runtime on its native form
+inputs with a store of its own. It never connects a Context itself.

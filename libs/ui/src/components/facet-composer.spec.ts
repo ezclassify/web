@@ -4,8 +4,8 @@
  * marking the draft stores into: the other categories count as they stand. And
  * a closed composer leaves none of what it said behind in the document.
  */
+import { asContext } from '../../test-fixtures/as-context';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
-import { Context } from '@ezclassify/engine';
 import { EzClassifyUI } from '../ezclassify-ui';
 import {
     openSurface,
@@ -14,9 +14,10 @@ import {
     typeText,
     wait,
 } from './composer/composer-harness';
+import { connectDemoContext } from '../../../../test-support/demo-runtime';
 
 /** A required single-choice level and an optional multi-choice caveat. */
-function createContext() {
+async function createContext() {
     const concept = (
         id: string,
         label: string,
@@ -32,56 +33,56 @@ function createContext() {
         position,
         rank: position,
     });
-    return Context.fromComponents({
-        scheme: {
+    return await connectDemoContext({
+        draft: {
             scheme: {
-                id: 'facet-composer',
-                version: '1.0.0',
-                name: 'Facet Composer',
-                data: {
-                    concepts: {
-                        inline: [
+                scheme: {
+                    id: 'facet-composer',
+                    version: '1.0.0',
+                    name: 'Facet Composer',
+                    description: 'Facet Composer test fixture.',
+                    data: {
+                        concepts: [
                             concept('U', 'UNCLASSIFIED', 'level', 1),
                             concept('S', 'SECRET', 'level', 2),
                             concept('NF', 'NOFORN', 'caveat', 1),
                             concept('OC', 'ORCON', 'caveat', 2),
                         ],
+                        categories: [
+                            {
+                                id: 'level',
+                                label: 'Level',
+                                required: true,
+                                single: true,
+                                rollup: 'max',
+                                position: 1,
+                            },
+                            {
+                                id: 'caveat',
+                                label: 'Caveat',
+                                required: false,
+                                single: false,
+                                rollup: 'union',
+                                position: 2,
+                            },
+                        ],
                     },
-                    categories: [
-                        {
-                            id: 'level',
-                            label: 'Level',
-                            required: true,
-                            single: true,
-                            rollup: 'max',
-                            position: 1,
-                        },
-                        {
-                            id: 'caveat',
-                            label: 'Caveat',
-                            required: false,
-                            single: false,
-                            rollup: 'union',
-                            position: 2,
-                        },
-                    ],
-                },
-                rules: [],
-                parse: { case_sensitive: false, strip_whitespace: true },
-                render: {
-                    default: 'default',
-                    formats: [
-                        {
-                            id: 'default',
-                            surface: 'marking',
-                            mode: 'inline',
-                            separator: '//',
-                            fields: [
-                                { category: 'level', separator: '/' },
-                                { category: 'caveat', separator: '/' },
-                            ],
-                        },
-                    ],
+                    rules: [],
+                    render: {
+                        default: 'default',
+                        formats: [
+                            {
+                                id: 'default',
+                                surface: 'marking',
+                                mode: 'inline',
+                                separator: '//',
+                                fields: [
+                                    { category: 'level', separator: '/' },
+                                    { category: 'caveat', separator: '/' },
+                                ],
+                            },
+                        ],
+                    },
                 },
             },
         },
@@ -105,11 +106,13 @@ afterEach(() => {
 
 async function mount(): Promise<HTMLInputElement> {
     root.innerHTML = [
-        '<input type="hidden" id="doc" data-ezclassify-rendered />',
+        '<input type="hidden" id="doc" data-ezclassify-marking />',
         '<label for="caveats">Caveats</label>',
         '<input id="caveats" data-ezclassify-controller="tags" data-ezclassify-category="caveat" data-ezclassify-facet-of="doc" />',
     ].join('');
-    forms = new EzClassifyUI(createContext() as never, { root });
+    forms = new EzClassifyUI(asContext((await createContext()) as never), {
+        root,
+    });
     await wait();
     await forms.store.publishRendered('doc', 'SECRET');
     await wait();

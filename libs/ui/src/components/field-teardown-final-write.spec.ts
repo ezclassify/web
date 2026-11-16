@@ -11,16 +11,15 @@
  * then removed from the document the way a host removes it. The store must hold
  * the typed marking afterwards.
  */
+import { asContext } from '../../test-fixtures/as-context';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { Context } from '@ezclassify/engine';
-import {
-    cedarValleyAccessYaml,
-    cedarValleyGuideYaml,
-    cedarValleySchemeYaml,
-} from '@ezclassify/example-schemes/cedar-valley';
-import * as jsYaml from 'js-yaml';
+import type { EzClassifyClient } from '@ezclassify/rest-client';
 import { EzClassifyUI } from '../ezclassify-ui';
 import { pendingTeardownWrite } from './teardown-write';
+import {
+    connectDemoContext,
+    demoRuntimeSettled,
+} from '../../../../test-support/demo-runtime';
 
 /** Replace an input's text as typing does, caret at the end. */
 function typeText(
@@ -35,12 +34,8 @@ function typeText(
 const MARKING_ID = 'doc';
 
 /** The cedar-valley example context, as the demos load it. */
-function createContext(): Context {
-    return Context.fromComponents({
-        scheme: jsYaml.load(cedarValleySchemeYaml),
-        guides: [jsYaml.load(cedarValleyGuideYaml)],
-        access: jsYaml.load(cedarValleyAccessYaml),
-    });
+async function createContext(): Promise<EzClassifyClient> {
+    return await connectDemoContext({ contextId: 'cedar-valley' });
 }
 
 let root: HTMLDivElement;
@@ -65,7 +60,7 @@ afterEach(() => {
  */
 async function mount(html: string): Promise<HTMLElement> {
     // The marking the fields are bound to, as a page declares it.
-    root.innerHTML = `<input type="hidden" id="${MARKING_ID}" data-ezclassify-rendered />${html}`;
+    root.innerHTML = `<input type="hidden" id="${MARKING_ID}" data-ezclassify-marking />${html}`;
     await startRuntime();
     return root.querySelector<HTMLElement>('#host')!;
 }
@@ -74,8 +69,9 @@ async function startRuntime(): Promise<void> {
     const ready = new Promise((resolve) =>
         root.addEventListener('ezclassify:ready', resolve, { once: true }),
     );
-    forms = new EzClassifyUI(createContext(), { root });
+    forms = new EzClassifyUI(asContext(await createContext()), { root });
     await ready;
+    await demoRuntimeSettled();
 }
 
 /** Open the marked field's editor at the caret, the way Ctrl+Enter does. */
@@ -122,6 +118,7 @@ async function finalWrite(component: object): Promise<void> {
         return pending!;
     });
     await write;
+    await demoRuntimeSettled();
 }
 
 /**

@@ -24,6 +24,7 @@ import type {
     Assertion,
     Fix,
     ProcessResult,
+    RenderAssessment,
     SchemePublicView,
     Suggestion,
     ValidateResult,
@@ -34,6 +35,7 @@ import type {
     ComposerReading,
 } from './composer-controller';
 import { statedAssertions } from './composer-controller';
+import { renderViewRefusalMessages } from '../../render-refusal';
 
 /** What a composer read sends the engine besides the text. */
 export interface ComposerProcessRequest {
@@ -68,7 +70,14 @@ export interface ComposerEngineBinding {
      * Write an assertion set in the field's format as it is, without validating
      * or repairing it (see ComposerPort.write).
      */
-    write?(assertions: readonly Assertion[]): Promise<string>;
+    write?(
+        assertions: readonly Assertion[],
+    ): Promise<{ rendered: string; assessment?: RenderAssessment }>;
+    /**
+     * Whether the field reads its marking as a part of a whole it names, so the
+     * engine may take values from that whole for what the part states.
+     */
+    readsInWhole?(): boolean;
 }
 
 /**
@@ -76,10 +85,12 @@ export interface ComposerEngineBinding {
  *
  * @param result - The process result for `text`
  * @param text - The draft text the result read
+ * @param format - The field's format, which a refusal names
  */
 export function readingFromResult(
     result: ProcessResult,
     text: string,
+    format: string,
 ): ComposerReading {
     const recognition = result.recognition;
     const unmatched: ComposerFragment[] = (recognition?.unmatched ?? []).map(
@@ -99,9 +110,14 @@ export function readingFromResult(
     // treating any assertion as enough would store "A zz" as "A" and drop "zz".
     const complete =
         text.trim().length === 0 || recognition?.status === 'complete';
+    // A refused write is the engine's marker, not a marking. The text the
+    // engine read stands in for it, and the reading says why.
+    const refusal = renderViewRefusalMessages(format, result);
+    const refused = refusal.length > 0;
     return {
         assertions: result.assertions,
-        rendered: result.rendered,
+        rendered: refused ? text : result.rendered,
+        ...(refused ? { refusal } : {}),
         complete,
         unmatched,
         corrections,
@@ -110,7 +126,6 @@ export function readingFromResult(
         warnings: result.warnings ?? [],
         proposedFixes: (result.proposedFixes ?? []) as Fix[],
         appliedFixes: result.appliedFixes ?? [],
-        assertionsBeforeRepair: result.assertionsBeforeRepair,
     };
 }
 
@@ -122,11 +137,13 @@ export function readingFromResult(
  * @param binding - The field's engine calls
  * @param text - The draft text
  * @param committed - The value the field holds now
+ * @param format - The field's format
  */
 export async function readWholeDraft(
     binding: ComposerEngineBinding,
     text: string,
     committed: readonly Assertion[],
+    format: string,
 ): Promise<ComposerReading> {
     const covered = binding.coveredCategories?.();
     const carried = covered
@@ -136,7 +153,7 @@ export async function readWholeDraft(
         text,
         carried.length > 0 ? { chosen: carried } : {},
     );
-    return readingFromResult(result, text);
+    return readingFromResult(result, text, format);
 }
 
 /**
@@ -154,6 +171,7 @@ export async function readWholeDraft(
  * @param text - The draft text
  * @param base - The assertion set the text adds to
  * @param add - The field's add rule
+ * @param format - The field's format
  */
 export async function readAdditiveDraft(
     binding: ComposerEngineBinding,
@@ -163,6 +181,7 @@ export async function readAdditiveDraft(
         assertions: readonly Assertion[],
         ref: { conceptId: string; categoryId: string },
     ) => Assertion[],
+    format: string,
 ): Promise<ComposerReading> {
     // With no text the base is the whole marking.
     let chosen = statedAssertions(base);
@@ -184,7 +203,7 @@ export async function readAdditiveDraft(
     // the marking, empty or not.
     const sendChosen = text.trim().length === 0 || chosen.length > 0;
     const result = await binding.process(text, sendChosen ? { chosen } : {});
-    return readingFromResult(result, text);
+    return readingFromResult(result, text, format);
 }
 
 function refKey(ref: { conceptId: string; categoryId: string }): string {
@@ -196,15 +215,17 @@ function refKey(ref: { conceptId: string; categoryId: string }): string {
  *
  * @param binding - The field's engine calls
  * @param assertions - The edited set; only what the user stated is sent
+ * @param format - The field's format
  */
 export async function renderAssertions(
     binding: ComposerEngineBinding,
     assertions: readonly Assertion[],
+    format: string,
 ): Promise<ComposerReading> {
     const result = await binding.process('', {
         chosen: statedAssertions(assertions),
     });
-    return readingFromResult(result, '');
+    return readingFromResult(result, '', format);
 }
 
 /**

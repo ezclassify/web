@@ -277,8 +277,10 @@ export function positionPopover(
     );
     // Portaling escapes clipping but also leaves the field's CSS inheritance
     // chain. Copy the documented presentation tokens on every placement so
-    // host themes follow, including after a light/dark switch.
-    copyOverlayTheme(p.anchor, p.surface);
+    // host themes follow, including after a light/dark switch. An inline
+    // editor's anchor sits in the field's text, so the font comes from the
+    // owning field.
+    copyOverlayTheme(p.anchor, p.surface, p.field ?? p.anchor);
 
     // Measure the list's natural height with any earlier clamp lifted:
     // scrollHeight on the list is clamp-independent, but the surface's own

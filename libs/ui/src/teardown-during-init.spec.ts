@@ -16,18 +16,20 @@ import { readFileSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { Context } from '@ezclassify/engine';
 import { EzClassifyUI } from './ezclassify-ui';
 import { VanillaEzClassifyStore } from './store/ezclassify-store';
+import { connectDemoContext } from '../../../test-support/demo-runtime';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const fixturesDir = resolve(__dirname, '../../../vendor/spec/fixtures/v1');
 
-function newContext() {
-    return Context.fromComponents({
-        scheme: JSON.parse(
-            readFileSync(resolve(fixturesDir, 'ref-scheme-1.json'), 'utf8'),
-        ),
+async function newContext() {
+    return await connectDemoContext({
+        draft: {
+            scheme: JSON.parse(
+                readFileSync(resolve(fixturesDir, 'ref-scheme-1.json'), 'utf8'),
+            ),
+        },
     });
 }
 
@@ -48,11 +50,11 @@ beforeEach(() => {
     });
     container = document.createElement('div');
     container.innerHTML = `
-        <input type="hidden" id="doc-marking" data-ezclassify-rendered />
+        <input type="hidden" id="doc-marking" data-ezclassify-marking />
         <input id="tag-field"
                data-ezclassify-controller="tags"
                data-ezclassify-bound-to="doc-marking" />
-        <div data-ezclassify-controller="card" data-ezclassify-aggregate></div>
+        <div data-ezclassify-controller="banner" data-ezclassify-aggregate></div>
     `;
     document.body.appendChild(container);
 });
@@ -68,22 +70,21 @@ function destroyedStoreErrors(): string[] {
 }
 
 /** One instance over the fixture above, sharing a store the caller owns. */
-function mount(store: VanillaEzClassifyStore): EzClassifyUI {
-    return new EzClassifyUI(newContext(), {
+async function mount(store: VanillaEzClassifyStore): Promise<EzClassifyUI> {
+    return new EzClassifyUI(await newContext(), {
         root: container,
-        rollupId: 'teardown-rollup',
         store,
     });
 }
 
 describe('an instance destroyed while its fields are initializing', () => {
     it('reaches no store at all once it is torn down', async () => {
-        const context = newContext();
+        const context = await newContext();
         const store = new VanillaEzClassifyStore(context.scheme);
         const subscribe = vi.spyOn(store, 'subscribe');
         const subscribeAggregate = vi.spyOn(store, 'subscribeAggregate');
 
-        const ui = mount(store);
+        const ui = await mount(store);
         // Destroyed in the same tick as the scan, before any init resolves.
         ui.destroy();
         const callsAtTeardown =
@@ -97,10 +98,10 @@ describe('an instance destroyed while its fields are initializing', () => {
     });
 
     it('reports no failed mount when its store went with it', async () => {
-        const context = newContext();
+        const context = await newContext();
         const store = new VanillaEzClassifyStore(context.scheme);
 
-        const ui = mount(store);
+        const ui = await mount(store);
         // The order every integration tears down in: the instance, then the
         // store it owned alongside it.
         ui.destroy();
@@ -111,15 +112,15 @@ describe('an instance destroyed while its fields are initializing', () => {
     });
 
     it('leaves the replacement instance free to wire the same fields', async () => {
-        const first = new VanillaEzClassifyStore(newContext().scheme);
-        const firstUi = mount(first);
+        const first = new VanillaEzClassifyStore((await newContext()).scheme);
+        const firstUi = await mount(first);
         firstUi.destroy();
         first.destroy();
 
         // The StrictMode sequence: a second instance over the same committed
         // DOM, while the first one's inits are still in flight.
-        const second = new VanillaEzClassifyStore(newContext().scheme);
-        const secondUi = mount(second);
+        const second = new VanillaEzClassifyStore((await newContext()).scheme);
+        const secondUi = await mount(second);
         await settle();
 
         expect(destroyedStoreErrors()).toEqual([]);
@@ -129,5 +130,51 @@ describe('an instance destroyed while its fields are initializing', () => {
 
         secondUi.destroy();
         second.destroy();
+    });
+});
+
+describe('an instance torn down beside a store that outlives it', () => {
+    it('stops hearing the store before it releases its markings', async () => {
+        // The page's banner views a marking the instance holds. Releasing that
+        // marking commits it empty; a view still listening then would read
+        // again through a Context its host may already have destroyed.
+        container.innerHTML = `
+            <input type="hidden" id="doc-marking" data-ezclassify-marking />
+            <input id="tag-field"
+                   data-ezclassify-controller="tags"
+                   data-ezclassify-bound-to="doc-marking" />
+            <div data-ezclassify-controller="banner" data-ezclassify-source="doc-marking"></div>
+        `;
+        const context = await newContext();
+        const store = new VanillaEzClassifyStore(context.scheme);
+        let tearingDown = false;
+        const heardDuringTeardown: string[] = [];
+        const subscribe = store.subscribe.bind(store);
+        vi.spyOn(store, 'subscribe').mockImplementation(
+            (id, listener, source) =>
+                subscribe(
+                    id,
+                    (state) => {
+                        if (tearingDown) heardDuringTeardown.push(id);
+                        listener(state);
+                    },
+                    source,
+                ),
+        );
+        const ui = await mount(store);
+        await settle();
+        await store.publishRendered('doc-marking', 'HIGH');
+        await settle();
+
+        // Its host takes the page away first, as React does: the markings
+        // have left, so destroy releases them.
+        container.remove();
+        tearingDown = true;
+        ui.destroy();
+        await settle();
+        tearingDown = false;
+
+        expect(heardDuringTeardown).toEqual([]);
+        store.destroy();
     });
 });

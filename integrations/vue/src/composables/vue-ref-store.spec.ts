@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import {
+    EMPTY_EZCLASSIFY_AGGREGATE,
     EMPTY_EZCLASSIFY_STATE,
     type EzClassifyStoreEngine,
     type EzClassifyStoreProcessResult,
@@ -11,7 +12,7 @@ import {
     runEzClassifyStoreConformance,
     runEzClassifyStoreBudgetConformance,
     runEzClassifyStoreSeedConformance,
-} from '@ezclassify/testing-utils';
+} from '../../../../test-support/store-conformance';
 import { VueRefStore } from './vue-ref-store';
 
 /** What a write that wrote everything it was given reports. */
@@ -65,12 +66,15 @@ describe('VueRefStore: live refs for template binding', () => {
         expect(r.value.rendered).toBe('tier:secret');
     });
 
-    it('aggregateRef returns a ref that updates when any contributor commits', async () => {
+    it('aggregateRef returns a ref of the page rollup that updates when a whole commits', async () => {
         const store = new VueRefStore(passThrough());
         const r = store.aggregateRef();
-        expect(r.value).toBe(EMPTY_EZCLASSIFY_STATE);
+        expect(r.value.byBucket.size).toBe(0);
         await store.publishRendered('doc', 'tier:secret');
-        expect(r.value.rendered).toBe('tier:secret');
+        // One engine, so one bucket.
+        const buckets = [...r.value.byBucket.values()];
+        expect(buckets).toHaveLength(1);
+        expect(buckets[0].rendered).toBe('tier:secret');
     });
 
     it('wholeRollupRef returns a ref that updates when one of the whole’s parts commits', async () => {
@@ -561,7 +565,7 @@ describe('VueRefStore: aggregate recompute', () => {
         store.subscribeAggregate(() => {});
         await store.publishRendered('doc', '');
         await flush();
-        expect(store.getAggregate()).toEqual(EMPTY_EZCLASSIFY_STATE);
+        expect(store.getAggregate()).toEqual(EMPTY_EZCLASSIFY_AGGREGATE);
     });
 
     it('stops calling an aggregate listener after it unsubscribes', async () => {

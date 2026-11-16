@@ -8,13 +8,17 @@
  * behavior).
  *
  * Supports grouping categories under headings via `categoryGroups` option, and
- * an optional preview bar showing the rendered marking string.
+ * an optional preview bar showing the rendered marking string. A host that
+ * lists several scopes in `data-ezclassify-scope` gets the categories of each,
+ * grouped under the scope's label when they fall in more than one.
  */
 
 import { ComponentBase, type ComponentOptions } from './component-base';
 import { createAnnouncer, announce } from './component-utils';
 import type { CategoryView, ConceptView, Suggestion } from '@ezclassify/types';
 import type { ComponentEngineSource } from './component-base-readonly';
+import { fieldSurfaces, ownedElsewhere } from './composer/composer-port';
+import { categoriesByScope, scopeLabel } from '../scopes';
 import categorySelectorCss from './category-selector.css?inline';
 
 const CATEGORY_SELECTOR_CSS: string = categorySelectorCss;
@@ -46,14 +50,16 @@ interface CategoryRow {
  * rendered as rows of toggle buttons.
  */
 export class CategorySelector extends ComponentBase {
-    protected override clearButtonMount(): HTMLElement {
-        return this.clearButtonFrame(this.bodyEl);
-    }
     private preview!: HTMLDivElement;
     private bodyEl!: HTMLDivElement;
     private announcer!: HTMLDivElement;
     /** Ordered category rows */
     private categoryRows: CategoryRow[] = [];
+    /**
+     * The rows' categories by scope label, for a host that lists several scopes
+     * whose categories fall in more than one of them; else null.
+     */
+    private scopeGroups: Record<string, string[]> | null = null;
     /** Focus tracking: [rowIndex, buttonIndex] */
     private focusRow = 0;
     private focusCol = 0;
@@ -74,11 +80,45 @@ export class CategorySelector extends ComponentBase {
     protected setup(): void {
         const _opts = this.options as CategorySelectorOptions;
 
-        // Build category rows. When a specific categoryId is bound (facet-of usage), scope
-        // to that one category only. Out-of-facet rows are never rendered and never commit.
+        // Build category rows. A bound categoryId (facet-of usage) is that one
+        // category, whose own declared scope decides where it lands. Otherwise
+        // the rows are the categories of the scope the host writes: a category
+        // of another scope has no place in this field's marking. A host that
+        // lists several scopes gets each one's categories, scope by scope in
+        // the scheme's declaration order, under the scope's label. Rows left
+        // out are never rendered and never commit.
         const boundCategoryId = _opts.categoryId;
-        this.categoryRows = this.scheme.categories
-            .filter((cat) => !boundCategoryId || cat.id === boundCategoryId)
+        const listed = _opts.scopes ?? [];
+        const byScope =
+            !boundCategoryId && listed.length > 1
+                ? categoriesByScope(
+                      this.scheme.categories,
+                      listed,
+                      this.schemeMeta,
+                  )
+                : null;
+        this.scopeGroups =
+            byScope && byScope.length > 1
+                ? Object.fromEntries(
+                      byScope.map((group) => [
+                          scopeLabel(group.scope, this.schemeMeta),
+                          group.categories.map((c) => c.id),
+                      ]),
+                  )
+                : null;
+        const { surface, defaultSurface } = fieldSurfaces(
+            this.schemeMeta,
+            this.formatId,
+            _opts.scope,
+        );
+        const categories = byScope
+            ? byScope.flatMap((group) => group.categories)
+            : this.scheme.categories.filter((cat) =>
+                  boundCategoryId
+                      ? cat.id === boundCategoryId
+                      : !ownedElsewhere(cat, surface, defaultSurface),
+              );
+        this.categoryRows = categories
             .map((category) => ({
                 category,
                 concepts: this.scheme.concepts
@@ -96,6 +136,7 @@ export class CategorySelector extends ComponentBase {
         // Body container
         this.bodyEl = document.createElement('div');
         this.bodyEl.className = 'category-selector-body';
+        this.applySuiteFrame(this.bodyEl);
         this.container.appendChild(this.bodyEl);
 
         // Announcer
@@ -145,6 +186,7 @@ export class CategorySelector extends ComponentBase {
     }
 
     destroy(): void {
+        this._destroyed = true;
         this.destroyClearButton();
         this.removeRuleErrors();
         this.container.innerHTML = '';
@@ -159,13 +201,24 @@ export class CategorySelector extends ComponentBase {
         this.bodyEl.innerHTML = '';
 
         const opts = this.options as CategorySelectorOptions;
-        const groups = opts.categoryGroups;
+        // The host's own grouping wins over the one by scope.
+        const groups =
+            opts.categoryGroups && Object.keys(opts.categoryGroups).length > 0
+                ? opts.categoryGroups
+                : this.scopeGroups;
 
         if (groups && Object.keys(groups).length > 0) {
             this.renderGrouped(groups);
         } else {
             this.renderFlat();
         }
+
+        // The suite's chrome ends the control's first row, after the first
+        // category's name (or the first group's heading).
+        const firstRow = this.bodyEl.querySelector<HTMLElement>(
+            '.category-selector-group-heading, .category-selector-head',
+        );
+        if (firstRow) this.mountSuiteChrome(firstRow);
     }
 
     /** Render all category rows without grouping */
@@ -235,13 +288,17 @@ export class CategorySelector extends ComponentBase {
         rowEl.dataset.categoryId = row.category.id;
         rowEl.dataset.rowIndex = String(rowIndex);
 
-        // Label
+        // The category's name, on its own line above its buttons. The control's
+        // first line also carries the suite's chrome at its trailing end.
+        const head = document.createElement('div');
+        head.className = 'category-selector-head';
         const label = document.createElement('div');
         label.className = 'category-selector-label';
         label.textContent = row.category.label;
         label.id = `category-label-${row.category.id}`;
         rowEl.setAttribute('aria-labelledby', label.id);
-        rowEl.appendChild(label);
+        head.appendChild(label);
+        rowEl.appendChild(head);
 
         // Options container
         const optionsEl = document.createElement('div');

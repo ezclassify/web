@@ -13,6 +13,9 @@ import type { MarkedTextArea } from './components/marked-text-area';
 import { VanillaEzClassifyStore } from './store/ezclassify-store';
 import { t } from './i18n';
 import { loadMultiScopeRegression } from '../test-fixtures/load-multi-scope-regression';
+import { asContext } from '../test-fixtures/as-context';
+import { markTone } from '../test-fixtures/field-chrome';
+import { levelState } from './store/page-rollup-harness';
 
 const FORM = `<form id="root">
     <input id="document" value="SCHOOL STAFF" data-ezclassify-controller="marking">
@@ -41,20 +44,20 @@ afterEach(() => {
  * reached so far, and a limit report that says the text was not read to the
  * end), `none` stops before any marking, and `throw` fails the call.
  */
-function stoppingEngine() {
-    const engine = loadMultiScopeRegression();
+async function stoppingEngine() {
+    const engine = await loadMultiScopeRegression();
     const control: {
         stopEarly: boolean;
         mode: 'first' | 'none' | 'throw';
     } = { stopEarly: false, mode: 'first' };
     const scan = engine.scan.bind(engine) as (
         ...args: unknown[]
-    ) => ScanOutcome;
+    ) => Promise<ScanOutcome>;
     const proxied = new Proxy(engine, {
         get(target, key, receiver) {
             if (key === 'scan')
-                return (...args: unknown[]) => {
-                    const outcome = scan(...args);
+                return async (...args: unknown[]) => {
+                    const outcome = await scan(...args);
                     if (!control.stopEarly) return outcome;
                     if (control.mode === 'throw')
                         throw new Error('scan service unavailable');
@@ -63,6 +66,7 @@ function stoppingEngine() {
                             0,
                             control.mode === 'first' ? 1 : 0,
                         ),
+                        unread: [],
                         limits: {
                             status: 'truncated',
                             regionsFound: outcome.results.length,
@@ -101,14 +105,14 @@ describe('MarkedTextArea scan that does not read the whole text', () => {
     it('shows an error, invalidates the textarea and flags its rollups until a complete scan clears them', async () => {
         document.body.innerHTML = FORM;
         const root = document.querySelector<HTMLElement>('#root')!;
-        const { engine, control } = stoppingEngine();
+        const { engine, control } = await stoppingEngine();
         const isReady = ready(root);
-        ui = new EzClassifyUI(engine, { root });
+        ui = new EzClassifyUI(asContext(engine), { root });
         await isReady;
         await settle();
         const textarea = root.querySelector<HTMLTextAreaElement>('#body')!;
         const mark = root.querySelector<HTMLElement>(
-            '.marked-textarea-hint-chrome > .ez-status-mark',
+            '.marked-textarea-wrap .ez-field-chrome__status > .ez-status-mark',
         )!;
         const message = t('mark.scanIncomplete');
 
@@ -116,7 +120,7 @@ describe('MarkedTextArea scan that does not read the whole text', () => {
         expect(mark.classList.contains('ez-status-mark--error')).toBe(false);
         expect(textarea.validity.valid).toBe(true);
         expect(ui.store.getWholeRollup('document').stale).toBeUndefined();
-        expect(ui.store.getAggregate().stale).toBeUndefined();
+        expect(levelState(ui.store).stale).toBeUndefined();
 
         control.stopEarly = true;
         await type(textarea, '(SS) First.\n(ST) Second.\n(SS) Third.');
@@ -130,7 +134,7 @@ describe('MarkedTextArea scan that does not read the whole text', () => {
             field.getSegments().flatMap((segment) => segment.errors),
         ).toEqual([]);
         expect(ui.store.getWholeRollup('document').stale).toBe(true);
-        expect(ui.store.getAggregate().stale).toBe(true);
+        expect(levelState(ui.store).stale).toBe(true);
 
         control.stopEarly = false;
         await type(textarea, '(SS) First.\n(ST) Second.');
@@ -138,15 +142,41 @@ describe('MarkedTextArea scan that does not read the whole text', () => {
         expect(mark.getAttribute('aria-label')).not.toContain(message);
         expect(textarea.validity.valid).toBe(true);
         expect(ui.store.getWholeRollup('document').stale).toBeUndefined();
-        expect(ui.store.getAggregate().stale).toBeUndefined();
+        expect(levelState(ui.store).stale).toBeUndefined();
+    });
+
+    it('colors its status mark strong while it reports the incomplete scan, muted otherwise', async () => {
+        document.body.innerHTML = FORM;
+        const root = document.querySelector<HTMLElement>('#root')!;
+        const { engine, control } = await stoppingEngine();
+        const isReady = ready(root);
+        ui = new EzClassifyUI(asContext(engine), { root });
+        await isReady;
+        await settle();
+        const textarea = root.querySelector<HTMLTextAreaElement>('#body')!;
+        const mark = root.querySelector<HTMLElement>(
+            '.marked-textarea-wrap .ez-field-chrome__status > .ez-status-mark',
+        )!;
+        expect(markTone(mark)).toBe('muted');
+
+        control.stopEarly = true;
+        await type(textarea, '(SS) First.\n(ST) Second.\n(SS) Third.');
+        expect(markTone(mark)).toBe('strong');
+        expect(mark.getAttribute('aria-label')).toContain(
+            t('mark.scanIncomplete'),
+        );
+
+        control.stopEarly = false;
+        await type(textarea, '(SS) First.\n(ST) Second.');
+        expect(markTone(mark)).toBe('muted');
     });
 
     it('clears only its own validity message when a complete scan lands', async () => {
         document.body.innerHTML = FORM;
         const root = document.querySelector<HTMLElement>('#root')!;
-        const { engine, control } = stoppingEngine();
+        const { engine, control } = await stoppingEngine();
         const isReady = ready(root);
-        ui = new EzClassifyUI(engine, { root });
+        ui = new EzClassifyUI(asContext(engine), { root });
         await isReady;
         await settle();
         const textarea = root.querySelector<HTMLTextAreaElement>('#body')!;
@@ -163,20 +193,20 @@ describe('MarkedTextArea scan that does not read the whole text', () => {
     it('leaves no flag behind in a store that outlives the runtime', async () => {
         document.body.innerHTML = FORM;
         const root = document.querySelector<HTMLElement>('#root')!;
-        const { engine, control } = stoppingEngine();
+        const { engine, control } = await stoppingEngine();
         const store = new VanillaEzClassifyStore(engine);
         const isReady = ready(root);
-        ui = new EzClassifyUI(engine, { root, store });
+        ui = new EzClassifyUI(asContext(engine), { root, store });
         await isReady;
         await settle();
         const textarea = root.querySelector<HTMLTextAreaElement>('#body')!;
         control.stopEarly = true;
         await type(textarea, '(SS) First.\n(ST) Second.\n(SS) Third.');
-        expect(store.getAggregate().stale).toBe(true);
+        expect(levelState(store).stale).toBe(true);
         ui.destroy();
         ui = undefined;
         await settle();
-        expect(store.getAggregate().stale).toBeUndefined();
+        expect(levelState(store).stale).toBeUndefined();
         expect(store.getWholeRollup('document').stale).toBeUndefined();
         store.destroy();
     });
@@ -184,9 +214,9 @@ describe('MarkedTextArea scan that does not read the whole text', () => {
     it('keeps the portions past where the scan stopped until a complete scan replaces them', async () => {
         document.body.innerHTML = PORTIONS_FORM;
         const root = document.querySelector<HTMLElement>('#root')!;
-        const { engine, control } = stoppingEngine();
+        const { engine, control } = await stoppingEngine();
         const isReady = ready(root);
-        ui = new EzClassifyUI(engine, { root });
+        ui = new EzClassifyUI(asContext(engine), { root });
         await isReady;
         await settle();
         const textarea = root.querySelector<HTMLTextAreaElement>('#body')!;
@@ -227,9 +257,9 @@ describe('MarkedTextArea scan that does not read the whole text', () => {
     it('holds a portion past the cut whose mark was rewritten, across incomplete scans', async () => {
         document.body.innerHTML = PORTIONS_FORM;
         const root = document.querySelector<HTMLElement>('#root')!;
-        const { engine, control } = stoppingEngine();
+        const { engine, control } = await stoppingEngine();
         const isReady = ready(root);
-        ui = new EzClassifyUI(engine, { root });
+        ui = new EzClassifyUI(asContext(engine), { root });
         await isReady;
         await settle();
         const textarea = root.querySelector<HTMLTextAreaElement>('#body')!;
@@ -272,12 +302,16 @@ describe('MarkedTextArea scan that does not read the whole text', () => {
         expect(rollup.stale).toBeUndefined();
     });
 
-    it('says the rollup is incomplete on its banner and its rollup field while it is stale', async () => {
+    it('says the rollup is incomplete on its banner and its page output while it is stale', async () => {
         document.body.innerHTML = PORTIONS_FORM;
         const root = document.querySelector<HTMLElement>('#root')!;
-        const { engine, control } = stoppingEngine();
+        root.insertAdjacentHTML(
+            'beforeend',
+            '<input type="hidden" id="page-marking" data-ezclassify-aggregate>',
+        );
+        const { engine, control } = await stoppingEngine();
         const isReady = ready(root);
-        ui = new EzClassifyUI(engine, { root });
+        ui = new EzClassifyUI(asContext(engine), { root });
         await isReady;
         await settle();
         const textarea = root.querySelector<HTMLTextAreaElement>('#body')!;
@@ -285,7 +319,7 @@ describe('MarkedTextArea scan that does not read the whole text', () => {
             '#parts .status-banner',
         )!;
         const rollupField =
-            root.querySelector<HTMLInputElement>('#ezclassify-rollup')!;
+            root.querySelector<HTMLInputElement>('#page-marking')!;
         const message = t('rollup.incomplete');
         expect(message).not.toBe('rollup.incomplete');
         const incomplete = () => ({
@@ -330,19 +364,14 @@ describe('MarkedTextArea scan that does not read the whole text', () => {
     it('carries an incomplete inner whole up to the scope that contains it', async () => {
         document.body.innerHTML = `<form id="outer">
     <input id="cover" value="STUDENTS" data-ezclassify-controller="marking">
-    <section id="inner"></section>
+    <input type="hidden" id="outer-rollup" data-ezclassify-aggregate>
+    <section id="inner"><input type="hidden" id="inner-rollup" data-ezclassify-aggregate></section>
 </form>`;
         const outerRoot = document.querySelector<HTMLElement>('#outer')!;
         const innerRoot = document.querySelector<HTMLElement>('#inner')!;
-        const { engine, control } = stoppingEngine();
-        const outer = new EzClassifyUI(engine, {
-            root: outerRoot,
-            rollupId: 'outer-rollup',
-        });
-        const inner = new EzClassifyUI(engine, {
-            root: innerRoot,
-            rollupId: 'inner-rollup',
-        });
+        const { engine, control } = await stoppingEngine();
+        const outer = new EzClassifyUI(asContext(engine), { root: outerRoot });
+        const inner = new EzClassifyUI(asContext(engine), { root: innerRoot });
         let innerDestroyed = false;
         try {
             await settle();
@@ -397,14 +426,14 @@ describe('MarkedTextArea scan that does not read the whole text', () => {
     it('treats a scan that fails as one that did not read the text', async () => {
         document.body.innerHTML = PORTIONS_FORM;
         const root = document.querySelector<HTMLElement>('#root')!;
-        const { engine, control } = stoppingEngine();
+        const { engine, control } = await stoppingEngine();
         const isReady = ready(root);
-        ui = new EzClassifyUI(engine, { root });
+        ui = new EzClassifyUI(asContext(engine), { root });
         await isReady;
         await settle();
         const textarea = root.querySelector<HTMLTextAreaElement>('#body')!;
         const mark = root.querySelector<HTMLElement>(
-            '.marked-textarea-hint-chrome > .ez-status-mark',
+            '.marked-textarea-wrap .ez-field-chrome__status > .ez-status-mark',
         )!;
         const failure = vi.spyOn(console, 'error').mockImplementation(() => {});
         control.stopEarly = true;
@@ -414,60 +443,22 @@ describe('MarkedTextArea scan that does not read the whole text', () => {
         failure.mockRestore();
         expect(mark.classList.contains('ez-status-mark--error')).toBe(true);
         expect(textarea.validationMessage).toBe(t('mark.scanIncomplete'));
-        expect(ui.store.getAggregate().stale).toBe(true);
+        expect(levelState(ui.store).stale).toBe(true);
         expect(ui.store.getWholeRollup('document').stale).toBe(true);
 
         control.stopEarly = false;
         await type(textarea, '(ST) First.\n(DC) Second.');
         expect(mark.classList.contains('ez-status-mark--error')).toBe(false);
         expect(textarea.validity.valid).toBe(true);
-        expect(ui.store.getAggregate().stale).toBeUndefined();
-    });
-
-    it('flags the marking bound to the first part when the scan read no part', async () => {
-        document.body.innerHTML = `<form id="root">
-    <input id="lead" type="hidden" value="STUDENTS" data-ezclassify-rendered>
-    <textarea id="body" data-ezclassify-controller="marked-textarea" data-ezclassify-first-part-binding="lead">(ST) First.
-(DC) Second.</textarea>
-    <div id="lead-banner" data-ezclassify-controller="banner" data-ezclassify-source="lead"></div>
-</form>`;
-        const root = document.querySelector<HTMLElement>('#root')!;
-        const { engine, control } = stoppingEngine();
-        const isReady = ready(root);
-        ui = new EzClassifyUI(engine, { root });
-        await isReady;
-        await settle();
-        const textarea = root.querySelector<HTMLTextAreaElement>('#body')!;
-        const banner = root.querySelector<HTMLElement>(
-            '#lead-banner .status-banner',
-        )!;
-        const flagged = () =>
-            banner.classList.contains('status-banner--incomplete');
-        expect(flagged()).toBe(false);
-
-        // A scan that reached the first part read it: nothing to flag on the
-        // marking it is bound to.
-        control.stopEarly = true;
-        control.mode = 'first';
-        await type(textarea, '(ST) First.\n(DC) Second.\n(SA) Third.');
-        expect(flagged()).toBe(false);
-
-        control.mode = 'none';
-        await type(textarea, '(ST) First.\n(DC) Second.');
-        expect(flagged()).toBe(true);
-        expect(banner.textContent).toContain(t('rollup.incomplete'));
-
-        control.stopEarly = false;
-        await type(textarea, '(ST) First.');
-        expect(flagged()).toBe(false);
+        expect(levelState(ui.store).stale).toBeUndefined();
     });
 
     it('announces the incomplete scan and says so in text, not color alone', async () => {
         document.body.innerHTML = PORTIONS_FORM;
         const root = document.querySelector<HTMLElement>('#root')!;
-        const { engine, control } = stoppingEngine();
+        const { engine, control } = await stoppingEngine();
         const isReady = ready(root);
-        ui = new EzClassifyUI(engine, { root });
+        ui = new EzClassifyUI(asContext(engine), { root });
         await isReady;
         await settle();
         const textarea = root.querySelector<HTMLTextAreaElement>('#body')!;

@@ -1,0 +1,1775 @@
+{
+    "engineVersion": "1.0.0-dev.30",
+    "openapiVersion": "1.0.0-dev.30",
+    "responses": {
+        "014ea0c4a742913953e5582ae3f93c900b473b760dd6c6efb6c594c863cdb75a": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "mf-prefixed",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "mf-prefixed",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "suggestions": [
+                        {
+                            "categoryId": "cui_designator",
+                            "conceptId": "CUI",
+                            "description": "Controlled Unclassified Information",
+                            "group": "CUI Designator",
+                            "label": "CUI",
+                            "name": "Controlled Unclassified Information",
+                            "order": 0,
+                            "selected": true,
+                            "views": { "default": "CUI" }
+                        },
+                        {
+                            "categoryId": "specified_category",
+                            "conceptId": "EXPT",
+                            "description": "Export Controlled",
+                            "group": "CUI Specified Category",
+                            "label": "EXPT",
+                            "name": "Export Controlled",
+                            "order": 4,
+                            "selected": false,
+                            "views": { "default": "EXPT" }
+                        },
+                        {
+                            "categoryId": "basic_category",
+                            "conceptId": "PROPIN",
+                            "description": "Proprietary Business Information",
+                            "group": "CUI Basic Category",
+                            "label": "PROPIN",
+                            "name": "Proprietary Business Information",
+                            "order": 2,
+                            "selected": false,
+                            "views": { "default": "PROPIN" }
+                        },
+                        {
+                            "categoryId": "basic_category",
+                            "conceptId": "EXPT",
+                            "description": "Export Controlled",
+                            "group": "CUI Basic Category",
+                            "label": "EXPT",
+                            "name": "Export Controlled",
+                            "order": 4,
+                            "selected": false,
+                            "views": { "default": "EXPT" }
+                        },
+                        {
+                            "categoryId": "dissem",
+                            "conceptId": "NOFORN",
+                            "description": "Not Releasable to Foreign Nationals",
+                            "group": "Limited Dissemination Control",
+                            "label": "NOFORN",
+                            "name": "Not Releasable to Foreign Nationals",
+                            "order": 0,
+                            "selected": true,
+                            "views": { "default": "NOFORN" }
+                        },
+                        {
+                            "categoryId": "dissem",
+                            "conceptId": "FED-ONLY",
+                            "description": "Federal Employees Only",
+                            "group": "Limited Dissemination Control",
+                            "label": "FED ONLY",
+                            "name": "Federal Employees Only",
+                            "order": 1,
+                            "selected": true,
+                            "views": { "default": "FED ONLY" }
+                        },
+                        {
+                            "categoryId": "dissem",
+                            "conceptId": "ONSITE",
+                            "description": "On-Site Access Only",
+                            "group": "Limited Dissemination Control",
+                            "label": "ON",
+                            "name": "On-Site Access Only",
+                            "order": 2,
+                            "selected": true,
+                            "views": { "default": "ON" }
+                        }
+                    ],
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "017f5665899c27ba35a2f02afb6fde6b1b12771843e6a3ad19b4bc4a33e1dbe0": {
+            "body": {
+                "defaultRenderFormat": "banner",
+                "description": "MarkingField prefixed-category fixture test fixture.",
+                "id": "mf-prefixed",
+                "name": "MarkingField prefixed-category fixture",
+                "referenceSurfaceLabel": {
+                    "plural": "Handbooks",
+                    "singular": "Handbook"
+                },
+                "roleAware": false,
+                "version": "1.0.0"
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "10fa0cbdde2b87d19ba71a96e4a9c7b19f3fb468e40e813df5b6c75796aed167": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "mf-tiered",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "mf-tiered",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "SECRET",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "sci",
+                            "conceptId": "SI",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "sci",
+                            "conceptId": "TK",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "dissem",
+                            "conceptId": "NOFORN",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            { "categoryId": "level", "conceptId": "SECRET" },
+                            { "categoryId": "sci", "conceptId": "SI" },
+                            { "categoryId": "sci", "conceptId": "TK" },
+                            { "categoryId": "dissem", "conceptId": "NOFORN" }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "SECRET//SI/TK//NOFORN",
+                    "renders": {},
+                    "suggestionsFor": {
+                        "level": {
+                            "suggestions": [
+                                {
+                                    "categoryId": "level",
+                                    "conceptId": "SECRET",
+                                    "description": "Secret",
+                                    "group": "Level",
+                                    "label": "SECRET",
+                                    "name": "Secret",
+                                    "order": 0,
+                                    "selected": false,
+                                    "views": { "default": "SECRET" }
+                                }
+                            ],
+                            "warnings": []
+                        }
+                    },
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "190ee2a14fb526826a2d4821033d3e4b953285979e0b3a410757fe46e69ae019": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "mf-prefixed",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "mf-prefixed",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "cui_designator",
+                            "conceptId": "CUI",
+                            "confidence": "certain",
+                            "source": "test"
+                        },
+                        {
+                            "categoryId": "specified_category",
+                            "conceptId": "EXPT",
+                            "confidence": "certain",
+                            "source": "test"
+                        },
+                        {
+                            "categoryId": "basic_category",
+                            "conceptId": "PROPIN",
+                            "confidence": "certain",
+                            "source": "test"
+                        },
+                        {
+                            "categoryId": "dissem",
+                            "conceptId": "FED-ONLY",
+                            "confidence": "certain",
+                            "source": "test"
+                        },
+                        {
+                            "categoryId": "dissem",
+                            "conceptId": "NOFORN",
+                            "confidence": "certain",
+                            "source": "test"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            {
+                                "categoryId": "cui_designator",
+                                "conceptId": "CUI"
+                            },
+                            {
+                                "categoryId": "specified_category",
+                                "conceptId": "EXPT"
+                            },
+                            {
+                                "categoryId": "basic_category",
+                                "conceptId": "PROPIN"
+                            },
+                            { "categoryId": "dissem", "conceptId": "FED-ONLY" },
+                            { "categoryId": "dissem", "conceptId": "NOFORN" }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "CUI//SP-EXPT/PROPIN//FED ONLY/NOFORN",
+                    "renders": {},
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "23d57e0bcdda4176ff9c24b21895af05b7e04cc5c75f4bc31af6da7aa29ae338": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "mf-prefixed",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "mf-prefixed",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [
+                        {
+                            "constraintId": "_recognition_incomplete",
+                            "message": "The input does not read as a marking."
+                        },
+                        {
+                            "constraintId": "_unmatched_token",
+                            "message": "\"UNKNOWN-MARKING\" was not recognized: it matched no known concept and will be kept visible in the rendered marking."
+                        }
+                    ],
+                    "inputWasValid": false,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "recognition": {
+                        "corrections": [],
+                        "status": "unrecognized",
+                        "unmatched": [
+                            { "end": 15, "start": 0, "text": "UNKNOWN-MARKING" }
+                        ]
+                    },
+                    "rendered": "UNKNOWN-MARKING",
+                    "renders": {},
+                    "valid": false,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "3193757285f0e781088fa76cad7b46d8cb42d85466a741b3ead258594c867ab1": {
+            "body": [
+                {
+                    "aliases": [],
+                    "categories": ["level"],
+                    "id": "SECRET",
+                    "name": "Secret",
+                    "parents": [],
+                    "position": 0,
+                    "rank": 2,
+                    "views": { "default": "SECRET" }
+                },
+                {
+                    "aliases": [],
+                    "categories": ["sci"],
+                    "id": "SI",
+                    "name": "Special Intelligence",
+                    "parents": [],
+                    "position": 0,
+                    "rank": 1,
+                    "views": { "default": "SI" }
+                },
+                {
+                    "aliases": [],
+                    "categories": ["sci"],
+                    "id": "TK",
+                    "name": "Talent Keyhole",
+                    "parents": [],
+                    "position": 1,
+                    "rank": 1,
+                    "views": { "default": "TK" }
+                },
+                {
+                    "aliases": [],
+                    "categories": ["dissem"],
+                    "id": "NOFORN",
+                    "name": "No Foreign",
+                    "parents": [],
+                    "position": 0,
+                    "rank": 1,
+                    "views": { "default": "NOFORN" }
+                }
+            ],
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "3f29e66a4f05c1b42be7f93624cbb4dd13cd473ed51d2e1386f4126a0d9a0922": {
+            "body": [
+                {
+                    "categoryOrder": ["level", "sci", "dissem"],
+                    "categorySeparators": {
+                        "dissem": "/",
+                        "level": "/",
+                        "sci": "/"
+                    },
+                    "categoryTiers": {
+                        "sci": [
+                            { "attachedBy": "-", "tier": "subcontrol" },
+                            { "attachedBy": " ", "tier": "subcompartment" }
+                        ]
+                    },
+                    "id": "banner",
+                    "mode": "inline",
+                    "separator": "//",
+                    "separatorBefore": { "dissem": "//", "sci": "//" },
+                    "surface": "marking",
+                    "view": "default"
+                }
+            ],
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "42e36f93900a4ff3c48de4c0b4f526b34bd4f5b72727850cf0b5c2709e57fcef": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "mf-prefixed",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "mf-prefixed",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "cui_designator",
+                            "conceptId": "CUI",
+                            "confidence": "certain",
+                            "source": "test"
+                        },
+                        {
+                            "categoryId": "specified_category",
+                            "conceptId": "EXPT",
+                            "confidence": "certain",
+                            "source": "test"
+                        },
+                        {
+                            "categoryId": "basic_category",
+                            "conceptId": "PROPIN",
+                            "confidence": "certain",
+                            "source": "test"
+                        },
+                        {
+                            "categoryId": "dissem",
+                            "conceptId": "FED-ONLY",
+                            "confidence": "certain",
+                            "source": "test"
+                        },
+                        {
+                            "categoryId": "dissem",
+                            "conceptId": "NOFORN",
+                            "confidence": "certain",
+                            "source": "test"
+                        }
+                    ],
+                    "errors": [],
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "CUI//SP-EXPT/PROPIN//FED ONLY/NOFORN",
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "515ac6a32c6edc07d0efa6f53008a68cebf70c2acb6f79b3f712f052dc651247": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "mf-prefixed",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "mf-prefixed",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "cui_designator",
+                            "conceptId": "CUI",
+                            "confidence": "certain",
+                            "source": "test"
+                        },
+                        {
+                            "categoryId": "dissem",
+                            "conceptId": "FED-ONLY",
+                            "confidence": "certain",
+                            "source": "test"
+                        },
+                        {
+                            "categoryId": "dissem",
+                            "conceptId": "NOFORN",
+                            "confidence": "certain",
+                            "source": "test"
+                        },
+                        {
+                            "categoryId": "dissem",
+                            "conceptId": "ONSITE",
+                            "confidence": "certain",
+                            "source": "test"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            {
+                                "categoryId": "cui_designator",
+                                "conceptId": "CUI"
+                            },
+                            { "categoryId": "dissem", "conceptId": "FED-ONLY" },
+                            { "categoryId": "dissem", "conceptId": "NOFORN" },
+                            { "categoryId": "dissem", "conceptId": "ONSITE" }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "CUI//FED ONLY/NOFORN/ON",
+                    "renders": {},
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "518251c7600901c1384a07aa33a2562ba9b8507c315f9c5a2042521a29343099": {
+            "body": [
+                {
+                    "id": "level",
+                    "label": "Level",
+                    "position": 0,
+                    "required": false,
+                    "rollup": "max",
+                    "single": true
+                },
+                {
+                    "id": "sci",
+                    "label": "SCI Control System",
+                    "position": 1,
+                    "required": false,
+                    "rollup": "union",
+                    "single": false,
+                    "sort": "position"
+                },
+                {
+                    "id": "dissem",
+                    "label": "Dissemination Control",
+                    "position": 2,
+                    "required": false,
+                    "rollup": "union",
+                    "single": false,
+                    "sort": "position"
+                }
+            ],
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "52dcbbabc3c753f5a749ee7f9b56bfbb7abb88de6226d7d0583f59c0b523311a": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "mf-prefixed",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "mf-prefixed",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "cui_designator",
+                            "conceptId": "CUI",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "specified_category",
+                            "conceptId": "EXPT",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "basic_category",
+                            "conceptId": "PROPIN",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "dissem",
+                            "conceptId": "FED-ONLY",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "dissem",
+                            "conceptId": "NOFORN",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            {
+                                "categoryId": "cui_designator",
+                                "conceptId": "CUI"
+                            },
+                            {
+                                "categoryId": "specified_category",
+                                "conceptId": "EXPT"
+                            },
+                            {
+                                "categoryId": "basic_category",
+                                "conceptId": "PROPIN"
+                            },
+                            { "categoryId": "dissem", "conceptId": "FED-ONLY" },
+                            { "categoryId": "dissem", "conceptId": "NOFORN" }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "CUI//SP-EXPT/PROPIN//FED ONLY/NOFORN",
+                    "renders": {},
+                    "suggestionsFor": {
+                        "cui_designator": {
+                            "suggestions": [
+                                {
+                                    "categoryId": "cui_designator",
+                                    "conceptId": "CUI",
+                                    "description": "Controlled Unclassified Information",
+                                    "group": "CUI Designator",
+                                    "label": "CUI",
+                                    "name": "Controlled Unclassified Information",
+                                    "order": 0,
+                                    "selected": false,
+                                    "views": { "default": "CUI" }
+                                }
+                            ],
+                            "warnings": []
+                        }
+                    },
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "60779569de400cd4b2137a8bbfd145d905f65d8084b9a67f68ae4387b651a11d": {
+            "body": [],
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "616967a9afaa9a712061308c9f652a4fa9eb12047d8d79e3444db0d9b69cc8c5": {
+            "body": [],
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "79f06df0cc9d6832b6461d68390367a8eaff3a0330736f3b0111e887a9bcb767": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "mf-tiered",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "mf-tiered",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "SECRET",
+                            "confidence": "certain",
+                            "source": "test"
+                        },
+                        {
+                            "categoryId": "sci",
+                            "conceptId": "SI",
+                            "confidence": "certain",
+                            "source": "test"
+                        },
+                        {
+                            "categoryId": "sci",
+                            "conceptId": "TK",
+                            "confidence": "certain",
+                            "source": "test"
+                        },
+                        {
+                            "categoryId": "dissem",
+                            "conceptId": "NOFORN",
+                            "confidence": "certain",
+                            "source": "test"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            { "categoryId": "level", "conceptId": "SECRET" },
+                            { "categoryId": "sci", "conceptId": "SI" },
+                            { "categoryId": "sci", "conceptId": "TK" },
+                            { "categoryId": "dissem", "conceptId": "NOFORN" }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "SECRET//SI/TK//NOFORN",
+                    "renders": {},
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "8237a3373cfc09b90a648584fafc64c7368010dbb240d3565a33620e4931d563": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "mf-tiered",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "mf-tiered",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "SECRET",
+                            "confidence": "certain",
+                            "source": "aggregate"
+                        },
+                        {
+                            "categoryId": "sci",
+                            "conceptId": "SI",
+                            "confidence": "certain",
+                            "source": "test"
+                        },
+                        {
+                            "categoryId": "sci",
+                            "conceptId": "TK",
+                            "confidence": "certain",
+                            "source": "test"
+                        },
+                        {
+                            "categoryId": "dissem",
+                            "conceptId": "NOFORN",
+                            "confidence": "certain",
+                            "source": "test"
+                        }
+                    ],
+                    "errors": [],
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "SECRET//SI/TK//NOFORN",
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "88f46d458f72bfbffa4c5c7dab2e7ee58d4a88fd8ed25ce31fdc9e90e382b03e": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "mf-prefixed",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "mf-prefixed",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "cui_designator",
+                            "conceptId": "CUI",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "specified_category",
+                            "conceptId": "EXPT",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "basic_category",
+                            "conceptId": "PROPIN",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "dissem",
+                            "conceptId": "FED-ONLY",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "dissem",
+                            "conceptId": "NOFORN",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            {
+                                "categoryId": "cui_designator",
+                                "conceptId": "CUI"
+                            },
+                            {
+                                "categoryId": "specified_category",
+                                "conceptId": "EXPT"
+                            },
+                            {
+                                "categoryId": "basic_category",
+                                "conceptId": "PROPIN"
+                            },
+                            { "categoryId": "dissem", "conceptId": "FED-ONLY" },
+                            { "categoryId": "dissem", "conceptId": "NOFORN" }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "recognition": {
+                        "corrections": [],
+                        "inputFormat": "banner",
+                        "status": "complete",
+                        "surface": "marking",
+                        "unmatched": []
+                    },
+                    "rendered": "CUI//SP-EXPT/PROPIN//FED ONLY/NOFORN",
+                    "renders": {},
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "8d9f91d3d7f61bd3d1c9306e32ae4099f2769746f2fceb84618a78a71ce804a6": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "mf-prefixed",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "mf-prefixed",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "suggestions": [
+                        {
+                            "categoryId": "cui_designator",
+                            "conceptId": "CUI",
+                            "description": "Controlled Unclassified Information",
+                            "group": "CUI Designator",
+                            "label": "CUI",
+                            "name": "Controlled Unclassified Information",
+                            "order": 0,
+                            "selected": true,
+                            "views": { "default": "CUI" }
+                        },
+                        {
+                            "categoryId": "specified_category",
+                            "conceptId": "EXPT",
+                            "description": "Export Controlled",
+                            "group": "CUI Specified Category",
+                            "label": "EXPT",
+                            "name": "Export Controlled",
+                            "order": 4,
+                            "selected": true,
+                            "views": { "default": "EXPT" }
+                        },
+                        {
+                            "categoryId": "basic_category",
+                            "conceptId": "PROPIN",
+                            "description": "Proprietary Business Information",
+                            "group": "CUI Basic Category",
+                            "label": "PROPIN",
+                            "name": "Proprietary Business Information",
+                            "order": 2,
+                            "selected": true,
+                            "views": { "default": "PROPIN" }
+                        },
+                        {
+                            "categoryId": "basic_category",
+                            "conceptId": "EXPT",
+                            "description": "Export Controlled",
+                            "group": "CUI Basic Category",
+                            "label": "EXPT",
+                            "name": "Export Controlled",
+                            "order": 4,
+                            "selected": false,
+                            "views": { "default": "EXPT" }
+                        },
+                        {
+                            "categoryId": "dissem",
+                            "conceptId": "NOFORN",
+                            "description": "Not Releasable to Foreign Nationals",
+                            "group": "Limited Dissemination Control",
+                            "label": "NOFORN",
+                            "name": "Not Releasable to Foreign Nationals",
+                            "order": 0,
+                            "selected": true,
+                            "views": { "default": "NOFORN" }
+                        },
+                        {
+                            "categoryId": "dissem",
+                            "conceptId": "FED-ONLY",
+                            "description": "Federal Employees Only",
+                            "group": "Limited Dissemination Control",
+                            "label": "FED ONLY",
+                            "name": "Federal Employees Only",
+                            "order": 1,
+                            "selected": true,
+                            "views": { "default": "FED ONLY" }
+                        },
+                        {
+                            "categoryId": "dissem",
+                            "conceptId": "ONSITE",
+                            "description": "On-Site Access Only",
+                            "group": "Limited Dissemination Control",
+                            "label": "ON",
+                            "name": "On-Site Access Only",
+                            "order": 2,
+                            "selected": false,
+                            "views": { "default": "ON" }
+                        }
+                    ],
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "965fc3f994b2b467bc24ede8a0c862d2d0309129e6fde8bdbf26cc65d75e7578": {
+            "body": {
+                "contextId": "sbx-b1bfadbec9dc98c8d0aa911df7e3173c4769471800d6289b3eb617c7c046dfc5"
+            },
+            "method": "PUT",
+            "statusCode": 200
+        },
+        "96640de31fb394b23baaddee8d8fce99affb7b1c4729e41a964af284083aac33": {
+            "body": {
+                "contextId": "sbx-ee5540155d9991984593e16819699cc865b737836e63c1fb7529e55cbaee19b9"
+            },
+            "method": "PUT",
+            "statusCode": 200
+        },
+        "9727c1277e26700f08e44d5fb24035ca2f5831b04ec897351c23a6c74891d669": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "mf-prefixed",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "mf-prefixed",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "cui_designator",
+                            "conceptId": "CUI",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "dissem",
+                            "conceptId": "FED-ONLY",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "dissem",
+                            "conceptId": "NOFORN",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "dissem",
+                            "conceptId": "ONSITE",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            {
+                                "categoryId": "cui_designator",
+                                "conceptId": "CUI"
+                            },
+                            { "categoryId": "dissem", "conceptId": "FED-ONLY" },
+                            { "categoryId": "dissem", "conceptId": "NOFORN" },
+                            { "categoryId": "dissem", "conceptId": "ONSITE" }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "CUI//FED ONLY/NOFORN/ON",
+                    "renders": {},
+                    "suggestionsFor": {
+                        "cui_designator": {
+                            "suggestions": [
+                                {
+                                    "categoryId": "cui_designator",
+                                    "conceptId": "CUI",
+                                    "description": "Controlled Unclassified Information",
+                                    "group": "CUI Designator",
+                                    "label": "CUI",
+                                    "name": "Controlled Unclassified Information",
+                                    "order": 0,
+                                    "selected": false,
+                                    "views": { "default": "CUI" }
+                                }
+                            ],
+                            "warnings": []
+                        }
+                    },
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "9c01b69adb734bdd9683325aca9c92bdcde6124d0c7ae41a2ba851a71948d0d2": {
+            "body": [
+                {
+                    "aliases": [],
+                    "categories": ["cui_designator"],
+                    "id": "CUI",
+                    "name": "Controlled Unclassified Information",
+                    "parents": [],
+                    "position": 0,
+                    "rank": 1,
+                    "views": { "default": "CUI" }
+                },
+                {
+                    "aliases": [],
+                    "categories": ["basic_category"],
+                    "id": "PROPIN",
+                    "name": "Proprietary Business Information",
+                    "parents": [],
+                    "position": 2,
+                    "rank": 1,
+                    "views": { "default": "PROPIN" }
+                },
+                {
+                    "aliases": [],
+                    "categories": ["basic_category", "specified_category"],
+                    "id": "EXPT",
+                    "name": "Export Controlled",
+                    "parents": [],
+                    "position": 4,
+                    "rank": 1,
+                    "views": { "default": "EXPT" }
+                },
+                {
+                    "aliases": [],
+                    "categories": ["dissem"],
+                    "id": "NOFORN",
+                    "name": "Not Releasable to Foreign Nationals",
+                    "parents": [],
+                    "position": 0,
+                    "rank": 1,
+                    "views": { "default": "NOFORN" }
+                },
+                {
+                    "aliases": [],
+                    "categories": ["dissem"],
+                    "id": "FED-ONLY",
+                    "name": "Federal Employees Only",
+                    "parents": [],
+                    "position": 1,
+                    "rank": 1,
+                    "views": { "default": "FED ONLY" }
+                },
+                {
+                    "aliases": [],
+                    "categories": ["dissem"],
+                    "id": "ONSITE",
+                    "name": "On-Site Access Only",
+                    "parents": [],
+                    "position": 2,
+                    "rank": 1,
+                    "views": { "default": "ON" }
+                }
+            ],
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "9fcfbe88cc4ff597d9ac81ec2ca02701953cd0213e949fb18a3e1d314ed239c0": {
+            "body": [
+                {
+                    "categoryEach": {
+                        "specified_category": { "prefix": "SP-" }
+                    },
+                    "categoryOrder": [
+                        "cui_designator",
+                        "specified_category",
+                        "basic_category",
+                        "dissem"
+                    ],
+                    "categorySeparators": {
+                        "basic_category": "/",
+                        "cui_designator": "/",
+                        "dissem": "/",
+                        "specified_category": "/"
+                    },
+                    "id": "banner",
+                    "mode": "inline",
+                    "separator": "//",
+                    "separatorBefore": {
+                        "basic_category": "/",
+                        "dissem": "//",
+                        "specified_category": "//"
+                    },
+                    "surface": "marking",
+                    "view": "default"
+                }
+            ],
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "aa3011656b8b0057a69e275b4333589a401a6cb78df3547bf020926176031b94": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "mf-prefixed",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "mf-prefixed",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "cui_designator",
+                            "conceptId": "CUI",
+                            "confidence": "certain",
+                            "source": "test"
+                        },
+                        {
+                            "categoryId": "specified_category",
+                            "conceptId": "EXPT",
+                            "confidence": "certain",
+                            "source": "test"
+                        },
+                        {
+                            "categoryId": "basic_category",
+                            "conceptId": "PROPIN",
+                            "confidence": "certain",
+                            "source": "test"
+                        },
+                        {
+                            "categoryId": "dissem",
+                            "conceptId": "FED-ONLY",
+                            "confidence": "certain",
+                            "source": "test"
+                        },
+                        {
+                            "categoryId": "dissem",
+                            "conceptId": "NOFORN",
+                            "confidence": "certain",
+                            "source": "test"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            {
+                                "categoryId": "cui_designator",
+                                "conceptId": "CUI"
+                            },
+                            {
+                                "categoryId": "specified_category",
+                                "conceptId": "EXPT"
+                            },
+                            {
+                                "categoryId": "basic_category",
+                                "conceptId": "PROPIN"
+                            },
+                            { "categoryId": "dissem", "conceptId": "FED-ONLY" },
+                            { "categoryId": "dissem", "conceptId": "NOFORN" }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "CUI//SP-EXPT/PROPIN//FED ONLY/NOFORN",
+                    "renders": {},
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "b5bb02165f955197a58a64e0499ab5158f42184204d777776c3611ac4de62134": {
+            "body": [],
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "be12ec7723419f08c8349f273f17bd33adb11b71308367191798e65ece367dcf": {
+            "body": {
+                "id": "mf-prefixed",
+                "scheme": {
+                    "id": "mf-prefixed",
+                    "resolvedVersion": "1.0.0",
+                    "version": "1.0.0"
+                },
+                "schemes": [
+                    {
+                        "id": "mf-prefixed",
+                        "roles": ["primary"],
+                        "selector": "mf-prefixed",
+                        "version": "1.0.0"
+                    }
+                ],
+                "version": "1.0.0"
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "cf4045de094432a9512e48232d7e50dff196c4f6998020324707167b2a753d18": {
+            "body": [],
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "d55590b545f403b91f51ac6cb6c775cee2ff468c3f9d1d6af1ccbe576890a7c3": {
+            "body": {
+                "defaultRenderFormat": "banner",
+                "description": "MarkingField tiered-category fixture test fixture.",
+                "id": "mf-tiered",
+                "name": "MarkingField tiered-category fixture",
+                "referenceSurfaceLabel": {
+                    "plural": "Handbooks",
+                    "singular": "Handbook"
+                },
+                "roleAware": false,
+                "version": "1.0.0"
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "deeceb088d4b8f9e0b8adc0db55d4b5cf1103e146fd3611dd590a034539141ca": {
+            "body": {
+                "id": "mf-tiered",
+                "scheme": {
+                    "id": "mf-tiered",
+                    "resolvedVersion": "1.0.0",
+                    "version": "1.0.0"
+                },
+                "schemes": [
+                    {
+                        "id": "mf-tiered",
+                        "roles": ["primary"],
+                        "selector": "mf-tiered",
+                        "version": "1.0.0"
+                    }
+                ],
+                "version": "1.0.0"
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "df8d6a84a48e23de6f5c378019c92efa8cd9acff96a6a407487bd268cb0c02ee": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "mf-tiered",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "mf-tiered",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "SECRET",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "sci",
+                            "conceptId": "SI",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "sci",
+                            "conceptId": "TK",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "dissem",
+                            "conceptId": "NOFORN",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            { "categoryId": "level", "conceptId": "SECRET" },
+                            { "categoryId": "sci", "conceptId": "SI" },
+                            { "categoryId": "sci", "conceptId": "TK" },
+                            { "categoryId": "dissem", "conceptId": "NOFORN" }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "recognition": {
+                        "corrections": [],
+                        "inputFormat": "banner",
+                        "status": "complete",
+                        "surface": "marking",
+                        "unmatched": []
+                    },
+                    "rendered": "SECRET//SI/TK//NOFORN",
+                    "renders": {},
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "e070dec6e78862435e7c23c92a6e4a93a9667377aed0b78b533966687028c314": {
+            "body": {
+                "abiVersion": "v1",
+                "engineSha": "",
+                "engineVersion": "1.0.0-dev.30",
+                "gitTag": "",
+                "openapiVersion": "1.0.0-dev.30",
+                "status": "ok"
+            },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "e848a44d135aad31158ad20f2eea8eb32bb13feabb64445bab24d32ef41d6a56": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "mf-tiered",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "mf-tiered",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "suggestions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "SECRET",
+                            "description": "Secret",
+                            "group": "Level",
+                            "label": "SECRET",
+                            "name": "Secret",
+                            "order": 0,
+                            "selected": true,
+                            "views": { "default": "SECRET" }
+                        },
+                        {
+                            "categoryId": "sci",
+                            "conceptId": "SI",
+                            "description": "Special Intelligence",
+                            "group": "SCI Control System",
+                            "label": "SI",
+                            "name": "Special Intelligence",
+                            "order": 0,
+                            "selected": true,
+                            "views": { "default": "SI" }
+                        },
+                        {
+                            "categoryId": "sci",
+                            "conceptId": "TK",
+                            "description": "Talent Keyhole",
+                            "group": "SCI Control System",
+                            "label": "TK",
+                            "name": "Talent Keyhole",
+                            "order": 1,
+                            "selected": true,
+                            "views": { "default": "TK" }
+                        },
+                        {
+                            "categoryId": "dissem",
+                            "conceptId": "NOFORN",
+                            "description": "No Foreign",
+                            "group": "Dissemination Control",
+                            "label": "NOFORN",
+                            "name": "No Foreign",
+                            "order": 0,
+                            "selected": true,
+                            "views": { "default": "NOFORN" }
+                        }
+                    ],
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "f270b700ebcd9201c7353a695083ed1d6b047bf96d2c136c82b6dfc22162e472": {
+            "body": [
+                {
+                    "id": "cui_designator",
+                    "label": "CUI Designator",
+                    "position": 0,
+                    "required": false,
+                    "rollup": "union",
+                    "single": true
+                },
+                {
+                    "id": "specified_category",
+                    "label": "CUI Specified Category",
+                    "position": 1,
+                    "required": false,
+                    "rollup": "union",
+                    "single": false,
+                    "sort": "alphabetical"
+                },
+                {
+                    "id": "basic_category",
+                    "label": "CUI Basic Category",
+                    "position": 2,
+                    "required": false,
+                    "rollup": "union",
+                    "single": false,
+                    "sort": "alphabetical"
+                },
+                {
+                    "id": "dissem",
+                    "label": "Limited Dissemination Control",
+                    "position": 3,
+                    "required": false,
+                    "rollup": "union",
+                    "single": false,
+                    "sort": "alphabetical"
+                }
+            ],
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "f98001925d2eab848402e578f5b2ecdb471bb65fcee62db798cb2fcfebab1e55": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "mf-prefixed",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "mf-prefixed",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "cui_designator",
+                            "conceptId": "CUI",
+                            "confidence": "certain",
+                            "source": "test"
+                        },
+                        {
+                            "categoryId": "dissem",
+                            "conceptId": "FED-ONLY",
+                            "confidence": "certain",
+                            "source": "test"
+                        },
+                        {
+                            "categoryId": "dissem",
+                            "conceptId": "NOFORN",
+                            "confidence": "certain",
+                            "source": "test"
+                        },
+                        {
+                            "categoryId": "dissem",
+                            "conceptId": "ONSITE",
+                            "confidence": "certain",
+                            "source": "test"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            {
+                                "categoryId": "cui_designator",
+                                "conceptId": "CUI"
+                            },
+                            { "categoryId": "dissem", "conceptId": "FED-ONLY" },
+                            { "categoryId": "dissem", "conceptId": "NOFORN" },
+                            { "categoryId": "dissem", "conceptId": "ONSITE" }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "CUI//FED ONLY/NOFORN/ON",
+                    "renders": {},
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "fb65740da7d49b3e22f139d3f9eed233b27b2990e8ba3710fb554a823871ec62": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "mf-prefixed",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "mf-prefixed",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "cui_designator",
+                            "conceptId": "CUI",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "dissem",
+                            "conceptId": "FED-ONLY",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "dissem",
+                            "conceptId": "NOFORN",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "dissem",
+                            "conceptId": "ONSITE",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            {
+                                "categoryId": "cui_designator",
+                                "conceptId": "CUI"
+                            },
+                            { "categoryId": "dissem", "conceptId": "FED-ONLY" },
+                            { "categoryId": "dissem", "conceptId": "NOFORN" },
+                            { "categoryId": "dissem", "conceptId": "ONSITE" }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "recognition": {
+                        "corrections": [],
+                        "inputFormat": "banner",
+                        "status": "complete",
+                        "surface": "marking",
+                        "unmatched": []
+                    },
+                    "rendered": "CUI//FED ONLY/NOFORN/ON",
+                    "renders": {},
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "fb9e23cb0560084e42d6b4641c89530993a8286daa5a174b7adceda9fec89948": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "mf-prefixed",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "mf-prefixed",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "cui_designator",
+                            "conceptId": "CUI",
+                            "confidence": "certain",
+                            "source": "test"
+                        },
+                        {
+                            "categoryId": "dissem",
+                            "conceptId": "FED-ONLY",
+                            "confidence": "certain",
+                            "source": "test"
+                        },
+                        {
+                            "categoryId": "dissem",
+                            "conceptId": "NOFORN",
+                            "confidence": "certain",
+                            "source": "test"
+                        },
+                        {
+                            "categoryId": "dissem",
+                            "conceptId": "ONSITE",
+                            "confidence": "certain",
+                            "source": "test"
+                        }
+                    ],
+                    "errors": [],
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "CUI//FED ONLY/NOFORN/ON",
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        }
+    }
+}

@@ -10,17 +10,13 @@
  * finds no report). A MarkedInput marks its leading mark the same way and lists
  * the report under the field.
  */
+import { asContext } from '../../test-fixtures/as-context';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { Context } from '@ezclassify/engine';
-import {
-    cedarValleyAccessYaml,
-    cedarValleyGuideYaml,
-    cedarValleySchemeYaml,
-} from '@ezclassify/example-schemes/cedar-valley';
+import { openContext } from '../../test-fixtures/context-doubles';
 import type { ProcessResult, Warning } from '@ezclassify/types';
-import * as jsYaml from 'js-yaml';
 import { EzClassifyUI } from '../ezclassify-ui';
 import { openSurface, rows, wait } from './composer/composer-harness';
+import { connectDemoContext } from '../../../../test-support/demo-runtime';
 
 /** Cedar-valley spells FINANCIAL INFORMATION as FINANCIAL in a portion. */
 const TEXT = [
@@ -53,12 +49,10 @@ afterEach(() => {
 });
 
 /** The cedar-valley engine, with a warning on every read of `C` alone. */
-function engineContext() {
-    const ctx = Context.fromComponents({
-        scheme: jsYaml.load(cedarValleySchemeYaml),
-        guides: [jsYaml.load(cedarValleyGuideYaml)],
-        access: jsYaml.load(cedarValleyAccessYaml),
-    });
+async function engineContext() {
+    const ctx = openContext(
+        await connectDemoContext({ contextId: 'cedar-valley' }),
+    );
     const scheme = ctx.scheme as unknown as {
         process: (...args: unknown[]) => unknown;
     };
@@ -79,7 +73,7 @@ async function mount(): Promise<HTMLTextAreaElement> {
         '<textarea id="body" rows="4" data-ezclassify-controller="marked-textarea"></textarea>';
     const textarea = root.querySelector<HTMLTextAreaElement>('#body')!;
     textarea.value = TEXT;
-    forms = new EzClassifyUI(engineContext(), { root });
+    forms = new EzClassifyUI(asContext(await engineContext()), { root });
     await wait(400);
     return textarea;
 }
@@ -175,7 +169,7 @@ describe('MarkedInput mark report', () => {
             '<input type="text" id="title" data-ezclassify-controller="marked-input">';
         const input = root.querySelector<HTMLTextAreaElement>('#title')!;
         input.value = value;
-        forms = new EzClassifyUI(engineContext(), { root });
+        forms = new EzClassifyUI(asContext(await engineContext()), { root });
         await wait(300);
         return input;
     }
@@ -229,7 +223,7 @@ describe('one list per field', () => {
             '<input type="text" id="title" data-ezclassify-controller="marked-input">';
         const input = root.querySelector<HTMLTextAreaElement>('#title')!;
         input.value = '(P//FINANCIAL) A title';
-        forms = new EzClassifyUI(engineContext(), { root });
+        forms = new EzClassifyUI(asContext(await engineContext()), { root });
         await wait(300);
         const list = root.querySelector<HTMLElement>('.ez-validation-errors')!;
         expect(list.hidden).toBe(false);
@@ -264,7 +258,7 @@ describe('one list per field', () => {
     it('MarkingField hides the list under the field while its composer is open', async () => {
         root.innerHTML =
             '<textarea id="mf" data-ezclassify-controller="marking">PUBLIC//FINANCIAL INFORMATION</textarea>';
-        forms = new EzClassifyUI(engineContext(), { root });
+        forms = new EzClassifyUI(asContext(await engineContext()), { root });
         await wait(300);
         const host = root.querySelector<HTMLTextAreaElement>('#mf')!;
         const list = root.querySelector<HTMLElement>('.ez-validation-errors')!;
@@ -292,7 +286,7 @@ describe('folding the broken rules in the editor list', () => {
             '<textarea id="mf" data-ezclassify-controller="marking"></textarea>';
         const host = root.querySelector<HTMLTextAreaElement>('#mf')!;
         host.value = value;
-        forms = new EzClassifyUI(engineContext(), { root });
+        forms = new EzClassifyUI(asContext(await engineContext()), { root });
         await wait(300);
         host.focus();
         host.setSelectionRange(host.value.length, host.value.length);
@@ -365,7 +359,7 @@ describe('the editor of a paragraph mark', () => {
             '<label for="body">Document paragraphs</label><textarea id="body" data-ezclassify-controller="marked-textarea"></textarea>';
         const textarea = root.querySelector<HTMLTextAreaElement>('#body')!;
         textarea.value = '(C) First paragraph.\n(I) Second paragraph.';
-        forms = new EzClassifyUI(engineContext(), { root });
+        forms = new EzClassifyUI(asContext(await engineContext()), { root });
         await wait(400);
         const start = textarea.value.indexOf('(I)') + 1;
         textarea.focus();
@@ -392,7 +386,7 @@ describe('the editor of a paragraph mark', () => {
             '<label for="body">Document paragraphs. Edit the marks in parentheses.</label><textarea id="body" aria-label="Document body" data-ezclassify-controller="marked-textarea"></textarea>';
         const textarea = root.querySelector<HTMLTextAreaElement>('#body')!;
         textarea.value = '(C) First paragraph.\n\n(I) Second paragraph.';
-        forms = new EzClassifyUI(engineContext(), { root });
+        forms = new EzClassifyUI(asContext(await engineContext()), { root });
         await wait(400);
         const start = textarea.value.indexOf('(I)') + 1;
         textarea.focus();

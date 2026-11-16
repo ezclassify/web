@@ -2,29 +2,19 @@
   "engineVersion": "1.0.0-dev.30",
   "openapiVersion": "1.0.0-dev.30",
   "responses": {
-    "2574cd5f77b13beff827f517bed8e71218ff82e3778135009b509a1bb7859049": {
-      "argsSummary": "[\"no markings in this prose sentence\"]",
+    "244a54c0b64a900bc60aaf34c8c9eee069cfeeca9a1b868807abed6cb882456b": {
+      "argsSummary": "[\"(LOW) First paragraph.\\n(QZXJV) Second paragraph.\\nThird paragraph cites (N...",
       "method": "scan",
       "response": {
-        "count": 0,
-        "firstMarking": null,
-        "firstRendered": null,
-        "firstStart": null,
-        "results": []
-      }
-    },
-    "705846dcf9ec007014f975c8e8018bec36d754daf2669d247464e0125dc6daa3": {
-      "argsSummary": "[\"LOW\\nHIGH\"]",
-      "method": "scan",
-      "response": {
-        "count": 2,
-        "firstMarking": "LOW",
+        "count": 1,
+        "firstMarking": "(LOW)",
         "firstRendered": "LOW",
         "firstStart": 0,
         "results": [
           {
-            "end": 3,
-            "marking": "LOW",
+            "end": 5,
+            "inner": "LOW",
+            "marking": "(LOW)",
             "result": {
               "appliedFixes": [],
               "assertions": [
@@ -60,20 +50,54 @@
               "valid": true,
               "warnings": []
             },
-            "role": "whole",
+            "role": "part",
             "start": 0,
             "type": "default",
-            "wrapped": false
+            "wrapped": true
+          }
+        ],
+        "unread": [
+          {
+            "end": 30,
+            "inner": "QZXJV",
+            "leading": true,
+            "start": 23,
+            "text": "(QZXJV)"
           },
           {
-            "end": 8,
-            "marking": "HIGH",
+            "end": 77,
+            "inner": "NOPE",
+            "leading": false,
+            "start": 71,
+            "text": "(NOPE)"
+          }
+        ]
+      }
+    },
+    "4707351859d89c985d03ecfbac2916bd6704d9d4cf99ba66f6f816cb31a1a06a": {
+      "argsSummary": "[\"HIGH/CTRL-A\"]",
+      "method": "scan",
+      "response": {
+        "count": 1,
+        "firstMarking": "HIGH/CTRL-A",
+        "firstRendered": "HIGH/CTRL-A",
+        "firstStart": 0,
+        "results": [
+          {
+            "end": 11,
+            "marking": "HIGH/CTRL-A",
             "result": {
               "appliedFixes": [],
               "assertions": [
                 {
                   "categoryId": "level",
                   "conceptId": "HIGH",
+                  "confidence": "certain",
+                  "source": "parse"
+                },
+                {
+                  "categoryId": "controls",
+                  "conceptId": "CTRL-A",
                   "confidence": "certain",
                   "source": "parse"
                 }
@@ -85,6 +109,10 @@
                   {
                     "categoryId": "level",
                     "conceptId": "HIGH"
+                  },
+                  {
+                    "categoryId": "controls",
+                    "conceptId": "CTRL-A"
                   }
                 ],
                 "omitted": [],
@@ -99,19 +127,44 @@
                 "surface": "banner",
                 "unmatched": []
               },
-              "rendered": "HIGH",
+              "rendered": "HIGH/CTRL-A",
               "valid": true,
               "warnings": []
             },
             "role": "whole",
-            "start": 4,
+            "start": 0,
             "type": "default",
             "wrapped": false
           }
-        ]
+        ],
+        "unread": []
       }
     },
-    "718ae00f2dcc67379c4d1d8a166e353aefcb4ff5935c1dbcbac90708fc03e022": {
+    "7168f22617b9e83255c255144f6ba350b4ee43f6ca1a5089848d7f59e451ee3a": {
+      "argsSummary": "[\"\"]",
+      "method": "scan",
+      "response": {
+        "count": 0,
+        "firstMarking": null,
+        "firstRendered": null,
+        "firstStart": null,
+        "results": [],
+        "unread": []
+      }
+    },
+    "8d0cc3ccfc9583bfe23e354e1ddda4dbdccd4b3961e0494ef5241d4cb10fe4ab": {
+      "argsSummary": "[\"no markings in this prose sentence\"]",
+      "method": "scan",
+      "response": {
+        "count": 0,
+        "firstMarking": null,
+        "firstRendered": null,
+        "firstStart": null,
+        "results": [],
+        "unread": []
+      }
+    },
+    "981c8c0518af9dad22b437adbdcf2e8ed05f2db837196d25b52f5b66a274c436": {
       "argsSummary": "[\"HIGH\"]",
       "method": "scan",
       "response": {
@@ -163,10 +216,112 @@
             "type": "default",
             "wrapped": false
           }
-        ]
+        ],
+        "unread": []
       }
     },
-    "9b273227e13b296d3bfb3bf559550cfa44d25a45ba2dd6a31e58f2c325abd817": {
+    "d4b27956645d3daa6852794fd52ceaaacbeb4c3ea44ab4ef72ebb87e43d9627e": {
+      "argsSummary": "[\"(LOW) First paragraph.\\n(HIGH) Second paragraph.\"]",
+      "method": "scan",
+      "response": {
+        "count": 2,
+        "firstMarking": "(LOW)",
+        "firstRendered": "LOW",
+        "firstStart": 0,
+        "results": [
+          {
+            "end": 5,
+            "inner": "LOW",
+            "marking": "(LOW)",
+            "result": {
+              "appliedFixes": [],
+              "assertions": [
+                {
+                  "categoryId": "level",
+                  "conceptId": "LOW",
+                  "confidence": "certain",
+                  "source": "parse"
+                }
+              ],
+              "assessment": {
+                "collapsed": [],
+                "conflicts": [],
+                "emitted": [
+                  {
+                    "categoryId": "level",
+                    "conceptId": "LOW"
+                  }
+                ],
+                "omitted": [],
+                "unrepresentable": []
+              },
+              "errors": [],
+              "inputWasValid": true,
+              "notices": [],
+              "recognition": {
+                "inputFormat": "default",
+                "status": "complete",
+                "surface": "banner",
+                "unmatched": []
+              },
+              "rendered": "LOW",
+              "valid": true,
+              "warnings": []
+            },
+            "role": "part",
+            "start": 0,
+            "type": "default",
+            "wrapped": true
+          },
+          {
+            "end": 29,
+            "inner": "HIGH",
+            "marking": "(HIGH)",
+            "result": {
+              "appliedFixes": [],
+              "assertions": [
+                {
+                  "categoryId": "level",
+                  "conceptId": "HIGH",
+                  "confidence": "certain",
+                  "source": "parse"
+                }
+              ],
+              "assessment": {
+                "collapsed": [],
+                "conflicts": [],
+                "emitted": [
+                  {
+                    "categoryId": "level",
+                    "conceptId": "HIGH"
+                  }
+                ],
+                "omitted": [],
+                "unrepresentable": []
+              },
+              "errors": [],
+              "inputWasValid": true,
+              "notices": [],
+              "recognition": {
+                "inputFormat": "default",
+                "status": "complete",
+                "surface": "banner",
+                "unmatched": []
+              },
+              "rendered": "HIGH",
+              "valid": true,
+              "warnings": []
+            },
+            "role": "part",
+            "start": 23,
+            "type": "default",
+            "wrapped": true
+          }
+        ],
+        "unread": []
+      }
+    },
+    "e0248a66fb588c20e1442b455337eb8107e2bb3336aff4d65785f57a09bf10c2": {
       "argsSummary": "[\"HEADER\\nHIGH\\nsome text\\nLOW\"]",
       "method": "scan",
       "response": {
@@ -261,33 +416,28 @@
             "type": "default",
             "wrapped": false
           }
-        ]
+        ],
+        "unread": []
       }
     },
-    "b3830cac1d635072f306025eb747b24b9d2435e9e497763f1fe4cb5620f47f4a": {
-      "argsSummary": "[\"HIGH/CTRL-A\"]",
+    "f02e274d125b4878cf7b2722458cab54e4492d6405411e33aa10740528302573": {
+      "argsSummary": "[\"LOW\\nHIGH\"]",
       "method": "scan",
       "response": {
-        "count": 1,
-        "firstMarking": "HIGH/CTRL-A",
-        "firstRendered": "HIGH/CTRL-A",
+        "count": 2,
+        "firstMarking": "LOW",
+        "firstRendered": "LOW",
         "firstStart": 0,
         "results": [
           {
-            "end": 11,
-            "marking": "HIGH/CTRL-A",
+            "end": 3,
+            "marking": "LOW",
             "result": {
               "appliedFixes": [],
               "assertions": [
                 {
                   "categoryId": "level",
-                  "conceptId": "HIGH",
-                  "confidence": "certain",
-                  "source": "parse"
-                },
-                {
-                  "categoryId": "controls",
-                  "conceptId": "CTRL-A",
+                  "conceptId": "LOW",
                   "confidence": "certain",
                   "source": "parse"
                 }
@@ -298,11 +448,7 @@
                 "emitted": [
                   {
                     "categoryId": "level",
-                    "conceptId": "HIGH"
-                  },
-                  {
-                    "categoryId": "controls",
-                    "conceptId": "CTRL-A"
+                    "conceptId": "LOW"
                   }
                 ],
                 "omitted": [],
@@ -317,7 +463,7 @@
                 "surface": "banner",
                 "unmatched": []
               },
-              "rendered": "HIGH/CTRL-A",
+              "rendered": "LOW",
               "valid": true,
               "warnings": []
             },
@@ -325,19 +471,52 @@
             "start": 0,
             "type": "default",
             "wrapped": false
+          },
+          {
+            "end": 8,
+            "marking": "HIGH",
+            "result": {
+              "appliedFixes": [],
+              "assertions": [
+                {
+                  "categoryId": "level",
+                  "conceptId": "HIGH",
+                  "confidence": "certain",
+                  "source": "parse"
+                }
+              ],
+              "assessment": {
+                "collapsed": [],
+                "conflicts": [],
+                "emitted": [
+                  {
+                    "categoryId": "level",
+                    "conceptId": "HIGH"
+                  }
+                ],
+                "omitted": [],
+                "unrepresentable": []
+              },
+              "errors": [],
+              "inputWasValid": true,
+              "notices": [],
+              "recognition": {
+                "inputFormat": "default",
+                "status": "complete",
+                "surface": "banner",
+                "unmatched": []
+              },
+              "rendered": "HIGH",
+              "valid": true,
+              "warnings": []
+            },
+            "role": "whole",
+            "start": 4,
+            "type": "default",
+            "wrapped": false
           }
-        ]
-      }
-    },
-    "cd77d9d302ba91ac24be2793692885b7712fc815131aec7dd1e945af2ccd144a": {
-      "argsSummary": "[\"\"]",
-      "method": "scan",
-      "response": {
-        "count": 0,
-        "firstMarking": null,
-        "firstRendered": null,
-        "firstStart": null,
-        "results": []
+        ],
+        "unread": []
       }
     }
   },

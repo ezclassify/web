@@ -3,26 +3,26 @@ import { mergeProvisionOptions } from './provision-options';
 
 interface Options {
     format?: string;
-    rollupId?: string;
+    tooltipConceptProperty?: string;
 }
 
 describe('mergeProvisionOptions', () => {
     it('applies the overrides over the defaults, key by key', () => {
         expect(
             mergeProvisionOptions<Options>(
-                { format: 'app', rollupId: 'app-rollup' },
+                { format: 'app', tooltipConceptProperty: 'app-property' },
                 { format: 'scope' },
             ),
-        ).toEqual({ format: 'scope', rollupId: 'app-rollup' });
+        ).toEqual({ format: 'scope', tooltipConceptProperty: 'app-property' });
     });
 
     it('keeps a default whose override key is explicitly undefined', () => {
         expect(
             mergeProvisionOptions<Options>(
                 { format: 'app' },
-                { format: undefined, rollupId: 'scope-rollup' },
+                { format: undefined, tooltipConceptProperty: 'scope-property' },
             ),
-        ).toEqual({ format: 'app', rollupId: 'scope-rollup' });
+        ).toEqual({ format: 'app', tooltipConceptProperty: 'scope-property' });
     });
 
     it('answers with a fresh bag for every combination of absent inputs', () => {

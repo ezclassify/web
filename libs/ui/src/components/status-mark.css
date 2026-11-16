@@ -1,9 +1,12 @@
 /* ── Enhancement status mark ─────────────────────────── */
-/* One brand-logo mark per enhanced field: 3 bars + a sparkle. Bars stay muted
-   in every state; the sparkle carries the state. Quiet: whole glyph muted, no
-   fixes applied. Unseen: sparkle turns accent, a corner dot appears, and the
-   sparkle pulses on an interval. Seen: dot clears, sparkle stays accent, no
-   pulse: the tooltip already explained what changed. */
+/* One brand-logo mark per enhanced field: 3 bars + a sparkle, always drawn in
+   one color like the logo itself; the sparkle is never colored on its own.
+   Quiet: the field has nothing to say, and the whole glyph sits muted. Any
+   other state means the field has a message for the user, and the whole mark
+   turns strong: the theme's text color in a light theme, gold in a dark one
+   (--ez-status-mark-strong-color, styles.css). Unseen: the number of changes
+   stands beside the mark. Seen: the number goes; the list already explained
+   what changed. Error: the whole mark takes the error color. */
 .ez-status-mark {
     position: absolute;
     width: 1.25rem;
@@ -30,115 +33,109 @@
     transform-origin: center;
 }
 .ez-status-mark--unseen,
-.ez-status-mark--seen {
+.ez-status-mark--seen,
+.ez-status-mark--error {
+    color: var(--ez-status-mark-strong-color, currentColor);
     opacity: 1;
     cursor: help;
 }
-.ez-status-mark--unseen .ez-status-mark__sparkle,
-.ez-status-mark--seen .ez-status-mark__sparkle {
-    fill: var(--ez-color-primary, #fdb827);
-}
-/* Error: the field could not check all of its text. The sparkle takes the
+/* Error: the field could not check all of its text. The whole mark takes the
    error color; the popover and the label say why. */
 .ez-status-mark--error {
-    opacity: 1;
-    cursor: help;
-}
-.ez-status-mark--error .ez-status-mark__sparkle {
-    fill: var(--ez-color-error, #b91c1c);
+    color: var(--ez-color-error, #b91c1c);
 }
 .ez-status-mark:focus-visible {
     outline: 2px solid var(--ez-color-primary, #fdb827);
     outline-offset: 2px;
 }
-/* An input places the mark at the right edge, centered on the field's first
-   line: the only self-positioning shape; every other field folds the mark
-   into its own chrome row or drawer. */
+/* A plain enhanced input places the mark at the trailing edge, centered on
+   the field's first line: the only self-positioning shape. The field
+   components mount theirs in their inline chrome (field-chrome.css). The wrap
+   is the input's box, so half its height is the input's middle; a row that
+   stretches the wrap taller than the input keeps the mark within the first
+   line's 1rem instead. */
 .ez-status-mark--input {
-    top: 1rem;
-    right: 0.375rem;
+    top: min(50%, 1rem);
+    inset-inline-end: 0.375rem;
     transform: translateY(-50%);
 }
+/* The wrap the behavior pass puts around a plain input, and the box the mark
+   positions against. It has to be the input's box in whatever layout holds
+   it, or the mark lands past the input's end. A column flexbox does that both
+   ways: inline, it is as wide as the input; as a grid or flex item that the
+   host's layout stretches, an input with no width of its own stretches with
+   it, as the bare input would have, and a percentage width resolves against
+   the room the host gave. The input keeps its own height at the top of a
+   taller row, where the mark is centered on its first line. */
+.ez-plain-field-wrap {
+    position: relative;
+    display: inline-flex;
+    flex-direction: column;
+    align-items: stretch;
+    vertical-align: baseline;
+}
+/* The plain input's text stops short of the mark: its width (1.25rem) and
+   inset (0.375rem), and a little air. Logical, like the mark's own inset, so a
+   right-to-left field keeps the room on the side the mark sits. !important
+   because the room has to hold over any padding the host gives that edge,
+   inline or in its own sheet; the other three edges stay the host's. */
+.ez-plain-field-wrap > input {
+    padding-inline-end: 1.75rem !important;
+}
 /* 'chrome': no self-positioning. The mark sits in normal flow as a flex child
-   of a caller-owned container (a hint-row chrome slot or the ★ drawer), which
-   provides layout; this only needs to sit above the field's own invisible
+   of the field's inline chrome, which provides layout; this only needs to
+   sit above the field's own invisible
    capture-layer input (same z-index the 'input' shape already uses) and stay
    a positioned element so that z-index takes effect. */
 .ez-status-mark--chrome {
     position: relative;
     top: auto;
-    right: auto;
+    inset-inline-end: auto;
     transform: none;
 }
 
-/* Corner notification dot: unseen only. Sits bottom-left, diagonally opposite
-   the sparkle (translated to the glyph's top-right in buildMarkSvg): the dot
-   is a second, independent signal, and placing it on top of the sparkle would
-   paint over the one element that actually carries the accent color for this
-   state. A box-shadow ring stands the dot off the background it sits on
-   without growing its layout box; box-sizing keeps that ring from resizing
-   the box in the forced-colors override below, which uses a real border
-   instead (forced-colors strips box-shadow entirely). */
-.ez-status-mark__dot {
+/* The number of changes not yet reviewed, on the leading side of the icon:
+   the mark grows to hold it, so the chrome's reserve follows
+   (field-chrome.ts). Gone once the list has been shown. The mark sits at the
+   trailing end of its row, so the icon keeps its place when the count goes. */
+.ez-status-mark__count:empty {
     display: none;
-    position: absolute;
-    bottom: -0.1875rem;
-    left: -0.1875rem;
-    width: 0.5625rem;
-    height: 0.5625rem;
-    box-sizing: border-box;
-    border-radius: 50%;
-    background: var(--ez-color-primary, #fdb827);
-    box-shadow: 0 0 0 0.125rem
-        var(--ez-status-mark-ring, var(--ez-color-background, #fff));
-    pointer-events: none;
 }
-.ez-status-mark--unseen .ez-status-mark__dot {
-    display: block;
+.ez-status-mark__count {
+    margin-inline-end: 0.125rem;
+    font-family: var(--ez-font-family, inherit);
+    font-size: 0.75rem;
+    font-weight: 700;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
 }
-
-/* One short twinkle burst near the start of each cycle, then stillness.
-   A nudge, not a distraction. */
-@keyframes ez-status-mark-pulse {
-    0%,
-    12.5%,
-    100% {
-        transform: scale(1) rotate(0deg);
-    }
-    6% {
-        transform: scale(1.6) rotate(10deg);
-    }
+.ez-status-mark--unseen {
+    width: auto;
+    min-width: 1.25rem;
 }
-.ez-status-mark--pulse .ez-status-mark__sparkle {
-    animation: ez-status-mark-pulse 4s ease-in-out infinite;
-}
-@media (prefers-reduced-motion: reduce) {
-    .ez-status-mark--pulse .ez-status-mark__sparkle {
-        animation: none;
-    }
+.ez-status-mark--unseen svg {
+    width: 1.25rem;
+    height: 1.25rem;
+    flex: 0 0 auto;
 }
 
 @media (forced-colors: active) {
     .ez-status-mark {
         color: ButtonText;
     }
-    .ez-status-mark--unseen .ez-status-mark__sparkle,
-    .ez-status-mark--seen .ez-status-mark__sparkle {
-        fill: Highlight;
+    .ez-status-mark--unseen,
+    .ez-status-mark--seen {
+        color: Highlight;
     }
-    .ez-status-mark--error .ez-status-mark__sparkle {
-        fill: Mark;
-    }
-    .ez-status-mark__dot {
-        background: Highlight;
-        border: 0.125rem solid Canvas;
+    .ez-status-mark--error {
+        color: Mark;
     }
 }
 
 /* A finger needs a 44px target. The drawn mark stays 20px; an invisible
-   overlay takes the taps around it. Its chrome row spaces the mark from its
-   neighbor enough that the two overlays never overlap (see
-   field-chrome-drawer.css and the marked fields' chrome rows). */
+   overlay takes the taps around it. The field's chrome row spaces the mark
+   from its neighbor enough that the two overlays never overlap (see
+   field-chrome.css). */
 @media (pointer: coarse) {
     .ez-status-mark::after {
         content: '';

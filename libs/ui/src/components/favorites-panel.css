@@ -1,8 +1,7 @@
 /* ── Favorites button ───────────────────────────────────── */
-/* Sits immediately left of the status mark (see status-mark.css for the
-   shape/positioning contract this mirrors: input centers on the field's
-   first line, textarea pins top right). Outline star at rest; filled/accent
-   when the field's current marking matches a loaded favorite. */
+/* Sits immediately after the status mark in the field's inline chrome
+   (field-chrome.css). Outline star at rest; filled/accent when the field's
+   current marking matches a loaded favorite. */
 .ez-favorites-button {
     position: absolute;
     width: 1.25rem;
@@ -35,10 +34,8 @@
     color: var(--ez-color-primary, #fdb827);
     opacity: 1;
 }
-/* No self-positioning: the button sits in normal flow as a flex child of a
-   caller-owned chrome container (a hint-row slot or the ★ drawer), which sits
-   OUTSIDE the field's own content box, so there is no overlap with field text
-   to guard against. */
+/* No self-positioning: the button sits in normal flow as a flex child of the
+   field's inline chrome, which the field's text layers already keep clear of. */
 .ez-favorites-button--chrome {
     position: relative;
     top: auto;

@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { asContext } from '../../test-fixtures/as-context';
 import { EzClassifyText } from './ezclassify-text';
 import { EzClassifyUI } from '../ezclassify-ui';
 import type {
@@ -7,8 +8,9 @@ import type {
     Assertion,
     ValidationError,
 } from '@ezclassify/types';
-import { Context } from '@ezclassify/engine';
+import { schemeOnlyContext } from '../../test-fixtures/context-doubles';
 import { mockRenderFormats } from '../render-format-layout-mock';
+import { levelState } from '../store/page-rollup-harness';
 
 /**
  * Minimal in-memory engine adapter for unit tests. Supports the multi-scheme
@@ -154,7 +156,7 @@ function createMockEngine(): SchemeEngineAdapter {
     } as unknown as SchemeEngineAdapter;
 }
 
-const toCtx = (eng: unknown) => Context.fromSchemeEngine(eng as never);
+const toCtx = (eng: unknown) => schemeOnlyContext(eng as never);
 
 async function flush(): Promise<void> {
     for (let i = 0; i < 6; i++) await Promise.resolve();
@@ -179,6 +181,104 @@ describe('EzClassifyText (standalone)', () => {
             /* not yet initialized */
         }
         host.remove();
+    });
+
+    it('reads a host that names one scope as that scope, in its output', async () => {
+        const meta = engine.getSchemeMeta();
+        engine.getSchemeMeta = () => ({
+            ...meta,
+            defaultScope: 'line',
+            scopes: [
+                { id: 'line', label: 'Line' },
+                { id: 'block', label: 'Block' },
+            ],
+            formats: [
+                ...(meta.formats ?? []),
+                {
+                    id: 'block/full',
+                    surface: 'block',
+                    mode: 'block',
+                    categoryOrder: ['cat1'],
+                    defaultFor: ['whole', 'part'],
+                },
+            ],
+        });
+        host.textContent = 'c1';
+
+        await field.init(host as HTMLDivElement, toCtx(engine), {
+            scope: 'block',
+            scopes: ['block'],
+        });
+
+        expect(engine.validate).toHaveBeenCalledWith('c1', {
+            outputFormat: 'block/full',
+            surface: 'block',
+        });
+    });
+
+    describe('a marking the engine cannot write', () => {
+        const MARKER = '[unrepresentable:ambiguous-representation]';
+        const refused = {
+            rendered: MARKER,
+            assessment: {
+                emitted: [],
+                omitted: [],
+                collapsed: [],
+                conflicts: [],
+                unrepresentable: [
+                    {
+                        output: 'default',
+                        reason: 'ambiguous-representation',
+                    },
+                ],
+            },
+        };
+
+        it('keeps the page text when it reads one, and says why', async () => {
+            const read = engine.validate as unknown as (
+                input: string,
+            ) => Record<string, unknown>;
+            engine.validate = ((input: string) => ({
+                ...read(input),
+                ...refused,
+            })) as unknown as SchemeEngineAdapter['validate'];
+            host.textContent = 'c1';
+
+            await field.init(host as HTMLDivElement, toCtx(engine));
+
+            expect(host.textContent).toBe('c1');
+            expect(field.getRendered()).toBe('c1');
+            expect(host.getAttribute('aria-invalid')).toBe('true');
+        });
+
+        it.each([
+            ['an engine in hand', () => refused],
+            ['a remote engine', () => Promise.resolve(refused)],
+        ])(
+            'keeps its text and goes invalid on new facts, with %s',
+            async (_what, render) => {
+                host.textContent = 'c1';
+                await field.init(host as HTMLDivElement, toCtx(engine));
+                const write = engine.render;
+                engine.render = vi.fn(
+                    render,
+                ) as unknown as SchemeEngineAdapter['render'];
+
+                field.setAssertions(field.getAssertions());
+                await Promise.resolve();
+                await Promise.resolve();
+
+                expect(field.getRendered()).toBe('c1');
+                expect(host.getAttribute('aria-invalid')).toBe('true');
+
+                engine.render = write;
+                field.setAssertions(field.getAssertions());
+                await Promise.resolve();
+                await Promise.resolve();
+
+                expect(host.getAttribute('aria-invalid')).toBeNull();
+            },
+        );
     });
 
     it('sets aria-live="polite" on the host on init', async () => {
@@ -477,10 +577,10 @@ describe('EzClassifyText (declarative via EzClassifyUI)', () => {
 
     it('declarative mount publishes to the page aggregate store', async () => {
         root.innerHTML = `<code data-ezclassify-controller="text">c1, c2</code>`;
-        forms = new EzClassifyUI(createMockEngine(), { root });
+        forms = new EzClassifyUI(asContext(createMockEngine()), { root });
         await flush();
 
-        const agg = forms.store.getAggregate();
+        const agg = levelState(forms.store);
         expect(agg.assertions.length).toBeGreaterThanOrEqual(1);
         // The text card's c1+c2 must surface in the aggregate.
         expect(agg.assertions.some((a) => a.conceptId === 'c1')).toBe(true);
@@ -489,7 +589,7 @@ describe('EzClassifyText (declarative via EzClassifyUI)', () => {
 
     it('declarative mount auto-assigns a synthetic id when host has none', async () => {
         root.innerHTML = `<code data-ezclassify-controller="text">c1</code>`;
-        forms = new EzClassifyUI(createMockEngine(), { root });
+        forms = new EzClassifyUI(asContext(createMockEngine()), { root });
         await flush();
 
         const el = root.querySelector('code')!;
@@ -498,7 +598,7 @@ describe('EzClassifyText (declarative via EzClassifyUI)', () => {
 
     it('declarative mount honors a consumer-provided id', async () => {
         root.innerHTML = `<code id="my-marking" data-ezclassify-controller="text">c1</code>`;
-        forms = new EzClassifyUI(createMockEngine(), { root });
+        forms = new EzClassifyUI(asContext(createMockEngine()), { root });
         await flush();
 
         const el = root.querySelector('#my-marking')!;
@@ -512,7 +612,7 @@ describe('EzClassifyText (declarative via EzClassifyUI)', () => {
       <code data-ezclassify-controller="text">c1</code>
       <code data-ezclassify-controller="text">c2</code>
     `;
-        forms = new EzClassifyUI(createMockEngine(), { root });
+        forms = new EzClassifyUI(asContext(createMockEngine()), { root });
         await flush();
 
         const codes = root.querySelectorAll<HTMLElement>('code');
@@ -520,14 +620,14 @@ describe('EzClassifyText (declarative via EzClassifyUI)', () => {
         const ids = Array.from(codes).map((c) => c.id);
         expect(new Set(ids).size).toBe(2);
 
-        const agg = forms.store.getAggregate();
+        const agg = levelState(forms.store);
         expect(agg.assertions.some((a) => a.conceptId === 'c1')).toBe(true);
         expect(agg.assertions.some((a) => a.conceptId === 'c2')).toBe(true);
     });
 
     it('declarative invalid marking applies aria-invalid + ez-text--invalid', async () => {
         root.innerHTML = `<code data-ezclassify-controller="text">bogus-concept</code>`;
-        forms = new EzClassifyUI(createMockEngine(), { root });
+        forms = new EzClassifyUI(asContext(createMockEngine()), { root });
         await flush();
 
         const el = root.querySelector<HTMLElement>('code')!;
@@ -538,7 +638,7 @@ describe('EzClassifyText (declarative via EzClassifyUI)', () => {
     it('declarative mount keeps the host visible (no sibling mount, no display:none)', async () => {
         // Wrap so the rollup hidden input EzClassifyUI appends to root isn't mistaken for a mount sibling.
         root.innerHTML = `<div id="content"><code data-ezclassify-controller="text">c1</code></div>`;
-        forms = new EzClassifyUI(createMockEngine(), { root });
+        forms = new EzClassifyUI(asContext(createMockEngine()), { root });
         await flush();
 
         const el = root.querySelector<HTMLElement>('code')!;
@@ -547,21 +647,58 @@ describe('EzClassifyText (declarative via EzClassifyUI)', () => {
         expect(el.nextElementSibling).toBeNull();
     });
 
-    it('respects data-ezclassify-text-format attribute', async () => {
+    it('reads its marking in the format data-ezclassify-format names', async () => {
         const engine = createMockEngine();
-        root.innerHTML = `<code data-ezclassify-controller="text" data-ezclassify-text-format="default">c1</code>`;
-        forms = new EzClassifyUI(engine, { root });
+        root.innerHTML = `<code data-ezclassify-controller="text" data-ezclassify-format="short">c1</code>`;
+        forms = new EzClassifyUI(asContext(engine), { root });
         await flush();
 
         expect(engine.validate).toHaveBeenCalledWith(
             'c1',
-            expect.objectContaining({ outputFormat: 'default' }),
+            expect.objectContaining({ outputFormat: 'short' }),
         );
+    });
+
+    describe('role', () => {
+        async function readContext(markup: string): Promise<unknown> {
+            const engine = createMockEngine();
+            root.innerHTML = markup;
+            forms = new EzClassifyUI(asContext(engine), { root });
+            await flush();
+            const calls = vi.mocked(engine.validate).mock.calls;
+            const options = calls[calls.length - 1]?.[1] as
+                { context?: unknown } | undefined;
+            return options?.context;
+        }
+
+        it('reads a host marked role="part" as a part', async () => {
+            expect(
+                await readContext(
+                    `<code data-ezclassify-controller="text" data-ezclassify-role="part">c1</code>`,
+                ),
+            ).toEqual({ role: 'part' });
+        });
+
+        it('reads role="whole" as no role at all: only part is a role a host can declare', async () => {
+            expect(
+                await readContext(
+                    `<code data-ezclassify-controller="text" data-ezclassify-role="whole">c1</code>`,
+                ),
+            ).toBeUndefined();
+        });
+
+        it('reads a host naming its whole with part-of as a part of that whole', async () => {
+            expect(
+                await readContext(
+                    `<input id="doc" data-ezclassify-controller="marking" value="c1,c2"><code data-ezclassify-controller="text" data-ezclassify-part-of="doc">c1</code>`,
+                ),
+            ).toMatchObject({ role: 'part' });
+        });
     });
 
     it('destroy via EzClassifyUI clears the contribution from the store', async () => {
         root.innerHTML = `<code id="m1" data-ezclassify-controller="text">c1</code>`;
-        forms = new EzClassifyUI(createMockEngine(), { root });
+        forms = new EzClassifyUI(asContext(createMockEngine()), { root });
         await flush();
 
         expect(forms.store.get('m1').assertions.length).toBeGreaterThan(0);
@@ -577,7 +714,7 @@ describe('EzClassifyText (declarative via EzClassifyUI)', () => {
 
     it('a remount on the same root assigns fresh synthetic ids (no collision)', async () => {
         root.innerHTML = `<code data-ezclassify-controller="text">c1</code>`;
-        const ui1 = new EzClassifyUI(createMockEngine(), { root });
+        const ui1 = new EzClassifyUI(asContext(createMockEngine()), { root });
         await flush();
         const firstId = root.querySelector<HTMLElement>('code')!.id;
         ui1.destroy();
@@ -588,7 +725,7 @@ describe('EzClassifyText (declarative via EzClassifyUI)', () => {
         // id, the new EzClassifyUI's validMarkingIds is fresh, so this still
         // publishes cleanly to the store.
         root.innerHTML = `<code data-ezclassify-controller="text">c2</code>`;
-        forms = new EzClassifyUI(createMockEngine(), { root });
+        forms = new EzClassifyUI(asContext(createMockEngine()), { root });
         await flush();
 
         const secondId = root.querySelector<HTMLElement>('code')!.id;
@@ -606,10 +743,10 @@ describe('EzClassifyText (declarative via EzClassifyUI)', () => {
     it('bare data-ezclassify-source without controller still text-mirrors (no regression)', async () => {
         // A plain <output> with source but no controller gets the text-mirror path.
         root.innerHTML = `
-      <input id="src-marking" data-ezclassify-rendered value="c1">
+      <input id="src-marking" data-ezclassify-marking value="c1">
       <output data-ezclassify-source="src-marking"></output>
     `;
-        forms = new EzClassifyUI(createMockEngine(), { root });
+        forms = new EzClassifyUI(asContext(createMockEngine()), { root });
         await flush();
 
         const out = root.querySelector('output')!;
@@ -621,10 +758,10 @@ describe('EzClassifyText (declarative via EzClassifyUI)', () => {
 
     it('text-mirrors an empty source with a word a screen reader announces, not a dash', async () => {
         root.innerHTML = `
-      <input id="blank-marking" data-ezclassify-rendered value="">
+      <input id="blank-marking" data-ezclassify-marking value="">
       <output data-ezclassify-source="blank-marking"></output>
     `;
-        forms = new EzClassifyUI(createMockEngine(), { root });
+        forms = new EzClassifyUI(asContext(createMockEngine()), { root });
         await flush();
 
         const out = root.querySelector('output')!;
@@ -635,12 +772,12 @@ describe('EzClassifyText (declarative via EzClassifyUI)', () => {
         // This is the primary bug scenario: host starts empty; framework pushes
         // rendered value via setValue(); host should display the marking string.
         root.innerHTML = `
-      <input id="book-marking" data-ezclassify-rendered value="">
+      <input id="book-marking" data-ezclassify-marking value="">
       <span id="text-display"
             data-ezclassify-controller="text"
             data-ezclassify-source="book-marking"></span>
     `;
-        forms = new EzClassifyUI(createMockEngine(), { root });
+        forms = new EzClassifyUI(asContext(createMockEngine()), { root });
         await flush();
 
         const span = root.querySelector<HTMLElement>('#text-display')!;
@@ -668,12 +805,12 @@ describe('EzClassifyText (declarative via EzClassifyUI)', () => {
         // update, not stay frozen at mount-time (which happened when the source
         // path called setAssertions() instead of setValue(), skipping the read).
         root.innerHTML = `
-      <input id="doc-marking" data-ezclassify-rendered value="c1">
+      <input id="doc-marking" data-ezclassify-marking value="c1">
       <code id="text-view"
             data-ezclassify-controller="text"
             data-ezclassify-source="doc-marking">c1</code>
     `;
-        forms = new EzClassifyUI(createMockEngine(), { root });
+        forms = new EzClassifyUI(asContext(createMockEngine()), { root });
         await flush();
 
         const codeEl = root.querySelector<HTMLElement>('#text-view')!;
@@ -707,7 +844,7 @@ it('omits outputFormat when the scheme has no default output', async () => {
     host.textContent = 'c1';
     document.body.append(host);
     const component = new EzClassifyText();
-    await component.init(host, Context.fromSchemeEngine(engine as never));
+    await component.init(host, schemeOnlyContext(engine as never));
     expect(validate).toHaveBeenCalledWith('c1', undefined);
     component.destroy();
     host.remove();

@@ -8,9 +8,11 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { loadMultiScopeRegression } from '../test-fixtures/load-multi-scope-regression';
 import { EzClassifyUI } from './ezclassify-ui';
+import { asContext } from '../test-fixtures/as-context';
+import { demoRuntimeSettled } from '../../../test-support/demo-runtime';
 
 const CHECKLIST_FACET_HTML = `
-  <input type="hidden" id="doc-marking" data-ezclassify-rendered />
+  <input type="hidden" id="doc-marking" data-ezclassify-marking />
   <div id="source-policy-checklist" data-ezclassify-controller="checklist"
        data-ezclassify-facet-of="doc-marking"
        data-ezclassify-scope="office_record"
@@ -18,7 +20,7 @@ const CHECKLIST_FACET_HTML = `
 `;
 
 async function flush(): Promise<void> {
-    for (let i = 0; i < 8; i++) await Promise.resolve();
+    await demoRuntimeSettled();
 }
 
 /** The checklist's checked concept ids, read from the live DOM. */
@@ -65,7 +67,9 @@ describe('CategoryChecklist hydrates from external store publishes', () => {
 
     it('publish while mounted: checkbox reflects the external assertions', async () => {
         root.innerHTML = CHECKLIST_FACET_HTML;
-        forms = new EzClassifyUI(loadMultiScopeRegression(), { root });
+        forms = new EzClassifyUI(asContext(await loadMultiScopeRegression()), {
+            root,
+        });
         await flush();
 
         await forms.store.publishAssertions('doc-marking', [SCOPED_ASSERTION]);
@@ -77,7 +81,9 @@ describe('CategoryChecklist hydrates from external store publishes', () => {
 
     it('publish after a facet allowability push: the new selection still renders checked', async () => {
         root.innerHTML = CHECKLIST_FACET_HTML;
-        forms = new EzClassifyUI(loadMultiScopeRegression(), { root });
+        forms = new EzClassifyUI(asContext(await loadMultiScopeRegression()), {
+            root,
+        });
         await flush();
 
         // A default-scope commit first: triggers the store's suggest fan-out,
@@ -111,7 +117,9 @@ describe('CategoryChecklist hydrates from external store publishes', () => {
 
     it('publish of a gated-out concept: the checklist rebuilds and shows it checked', async () => {
         root.innerHTML = CHECKLIST_FACET_HTML;
-        forms = new EzClassifyUI(loadMultiScopeRegression(), { root });
+        forms = new EzClassifyUI(asContext(await loadMultiScopeRegression()), {
+            root,
+        });
         await flush();
 
         // Simulate a facet allowability push that gates every concept out
@@ -141,14 +149,17 @@ describe('CategoryChecklist hydrates from external store publishes', () => {
         // push arrives after the selection).
         checklist.setAssertions([SCOPED_ASSERTION]);
 
+        await demoRuntimeSettled();
         expect(checkedConceptIds(root)).toContain('NEW_ITEM');
         expect(countText(root)).toMatch(/^1 of /);
     });
 
     it('mount after publish: checkbox reflects the pre-existing store state', async () => {
         // Marking host exists first; the publish lands before the checklist mounts.
-        root.innerHTML = `<input type="hidden" id="doc-marking" data-ezclassify-rendered />`;
-        forms = new EzClassifyUI(loadMultiScopeRegression(), { root });
+        root.innerHTML = `<input type="hidden" id="doc-marking" data-ezclassify-marking />`;
+        forms = new EzClassifyUI(asContext(await loadMultiScopeRegression()), {
+            root,
+        });
         await flush();
 
         await forms.store.publishAssertions('doc-marking', [SCOPED_ASSERTION]);

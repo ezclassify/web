@@ -1,0 +1,19 @@
+{
+    "access": {
+        "id": "ref-scheme-1-controls-access",
+        "version": "1.0.0",
+        "name": "Reference Optional Controls Access",
+        "target_scheme": {
+            "id": "ref-scheme-1"
+        },
+        "rules": [
+            {
+                "id": "controls-rule",
+                "name": "Controls held",
+                "attribute": "controls",
+                "category": "controls",
+                "strategy": "superset"
+            }
+        ]
+    }
+}

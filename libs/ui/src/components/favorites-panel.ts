@@ -248,8 +248,8 @@ export class FavoritesPanel {
         this.button = document.createElement('button');
         this.button.type = 'button';
         // No self-positioning: the button sits in normal flow as a flex child
-        // of a caller-owned chrome container (a hint-row slot or the ★
-        // drawer), mirroring status-mark.ts's 'chrome' shape.
+        // of the field's inline chrome, mirroring status-mark.ts's 'chrome'
+        // shape.
         this.button.className =
             'ez-favorites-button ez-favorites-button--chrome';
         this.button.innerHTML = buildStarSvg();

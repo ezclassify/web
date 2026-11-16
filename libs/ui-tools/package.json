@@ -2,7 +2,7 @@
     "name": "@ezclassify/ui-tools",
     "version": "1.0.0-dev.30",
     "type": "module",
-    "description": "Playwright/browser test tooling: crawler runtime (browser, a11y, baselines, run-loop) plus the Playwright record/replay route transport",
+    "description": "Playwright/browser test tooling: crawler runtime (browser, a11y, baselines, run-loop) plus HTTP record and replay with fetch and Playwright route transports",
     "repository": {
         "type": "git",
         "url": "git+https://github.com/ezclassify/web.git",
@@ -50,7 +50,6 @@
     },
     "dependencies": {
         "@axe-core/playwright": "^4.11.2",
-        "@ezclassify/testing-utils": "^1.0.0-0",
         "@playwright/test": "^1.59.1"
     },
     "devDependencies": {

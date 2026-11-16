@@ -2,10 +2,11 @@
  * Shared rendering helpers for read-only "browser" components: Handbook
  * (profile concepts), Guidebook (guide rules), and AccessHandbook (access
  * rules). All three consume an engine view (`StructuralView<T>` for the first
- * two) plus a `FilterResult` from engine.filter* and render a related DOM
- * shape: categories or groups with collapsible headers and item rows. Search,
- * filter-driven visibility, ARIA wiring, and reference-surface noun resolution
- * live here so the three components don't duplicate them.
+ * two) plus a {@link TreeFilter} the component computes from its search query,
+ * and render a related DOM shape: categories or groups with collapsible headers
+ * and item rows. Search, filter-driven visibility, ARIA wiring, and
+ * reference-surface noun resolution live here so the three components don't
+ * duplicate them.
  *
  * Deliberately not a base class: Handbook, Guidebook, and AccessHandbook
  * already extend `ReadOnlyComponentBase`, which owns `this.engine` /
@@ -18,10 +19,10 @@ import {
     GENERIC_REFERENCE_SURFACE_NOUNS,
     type ReferenceSurfaceKey,
     type ReferenceSurfaceLabel,
-    type FilterResult,
     type StructuralView,
 } from '@ezclassify/types';
 import { announce, createAnnouncer } from './component-utils';
+import { t } from '../i18n';
 
 /** Options for {@link renderStructuralTree}. */
 export interface RenderStructuralTreeOptions<Item> {
@@ -142,10 +143,24 @@ function buildCategoryHeader(
     return header;
 }
 
+/**
+ * Which rows of a structural tree match the current search query. The component
+ * computes it from its own view; {@link applyFilterToTree} applies it to the
+ * DOM.
+ */
+export interface TreeFilter {
+    /** Ids of the items that matched the query. */
+    visibleIds: Set<string>;
+    /** Matched and total item counts per category id. */
+    categoryCounts: Map<string, { visible: number; total: number }>;
+    /** Matched and total items across every category. */
+    total: { visible: number; total: number };
+}
+
 /** Options for {@link applyFilterToTree}. */
 export interface ApplyFilterOptions {
     container: HTMLElement;
-    filter: FilterResult;
+    filter: TreeFilter;
     rootClass: string;
     /**
      * When the filter is active ("`query !== ''`"), expand collapsed categories
@@ -273,6 +288,29 @@ export function announceMatchCount(
             ? `No ${plural} match "${query}"`
             : `${visible} ${visible === 1 ? itemLabel : plural} match`;
     announce(announcer, text);
+}
+
+/**
+ * The overall marking line a reference panel leads with, for a document that
+ * carries one. Shown verbatim, the way the document writes it; nothing here
+ * reads it. The label is for assistive technology only.
+ *
+ * @param className - Class for the line
+ * @param marking - The document's overall marking, if it declares one
+ * @returns The line, or `null` for a document with no overall marking
+ */
+export function buildOverallMarking(
+    className: string,
+    marking: string | undefined,
+): HTMLDivElement | null {
+    if (!marking) return null;
+    const line = document.createElement('div');
+    line.className = className;
+    const label = document.createElement('span');
+    label.className = 'ez-sr-only';
+    label.textContent = t('aria.overallMarkingPrefix');
+    line.append(label, marking);
+    return line;
 }
 
 /**

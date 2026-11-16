@@ -1,0 +1,861 @@
+{
+    "engineVersion": "1.0.0-dev.30",
+    "openapiVersion": "1.0.0-dev.30",
+    "responses": {
+        "172114cc0e8b42fde664cfbef18d831d285c8b98ab901306f9beba9e72652aec": {
+            "body": {
+                "defaultRenderFormat": "compact",
+                "description": "Warehouse Entry test fixture.",
+                "id": "warehouse-entry",
+                "name": "Warehouse Entry",
+                "referenceSurfaceLabel": {
+                    "plural": "Handbooks",
+                    "singular": "Handbook"
+                },
+                "roleAware": false,
+                "version": "1.0.0"
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "1c55688ba1db67ab0e49c4b70c3762a125778261e074b8c8b8db79f01016b806": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "warehouse-entry",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "warehouse-entry",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "item",
+                            "conceptId": "unlabeled",
+                            "confidence": "certain",
+                            "source": "user"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            { "categoryId": "item", "conceptId": "unlabeled" }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "NONE",
+                    "renders": {},
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "360497747c5e4894c6a1a825acfbb0bce60dd66a3f37e6b4251c99be9e2f7161": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "warehouse-entry",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "warehouse-entry",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "item": {
+                        "suggestions": [
+                            {
+                                "categoryId": "item",
+                                "conceptId": "identifier",
+                                "description": "Identifier",
+                                "group": "Item",
+                                "label": "Warehouse identifier",
+                                "name": "Identifier",
+                                "order": 0,
+                                "selected": false,
+                                "views": {
+                                    "compact": "ID:{value}",
+                                    "default": "ID:{value}"
+                                }
+                            },
+                            {
+                                "categoryId": "item",
+                                "conceptId": "unlabeled",
+                                "description": "Unlabeled",
+                                "group": "Item",
+                                "label": "NONE",
+                                "name": "Unlabeled",
+                                "order": 0,
+                                "selected": false,
+                                "views": {
+                                    "compact": "NONE",
+                                    "default": "NONE"
+                                }
+                            }
+                        ],
+                        "warnings": []
+                    }
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "4033e6d05ba0bbcb9f761c7239889ae9918af681a1c96010dec443e6b2bbd298": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "warehouse-entry",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "warehouse-entry",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "item",
+                            "conceptId": "identifier",
+                            "confidence": "certain",
+                            "source": "user",
+                            "value": "AA"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            {
+                                "categoryId": "item",
+                                "conceptId": "identifier",
+                                "value": "AA"
+                            }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "ID:AA",
+                    "renders": {},
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "47147594ae9c6aa4ee48eba2f9a7fabfbed768372ca2b6bf6ef4817e7a3b0dc7": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "warehouse-entry",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "warehouse-entry",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [
+                        {
+                            "affectedConcepts": ["identifier"],
+                            "categoryId": "item",
+                            "constraintId": "_invalid_assertion_value",
+                            "message": "Identifier cannot hold the value \"TOOLONG\": 7 characters; this concept accepts at most 3.."
+                        }
+                    ],
+                    "inputWasValid": false,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "",
+                    "renders": {},
+                    "valid": false,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "6582a3dd663fa6136177ad5362d7a3dd94f1d94e63861694cd8d2ada9c1c6710": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "warehouse-entry",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "warehouse-entry",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "item",
+                            "conceptId": "identifier",
+                            "confidence": "certain",
+                            "source": "user",
+                            "value": "NEW"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            {
+                                "categoryId": "item",
+                                "conceptId": "identifier",
+                                "value": "NEW"
+                            }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "ID:NEW",
+                    "renders": {},
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "6765b10594cefa96645f8249534abcc918cf7fccc38362084cbf5621de7cd41b": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "warehouse-entry",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "warehouse-entry",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "item",
+                            "conceptId": "identifier",
+                            "confidence": "certain",
+                            "source": "user",
+                            "value": "ABC"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            {
+                                "categoryId": "item",
+                                "conceptId": "identifier",
+                                "value": "ABC"
+                            }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "ID:ABC",
+                    "renders": {},
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "6e7a34cdd1c0b61162229b1a99f92b13037eba75a5f643019434f9907c3e9038": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "warehouse-entry",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "warehouse-entry",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "item",
+                            "conceptId": "identifier",
+                            "confidence": "certain",
+                            "source": "user",
+                            "value": "XYZ"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            {
+                                "categoryId": "item",
+                                "conceptId": "identifier",
+                                "value": "XYZ"
+                            }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "ID:XYZ",
+                    "renders": {},
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "733ca98cad3cc3c3d3ae735028c26f39b8117992e9ba790313b89d4519cba044": {
+            "body": [
+                {
+                    "aliases": [],
+                    "categories": ["item"],
+                    "id": "identifier",
+                    "name": "Identifier",
+                    "parents": [],
+                    "position": 0,
+                    "textInput": {
+                        "encoding": { "maxLength": 3, "type": "text" },
+                        "label": "Warehouse identifier",
+                        "required": true
+                    },
+                    "views": {
+                        "compact": "ID:{value}",
+                        "default": "ID:{value}"
+                    }
+                },
+                {
+                    "aliases": [],
+                    "categories": ["item"],
+                    "id": "unlabeled",
+                    "name": "Unlabeled",
+                    "parents": [],
+                    "position": 0,
+                    "views": { "compact": "NONE", "default": "NONE" }
+                }
+            ],
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "765f2d8135e707bbd6fc309838d458f4fbfe35286589b1c5f26f572b4baf3d82": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "warehouse-entry",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "warehouse-entry",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "item": {
+                        "suggestions": [
+                            {
+                                "categoryId": "item",
+                                "conceptId": "identifier",
+                                "description": "Identifier",
+                                "group": "Item",
+                                "label": "Warehouse identifier",
+                                "name": "Identifier",
+                                "order": 0,
+                                "selected": false,
+                                "views": {
+                                    "compact": "ID:{value}",
+                                    "default": "ID:{value}"
+                                }
+                            },
+                            {
+                                "categoryId": "item",
+                                "conceptId": "unlabeled",
+                                "description": "Unlabeled",
+                                "group": "Item",
+                                "label": "NONE",
+                                "name": "Unlabeled",
+                                "order": 0,
+                                "selected": false,
+                                "views": {
+                                    "compact": "NONE",
+                                    "default": "NONE"
+                                }
+                            }
+                        ],
+                        "warnings": []
+                    }
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "893999244d7f90e6299ebe2b9e638eabb6aaf28c0a5e195a42c7f3056438d299": {
+            "body": [
+                {
+                    "id": "item",
+                    "label": "Item",
+                    "required": false,
+                    "rollup": "union",
+                    "single": true
+                }
+            ],
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "8a65144a2a84e70c903cdb4a359e87152795fa0a206d19911241e370b1fa3ad9": {
+            "body": [],
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "8cf182032dfc58888443f6289b570efde0de0f514bce6f0a387a2bc03eb1376d": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "warehouse-entry",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "warehouse-entry",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "item",
+                            "conceptId": "identifier",
+                            "confidence": "certain",
+                            "source": "user",
+                            "value": "ABC"
+                        }
+                    ],
+                    "errors": [],
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "ID:ABC",
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "9ab7b544bf1c080f7c3c50e35970fc4a66b88757936e3789f63d678adebab5aa": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "warehouse-entry",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "warehouse-entry",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "item",
+                            "conceptId": "identifier",
+                            "confidence": "certain",
+                            "source": "user",
+                            "value": "NEW"
+                        }
+                    ],
+                    "errors": [],
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "ID:NEW",
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "a9639e5e281a71d90667720f79129b6a545b64a34fb8402e729ff243a9458ba0": {
+            "body": [],
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "b4fc4c662f76019fe34a205d229fa8e16f8838fc747856f882d432226e67d959": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "warehouse-entry",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "warehouse-entry",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "item",
+                            "conceptId": "identifier",
+                            "confidence": "certain",
+                            "source": "parse",
+                            "sourceRule": "host-parse-proof",
+                            "value": "XY"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            {
+                                "categoryId": "item",
+                                "conceptId": "identifier",
+                                "value": "XY"
+                            }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "ID:XY",
+                    "renders": {},
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "c8654b5479fe4382f3b77ec5029369fe9605ee71ee1c45dfa7f0e23510bd2db7": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "warehouse-entry",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "warehouse-entry",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "item",
+                            "conceptId": "identifier",
+                            "confidence": "certain",
+                            "source": "user",
+                            "value": "XY"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            {
+                                "categoryId": "item",
+                                "conceptId": "identifier",
+                                "value": "XY"
+                            }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "ID:XY",
+                    "renders": {},
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "cbb1fde8aef13b81f99c51a7c1cfc062c71ade53e6696f157f3c05f3d99625d1": {
+            "body": [
+                {
+                    "categoryOrder": ["item"],
+                    "categoryViews": { "item": "default" },
+                    "id": "compact",
+                    "mode": "inline",
+                    "surface": "marking"
+                }
+            ],
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "daf91171437d71143d09ad51194445d54927c3684fd15cf87dda2d94e52666a2": {
+            "body": {
+                "contextId": "sbx-d92a7e698f03f06b5ab0ba01ce34906c2364e428707aa4dda74bbeb813a4353b"
+            },
+            "method": "PUT",
+            "statusCode": 200
+        },
+        "e070dec6e78862435e7c23c92a6e4a93a9667377aed0b78b533966687028c314": {
+            "body": {
+                "abiVersion": "v1",
+                "engineSha": "",
+                "engineVersion": "1.0.0-dev.30",
+                "gitTag": "",
+                "openapiVersion": "1.0.0-dev.30",
+                "status": "ok"
+            },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "e6065f180a3718cd293513c35cd5ded4dd7f2f25e0076f8bbde5e76c406e1f1d": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "warehouse-entry",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "warehouse-entry",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [
+                        {
+                            "affectedConcepts": ["identifier"],
+                            "categoryId": "item",
+                            "constraintId": "_invalid_assertion_value",
+                            "message": "Identifier cannot hold the value \"TOOLONG\": 7 characters; this concept accepts at most 3.."
+                        }
+                    ],
+                    "inputWasValid": false,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "",
+                    "renders": {},
+                    "valid": false,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "ed3f8a69bf957742393101b368d637092f1e7bc77890cea00d0bd4e89f00d937": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "warehouse-entry",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "warehouse-entry",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "item": {
+                        "suggestions": [
+                            {
+                                "categoryId": "item",
+                                "conceptId": "identifier",
+                                "description": "Identifier",
+                                "group": "Item",
+                                "label": "Warehouse identifier",
+                                "name": "Identifier",
+                                "order": 0,
+                                "selected": false,
+                                "views": {
+                                    "compact": "ID:{value}",
+                                    "default": "ID:{value}"
+                                }
+                            },
+                            {
+                                "categoryId": "item",
+                                "conceptId": "unlabeled",
+                                "description": "Unlabeled",
+                                "group": "Item",
+                                "label": "NONE",
+                                "name": "Unlabeled",
+                                "order": 0,
+                                "selected": false,
+                                "views": {
+                                    "compact": "NONE",
+                                    "default": "NONE"
+                                }
+                            }
+                        ],
+                        "warnings": []
+                    }
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "fbccdd8e7dee4553c4928515dadd63eab8817721d5c20bc63989e612d5069966": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "warehouse-entry",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "warehouse-entry",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "",
+                    "renders": {},
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "ffef099600939c923e049db2bf20cdb23cc12ac9e392280f10c93fea96d03545": {
+            "body": {
+                "id": "warehouse-entry",
+                "scheme": {
+                    "id": "warehouse-entry",
+                    "resolvedVersion": "1.0.0",
+                    "version": "1.0.0"
+                },
+                "schemes": [
+                    {
+                        "id": "warehouse-entry",
+                        "roles": ["primary"],
+                        "selector": "warehouse-entry",
+                        "version": "1.0.0"
+                    }
+                ],
+                "version": "1.0.0"
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        }
+    }
+}

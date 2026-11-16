@@ -329,7 +329,7 @@
             ],
             "expect": {
                 "errors": [
-                    { "constraintId": "required-category:authority" }
+                    { "categoryId": "authority", "constraintId": "_required-category:authority" }
                 ],
                 "rendered": "ORIG=ABCXYZ",
                 "valid": false
@@ -352,7 +352,7 @@
                 { "outputFormat": "full" }
             ],
             "expect": {
-                "errors": [{ "constraintId": "required-category:level" }],
+                "errors": [{ "categoryId": "level", "constraintId": "_required-category:level" }],
                 "rendered": "ORIG=ABCXYZ",
                 "valid": false
             },
@@ -428,7 +428,7 @@
                 { "outputFormat": "full", "surface": "alt" }
             ],
             "expect": {
-                "errors": [{ "constraintId": "required-category:authority" }],
+                "errors": [{ "categoryId": "authority", "constraintId": "_required-category:authority" }],
                 "rendered": "ORIG=ABCXYZ",
                 "valid": false
             },
@@ -452,7 +452,7 @@
                 { "outputFormat": "full" }
             ],
             "expect": {
-                "errors": [{ "constraintId": "required-category:level" }],
+                "errors": [{ "categoryId": "level", "constraintId": "_required-category:level" }],
                 "rendered": "ORIG=ABCXYZ",
                 "valid": false
             },

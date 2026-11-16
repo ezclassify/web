@@ -9,10 +9,10 @@ import {
 } from './element-scanner';
 
 describe('CONTROLLER_NAMES', () => {
-    it('contains all 20 recognized controllers', () => {
+    it('contains all 18 recognized controllers', () => {
         // 2 framework/GRC controllers (scorecard, matrix) are deferred
         // from the 1.0 surface.
-        expect(CONTROLLER_NAMES).toHaveLength(20);
+        expect(CONTROLLER_NAMES).toHaveLength(18);
     });
 
     it('starts with tags', () => {
@@ -40,19 +40,12 @@ describe('CONTROLLER_NAMES', () => {
     });
 
     it('includes interactive controllers', () => {
-        for (const c of [
-            'tags',
-            'select',
-            'checklist',
-            'selector',
-            'dualpane',
-        ]) {
+        for (const c of ['tags', 'select', 'checklist', 'selector']) {
             expect(CONTROLLER_NAMES).toContain(c);
         }
     });
 
     it('includes read-only controllers', () => {
-        expect(CONTROLLER_NAMES).toContain('card');
         expect(CONTROLLER_NAMES).toContain('banner');
     });
 });
@@ -76,7 +69,7 @@ describe('scanElements', () => {
         expect(onBehavior).toHaveBeenCalledTimes(1);
         expect(onBehavior).toHaveBeenCalledWith(
             input,
-            expect.objectContaining({ bind: false }),
+            expect.objectContaining({ marking: false }),
         );
         expect(onView).toHaveBeenCalledTimes(1);
         expect(onView).toHaveBeenCalledWith(input, 'tags', {});
@@ -84,8 +77,7 @@ describe('scanElements', () => {
 
     it('reports a behavior-bound element with no controller only to onBehavior', () => {
         const input = document.createElement('input');
-        input.setAttribute('data-ezclassify-bind', '');
-        input.setAttribute('data-ezclassify-target', 'para-1');
+        input.setAttribute('data-ezclassify-marking', '');
         root.appendChild(input);
 
         const onBehavior = vi.fn();
@@ -94,8 +86,7 @@ describe('scanElements', () => {
 
         expect(onBehavior).toHaveBeenCalledTimes(1);
         const binding = onBehavior.mock.calls[0][1] as BehaviorBinding;
-        expect(binding.bind).toBe(true);
-        expect(binding.target).toBe('para-1');
+        expect(binding.marking).toBe(true);
         expect(onView).not.toHaveBeenCalled();
     });
 
@@ -117,12 +108,10 @@ describe('scanElements', () => {
 
     it('parses non-axis binding fields from data-ezclassify-* attributes', () => {
         const el = document.createElement('div');
-        el.setAttribute('data-ezclassify-bind', '');
         el.setAttribute('data-ezclassify-category', 'level');
         el.setAttribute('data-ezclassify-part-of', 'parent-id');
-        el.setAttribute('data-ezclassify-rendered', '');
         el.setAttribute('data-ezclassify-bound-to', 'bind-id');
-        el.setAttribute('data-ezclassify-target', 'tgt');
+        el.setAttribute('data-ezclassify-translate', 'cw-1');
         el.setAttribute('data-ezclassify-scope', '');
         el.setAttribute('data-ezclassify-scheme', 'scheme-x');
         root.appendChild(el);
@@ -131,12 +120,11 @@ describe('scanElements', () => {
         scanElements(root, null, onBehavior, vi.fn());
         const b = onBehavior.mock.calls[0][1] as BehaviorBinding;
         expect(b).toMatchObject({
-            bind: true,
+            marking: false,
             category: 'level',
             partOf: 'parent-id',
-            rendered: true,
             boundTo: 'bind-id',
-            target: 'tgt',
+            translate: 'cw-1',
             scope: '',
             scheme: 'scheme-x',
         });
@@ -174,13 +162,13 @@ describe('scanElements', () => {
     it('exposes a marking-only element via the marking flag', () => {
         const el = document.createElement('input');
         el.id = 'doc-marking';
-        el.setAttribute('data-ezclassify-rendered', '');
+        el.setAttribute('data-ezclassify-marking', '');
         root.appendChild(el);
 
         const onBehavior = vi.fn();
         scanElements(root, null, onBehavior, vi.fn());
         const b = onBehavior.mock.calls[0][1] as BehaviorBinding;
-        expect(b.rendered).toBe(true);
+        expect(b.marking).toBe(true);
         expect(b.boundTo).toBeUndefined();
     });
 
@@ -196,22 +184,49 @@ describe('scanElements', () => {
         expect(b.boundTo).toBe('doc-marking');
     });
 
-    it('exposes the aggregate attribute as a presence flag', () => {
+    it('reads a bare aggregate, and React\'s "true", as the page level', () => {
+        for (const value of ['', 'true']) {
+            root.innerHTML = '';
+            const el = document.createElement('div');
+            el.setAttribute('data-ezclassify-controller', 'banner');
+            el.setAttribute('data-ezclassify-aggregate', value);
+            root.appendChild(el);
+
+            const onBehavior = vi.fn();
+            scanElements(root, null, onBehavior, vi.fn());
+            const b = onBehavior.mock.calls[0][1] as BehaviorBinding;
+            expect(b.aggregate).toBe('');
+        }
+    });
+
+    it('reads an aggregate value as the level it names', () => {
         const el = document.createElement('div');
         el.setAttribute('data-ezclassify-controller', 'banner');
-        el.setAttribute('data-ezclassify-aggregate', '');
+        el.setAttribute('data-ezclassify-aggregate', 'folderA');
         root.appendChild(el);
 
         const onBehavior = vi.fn();
         scanElements(root, null, onBehavior, vi.fn());
-        const b = onBehavior.mock.calls[0][1] as BehaviorBinding;
-        expect(b.aggregate).toBe(true);
+        expect((onBehavior.mock.calls[0][1] as BehaviorBinding).aggregate).toBe(
+            'folderA',
+        );
+    });
+
+    it('reports structural containers so their placement is read', () => {
+        root.innerHTML =
+            '<section data-ezclassify-collection="a"></section>' +
+            '<form data-ezclassify-whole="doc"></form>' +
+            '<ul data-ezclassify-ignore></ul>' +
+            '<div data-ezclassify-member-of="a"></div>';
+        const onBehavior = vi.fn();
+        scanElements(root, null, onBehavior, vi.fn());
+        expect(onBehavior).toHaveBeenCalledTimes(4);
     });
 
     it('invokes onBehavior before onView for elements with both', () => {
         const input = document.createElement('input');
         input.setAttribute('data-ezclassify-controller', 'tags');
-        input.setAttribute('data-ezclassify-target', 'para-1');
+        input.setAttribute('data-ezclassify-category', 'level');
         root.appendChild(input);
 
         const calls: string[] = [];
@@ -326,8 +341,8 @@ describe('harvestControllerOptions', () => {
 
     it('returns an empty bag when no matching attributes', () => {
         const el = document.createElement('div');
-        el.setAttribute('data-ezclassify-controller', 'card');
-        const opts = harvestControllerOptions(el, 'card');
+        el.setAttribute('data-ezclassify-controller', 'banner');
+        const opts = harvestControllerOptions(el, 'banner');
         expect(opts).toEqual({});
     });
 
@@ -393,13 +408,13 @@ describe('observeNewElements', () => {
         observer = observeNewElements(root, null, onBehavior, onView);
 
         const input = document.createElement('input');
-        input.setAttribute('data-ezclassify-bind', '');
+        input.setAttribute('data-ezclassify-marking', '');
         root.appendChild(input);
 
         await new Promise((r) => setTimeout(r, 0));
         expect(onBehavior).toHaveBeenCalledWith(
             input,
-            expect.objectContaining({ bind: true }),
+            expect.objectContaining({ marking: true }),
         );
         expect(onView).not.toHaveBeenCalled();
     });
@@ -475,6 +490,87 @@ describe('observeNewElements', () => {
         input.remove();
         await new Promise((r) => setTimeout(r, 0));
         expect(onRemove).toHaveBeenCalledWith(input);
+    });
+
+    it('reports a structural attribute change on an existing element', async () => {
+        const form = document.createElement('form');
+        form.setAttribute('data-ezclassify-whole', 'doc');
+        root.appendChild(form);
+        const onStructureChange = vi.fn();
+        observer = observeNewElements(
+            root,
+            null,
+            vi.fn(),
+            vi.fn(),
+            vi.fn(),
+            onStructureChange,
+        );
+
+        form.setAttribute('data-ezclassify-whole', 'other');
+        await new Promise((r) => setTimeout(r, 0));
+        expect(onStructureChange).toHaveBeenCalledTimes(1);
+        expect(onStructureChange).toHaveBeenCalledWith(form);
+    });
+
+    it('ignores attribute changes outside the structural set', async () => {
+        const input = document.createElement('input');
+        input.setAttribute('data-ezclassify-controller', 'marking');
+        root.appendChild(input);
+        const onStructureChange = vi.fn();
+        observer = observeNewElements(
+            root,
+            null,
+            vi.fn(),
+            vi.fn(),
+            vi.fn(),
+            onStructureChange,
+        );
+
+        input.setAttribute('data-ezclassify-format', 'short');
+        input.setAttribute('value', 'x');
+        await new Promise((r) => setTimeout(r, 0));
+        expect(onStructureChange).not.toHaveBeenCalled();
+    });
+
+    it('reports one change for an element and its changed descendants', async () => {
+        root.innerHTML =
+            '<section data-ezclassify-collection="a"><input id="m" data-ezclassify-marking></section>';
+        const section = root.querySelector('section')!;
+        const input = root.querySelector('input')!;
+        const onStructureChange = vi.fn();
+        observer = observeNewElements(
+            root,
+            null,
+            vi.fn(),
+            vi.fn(),
+            vi.fn(),
+            onStructureChange,
+        );
+
+        section.setAttribute('data-ezclassify-context', 'cui');
+        input.setAttribute('data-ezclassify-no-rollup', '');
+        await new Promise((r) => setTimeout(r, 0));
+        expect(onStructureChange.mock.calls).toEqual([[section]]);
+    });
+
+    it('does not report a change on an element added in the same batch', async () => {
+        const onBehavior = vi.fn();
+        const onStructureChange = vi.fn();
+        observer = observeNewElements(
+            root,
+            null,
+            onBehavior,
+            vi.fn(),
+            vi.fn(),
+            onStructureChange,
+        );
+
+        const form = document.createElement('form');
+        root.appendChild(form);
+        form.setAttribute('data-ezclassify-whole', 'doc');
+        await new Promise((r) => setTimeout(r, 0));
+        expect(onBehavior).toHaveBeenCalledWith(form, expect.anything());
+        expect(onStructureChange).not.toHaveBeenCalled();
     });
 });
 
@@ -593,7 +689,7 @@ describe('forbidden binding patterns', () => {
 
         it('warns when [ngModel] is paired with (ngModelChange) on a bound element', () => {
             root.innerHTML =
-                '<input data-ezclassify-bind [ngModel]="value" (ngModelChange)="onChange($event)">';
+                '<input data-ezclassify-marking [ngModel]="value" (ngModelChange)="onChange($event)">';
 
             scanElements(root, null, vi.fn(), vi.fn());
             expect(warnSpy).toHaveBeenCalledTimes(1);
@@ -601,7 +697,8 @@ describe('forbidden binding patterns', () => {
         });
 
         it('does not warn when [ngModel] is present alone (one-way Angular)', () => {
-            root.innerHTML = '<input data-ezclassify-bind [ngModel]="value">';
+            root.innerHTML =
+                '<input data-ezclassify-marking [ngModel]="value">';
 
             scanElements(root, null, vi.fn(), vi.fn());
             expect(warnSpy).not.toHaveBeenCalled();

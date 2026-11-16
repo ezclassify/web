@@ -22,8 +22,8 @@ import { readFileSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { Context } from '@ezclassify/engine';
 import { EzClassifyUI } from './ezclassify-ui';
+import { connectDemoContext } from '../../../test-support/demo-runtime';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 // From libs/ui/src/ up to repo root is three hops.
@@ -38,8 +38,8 @@ function loadScheme(): unknown {
     );
 }
 
-function newEngine() {
-    return Context.fromComponents({ scheme: loadScheme() });
+async function newEngine() {
+    return await connectDemoContext({ draft: { scheme: loadScheme() } });
 }
 
 /** Flush EzClassifyUI's async component-init chain and the rollup debounce. */
@@ -65,13 +65,21 @@ function mountSiblingsFor(host: HTMLElement): HTMLElement[] {
 }
 
 /**
- * The rolled-up page value for an instance lives in its synthesized rollup
- * sink, the hidden `#<rollupId>` input the constructor appends to the root.
- * This, not `data-ezclassify-aggregate` (a scan-time binding flag), is where
- * the engine aggregate of all of an instance's contributing fields lands.
+ * Place the hidden output the host submits the page marking with inside `root`,
+ * and hand `root` back for the constructor.
  */
-function rollupValueOf(root: HTMLElement, rollupId: string): string {
-    return root.querySelector<HTMLInputElement>('#' + rollupId)?.value ?? '';
+function withOutput<T extends HTMLElement>(root: T, id: string): T {
+    const output = document.createElement('input');
+    output.type = 'hidden';
+    output.id = id;
+    output.setAttribute('data-ezclassify-aggregate', '');
+    root.appendChild(output);
+    return root;
+}
+
+/** The page marking an instance shows in the output placed in `root`. */
+function rollupValueOf(root: HTMLElement, outputId: string): string {
+    return root.querySelector<HTMLInputElement>('#' + outputId)?.value ?? '';
 }
 
 /** The DOM ids of the fields an instance registered as rollup contributors. */
@@ -128,15 +136,13 @@ describe('nested-mount harness (DOM/SDK level)', () => {
         inner.appendChild(field);
 
         track(
-            new EzClassifyUI(newEngine(), {
-                root: outer,
-                rollupId: 'c1-outer-rollup',
+            new EzClassifyUI(await newEngine(), {
+                root: withOutput(outer, 'c1-outer-rollup'),
             }),
         );
         track(
-            new EzClassifyUI(newEngine(), {
-                root: inner,
-                rollupId: 'c1-inner-rollup',
+            new EzClassifyUI(await newEngine(), {
+                root: withOutput(inner, 'c1-inner-rollup'),
             }),
         );
         await settle();
@@ -151,15 +157,11 @@ describe('nested-mount harness (DOM/SDK level)', () => {
 
     // -------------------------------------------------------------------------
     // C2, CROSS-MOUNT ROLLUP CONTRIBUTION
-    // OUTER root has its own aggregate sink (the #<rollupId> hidden input). A
-    // NESTED inner mount owns a field with a marking. The inner field is owned
-    // solely by the inner instance, so it is NOT in the outer instance's field
-    // list, yet its rolled-up whole still reaches the OUTER rollup through the
+    // OUTER root holds a hidden page-marking output the host placed. A NESTED
+    // inner mount owns a field with a marking. The inner field is owned solely
+    // by the inner instance, so it is NOT in the outer instance's field list,
+    // yet its rolled-up whole still reaches the OUTER rollup through the
     // registry's inferred ancestry edge.
-    //
-    // NOTE on `data-ezclassify-aggregate`: that attribute is a scan-time binding
-    // flag, not the rolled-up value sink. The sink is the synthesized
-    // #<rollupId> hidden input, which is what these assertions read.
     // -------------------------------------------------------------------------
     it('C2: an inner mount field feeds the outer rollup without joining its field list', async () => {
         const outer = container;
@@ -176,15 +178,13 @@ describe('nested-mount harness (DOM/SDK level)', () => {
         inner.appendChild(field);
 
         const outerUI = track(
-            new EzClassifyUI(newEngine(), {
-                root: outer,
-                rollupId: 'c2-outer-rollup',
+            new EzClassifyUI(await newEngine(), {
+                root: withOutput(outer, 'c2-outer-rollup'),
             }),
         );
         const innerUI = track(
-            new EzClassifyUI(newEngine(), {
-                root: inner,
-                rollupId: 'c2-inner-rollup',
+            new EzClassifyUI(await newEngine(), {
+                root: withOutput(inner, 'c2-inner-rollup'),
             }),
         );
         await settle();
@@ -220,7 +220,9 @@ describe('nested-mount harness (DOM/SDK level)', () => {
         root.appendChild(field);
 
         const ui = track(
-            new EzClassifyUI(newEngine(), { root, rollupId: 'c3-rollup' }),
+            new EzClassifyUI(await newEngine(), {
+                root: withOutput(root, 'c3-rollup'),
+            }),
         );
         await settle();
 
@@ -271,15 +273,13 @@ describe('nested-mount harness (DOM/SDK level)', () => {
         right.appendChild(rightField);
 
         const leftUI = track(
-            new EzClassifyUI(newEngine(), {
-                root: left,
-                rollupId: 'c4-left-rollup',
+            new EzClassifyUI(await newEngine(), {
+                root: withOutput(left, 'c4-left-rollup'),
             }),
         );
         const rightUI = track(
-            new EzClassifyUI(newEngine(), {
-                root: right,
-                rollupId: 'c4-right-rollup',
+            new EzClassifyUI(await newEngine(), {
+                root: withOutput(right, 'c4-right-rollup'),
             }),
         );
         await settle();
@@ -329,7 +329,11 @@ describe('nested-mount harness (DOM/SDK level)', () => {
         reference.value = 'HIGH'; // would dominate the max-rollup if (wrongly) counted
         refWrap.appendChild(reference);
 
-        track(new EzClassifyUI(newEngine(), { root, rollupId: 'c6-rollup' }));
+        track(
+            new EzClassifyUI(await newEngine(), {
+                root: withOutput(root, 'c6-rollup'),
+            }),
+        );
         await settle();
 
         // Only the on-page LOW marking rolls up; the reference HIGH is excluded.
@@ -368,15 +372,13 @@ describe('nested-mount harness (DOM/SDK level)', () => {
         inner.appendChild(innerRef);
 
         track(
-            new EzClassifyUI(newEngine(), {
-                root: outer,
-                rollupId: 'c7-outer-rollup',
+            new EzClassifyUI(await newEngine(), {
+                root: withOutput(outer, 'c7-outer-rollup'),
             }),
         );
         track(
-            new EzClassifyUI(newEngine(), {
-                root: inner,
-                rollupId: 'c7-inner-rollup',
+            new EzClassifyUI(await newEngine(), {
+                root: withOutput(inner, 'c7-inner-rollup'),
             }),
         );
         await settle();

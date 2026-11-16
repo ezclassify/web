@@ -11,11 +11,10 @@ import type { ConceptView, Assertion } from '@ezclassify/types';
 // The fixtures are authored schemes (concept documentation blocks), an
 // internal shape; this spec is already engine-bound.
 import type { Category, Concept, Scheme } from '@ezclassify/types/internal';
-import { Context } from '@ezclassify/engine';
+import { schemeOnlyContext } from '../../test-fixtures/context-doubles';
 import { Handbook } from './handbook';
-import { loadPantry } from '@ezclassify/example-schemes/pantry';
-import { loadCedarValley } from '@ezclassify/example-schemes/cedar-valley';
 import { mockRenderFormats } from '../render-format-layout-mock';
+import { connectDemoContext } from '../../../../test-support/demo-runtime';
 
 /** Scheme with scopes and explicit defaultScope */
 function createScopedProfile(): Scheme {
@@ -154,7 +153,7 @@ function createProfile(): Scheme {
                         text: 'Handle with care',
                     },
                     {
-                        type: 'handling',
+                        type: 'admonition',
                         required: false,
                         text: 'Special handling required',
                     },
@@ -216,11 +215,11 @@ function createProfile(): Scheme {
 /**
  * Project authored concepts the way an engine adapter does.
  *
- * `getConceptsInCategory` answers `ConceptView`, which carries `definition`,
- * `guidance` and `notices` as flat fields. The authored `Concept` the fixtures
- * below are written as keeps all three inside its `documentation` block, so a
- * mock that handed those documents straight back would let the Handbook pass
- * against a shape no real adapter returns.
+ * An adapter answers `ConceptView`, which carries `definition`, `guidance` and
+ * `notices` as flat fields. The authored `Concept` the fixtures below are
+ * written as keeps all three inside its `documentation` block, so a mock that
+ * handed those documents straight back would let the Handbook pass against a
+ * shape no real adapter returns.
  */
 function toConceptViews(concepts: Concept[]): ConceptView[] {
     return concepts.map(
@@ -274,12 +273,10 @@ function createEngine(scheme?: Scheme) {
             scopes: (p as any).scopes ?? [],
         }),
         listCategories: () => (p as any).categories ?? [],
-        getConceptsInCategory: (catId: string, opts?: any) => {
-            if (opts?.nested) return undefined;
-            return ((view as any).concepts ?? []).filter((c: any) =>
+        getConceptsInCategory: (catId: string) =>
+            ((view as any).concepts ?? []).filter((c: any) =>
                 c.categories?.includes(catId),
-            );
-        },
+            ),
         render: vi.fn((_a: Assertion[]) => ''),
         process: vi.fn((_input: string) => ({
             assertions: [],
@@ -308,12 +305,10 @@ function createAsyncEngine(scheme?: Scheme) {
             scopes: (p as any).scopes ?? [],
         }),
         listCategories: () => (p as any).categories ?? [],
-        getConceptsInCategory: (catId: string, opts?: any) => {
-            if (opts?.nested) return undefined;
-            return ((view as any).concepts ?? []).filter((c: any) =>
+        getConceptsInCategory: (catId: string) =>
+            ((view as any).concepts ?? []).filter((c: any) =>
                 c.categories?.includes(catId),
-            );
-        },
+            ),
         render: vi.fn((_a: Assertion[]) => ''),
         process: vi.fn((_input: string) => ({
             assertions: [],
@@ -327,7 +322,7 @@ function createAsyncEngine(scheme?: Scheme) {
     } as any;
 }
 
-const toCtx = (eng: unknown) => Context.fromSchemeEngine(eng as never);
+const toCtx = (eng: unknown) => schemeOnlyContext(eng as never);
 describe('Handbook', () => {
     let container: HTMLDivElement;
     let handbook: Handbook;
@@ -381,6 +376,39 @@ describe('Handbook', () => {
             ].map((l) => l.textContent);
             expect(labels).toContain('Definition');
             expect(labels).toContain('Guidance');
+        });
+
+        it('leads the overview with a marked scheme document overall marking, verbatim', async () => {
+            const marked = {
+                ...createProfile(),
+                marking: '(U) NOTIONAL//TEST',
+            } as Scheme;
+            await handbook.init(container, toCtx(createEngine(marked)));
+
+            const overview = container.querySelector('.ez-handbook__overview')!;
+            const marking = overview.querySelector(
+                '.ez-handbook__overview-marking',
+            )!;
+            expect(overview.firstElementChild).toBe(marking);
+            expect(marking.textContent).toBe(
+                'Overall marking: (U) NOTIONAL//TEST',
+            );
+            expect(marking.querySelector('.ez-sr-only')!.textContent).toBe(
+                'Overall marking: ',
+            );
+        });
+
+        it('shows no overall marking for an unmarked scheme document', async () => {
+            await handbook.init(container, toCtx(createEngine()));
+
+            const overview = container.querySelector('.ez-handbook__overview')!;
+            expect(
+                overview.querySelector('.ez-handbook__overview-marking'),
+            ).toBeNull();
+            expect(overview.textContent).not.toContain('Overall marking');
+            expect(overview.firstElementChild!.className).toBe(
+                'ez-handbook__overview-name',
+            );
         });
 
         it('shows version, category count, and concept count', async () => {
@@ -521,49 +549,31 @@ describe('Handbook', () => {
             expect(rules[0].textContent).toBe('Exclusive with Beta');
         });
 
-        it('renders Description/Usage from flat ConceptView fields on the nested path', async () => {
-            // The nested-category path builds its entries from
-            // `getConceptsInCategory({ nested: true })` rather than from the flat
-            // call, so it reaches the description and usage text by its own route.
-            // Regression guard: that route has to render them too.
+        it('nests a concept under its broader concept, whatever its position', async () => {
             const p = createProfile();
-            const eng = createEngine(p);
-            eng.getConceptsInCategory = (
-                catId: string,
-                opts?: { nested?: boolean },
-            ) => {
-                const inCat = ((p as any).concepts ?? []).filter((c: any) =>
-                    c.categories?.includes(catId),
-                );
-                if (!opts?.nested) return inCat;
-                return inCat.map((c: any) => ({
-                    concept: {
-                        id: c.id,
-                        name: c.name,
-                        views: c.views ?? {},
-                        aliases: c.aliases ?? [],
-                        categories: c.categories ?? [],
-                        parents: c.parents ?? [],
-                        position: c.position ?? 0,
-                        // Flat view fields, NOT nested under `documentation`.
-                        definition: c.documentation?.definition,
-                        guidance: c.documentation?.guidance,
-                    },
-                    depth: 0,
-                }));
-            };
-            await handbook.init(container, toCtx(eng), { expandAll: true });
+            // Put the narrower concept first by position: it still reads
+            // under its broader one, one level down.
+            (p as any).concepts.find((c: any) => c.id === 'beta').position = -1;
+            await handbook.init(container, toCtx(createEngine(p)), {
+                expandAll: true,
+            });
 
-            const firstEntry = container.querySelector('.ez-handbook__entry')!;
-            const labels = [
-                ...firstEntry.querySelectorAll('.ez-handbook__section-label'),
-            ].map((l) => l.textContent);
-            expect(labels).toContain('Description');
-            expect(labels).toContain('Usage');
-            expect(
-                firstEntry.querySelector('.ez-handbook__section-text')!
-                    .textContent,
-            ).toBe('First letter of the Greek alphabet');
+            const entries = [
+                ...container.querySelectorAll<HTMLElement>(
+                    '.ez-handbook__entry',
+                ),
+            ].map((el) => [
+                el.getAttribute('aria-label'),
+                el.getAttribute('data-depth'),
+            ]);
+            expect(entries.slice(0, 3)).toEqual([
+                ['Alpha', '0'],
+                ['Beta', '1'],
+                ['Old Concept', '0'],
+            ]);
+            const beta = container.querySelectorAll('.ez-handbook__entry')[1];
+            expect(beta.classList).toContain('ez-handbook__entry--depth-1');
+            expect(beta.getAttribute('aria-level')).toBe('2');
         });
 
         it('shows aliases and alternative views', async () => {
@@ -634,7 +644,9 @@ describe('Handbook', () => {
             ).toBe(true);
             expect(notices[0].textContent).toContain('Handle with care');
             expect(
-                notices[1].classList.contains('ez-handbook__notice--handling'),
+                notices[1].classList.contains(
+                    'ez-handbook__notice--admonition',
+                ),
             ).toBe(true);
             expect(notices[1].textContent).toContain(
                 'Special handling required',
@@ -1122,39 +1134,53 @@ describe('Handbook', () => {
     });
 
     describe('context re-bind', () => {
-        it('renders pantry scheme categories and concepts', async () => {
-            const ctxA = toCtx(loadPantry());
+        it('renders Cedar Valley scheme categories and concepts', async () => {
+            const ctxA = toCtx(
+                (await connectDemoContext({ contextId: 'cedar-valley' }))
+                    .scheme,
+            );
             await handbook.init(container, ctxA, { expandAll: true });
 
             const headers = [
                 ...container.querySelectorAll('.ez-handbook__category-header'),
             ];
             const headerText = headers.map((h) => h.textContent ?? '');
-            expect(headerText.some((t) => t.includes('Allergen Tags'))).toBe(
-                true,
-            );
+            expect(
+                headerText.some((t) => t.includes('Sensitive content')),
+            ).toBe(true);
 
             const entries = [
                 ...container.querySelectorAll('.ez-handbook__entry-name'),
             ];
             const entryNames = entries.map((e) => e.textContent ?? '');
-            expect(entryNames.some((n) => n.includes('Gluten'))).toBe(true);
+            expect(
+                entryNames.some((n) => n.includes('Student information')),
+            ).toBe(true);
         });
 
-        it('fully re-renders on Context change: cedarValley content appears, pantry content disappears', async () => {
-            const ctxA = toCtx(loadPantry());
+        it('fully re-renders on Context change: the levels content appears, the district content disappears', async () => {
+            const ctxA = toCtx(
+                (await connectDemoContext({ contextId: 'cedar-valley' }))
+                    .scheme,
+            );
             await handbook.init(container, ctxA, { expandAll: true });
 
-            // Sanity: pantry content visible before re-bind
-            expect(container.textContent).toContain('Allergen Tags');
-            expect(container.textContent).toContain('Gluten');
+            // Sanity: district-only content visible before re-bind
+            expect(container.textContent).toContain('Sensitive content');
+            expect(container.textContent).toContain('Student information');
 
-            // Re-bind to cedarValley context
+            // Re-bind to the protection-levels context
             handbook.destroy();
-            const ctxB = toCtx(loadCedarValley());
+            const ctxB = toCtx(
+                (
+                    await connectDemoContext({
+                        contextId: 'cedar-valley-protection',
+                    })
+                ).scheme,
+            );
             await handbook.init(container, ctxB, { expandAll: true });
 
-            // CedarValley category and concept must appear
+            // The levels category and concept must appear
             const headers = [
                 ...container.querySelectorAll('.ez-handbook__category-header'),
             ];
@@ -1167,11 +1193,13 @@ describe('Handbook', () => {
             const entryNames = entries.map((e) => e.textContent ?? '');
             expect(entryNames.some((n) => n.includes('Restricted'))).toBe(true);
 
-            // Pantry-specific content must be gone
-            expect(headerText.some((t) => t.includes('Allergen Tags'))).toBe(
-                false,
-            );
-            expect(entryNames.some((n) => n.includes('Gluten'))).toBe(false);
+            // Content only the district scheme carries must be gone
+            expect(
+                headerText.some((t) => t.includes('Sensitive content')),
+            ).toBe(false);
+            expect(
+                entryNames.some((n) => n.includes('Student information')),
+            ).toBe(false);
         });
     });
 });

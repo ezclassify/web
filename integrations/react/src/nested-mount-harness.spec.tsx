@@ -2,20 +2,14 @@
  * Nested-mount ownership boundary, React level (case C5).
  *
  * Companion to libs/ui/src/nested-mount-harness.spec.ts (the DOM/SDK-level
- * C1..C4). This file guards the same invariant through the React integration's
- * useSchemeEngine hook.
+ * C1..C4). This file guards the same invariant through nested `<EzClassify>`
+ * roots: each constructs its own EzClassifyUI, so the inner root's controller
+ * sits under two overlapping roots.
  *
- * The shape: a parent component calls useSchemeEngine on a provider region; a
- * CHILD component nested inside it (a nested-scope field) ALSO calls
- * useSchemeEngine on its own wrapper, which contains one controller element.
- * Each useSchemeEngine constructs its own EzClassifyUI, so the child's
- * controller sits under two overlapping roots: the parent's region ref and the
- * child's wrapper ref.
- *
- * Invariant: a controller is enhanced once, by the scope that owns it. The
- * child controller's nearest mount-root ancestor is the child scope's root, so
- * the enclosing parent scope must skip it. A regression would double-enhance
- * the field and produce two mount siblings.
+ * Invariant: a controller is enhanced once, by the root that owns it. Its
+ * nearest mount-root ancestor is the inner root, so the outer root must skip
+ * it. A regression would double-enhance the field and produce two mount
+ * siblings.
  */
 
 import { readFileSync } from 'node:fs';
@@ -23,9 +17,9 @@ import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, it, expect, afterEach } from 'vitest';
 import { render, act, cleanup } from '@testing-library/react';
-import { Context } from '@ezclassify/engine';
-import type { LocalSchemeEngineAdapter } from '@ezclassify/types';
-import { useSchemeEngine } from './index';
+import type { ContextAdapter } from '@ezclassify/ui';
+import { EzClassify, EzClassifyProvider } from './index';
+import { connectDemoContext } from '../../../test-support/demo-runtime';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const fixturesDir = resolve(__dirname, '../../../vendor/spec/fixtures/v1');
@@ -36,10 +30,13 @@ function loadScheme(): unknown {
     );
 }
 
-/** A fresh, standalone scheme engine adapter from the reference fixture. */
-function makeEngine(): LocalSchemeEngineAdapter {
-    return Context.fromComponents({ scheme: loadScheme() })
-        .scheme as LocalSchemeEngineAdapter;
+/** A fresh Context over the reference fixture. */
+async function makeContext(): Promise<ContextAdapter> {
+    return (await connectDemoContext({
+        draft: {
+            scheme: loadScheme(),
+        },
+    })) as unknown as ContextAdapter;
 }
 
 /** Flush React effects plus EzClassifyUI's async component-init + rollup. */
@@ -53,37 +50,24 @@ async function flush(): Promise<void> {
 
 afterEach(() => cleanup());
 
-/**
- * A nested-scope field: a child that opens its OWN useSchemeEngine scope on a
- * wrapper holding a single controller element.
- */
-function NestedScopeField({ engine }: { engine: LocalSchemeEngineAdapter }) {
-    const { ref } = useSchemeEngine(engine, { rollupId: 'c5-child-rollup' });
+/** A field in its own root, nested inside the parent root below. */
+function NestedRootField() {
     return (
-        <div ref={ref} data-testid="c5-child-region">
+        <EzClassify>
             <input data-ezclassify-controller="tags" id="c5-child-field" />
-        </div>
-    );
-}
-
-/** Parent provider-region that ALSO opens a useSchemeEngine scope. */
-function ParentRegion({ engine }: { engine: LocalSchemeEngineAdapter }) {
-    const { ref } = useSchemeEngine(engine, { rollupId: 'c5-parent-rollup' });
-    return (
-        <div ref={ref} data-testid="c5-parent-region">
-            <NestedScopeField engine={engine} />
-        </div>
+        </EzClassify>
     );
 }
 
 describe('nested-mount harness (React level)', () => {
-    it('C5: a controller under nested useSchemeEngine scopes is enhanced only by its owning scope', async () => {
-        // Two distinct engine identities so each useSchemeEngine builds its own
-        // EzClassifyUI (a single shared identity would still build two instances,
-        // one per hook call, but keeping them distinct mirrors a host that passes
-        // a region-scoped engine to each level and avoids any future identity-dedup
-        // masking the count).
-        const { container } = render(<ParentRegion engine={makeEngine()} />);
+    it('C5: a controller under nested roots is enhanced only by the root that owns it', async () => {
+        const { container } = render(
+            <EzClassifyProvider context={await makeContext()}>
+                <EzClassify>
+                    <NestedRootField />
+                </EzClassify>
+            </EzClassifyProvider>,
+        );
         await flush();
 
         const field = container.querySelector('#c5-child-field') as HTMLElement;
@@ -93,8 +77,8 @@ describe('nested-mount harness (React level)', () => {
         const mounts = parent.querySelectorAll(
             ':scope > [data-ezclassify-mount]',
         );
-        // Exactly one mount: the child scope owns the field; the parent scope skips
-        // it. Two would mean both scopes enhanced it (the regression this guards).
+        // Exactly one mount: the inner root owns the field; the outer root
+        // skips it. Two would mean both enhanced it.
         expect(mounts.length).toBe(1);
     });
 });

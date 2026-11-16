@@ -293,7 +293,6 @@ export function createAsyncMockEngine(
             version: scheme.version,
             name: scheme.name,
             description: scheme.description,
-            license: scheme.license,
             defaultRenderFormat: scheme.defaultRenderFormat,
             scopes: scheme.scopes,
             referenceSurfaceLabel: scheme.referenceSurfaceLabel ?? {

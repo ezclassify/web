@@ -51,13 +51,13 @@ button:focus-visible {
 
 form > label,
 form > p,
-app-document-summary > p {
+app-document-state > p {
     margin: 0.75rem 0 0;
     font-size: 0.875rem;
     font-weight: 600;
 }
 
-app-document-summary > button {
+app-document-state > button {
     align-self: flex-start;
     margin-top: 1rem;
 }

@@ -6,18 +6,23 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import type { SchemeEngineAdapter } from '@ezclassify/types';
+import type {
+    RemoteContextSchemeEngineAdapter,
+    SchemeEngineAdapter,
+} from '@ezclassify/types';
 import { loadMultiScopeRegression } from '../test-fixtures/load-multi-scope-regression';
 import { EzClassifyUI } from './ezclassify-ui';
+import { asContext } from '../test-fixtures/as-context';
+import { demoRuntimeSettled } from '../../../test-support/demo-runtime';
 
 const HTML = `
-  <input type="hidden" id="doc-marking" data-ezclassify-rendered />
+  <input type="hidden" id="doc-marking" data-ezclassify-marking />
   <textarea id="body" data-ezclassify-controller="marked-textarea"
          data-ezclassify-bound-to="doc-marking"></textarea>
 `;
 
 async function flush(): Promise<void> {
-    for (let i = 0; i < 8; i++) await Promise.resolve();
+    await demoRuntimeSettled();
     await new Promise((r) => setTimeout(r, 20));
 }
 
@@ -45,7 +50,9 @@ describe('MarkedTextArea bound-to: multi-segment publish rolls up per the docume
     });
 
     it("two segments asserting the same single-select category resolve via that category's rollup rule (max rank), not typing order", async () => {
-        forms = new EzClassifyUI(loadMultiScopeRegression(), { root });
+        forms = new EzClassifyUI(asContext(await loadMultiScopeRegression()), {
+            root,
+        });
         await flush();
 
         const ta = root.querySelector<HTMLTextAreaElement>('#body')!;
@@ -73,7 +80,9 @@ describe('MarkedTextArea bound-to: multi-segment publish rolls up per the docume
     });
 
     it('reversed typing order (higher-rank segment typed SECOND) still resolves to the higher rank, ruling out first-segment-wins too', async () => {
-        forms = new EzClassifyUI(loadMultiScopeRegression(), { root });
+        forms = new EzClassifyUI(asContext(await loadMultiScopeRegression()), {
+            root,
+        });
         await flush();
 
         const ta = root.querySelector<HTMLTextAreaElement>('#body')!;
@@ -99,32 +108,34 @@ describe('MarkedTextArea bound-to: multi-segment publish rolls up per the docume
     });
 
     it('ignores an older portion aggregate that answers after a replacement', async () => {
-        const engine: SchemeEngineAdapter = loadMultiScopeRegression();
+        const engine: RemoteContextSchemeEngineAdapter =
+            await loadMultiScopeRegression();
         const aggregate = engine.aggregateAssertions.bind(engine);
         let release!: () => void;
         const gate = new Promise<void>((resolve) => {
             release = resolve;
         });
         let held = false;
-        vi.spyOn(engine, 'aggregateAssertions').mockImplementation(
-            (...args) => {
-                const result = aggregate(...args);
-                if (
-                    !held &&
-                    args[0].length === 2 &&
-                    args[0].some((set) =>
-                        set.some(
-                            (a) => a.conceptId === 'STATE_ASSESSMENT_STAFF',
-                        ),
-                    )
-                ) {
-                    held = true;
-                    return gate.then(() => result);
-                }
-                return result;
-            },
-        );
-        forms = new EzClassifyUI(engine, { root });
+        // The held answer arrives late, the way a remote adapter's would, so
+        // the spy takes the contract that lets an answer be a promise.
+        vi.spyOn(
+            engine as unknown as SchemeEngineAdapter,
+            'aggregateAssertions',
+        ).mockImplementation((...args) => {
+            const result = aggregate(...args);
+            if (
+                !held &&
+                args[0].length === 2 &&
+                args[0].some((set) =>
+                    set.some((a) => a.conceptId === 'STATE_ASSESSMENT_STAFF'),
+                )
+            ) {
+                held = true;
+                return gate.then(() => result);
+            }
+            return result;
+        });
+        forms = new EzClassifyUI(asContext(engine), { root });
         await flush();
         const textarea = root.querySelector<HTMLTextAreaElement>('#body')!;
         textarea.value =
@@ -147,7 +158,9 @@ describe('MarkedTextArea bound-to: multi-segment publish rolls up per the docume
     });
 
     it('two segments asserting different categories union together on doc-marking', async () => {
-        forms = new EzClassifyUI(loadMultiScopeRegression(), { root });
+        forms = new EzClassifyUI(asContext(await loadMultiScopeRegression()), {
+            root,
+        });
         await flush();
 
         const ta = root.querySelector<HTMLTextAreaElement>('#body')!;
@@ -183,7 +196,7 @@ describe('MarkedTextArea bound-to: replacement parts cannot be cleared by stale 
         document.body.innerHTML = '';
         root = document.createElement('div');
         root.innerHTML = `
-          <input type="hidden" id="doc-marking" data-ezclassify-rendered />
+          <input type="hidden" id="doc-marking" data-ezclassify-marking />
           <textarea id="body" data-ezclassify-controller="marked-textarea"
                     data-ezclassify-bound-to="doc-marking"></textarea>
         `;
@@ -197,7 +210,9 @@ describe('MarkedTextArea bound-to: replacement parts cannot be cleared by stale 
     });
 
     it('keeps the replacement segment set in the parent aggregate', async () => {
-        forms = new EzClassifyUI(loadMultiScopeRegression(), { root });
+        forms = new EzClassifyUI(asContext(await loadMultiScopeRegression()), {
+            root,
+        });
         await flush();
 
         const textarea = root.querySelector<HTMLTextAreaElement>('#body')!;

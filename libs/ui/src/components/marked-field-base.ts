@@ -32,24 +32,44 @@ import type {
 } from './component-base-readonly';
 import { teardownAfterWrite } from './teardown-write';
 import {
-    isAddressableSchemeEngine,
     resolveProfile,
     resolveSchemeEngine,
     resolveContextSource,
 } from './component-base-readonly';
 import { isMacPlatform } from './dom-helpers';
 import { takenFromWhole } from '../assertion-identity';
+import { renderViewRefused } from '../render-refusal';
 import { t } from '../i18n';
-import { wrapPartMark } from './marked-text-area-logic';
+import { templateDelimiters, wrapPartMark } from './marked-text-area-logic';
 import { adoptStylesOnce } from '../styles/adopt';
 import { attachTooltip, COMPONENT_CSS } from './component-utils';
 import {
     assertDescribesConcepts,
     createConceptDescriber,
 } from './concept-description';
-import { defaultSurfaceOf, resolveOutput } from '../format-resolver';
+import {
+    assertWritesScopes,
+    defaultSurfaceOf,
+    resolveOutput,
+    viewOutputOf,
+} from '../format-resolver';
+import {
+    inDeclarationOrder,
+    listedScopesOf,
+    scopeSetOf,
+    writesCategoryOf,
+} from '../scopes';
+import {
+    explainedChanges,
+    schemeChangeWords,
+    type ChangeWords,
+} from './status-mark';
 import type { InlineMarkingEditor } from './inline-marking-editor';
+import { writtenFactTest, type ShownForm } from '../written-facts';
 import { createClearButton, type ClearButton } from './clear-button';
+import { isUndoChord, MarkingUndo } from './marking-undo';
+import { announce, createAnnouncer } from './accessibility-helpers';
+import { mountFieldChrome, type FieldChrome } from './field-chrome';
 
 /**
  * CSS class-name set a concrete field uses. Keeps the shared scaffolding (wrap,
@@ -62,23 +82,14 @@ export interface MarkedFieldClassNames {
     /** Visible display layer that mirrors the host. */
     display: string;
     /**
-     * Footer row holding the keyboard hint / touch "Add marking" button and the
-     * trailing chrome slot, in one flex row so the chrome always lands
-     * right-aligned opposite whichever of the two is currently shown.
+     * Footer row under the field: the keyboard hint / touch "Add marking"
+     * button.
      */
     footer: string;
     /** Keyboard-hint footer. */
     kbHint: string;
     /** Touch "Add marking" button. */
     touchAdd: string;
-    /**
-     * Chrome slot: the field's status mark and (when wired) its ★ favorites
-     * button, hanging off the field's bottom-right edge. It stays there at rest
-     * and while the inline editor is open, so the controls never move between
-     * states, and the editor, which opens below or above the line being edited,
-     * never has to push them aside.
-     */
-    hintChrome: string;
     /** Marker class toggled on the container while the picker is open. */
     pickerActive: string;
 }
@@ -103,26 +114,20 @@ export abstract class MarkedFieldBase<
         appliedFixes: Change[];
     }> {
         const result = await Promise.resolve(
-            this.schemeAddressing && isAddressableSchemeEngine(this.engine)
-                ? this.engine.validate(marking, this.schemeId, {
-                      outputFormat: this.scanFormat,
-                  })
-                : this.engine.validate(marking, {
-                      outputFormat: this.scanFormat,
-                  }),
+            this.engine.validate(marking, {
+                outputFormat: this.scanFormat,
+            }),
         );
         return {
             assertions: result.assertions,
-            rendered: result.rendered,
+            // A refused write is the engine's marker: the saved text stands.
+            rendered: renderViewRefused(result) ? marking : result.rendered,
             appliedFixes: result.appliedFixes,
         };
     }
     /** Expand a named scheme preset through the bound adapter. */
     protected callApplyPreset(presetId: string, outputFormat?: string) {
         const options = outputFormat ? { outputFormat } : undefined;
-        if (this.schemeAddressing && isAddressableSchemeEngine(this.engine)) {
-            return this.engine.applyPreset(presetId, this.schemeId, options);
-        }
         return this.engine.applyPreset(presetId, options);
     }
     /**
@@ -133,13 +138,6 @@ export abstract class MarkedFieldBase<
      */
     protected engineSource!: ComponentEngineSource;
 
-    /** Whether calls from this bare adapter may include an explicit scheme id. */
-    protected get schemeAddressing(): boolean {
-        return (
-            !('scheme' in this.engineSource) &&
-            isAddressableSchemeEngine(this.engine)
-        );
-    }
     protected container!: HTMLDivElement;
     protected options: ComponentOptions = {};
     protected schemeId!: string;
@@ -148,12 +146,35 @@ export abstract class MarkedFieldBase<
     protected host!: H;
     protected display!: HTMLDivElement;
     /**
-     * The chrome slot (see {@link MarkedFieldClassNames.hintChrome}), appended
-     * by {@link appendFooter}. The subclass mounts its status mark and (when
-     * wired) favorites button into it with `shape: 'chrome'`.
+     * The field's inline chrome, mounted by {@link appendFooter}. The subclass
+     * mounts its status mark and (when wired) favorites button into
+     * `chrome.status` with `shape: 'chrome'`; clear follows them.
      */
-    protected hintChrome!: HTMLDivElement;
+    protected chrome!: FieldChrome;
+    /**
+     * Where the chrome sits on the field's trailing edge: centered on a
+     * single-line field, pinned to the first line of a multi-line one.
+     */
+    protected readonly chromeAlign: 'center' | 'start' = 'center';
     private clearControl?: ClearButton;
+    /**
+     * The undo of a clear (see marking-undo.ts). The field's value is its text,
+     * so every change to the text after the clear ends the offer.
+     */
+    private readonly undo = new MarkingUndo();
+    private releaseUndo: (() => void) | null = null;
+    private readonly followText = () => this.undo.observe(this.host.value);
+    private readonly undoKey = (event: KeyboardEvent) => {
+        if (!isUndoChord(event) || !this.undo.offer) return;
+        event.preventDefault();
+        event.stopPropagation();
+        void this.undo.perform().then(() => {
+            this.host.focus({ preventScroll: true });
+            if (this.undoAnnouncer)
+                announce(this.undoAnnouncer, t('a11y.markingRestored'));
+        });
+    };
+    private undoAnnouncer: HTMLElement | null = null;
 
     protected embeddedStyle: EmbeddedMarkingStyle | null = null;
     /** Resolved from the scheme in bindEngine; empty until then. */
@@ -172,6 +193,35 @@ export abstract class MarkedFieldBase<
     protected _themeObserver: MutationObserver | null = null;
     protected _explicitClose = false;
     protected _lastCloseTime = 0;
+    /**
+     * True while a mouse press that began on the host is held. A caret move
+     * during a press opens nothing: the release decides, so a plain click opens
+     * the marking with its list, and a drag or a double-click stays a text
+     * selection.
+     */
+    protected pressing = false;
+    private readonly beginPress = (event: Event): void => {
+        if ((event as MouseEvent).button === 0) this.pressing = true;
+    };
+    // Cleared on any release in the document: a drag can end anywhere.
+    private readonly endPress = (): void => {
+        this.pressing = false;
+    };
+
+    /** Start tracking presses on the host (see {@link pressing}). */
+    protected watchPresses(): void {
+        this.host.addEventListener('mousedown', this.beginPress);
+        document.addEventListener('mouseup', this.endPress, true);
+        window.addEventListener('blur', this.endPress);
+    }
+
+    /** Stop tracking presses. */
+    protected unwatchPresses(): void {
+        this.host.removeEventListener('mousedown', this.beginPress);
+        document.removeEventListener('mouseup', this.endPress, true);
+        window.removeEventListener('blur', this.endPress);
+        this.pressing = false;
+    }
     /**
      * Host value + caret captured when the picker opens (for the textarea,
      * BEFORE the template insertion that precedes the open). Escape restores
@@ -239,24 +289,16 @@ export abstract class MarkedFieldBase<
         requestedFormat: string | undefined,
     ): void {
         const resolvedEngine = resolveSchemeEngine(
-            container,
             engineOrContext,
             this.componentLabel,
         );
         assertDescribesConcepts(resolvedEngine, this.componentLabel);
         this.engine = resolvedEngine;
         this.engineSource =
-            resolveContextSource(container, engineOrContext) ?? resolvedEngine;
+            resolveContextSource(engineOrContext) ?? resolvedEngine;
         this.container = container;
-        this.schemeId = resolveProfile(
-            container,
-            resolvedEngine,
-            this.options,
-            this.schemeAddressing,
-        );
-        const resolvedScheme = this.schemeAddressing
-            ? resolvedEngine.getScheme(this.schemeId)
-            : resolvedEngine.getScheme();
+        this.schemeId = resolveProfile(resolvedEngine);
+        const resolvedScheme = resolvedEngine.getScheme();
         this.scheme = resolvedScheme;
         this.embeddedStyle =
             (
@@ -265,9 +307,13 @@ export abstract class MarkedFieldBase<
                 }
             ).embeddedMarking?.[0] ?? null;
         const formats = this.scheme.formats ?? [];
+        // A lone `scope` is a list of one, and a list of one is that scope.
+        const listed = listedScopesOf(this.options);
+        const meta = resolvedEngine.getSchemeMeta();
         // The host's spelling is resolved to the output it names: an output id
-        // as it is, a bare view id to that view on the field's surface. A
-        // scheme that lists no formats leaves nothing to check it against.
+        // as it is, a bare view id to that view on the field's surface (the
+        // first of the scopes it lists). A scheme that lists no formats leaves
+        // nothing to check it against.
         const requested =
             requestedFormat !== undefined && formats.length === 0
                 ? requestedFormat
@@ -275,20 +321,50 @@ export abstract class MarkedFieldBase<
                   resolveOutput(
                       formats,
                       requestedFormat,
-                      this.options.scope ??
+                      inDeclarationOrder(listed, meta)[0] ??
                           defaultSurfaceOf(
                               formats,
                               this.scheme.defaultRenderFormat,
                           ),
                   );
+        // A field that lists scopes writes them as one mark: in the format it
+        // names, else the part default of the first of them. Several are
+        // written only when that one output writes every one of them. The
+        // scheme decides; a field whose scopes no one output covers is
+        // refused here.
+        if (listed.length > 1) {
+            this.scanFormat =
+                requested ||
+                requestedFormat ||
+                viewOutputOf(meta, listed, true);
+            assertWritesScopes(
+                resolvedEngine,
+                resolvedScheme.categories,
+                this.scanFormat,
+                listed,
+                this.componentLabel,
+            );
+            return;
+        }
         // Every fallback comes out of the scheme. A literal format id here
         // would be a data value in code: a scheme that declares no format under
         // that name gets an id it never heard of. Both fields write parts, so a
-        // spelling the scheme does not have falls back to the part default.
+        // spelling the scheme does not have falls back to the part default:
+        // of the one scope the field lists, else of the default scope.
         this.scanFormat =
             requested ||
-            this.pickPartFormat() ||
+            (listed.length === 1
+                ? viewOutputOf(meta, listed, true)
+                : this.pickPartFormat()) ||
             this.schemeDefaultFormat(formats.map((format) => format.id));
+        // A field of one scope writes that scope only.
+        assertWritesScopes(
+            resolvedEngine,
+            resolvedScheme.categories,
+            this.scanFormat,
+            listed,
+            this.componentLabel,
+        );
     }
 
     /**
@@ -405,23 +481,33 @@ export abstract class MarkedFieldBase<
         this._themeObserver = observer;
     }
 
-    /** Disconnect and drop the theme observer installed by installThemeObserver. */
+    /**
+     * Release what setup attached around the host: the clear control, the
+     * inline chrome and the theme observer installed by installThemeObserver.
+     */
     protected disconnectThemeObserver(): void {
+        this.undo.end();
+        this.releaseUndo?.();
+        this.releaseUndo = null;
+        this.host?.removeEventListener('input', this.followText);
+        this.wrap?.removeEventListener('keydown', this.undoKey, true);
+        this.undoAnnouncer?.remove();
+        this.undoAnnouncer = null;
         this.clearControl?.destroy();
         this.clearControl = undefined;
+        this.chrome?.destroy();
         this._themeObserver?.disconnect();
         this._themeObserver = null;
     }
 
     /**
      * Append the footer row (keyboard hint + touch "Add marking") and the
-     * chrome slot to the wrap. The touch-add click delegates to
+     * field's inline chrome to the wrap. The touch-add click delegates to
      * {@link triggerAddMarking}.
      *
-     * The status mark and ★ favorites button live in {@link hintChrome}, which
-     * hangs off the field's bottom-right edge in every state (see
-     * {@link MarkedFieldClassNames.hintChrome}), keeping their position stable
-     * while the inline editor opens.
+     * The chrome ({@link chrome}) sits inside the field's trailing edge in every
+     * state, so its controls never move while the inline editor opens, and the
+     * field's text layers reserve the room it takes.
      */
     protected appendFooter(): void {
         const footer = document.createElement('div');
@@ -485,25 +571,49 @@ export abstract class MarkedFieldBase<
         this.wrap.appendChild(footer);
 
         // Last in the wrap, so Tab reaches the field, its fixes and the hint
-        // before the chrome; CSS hangs it above the field's bottom-right edge.
-        this.hintChrome = document.createElement('div');
-        this.hintChrome.className = this.classNames.hintChrome;
-        this.wrap.appendChild(this.hintChrome);
+        // before the chrome.
+        this.chrome = mountFieldChrome(this.wrap, {
+            root: this.container,
+            align: this.chromeAlign,
+        });
         this.clearControl = createClearButton({
             label: t('aria.clearText'),
             host: this.host,
             empty: () => this.host.value.length === 0,
             clear: () => {
-                ++this.scanSeq;
-                this._editorAssertions = null;
-                this.finishClose();
-                this.setValue('');
-                // This is a user edit, so observers receive the same native event as typing.
-                this.host.dispatchEvent(new Event('input', { bubbles: true }));
+                const text = this.host.value;
+                this.undo.make('clear', this, () => this.replaceText(text));
+                this.replaceText('');
             },
+            undoOffer: () => this.undo.offer,
+            undo: () => this.undo.perform(),
+            focusField: () => this.host.focus({ preventScroll: true }),
         });
-        this.wrap.classList.add('ez-clear-text');
-        this.wrap.insertBefore(this.clearControl.button, this.hintChrome);
+        this.chrome.element.appendChild(this.clearControl.button);
+        this.releaseUndo = this.undo.subscribe(() =>
+            this.clearControl?.update(),
+        );
+        this.host.addEventListener('input', this.followText);
+        this.wrap.addEventListener('keydown', this.undoKey, true);
+        // Beside clear, which stays the chrome's last control.
+        this.undoAnnouncer = createAnnouncer();
+        this.chrome.element.insertBefore(
+            this.undoAnnouncer,
+            this.clearControl.button,
+        );
+    }
+
+    /**
+     * Replace the field's whole text as the author's own edit: a clear, or the
+     * undo of one. Any open editor and scan are dropped.
+     */
+    private replaceText(text: string): void {
+        ++this.scanSeq;
+        this._editorAssertions = null;
+        this.finishClose();
+        this.setValue(text);
+        // This is a user edit, so observers receive the same native event as typing.
+        this.host.dispatchEvent(new Event('input', { bubbles: true }));
     }
 
     /**
@@ -540,16 +650,70 @@ export abstract class MarkedFieldBase<
     }
 
     /**
+     * How the field's status mark names values and categories: a value the way
+     * this field writes its concept, in its scan format as a part, a category
+     * by its label.
+     */
+    protected changeWords(): ChangeWords {
+        return schemeChangeWords(() => {
+            if (!this.scheme || !this.engine) return undefined;
+            const meta = this.engine.getSchemeMeta();
+            return {
+                scheme: this.scheme,
+                meta,
+                field: {
+                    formatId: this.scanFormat,
+                    part: true,
+                    scopes: scopeSetOf(listedScopesOf(this.options), meta),
+                },
+            };
+        });
+    }
+
+    /**
+     * The changes the field's status mark explains for what it holds: those to
+     * what its marks write that its scopes write or it changed. A text field
+     * shows only its text, so a fact a rule filled in that the text does not
+     * write is not one of them (see explainedChanges).
+     *
+     * @param applied - The applied changes the field has recorded
+     * @param holds - What the field holds now, every mark of it
+     */
+    protected textStatusChanges(
+        applied: readonly Change[],
+        holds: readonly Assertion[],
+    ): Change[] {
+        const meta = this.engine.getSchemeMeta();
+        return explainedChanges(applied, holds, {
+            writes: writesCategoryOf(
+                listedScopesOf(this.options),
+                this.scheme.categories,
+                meta,
+            ),
+            written: writtenFactTest(
+                this.markForms(),
+                this.scheme.categories,
+                meta,
+            ),
+            showsUnwritten: false,
+        });
+    }
+
+    /**
+     * The forms the field's marks are written in, each with what writing it
+     * did, so its status mark explains changes to what the marks write (see
+     * written-facts.ts).
+     */
+    protected abstract markForms(): ShownForm[];
+
+    /**
      * The scheme's declared render format for a part of a marking, if it names
      * one. Matches the `defaultPartRenderFormat` field it reads.
      *
      * @returns The format id, or undefined when the scheme declares none
      */
     protected pickPartFormat(): string | undefined {
-        return (
-            this.engine.getSchemeMeta(this.schemeId).defaultPartRenderFormat ??
-            undefined
-        );
+        return this.engine.getSchemeMeta().defaultPartRenderFormat ?? undefined;
     }
 
     /**
@@ -570,6 +734,11 @@ export abstract class MarkedFieldBase<
     /** The embedded-marking template, defaulting to "{marking} " when none. */
     protected get template(): string {
         return this.embeddedStyle?.template ?? '{marking} ';
+    }
+
+    /** The delimiters the embedded-marking template writes around a mark. */
+    protected get delimiters(): { open: string; close: string } {
+        return templateDelimiters(this.template);
     }
 
     /** The scheme's embedded marking patterns, in declaration order. */
@@ -801,8 +970,6 @@ export abstract class MarkedFieldBase<
      */
     private readonly _conceptDescriber = createConceptDescriber({
         engine: () => this.engine,
-        schemeId: () => this.schemeId,
-        schemeAddressing: () => this.schemeAddressing,
         options: () => this.options,
     });
 

@@ -9,6 +9,7 @@ import type {
     Assertion,
     Change,
     Fix,
+    RenderAssessment,
     ValidationError,
     Warning,
 } from '@ezclassify/types';
@@ -16,15 +17,15 @@ import type {
     ComponentOptions,
     ComponentEngineSource,
 } from './component-base-readonly';
-import {
-    isAddressableSchemeEngine,
-    returnToField,
-    partsOption,
-} from './component-base-readonly';
+import { returnToField, partsOption } from './component-base-readonly';
 import { getMountHost } from '../mount-host-registry';
 import { InlineMarkingEditor } from './inline-marking-editor';
 import { accessibleLabel } from './composer/composer-view';
 import { takenFromWhole, withStatedAssertions } from '../assertion-identity';
+import {
+    renderViewRefusalMessages,
+    renderViewRefused,
+} from '../render-refusal';
 import { t } from '../i18n';
 import { revealClearOfPinned } from './composer/composer-placement';
 import { replacesStated } from './composer/composer-controller';
@@ -57,6 +58,7 @@ import {
     type MarkedFieldClassNames,
 } from './marked-field-base';
 import markedInputCss from './marked-input.css?inline';
+import type { ShownForm } from '../written-facts';
 
 /** Caller-facing options for MarkedInput. */
 export interface MarkedInputOptions extends ComponentOptions {
@@ -84,7 +86,6 @@ export class MarkedInput extends MarkedFieldBase<HTMLTextAreaElement> {
         footer: 'marked-input-footer',
         kbHint: 'marked-input-kb-hint',
         touchAdd: 'marked-input-touch-add',
-        hintChrome: 'marked-input-hint-chrome',
         pickerActive: 'marked-input-picker-active',
     };
 
@@ -143,6 +144,8 @@ export class MarkedInput extends MarkedFieldBase<HTMLTextAreaElement> {
     private _appliedFixes = new Map<string, Change>();
     /** What the mark held when {@link _appliedFixes} was last written. */
     private _fixesHeld: readonly Assertion[] = [];
+    /** What writing the mark did, from the read that recorded its fixes. */
+    private _fixesAssessment: RenderAssessment | undefined;
     private favoritesPanel: FavoritesPanel | null = null;
     /**
      * Bound `paste` handler: the owned editor is a `<textarea>`, and a paste
@@ -176,12 +179,12 @@ export class MarkedInput extends MarkedFieldBase<HTMLTextAreaElement> {
         // if we read the live object after that class is applied). The base helper
         // does the snapshot + mirror once the display exists.
         //
-        // The native input owns the field's visible box: its paint and its whole
-        // edge, the same edge MarkingField and TagInput take from their native
-        // inputs, so the family reads as one set of controls. The owned
-        // textarea can't stand in for it: its own edge is a textarea's (a
-        // browser's default input and textarea borders differ) and input-only
-        // host rules never reach it.
+        // The native input owns the field's visible box: its paint, its whole
+        // edge and its padding, the same box MarkingField and TagInput take
+        // from their native inputs, so the family reads as one set of
+        // controls. The owned textarea can't stand in for it: its own edge is
+        // a textarea's (a browser's default input and textarea borders differ)
+        // and input-only host rules never reach it.
         const nativeBoxProps = [
             'color',
             'backgroundColor',
@@ -189,6 +192,10 @@ export class MarkedInput extends MarkedFieldBase<HTMLTextAreaElement> {
             'borderWidth',
             'borderStyle',
             'borderRadius',
+            'paddingTop',
+            'paddingRight',
+            'paddingBottom',
+            'paddingLeft',
         ] as const;
         const readNativeBox = () => {
             const style = window.getComputedStyle(this.nativeInput);
@@ -225,6 +232,11 @@ export class MarkedInput extends MarkedFieldBase<HTMLTextAreaElement> {
             }
             input.style.borderWidth = box.borderWidth;
             input.style.borderStyle = box.borderStyle;
+            // The text starts where the host's padding puts it, in both layers.
+            input.style.paddingTop = box.paddingTop;
+            input.style.paddingRight = box.paddingRight;
+            input.style.paddingBottom = box.paddingBottom;
+            input.style.paddingLeft = box.paddingLeft;
         };
         mirrorNativeBox(authoredBox);
 
@@ -239,7 +251,7 @@ export class MarkedInput extends MarkedFieldBase<HTMLTextAreaElement> {
         // The owned textarea supplies wrapping/font metrics. Native input CSS
         // remains authoritative for the visible box, including late styles and
         // theme changes; the editor's transparent capture layer is never paint.
-        const editorLayoutProps = ['padding', 'font', 'lineHeight'] as const;
+        const editorLayoutProps = ['font', 'lineHeight'] as const;
 
         // Re-read the host's computed styles one frame after mount to catch host
         // stylesheets that load async after component init. Without this, the
@@ -261,11 +273,12 @@ export class MarkedInput extends MarkedFieldBase<HTMLTextAreaElement> {
         this.appendFooter();
 
         // The field's single status mark (starless "enhanced" until the
-        // engine applies a fix), in the footer's trailing chrome slot.
-        ensureStatusMark(this.hintChrome, {
+        // engine applies a fix), in the field's inline chrome.
+        ensureStatusMark(this.chrome.status, {
             shape: 'chrome',
             root: this.container,
             shouldShowTooltip: () => this.shouldShowTooltip(),
+            words: this.changeWords(),
         });
         // The ★ mounts on host favorites wiring OR scheme-declared presets
         // (ensureFavoritesButton owns the OR); an undefined `config` runs the
@@ -274,7 +287,7 @@ export class MarkedInput extends MarkedFieldBase<HTMLTextAreaElement> {
             this.options.favorites ||
             schemeOffersPresets(this.scheme, this.options.scope)
         ) {
-            this.favoritesPanel = ensureFavoritesButton(this.hintChrome, {
+            this.favoritesPanel = ensureFavoritesButton(this.chrome.status, {
                 root: this.container,
                 schemeId: this.schemeId,
                 scope: this.options.scope,
@@ -317,16 +330,21 @@ export class MarkedInput extends MarkedFieldBase<HTMLTextAreaElement> {
             this.display.style.borderColor = capturedStyles.borderColor;
             if (!this.picker) this.renderDisplay();
         });
-        // Click near the marking chip opens the picker. A drag-selection whose
-        // endpoint lands in the chip is NOT a chip click: bail so text
-        // selection across the mark survives (progressive-enhancement rule:
-        // never trap the native interaction).
+        // A plain click on the marking opens it with its list, caret at the
+        // click. The release decides (see MarkedFieldBase.pressing): a drag or
+        // a double-click is a text selection and opens nothing, so selecting
+        // across the mark survives (progressive-enhancement rule: never trap
+        // the native interaction). A click on the open editor lands on the
+        // editor itself, which handles it.
+        this.watchPresses();
         this.input.addEventListener('mouseup', (event: MouseEvent) => {
+            if (event.button !== 0 || event.detail > 1) return;
             if (!this.hasFocus || this.picker) return;
             requestAnimationFrame(() => {
                 if (this.picker) return;
                 if (this.input.selectionStart !== this.input.selectionEnd)
                     return;
+                const caret = this.caretInMark();
                 // The native input is the transparent hit target above the
                 // display. Browser caret placement does not reliably map a
                 // click on the styled chip back to a character inside the
@@ -347,7 +365,7 @@ export class MarkedInput extends MarkedFieldBase<HTMLTextAreaElement> {
                         event.clientY >= rect.top &&
                         event.clientY < rect.bottom;
                     if (hitChip) {
-                        void this.openPicker();
+                        this.openFromClick(caret);
                         return;
                     }
                 }
@@ -362,7 +380,7 @@ export class MarkedInput extends MarkedFieldBase<HTMLTextAreaElement> {
                     cursorPos < this.markEnd &&
                     !closeCooldown
                 ) {
-                    void this.openPicker();
+                    this.openFromClick(caret);
                 }
             });
         });
@@ -584,7 +602,19 @@ export class MarkedInput extends MarkedFieldBase<HTMLTextAreaElement> {
         };
     }
 
+    /**
+     * Write the field's value, unless it breaks a line. A native input drops
+     * the breaks from its value, which would run the lines of a write together
+     * into text that reads back as a different marking. Free text cannot hold a
+     * break here (Enter is blocked and a paste is sanitized), so a value that
+     * has one carries an engine write in a format of several lines: the field
+     * keeps its value and says why instead.
+     */
     protected override setHostValue(value: string, notify = true): void {
+        if (breaksLine(value)) {
+            this.refuseLineBreak();
+            return;
+        }
         this.nativeInput.value = value;
         super.setHostValue(this.nativeInput.value, notify);
     }
@@ -596,6 +626,11 @@ export class MarkedInput extends MarkedFieldBase<HTMLTextAreaElement> {
 
     getAssertions(): Assertion[] {
         return [...this.assertions];
+    }
+
+    /** The output this field writes its leading marking in. */
+    writtenOutput(): string {
+        return this.scanFormat;
     }
 
     setAssertions(assertions: Assertion[]): void {
@@ -634,9 +669,16 @@ export class MarkedInput extends MarkedFieldBase<HTMLTextAreaElement> {
             errors: ValidationError[];
             proposedFixes?: Fix[];
             warnings?: Warning[];
-            assertionsBeforeRepair?: Assertion[];
+            assessment?: RenderAssessment;
         }) => {
             if (mySeq !== this.scanSeq) return;
+            // The engine could not write these facts, so its text is the
+            // refusal marker: the host keeps its value and the field says why.
+            if (renderViewRefused(result)) {
+                this.showRefusal(result);
+                this.renderDisplay();
+                return;
+            }
             const r = result.rendered;
             this.rendered = r;
             const partErrors = result.errors ?? [];
@@ -670,23 +712,13 @@ export class MarkedInput extends MarkedFieldBase<HTMLTextAreaElement> {
             // the shared marking's valid flag.
         };
 
-        const result =
-            this.schemeAddressing && isAddressableSchemeEngine(this.engine)
-                ? this.engine.process(
-                      '',
-                      this.schemeId,
-                      this.markOptions({
-                          outputFormat: this.scanFormat,
-                          assertions,
-                      }),
-                  )
-                : this.engine.process(
-                      '',
-                      this.markOptions({
-                          outputFormat: this.scanFormat,
-                          assertions,
-                      }),
-                  );
+        const result = this.engine.process(
+            '',
+            this.markOptions({
+                outputFormat: this.scanFormat,
+                assertions,
+            }),
+        );
 
         void Promise.resolve(result)
             .then(apply)
@@ -780,6 +812,7 @@ export class MarkedInput extends MarkedFieldBase<HTMLTextAreaElement> {
         this.input.removeEventListener('paste', this.boundPaste);
         document.removeEventListener('keydown', this.boundDocKeydown, true);
         document.removeEventListener('mousedown', this.boundDocClick);
+        this.unwatchPresses();
         document.removeEventListener(
             'selectionchange',
             this.boundSelectionChange,
@@ -805,6 +838,44 @@ export class MarkedInput extends MarkedFieldBase<HTMLTextAreaElement> {
         warnings: readonly Warning[] = [],
     ): void {
         this.showReport(ruleErrorsFrom(errors, proposedFixes, warnings));
+    }
+
+    /**
+     * Mark the field invalid and say why the engine could not write its
+     * marking, after the engine's errors for it.
+     */
+    private showRefusal(write: {
+        errors: readonly ValidationError[];
+        proposedFixes?: readonly Fix[];
+        warnings?: readonly Warning[];
+        assessment?: RenderAssessment;
+    }): void {
+        const report = ruleErrorsFrom(
+            write.errors ?? [],
+            write.proposedFixes ?? [],
+            write.warnings,
+        );
+        const messages = [
+            ...report.messages,
+            ...renderViewRefusalMessages(this.scanFormat, write),
+        ];
+        this.valid = false;
+        this.errors = messages;
+        this.showReport({ ...report, messages });
+    }
+
+    /**
+     * Mark the field invalid and say that the marking it was given is written
+     * on more than one line, which this one-line field cannot hold.
+     */
+    private refuseLineBreak(): void {
+        const message =
+            `Cannot write the marking in this field: format "${this.scanFormat}" ` +
+            'writes it on more than one line, and this field holds one line.';
+        this.valid = false;
+        this.errors = [message];
+        this.showReport({ ...NO_RULE_ERRORS, messages: [message] });
+        this.renderDisplay();
     }
 
     /**
@@ -850,6 +921,12 @@ export class MarkedInput extends MarkedFieldBase<HTMLTextAreaElement> {
             this.input.readOnly
         )
             return;
+        // The read that follows would re-read the text the field kept and
+        // clear the reason this fix was not written.
+        if (breaksLine(fix.rendered)) {
+            this.refuseLineBreak();
+            return;
+        }
         const marking = this.wrapRendered(fix.rendered);
         this._editorAssertions = null;
         this._userEdited = true;
@@ -901,8 +978,6 @@ export class MarkedInput extends MarkedFieldBase<HTMLTextAreaElement> {
             this.markEnd = 0;
             return;
         }
-        // Minimal leading match: a greedy scheme pattern (e.g. a `\((.+)\)`
-        // wrapper) would otherwise span to a later prose paren like "(a)".
         this.markEnd = matchLeadingMark(v, this.embeddedStyle.pattern).length;
     }
 
@@ -959,7 +1034,7 @@ export class MarkedInput extends MarkedFieldBase<HTMLTextAreaElement> {
             appliedFixes: Change[];
             proposedFixes?: Fix[];
             warnings?: Warning[];
-            assertionsBeforeRepair?: Assertion[];
+            assessment?: RenderAssessment;
         };
         const savedAssertions = this._editorAssertions;
         this._editorAssertions = null;
@@ -972,41 +1047,22 @@ export class MarkedInput extends MarkedFieldBase<HTMLTextAreaElement> {
         try {
             if (usedSavedAssertions) {
                 result = await Promise.resolve(
-                    this.schemeAddressing &&
-                        isAddressableSchemeEngine(this.engine)
-                        ? this.engine.process(
-                              '',
-                              this.schemeId,
-                              this.markOptions({
-                                  outputFormat: this.scanFormat,
-                                  assertions: savedAssertions!.assertions,
-                              }),
-                          )
-                        : this.engine.process(
-                              '',
-                              this.markOptions({
-                                  outputFormat: this.scanFormat,
-                                  assertions: savedAssertions!.assertions,
-                              }),
-                          ),
+                    this.engine.process(
+                        '',
+                        this.markOptions({
+                            outputFormat: this.scanFormat,
+                            assertions: savedAssertions!.assertions,
+                        }),
+                    ),
                 );
             } else {
                 result = await Promise.resolve(
-                    this.schemeAddressing &&
-                        isAddressableSchemeEngine(this.engine)
-                        ? this.engine.process(
-                              inner,
-                              this.schemeId,
-                              this.markOptions({
-                                  outputFormat: this.scanFormat,
-                              }),
-                          )
-                        : this.engine.process(
-                              inner,
-                              this.markOptions({
-                                  outputFormat: this.scanFormat,
-                              }),
-                          ),
+                    this.engine.process(
+                        inner,
+                        this.markOptions({
+                            outputFormat: this.scanFormat,
+                        }),
+                    ),
                 );
             }
         } catch (error) {
@@ -1019,9 +1075,19 @@ export class MarkedInput extends MarkedFieldBase<HTMLTextAreaElement> {
 
         if (mySeq !== this.scanSeq) return;
 
+        // A refused write is the engine's marker, so the field keeps the text
+        // it holds. What the engine read from the mark is still what the
+        // author wrote, and the store needs it to judge the part: left out,
+        // the rollup would go on reading the last marking that could be
+        // written.
+        const refused = renderViewRefused(result);
         this.assertions = result.assertions;
-        this.rendered = result.rendered;
-        this.recordMarkFixes(result.assertions, result.appliedFixes);
+        if (!refused) this.rendered = result.rendered;
+        this.recordMarkFixes(
+            result.assertions,
+            result.appliedFixes,
+            result.assessment,
+        );
 
         // Validity: surface part-level engine errors, and catch silent
         // token drops. The engine ignores tokens it cannot parse WITHOUT
@@ -1032,13 +1098,17 @@ export class MarkedInput extends MarkedFieldBase<HTMLTextAreaElement> {
         // explaining the change, flag the mark invalid rather than silently
         // publishing the downgraded form.
         const partErrors = result.errors ?? [];
-        this.valid = partErrors.length === 0;
-        this.errors = partErrors.map((e) => e.message);
-        this.showRuleErrors(
-            partErrors,
-            result.proposedFixes ?? [],
-            result.warnings,
-        );
+        if (refused) {
+            this.showRefusal(result);
+        } else {
+            this.valid = partErrors.length === 0;
+            this.errors = partErrors.map((e) => e.message);
+            this.showRuleErrors(
+                partErrors,
+                result.proposedFixes ?? [],
+                result.warnings,
+            );
+        }
         // Fail closed on unrecognized tokens: a typo inside the mark (e.g.
         // "HxOLD") parses to a REDUCED assertion set, so publishing it would
         // silently downgrade the shared marking. Keep the last published state
@@ -1086,16 +1156,31 @@ export class MarkedInput extends MarkedFieldBase<HTMLTextAreaElement> {
     private recordMarkFixes(
         holds: readonly Assertion[],
         fixes: readonly Change[] | undefined,
+        assessment?: RenderAssessment,
     ): void {
         if (replacesStated(this._fixesHeld, holds)) this._appliedFixes.clear();
         this._fixesHeld = holds;
+        this._fixesAssessment = assessment;
         recordAppliedFixes(this._appliedFixes, fixes);
         this.updateStatusMark();
     }
 
+    /** The mark, in the format the field writes it in. */
+    protected override markForms(): ShownForm[] {
+        return [
+            { formatId: this.scanFormat, assessment: this._fixesAssessment },
+        ];
+    }
+
     /** Reflect the applied-fix record on the field's single status mark. */
     private updateStatusMark(): void {
-        setStatusMarkFixes(this.hintChrome, [...this._appliedFixes.values()]);
+        setStatusMarkFixes(
+            this.chrome.status,
+            this.textStatusChanges(
+                [...this._appliedFixes.values()],
+                this._fixesHeld,
+            ),
+        );
     }
 
     /**
@@ -1195,6 +1280,12 @@ export class MarkedInput extends MarkedFieldBase<HTMLTextAreaElement> {
         };
 
         const mark = this.getMarkString();
+        // The open editor's marking takes presses above the native host (see
+        // marked-input.css), so the display rises while it is mounted.
+        this.wrap.classList.toggle(
+            'marked-input-wrap--editing',
+            !!(this.picker && this.pickerMount),
+        );
         // Picker may be active even when the input has no mark yet (opening on an empty field).
         // In that case render the picker mount as an empty editing chip so the picker is visible.
         const pickerOnly = !mark && this.picker && this.pickerMount;
@@ -1205,10 +1296,10 @@ export class MarkedInput extends MarkedFieldBase<HTMLTextAreaElement> {
                 const editorChip = document.createElement('span');
                 editorChip.className =
                     'marked-input-chip marked-input-chip--editing';
-                const openDelim = this.template.slice(0, 1);
-                editorChip.appendChild(document.createTextNode(openDelim));
+                const { open, close } = this.delimiters;
+                editorChip.appendChild(document.createTextNode(open));
                 editorChip.appendChild(this.pickerMount);
-                editorChip.appendChild(document.createTextNode(')'));
+                editorChip.appendChild(this.picker.closeDelimiter(close));
                 this.display.appendChild(editorChip);
             } else {
                 const chip = document.createElement('span');
@@ -1341,12 +1432,19 @@ export class MarkedInput extends MarkedFieldBase<HTMLTextAreaElement> {
      *   marking the user typed: it becomes the editor's draft and is read, not
      *   left behind as free text with an empty mark in front of it. The rest of
      *   the text stays free text.
-     * @param options.openList - False when the caret moving into the mark
-     *   opened the editor: that is not a request for suggestions.
+     * @param options.openList - False when the keyboard moving the caret into
+     *   the mark opened the editor: that is not a request for suggestions.
+     * @param options.caret - Where the caret lands in the editor's text (a
+     *   click's offset); the end of the text when omitted.
      */
     private async openPicker({
         fromTyped = false,
         openList = true,
+        caret,
+    }: {
+        fromTyped?: boolean;
+        openList?: boolean;
+        caret?: number;
     } = {}): Promise<void> {
         this.destroyPicker();
         const openSeq = this.pickerOpenSeq;
@@ -1382,14 +1480,15 @@ export class MarkedInput extends MarkedFieldBase<HTMLTextAreaElement> {
             inner,
             {
                 openList,
+                caret,
                 formatId: this.scanFormat,
                 scope: this.options.scope,
+                scopes: this.options.scopes,
                 resolveParts: this.options.resolveParts,
                 resolveContext: this.options.resolveContext,
                 assertions:
                     this.assertions.length > 0 ? this.assertions : undefined,
                 draft,
-                schemeId: this.schemeId,
                 tooltips: this.options.tooltips,
                 tooltipConceptProperty: this.options.tooltipConceptProperty,
                 onChange: () => this.onPickerChange(),
@@ -1588,6 +1687,28 @@ export class MarkedInput extends MarkedFieldBase<HTMLTextAreaElement> {
         }
     }
 
+    /**
+     * Open the mark for a click with the caret at `caret` in its text. The
+     * native caret moves just past the mark, where a caret move by keyboard
+     * would put it, so the hidden text never holds a caret inside the mark.
+     */
+    private openFromClick(caret: number | undefined): void {
+        const afterMark = this.captureCaretTarget();
+        this.input.setSelectionRange(afterMark, afterMark);
+        void this.openPicker({ caret });
+    }
+
+    /**
+     * The caret's offset in the mark's text, between its delimiters, or
+     * undefined when the caret is not inside the mark.
+     */
+    private caretInMark(): number | undefined {
+        const pos = this.input.selectionStart ?? 0;
+        const open = this.delimiters.open.length;
+        if (pos < open || pos >= this.markEnd) return undefined;
+        return pos - open;
+    }
+
     /** Caret target just past the marking (one space accounted for). */
     protected captureCaretTarget(): number {
         return this.markEnd + (this.input.value[this.markEnd] === ' ' ? 1 : 0);
@@ -1624,8 +1745,11 @@ export class MarkedInput extends MarkedFieldBase<HTMLTextAreaElement> {
             // If the cursor drifts into the marking region (0..markEnd), push it
             // to the end of the mark and open the picker, same logic as MTA's
             // auto-open when cursor enters a segment.
+            // A held press leaves the move to its release (the mouseup
+            // handler), which opens the mark with its list.
             if (
                 !hasSelection &&
+                !this.pressing &&
                 this.markEnd > 0 &&
                 cursorPos < this.markEnd &&
                 !this.picker &&
@@ -1662,4 +1786,9 @@ function takenSignature(assertions: readonly Assertion[]): string {
         .map((one) => `${one.categoryId}\u0000${one.conceptId}`)
         .sort()
         .join('\u0001');
+}
+
+/** Whether `text` holds a line break. */
+function breaksLine(text: string): boolean {
+    return /[\r\n]/.test(text);
 }

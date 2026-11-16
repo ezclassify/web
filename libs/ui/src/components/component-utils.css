@@ -34,7 +34,10 @@
     outline: 1px dashed currentColor;
     outline-offset: -1px;
 }
+/* A chip that holds a typed value never grows past its field: its value
+   field gives up width first and scrolls its text. */
 .proto-tag--editable {
+    max-width: 100%;
     padding-right: 0.25rem;
 }
 /* The field holds this fact but the rendered marking leaves it out, as a
@@ -77,6 +80,7 @@
     padding: 0 0.125rem;
     margin-left: 0.125rem;
     outline: none;
+    flex: 1 1 auto;
     min-width: 3rem;
     border-bottom: 1px dashed currentColor;
 }
@@ -293,24 +297,6 @@
     flex-wrap: wrap;
     gap: 0.375rem;
 }
-/* Inside the ★ drawer (TagInput; see field-chrome-drawer.ts/css), the hints
-   live as a normal-flow sibling to the LEFT of the status mark + ★ button in
-   the drawer's one quiet row: always visible there (matching the status
-   mark/★ button's own always-visible treatment), never a hover-triggered
-   overlay, and with no chrome of their own since the drawer already supplies
-   the border/background. The data-ezclassify-no-hints opt-out still wins: it
-   sets `display: none` inline, which beats this class selector. */
-.ez-field-drawer > .proto-kbd-hints {
-    display: flex;
-}
-/* Mirrored to the top edge, the drawer hangs into the space above the field,
-   which belongs to the field's label. There it carries only the status mark
-   and the star, which stay clear of a label at any width. The key hints come
-   back with the drawer to the bottom edge, and an open composer lists its
-   own keys meanwhile. */
-.ez-field-drawer--top > .proto-kbd-hints {
-    display: none;
-}
 .proto-kbd-hint {
     display: inline-flex;
     align-items: center;
@@ -330,6 +316,15 @@
     line-height: 1.3;
 }
 
+/* The suite's hint row for a control with keys of its own (the pickers,
+   DecisionFlow): shown while the control has focus, so it adds nothing to the
+   form at rest. Two classes, like TagInput's, so it shows whatever order the
+   root's sheets were adopted in. */
+:focus-within > .proto-kbd-hints.ez-field-hints {
+    display: flex;
+    margin-top: 0.25rem;
+}
+
 /* TagInput's own row-gap (default and coarse-pointer) lives in
    tag-input.css, not here: `injectComponentStyles` always concatenates
    `COMPONENT_CSS + <component>Css`, so a rule placed in this file loads
@@ -343,6 +338,9 @@
     /* Keyboard-hint chrome is useless on a touch device and just clutters
      the field, so hide it on coarse pointers. */
     .proto-kbd-hints,
+    :focus-within > .proto-kbd-hints.ez-field-hints {
+        display: none;
+    }
     /* The remove control is visible at rest on every pointer; on a coarse
      (touch) pointer it also needs a bigger hit area for a thumb. Grow the tap
      target with an INVISIBLE overlay (::after) rather than padding or a
@@ -428,14 +426,16 @@
     }
 }
 
-/* Clear is a normal form action. Keep it quieter than the marking status. */
+/* Clear is a normal form action. Keep it quieter than the marking status.
+   With a mouse its target is 24px, the WCAG 2.2 AA minimum (2.5.8); a finger
+   gets 44px below. */
 .ez-clear-button {
     display: inline-flex;
     align-items: center;
     justify-content: center;
     flex: 0 0 auto;
-    width: 2rem;
-    height: 2rem;
+    width: 1.5rem;
+    height: 1.5rem;
     padding: 0;
     border: 1px solid transparent;
     border-radius: 0.25rem;
@@ -443,6 +443,17 @@
     background: transparent;
     cursor: pointer;
     -webkit-tap-highlight-color: transparent;
+}
+/* The × and the undo that takes its place after a clear draw in one box, so
+   the slot never changes size between them. */
+.ez-clear-button__icon {
+    display: inline-flex;
+    width: 1rem;
+    height: 1rem;
+}
+.ez-clear-button__icon svg {
+    width: 100%;
+    height: 100%;
 }
 .ez-clear-button:focus-visible {
     outline: 2px solid var(--ez-color-primary, #2563eb);
@@ -453,88 +464,10 @@
     opacity: 0.45;
     cursor: default;
 }
-.ez-has-clear,
-.ez-clear-frame {
-    position: relative;
-}
-.ez-has-clear > .ez-clear-button {
-    position: absolute;
-    inset-inline-end: 0.25rem;
-    top: 50%;
-    transform: translateY(-50%);
-    z-index: 4;
-}
-.marking-field-wrap > .ez-clear-button {
-    grid-area: 1 / 1 / 2 / 2;
-}
-.ez-has-clear > .ez-field-drawer {
-    right: 2.25rem;
-}
-.ez-clear-frame > .ez-clear-button,
-.ez-clear-text > .ez-clear-button {
-    position: absolute;
-    inset-inline-end: 0.25rem;
-    top: 0.25rem;
-    z-index: 4;
-}
-.ez-clear-preview > .proto-preview {
-    padding-inline-end: 2.75rem;
-    min-height: 2.5rem;
-    box-sizing: border-box;
-}
-.ez-clear-preview > .ez-clear-button {
-    top: 50%;
-    transform: translateY(-50%);
-}
-.ez-clear-frame > .select-cards,
-.ez-clear-frame > .category-selector-body > :first-child,
-.ez-clear-frame > .ez-decision-flow > :first-child {
-    padding-inline-end: 2.5rem;
-}
-.ez-clear-frame > .ez-decision-flow > :first-child {
-    min-height: 2.5rem;
-}
-.ez-clear-text > .marked-input-native,
-.ez-clear-text > .marked-input-display,
-.ez-clear-text > .marked-textarea-input,
-.ez-clear-text > .marked-textarea-display {
-    padding-inline-end: 2.75rem !important;
-}
-.ez-has-clear .marking-field-host,
-.ez-has-clear .marking-field-display,
-.tag-input-wrap.ez-has-clear {
-    padding-inline-end: 4.25rem !important;
-}
 @media (pointer: coarse) {
     .ez-clear-button {
         width: 2.75rem;
         height: 2.75rem;
-    }
-    .ez-has-clear > .ez-field-drawer {
-        right: 3.75rem;
-    }
-    .ez-clear-frame > .select-cards,
-    .ez-clear-frame > .category-selector-body > :first-child,
-    .ez-clear-frame > .ez-decision-flow > :first-child {
-        padding-inline-end: 3.25rem;
-    }
-    .ez-clear-frame > .ez-decision-flow > :first-child {
-        min-height: 3.25rem;
-    }
-    .ez-clear-preview > .proto-preview {
-        padding-inline-end: 3.5rem;
-        min-height: 3.25rem;
-    }
-    .ez-clear-text > .marked-input-native,
-    .ez-clear-text > .marked-input-display,
-    .ez-clear-text > .marked-textarea-input,
-    .ez-clear-text > .marked-textarea-display {
-        padding-inline-end: 3.5rem !important;
-    }
-    .ez-has-clear .marking-field-host,
-    .ez-has-clear .marking-field-display,
-    .tag-input-wrap.ez-has-clear {
-        padding-inline-end: 6.25rem !important;
     }
 }
 @media (forced-colors: active) {

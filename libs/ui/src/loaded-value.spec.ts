@@ -1,11 +1,13 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { Context } from '@ezclassify/engine';
 import type { ProcessResult } from '@ezclassify/types';
 import { EzClassifyUI } from './ezclassify-ui';
 import { VanillaEzClassifyStore } from './store/ezclassify-store';
 import { ComponentBase } from './components/component-base';
 import { acceptedValue, judgedAsHeld } from './loaded-value';
 import { mockProcessResult } from './engine-result-mock';
+import { asContext } from '../test-fixtures/as-context';
+import { markTone } from '../test-fixtures/field-chrome';
+import { connectDemoContext } from '../../../test-support/demo-runtime';
 
 /** A recognition that read every character. */
 function complete(): ProcessResult['recognition'] {
@@ -27,111 +29,105 @@ function unread(
 }
 
 /** Neutral real-engine fixture: no policy vocabulary or external deployment. */
-function engine(
-    policy:
-        | 'preserve_unmatched'
-        | 'refuse'
-        | 'drop_unmatched' = 'preserve_unmatched',
-    repair = false,
-) {
-    return Context.fromComponents({
-        scheme: {
-            scheme: {
-                id: 'loaded-values',
-                version: '1.0.0',
-                name: 'Loaded values',
-                data: {
-                    categories: [
-                        {
-                            id: 'level',
-                            label: 'Level',
-                            single: true,
-                            required: false,
-                            rollup: 'max',
-                        },
-                        {
-                            id: 'tag',
-                            label: 'Tag',
-                            single: false,
-                            required: false,
-                            rollup: 'union',
-                        },
-                        {
-                            id: 'hidden',
-                            label: 'Hidden',
-                            single: false,
-                            required: false,
-                            rollup: 'union',
-                        },
-                    ],
-                    concepts: {
-                        inline: [
-                            {
-                                id: 'A',
-                                name: 'Level A',
-                                categories: ['level'],
-                                views: { default: 'LEVEL A' },
-                                rank: 1,
-                            },
-                            {
-                                id: 'B',
-                                name: 'Level B',
-                                categories: ['level'],
-                                views: { default: 'LEVEL B' },
-                                rank: 2,
-                            },
-                            {
-                                id: 'X',
-                                name: 'Tag X',
-                                categories: ['tag'],
-                                views: { default: 'TAG-X' },
-                            },
-                            {
-                                id: 'H',
-                                name: 'Hidden fact',
-                                categories: ['hidden'],
-                                views: { default: 'HIDDEN' },
-                            },
-                        ],
-                    },
-                },
-                rules: [],
-                parse: {
-                    case_sensitive: false,
-                    strip_whitespace: true,
-                    ...(repair
-                        ? {
-                              normalize: [
-                                  {
-                                      id: 'dedup',
-                                      type: 'dedup',
-                                      description: 'Remove duplicate facts',
-                                      confidence: 'safe',
-                                      explanation: 'Repeated fact',
-                                  },
-                              ],
-                          }
-                        : {}),
-                },
-                render: {
-                    default: 'default',
-                    of_invalid: policy,
-                    formats: [
-                        {
-                            id: 'default',
-                            surface: 'marking',
-                            mode: 'inline',
-                            separator: '//',
-                            fields: [
-                                { category: 'level', separator: '/' },
-                                { category: 'tag', separator: '/' },
+async function engine(repair = false) {
+    return (
+        await connectDemoContext({
+            draft: {
+                scheme: {
+                    scheme: {
+                        id: 'loaded-values',
+                        version: '1.0.0',
+                        name: 'Loaded values',
+                        description: 'Loaded values test fixture.',
+                        data: {
+                            categories: [
+                                {
+                                    id: 'level',
+                                    label: 'Level',
+                                    single: true,
+                                    required: false,
+                                    rollup: 'max',
+                                },
+                                {
+                                    id: 'tag',
+                                    label: 'Tag',
+                                    single: false,
+                                    required: false,
+                                    rollup: 'union',
+                                },
+                                {
+                                    id: 'hidden',
+                                    label: 'Hidden',
+                                    single: false,
+                                    required: false,
+                                    rollup: 'union',
+                                },
+                            ],
+                            concepts: [
+                                {
+                                    id: 'A',
+                                    name: 'Level A',
+                                    categories: ['level'],
+                                    views: { default: 'LEVEL A' },
+                                    rank: 1,
+                                },
+                                {
+                                    id: 'B',
+                                    name: 'Level B',
+                                    categories: ['level'],
+                                    views: { default: 'LEVEL B' },
+                                    rank: 2,
+                                },
+                                {
+                                    id: 'X',
+                                    name: 'Tag X',
+                                    categories: ['tag'],
+                                    views: { default: 'TAG-X' },
+                                },
+                                {
+                                    id: 'H',
+                                    name: 'Hidden fact',
+                                    categories: ['hidden'],
+                                    views: { default: 'HIDDEN' },
+                                },
                             ],
                         },
-                    ],
+                        rules: [],
+                        parse: {
+                            ...(repair
+                                ? {
+                                      normalize: [
+                                          {
+                                              id: 'dedup',
+                                              type: 'dedup',
+                                              description:
+                                                  'Remove duplicate facts',
+                                              explanation: 'Repeated fact',
+                                          },
+                                      ],
+                                  }
+                                : {}),
+                        },
+                        render: {
+                            default: 'default',
+                            formats: [
+                                {
+                                    id: 'default',
+                                    surface: 'marking',
+                                    mode: 'inline',
+                                    separator: '//',
+                                    fields: [
+                                        { category: 'level', separator: '/' },
+                                        { category: 'tag', separator: '/' },
+                                    ],
+                                },
+                            ],
+                        },
+                    },
                 },
             },
-        },
-    }).scheme;
+        })
+    ).scheme;
 }
 const mounted: EzClassifyUI[] = [];
 afterEach(() => {
@@ -141,7 +137,6 @@ afterEach(() => {
 async function mount(
     controller: string,
     value: string,
-    policy?: Parameters<typeof engine>[0],
     storeHost = false,
     repair = false,
     withReceiver = false,
@@ -153,18 +148,17 @@ async function mount(
     input.id = 'loaded';
     input.value = value;
     if (controller) input.dataset.ezclassifyController = controller;
-    if (storeHost) input.dataset.ezclassifyRendered = '';
+    if (storeHost) input.dataset.ezclassifyMarking = '';
     form.append(input);
     if (withReceiver) {
         const receiver = document.createElement('input');
         receiver.id = 'receiver';
-        receiver.dataset.ezclassifyBind = '';
         receiver.dataset.ezclassifyBoundTo = 'loaded';
         receiver.value = value;
         form.append(receiver);
     }
     document.body.append(form);
-    const ui = new EzClassifyUI(engine(policy, repair) as never, {
+    const ui = new EzClassifyUI(asContext((await engine(repair)) as never), {
         root: form,
     });
     mounted.push(ui);
@@ -173,7 +167,7 @@ async function mount(
 }
 
 it('keeps an unproven string read in bound MF/TI receivers but accepts structured state without recognition', async () => {
-    const real = engine();
+    const real = await engine();
     const missingRecognition = new Proxy(real, {
         get(target, key) {
             const member = Reflect.get(target, key);
@@ -195,12 +189,14 @@ it('keeps an unproven string read in bound MF/TI receivers but accepts structure
         },
     });
     const form = document.createElement('form');
-    form.innerHTML = `<input type="hidden" id="loaded" data-ezclassify-rendered><input id="mf" data-ezclassify-controller="marking" data-ezclassify-bound-to="loaded"><input id="ti" data-ezclassify-controller="tags" data-ezclassify-bound-to="loaded">`;
+    form.innerHTML = `<input type="hidden" id="loaded" data-ezclassify-marking><input id="mf" data-ezclassify-controller="marking" data-ezclassify-bound-to="loaded"><input id="ti" data-ezclassify-controller="tags" data-ezclassify-bound-to="loaded">`;
     document.body.append(form);
     const ready = new Promise((resolve) =>
         form.addEventListener('ezclassify:ready', resolve, { once: true }),
     );
-    const ui = new EzClassifyUI(missingRecognition as never, { root: form });
+    const ui = new EzClassifyUI(asContext(missingRecognition as never), {
+        root: form,
+    });
     mounted.push(ui);
     await ready;
     const source = '  level a  ';
@@ -226,7 +222,7 @@ it('keeps an unproven string read in bound MF/TI receivers but accepts structure
     expect(ui.store.get('structured').valid).toBe(true);
     expect('recognition' in ui.store.get('structured')).toBe(false);
     const structured = document.createElement('section');
-    structured.innerHTML = `<input type="hidden" id="structured" data-ezclassify-rendered><input id="mf-structured" data-ezclassify-controller="marking" data-ezclassify-bound-to="structured"><input id="ti-structured" data-ezclassify-controller="tags" data-ezclassify-bound-to="structured">`;
+    structured.innerHTML = `<input type="hidden" id="structured" data-ezclassify-marking><input id="mf-structured" data-ezclassify-controller="marking" data-ezclassify-bound-to="structured"><input id="ti-structured" data-ezclassify-controller="tags" data-ezclassify-bound-to="structured">`;
     form.append(structured);
     await new Promise((resolve) => setTimeout(resolve, 100));
     for (const id of ['mf-structured', 'ti-structured'])
@@ -288,7 +284,6 @@ describe('supplied marking acceptance', () => {
             rendered: 'ALPHA//BETA',
             valid: false,
             errors: [{ message: 'about the resulting value' } as never],
-            assertionsBeforeRepair: [],
             recognition: complete(),
         });
         const readAgain = vi.fn();
@@ -320,7 +315,6 @@ describe('supplied marking acceptance', () => {
         const repaired = mockProcessResult({
             rendered: 'ALPHA',
             valid: false,
-            assertionsBeforeRepair: [],
         });
         expect(judgedAsHeld([], repaired, readAgain)).toBe(repaired);
         expect(reads).toBe(0);
@@ -351,7 +345,6 @@ describe('supplied marking acceptance', () => {
                 const { input, form, ui } = await mount(
                     controller,
                     source,
-                    'preserve_unmatched',
                     true,
                 );
                 expect(input.value).toBe(held);
@@ -394,7 +387,6 @@ describe('supplied marking acceptance', () => {
         const { input, ui } = await mount(
             'marking',
             'LEVEL A//LEVEL A',
-            undefined,
             false,
             true,
         );
@@ -410,7 +402,7 @@ describe('supplied marking acceptance', () => {
             protected render(): void {}
             destroy(): void {}
         }
-        const real = engine();
+        const real = await engine();
         let release: (() => void) | undefined;
         let first = true;
         const delayed = new Proxy(real, {
@@ -451,12 +443,7 @@ describe('supplied marking acceptance', () => {
     it('edits unresolved tag text whole and carries unread text through chip removal', async () => {
         const source = '  LEVEL A//BOGUS-TOKEN//TAG-X  ';
         const held = 'LEVEL A//TAG-X//BOGUS-TOKEN';
-        const { input, form } = await mount(
-            'tags',
-            source,
-            'preserve_unmatched',
-            true,
-        );
+        const { input, form } = await mount('tags', source, true);
         const filter =
             form.querySelector<HTMLInputElement>('.tag-input-filter')!;
         filter.focus();
@@ -483,12 +470,7 @@ describe('supplied marking acceptance', () => {
     it('does not drop unresolved source when a tag input event arrives without focus', async () => {
         const source = '  LEVEL A//BOGUS-TOKEN//TAG-X  ';
         const held = 'LEVEL A//TAG-X//BOGUS-TOKEN';
-        const { input, form } = await mount(
-            'tags',
-            source,
-            'preserve_unmatched',
-            true,
-        );
+        const { input, form } = await mount('tags', source, true);
         const filter =
             form.querySelector<HTMLInputElement>('.tag-input-filter')!;
         filter.value = 'LEVEL B';
@@ -504,19 +486,12 @@ describe('supplied marking acceptance', () => {
     });
     it('holds the engine writing of unread input in a store-only native host', async () => {
         const source = '  LEVEL A//BOGUS-TOKEN//TAG-X  ';
-        const { input, ui } = await mount(
-            '',
-            source,
-            'preserve_unmatched',
-            true,
-        );
+        const { input, ui } = await mount('', source, true);
         expect(input.value).toBe('LEVEL A//TAG-X//BOGUS-TOKEN');
         expect(ui.store.get('loaded').rendered).toBe(input.value);
     });
     it('refuses a category edit that would discard unread seeded text, then allows it after correction', async () => {
-        const store = new VanillaEzClassifyStore(
-            engine('preserve_unmatched') as never,
-        );
+        const store = new VanillaEzClassifyStore((await engine()) as never);
         const source = '  LEVEL A//BOGUS-TOKEN//TAG-X  ';
         await store.seedRendered('doc', source);
         await store.publishAssertions(
@@ -561,14 +536,7 @@ describe('supplied marking acceptance', () => {
         store.destroy();
     });
     it('reflects retained conflicting source into a plain bound receiver instead of its prior marking', async () => {
-        const { form, ui } = await mount(
-            '',
-            'LEVEL A',
-            'refuse',
-            true,
-            false,
-            true,
-        );
+        const { form, ui } = await mount('', 'LEVEL A', true, false, true);
         const receiver = form.querySelector<HTMLInputElement>('#receiver')!;
         const source = '  LEVEL A//LEVEL B  ';
         await ui.store.publishRendered('loaded', source);
@@ -579,7 +547,7 @@ describe('supplied marking acceptance', () => {
         expect(ui.store.get('loaded').valid).toBe(false);
     });
     it('keeps render-suppressed assertions when accepting structured state', async () => {
-        const store = new VanillaEzClassifyStore(engine() as never);
+        const store = new VanillaEzClassifyStore((await engine()) as never);
         await store.publishAssertions('doc', [
             {
                 conceptId: 'A',
@@ -608,7 +576,7 @@ describe('supplied marking acceptance', () => {
  * written, HOME is left out of the written marking by a render filter, the way
  * a scheme suppresses a fact from print.
  */
-function ruledEngine() {
+async function ruledEngine() {
     let position = 0;
     const concept = (id: string, category: string, view: string) => ({
         id,
@@ -629,95 +597,114 @@ function ruledEngine() {
         ...extra,
     });
     const whenLevel = { when: { category: 'level', is: 'has_content' } };
-    return Context.fromComponents({
-        scheme: {
-            scheme: {
-                id: 'settled-values',
-                version: '1.0.0',
-                name: 'Settled values',
-                default_scope: 'marking',
-                scopes: [{ id: 'marking', label: 'Marking' }],
-                data: {
-                    categories: [
-                        category('level'),
-                        category('tag'),
-                        category('handling', {
-                            default_concept: { concept: 'STD', ...whenLevel },
-                        }),
-                        category('origin', {
-                            default_concept: { concept: 'HOME', ...whenLevel },
-                        }),
-                    ],
-                    concepts: {
-                        inline: [
-                            concept('A', 'level', 'LEVEL A'),
-                            concept('B', 'level', 'LEVEL B'),
-                            concept('X', 'tag', 'TAG-X'),
-                            concept('G', 'tag', 'TAG-G'),
-                            concept('O', 'tag', 'TAG-O'),
-                            concept('R', 'tag', 'TAG-R'),
-                            concept('STD', 'handling', 'STD'),
-                            concept('HOME', 'origin', 'HOME'),
+    return (
+        await connectDemoContext({
+            draft: {
+                scheme: {
+                    scheme: {
+                        id: 'settled-values',
+                        version: '1.0.0',
+                        name: 'Settled values',
+                        description: 'Settled values test fixture.',
+                        default_scope: 'marking',
+                        scopes: [{ id: 'marking', label: 'Marking' }],
+                        data: {
+                            categories: [
+                                category('level'),
+                                category('tag'),
+                                category('handling', {
+                                    default_concept: {
+                                        concept: 'STD',
+                                        ...whenLevel,
+                                    },
+                                }),
+                                category('origin', {
+                                    default_concept: {
+                                        concept: 'HOME',
+                                        ...whenLevel,
+                                    },
+                                }),
+                            ],
+                            concepts: [
+                                concept('A', 'level', 'LEVEL A'),
+                                concept('B', 'level', 'LEVEL B'),
+                                concept('X', 'tag', 'TAG-X'),
+                                concept('G', 'tag', 'TAG-G'),
+                                concept('O', 'tag', 'TAG-O'),
+                                concept('R', 'tag', 'TAG-R'),
+                                concept('STD', 'handling', 'STD'),
+                                concept('HOME', 'origin', 'HOME'),
+                            ],
+                        },
+                        rules: [
+                            {
+                                id: 'g-needs-b',
+                                action: 'require_any',
+                                when: 'G',
+                                target: ['B'],
+                                phases: ['validate'],
+                                message: 'TAG-G requires LEVEL B.',
+                            },
+                            {
+                                id: 'g-adds-o',
+                                action: 'require',
+                                when: 'G',
+                                target: 'O',
+                                category: 'tag',
+                                message: 'TAG-G requires TAG-O.',
+                            },
+                            {
+                                id: 'o-forbids-r',
+                                action: 'forbid',
+                                when: 'O',
+                                target: 'R',
+                                message:
+                                    'TAG-O and TAG-R cannot appear together.',
+                            },
+                        ],
+                        render: {
+                            default: 'default',
+                            formats: [
+                                {
+                                    id: 'default',
+                                    surface: 'marking',
+                                    mode: 'inline',
+                                    separator: '//',
+                                    fields: [
+                                        'level',
+                                        'tag',
+                                        'handling',
+                                        'origin',
+                                    ].map((id) => ({
+                                        category: id,
+                                        separator: '/',
+                                    })),
+                                },
+                            ],
+                        },
+                        filters: [
+                            {
+                                id: 'home-origin-unprinted',
+                                in: ['render'],
+                                remove: ['origin'],
+                                when: {
+                                    all: [
+                                        {
+                                            category: 'origin',
+                                            is: 'count_eq 1',
+                                        },
+                                        { category: 'origin', has: 'HOME' },
+                                    ],
+                                },
+                                explanation:
+                                    'Home origin alone goes without saying.',
+                            },
                         ],
                     },
                 },
-                rules: [
-                    {
-                        id: 'g-needs-b',
-                        action: 'require_any',
-                        when: 'G',
-                        target: ['B'],
-                        phases: ['validate'],
-                        message: 'TAG-G requires LEVEL B.',
-                    },
-                    {
-                        id: 'g-adds-o',
-                        action: 'require',
-                        when: 'G',
-                        target: 'O',
-                        category: 'tag',
-                        message: 'TAG-G requires TAG-O.',
-                    },
-                    {
-                        id: 'o-forbids-r',
-                        action: 'forbid',
-                        when: 'O',
-                        target: 'R',
-                        message: 'TAG-O and TAG-R cannot appear together.',
-                    },
-                ],
-                parse: { case_sensitive: false, strip_whitespace: true },
-                render: {
-                    default: 'default',
-                    formats: [
-                        {
-                            id: 'default',
-                            surface: 'marking',
-                            mode: 'inline',
-                            separator: '//',
-                            fields: ['level', 'tag', 'handling', 'origin'].map(
-                                (id) => ({ category: id, separator: '/' }),
-                            ),
-                        },
-                    ],
-                },
-                filters: [
-                    {
-                        id: 'home-origin-unprinted',
-                        in: ['render'],
-                        remove: ['origin'],
-                        when: {
-                            all: [
-                                { category: 'origin', is: 'count_eq 1' },
-                                { category: 'origin', has: 'HOME' },
-                            ],
-                        },
-                        explanation: 'Home origin alone goes without saying.',
-                    },
-                ],
             },
-        },
-    }).scheme;
+        })
+    ).scheme;
 }
 
 /** Mount `markup` over the ruled fixture and wait for it to settle. */
@@ -728,7 +715,9 @@ async function mountRuled(markup: string, publish?: [string, string]) {
     const ready = new Promise((resolve) =>
         form.addEventListener('ezclassify:ready', resolve, { once: true }),
     );
-    const ui = new EzClassifyUI(ruledEngine() as never, { root: form });
+    const ui = new EzClassifyUI(asContext((await ruledEngine()) as never), {
+        root: form,
+    });
     mounted.push(ui);
     await ready;
     if (publish) await ui.store.publishRendered(...publish);
@@ -747,9 +736,11 @@ async function markLines(field: Element): Promise<string[]> {
     const tip = document.querySelector<HTMLElement>('.ez-tooltip');
     const lines =
         tip && !tip.hidden
-            ? [...tip.querySelectorAll(':scope > div')].map(
-                  (line) => line.textContent ?? '',
-              )
+            ? [
+                  ...tip.querySelectorAll(
+                      '.ez-tooltip__header, .ez-status-list__text',
+                  ),
+              ].map((line) => line.textContent ?? '')
             : [];
     mark.dispatchEvent(new Event('mouseleave'));
     return lines;
@@ -774,8 +765,9 @@ describe('a loaded marking takes what the engine fixed and says so', () => {
         const mark = form.querySelector('.ez-status-mark')!;
         expect(mark.classList.contains('ez-status-mark--unseen')).toBe(true);
         expect(await markLines(form)).toEqual([
-            'EzClassify fixed this marking:',
-            '• Rule "g-adds-o": added "O" to category "tag"',
+            '1 change made by a marking rule',
+            // The value as the field writes it, not the concept's name.
+            'Added TAG-O to tag.',
         ]);
     });
 
@@ -850,9 +842,33 @@ describe('a loaded marking takes what the engine fixed and says so', () => {
         ).toBe(true);
     });
 
+    it('colors the MarkingField and TagInput marks strong while they explain a fix', async () => {
+        const { form } = await mountRuled(
+            `<input type="hidden" id="doc" data-ezclassify-marking>
+             <div class="mf"><input id="mf" data-ezclassify-controller="marking" data-ezclassify-bound-to="doc"></div>
+             <div class="ti"><input id="ti" data-ezclassify-controller="tags" data-ezclassify-bound-to="doc"></div>`,
+            ['doc', 'LEVEL A//TAG-G'],
+        );
+        for (const field of ['.mf', '.ti']) {
+            const mark = form.querySelector(`${field} .ez-status-mark`)!;
+            expect(markTone(mark), field).toBe('strong');
+            // The name says there is something to read, not just whose mark it is.
+            expect(mark.getAttribute('aria-label')).toContain(
+                '1 change made by a marking rule, not yet reviewed',
+            );
+        }
+    });
+
+    it('keeps the MarkingField mark muted when the field has nothing to say', async () => {
+        const { form } = await mountRuled(
+            '<input id="f" data-ezclassify-controller="marking" value="LEVEL B//TAG-X//STD">',
+        );
+        expect(markTone(form.querySelector('.ez-status-mark')!)).toBe('muted');
+    });
+
     it('shows the same fixed marking, errors and explanation in every bound field', async () => {
         const { form, ui } = await mountRuled(
-            `<input type="hidden" id="doc" data-ezclassify-rendered>
+            `<input type="hidden" id="doc" data-ezclassify-marking>
              <div class="mf"><input id="mf" data-ezclassify-controller="marking" data-ezclassify-bound-to="doc"></div>
              <div class="ti"><input id="ti" data-ezclassify-controller="tags" data-ezclassify-bound-to="doc"></div>`,
             ['doc', 'LEVEL A//TAG-G'],
@@ -870,10 +886,10 @@ describe('a loaded marking takes what the engine fixed and says so', () => {
         ]);
         for (const field of ['.mf', '.ti'])
             expect((await markLines(form.querySelector(field)!))[1]).toBe(
-                '• Rule "g-adds-o": added "O" to category "tag"',
+                'Added TAG-O to tag.',
             );
-        // The one difference: the chips hold HOME, which the marking leaves
-        // out of print.
+        // The one difference: the chips also draw HOME, a default the
+        // marking holds and leaves out of print, faded.
         expect(
             [...form.querySelectorAll('.ti .proto-tag')].map(
                 (chip) => (chip as HTMLElement).dataset.conceptId,
@@ -883,7 +899,7 @@ describe('a loaded marking takes what the engine fixed and says so', () => {
 });
 
 it('holds the conflicting marking in the store with author choices and no applied repair', async () => {
-    const store = new VanillaEzClassifyStore(ruledEngine() as never);
+    const store = new VanillaEzClassifyStore((await ruledEngine()) as never);
     await store.publishRendered('doc', 'LEVEL B//TAG-G/TAG-R');
     const state = store.get('doc');
     expect(state.rendered).toBe('LEVEL B//TAG-G/TAG-R//STD');
@@ -900,7 +916,7 @@ it('holds the conflicting marking in the store with author choices and no applie
 });
 
 it('takes a category edit over a fully read marking that breaks a rule', async () => {
-    const store = new VanillaEzClassifyStore(ruledEngine() as never);
+    const store = new VanillaEzClassifyStore((await ruledEngine()) as never);
     await store.seedRendered('doc', 'LEVEL A//TAG-G');
     expect(store.get('doc').valid).toBe(false);
     await store.publishAssertions(
@@ -969,12 +985,12 @@ describe('TagInput chip style follows who stated the fact', () => {
         });
     });
 
-    it('fades a fact the marking leaves out of print, and says so', async () => {
+    it('fades a default the marking leaves out of print, and says why', async () => {
         expect((await chips()).get('HOME')).toEqual({
             dashed: true,
             faded: true,
             removable: false,
-            label: 'Name HOME (inferred) (not shown in the marking)',
+            label: 'Name HOME (inferred), Default origin, not written in the marking',
         });
     });
 });

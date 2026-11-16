@@ -37,7 +37,6 @@ import type {
     EzClassifyStoreProcessResult,
     FacetState,
 } from './ezclassify-store';
-import { captureFormState, restoreFormState } from '../serialization';
 import { EMPTY_RENDER_ASSESSMENT } from '../engine-result-mock';
 
 /**
@@ -398,46 +397,6 @@ export function runAdapterParitySuite(driver: AdapterParityDriver): void {
             ]);
             store.destroy();
         });
-
-        it('captureFormState → restoreFormState round-trips scoped + captured state into a fresh mount', async () => {
-            const engine = createScopedEngine();
-            const storeA = driver.createStore(engine);
-            const fieldA = makeField('doc');
-            const formsA = makeForms(storeA, engine, fieldA);
-            await storeA.publishAssertions('doc', [
-                { categoryId: 'label', conceptId: 'LEVEL_A' } as Assertion,
-                {
-                    categoryId: 'detail_kind',
-                    conceptId: 'ISSUED',
-                } as Assertion,
-                {
-                    categoryId: 'expires_on',
-                    conceptId: 'ON_DATE',
-                    value: '20301231',
-                } as Assertion,
-            ]);
-
-            const snapshot = await captureFormState(formsA);
-            expect(snapshot.version).toBe(1);
-
-            const storeB = driver.createStore(engine);
-            const fieldB = makeField('doc');
-            const formsB = makeForms(storeB, engine, fieldB);
-            restoreFormState(formsB, snapshot);
-            await flush();
-
-            const restored = storeB.get('doc').assertions;
-            expect(keys(restored)).toEqual([
-                'detail_kind:ISSUED',
-                'expires_on:ON_DATE',
-                'label:LEVEL_A',
-            ]);
-            expect(
-                restored.find((a) => a.categoryId === 'expires_on')?.value,
-            ).toBe('20301231');
-            storeA.destroy();
-            storeB.destroy();
-        });
     });
 
     describe(`adapter parity / ${driver.name}: seeding keeps scoped transport`, () => {
@@ -543,32 +502,4 @@ export function runAdapterParitySuite(driver: AdapterParityDriver): void {
             store.destroy();
         });
     });
-}
-
-/** Make a bare input host with the given store id. */
-function makeField(id: string): HTMLInputElement {
-    const el = document.createElement('input');
-    el.id = id;
-    return el;
-}
-
-/**
- * Wrap a store as the minimal `EzClassifyUI`-shaped host the serialization API
- * consumes (`engine`, `store`, `fields`, `defaultFormat`, `getRollup`,
- * `recalculate`). The serialization functions only read these members.
- */
-function makeForms(
-    store: EzClassifyStore,
-    engine: EzClassifyStoreEngine,
-    field: HTMLInputElement,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- structural host stand-in for the serialization API's EzClassifyUI param
-): any {
-    return {
-        engine,
-        store,
-        fields: [field],
-        defaultFormat: '',
-        getRollup: () => store.get(field.id).rendered,
-        recalculate: () => {},
-    };
 }

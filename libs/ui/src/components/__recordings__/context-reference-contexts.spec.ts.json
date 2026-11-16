@@ -1,0 +1,1396 @@
+{
+    "engineVersion": "1.0.0-dev.30",
+    "openapiVersion": "1.0.0-dev.30",
+    "responses": {
+        "0553dcd330a64169eac0394a68355aa6f78974b5e7a369a8e67a9f61297bc467": {
+            "body": [
+                {
+                    "id": "level",
+                    "label": "Level",
+                    "position": 0,
+                    "required": true,
+                    "rollup": "max",
+                    "single": true
+                },
+                {
+                    "id": "controls",
+                    "label": "Controls",
+                    "position": 1,
+                    "required": false,
+                    "rollup": "union",
+                    "single": false
+                }
+            ],
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "0bd99b5908760bfaf7913a4c7d1514ac43eb93bb0c3482a8735ce7f4901b8090": {
+            "body": {
+                "rules": [
+                    {
+                        "access": {
+                            "id": "ref-scheme-1-access-rules",
+                            "kind": "access",
+                            "version": "1.0.0"
+                        },
+                        "attributesNeeded": ["level"],
+                        "dependsOn": [],
+                        "name": "Level",
+                        "overrides": [],
+                        "requirementText": "level >= data.level",
+                        "rule": {
+                            "artifact": {
+                                "id": "ref-scheme-1-access-rules",
+                                "kind": "access",
+                                "version": "1.0.0"
+                            },
+                            "ruleDigest": "sha256:4fd9f5773510108b2fc4640163c6234942bb032a9f58e362e91827100d7204a0",
+                            "ruleId": "level-rule"
+                        },
+                        "scheme": {
+                            "id": "ref-scheme-1",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    }
+                ]
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "1116493b77174c9a160e7157e341f990c5f7acd2701eb0617a6e646eefb261d7": {
+            "body": {
+                "contextId": "sbx-fc3c89908bc99c65f0af468f11f2ab4d0a569621549c607a8cd5bb8fd0417e19"
+            },
+            "method": "PUT",
+            "statusCode": 200
+        },
+        "15f5f51081116e51f4360caf716cbc5f4f5b6af824c7c9e83218b751720d4c42": {
+            "body": [
+                {
+                    "aliases": [],
+                    "categories": ["level"],
+                    "id": "LOW",
+                    "name": "Low",
+                    "parents": [],
+                    "position": 0,
+                    "rank": 0,
+                    "views": { "default": "LOW", "portion": "L" }
+                },
+                {
+                    "aliases": [],
+                    "categories": ["level"],
+                    "id": "MED",
+                    "name": "Med",
+                    "parents": [],
+                    "position": 1,
+                    "rank": 1,
+                    "views": { "default": "MED", "portion": "M" }
+                },
+                {
+                    "aliases": [],
+                    "categories": ["level"],
+                    "id": "HIGH",
+                    "name": "High",
+                    "parents": [],
+                    "position": 2,
+                    "rank": 2,
+                    "views": { "default": "HIGH", "portion": "H" }
+                },
+                {
+                    "aliases": [],
+                    "categories": ["controls"],
+                    "id": "CTRL-A",
+                    "name": "Control A",
+                    "parents": ["HIGH"],
+                    "position": 0,
+                    "views": { "default": "CTRL-A" }
+                }
+            ],
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "17c8db40d6fcde0d1cca9fd099cd5eae786d5341765ac7ff14f6438faf83b040": {
+            "body": [],
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "18a41c1a2dfe52c020e62051863af35020b8c083a5e962acfe2217b0cc45590c": {
+            "body": [],
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "23c090aaab438dfb289d245fdaaca055ac5901344856b275fa6496754822c0ab": {
+            "body": [
+                {
+                    "categoryOrder": ["level"],
+                    "categorySeparators": { "level": " " },
+                    "id": "default",
+                    "mode": "inline",
+                    "separator": " ",
+                    "surface": "default",
+                    "view": "default"
+                }
+            ],
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "24eb9739157535cde11004cba657e9533b8bcbe95578ddc7fb74b56f0a644614": {
+            "body": [
+                {
+                    "id": "level",
+                    "label": "Level",
+                    "position": 0,
+                    "required": true,
+                    "rollup": "max",
+                    "single": true
+                },
+                {
+                    "id": "controls",
+                    "label": "Controls",
+                    "position": 1,
+                    "required": false,
+                    "rollup": "union",
+                    "single": false
+                }
+            ],
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "29f8966b2ca347bfa27bfe794221089a0d2b1e388eea834ad2c0ad3ee8e41eab": {
+            "body": [
+                {
+                    "categoryOrder": ["tag"],
+                    "categorySeparators": { "tag": " " },
+                    "id": "default",
+                    "mode": "inline",
+                    "separator": " ",
+                    "surface": "default",
+                    "view": "default"
+                }
+            ],
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "2a173adbfd69ed97b166fd68bc7f30a6cde2ea8e5c387ea889a2e52716bf57a6": {
+            "body": {
+                "contextId": "sbx-bf200363a6adef3d4f4b6ed297413cb704e67730763e9c2c29f11a4ef7d4015b"
+            },
+            "method": "PUT",
+            "statusCode": 200
+        },
+        "2dcb1e7b7ac5447fef8b47ba0e1b71b8f0b756de3d9941880e126f1972688578": {
+            "body": [
+                {
+                    "categoryOrder": ["level", "controls"],
+                    "categorySeparators": { "controls": "/", "level": "/" },
+                    "categoryViews": {
+                        "controls": "default",
+                        "level": "default"
+                    },
+                    "id": "default",
+                    "mode": "inline",
+                    "separator": "/",
+                    "separatorBefore": { "controls": "/" },
+                    "surface": "banner"
+                },
+                {
+                    "categoryOrder": ["level", "controls"],
+                    "categorySeparators": { "controls": "/", "level": "/" },
+                    "id": "portion",
+                    "mode": "inline",
+                    "separator": "/",
+                    "separatorBefore": { "controls": "/" },
+                    "surface": "banner",
+                    "view": "portion"
+                }
+            ],
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "2e89438f9b87dd9c068edb8940b064d076c1aa492ceb4ec33a203e1c1b914683": {
+            "body": [
+                {
+                    "aliases": [],
+                    "categories": ["level"],
+                    "id": "LOW",
+                    "name": "LOW",
+                    "parents": [],
+                    "position": 0,
+                    "rank": 0,
+                    "views": { "default": "LOW" }
+                },
+                {
+                    "aliases": [],
+                    "categories": ["level"],
+                    "id": "HIGH",
+                    "name": "HIGH",
+                    "parents": [],
+                    "position": 0,
+                    "rank": 1,
+                    "views": { "default": "HIGH" }
+                }
+            ],
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "313e86d861371d3df29cbe777763569e418969bdebca56621c6a6af79d47b915": {
+            "body": [{ "id": "banner", "label": "Banner" }],
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "31e9cdb9f14461c665f4703ad2a71c055d5543bbe6b33c9c227decd168c96a0d": {
+            "body": {
+                "contextId": "sbx-e98192507b6cb39c3381b7d63f2eca1b815815566bbaba05a3f0a3e9e5dc0228"
+            },
+            "method": "PUT",
+            "statusCode": 200
+        },
+        "3332493f0b368a7cac4d67300e0236a24318ac1f7d3eb361c8051d7f034c4eac": {
+            "body": [
+                {
+                    "aliases": [],
+                    "categories": ["level"],
+                    "id": "LOW",
+                    "name": "Low",
+                    "parents": [],
+                    "position": 0,
+                    "rank": 0,
+                    "views": { "default": "LOW", "portion": "L" }
+                },
+                {
+                    "aliases": [],
+                    "categories": ["level"],
+                    "id": "MED",
+                    "name": "Med",
+                    "parents": [],
+                    "position": 1,
+                    "rank": 1,
+                    "views": { "default": "MED", "portion": "M" }
+                },
+                {
+                    "aliases": [],
+                    "categories": ["level"],
+                    "id": "HIGH",
+                    "name": "High",
+                    "parents": [],
+                    "position": 2,
+                    "rank": 2,
+                    "views": { "default": "HIGH", "portion": "H" }
+                },
+                {
+                    "aliases": [],
+                    "categories": ["controls"],
+                    "id": "CTRL-A",
+                    "name": "Control A",
+                    "parents": ["HIGH"],
+                    "position": 0,
+                    "views": { "default": "CTRL-A" }
+                }
+            ],
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "36f3a47c626d630a3535d71788a49e799c70144ce563aa2ce7970f1055a9d8b1": {
+            "body": {
+                "defaultRenderFormat": "default",
+                "defaultScope": "banner",
+                "description": "Canonical conformance test scheme. Two categories: level (max rollup, required) and controls (union rollup, optional). Four concepts: LOW/MED/HIGH in level, CTRL-A in controls requiring parent HIGH.",
+                "id": "ref-scheme-1",
+                "name": "Records Scheme",
+                "referenceSurfaceLabel": {
+                    "plural": "Handbooks",
+                    "singular": "Handbook"
+                },
+                "roleAware": false,
+                "version": "1.0.0"
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "3fa40bbc22c0c3daa2523c4591446f9154bb7183ffc70730c6e122aaa4d7edd7": {
+            "body": {
+                "access": {
+                    "id": "ref-scheme-1-access-rules",
+                    "resolvedVersion": "1.0.0",
+                    "version": "1.0.0"
+                },
+                "guides": [
+                    {
+                        "id": "ref-guide-1",
+                        "resolvedVersion": "1.0.0",
+                        "version": "1.0.0"
+                    }
+                ],
+                "id": "ref-scheme-1",
+                "scheme": {
+                    "id": "ref-scheme-1",
+                    "resolvedVersion": "1.0.0",
+                    "version": "1.0.0"
+                },
+                "schemes": [
+                    {
+                        "id": "ref-scheme-1",
+                        "roles": ["primary"],
+                        "selector": "ref-scheme-1",
+                        "version": "1.0.0"
+                    }
+                ],
+                "version": "1.0.0"
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "3fe7f0cc762b16fc698770d7dbb672c4627a4fe614756c4c070194eb32409872": {
+            "body": {
+                "defaultRenderFormat": "default",
+                "defaultScope": "banner",
+                "description": "Canonical conformance test scheme. Two categories: level (max rollup, required) and controls (union rollup, optional). Four concepts: LOW/MED/HIGH in level, CTRL-A in controls requiring parent HIGH.",
+                "id": "ref-scheme-1",
+                "name": "County Scheme",
+                "referenceSurfaceLabel": {
+                    "plural": "Handbooks",
+                    "singular": "Handbook"
+                },
+                "roleAware": false,
+                "version": "1.0.0"
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "424f7e866f87bca53b3e15ae6e1d30f85c216f1efcaae26a19f86793976a8c44": {
+            "body": [
+                {
+                    "categoryOrder": ["level", "controls"],
+                    "categorySeparators": { "controls": "/", "level": "/" },
+                    "categoryViews": {
+                        "controls": "default",
+                        "level": "default"
+                    },
+                    "id": "default",
+                    "mode": "inline",
+                    "separator": "/",
+                    "separatorBefore": { "controls": "/" },
+                    "surface": "banner"
+                },
+                {
+                    "categoryOrder": ["level", "controls"],
+                    "categorySeparators": { "controls": "/", "level": "/" },
+                    "id": "portion",
+                    "mode": "inline",
+                    "separator": "/",
+                    "separatorBefore": { "controls": "/" },
+                    "surface": "banner",
+                    "view": "portion"
+                }
+            ],
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "43da78f755b518106d7f0e568b902ff7162382d28c344aa08e34478ce34cde4f": {
+            "body": [
+                {
+                    "aliases": [],
+                    "categories": ["tag"],
+                    "id": "PUBLIC",
+                    "name": "PUBLIC",
+                    "parents": [],
+                    "position": 0,
+                    "rank": 0,
+                    "views": { "default": "PUBLIC" }
+                },
+                {
+                    "aliases": [],
+                    "categories": ["tag"],
+                    "id": "LIMITED",
+                    "name": "LIMITED",
+                    "parents": [],
+                    "position": 0,
+                    "rank": 1,
+                    "views": { "default": "LIMITED" }
+                }
+            ],
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "4a3c29fb43e07205ee33be056554c3798605dab0a0e71f7fc10d7dab6ab30caa": {
+            "body": [],
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "4c375bdf772b51dc8e090285d9ceb972f731a0497ed6adc16a13a0aa53a1da7c": {
+            "body": [{ "id": "banner", "label": "Banner" }],
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "4d7608601b49819654c73eef03f448ef1037fd38be1222d89f9b86f02f40b76c": {
+            "body": [],
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "4ecbca36ae4b0c1d014bd1ddae6360028566556a785fc6bbd7197f84ac706e33": {
+            "body": {
+                "id": "ref-scheme-1",
+                "scheme": {
+                    "id": "ref-scheme-1",
+                    "resolvedVersion": "1.0.0",
+                    "version": "1.0.0"
+                },
+                "schemes": [
+                    {
+                        "id": "ref-scheme-1",
+                        "roles": ["primary"],
+                        "selector": "ref-scheme-1",
+                        "version": "1.0.0"
+                    }
+                ],
+                "version": "1.0.0"
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "567fa0053e94a2310b234f45b9011023a60770058d5e5d4d87880d9b8adec3ca": {
+            "body": [{ "id": "banner", "label": "Banner" }],
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "5c8ca874416b6e5fd0ad89db4092acb4c5106b3ea661eb5fe60a693f4fdaca4f": {
+            "body": {
+                "crosswalks": [
+                    {
+                        "guidance": "Route review outcomes to the owner.",
+                        "id": "tier-to-label",
+                        "mappings": [
+                            {
+                                "disposition": "carry",
+                                "id": "low-public",
+                                "reason": "Low tier is releasable.",
+                                "source": {
+                                    "categoryId": "level",
+                                    "conceptId": "LOW"
+                                },
+                                "targets": [
+                                    {
+                                        "categoryId": "tag",
+                                        "conceptId": "PUBLIC"
+                                    }
+                                ]
+                            },
+                            {
+                                "disposition": "review",
+                                "id": "high-limited",
+                                "reason": "The owner decides the audience.",
+                                "source": {
+                                    "categoryId": "level",
+                                    "conceptId": "HIGH"
+                                },
+                                "targets": [
+                                    {
+                                        "categoryId": "tag",
+                                        "conceptId": "LIMITED"
+                                    }
+                                ]
+                            }
+                        ],
+                        "name": "Tier to label",
+                        "selections": [],
+                        "source": "tier",
+                        "target": "label",
+                        "version": "1.0.0"
+                    }
+                ]
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "64ba1d0ef6e825f43d33d37376a013e2d386ced97184267b4d300e1f5c2913ab": {
+            "body": [
+                {
+                    "aliases": [],
+                    "categories": ["level"],
+                    "id": "LOW",
+                    "name": "Low",
+                    "parents": [],
+                    "position": 0,
+                    "rank": 0,
+                    "views": { "default": "LOW", "portion": "L" }
+                },
+                {
+                    "aliases": [],
+                    "categories": ["level"],
+                    "id": "MED",
+                    "name": "Med",
+                    "parents": [],
+                    "position": 1,
+                    "rank": 1,
+                    "views": { "default": "MED", "portion": "M" }
+                },
+                {
+                    "aliases": [],
+                    "categories": ["level"],
+                    "id": "HIGH",
+                    "name": "High",
+                    "parents": [],
+                    "position": 2,
+                    "rank": 2,
+                    "views": { "default": "HIGH", "portion": "H" }
+                },
+                {
+                    "aliases": [],
+                    "categories": ["controls"],
+                    "id": "CTRL-A",
+                    "name": "Control A",
+                    "parents": ["HIGH"],
+                    "position": 0,
+                    "views": { "default": "CTRL-A" }
+                }
+            ],
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "6a7ee75e7d6d41fada66f495a1fecfe16abf1bb7b021e1cd95fd47b5e79170e7": {
+            "body": {
+                "id": "ref-scheme-1",
+                "scheme": {
+                    "id": "ref-scheme-1",
+                    "resolvedVersion": "1.0.0",
+                    "version": "1.0.0"
+                },
+                "schemes": [
+                    {
+                        "id": "ref-scheme-1",
+                        "roles": ["primary"],
+                        "selector": "ref-scheme-1",
+                        "version": "1.0.0"
+                    }
+                ],
+                "version": "1.0.0"
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "6cde2a31e2e11f3da626675ea0ba9a4d519adafb8fa44ea1e3f3863cb34f9306": {
+            "body": [],
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "71e46046846257fea279cc0b94b24bab893441aa5f75372858d5629e1e51ac3f": {
+            "body": {
+                "access": {
+                    "id": "ref-scheme-1-access-rules",
+                    "resolvedVersion": "1.0.0",
+                    "version": "1.0.0"
+                },
+                "guides": [
+                    {
+                        "id": "ref-guide-1",
+                        "resolvedVersion": "1.0.0",
+                        "version": "1.0.0"
+                    }
+                ],
+                "id": "ref-scheme-1",
+                "scheme": {
+                    "id": "ref-scheme-1",
+                    "resolvedVersion": "1.0.0",
+                    "version": "1.0.0"
+                },
+                "schemes": [
+                    {
+                        "id": "ref-scheme-1",
+                        "roles": ["primary"],
+                        "selector": "ref-scheme-1",
+                        "version": "1.0.0"
+                    }
+                ],
+                "version": "1.0.0"
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "7f681ab09e950e7e1ca30009fc089ce8eee3b519242b4620243f88a533707ec2": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "ref-scheme-1",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "ref-guide-1",
+                            "kind": "guide",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "ref-scheme-1-access-rules",
+                            "kind": "access",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "ref-scheme-1",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "categories": [],
+                    "description": "Canonical conformance test guide. Three rules: rule-high (keywords: critical, sensitive → outcome HIGH), rule-low (keywords: public, open → outcome LOW), rule-ctrl-a (keywords: controlled, restricted → outcome HIGH/CTRL-A). Tests: scan finds keyword hits, evaluate aggregates outcomes, evaluateMany rolls up the outcomes of the rules selected from each guide.",
+                    "id": "ref-guide-1",
+                    "name": "Reference Guide 1",
+                    "uncategorized": [
+                        {
+                            "dependsOn": [],
+                            "dependsOnNames": [],
+                            "description": "Applies when document contains sensitive or critical content. Contributes HIGH level marking.",
+                            "id": "rule-high",
+                            "isComputed": false,
+                            "keywords": ["critical", "sensitive"],
+                            "matcherLabels": [],
+                            "name": "High Sensitivity",
+                            "outcomeText": "HIGH",
+                            "overrideNames": [],
+                            "overrides": []
+                        },
+                        {
+                            "dependsOn": [],
+                            "dependsOnNames": [],
+                            "description": "Applies when document is public or open. Contributes LOW level marking.",
+                            "id": "rule-low",
+                            "isComputed": false,
+                            "keywords": ["public", "open"],
+                            "matcherLabels": [],
+                            "name": "Low Sensitivity",
+                            "outcomeText": "LOW",
+                            "overrideNames": [],
+                            "overrides": []
+                        },
+                        {
+                            "dependsOn": [],
+                            "dependsOnNames": [],
+                            "description": "Applies when document contains controlled or restricted data. Contributes HIGH/CTRL-A marking.",
+                            "id": "rule-ctrl-a",
+                            "isComputed": false,
+                            "keywords": ["controlled", "restricted"],
+                            "matcherLabels": [],
+                            "name": "Control A",
+                            "outcomeText": "HIGH/CTRL-A",
+                            "overrideNames": [],
+                            "overrides": []
+                        }
+                    ]
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "88c42b3712910f66cd51d311509f6015d8ebed6dcbc951f6222cadc30e90ff3b": {
+            "body": [
+                {
+                    "id": "level",
+                    "label": "Level",
+                    "position": 0,
+                    "required": true,
+                    "rollup": "max",
+                    "single": true
+                },
+                {
+                    "id": "controls",
+                    "label": "Controls",
+                    "position": 1,
+                    "required": false,
+                    "rollup": "union",
+                    "single": false
+                }
+            ],
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "8a266b2db8e7985b740f243c628bad283711a35b61aa89a6392471ac7d968eb1": {
+            "body": {
+                "rules": [
+                    {
+                        "access": {
+                            "id": "ref-scheme-1-access-rules",
+                            "kind": "access",
+                            "version": "1.0.0"
+                        },
+                        "attributesNeeded": ["level"],
+                        "dependsOn": [],
+                        "name": "Level",
+                        "overrides": [],
+                        "requirementText": "level >= data.level",
+                        "rule": {
+                            "artifact": {
+                                "id": "ref-scheme-1-access-rules",
+                                "kind": "access",
+                                "version": "1.0.0"
+                            },
+                            "ruleDigest": "sha256:4fd9f5773510108b2fc4640163c6234942bb032a9f58e362e91827100d7204a0",
+                            "ruleId": "level-rule"
+                        },
+                        "scheme": {
+                            "id": "ref-scheme-1",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    }
+                ]
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "8a778065def5ffe10e2ae329dd77d733e15e52aade8cbb7c3517de55c93a3e08": {
+            "body": [
+                {
+                    "id": "level",
+                    "label": "Level",
+                    "position": 0,
+                    "required": true,
+                    "rollup": "max",
+                    "single": true
+                },
+                {
+                    "id": "controls",
+                    "label": "Controls",
+                    "position": 1,
+                    "required": false,
+                    "rollup": "union",
+                    "single": false
+                }
+            ],
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "91ed41b93471536eff36cc257887771291bdf1e248c8cdc40c10321fc8abe260": {
+            "body": {
+                "defaultRenderFormat": "default",
+                "description": "Test test fixture.",
+                "id": "tier",
+                "name": "tier scheme",
+                "referenceSurfaceLabel": {
+                    "plural": "Handbooks",
+                    "singular": "Handbook"
+                },
+                "roleAware": false,
+                "version": "1.0.0"
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "988ce43fa9a6a9a6fc2514b2b6717e161f6e28101a30052e0f861afa5879819d": {
+            "body": [
+                {
+                    "id": "tag",
+                    "label": "tag",
+                    "required": true,
+                    "rollup": "max",
+                    "single": true
+                }
+            ],
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "a72a82a204a83e03d44fdca6ed816a82fe7cc68769425a6727096744834b61bb": {
+            "body": [
+                {
+                    "aliases": [],
+                    "categories": ["level"],
+                    "id": "LOW",
+                    "name": "Low",
+                    "parents": [],
+                    "position": 0,
+                    "rank": 0,
+                    "views": { "default": "LOW", "portion": "L" }
+                },
+                {
+                    "aliases": [],
+                    "categories": ["level"],
+                    "id": "MED",
+                    "name": "Med",
+                    "parents": [],
+                    "position": 1,
+                    "rank": 1,
+                    "views": { "default": "MED", "portion": "M" }
+                },
+                {
+                    "aliases": [],
+                    "categories": ["level"],
+                    "id": "HIGH",
+                    "name": "High",
+                    "parents": [],
+                    "position": 2,
+                    "rank": 2,
+                    "views": { "default": "HIGH", "portion": "H" }
+                },
+                {
+                    "aliases": [],
+                    "categories": ["controls"],
+                    "id": "CTRL-A",
+                    "name": "Control A",
+                    "parents": ["HIGH"],
+                    "position": 0,
+                    "views": { "default": "CTRL-A" }
+                }
+            ],
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "ab37a65a65a6449e65e59fed571a099c4168e33cadabb8a5dd14ed307c9f8c2a": {
+            "body": {
+                "defaultRenderFormat": "default",
+                "description": "Test test fixture.",
+                "id": "label",
+                "name": "label scheme",
+                "referenceSurfaceLabel": {
+                    "plural": "Handbooks",
+                    "singular": "Handbook"
+                },
+                "roleAware": false,
+                "version": "1.0.0"
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "acce7f64cf74563d39fc8d233a3aca47b99dca30f64a7a6bd1697f9d870c73e0": {
+            "body": [{ "id": "banner", "label": "Banner" }],
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "b273ac139d5e633a198143fba29af8d624c7b9a9137fab5b8097c9da94daaa6c": {
+            "body": [
+                {
+                    "categoryOrder": ["level", "controls"],
+                    "categorySeparators": { "controls": "/", "level": "/" },
+                    "categoryViews": {
+                        "controls": "default",
+                        "level": "default"
+                    },
+                    "id": "default",
+                    "mode": "inline",
+                    "separator": "/",
+                    "separatorBefore": { "controls": "/" },
+                    "surface": "banner"
+                },
+                {
+                    "categoryOrder": ["level", "controls"],
+                    "categorySeparators": { "controls": "/", "level": "/" },
+                    "id": "portion",
+                    "mode": "inline",
+                    "separator": "/",
+                    "separatorBefore": { "controls": "/" },
+                    "surface": "banner",
+                    "view": "portion"
+                }
+            ],
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "b2c06441f08aed946bc8690d37c6ac11d01f4d507cf48858c7c0be2fb5b7f796": {
+            "body": [],
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "b4c4d736e0d10c5151251a77841ecaf03ccb5bdb80f5235c0f61dfa5e581f996": {
+            "body": [
+                {
+                    "id": "level",
+                    "label": "level",
+                    "required": true,
+                    "rollup": "max",
+                    "single": true
+                }
+            ],
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "badf477e578c914e0ed15f52efd22ff451d8afa9a62a3c65588582957933f6b5": {
+            "body": [{ "id": "banner", "label": "Banner" }],
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "bc1877aa78e5c5a8312dae14ef901c45568a7bb10f7055152689bc2ac57420ae": {
+            "body": {
+                "crosswalks": [
+                    {
+                        "id": "tier-to-label",
+                        "resolvedVersion": "1.0.0",
+                        "version": "1.0.0"
+                    }
+                ],
+                "id": "tier",
+                "scheme": {
+                    "id": "tier",
+                    "resolvedVersion": "1.0.0",
+                    "version": "1.0.0"
+                },
+                "schemes": [
+                    {
+                        "id": "tier",
+                        "roles": ["primary", "crosswalk-source"],
+                        "selector": "tier",
+                        "version": "1.0.0"
+                    },
+                    {
+                        "id": "label",
+                        "roles": ["crosswalk-target"],
+                        "selector": "label",
+                        "version": "1.0.0"
+                    }
+                ],
+                "version": "1.0.0"
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "bdeb3e7af8539bc7e1d1bd81cd9ac0c0499524a48a42ff02a71b10b067e16049": {
+            "body": [],
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "be6fb0397ecbd78b2e663384d4c61fb4691e7eae5c8972d15ffbfe99b89a0288": {
+            "body": [
+                {
+                    "aliases": [],
+                    "categories": ["level"],
+                    "id": "LOW",
+                    "name": "Low",
+                    "parents": [],
+                    "position": 0,
+                    "rank": 0,
+                    "views": { "default": "LOW", "portion": "L" }
+                },
+                {
+                    "aliases": [],
+                    "categories": ["level"],
+                    "id": "MED",
+                    "name": "Med",
+                    "parents": [],
+                    "position": 1,
+                    "rank": 1,
+                    "views": { "default": "MED", "portion": "M" }
+                },
+                {
+                    "aliases": [],
+                    "categories": ["level"],
+                    "id": "HIGH",
+                    "name": "High",
+                    "parents": [],
+                    "position": 2,
+                    "rank": 2,
+                    "views": { "default": "HIGH", "portion": "H" }
+                },
+                {
+                    "aliases": [],
+                    "categories": ["controls"],
+                    "id": "CTRL-A",
+                    "name": "Control A",
+                    "parents": ["HIGH"],
+                    "position": 0,
+                    "views": { "default": "CTRL-A" }
+                }
+            ],
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "c4fe65354ad3d4090c49862409b406574ef46c7dcc3ebc81ba98e73630e05977": {
+            "body": {
+                "defaultRenderFormat": "default",
+                "defaultScope": "banner",
+                "description": "Canonical conformance test scheme. Two categories: level (max rollup, required) and controls (union rollup, optional). Four concepts: LOW/MED/HIGH in level, CTRL-A in controls requiring parent HIGH.",
+                "id": "ref-scheme-1",
+                "name": "Reference Scheme 1",
+                "referenceSurfaceLabel": {
+                    "plural": "Handbooks",
+                    "singular": "Handbook"
+                },
+                "roleAware": false,
+                "version": "1.0.0"
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "c760af1cd771074b0b907564a4c772dee3ab892a3d72c80eb169ecb509ee4766": {
+            "body": {
+                "contextId": "sbx-243283db2ef4554cbaca9cae56b2cc6809a34e90de20bb0e471c7607dc3cd755"
+            },
+            "method": "PUT",
+            "statusCode": 200
+        },
+        "d070f85ae5ab889c73963e01719fa498c4166ae90cd210efbe96fa9ca88beb1d": {
+            "body": [],
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "d61d9a03beb4bcf561a4cbfb067a7becec69ed7bbaa0712b5389911cb657ce89": {
+            "body": {
+                "guides": [
+                    {
+                        "id": "ref-guide-1",
+                        "resolvedVersion": "1.0.0",
+                        "version": "1.0.0"
+                    }
+                ],
+                "id": "ref-scheme-1",
+                "scheme": {
+                    "id": "ref-scheme-1",
+                    "resolvedVersion": "1.0.0",
+                    "version": "1.0.0"
+                },
+                "schemes": [
+                    {
+                        "id": "ref-scheme-1",
+                        "roles": ["primary"],
+                        "selector": "ref-scheme-1",
+                        "version": "1.0.0"
+                    }
+                ],
+                "version": "1.0.0"
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "d7c44019d29b0506e82aff746b56015ed699349707c94d529113e980299e4712": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "ref-scheme-1",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "ref-guide-1",
+                            "kind": "guide",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "ref-scheme-1",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "categories": [],
+                    "description": "Canonical conformance test guide. Three rules: rule-high (keywords: critical, sensitive → outcome HIGH), rule-low (keywords: public, open → outcome LOW), rule-ctrl-a (keywords: controlled, restricted → outcome HIGH/CTRL-A). Tests: scan finds keyword hits, evaluate aggregates outcomes, evaluateMany rolls up the outcomes of the rules selected from each guide.",
+                    "id": "ref-guide-1",
+                    "name": "Reference Guide 1",
+                    "uncategorized": [
+                        {
+                            "dependsOn": [],
+                            "dependsOnNames": [],
+                            "description": "Applies when document contains sensitive or critical content. Contributes HIGH level marking.",
+                            "id": "rule-high",
+                            "isComputed": false,
+                            "keywords": ["critical", "sensitive"],
+                            "matcherLabels": [],
+                            "name": "High Sensitivity",
+                            "outcomeText": "HIGH",
+                            "overrideNames": [],
+                            "overrides": []
+                        },
+                        {
+                            "dependsOn": [],
+                            "dependsOnNames": [],
+                            "description": "Applies when document is public or open. Contributes LOW level marking.",
+                            "id": "rule-low",
+                            "isComputed": false,
+                            "keywords": ["public", "open"],
+                            "matcherLabels": [],
+                            "name": "Low Sensitivity",
+                            "outcomeText": "LOW",
+                            "overrideNames": [],
+                            "overrides": []
+                        },
+                        {
+                            "dependsOn": [],
+                            "dependsOnNames": [],
+                            "description": "Applies when document contains controlled or restricted data. Contributes HIGH/CTRL-A marking.",
+                            "id": "rule-ctrl-a",
+                            "isComputed": false,
+                            "keywords": ["controlled", "restricted"],
+                            "matcherLabels": [],
+                            "name": "Control A",
+                            "outcomeText": "HIGH/CTRL-A",
+                            "overrideNames": [],
+                            "overrides": []
+                        }
+                    ]
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "df83b9882b92e9419fe5232ebfa6533f0b91f65e63ad0bcfb639385e11502e57": {
+            "body": [
+                {
+                    "categoryOrder": ["level", "controls"],
+                    "categorySeparators": { "controls": "/", "level": "/" },
+                    "categoryViews": {
+                        "controls": "default",
+                        "level": "default"
+                    },
+                    "id": "default",
+                    "mode": "inline",
+                    "separator": "/",
+                    "separatorBefore": { "controls": "/" },
+                    "surface": "banner"
+                },
+                {
+                    "categoryOrder": ["level", "controls"],
+                    "categorySeparators": { "controls": "/", "level": "/" },
+                    "id": "portion",
+                    "mode": "inline",
+                    "separator": "/",
+                    "separatorBefore": { "controls": "/" },
+                    "surface": "banner",
+                    "view": "portion"
+                }
+            ],
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "e070dec6e78862435e7c23c92a6e4a93a9667377aed0b78b533966687028c314": {
+            "body": {
+                "abiVersion": "v1",
+                "engineSha": "",
+                "engineVersion": "1.0.0-dev.30",
+                "gitTag": "",
+                "openapiVersion": "1.0.0-dev.30",
+                "status": "ok"
+            },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "e4b495d2810834f3637cd7fb1a80a8f2d6dbe2db6bad88531a5b43453005994c": {
+            "body": [],
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "e4ea027b37bcae6c73360d552b25c9c1bd7465bb4bc6b4e72a53f12d5f6e4ccf": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "ref-scheme-1",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "ref-guide-1",
+                            "kind": "guide",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "ref-scheme-1-access-rules",
+                            "kind": "access",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "ref-scheme-1",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "categories": [],
+                    "description": "Canonical conformance test guide. Three rules: rule-high (keywords: critical, sensitive → outcome HIGH), rule-low (keywords: public, open → outcome LOW), rule-ctrl-a (keywords: controlled, restricted → outcome HIGH/CTRL-A). Tests: scan finds keyword hits, evaluate aggregates outcomes, evaluateMany rolls up the outcomes of the rules selected from each guide.",
+                    "id": "ref-guide-1",
+                    "name": "Reference Guide 1",
+                    "uncategorized": [
+                        {
+                            "dependsOn": [],
+                            "dependsOnNames": [],
+                            "description": "Applies when document contains sensitive or critical content. Contributes HIGH level marking.",
+                            "id": "rule-high",
+                            "isComputed": false,
+                            "keywords": ["critical", "sensitive"],
+                            "matcherLabels": [],
+                            "name": "High Sensitivity",
+                            "outcomeText": "HIGH",
+                            "overrideNames": [],
+                            "overrides": []
+                        },
+                        {
+                            "dependsOn": [],
+                            "dependsOnNames": [],
+                            "description": "Applies when document is public or open. Contributes LOW level marking.",
+                            "id": "rule-low",
+                            "isComputed": false,
+                            "keywords": ["public", "open"],
+                            "matcherLabels": [],
+                            "name": "Low Sensitivity",
+                            "outcomeText": "LOW",
+                            "overrideNames": [],
+                            "overrides": []
+                        },
+                        {
+                            "dependsOn": [],
+                            "dependsOnNames": [],
+                            "description": "Applies when document contains controlled or restricted data. Contributes HIGH/CTRL-A marking.",
+                            "id": "rule-ctrl-a",
+                            "isComputed": false,
+                            "keywords": ["controlled", "restricted"],
+                            "matcherLabels": [],
+                            "name": "Control A",
+                            "outcomeText": "HIGH/CTRL-A",
+                            "overrideNames": [],
+                            "overrides": []
+                        }
+                    ]
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "e5b71c6c2e478cefaa594e76c13b17efa26f55ffcea50fff846a288f7856cabf": {
+            "body": [
+                {
+                    "id": "level",
+                    "label": "Level",
+                    "position": 0,
+                    "required": true,
+                    "rollup": "max",
+                    "single": true
+                },
+                {
+                    "id": "controls",
+                    "label": "Controls",
+                    "position": 1,
+                    "required": false,
+                    "rollup": "union",
+                    "single": false
+                }
+            ],
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "ea07b7152214ea67b1e8a958bcbd33a9e92177184718d475a6902b32d55e57ae": {
+            "body": {
+                "defaultRenderFormat": "default",
+                "defaultScope": "banner",
+                "description": "Canonical conformance test scheme. Two categories: level (max rollup, required) and controls (union rollup, optional). Four concepts: LOW/MED/HIGH in level, CTRL-A in controls requiring parent HIGH.",
+                "id": "ref-scheme-1",
+                "name": "Reference Scheme 1",
+                "referenceSurfaceLabel": {
+                    "plural": "Handbooks",
+                    "singular": "Handbook"
+                },
+                "roleAware": false,
+                "version": "1.0.0"
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "f86eeb3989c15a78d553bb40463fb6f90c8be735fe25e3d589bbd5735cdc7290": {
+            "body": {
+                "defaultRenderFormat": "default",
+                "defaultScope": "banner",
+                "description": "Canonical conformance test scheme. Two categories: level (max rollup, required) and controls (union rollup, optional). Four concepts: LOW/MED/HIGH in level, CTRL-A in controls requiring parent HIGH.",
+                "id": "ref-scheme-1",
+                "name": "Reference Scheme 1",
+                "referenceSurfaceLabel": {
+                    "plural": "Handbooks",
+                    "singular": "Handbook"
+                },
+                "roleAware": false,
+                "version": "1.0.0"
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "f8ab141f73acdc8bf8d7eb7fed5cd901420211fb501cb0c3bad436562ad43256": {
+            "body": [
+                {
+                    "categoryOrder": ["level", "controls"],
+                    "categorySeparators": { "controls": "/", "level": "/" },
+                    "categoryViews": {
+                        "controls": "default",
+                        "level": "default"
+                    },
+                    "id": "default",
+                    "mode": "inline",
+                    "separator": "/",
+                    "separatorBefore": { "controls": "/" },
+                    "surface": "banner"
+                },
+                {
+                    "categoryOrder": ["level", "controls"],
+                    "categorySeparators": { "controls": "/", "level": "/" },
+                    "id": "portion",
+                    "mode": "inline",
+                    "separator": "/",
+                    "separatorBefore": { "controls": "/" },
+                    "surface": "banner",
+                    "view": "portion"
+                }
+            ],
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "GET",
+            "statusCode": 200
+        },
+        "fa6a1050c8e580e1598876c9ca2807ce731b1b6d9304953ec9e79370b7e4d437": {
+            "body": {
+                "contextId": "sbx-5a242e666375fd628bba78c706586ab83d1e8c7f14ca1f519bf0bdb7ddfa9576"
+            },
+            "method": "PUT",
+            "statusCode": 200
+        },
+        "ff34098a4e7075a998e75c7c9660680e1f2375a5b9197fdce128346f925215e4": {
+            "body": {
+                "contextId": "sbx-4c1538bd00a5db4bfd93c22aafc95d4168562c901bdaddb0e87d56e1deb99041"
+            },
+            "method": "PUT",
+            "statusCode": 200
+        }
+    }
+}

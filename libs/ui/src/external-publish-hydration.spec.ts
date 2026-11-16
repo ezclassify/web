@@ -29,6 +29,8 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import type { Assertion } from '@ezclassify/types';
 import { loadMultiScopeRegression } from '../test-fixtures/load-multi-scope-regression';
 import { EzClassifyUI } from './ezclassify-ui';
+import { asContext } from '../test-fixtures/as-context';
+import { demoRuntimeSettled } from '../../../test-support/demo-runtime';
 
 const MARKING_ID = 'doc-marking';
 
@@ -83,7 +85,7 @@ const VIEWS_HTML = `
 `;
 
 async function flush(): Promise<void> {
-    for (let i = 0; i < 40; i++) await Promise.resolve();
+    await demoRuntimeSettled();
 }
 
 describe('externally published store state reaches bound views', () => {
@@ -93,7 +95,7 @@ describe('externally published store state reaches bound views', () => {
     beforeEach(() => {
         document.body.innerHTML = '';
         root = document.createElement('div');
-        root.innerHTML = `<input type="hidden" id="${MARKING_ID}" data-ezclassify-rendered />`;
+        root.innerHTML = `<input type="hidden" id="${MARKING_ID}" data-ezclassify-marking />`;
         document.body.appendChild(root);
         forms = null;
     });
@@ -180,7 +182,9 @@ describe('externally published store state reaches bound views', () => {
     }
 
     it('hydrates a view that mounts AFTER the state was published', async () => {
-        forms = new EzClassifyUI(loadMultiScopeRegression(), { root });
+        forms = new EzClassifyUI(asContext(await loadMultiScopeRegression()), {
+            root,
+        });
         await flush();
 
         await forms.store.publishAssertions(MARKING_ID, STAGED);
@@ -206,7 +210,9 @@ describe('externally published store state reaches bound views', () => {
     });
 
     it('hydrates a view when the state is published AFTER it mounts', async () => {
-        forms = new EzClassifyUI(loadMultiScopeRegression(), { root });
+        forms = new EzClassifyUI(asContext(await loadMultiScopeRegression()), {
+            root,
+        });
         await flush();
         await mountViews();
 
@@ -227,7 +233,9 @@ describe('externally published store state reaches bound views', () => {
     });
 
     it('leaves an unpublished marking alone when a view mounts against it', async () => {
-        forms = new EzClassifyUI(loadMultiScopeRegression(), { root });
+        forms = new EzClassifyUI(asContext(await loadMultiScopeRegression()), {
+            root,
+        });
         await flush();
         await mountViews();
 
@@ -239,7 +247,9 @@ describe('externally published store state reaches bound views', () => {
     });
 
     it('does not fight an edit the view itself published', async () => {
-        forms = new EzClassifyUI(loadMultiScopeRegression(), { root });
+        forms = new EzClassifyUI(asContext(await loadMultiScopeRegression()), {
+            root,
+        });
         await flush();
         await mountViews();
 
@@ -282,8 +292,8 @@ describe('externally published store state reaches bound views', () => {
  * `marked-textarea` uses ordered entry membership rather than this scalar
  * hydration path; its entry editing and source ownership have separate
  * coverage. The producer-only text controller has no hydration step. Plain
- * `data-ezclassify-bind` inputs are a behavior path, not a component view, and
- * are not covered here.
+ * `data-ezclassify-marking` inputs are a behavior path, not a component view,
+ * and are not covered here.
  */
 describe('hydrate-at-mount covers every marking-bound controller', () => {
     let root: HTMLDivElement;
@@ -292,7 +302,7 @@ describe('hydrate-at-mount covers every marking-bound controller', () => {
     beforeEach(() => {
         document.body.innerHTML = '';
         root = document.createElement('div');
-        root.innerHTML = `<input type="hidden" id="${MARKING_ID}" data-ezclassify-rendered />`;
+        root.innerHTML = `<input type="hidden" id="${MARKING_ID}" data-ezclassify-marking />`;
         document.body.appendChild(root);
         forms = null;
     });
@@ -307,7 +317,9 @@ describe('hydrate-at-mount covers every marking-bound controller', () => {
      * the mutation observer mount it against the already-populated marking.
      */
     async function mountAfterPublish(html: string): Promise<void> {
-        forms = new EzClassifyUI(loadMultiScopeRegression(), { root });
+        forms = new EzClassifyUI(asContext(await loadMultiScopeRegression()), {
+            root,
+        });
         await flush();
         await forms.store.publishAssertions(MARKING_ID, STAGED);
         await flush();

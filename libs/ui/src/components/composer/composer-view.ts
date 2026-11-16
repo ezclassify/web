@@ -31,7 +31,6 @@ import type { AdoptedStyles } from '../../styles/adopt';
 import {
     isInternalScroll,
     listenForViewportChanges,
-    popoverSide,
     positionPopover,
     positionCompactSheet,
     positionSheet,
@@ -111,10 +110,7 @@ export interface ComposerViewOptions {
         categoryId: string,
     ) => string | undefined;
     /** The composer opened, closed or changed side. */
-    readonly onPlacement?: (
-        open: boolean,
-        side: 'above' | 'below' | 'sheet',
-    ) => void;
+    readonly onPlacement?: (open: boolean) => void;
     /** The draft text changed; the field mirrors it (height, width, paint). */
     readonly onDraft?: (text: string) => void;
     /**
@@ -131,6 +127,14 @@ export interface ComposerViewOptions {
      * Return true when the field used the key.
      */
     readonly onEscapeIdle?: () => boolean;
+    /**
+     * Up or Down, with any modifier, while the list is closed, for a field
+     * whose own text has lines (the inline editor inside a text area). Return
+     * true when the field moved focus and caret into that text: the view then
+     * leaves the key to the browser, which moves the caret a line there, and
+     * opens nothing. Without it, Down opens the list as in any combobox.
+     */
+    readonly onLineMove?: (direction: 'up' | 'down') => boolean;
     /**
      * Enter (or Done) committed, stored or unchanged, and the composer closed.
      * `fromSheet` says it closed the phone sheet, where the field should not
@@ -364,6 +368,7 @@ export class ComposerView {
             this.surface,
             options.anchor,
             (options.css ?? '') + composerCss,
+            options.field ?? options.anchor,
         );
 
         this.wireInput(options.input);
@@ -664,7 +669,15 @@ export class ComposerView {
         if (this.destroyed) return;
         if (e.isComposing || e.keyCode === 229) return;
         const open = this.controller.isOpen;
-        if (e.altKey && (e.key === 'ArrowDown' || e.key === 'ArrowUp')) {
+        const vertical = e.key === 'ArrowDown' || e.key === 'ArrowUp';
+        if (
+            vertical &&
+            !open &&
+            this.opts.onLineMove?.(e.key === 'ArrowDown' ? 'down' : 'up')
+        ) {
+            return;
+        }
+        if (e.altKey && vertical) {
             e.preventDefault();
             if (open) this.jumpCategory(e.key === 'ArrowDown' ? 1 : -1);
             else void this.open('keyboard');
@@ -930,10 +943,7 @@ export class ComposerView {
         ) {
             this.sideLocked = true;
         }
-        this.opts.onPlacement?.(
-            true,
-            this.sheet ? 'sheet' : popoverSide(this.surface),
-        );
+        this.opts.onPlacement?.(true);
     }
 
     /**
@@ -1104,7 +1114,7 @@ export class ComposerView {
             this.releasePage = null;
             if (this.placed) {
                 this.placed = false;
-                this.opts.onPlacement?.(false, 'below');
+                this.opts.onPlacement?.(false);
             }
             return;
         }
@@ -1226,8 +1236,12 @@ export class ComposerView {
             return;
         }
         if (reading.complete) {
-            r.dataset.state = s.invalid ? 'invalid' : 'ok';
-            label.textContent = t('composer.savesAs');
+            // A marking the engine cannot write is never shown as saving.
+            const refused = !!reading.refusal;
+            r.dataset.state = s.invalid || refused ? 'invalid' : 'ok';
+            label.textContent = t(
+                refused ? 'composer.notSaved' : 'composer.savesAs',
+            );
             value.textContent = reading.rendered;
             const changes = document.createElement('span');
             changes.className = 'ez-composer__changes';
@@ -1282,7 +1296,11 @@ export class ComposerView {
             // The same report the field shows under itself when the list is
             // closed: every rule the result breaks, then the warnings. The
             // fix rows below are the ways to fix it.
-            const report = ruleErrorsFrom(reading.errors, [], reading.warnings);
+            const read = ruleErrorsFrom(reading.errors, [], reading.warnings);
+            const report = {
+                ...read,
+                messages: [...read.messages, ...(reading.refusal ?? [])],
+            };
             // The broken rules fold under one line so the ways to fix stay in
             // view: on the phone sheet when there are fixes, whenever more
             // than three are listed, and when the popover had no room for
@@ -1593,7 +1611,7 @@ export class ComposerView {
         const parts: string[] = [s.mode, s.scope ?? ''];
         if (s.scope) parts.push(JSON.stringify(s.categories.map((c) => c.id)));
         for (const group of s.groups) {
-            parts.push(`g:${group.id}:${group.label}`);
+            parts.push(`g:${group.id}:${group.scope ?? ''}:${group.label}`);
             for (const row of group.rows) {
                 if (row.kind === 'concept') {
                     parts.push(
@@ -1662,6 +1680,19 @@ export class ComposerView {
             const title = this.span('ez-composer__group-title', group.label);
             title.id = `${this.id}-${group.id}-label`;
             title.setAttribute('role', 'presentation');
+            // A field across scopes names the scope beside each category, and
+            // the group's accessible name carries it.
+            const labelledBy = [title.id];
+            if (group.scope) {
+                const scope = this.span(
+                    'ez-composer__group-scope',
+                    group.scope,
+                );
+                scope.id = `${this.id}-${group.id}-scope`;
+                scope.setAttribute('role', 'presentation');
+                heading.append(scope);
+                labelledBy.unshift(scope.id);
+            }
             heading.append(title);
             const first = group.rows[0];
             if (s.mode === 'browse' && first.kind === 'concept') {
@@ -1683,7 +1714,7 @@ export class ComposerView {
                 );
                 heading.append(nav);
             }
-            g.setAttribute('aria-labelledby', title.id);
+            g.setAttribute('aria-labelledby', labelledBy.join(' '));
             g.appendChild(heading);
             for (const row of group.rows) {
                 g.appendChild(this.rowElement(row, row === activeRow, s));

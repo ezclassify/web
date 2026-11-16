@@ -1,11 +1,14 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { afterEach, describe, it, expect, beforeEach, vi } from 'vitest';
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import { dirname, join } from 'node:path';
 import {
     CategoryChecklist,
     type CategoryChecklistOptions,
 } from './category-checklist';
 import type { SchemeEngineAdapter, Assertion } from '@ezclassify/types';
 import type { SchemePublicView } from '@ezclassify/types';
-import { Context } from '@ezclassify/engine';
+import { schemeOnlyContext } from '../../test-fixtures/context-doubles';
 import { mockRenderFormats } from '../render-format-layout-mock';
 
 /** Create a minimal mock engine with a multi-select category */
@@ -155,7 +158,7 @@ function createMockEngine(
     } as unknown as SchemeEngineAdapter;
 }
 
-const toCtx = (eng: unknown) => Context.fromSchemeEngine(eng as never);
+const toCtx = (eng: unknown) => schemeOnlyContext(eng as never);
 describe('CategoryChecklist', () => {
     let container: HTMLDivElement;
     let engine: SchemeEngineAdapter;
@@ -168,6 +171,13 @@ describe('CategoryChecklist', () => {
         checklist = new CategoryChecklist();
     });
 
+    // A checklist mounted by hand binds the first text input beside it, so a
+    // container left from another test would feed this one its value.
+    afterEach(() => {
+        checklist.destroy();
+        container.remove();
+    });
+
     async function init(
         opts?: Partial<CategoryChecklistOptions>,
     ): Promise<void> {
@@ -177,12 +187,89 @@ describe('CategoryChecklist', () => {
         } as CategoryChecklistOptions);
     }
 
-    it('should render a header with category label', async () => {
+    it('names its category in the first row, which is not a heading the host did not write', async () => {
         await init();
-        const heading = container.querySelector(
-            '.category-checklist-header h3',
+        const header = container.querySelector('.category-checklist-header')!;
+        expect(
+            header.querySelector('.category-checklist-name')?.textContent,
+        ).toBe('Items');
+        expect(header.querySelector('h1, h2, h3, h4, h5, h6')).toBeNull();
+        // The row ends with the count, Select all, Clear all and the mark.
+        const controls = header.querySelector('.category-checklist-controls')!;
+        expect([...controls.children].map((child) => child.className)).toEqual([
+            'category-checklist-count',
+            'category-checklist-toggle',
+            'ez-field-chrome ez-field-chrome--inline',
+        ]);
+        expect(controls.querySelector('.ez-status-mark')).not.toBeNull();
+        // Clear all is its clear: the chrome adds no second one.
+        expect(container.querySelector('.ez-clear-button')).toBeNull();
+    });
+
+    it('sits in the suite frame', async () => {
+        await init();
+        expect(
+            container
+                .querySelector('.category-checklist-frame')
+                ?.classList.contains('ez-field-frame'),
+        ).toBe(true);
+    });
+
+    it('toggles a checkbox from anywhere on its row', async () => {
+        await init();
+        const row = container.querySelector<HTMLLabelElement>(
+            '.category-checklist-item',
+        )!;
+        const box = row.querySelector<HTMLInputElement>(
+            '.category-checklist-checkbox',
+        )!;
+        // The row is the checkbox's label: a press on its name toggles it.
+        expect(row.tagName).toBe('LABEL');
+        expect(row.contains(box)).toBe(true);
+        row.click();
+        expect(box.checked).toBe(true);
+        expect(
+            checklist
+                .getAssertions()
+                .some((a) => a.conceptId === box.dataset.conceptId),
+        ).toBe(true);
+        expect(row.classList.contains('category-checklist-item--checked')).toBe(
+            true,
         );
-        expect(heading?.textContent).toBe('Items');
+    });
+
+    it('publishes nothing from a value read that lands after it was torn down', async () => {
+        // A host can tear the field down, and its Context with it, while the
+        // field reads a value it was given. The read's answer then has
+        // nowhere to go: publishing it would call into the gone Context.
+        const onChange = vi.fn();
+        await init({ onChange } as Partial<CategoryChecklistOptions>);
+        let answer!: (result: unknown) => void;
+        const deferred = () =>
+            new Promise((resolve) => {
+                answer = resolve;
+            });
+        const mock = engine as unknown as Record<string, unknown>;
+        mock.validate = vi.fn(deferred);
+        mock.process = vi.fn(deferred);
+        const read = checklist.setValue('item-a');
+        checklist.destroy();
+        answer({
+            assertions: [
+                {
+                    conceptId: 'item-a',
+                    categoryId: 'items',
+                    confidence: 'certain',
+                    source: 'parse',
+                },
+            ],
+            rendered: 'item-a',
+            valid: true,
+            errors: [],
+        });
+        await read;
+        expect(onChange).not.toHaveBeenCalled();
+        expect(checklist.getAssertions()).toEqual([]);
     });
 
     it('should show count badge "0 of 5"', async () => {
@@ -263,10 +350,49 @@ describe('CategoryChecklist', () => {
         expect(count?.textContent).toBe('2 of 5');
     });
 
-    it('should show search input by default', async () => {
+    it('shows the search input only when the list is longer than its room', async () => {
         await init();
-        const search = container.querySelector('.category-checklist-search');
-        expect(search).not.toBeNull();
+        const search = container.querySelector<HTMLInputElement>(
+            '.category-checklist-search',
+        )!;
+        const list = container.querySelector<HTMLElement>(
+            '.category-checklist-list',
+        )!;
+        // Every item fits: no filter to take up room.
+        expect(search.hidden).toBe(true);
+        // The engine offers nothing, then everything again, and the list
+        // that comes back scrolls: the filter shows.
+        checklist.applyAllowableOptions([]);
+        expect(search.hidden).toBe(true);
+        Object.defineProperty(list, 'scrollHeight', {
+            configurable: true,
+            value: 600,
+        });
+        Object.defineProperty(list, 'clientHeight', {
+            configurable: true,
+            value: 352,
+        });
+        checklist.applyAllowableOptions(null);
+        expect(search.hidden).toBe(false);
+    });
+
+    it('keeps the search input while it holds a filter, and always when asked', async () => {
+        await init();
+        const search = container.querySelector<HTMLInputElement>(
+            '.category-checklist-search',
+        )!;
+        search.value = 'Alpha';
+        search.dispatchEvent(new Event('input', { bubbles: true }));
+        expect(search.hidden).toBe(false);
+        checklist.destroy();
+        container.innerHTML = '';
+        checklist = new CategoryChecklist();
+        await init({ showSearch: true });
+        expect(
+            container.querySelector<HTMLInputElement>(
+                '.category-checklist-search',
+            )!.hidden,
+        ).toBe(false);
     });
 
     it('should hide search input when showSearch is false', async () => {
@@ -439,13 +565,15 @@ describe('CategoryChecklist', () => {
         const checkboxes = container.querySelectorAll(
             '.category-checklist-checkbox',
         ) as NodeListOf<HTMLInputElement>;
-        const labels = container.querySelectorAll(
-            '.category-checklist-label',
+        const rows = container.querySelectorAll(
+            '.category-checklist-item',
         ) as NodeListOf<HTMLLabelElement>;
-        // Each label's htmlFor should match the checkbox id
+        // Each row is the label of the checkbox it holds, by holding it: a
+        // label found by id would reach another checklist of the category.
         for (let i = 0; i < checkboxes.length; i++) {
             expect(checkboxes[i].type).toBe('checkbox');
-            expect(labels[i].htmlFor).toBe(checkboxes[i].id);
+            expect(rows[i].htmlFor).toBe('');
+            expect(rows[i].contains(checkboxes[i])).toBe(true);
         }
     });
 
@@ -508,5 +636,36 @@ describe('CategoryChecklist', () => {
 
         // Focus should still be on the same element after the render cycle
         expect(document.activeElement).toBe(checkbox);
+    });
+});
+
+describe('CategoryChecklist header layout', () => {
+    it('wraps the toggle buttons to a line of their own before it breaks the title mid-word', () => {
+        const css = readFileSync(
+            join(
+                dirname(fileURLToPath(import.meta.url)),
+                'category-checklist.css',
+            ),
+            'utf8',
+        ).replace(/\/\*[\s\S]*?\*\//g, '');
+        const rule = (selector: string) =>
+            css.match(
+                new RegExp(
+                    `(?:^|\\})\\s*${selector.replace(/[.]/g, '\\$&')}\\s*\\{([^}]*)\\}`,
+                ),
+            )?.[1] ?? '';
+        expect(rule('.category-checklist-header')).toMatch(/flex-wrap:\s*wrap/);
+        // A word of the name stays whole, whatever the host's own wrapping.
+        const name = rule('.category-checklist-name');
+        expect(name).toMatch(/overflow-wrap:\s*normal/);
+        expect(name).toMatch(/word-break:\s*normal/);
+        // The controls wrap as one unit, at the row's trailing end.
+        const controls = rule('.category-checklist-controls');
+        expect(controls).toMatch(/flex-wrap:\s*nowrap/);
+        expect(controls).toMatch(/margin-inline-start:\s*auto/);
+        // The buttons stay one unit, each on one line.
+        expect(rule('.category-checklist-toggle button')).toMatch(
+            /white-space:\s*nowrap/,
+        );
     });
 });
