@@ -1,15 +1,13 @@
 name: Publish mirror (GitHub Packages)
 
-# Nightly republish of this repo's @ezclassify/* packages (ui, react, vue,
+# Republish of this repo's @ezclassify/* packages (ui, react, vue,
 # angular, ui-tools) to the organization's GitHub Packages development
-# mirror, so consumers resolve real artifacts between releases. It runs after
-# the packages this repository installs have published. Gated on "did a commit
-# land in the last 24h" so idle days publish nothing. The real npm publish
-# belongs to the release process.
+# mirror, so consumers resolve real artifacts between releases. It runs only on
+# dispatch (and from orchestration's mirror:publish); there is no schedule.
+# Without force it skips when no commit landed in the last 24h. The real npm
+# publish belongs to the release process.
 
 on:
-  schedule:
-    - cron: '30 6 * * *' # 06:30 UTC nightly, after the packages this repo installs
   workflow_dispatch:
     inputs:
       force:

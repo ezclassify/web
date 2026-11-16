@@ -2,6 +2,6 @@
 * @ezclassify/maintainers
 
 # The vendored public contract, written by the spec bot from
-# ezclassify/contracts, never by hand here; the vendor-readonly workflow
-# enforces it.
+# ezclassify/contracts, never by hand here; this rule routes any change
+# to review.
 vendor/spec/ @ezclassify/maintainers

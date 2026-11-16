@@ -5,38 +5,17 @@ name: Recordings
 # recorder and the only freshness check (DEVELOPMENT.md, "Engine behavior in
 # tests").
 #
-# It runs in the official repository only: on demand, every week, and on a
-# pull request that changes what the recordings are made from (a spec, a
-# fixture, the UI code a spec drives, the harness, the test configuration, the
-# root manifest, a recording or a pin). It reads
-# private checkouts (the engine the demo runtime is built from, orchestration's
-# assembly script, and the content the demo set is assembled from), each at the
-# commit its pin in test-support names, so a fork has nothing to run here and
-# needs no secret: the job is skipped. Public CI replays the committed
-# recordings and needs none of this.
+# It runs in the official repository on demand only; a fork has nothing to run
+# here and needs no secret: the job is skipped. It reads private checkouts (the
+# engine the demo runtime is built from, orchestration's assembly script, and
+# the content the demo set is assembled from), each at the commit its pin in
+# test-support names, so it never runs on pull requests. Public CI replays the
+# committed recordings and needs none of this.
 #
 # A stale run uploads what it recorded, for a maintainer to review and commit.
 
 on:
   workflow_dispatch: null
-  schedule:
-    - cron: '17 6 * * 1'
-  pull_request:
-    paths:
-      - '**/*.spec.ts'
-      - '**/*.spec.tsx'
-      - '**/__recordings__/**'
-      - 'libs/ui/src/**'
-      - 'libs/ui/test-fixtures/**'
-      - 'libs/ui-tools/src/record-replay/**'
-      - 'integrations/*/src/**'
-      - 'test-support/**'
-      - 'vendor/spec/fixtures/**'
-      - 'package.json'
-      - 'vitest*.config.ts'
-      - 'scripts/record-demo-runtime.mjs'
-      - 'scripts/run-test-projects*.mjs'
-      - '.github/workflows/recordings.yml'
 
 permissions:
   contents: read
@@ -48,11 +27,8 @@ concurrency:
 
 jobs:
   record:
-    # A pull request from a fork has no access to the private checkouts.
-    if: >-
-      github.repository == 'ezclassify/web' &&
-      (github.event_name != 'pull_request' ||
-      github.event.pull_request.head.repo.full_name == github.repository)
+    # A fork has no access to the private checkouts.
+    if: github.repository == 'ezclassify/web'
     runs-on: ubuntu-latest
     timeout-minutes: 90
     steps:
