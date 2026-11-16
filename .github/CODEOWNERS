@@ -2,6 +2,6 @@
 * @ezclassify/maintainers
 
 # The vendored public contract, written by the spec bot from
-# ezclassify/contracts, never by hand here; this rule routes any change
-# to review.
+# ezclassify/contracts, never by hand here; this rule asks the maintainers
+# to review any change to it.
 vendor/spec/ @ezclassify/maintainers

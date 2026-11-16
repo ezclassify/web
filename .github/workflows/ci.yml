@@ -2,7 +2,7 @@ name: CI
 
 # One required check: the `ci` job. It runs on every pull request to main and
 # on demand. A dispatch with `full` set also runs the `full` job, the release
-# evidence: the second Node version and the pack-and-consume proof.
+# evidence: Node 24 and the pack-and-consume proof on both Node versions.
 on:
   pull_request:
     branches: [main]
@@ -159,7 +159,9 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        node-version: ['24']
+        # 22 is here too so the pack-and-consume proof covers both supported
+        # Node versions, as the release run always did.
+        node-version: ['22', '24']
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
