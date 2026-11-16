@@ -71,7 +71,7 @@
         "verify:pack-consume": "node scripts/verify-pack-consume.mjs"
     },
     "devDependencies": {
-        "@ezclassify/rest-client": "1.0.0-dev.30",
+        "@ezclassify/rest-client": "^1.0.0-0",
         "@types/node": "24.10.1",
         "@typescript-eslint/eslint-plugin": "^8.0.0",
         "@typescript-eslint/parser": "^8.0.0",

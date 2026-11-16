@@ -202,8 +202,7 @@ one spec file by hand, delete its recordings file, record it twice and then
 prune it with one replay.
 
 Recordings have to be reproducible from this repository, so the checkouts they
-are made from are pinned in `test-support`, and the REST client the specs
-record through is pinned to an exact version in the root `package.json`:
+are made from are pinned in `test-support`:
 
 - [`runtime.pin`](test-support/runtime.pin): the runtime commit the demo runtime is built from. The setup
   extracts that commit's source from the runtime checkout with `git archive`,
