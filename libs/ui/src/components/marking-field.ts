@@ -36,7 +36,7 @@ import {
 } from './status-mark';
 import { mountFieldChrome, type FieldChrome } from './field-chrome';
 import {
-    ensureFavoritesButton,
+    ensureMarkingFavorites,
     schemeOffersPresets,
     type FavoritesConfig,
     type FavoritesPanel,
@@ -281,11 +281,12 @@ export class MarkingField extends ComponentBase {
         this.container.appendChild(this.view.announcer);
         this.wrap.insertAdjacentElement('afterend', this.view.note);
 
-        // The status mark, ★ favorites button and clear sit inline at the
+        // Branding and clear sit inline at the
         // field's trailing edge, at rest and while editing; the text layers
         // reserve the room they take.
         this.chrome = mountFieldChrome(this.wrap, { root: this.options.root });
         ensureStatusMark(this.chrome.status, {
+            tools: true,
             shape: 'chrome',
             root: this.options.root,
             shouldShowTooltip: () => this.options.tooltips !== false,
@@ -301,7 +302,7 @@ export class MarkingField extends ComponentBase {
             this.options.favorites ||
             schemeOffersPresets(this.scheme, this.options.scope)
         ) {
-            this.favoritesPanel = ensureFavoritesButton(
+            this.favoritesPanel = ensureMarkingFavorites(
                 this.chrome.status,
                 this.favoritesHost(this.options.favorites),
             );
@@ -580,16 +581,25 @@ export class MarkingField extends ComponentBase {
                 ),
             applyPreset: (presetId) =>
                 this.callApplyPreset(presetId, this.formatId),
-            getCurrent: () => ({
-                // What the result row shows while a draft is open, the
-                // committed value otherwise.
-                rendered:
-                    this.controller.snapshot().reading?.rendered ??
-                    this._lastRendered,
-                valid:
-                    this.assertions.length > 0 &&
-                    !this.container.hasAttribute('data-ezclassify-invalid'),
-            }),
+            getCurrent: () => {
+                if (this.controller.isDirty()) {
+                    const reading = this.controller.completeReading();
+                    return {
+                        rendered: reading?.rendered ?? '',
+                        valid:
+                            !!reading &&
+                            reading.valid &&
+                            !reading.refusal &&
+                            reading.assertions.length > 0,
+                    };
+                }
+                return {
+                    rendered: this._lastRendered,
+                    valid:
+                        this.assertions.length > 0 &&
+                        !this.container.hasAttribute('data-ezclassify-invalid'),
+                };
+            },
             onApply: (marking) => {
                 this.beginUserEdit();
                 void this.setValue(marking);

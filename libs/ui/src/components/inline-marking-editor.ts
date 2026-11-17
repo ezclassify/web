@@ -100,6 +100,8 @@ export interface InlineMarkingEditorOptions {
     root?: HTMLElement;
     /** See `ComposerViewOptions.isFieldChrome`. */
     isFieldChrome?: (node: Node) => boolean;
+    /** Keep the host's control reachable in the phone sheet. */
+    sheetTools?: () => HTMLElement | null;
     /** The host field's accessible name, for the combobox and listbox. */
     label?: () => { id?: string; text: string };
     /**
@@ -265,6 +267,7 @@ export class InlineMarkingEditor {
             onEnterCommit: (_outcome, fromSheet) =>
                 this.options.onExit?.('commit', fromSheet),
             isFieldChrome: options.isFieldChrome,
+            sheetTools: options.sheetTools,
             onEscapeIdle: () => {
                 this.options.onCancel?.();
                 return true;
@@ -365,6 +368,20 @@ export class InlineMarkingEditor {
     /** Whether the editor holds typed text not yet committed. */
     hasDraft(): boolean {
         return this.controller?.isDirty() ?? false;
+    }
+
+    /** The current uncommitted marking, or null when this session is clean. */
+    getDraftMarking(): { rendered: string; valid: boolean } | null {
+        if (!this.controller?.isDirty()) return null;
+        const reading = this.controller.completeReading();
+        return {
+            rendered: reading?.rendered ?? '',
+            valid:
+                !!reading &&
+                reading.valid &&
+                !reading.refusal &&
+                reading.assertions.length > 0,
+        };
     }
 
     /** The committed value of this editing session. */

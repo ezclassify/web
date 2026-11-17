@@ -1,13 +1,6 @@
 /**
- * The ★ favorites surface is function-bearing config (`load`/`save`/`remove`
- * hooks), so it has no `data-ezclassify-*` attribute form: a declarative host's
- * only way to reach it is the `EzClassifyUI` constructor's `favorites` option,
- * threaded into every scanner-mounted field's `ComponentOptions` (see
- * `buildComponentOptions` in ezclassify-ui.ts). Before that threading existed,
- * a purely declarative page (any host that doesn't construct field components
- * directly) had no way to turn favorites on at all: the field components
- * support it, but nothing wired it from a markup-scanned mount to the option
- * they read.
+ * Host Favorites hooks reach scanner-mounted fields through the UI constructor.
+ * The branding popover reflects that same option for every declarative field.
  */
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { EzClassifyUI } from './ezclassify-ui';
@@ -33,7 +26,7 @@ afterEach(() => {
 });
 
 describe('EzClassifyUI({ favorites }) threads into scanner-mounted fields', () => {
-    it('renders the ★ button on a declaratively-mounted MarkingField when the constructor supplies favorites', async () => {
+    it('offers a Favorites tab on a declaratively-mounted MarkingField', async () => {
         root.innerHTML = `<textarea id="mf" data-ezclassify-controller="marking"></textarea>`;
         forms = new EzClassifyUI(
             await connectDemoContext({ contextId: 'cedar-valley' }),
@@ -44,10 +37,15 @@ describe('EzClassifyUI({ favorites }) threads into scanner-mounted fields', () =
         );
         await new Promise((r) => setTimeout(r, 100));
 
-        expect(root.querySelector('.ez-favorites-button')).not.toBeNull();
+        root.querySelector<HTMLButtonElement>('.ez-status-mark')!.click();
+        expect(
+            [...document.querySelectorAll('[role=tab]')].map(
+                (tab) => tab.textContent,
+            ),
+        ).toContain('Favorites');
     });
 
-    it('never renders the ★ button when the constructor omits favorites (default)', async () => {
+    it('omits Favorites when the constructor has no provider and the scheme has no presets', async () => {
         root.innerHTML = `<textarea id="mf" data-ezclassify-controller="marking"></textarea>`;
         forms = new EzClassifyUI(
             await connectDemoContext({ contextId: 'cedar-valley' }),
@@ -55,10 +53,15 @@ describe('EzClassifyUI({ favorites }) threads into scanner-mounted fields', () =
         );
         await new Promise((r) => setTimeout(r, 100));
 
-        expect(root.querySelector('.ez-favorites-button')).toBeNull();
+        root.querySelector<HTMLButtonElement>('.ez-status-mark')!.click();
+        expect(
+            [...document.querySelectorAll('[role=tab]')].map(
+                (tab) => tab.textContent,
+            ),
+        ).not.toContain('Favorites');
     });
 
-    it('renders the ★ button on a declaratively-mounted TagInput too, the same instance-level option covering every scanner-mounted field', async () => {
+    it('offers the same Favorites tab on a declaratively-mounted TagInput', async () => {
         root.innerHTML = `<input id="tags" data-ezclassify-controller="tags" />`;
         forms = new EzClassifyUI(
             await connectDemoContext({ contextId: 'cedar-valley' }),
@@ -69,6 +72,11 @@ describe('EzClassifyUI({ favorites }) threads into scanner-mounted fields', () =
         );
         await new Promise((r) => setTimeout(r, 100));
 
-        expect(root.querySelector('.ez-favorites-button')).not.toBeNull();
+        root.querySelector<HTMLButtonElement>('.ez-status-mark')!.click();
+        expect(
+            [...document.querySelectorAll('[role=tab]')].map(
+                (tab) => tab.textContent,
+            ),
+        ).toContain('Favorites');
     });
 });

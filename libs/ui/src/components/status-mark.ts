@@ -54,6 +54,7 @@ import {
     attachTooltip,
     hideTooltip,
     showTooltip,
+    repositionTooltip,
     type TooltipPlacement,
 } from './tooltip-manager';
 import { derivedAssertion, takenFromWhole } from '../assertion-identity';
@@ -61,6 +62,7 @@ import { t } from '../i18n';
 import { writtenConcept, type ConceptWriting } from '../written-concept';
 import { adoptStylesOnce } from '../styles/adopt';
 import statusMarkCss from './status-mark.css?inline';
+import { buildMarkingTools } from './marking-tools';
 
 /** A concept in a category, as one string. */
 function refKey(ref: Pick<AssertionRef, 'categoryId' | 'conceptId'>): string {
@@ -338,6 +340,8 @@ export function changeLines(
 
 /** Options for mounting a status mark on a field wrap. */
 export interface StatusMarkOptions {
+    /** Use the tabbed field helpers, including a quiet-state entry point. */
+    tools?: boolean;
     /**
      * Field shape: 'input' self-positions at the right edge of the first line
      * for the bare input host in `ezclassify-ui.ts`'s plain-field path.
@@ -400,6 +404,34 @@ const markAcknowledged = new WeakMap<HTMLElement, Set<string>>();
  */
 const markContentSnapshot = new WeakMap<HTMLElement, ReadonlySet<string>>();
 
+/** A field's host-fed Favorites content inside its branding popover. */
+export interface StatusMarkFavorites {
+    element: HTMLElement;
+    open: () => void;
+    close: () => void;
+}
+
+const markFavorites = new WeakMap<HTMLElement, StatusMarkFavorites>();
+
+/** Attach whole-marking actions to a field's existing branding entry point. */
+export function setStatusMarkFavorites(
+    wrap: HTMLElement,
+    favorites: StatusMarkFavorites | null,
+): void {
+    const mark = wrap.querySelector<HTMLElement>(':scope > .ez-status-mark');
+    if (!mark) return;
+    if (favorites) markFavorites.set(mark, favorites);
+    else markFavorites.delete(mark);
+    applyVisualState(mark, deriveState(mark));
+}
+
+/** Reposition after asynchronous Favorites content or a tab changes size. */
+export function refreshStatusMarkPopover(mark: HTMLElement): void {
+    if (!popoverOpen(mark)) return;
+    repositionTooltip(mark, markRoot.get(mark), popoverPlacement(mark));
+    guardPopover(mark);
+}
+
 const ENHANCED_LABEL = 'Enhanced by EzClassify';
 
 /** Adopt the mark stylesheet once per root (see adoptStylesOnce). */
@@ -448,8 +480,8 @@ function applyVisualState(mark: HTMLElement, state: MarkState): void {
     mark.classList.toggle('ez-status-mark--seen', state === 'seen');
     mark.classList.toggle('ez-status-mark--error', state === 'error');
 
-    const active = state !== 'quiet';
-    // Quiet is decorative; an active mark carries an explanation, so it
+    const active = state !== 'quiet' || markOptions.get(mark)?.tools === true;
+    // Without field tools, quiet is decorative; an active mark carries an explanation, so it
     // becomes keyboard-reachable (focus previews the list) and reads as the
     // button that discloses it. A disclosure button's expanded state is what
     // its press controls, so a hover or focus preview leaves it collapsed and
@@ -617,6 +649,7 @@ export function dismissStatusMarkPopover(mark: HTMLElement): void {
  * collapsed.
  */
 function collapse(mark: HTMLElement): void {
+    markFavorites.get(mark)?.close();
     markPinned.delete(mark);
     markDismissers.get(mark)?.();
     markDismissers.delete(mark);
@@ -728,6 +761,7 @@ export function ensureStatusMark(
     if (existing) return existing;
 
     injectStyles(opts.root);
+    if (opts.tools) adoptStylesOnce(statusMarkCss, document.body);
 
     const mark = document.createElement('button');
     mark.type = 'button';
@@ -746,9 +780,54 @@ export function ensureStatusMark(
     markAcknowledged.set(mark, new Set());
     markOptions.set(mark, opts);
 
+    if (opts.tools) {
+        mark.classList.add('ez-status-mark--tools');
+        mark.setAttribute('aria-haspopup', 'dialog');
+        applyVisualState(mark, 'quiet');
+    }
+
     const content = (): Node | string | undefined => {
         const error = markErrors.get(mark);
         const fixes = markFixes.get(mark);
+        if (opts.tools) {
+            const snapshot = new Set(fixes?.keys());
+            const hasCorrections =
+                error !== undefined || (explainsFixes() && snapshot.size > 0);
+            const corrections = hasCorrections
+                ? changeList(mark, error, opts.undoLastEdit?.() ?? null)
+                : document.createElement('div');
+            if (!hasCorrections)
+                corrections.textContent = t('tools.emptyCorrections');
+            const favorites = markFavorites.get(mark);
+            const showCorrections =
+                error !== undefined || deriveState(mark) === 'unseen';
+            markContentSnapshot.set(
+                mark,
+                showCorrections || !favorites ? snapshot : new Set(),
+            );
+            return buildMarkingTools({
+                corrections,
+                favorites: favorites?.element,
+                showCorrections,
+                onCorrectionsViewed: () => {
+                    markContentSnapshot.set(mark, snapshot);
+                    acknowledgeMark(mark);
+                },
+                onResize: () => refreshStatusMarkPopover(mark),
+                onClose: () => {
+                    dismissStatusMarkPopover(mark);
+                    mark.focus();
+                },
+                onExit: (backward) => {
+                    dismissStatusMarkPopover(mark);
+                    const clear = mark
+                        .closest('.ez-field-chrome')
+                        ?.querySelector<HTMLButtonElement>('.ez-clear-button');
+                    if (backward || !clear || clear.disabled) mark.focus();
+                    else clear.focus();
+                },
+            });
+        }
         // The opt-out hides the fix explanation, never the error.
         if (!fixes || fixes.size === 0 || !explainsFixes()) return error;
         // Snapshot exactly which fixes are behind this content build so
@@ -761,10 +840,18 @@ export function ensureStatusMark(
     // The error is not an optional helper: the tooltip opt-out hides the fix
     // explanation, never the reason the field is invalid.
     const mayShow = () =>
+        opts.tools === true ||
         markErrors.has(mark) ||
         (explainsFixes() && (markFixes.get(mark)?.size ?? 0) > 0);
     const shown = () => {
         acknowledgeMark(mark);
+        if (opts.tools) markFavorites.get(mark)?.open();
+        if (opts.tools) {
+            const id = mark.getAttribute('aria-describedby');
+            const tip = id ? document.getElementById(id) : null;
+            tip?.setAttribute('role', 'dialog');
+            tip?.setAttribute('aria-label', t('tools.sections'));
+        }
         guardPopover(mark);
     };
 
@@ -782,15 +869,41 @@ export function ensureStatusMark(
             dismissStatusMarkPopover(mark);
             return;
         }
-        const text = mayShow() ? content() : undefined;
+        const text = opts.tools || mayShow() ? content() : undefined;
         if (!text) return;
         showTooltip(mark, text, opts.root, popoverPlacement(mark), () =>
             collapse(mark),
         );
         expand(mark);
         shown();
+        if (opts.tools && e.detail === 0 && popoverOpen(mark)) {
+            const id = mark.getAttribute('aria-describedby');
+            if (id)
+                document
+                    .getElementById(id)
+                    ?.querySelector<HTMLElement>(
+                        '[role=tab][aria-selected=true]',
+                    )
+                    ?.focus();
+        }
     });
     mark.addEventListener('keydown', (e) => {
+        if (e.key === 'ArrowDown' && opts.tools) {
+            e.preventDefault();
+            e.stopPropagation();
+            if (!popoverOpen(mark)) mark.click();
+            else {
+                const id = mark.getAttribute('aria-describedby');
+                if (id)
+                    document
+                        .getElementById(id)
+                        ?.querySelector<HTMLElement>(
+                            '[role=tab][aria-selected=true]',
+                        )
+                        ?.focus();
+            }
+            return;
+        }
         // The list the press opened sits outside the field, so Tab takes the
         // keyboard into it when it holds the undo.
         if (e.key === 'Tab' && !e.shiftKey && popoverOpen(mark)) {
@@ -798,7 +911,9 @@ export function ensureStatusMark(
             const undo = tipId
                 ? document
                       .getElementById(tipId)
-                      ?.querySelector<HTMLElement>('.ez-status-list__undo')
+                      ?.querySelector<HTMLElement>(
+                          '[role=tab][aria-selected=true], .ez-status-list__undo',
+                      )
                 : null;
             if (undo) {
                 e.preventDefault();
@@ -818,7 +933,12 @@ export function ensureStatusMark(
         mark,
         content,
         opts.root,
-        mayShow,
+        () =>
+            opts.tools
+                ? document.activeElement !== mark &&
+                  (markErrors.has(mark) ||
+                      (explainsFixes() && (markFixes.get(mark)?.size ?? 0) > 0))
+                : mayShow(),
         // Acknowledgment happens when the tooltip actually presents, not on a
         // pointer merely passing through; attachTooltip's own hover-intent
         // delay already filters that out before this fires.

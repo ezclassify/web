@@ -550,10 +550,12 @@ let forms: EzClassifyUI | null = null;
  */
 async function mount(
     initialValue = '',
+    favorites?: import('./favorites-panel').FavoritesConfig,
 ): Promise<{ input: HTMLTextAreaElement; field: MarkingField }> {
     root.innerHTML = `<textarea id="mf" data-ezclassify-controller="marking">${initialValue}</textarea>`;
     forms = new EzClassifyUI(asContext((await createTestEngine()) as never), {
         root,
+        favorites,
     });
     await wait();
     const input = document.getElementById('mf') as HTMLTextAreaElement;
@@ -2631,7 +2633,7 @@ describe('MarkingField favorites', () => {
         expect(root.querySelector('.ez-favorites-button')).toBeNull();
     });
 
-    it('renders the ★ button, applies a favorite (replaces the marking), and reflects star-fill', async () => {
+    it('opens Favorites from branding and replaces the whole marking', async () => {
         const load = vi.fn(async () => [
             { marking: 'SECRET//NOFORN', label: 'Standard secret' },
         ]);
@@ -2639,7 +2641,7 @@ describe('MarkingField favorites', () => {
         activeForms = forms;
 
         const button = root.querySelector(
-            '.ez-favorites-button',
+            '.ez-status-mark',
         ) as HTMLButtonElement;
         expect(button).not.toBeNull();
 
@@ -2647,7 +2649,7 @@ describe('MarkingField favorites', () => {
         await wait();
 
         const row = document.body.querySelector(
-            '.ez-favorites-panel .proto-dropdown-item',
+            '.ez-favorites-panel__embedded .proto-dropdown-item',
         ) as HTMLElement;
         expect(row.textContent).toContain('Standard secret');
         row.dispatchEvent(new MouseEvent('click', { bubbles: true }));
@@ -2662,12 +2664,14 @@ describe('MarkingField favorites', () => {
         ).toEqual(['NF', 'S']);
         expect(input.value).toBe('SECRET//NOFORN');
 
-        // Reopening now shows the applied favorite as the current one (star-fill).
+        // Reopening identifies the applied Favorite as the current marking.
         button.dispatchEvent(new MouseEvent('click', { bubbles: true }));
         await wait();
-        expect(button.classList.contains('ez-favorites-button--active')).toBe(
-            true,
-        );
+        expect(
+            document.body.querySelector(
+                '.ez-favorites-panel__embedded .proto-dropdown-item--selected',
+            )?.textContent,
+        ).toContain('Standard secret');
     });
 
     it('offers the pinned save row for a valid non-empty marking and calls config.save', async () => {
@@ -2679,7 +2683,7 @@ describe('MarkingField favorites', () => {
         activeForms = forms;
 
         const button = root.querySelector(
-            '.ez-favorites-button',
+            '.ez-status-mark',
         ) as HTMLButtonElement;
         button.dispatchEvent(new MouseEvent('click', { bubbles: true }));
         await wait();
@@ -2688,10 +2692,52 @@ describe('MarkingField favorites', () => {
             '.ez-favorites-panel__pinned',
         ) as HTMLElement;
         expect(pinned).not.toBeNull();
-        expect(pinned.textContent).toContain('SECRET');
+        expect(pinned.textContent).toContain('Save Current Marking');
 
         pinned.dispatchEvent(new MouseEvent('click', { bubbles: true }));
         await wait();
-        expect(save).toHaveBeenCalledWith('SECRET');
+        expect(save).toHaveBeenCalledWith(
+            'SECRET',
+            expect.objectContaining({ schemeId: expect.any(String) }),
+        );
+    });
+});
+
+describe('Favorites reads the complete current draft', () => {
+    it('saves a valid uncommitted marking typed into an initially empty field', async () => {
+        const save = vi.fn(async () => {});
+        const { input, field } = await mount('', {
+            load: async () => [],
+            save,
+        });
+        input.focus();
+        await typeIn(input, 'SECRET');
+        expect(field.getAssertions()).toHaveLength(0);
+        root.querySelector<HTMLButtonElement>('.ez-status-mark')!.click();
+        await wait();
+        document.body
+            .querySelector<HTMLButtonElement>('.ez-favorites-panel__pinned')!
+            .click();
+        await wait();
+        expect(save).toHaveBeenCalledWith('SECRET', expect.any(Object));
+        expect(input.value).toBe('SECRET');
+    });
+
+    it('does not offer to save an invalid draft using the previous committed validity', async () => {
+        const save = vi.fn(async () => {});
+        const { input, field } = await mount('SECRET', {
+            load: async () => [],
+            save,
+        });
+        input.focus();
+        await typeIn(input, 'SECRET//UNCLASSIFIED');
+        expect(field.getRendered()).toBe('SECRET');
+        root.querySelector<HTMLButtonElement>('.ez-status-mark')!.click();
+        await wait();
+        expect(
+            document.body.querySelector('.ez-favorites-panel__pinned'),
+        ).toBeNull();
+        expect(input.value).toBe('SECRET//UNCLASSIFIED');
+        expect(save).not.toHaveBeenCalled();
     });
 });

@@ -439,7 +439,10 @@ describe('pinned save/remove row', () => {
         pinned.dispatchEvent(new MouseEvent('click', { bubbles: true }));
         await wait();
 
-        expect(save).toHaveBeenCalledWith('SECRET//NOFORN');
+        expect(save).toHaveBeenCalledWith(
+            'SECRET//NOFORN',
+            expect.objectContaining({ schemeId: 'test' }),
+        );
         // 3: mount-time load + initial open + reload after save.
         expect(load).toHaveBeenCalledTimes(3);
     });
@@ -468,7 +471,10 @@ describe('pinned save/remove row', () => {
         pinned.dispatchEvent(new MouseEvent('click', { bubbles: true }));
         await wait();
 
-        expect(remove).toHaveBeenCalledWith('SECRET');
+        expect(remove).toHaveBeenCalledWith(
+            'SECRET',
+            expect.objectContaining({ schemeId: 'test' }),
+        );
     });
 });
 
@@ -548,7 +554,10 @@ describe('★ class resyncs from an in-flight reload even after the popover clos
         // "removed", not stay stuck on the pre-remove state just because
         // there is no popover left to rerender.
         await vi.advanceTimersByTimeAsync(NETWORK_MS * 2);
-        expect(remove).toHaveBeenCalledWith('SECRET');
+        expect(remove).toHaveBeenCalledWith(
+            'SECRET',
+            expect.objectContaining({ schemeId: 'test' }),
+        );
         expect(
             panel.button.classList.contains('ez-favorites-button--active'),
         ).toBe(false);
@@ -566,7 +575,10 @@ describe('★ class resyncs from an in-flight reload even after the popover clos
         expect(panel.isOpen()).toBe(false);
 
         await vi.advanceTimersByTimeAsync(NETWORK_MS * 2);
-        expect(save).toHaveBeenCalledWith('SECRET');
+        expect(save).toHaveBeenCalledWith(
+            'SECRET',
+            expect.objectContaining({ schemeId: 'test' }),
+        );
         expect(
             panel.button.classList.contains('ez-favorites-button--active'),
         ).toBe(true);
@@ -642,7 +654,10 @@ describe('a save still in flight when the popover reopens', () => {
         // and correct the class, not be skipped because a newer `_openSeq`
         // happened to exist by then.
         await vi.advanceTimersByTimeAsync(SAVE_MS - LOAD_MS);
-        expect(save).toHaveBeenCalledWith('SECRET');
+        expect(save).toHaveBeenCalledWith(
+            'SECRET',
+            expect.objectContaining({ schemeId: 'test' }),
+        );
         await vi.advanceTimersByTimeAsync(LOAD_MS);
         expect(
             panel.button.classList.contains('ez-favorites-button--active'),
@@ -771,7 +786,10 @@ describe('applying a row', () => {
         ) as HTMLElement;
         row.dispatchEvent(new MouseEvent('click', { bubbles: true }));
 
-        expect(onApply).toHaveBeenCalledWith('SECRET//NOFORN');
+        expect(onApply).toHaveBeenCalledWith(
+            'SECRET//NOFORN',
+            expect.objectContaining({ aborted: false }),
+        );
         expect(panel.isOpen()).toBe(false);
     });
 
@@ -800,7 +818,10 @@ describe('applying a row', () => {
         const presetRow = header!.nextElementSibling as HTMLElement;
         expect(presetRow.textContent).toContain('Preset One');
         presetRow.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-        expect(onApply).toHaveBeenCalledWith('SECRET');
+        expect(onApply).toHaveBeenCalledWith(
+            'SECRET',
+            expect.objectContaining({ aborted: false }),
+        );
     });
 
     it('omits the "From the scheme" section when the scheme offers no presets in scope', async () => {
@@ -834,7 +855,10 @@ describe('keyboard', () => {
             new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }),
         );
 
-        expect(onApply).toHaveBeenCalledWith('B');
+        expect(onApply).toHaveBeenCalledWith(
+            'B',
+            expect.objectContaining({ aborted: false }),
+        );
     });
 
     it('Enter on the pinned row toggles save then remove without an extra arrow press in between', async () => {
@@ -864,13 +888,19 @@ describe('keyboard', () => {
             new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }),
         );
         await wait();
-        expect(save).toHaveBeenCalledWith('SECRET');
+        expect(save).toHaveBeenCalledWith(
+            'SECRET',
+            expect.objectContaining({ schemeId: 'test' }),
+        );
 
         panel.button.dispatchEvent(
             new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }),
         );
         await wait();
-        expect(remove).toHaveBeenCalledWith('SECRET');
+        expect(remove).toHaveBeenCalledWith(
+            'SECRET',
+            expect.objectContaining({ schemeId: 'test' }),
+        );
     });
 
     it('Escape closes the panel and returns focus to the field', async () => {
@@ -1094,7 +1124,10 @@ describe('scheme presets are never removable', () => {
 
         pinned.dispatchEvent(new MouseEvent('click', { bubbles: true }));
         await wait();
-        expect(save).toHaveBeenCalledWith('SECRET');
+        expect(save).toHaveBeenCalledWith(
+            'SECRET',
+            expect.objectContaining({ schemeId: 'test' }),
+        );
         expect(remove).not.toHaveBeenCalled();
     });
 });
@@ -1114,5 +1147,197 @@ describe('destroy', () => {
         );
         // No assertion beyond "doesn't throw": destroy() must be safe to
         // leave no dangling listener behind, this just exercises that path.
+    });
+});
+
+describe('standalone Favorites native controls', () => {
+    it('deletes an unrelated favorite without applying it, retaining the next row focus', async () => {
+        let entries = [{ marking: 'A' }, { marking: 'B' }];
+        const remove = vi.fn(async (marking: string) => {
+            entries = entries.filter((entry) => entry.marking !== marking);
+        });
+        const host = makeHost({
+            config: { load: async () => entries, remove },
+            getCurrent: () => ({ rendered: 'CURRENT', valid: true }),
+        });
+        const panel = ensureFavoritesButton(wrap, host)!;
+        await panel.open();
+        const row = document.querySelector<HTMLButtonElement>(
+            '[data-favorite-marking="A"]',
+        )!;
+        row.focus();
+        row.dispatchEvent(
+            new KeyboardEvent('keydown', { key: 'Delete', bubbles: true }),
+        );
+        await wait();
+        expect(remove).toHaveBeenCalledWith(
+            'A',
+            expect.objectContaining({ schemeId: 'test' }),
+        );
+        expect(host.onApply).not.toHaveBeenCalled();
+        expect(
+            (document.activeElement as HTMLElement).dataset.favoriteMarking,
+        ).toBe('B');
+    });
+
+    it('offers the browser opt-in and management from the separate control with native keyboard actions', async () => {
+        let enabled: boolean | undefined;
+        const panel = ensureFavoritesButton(
+            wrap,
+            makeHost({
+                config: {
+                    load: async () => [{ marking: 'A' }],
+                    browserStorage: {
+                        enabled: () => enabled,
+                        setEnabled: (value) => {
+                            enabled = value;
+                        },
+                    },
+                },
+            }),
+        )!;
+        await panel.open();
+        panel.button.dispatchEvent(
+            new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }),
+        );
+        expect(
+            (document.activeElement as HTMLElement).dataset.favoriteMarking,
+        ).toBe('A');
+        document.activeElement!.dispatchEvent(
+            new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }),
+        );
+        expect(document.activeElement?.textContent).toBe(
+            'Remember Favorites on This Browser',
+        );
+        (document.activeElement as HTMLButtonElement).click();
+        await wait();
+        expect(enabled).toBe(true);
+        expect(document.activeElement?.textContent).toBe('Manage Favorites');
+        (document.activeElement as HTMLButtonElement).click();
+        expect(document.querySelector('input[type=checkbox]')).not.toBeNull();
+    });
+});
+
+it('ArrowDown enters consent when MTA has no current marking or saved rows', async () => {
+    const panel = ensureFavoritesButton(
+        wrap,
+        makeHost({
+            config: {
+                load: async () => [],
+                browserStorage: {
+                    enabled: () => undefined,
+                    setEnabled: () => {},
+                },
+            },
+        }),
+    )!;
+    await panel.open();
+    panel.button.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }),
+    );
+    expect(document.activeElement?.textContent).toBe(
+        'Remember Favorites on This Browser',
+    );
+});
+
+it('keeps the visual highlight on the keyboard-focused native Favorite', async () => {
+    const panel = ensureFavoritesButton(
+        wrap,
+        makeHost({
+            config: { load: async () => [{ marking: 'A' }, { marking: 'B' }] },
+        }),
+    )!;
+    await panel.open();
+    panel.button.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }),
+    );
+    const first = document.activeElement!;
+    first.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }),
+    );
+    expect(
+        (document.activeElement as HTMLElement).dataset.favoriteMarking,
+    ).toBe('B');
+    expect(first.classList.contains('proto-dropdown-item--highlighted')).toBe(
+        false,
+    );
+    expect(
+        document.activeElement?.classList.contains(
+            'proto-dropdown-item--highlighted',
+        ),
+    ).toBe(true);
+});
+
+describe('asynchronous Favorite application', () => {
+    it('retains focus in the panel until the selected marking has actually applied', async () => {
+        let finish!: () => void;
+        const applied = new Promise<void>((resolve) => {
+            finish = resolve;
+        });
+        const host = makeHost({
+            config: { load: async () => [{ marking: 'A' }] },
+            onApply: vi.fn(() => applied),
+        });
+        const panel = ensureFavoritesButton(wrap, host)!;
+        await panel.open();
+        const row = document.querySelector<HTMLButtonElement>(
+            '[data-favorite-marking="A"]',
+        )!;
+        row.focus();
+        row.click();
+        expect(panel.isOpen()).toBe(true);
+        expect(document.activeElement).toBe(row);
+        expect(host.focusField).not.toHaveBeenCalled();
+        expect(row.closest('[aria-busy=true]')).not.toBeNull();
+        finish();
+        await wait();
+        expect(panel.isOpen()).toBe(false);
+        expect(host.focusField).toHaveBeenCalledTimes(1);
+    });
+
+    it('cancels superseded and dismissed reads without stealing later focus', async () => {
+        const signals: AbortSignal[] = [];
+        const finishes: Array<() => void> = [];
+        const host = makeHost({
+            config: { load: async () => [{ marking: 'A' }, { marking: 'B' }] },
+            onApply: (_marking, signal) => {
+                signals.push(signal);
+                return new Promise<void>((resolve) => finishes.push(resolve));
+            },
+        });
+        const panel = ensureFavoritesButton(wrap, host)!;
+        await panel.open();
+        document
+            .querySelector<HTMLButtonElement>('[data-favorite-marking="A"]')!
+            .click();
+        document
+            .querySelector<HTMLButtonElement>('[data-favorite-marking="B"]')!
+            .click();
+        expect(signals[0].aborted).toBe(true);
+        expect(signals[1].aborted).toBe(false);
+        panel.close(false);
+        expect(signals[1].aborted).toBe(true);
+        finishes.forEach((finish) => finish());
+        await wait();
+        expect(host.focusField).not.toHaveBeenCalled();
+        expect(panel.isOpen()).toBe(false);
+    });
+
+    it('keeps a failed application available for retry', async () => {
+        const host = makeHost({
+            config: { load: async () => [{ marking: 'A' }] },
+            onApply: () => Promise.reject(new Error('offline')),
+        });
+        const panel = ensureFavoritesButton(wrap, host)!;
+        await panel.open();
+        document
+            .querySelector<HTMLButtonElement>('[data-favorite-marking="A"]')!
+            .click();
+        await wait();
+        expect(panel.isOpen()).toBe(true);
+        expect(host.focusField).not.toHaveBeenCalled();
+        expect(wrap.querySelector('[aria-live]')?.textContent).toBe(
+            'Could not apply this favorite. Try again.',
+        );
     });
 });

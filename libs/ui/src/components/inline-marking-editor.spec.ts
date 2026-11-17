@@ -499,6 +499,10 @@ describe('InlineMarkingEditor', () => {
         expect(editor.isDirty()).toBe(true);
         await wait(40);
         expect(resultValue()).toBe('S//NF');
+        expect(editor.getDraftMarking()).toEqual({
+            rendered: 'S//NF',
+            valid: true,
+        });
         press(input, 'Enter');
         await wait(80);
         expect(onChange).toHaveBeenCalledWith(
@@ -517,6 +521,7 @@ describe('InlineMarkingEditor', () => {
         await wait(80);
         // Not stored: the draft stays, marked invalid, with the reason.
         expect(input.getAttribute('aria-invalid')).toBe('true');
+        expect(editor!.getDraftMarking()?.valid).toBe(false);
         expect(root.querySelector('.ez-composer-note')?.textContent).toContain(
             'Did you mean S?',
         );

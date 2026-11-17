@@ -66,7 +66,7 @@ function controlOf(id: string): HTMLElement {
 /** Press a control's status mark open and read its list, then close it. */
 function listOf(id: string): string[] {
     const mark = controlOf(id).querySelector<HTMLElement>('.ez-status-mark')!;
-    mark.click();
+    mark.dispatchEvent(new MouseEvent('click', { bubbles: true, detail: 1 }));
     const tip = document.querySelector<HTMLElement>('.ez-tooltip');
     const open = !!tip && !tip.hidden;
     const lines = open
@@ -76,7 +76,10 @@ function listOf(id: string): string[] {
               ),
           ].map((row) => row.textContent ?? '')
         : [];
-    if (open) mark.click();
+    if (open)
+        mark.dispatchEvent(
+            new MouseEvent('click', { bubbles: true, detail: 1 }),
+        );
     return lines;
 }
 

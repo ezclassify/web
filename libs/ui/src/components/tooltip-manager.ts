@@ -325,6 +325,12 @@ export function showTooltip(
     tip.innerHTML = '';
     const built = typeof content !== 'string';
     tip.classList.toggle('ez-tooltip--built', built);
+    tip.classList.toggle(
+        'ez-tooltip--tools',
+        built &&
+            content instanceof HTMLElement &&
+            content.classList.contains('ez-marking-tools'),
+    );
     // A tooltip holds no controls; built content may, so it is a group.
     tip.setAttribute('role', built ? 'group' : 'tooltip');
     if (built) tip.appendChild(content);
@@ -394,6 +400,41 @@ export function showTooltip(
     target.setAttribute('aria-describedby', tip.id);
     tip.hidden = false;
 
+    repositionTooltip(target, root, placement);
+
+    // The tooltip is position:fixed and anchored to the target's viewport rect at
+    // show time, so once the page (or any nested scroll container) scrolls it
+    // would otherwise hang in place on screen. Dismiss it on scroll/resize, the
+    // standard tooltip behavior. Capture:true catches scrolls from inner
+    // containers; the listeners are torn down in hideTooltip via entry.detach.
+    const entry = tooltipByRoot.get(effectiveRoot);
+    if (entry) {
+        entry.detach?.();
+        const dismiss = (event: Event) => {
+            if (event.target instanceof Node && tip.contains(event.target))
+                return;
+            hideTooltip(effectiveRoot);
+        };
+        const opts: AddEventListenerOptions = { capture: true, passive: true };
+        window.addEventListener('scroll', dismiss, opts);
+        window.addEventListener('resize', dismiss);
+        entry.detach = () => {
+            window.removeEventListener('scroll', dismiss, opts);
+            window.removeEventListener('resize', dismiss);
+            entry.detach = undefined;
+        };
+    }
+}
+
+/** Reposition visible content without detaching its focused controls. */
+export function repositionTooltip(
+    target: HTMLElement,
+    root?: HTMLElement,
+    placement?: TooltipPlacement,
+): void {
+    const entry = tooltipByRoot.get(root ?? document.body);
+    if (!entry || entry.target !== target || entry.el.hidden) return;
+    const tip = entry.el;
     // Position near the target
     const rect = target.getBoundingClientRect();
     const tipWidth = Math.min(32 * 16, window.innerWidth - 16); // max 32rem
@@ -440,25 +481,6 @@ export function showTooltip(
 
     tip.style.left = left + 'px';
     tip.style.top = top + 'px';
-
-    // The tooltip is position:fixed and anchored to the target's viewport rect at
-    // show time, so once the page (or any nested scroll container) scrolls it
-    // would otherwise hang in place on screen. Dismiss it on scroll/resize, the
-    // standard tooltip behavior. Capture:true catches scrolls from inner
-    // containers; the listeners are torn down in hideTooltip via entry.detach.
-    const entry = tooltipByRoot.get(effectiveRoot);
-    if (entry) {
-        entry.detach?.();
-        const dismiss = () => hideTooltip(effectiveRoot);
-        const opts: AddEventListenerOptions = { capture: true, passive: true };
-        window.addEventListener('scroll', dismiss, opts);
-        window.addEventListener('resize', dismiss);
-        entry.detach = () => {
-            window.removeEventListener('scroll', dismiss, opts);
-            window.removeEventListener('resize', dismiss);
-            entry.detach = undefined;
-        };
-    }
 }
 
 /** Hide the tooltip */

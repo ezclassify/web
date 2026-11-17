@@ -6,7 +6,12 @@
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ComposerController } from './composer-controller';
-import { ComposerView, accessibleLabel, middleEllipsis } from './composer-view';
+import {
+    ComposerView,
+    accessibleLabel,
+    middleEllipsis,
+    type ComposerViewOptions,
+} from './composer-view';
 import { CONCEPTS, FakePort, assertion } from './composer-port-mock';
 import {
     activeRow,
@@ -27,7 +32,10 @@ let port: FakePort;
 let controller: ComposerController;
 let view: ComposerView;
 
-function mount(shape: 'whole' | 'additive' = 'whole') {
+function mount(
+    shape: 'whole' | 'additive' = 'whole',
+    options: Partial<ComposerViewOptions> = {},
+) {
     controller = new ComposerController({
         port,
         shape,
@@ -39,6 +47,7 @@ function mount(shape: 'whole' | 'additive' = 'whole') {
         anchor: root,
         label: () => accessibleLabel(input, 'Marking'),
         singleLine: true,
+        ...options,
     });
     root.appendChild(view.announcer);
     root.appendChild(view.note);
@@ -743,9 +752,12 @@ describe('the sheet bar', () => {
         await view.open('api');
         expect(openSurface()!.dataset.surface).toBe('sheet');
         expect(bar()!.closest('[hidden]')).toBeNull();
-        const [cancel, label, done] = [...bar()!.children] as HTMLElement[];
-        expect(cancel).toBe(button('cancel'));
-        expect(done).toBe(button('done'));
+        const cancel = button('cancel');
+        const done = button('done');
+        const label = bar()!.querySelector<HTMLElement>(
+            '.ez-composer__sheet-label',
+        )!;
+        expect([...bar()!.querySelectorAll('button')]).toEqual([cancel, done]);
         expect(label.textContent).toBe('Document marking');
         for (const b of [cancel, done] as HTMLButtonElement[]) {
             expect(b.tagName).toBe('BUTTON');
@@ -753,6 +765,53 @@ describe('the sheet bar', () => {
         }
         expect(cancel.textContent).toBe('Cancel');
         expect(done.textContent).toBe('Done');
+    });
+
+    it('keeps the same field tool reachable on the phone and restores its exact position on close', async () => {
+        asPhone();
+        const tool = document.createElement('button');
+        tool.textContent = 'Favorites';
+        const after = document.createElement('span');
+        root.append(tool, after);
+        const action = vi.fn();
+        tool.addEventListener('click', action);
+        mount('whole', { sheetTools: () => tool });
+        await view.open('api');
+        expect(bar()!.contains(tool)).toBe(true);
+        expect(root.contains(tool)).toBe(false);
+        tool.click();
+        expect(action).toHaveBeenCalledTimes(1);
+        view.close();
+        expect(tool.parentNode).toBe(root);
+        expect(tool.nextSibling).toBe(after);
+        await view.open('api');
+        view.destroy();
+        expect(tool.parentNode).toBe(root);
+        expect(tool.nextSibling).toBe(after);
+    });
+
+    it('does not resurrect a host tool removed while its sheet was open', async () => {
+        asPhone();
+        const tool = document.createElement('button');
+        root.append(tool);
+        mount('whole', { sheetTools: () => tool });
+        await view.open('api');
+        tool.remove();
+        view.close();
+        expect(tool.parentNode).toBeNull();
+        expect(
+            [...root.childNodes].some(
+                (node) => node.nodeType === Node.COMMENT_NODE,
+            ),
+        ).toBe(false);
+    });
+
+    it('leaves the tool at home for a desktop popover', async () => {
+        const tool = document.createElement('button');
+        root.append(tool);
+        mount('whole', { sheetTools: () => tool });
+        await view.open('typing');
+        expect(tool.parentNode).toBe(root);
     });
 
     it('Done commits the draft, the same as Enter with no active row, and closes', async () => {
@@ -1465,5 +1524,59 @@ describe('the browse list of a field across scopes', () => {
         expect(
             openSurface()!.querySelectorAll('.ez-composer__group').length,
         ).toBeGreaterThan(0);
+    });
+});
+
+describe('focus in portaled field chrome', () => {
+    async function mountWithChrome() {
+        const chrome = document.createElement('div');
+        const trigger = document.createElement('button');
+        const favorite = document.createElement('button');
+        chrome.append(trigger, favorite);
+        document.body.append(chrome);
+        controller = new ComposerController({
+            port,
+            shape: 'whole',
+            announce: () => {},
+        });
+        view = new ComposerView({
+            controller,
+            input,
+            anchor: root,
+            label: () => accessibleLabel(input, 'Marking'),
+            isFieldChrome: (node) => chrome.contains(node),
+        });
+        input.focus();
+        await type('SECRET');
+        return { chrome, trigger, favorite };
+    }
+
+    it('holds the edit through a long keyboard pause on Favorites, then commits when focus leaves', async () => {
+        const { chrome, trigger, favorite } = await mountWithChrome();
+        const blur = vi.spyOn(controller, 'blur');
+        trigger.focus();
+        await wait(180);
+        favorite.focus();
+        await wait(180);
+        expect(blur).not.toHaveBeenCalled();
+        expect(controller.isOpen).toBe(true);
+        const outside = document.createElement('button');
+        document.body.append(outside);
+        outside.focus();
+        await wait();
+        expect(blur).toHaveBeenCalledTimes(1);
+        outside.remove();
+        chrome.remove();
+    });
+
+    it('does not treat a pointer press on a portaled favorite as leaving the editor', async () => {
+        const { chrome, favorite } = await mountWithChrome();
+        const blur = vi.spyOn(controller, 'blur');
+        favorite.dispatchEvent(new Event('pointerdown', { bubbles: true }));
+        await wait(180);
+        expect(document.activeElement).toBe(input);
+        expect(blur).not.toHaveBeenCalled();
+        expect(controller.isOpen).toBe(true);
+        chrome.remove();
     });
 });

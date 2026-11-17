@@ -1379,6 +1379,60 @@ describe('MarkedTextArea favorites: caret-scoped star fill and pinned row', () =
         document.dispatchEvent(new Event('selectionchange'));
     }
 
+    it('keeps the caret marking targeted through a keyboard pause and real Favorite pointer events', async () => {
+        const value = '(U) Body text here.';
+        const { ta } = await mountDirect(value, {
+            favorites: { load: async () => [{ marking: 'U' }] },
+        });
+        ta.focus();
+        moveCaret(ta, 1);
+        await wait(80);
+        root.querySelector<HTMLButtonElement>('.ez-favorites-button')!.click();
+        await wait(80);
+        const row = document.body.querySelector<HTMLButtonElement>(
+            '[data-favorite-marking="U"]',
+        )!;
+        row.focus();
+        await wait(180);
+        expect(
+            root.querySelector('.marked-textarea-picker-mount'),
+        ).not.toBeNull();
+        row.dispatchEvent(new Event('pointerdown', { bubbles: true }));
+        row.dispatchEvent(
+            new MouseEvent('mousedown', { bubbles: true, cancelable: true }),
+        );
+        await wait(180);
+        expect(
+            root.querySelector('.marked-textarea-picker-mount'),
+        ).not.toBeNull();
+        row.click();
+        await wait(80);
+        expect(ta.value).toBe(value);
+    });
+
+    it('replaces the caret marking during the post-close cooldown without inserting a paragraph', async () => {
+        const value = '(U) Body text here.';
+        const { ta } = await mountDirect(value, {
+            favorites: { load: async () => [{ marking: 'U' }] },
+        });
+        ta.focus();
+        moveCaret(ta, 1);
+        await wait(30);
+        ta.dispatchEvent(
+            new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }),
+        );
+        ta.focus();
+        moveCaret(ta, 1);
+        expect(root.querySelector('.marked-textarea-picker-mount')).toBeNull();
+        root.querySelector<HTMLButtonElement>('.ez-favorites-button')!.click();
+        await wait(30);
+        document.body
+            .querySelector<HTMLButtonElement>('[data-favorite-marking="U"]')!
+            .click();
+        await wait(80);
+        expect(ta.value).toBe(value);
+    });
+
     it('star fills gold when the caret sits inside a segment matching a favorite', async () => {
         const load = vi.fn(async () => [
             { marking: 'U', label: 'Unclassified' },

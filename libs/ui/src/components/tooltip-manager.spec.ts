@@ -20,6 +20,18 @@ describe('tooltip-manager', () => {
     });
 
     describe('showTooltip', () => {
+        it('uses the interactive palette for field tools and restores the prose palette for a tooltip', () => {
+            const target = document.createElement('button');
+            root.appendChild(target);
+            const tools = document.createElement('div');
+            tools.className = 'ez-marking-tools';
+            showTooltip(target, tools, root);
+            const tip = document.body.querySelector('.ez-tooltip')!;
+            expect(tip.classList.contains('ez-tooltip--tools')).toBe(true);
+            showTooltip(target, 'A concept description', root);
+            expect(tip.classList.contains('ez-tooltip--tools')).toBe(false);
+        });
+
         it('portals the tooltip beyond clipped consumer roots', () => {
             root.style.overflow = 'hidden';
             const target = document.createElement('span');

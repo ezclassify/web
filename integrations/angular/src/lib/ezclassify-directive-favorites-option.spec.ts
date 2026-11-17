@@ -88,7 +88,7 @@ async function flush(): Promise<void> {
 }
 
 describe('EzClassifyDirective ezClassifyOptions.favorites', () => {
-    it('forwards favorites through to EzClassifyUI: the ★ button renders on a scanner-mounted field', async () => {
+    it('forwards Favorites to the branding popover on a scanner-mounted field', async () => {
         await TestBed.configureTestingModule({
             imports: [FavoritesHostComponent],
             providers: [
@@ -104,12 +104,15 @@ describe('EzClassifyDirective ezClassifyOptions.favorites', () => {
         fixture.detectChanges(false);
         await flush();
 
+        fixture.nativeElement.querySelector('.ez-status-mark').click();
         expect(
-            fixture.nativeElement.querySelector('.ez-favorites-button'),
-        ).not.toBeNull();
+            [...document.querySelectorAll('[role=tab]')].map(
+                (tab) => tab.textContent,
+            ),
+        ).toContain('Favorites');
     });
 
-    it('renders no ★ button when favorites is omitted (default, unchanged)', async () => {
+    it('omits the Favorites tab when no provider or presets exist', async () => {
         await TestBed.configureTestingModule({
             imports: [FavoritesHostComponent],
             providers: [
@@ -124,8 +127,11 @@ describe('EzClassifyDirective ezClassifyOptions.favorites', () => {
         fixture.detectChanges(false);
         await flush();
 
+        fixture.nativeElement.querySelector('.ez-status-mark').click();
         expect(
-            fixture.nativeElement.querySelector('.ez-favorites-button'),
-        ).toBeNull();
+            [...document.querySelectorAll('[role=tab]')].map(
+                (tab) => tab.textContent,
+            ),
+        ).not.toContain('Favorites');
     });
 });

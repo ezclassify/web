@@ -111,13 +111,17 @@ export interface ComposerViewOptions {
     ) => string | undefined;
     /** The composer opened, closed or changed side. */
     readonly onPlacement?: (open: boolean) => void;
+    /**
+     * The field control that must remain reachable while its phone sheet is
+     * open.
+     */
+    readonly sheetTools?: () => HTMLElement | null;
     /** The draft text changed; the field mirrors it (height, width, paint). */
     readonly onDraft?: (text: string) => void;
     /**
      * Whether a node focus moves to is the field's own chrome (its favorites
-     * button, say). Focus going there waits out the same grace period as a
-     * press on the list instead of committing at once, so a control that works
-     * on the open edit still finds it open.
+     * button, say). Focus there keeps the edit open until it leaves the chrome,
+     * so a control acting on that edit retains its target.
      */
     readonly isFieldChrome?: (node: Node) => boolean;
     /** A blur finished committing. */
@@ -229,6 +233,10 @@ export class ComposerView {
     private readonly sheetDone: HTMLButtonElement;
     private readonly sheetCancel: HTMLButtonElement;
     private readonly sheetLabel: HTMLDivElement;
+    private readonly sheetTools: HTMLDivElement;
+    private readonly sheetActions: HTMLDivElement;
+    private sheetToolsHome: { node: HTMLElement; marker: Comment } | null =
+        null;
     /** The sheet's whole title; the label may show it shortened. */
     private sheetTitle = '';
     private readonly sheetInput: HTMLInputElement;
@@ -324,7 +332,13 @@ export class ComposerView {
         );
         const bar = document.createElement('div');
         bar.className = 'ez-composer__sheet-bar';
-        bar.append(this.sheetCancel, this.sheetLabel, this.sheetDone);
+        this.sheetTools = document.createElement('div');
+        this.sheetTools.className = 'ez-composer__sheet-tools';
+        this.sheetTools.hidden = true;
+        this.sheetActions = document.createElement('div');
+        this.sheetActions.className = 'ez-composer__sheet-actions';
+        this.sheetActions.append(this.sheetTools, this.sheetDone);
+        bar.append(this.sheetCancel, this.sheetLabel, this.sheetActions);
         this.sheetField.append(bar, this.sheetInput);
 
         this.result = document.createElement('div');
@@ -492,6 +506,7 @@ export class ComposerView {
     /** Tear down listeners and the portaled surface. */
     destroy(): void {
         this.destroyed = true;
+        this.restoreSheetTools();
         // A blur commit still waiting on a press goes with the view. The field
         // commits an open draft itself before it tears down (see
         // teardown-write.ts), through the same commit a blur would run.
@@ -642,10 +657,19 @@ export class ComposerView {
                 if (this.surface.contains(target)) return;
                 if (this.opts.anchor.contains(target)) return;
                 if (this.opts.input.contains(target)) return;
+                if (this.opts.isFieldChrome?.(target)) return;
                 this.activeInput.blur();
             },
             true,
         );
+        // Chrome can hold focus while the draft stays open (Favorites is
+        // portaled). Its eventual exit must settle through the same blur path.
+        this.on(document, 'focusout', (event) => {
+            if (this.destroyed || !this.controller.isOpen) return;
+            const { target, relatedTarget } = event as FocusEvent;
+            if (target instanceof Node && this.opts.isFieldChrome?.(target))
+                this.onBlur(relatedTarget);
+        });
         // A press on the result row stores it, except on the folded broken
         // rules: opening them to read is not a choice of the result.
         this.on(this.result, 'click', (e) => {
@@ -866,12 +890,37 @@ export class ComposerView {
             if (
                 active === this.opts.input ||
                 active === this.sheetInput ||
-                (active && this.surface.contains(active))
+                (active &&
+                    (this.surface.contains(active) ||
+                        this.opts.isFieldChrome?.(active)))
             ) {
                 return;
             }
             this.commitOnBlur();
         }, BLUR_COMMIT_DELAY_MS);
+    }
+
+    private mountSheetTools(): void {
+        if (this.sheetToolsHome) return;
+        const node = this.opts.sheetTools?.();
+        if (!node?.parentNode) return;
+        const marker = document.createComment('field tools');
+        node.before(marker);
+        this.sheetToolsHome = { node, marker };
+        this.sheetTools.appendChild(node);
+        this.sheetTools.hidden = false;
+    }
+
+    private restoreSheetTools(): void {
+        const home = this.sheetToolsHome;
+        if (!home) return;
+        // A host that destroyed its control while the sheet was open owns its
+        // removal; closing the sheet must not resurrect that control.
+        if (home.node.parentNode === this.sheetTools && home.marker.parentNode)
+            home.marker.replaceWith(home.node);
+        else home.marker.remove();
+        this.sheetToolsHome = null;
+        this.sheetTools.hidden = true;
     }
 
     // --- Surface choice and placement --------------------------------------------
@@ -1095,6 +1144,7 @@ export class ComposerView {
         }
 
         if (!s.open) {
+            this.restoreSheetTools();
             this.lastListSignature = '';
             this.surface.hidden = true;
             // A closed surface keeps nothing: text left in it (a reading's
@@ -1120,6 +1170,7 @@ export class ComposerView {
         }
         this.surface.hidden = false;
         this.surface.dataset.surface = this.sheet ? 'sheet' : 'popover';
+        if (this.sheet) this.mountSheetTools();
         this.arrange(this.sheet && keyboardUp());
         this.sheetField.hidden = !this.sheet;
         // Done cannot store a draft that does not read completely. It stays
@@ -1197,7 +1248,7 @@ export class ComposerView {
     private paintResult(s: ComposerSnapshot): void {
         // Keep the action outside the repainted reading, so a refused commit
         // never removes the keyboard user's focused button.
-        const parent = this.sheet ? this.sheetLabel.parentElement : this.result;
+        const parent = this.sheet ? this.sheetActions : this.result;
         if (parent && this.sheetDone.parentElement !== parent)
             parent.appendChild(this.sheetDone);
         this.resultContent.replaceChildren();

@@ -1332,20 +1332,20 @@ describe('TagInput favorites', () => {
         expect(root.querySelector('.ez-favorites-button')).toBeNull();
     });
 
-    it('renders the ★ button and applies a favorite by REPLACING the whole chip set', async () => {
+    it('opens Favorites from branding and replaces the whole chip set', async () => {
         const load = vi.fn(async () => [{ marking: 'SECRET//NOFORN' }]);
         const { input, tags } = await mountDirect({ favorites: { load } });
         await wait();
 
         const button = root.querySelector(
-            '.ez-favorites-button',
+            '.ez-status-mark',
         ) as HTMLButtonElement;
         expect(button).not.toBeNull();
 
         button.dispatchEvent(new MouseEvent('click', { bubbles: true }));
         await wait();
         const row = document.body.querySelector(
-            '.ez-favorites-panel .proto-dropdown-item',
+            '.ez-favorites-panel__embedded .proto-dropdown-item',
         ) as HTMLElement;
         row.dispatchEvent(new MouseEvent('click', { bubbles: true }));
         await wait();
@@ -1362,7 +1362,7 @@ describe('TagInput favorites', () => {
         ).toBeGreaterThan(0);
     });
 
-    it('offers Remove (not Save) when the current chip set already matches a loaded favorite', async () => {
+    it('offers Unsave when the current chip set matches a saved Favorite', async () => {
         const remove = vi.fn(async () => {});
         const load = vi.fn(async () => [{ marking: 'SECRET' }]);
         const { tags } = await mountDirect({
@@ -1372,7 +1372,7 @@ describe('TagInput favorites', () => {
         await wait();
 
         const button = root.querySelector(
-            '.ez-favorites-button',
+            '.ez-status-mark',
         ) as HTMLButtonElement;
         button.dispatchEvent(new MouseEvent('click', { bubbles: true }));
         await wait();
@@ -1380,11 +1380,14 @@ describe('TagInput favorites', () => {
         const pinned = document.body.querySelector(
             '.ez-favorites-panel__pinned',
         ) as HTMLElement;
-        expect(pinned.textContent?.toLowerCase()).toContain('remove');
+        expect(pinned.textContent?.toLowerCase()).toContain('unsave');
 
         pinned.dispatchEvent(new MouseEvent('click', { bubbles: true }));
         await wait();
-        expect(remove).toHaveBeenCalledWith('SECRET');
+        expect(remove).toHaveBeenCalledWith(
+            'SECRET',
+            expect.objectContaining({ schemeId: expect.any(String) }),
+        );
     });
 });
 

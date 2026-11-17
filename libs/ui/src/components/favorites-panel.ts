@@ -1,7 +1,7 @@
 /**
- * The ★ favorites surface: a chrome button next to a field's status mark that
- * opens a popover of host-persisted markings, plus (when the scheme declares
- * any) a trailing "From the scheme" section of `labelPresets`.
+ * Whole-marking Favorites and scoped scheme presets. MarkingField and TagInput
+ * embed this list in their branding popover; marked editors use its separate
+ * star control.
  *
  * The component stores nothing. A host wires `favorites.load` (and optionally
  * `save`/`remove`) on `ComponentOptions`; this module never touches
@@ -34,6 +34,21 @@ import { copyOverlayTheme, portalViewportOverlay } from './overlay-portal';
 import { adoptStylesOnce, type AdoptedStyles } from '../styles/adopt';
 import { t } from '../i18n';
 import favoritesPanelCss from './favorites-panel.css?inline';
+import {
+    dismissStatusMarkPopover,
+    refreshStatusMarkPopover,
+    setStatusMarkFavorites,
+} from './status-mark';
+
+/** The scheme and presentation scope owning a host's saved markings. */
+export interface FavoritesContext {
+    /** The scheme that reads these markings. */
+    schemeId: string;
+    /** The field's effective marking scope, when declared. */
+    scope?: string;
+    /** The consuming field's format. */
+    formatId?: string;
+}
 
 /** One saved favorite: a marking string plus an optional display label. */
 export interface FavoriteEntry {
@@ -44,31 +59,38 @@ export interface FavoriteEntry {
 }
 
 /**
- * Host-fed favorites surface. Hosts own persistence entirely (localStorage, a
- * server, wherever); the component only ever calls these three hooks.
+ * Host-fed Favorites and optional storage controls. The host owns persistence
+ * and the UI calls its hooks; it never writes browser or server storage.
  */
 export interface FavoritesConfig {
     /**
-     * Load the favorites list for this field's scheme/scope/format. Called
-     * TWICE per field lifecycle, not just on open: once at mount (so the ★
-     * button starts correctly filled when the field's initial value is already
-     * a saved favorite, rather than blank until the user's first open) and
-     * again every time the panel opens, never cached across opens: a host with
-     * server-backed favorites expects a fresh read each time the user looks,
-     * and each time the field mounts.
+     * Optional browser-storage consent. The host still owns every storage
+     * operation.
      */
-    load(ctx: {
-        schemeId: string;
-        scope?: string;
-        formatId?: string;
-    }): MaybePromise<FavoriteEntry[]>;
+    browserStorage?: {
+        /** Undefined until the visitor has chosen whether to remember Favorites. */
+        enabled(): boolean | undefined;
+        /**
+         * Persist the choice; disabling removes stored copies but may retain
+         * visit-local Favorites.
+         */
+        setEnabled(enabled: boolean): MaybePromise<void>;
+    };
+    /** Clear this scheme/scope's Favorites without changing scheme presets. */
+    clear?(ctx: FavoritesContext): MaybePromise<void>;
+    /**
+     * Load this scheme/scope's saved markings at mount and each time the panel
+     * opens. The format identifies the consuming field; saved values are read
+     * through that field's adapter before application.
+     */
+    load(ctx: FavoritesContext): MaybePromise<FavoriteEntry[]>;
     /**
      * Persist a new favorite. Its presence (not `remove`'s) gates whether the
      * panel offers the pinned save/remove row at all.
      */
-    save?(marking: string): MaybePromise<void>;
+    save?(marking: string, ctx: FavoritesContext): MaybePromise<void>;
     /** Remove a saved favorite. */
-    remove?(marking: string): MaybePromise<void>;
+    remove?(marking: string, ctx: FavoritesContext): MaybePromise<void>;
 }
 
 /** Everything a host field supplies so the panel can render and apply rows. */
@@ -110,8 +132,14 @@ export interface FavoritesPanelHost {
      * empty marking has nothing coherent to save.
      */
     getCurrent: () => { rendered: string; valid: boolean };
-    /** Apply a resolved marking string to the field (replace, or MTA's stamp). */
-    onApply: (marking: string) => void;
+    /** Describe the caret target when a field contains several markings. */
+    describeTarget?: () => string;
+    /**
+     * Apply a resolved marking (replace, or MTA's stamp). An asynchronous host
+     * must honor cancellation before writing if the panel closes or another
+     * action supersedes this one.
+     */
+    onApply: (marking: string, signal: AbortSignal) => MaybePromise<void>;
     /**
      * Return keyboard focus to the field's own native element (Esc's "return
      * focus to field" contract). Applying a row already moves focus itself
@@ -210,6 +238,7 @@ export class FavoritesPanel {
     private _openSeq = 0;
     private _rows: PanelRow[] = [];
     private _highlightIndex = -1;
+    private applyAbort: AbortController | null = null;
     /**
      * The last-loaded favorites, each paired with its rendered form in THIS
      * field's own format. Loaded once at construction so the button's
@@ -239,8 +268,10 @@ export class FavoritesPanel {
         rendered: string;
     }> = [];
     private boundDocPointerDown: (e: Event) => void;
+    private embeddedMark: HTMLElement | null = null;
+    private managing = false;
 
-    constructor(wrap: HTMLElement, host: FavoritesPanelHost) {
+    constructor(wrap: HTMLElement, host: FavoritesPanelHost, embedded = false) {
         this.wrap = wrap;
         this.host = host;
         injectStyles(host.root);
@@ -253,7 +284,7 @@ export class FavoritesPanel {
         this.button.className =
             'ez-favorites-button ez-favorites-button--chrome';
         this.button.innerHTML = buildStarSvg();
-        this.button.setAttribute('aria-haspopup', 'listbox');
+        this.button.setAttribute('aria-haspopup', 'dialog');
         this.button.setAttribute('aria-expanded', 'false');
         this.button.setAttribute('aria-label', t('aria.favorites'));
         // The button is a separate popover trigger, not part of the field's
@@ -265,35 +296,110 @@ export class FavoritesPanel {
         this.button.addEventListener('mousedown', (e) => e.preventDefault());
         this.button.addEventListener('click', () => void this.open());
         this.button.addEventListener('keydown', (e) => this.onButtonKeydown(e));
-        wrap.appendChild(this.button);
+        if (!embedded) wrap.appendChild(this.button);
 
         this.panel = document.createElement('div');
         this.panel.className = 'proto-dropdown ez-favorites-panel';
         this.panel.id =
             'ez-favorites-panel-' + Math.random().toString(36).slice(2, 8);
         this.panel.style.display = 'none';
+        this.panel.setAttribute('role', 'dialog');
+        this.panel.setAttribute('aria-label', t('aria.favorites'));
         this.panel.addEventListener('mousedown', (e) => e.preventDefault());
 
         this.panelItems = document.createElement('div');
         this.panelItems.className = 'proto-dropdown__items';
-        this.panelItems.setAttribute('role', 'listbox');
+        this.panelItems.setAttribute('role', 'group');
         this.panelItems.setAttribute('aria-label', t('aria.favorites'));
         this.panelItems.id = this.panel.id + '-items';
         this.panel.appendChild(this.panelItems);
+        this.panelItems.addEventListener('focusin', () => {
+            this._highlightIndex = this._rows.findIndex(
+                (row) => row.el === document.activeElement,
+            );
+            this._rows.forEach((row, index) =>
+                row.el.classList.toggle(
+                    'proto-dropdown-item--highlighted',
+                    index === this._highlightIndex,
+                ),
+            );
+        });
+        this.panel.addEventListener('keydown', (event) => {
+            if (this.embeddedMark) return;
+            if (event.key === 'Escape') {
+                event.preventDefault();
+                this.close(true);
+                return;
+            }
+            if (event.key === 'Tab') {
+                const controls = this.controls();
+                const edge = event.shiftKey ? controls[0] : controls.at(-1);
+                if (document.activeElement === edge) {
+                    if (event.shiftKey) {
+                        event.preventDefault();
+                        this.button.focus();
+                    } else {
+                        const next = [
+                            ...document.querySelectorAll<HTMLElement>(
+                                'a[href], button, input, select, textarea, [tabindex]',
+                            ),
+                        ].filter(
+                            (element) =>
+                                element.tabIndex >= 0 &&
+                                !element.matches(':disabled') &&
+                                !this.panel.contains(element) &&
+                                element.getClientRects().length > 0,
+                        );
+                        const target = next[next.indexOf(this.button) + 1];
+                        this.close(false);
+                        if (target) {
+                            event.preventDefault();
+                            target.focus();
+                        }
+                    }
+                }
+                return;
+            }
+            if (event.key !== 'ArrowDown' && event.key !== 'ArrowUp') return;
+            event.preventDefault();
+            const controls = this.controls();
+            const index = controls.indexOf(
+                document.activeElement as HTMLElement,
+            );
+            const next = index + (event.key === 'ArrowDown' ? 1 : -1);
+            if (next < 0) this.button.focus();
+            else controls[Math.min(next, controls.length - 1)]?.focus();
+        });
         this.button.setAttribute('aria-controls', this.panelItems.id);
 
         this.announcer = createAnnouncer();
         wrap.appendChild(this.announcer);
 
-        this.dropdownPortalStyle = portalViewportOverlay(
-            this.panel,
-            wrap,
-            favoritesPanelCss,
-        );
+        this.dropdownPortalStyle = embedded
+            ? null
+            : portalViewportOverlay(this.panel, wrap, favoritesPanelCss);
+        if (embedded) {
+            adoptStylesOnce(favoritesPanelCss, document.body);
+            this.embeddedMark = wrap.querySelector(':scope > .ez-status-mark');
+            this.panelItems.setAttribute('role', 'group');
+            this.panelItems.classList.add('ez-favorites-panel__embedded');
+            setStatusMarkFavorites(wrap, {
+                element: this.panelItems,
+                open: () => {
+                    void this.open();
+                },
+                close: () => {
+                    this.abortApply();
+                    this._isOpen = false;
+                    this.managing = false;
+                },
+            });
+        }
 
         this.boundDocPointerDown = (e: Event) => {
             const target = e.target as Node;
             if (
+                !this.embeddedMark &&
                 this._isOpen &&
                 !this.panel.contains(target) &&
                 !this.button.contains(target)
@@ -444,6 +550,7 @@ export class FavoritesPanel {
      */
     async open(restoreHighlightIndex?: number): Promise<void> {
         if (this._destroyed) return;
+        const wasOpen = this._isOpen;
         this._isOpen = true;
         this.button.setAttribute('aria-expanded', 'true');
         // mousedown preventDefault (above) suppresses the browser's normal
@@ -452,10 +559,12 @@ export class FavoritesPanel {
         // Up/Down/Enter/Esc would have nowhere to land afterward without
         // this explicit call. A keyboard open (button already focused to
         // receive the keydown that triggered this) makes this a no-op.
-        this.button.focus();
+        if (!this.embeddedMark && !wasOpen) this.button.focus();
         this.renderLoading();
-        this.showPanel();
-        this.position();
+        if (!this.embeddedMark) {
+            this.showPanel();
+            this.position();
+        }
 
         const processed = await this.loadAndCacheFavorites();
         if (processed === null) return;
@@ -474,7 +583,8 @@ export class FavoritesPanel {
         if (restoreHighlightIndex !== undefined) {
             this.moveHighlight(restoreHighlightIndex);
         }
-        this.position();
+        if (this.embeddedMark) refreshStatusMarkPopover(this.embeddedMark);
+        else this.position();
         announce(
             this.announcer,
             `${processed.length} favorite${processed.length === 1 ? '' : 's'} available`,
@@ -488,12 +598,21 @@ export class FavoritesPanel {
      */
     close(returnFocusToField: boolean): void {
         if (!this._isOpen) return;
+        this.abortApply();
         this._isOpen = false;
         this.panel.style.display = 'none';
         this.button.setAttribute('aria-expanded', 'false');
         this.button.removeAttribute('aria-activedescendant');
         this._highlightIndex = -1;
+        if (this.embeddedMark) dismissStatusMarkPopover(this.embeddedMark);
         if (returnFocusToField) this.host.focusField();
+    }
+
+    /** Whether focus is moving within this field's Favorites controls. */
+    contains(node: Node | null): boolean {
+        return (
+            !!node && (this.button.contains(node) || this.panel.contains(node))
+        );
     }
 
     /** Whether the popover is currently showing. */
@@ -502,7 +621,14 @@ export class FavoritesPanel {
     }
 
     destroy(): void {
+        this.abortApply();
         this._destroyed = true;
+        embeddedPanels.delete(this.wrap);
+        if (this.embeddedMark) {
+            dismissStatusMarkPopover(this.embeddedMark);
+            setStatusMarkFavorites(this.wrap, null);
+            this.panelItems.remove();
+        }
         document.removeEventListener('mousedown', this.boundDocPointerDown);
         this.panel.remove();
         this.dropdownPortalStyle?.release();
@@ -518,6 +644,7 @@ export class FavoritesPanel {
     }
 
     private renderLoading(): void {
+        if (this.panelItems.childElementCount > 0) return;
         this.panelItems.innerHTML = '';
         const row = document.createElement('div');
         row.className = 'proto-dropdown-item ez-favorites-panel__loading';
@@ -534,10 +661,22 @@ export class FavoritesPanel {
     private renderRows(
         processed: Array<{ entry: FavoriteEntry; rendered: string }>,
     ): void {
+        const restoreFocus = this.focusAfterRender();
         this.panelItems.innerHTML = '';
         this._rows = [];
         this._highlightIndex = -1;
+        if (this.managing) {
+            this.renderManagement();
+            restoreFocus();
+            return;
+        }
 
+        if (this.host.describeTarget) {
+            const target = document.createElement('div');
+            target.className = 'ez-favorites-panel__target';
+            target.textContent = this.host.describeTarget();
+            this.panelItems.appendChild(target);
+        }
         const current = this.host.getCurrent();
         const canPin =
             !!this.host.config?.save && current.valid && !!current.rendered;
@@ -552,11 +691,32 @@ export class FavoritesPanel {
             );
         }
 
-        for (const { entry, rendered } of processed) {
+        if (this.embeddedMark && this.host.config) {
+            const header = document.createElement('div');
+            header.className = 'proto-dropdown-group';
+            header.textContent = t('favorites.saved');
+            this.panelItems.appendChild(header);
+        }
+
+        for (const [
+            favoriteIndex,
+            { entry, rendered },
+        ] of processed.entries()) {
             const isCurrent = current.valid && rendered === current.rendered;
-            this.addRow(this.buildFavoriteRow(entry, isCurrent), () =>
-                this.applyAndClose(entry.marking),
-            );
+            const row = this.buildFavoriteRow(entry, isCurrent);
+            row.dataset.favoriteMarking = entry.marking;
+            this.addRow(row, () => this.applyAndClose(entry.marking));
+            if (this.host.config?.remove) {
+                this._rows[this._rows.length - 1].el.addEventListener(
+                    'keydown',
+                    (event) => {
+                        if (event.key !== 'Delete') return;
+                        event.preventDefault();
+                        event.stopPropagation();
+                        void this.removeFavorite(entry.marking, favoriteIndex);
+                    },
+                );
+            }
         }
 
         const presets = getScopedPresets(this.host.scheme, this.host.scope);
@@ -573,7 +733,9 @@ export class FavoritesPanel {
                 const rendered = this._cachedPresets.find(
                     (entry) => entry.preset.id === preset.id,
                 )?.rendered;
-                this.addRow(this.buildPresetRow(preset, rendered), () => {
+                const row = this.buildPresetRow(preset, rendered);
+                row.dataset.presetId = preset.id;
+                this.addRow(row, () => {
                     if (rendered) this.applyAndClose(rendered);
                 });
             }
@@ -588,11 +750,181 @@ export class FavoritesPanel {
             empty.textContent = t('favorites.empty');
             this.panelItems.appendChild(empty);
         }
+        if (this.host.config?.browserStorage) this.renderStorageChoice();
+        restoreFocus();
+    }
+
+    private focusAfterRender(): () => void {
+        const focused = document.activeElement;
+        if (
+            !(focused instanceof HTMLElement) ||
+            !this.panelItems.contains(focused) ||
+            this.panelItems.closest('[hidden]')
+        )
+            return () => {};
+        const identity = Object.entries(focused.dataset).find(([name]) =>
+            ['favoriteMarking', 'presetId', 'favoritesAction'].includes(name),
+        );
+        return () => {
+            if (!identity || this.panelItems.closest('[hidden]')) return;
+            const [name, value] = identity;
+            [...this.panelItems.querySelectorAll<HTMLElement>('button, input')]
+                .find((control) => control.dataset[name] === value)
+                ?.focus();
+        };
+    }
+
+    private settingsButton(
+        label: string,
+        action: (keyboard: boolean) => void,
+    ): HTMLButtonElement {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'ez-favorites-panel__settings-action';
+        button.textContent = label;
+        button.dataset.favoritesAction = label;
+        button.addEventListener('click', (event) => {
+            this.abortApply();
+            action(event.detail === 0);
+        });
+        return button;
+    }
+
+    private renderStorageChoice(): void {
+        const storage = this.host.config!.browserStorage!;
+        const footer = document.createElement('div');
+        footer.className = 'ez-favorites-panel__settings';
+        if (storage.enabled() === undefined) {
+            const prompt = document.createElement('div');
+            prompt.textContent = t('favorites.rememberPrompt');
+            footer.appendChild(prompt);
+            for (const [label, enabled] of [
+                [t('favorites.remember'), true],
+                [t('favorites.visitOnly'), false],
+            ] as const) {
+                footer.appendChild(
+                    this.settingsButton(label, (keyboard) => {
+                        const focused = document.activeElement;
+                        void Promise.resolve()
+                            .then(() => storage.setEnabled(enabled))
+                            .then(() => {
+                                if (!this._isOpen || this._destroyed) return;
+                                const restoreFocus =
+                                    keyboard &&
+                                    document.activeElement === focused &&
+                                    !this.panelItems.closest('[hidden]');
+                                this.renderRows(this._cachedFavorites);
+                                if (restoreFocus)
+                                    this.panelItems
+                                        .querySelector<HTMLButtonElement>(
+                                            '.ez-favorites-panel__settings-action',
+                                        )
+                                        ?.focus();
+                                if (this.embeddedMark)
+                                    refreshStatusMarkPopover(this.embeddedMark);
+                            })
+                            .catch(() =>
+                                announce(
+                                    this.announcer,
+                                    t('favorites.storageFailed'),
+                                ),
+                            );
+                    }),
+                );
+            }
+        } else {
+            footer.appendChild(
+                this.settingsButton(t('favorites.manage'), (keyboard) => {
+                    this.managing = true;
+                    this.renderRows(this._cachedFavorites);
+                    if (keyboard)
+                        this.panelItems
+                            .querySelector<HTMLButtonElement>('button')
+                            ?.focus();
+                    if (this.embeddedMark)
+                        refreshStatusMarkPopover(this.embeddedMark);
+                }),
+            );
+        }
+        this.panelItems.appendChild(footer);
+    }
+
+    private renderManagement(): void {
+        const storage = this.host.config?.browserStorage;
+        this.panelItems.appendChild(
+            this.settingsButton(t('favorites.back'), (keyboard) => {
+                this.managing = false;
+                this.renderRows(this._cachedFavorites);
+                if (keyboard)
+                    this.panelItems
+                        .querySelector<HTMLButtonElement>(
+                            '.ez-favorites-panel__settings-action',
+                        )
+                        ?.focus();
+                if (this.embeddedMark)
+                    refreshStatusMarkPopover(this.embeddedMark);
+            }),
+        );
+        if (storage) {
+            const label = document.createElement('label');
+            label.className = 'ez-favorites-panel__storage';
+            const input = document.createElement('input');
+            input.type = 'checkbox';
+            input.dataset.favoritesAction = 'storage';
+            input.checked = storage.enabled() === true;
+            let pending = false;
+            let requested = input.checked;
+            input.addEventListener('change', () => {
+                if (pending) {
+                    input.checked = requested;
+                    return;
+                }
+                const next = input.checked;
+                requested = next;
+                pending = true;
+                input.setAttribute('aria-busy', 'true');
+                void Promise.resolve()
+                    .then(() => storage.setEnabled(next))
+                    .catch(() => {
+                        input.checked = storage.enabled() === true;
+                        announce(this.announcer, t('favorites.storageFailed'));
+                    })
+                    .finally(() => {
+                        pending = false;
+                        input.removeAttribute('aria-busy');
+                    });
+            });
+            const text = document.createElement('span');
+            text.textContent = t('favorites.remember');
+            label.append(input, text);
+            this.panelItems.appendChild(label);
+        }
+        if (this.host.config?.clear) {
+            this.panelItems.appendChild(
+                this.settingsButton(t('favorites.clear'), () => {
+                    void Promise.resolve()
+                        .then(() => this.host.config!.clear!(this.context()))
+                        .then(async () => {
+                            const processed =
+                                await this.loadAndCacheFavorites();
+                            if (!processed || !this._isOpen || this._destroyed)
+                                return;
+                            announce(this.announcer, t('favorites.cleared'));
+                        })
+                        .catch(() =>
+                            announce(
+                                this.announcer,
+                                t('favorites.removeFailed'),
+                            ),
+                        );
+                }),
+            );
+        }
     }
 
     private addRow(el: HTMLElement, apply: () => void): void {
         const index = this._rows.length;
-        el.setAttribute('role', 'option');
+        el.setAttribute('role', 'button');
         el.id = `${this.panel.id}-row-${index}`;
         el.addEventListener('click', () => apply());
         this.panelItems.appendChild(el);
@@ -600,13 +932,32 @@ export class FavoritesPanel {
     }
 
     private buildPinnedRow(isFavorite: boolean, marking: string): HTMLElement {
-        const row = document.createElement('div');
+        const row = this.createRow();
         row.className = 'proto-dropdown-item ez-favorites-panel__pinned';
+        row.dataset.favoritesAction = 'pin';
+        if (row instanceof HTMLButtonElement)
+            row.disabled = isFavorite && !this.host.config?.remove;
         const label = document.createElement('div');
         label.className = 'proto-dropdown-item__label';
         label.textContent = isFavorite
-            ? t('favorites.remove')
-            : t('favorites.save').replace('{marking}', marking);
+            ? t(
+                  this.embeddedMark
+                      ? 'favorites.unsaveCurrent'
+                      : 'favorites.remove',
+              )
+            : this.embeddedMark
+              ? t('favorites.saveCurrent')
+              : t('favorites.save').replace('{marking}', marking);
+        if (this.embeddedMark) {
+            const star = document.createElement('span');
+            star.className = 'ez-favorites-panel__star';
+            star.innerHTML = buildStarSvg();
+            star.classList.toggle(
+                'ez-favorites-panel__star--saved',
+                isFavorite,
+            );
+            row.appendChild(star);
+        }
         row.appendChild(label);
         return row;
     }
@@ -615,7 +966,7 @@ export class FavoritesPanel {
         entry: FavoriteEntry,
         isCurrent: boolean,
     ): HTMLElement {
-        const row = document.createElement('div');
+        const row = this.createRow();
         row.className = 'proto-dropdown-item';
         if (isCurrent) row.classList.add('proto-dropdown-item--selected');
         const label = document.createElement('div');
@@ -641,7 +992,7 @@ export class FavoritesPanel {
         preset: LabelPresetView,
         rendered?: string,
     ): HTMLElement {
-        const row = document.createElement('div');
+        const row = this.createRow();
         row.className = 'proto-dropdown-item';
         const label = document.createElement('div');
         label.className = 'proto-dropdown-item__label';
@@ -655,9 +1006,101 @@ export class FavoritesPanel {
     }
 
     /** Apply a chosen marking (favorite or preset) and close the panel. */
+    private abortApply(): void {
+        this.applyAbort?.abort();
+        this.applyAbort = null;
+        this.panelItems.removeAttribute('aria-busy');
+    }
+
     private applyAndClose(marking: string): void {
-        this.host.onApply(marking);
-        this.close(true);
+        this.abortApply();
+        const controller = new AbortController();
+        this.applyAbort = controller;
+        try {
+            const result = this.host.onApply(marking, controller.signal);
+            if (!result || typeof result.then !== 'function') {
+                this.applyAbort = null;
+                this.close(true);
+                return;
+            }
+            // Keep the editor's focus domain intact until its asynchronous
+            // read applies to the selected marking. Closing/moving on cancels
+            // that read's UI write rather than losing its caret target.
+            this.panelItems.setAttribute('aria-busy', 'true');
+            void Promise.resolve(result).then(
+                () => {
+                    if (this.applyAbort !== controller) return;
+                    this.applyAbort = null;
+                    this.panelItems.removeAttribute('aria-busy');
+                    if (!this._destroyed) this.close(true);
+                },
+                () => {
+                    if (this.applyAbort !== controller) return;
+                    this.applyAbort = null;
+                    this.panelItems.removeAttribute('aria-busy');
+                    announce(this.announcer, t('favorites.applyFailed'));
+                },
+            );
+        } catch {
+            this.abortApply();
+            announce(this.announcer, t('favorites.applyFailed'));
+        }
+    }
+
+    private createRow(): HTMLElement {
+        const button = document.createElement('button');
+        button.type = 'button';
+        return button;
+    }
+
+    private context(): FavoritesContext {
+        return {
+            schemeId: this.host.schemeId,
+            scope: this.host.scope,
+            formatId: this.host.formatId,
+        };
+    }
+
+    private async removeFavorite(
+        marking: string,
+        index: number,
+    ): Promise<void> {
+        this.abortApply();
+        const focused = document.activeElement;
+        try {
+            await this.host.config?.remove?.(marking, this.context());
+        } catch {
+            announce(this.announcer, t('favorites.removeFailed'));
+            return;
+        }
+        if (this._destroyed) return;
+        const processed = await this.loadAndCacheFavorites();
+        if (!processed || !this._isOpen) return;
+        const restoreFocus =
+            this.panelItems.contains(focused) &&
+            document.activeElement === focused &&
+            !this.panelItems.closest('[hidden]');
+        this.renderRows(processed);
+        const favoriteRows = this._rows.filter(
+            (row) => !row.el.classList.contains('ez-favorites-panel__pinned'),
+        );
+        const target =
+            favoriteRows[Math.min(index, processed.length - 1)]?.el ??
+            this._rows[0]?.el;
+        if (restoreFocus) {
+            if (target) target.focus();
+            else {
+                const tab = this.panelItems
+                    .closest('.ez-marking-tools')
+                    ?.querySelector<HTMLElement>(
+                        '[role=tab][aria-selected=true]',
+                    );
+                (tab ?? this.button).focus();
+            }
+        }
+        this.syncStar();
+        if (this.embeddedMark) refreshStatusMarkPopover(this.embeddedMark);
+        announce(this.announcer, t('favorites.removed'));
     }
 
     /** Pinned row: save the current marking, or remove it, then reload. */
@@ -665,6 +1108,7 @@ export class FavoritesPanel {
         isFavorite: boolean,
         currentRendered: string,
     ): Promise<void> {
+        this.abortApply();
         // The pinned row is always row 0. Capture whether THIS toggle came
         // from a keyboard Enter on that row (moveHighlight is the only thing
         // that sets _highlightIndex; a mouse click never does) before the
@@ -672,6 +1116,7 @@ export class FavoritesPanel {
         // Enter keeps working without forcing the user to arrow back onto
         // the row they just acted on.
         const restoreHighlight = this._highlightIndex === 0 ? 0 : undefined;
+        const focused = document.activeElement;
         try {
             if (isFavorite) {
                 const match = this._cachedFavorites.find(
@@ -680,11 +1125,12 @@ export class FavoritesPanel {
                 await Promise.resolve(
                     this.host.config?.remove?.(
                         match?.entry.marking ?? currentRendered,
+                        this.context(),
                     ),
                 );
             } else {
                 await Promise.resolve(
-                    this.host.config?.save?.(currentRendered),
+                    this.host.config?.save?.(currentRendered, this.context()),
                 );
             }
         } catch {
@@ -714,7 +1160,22 @@ export class FavoritesPanel {
         // cache and resync its class without reopening the popover the user
         // already dismissed. See {@link refreshStar}.
         if (this._isOpen) {
-            void this.open(restoreHighlight);
+            const restoreFocus =
+                this.panelItems.contains(focused) &&
+                document.activeElement === focused;
+            await this.open(
+                document.activeElement === focused
+                    ? restoreHighlight
+                    : undefined,
+            );
+            if (
+                restoreFocus &&
+                this._isOpen &&
+                !this.panelItems.closest('[hidden]') &&
+                (document.activeElement === document.body ||
+                    document.activeElement === focused)
+            )
+                this._rows[0]?.el.focus();
         } else {
             void this.refreshStar();
         }
@@ -750,7 +1211,9 @@ export class FavoritesPanel {
                 break;
             case 'ArrowDown':
                 e.preventDefault();
-                this.moveHighlight(this._highlightIndex + 1);
+                if (this._rows.length)
+                    this.moveHighlight(this._highlightIndex + 1);
+                else this.controls()[0]?.focus();
                 break;
             case 'ArrowUp':
                 e.preventDefault();
@@ -764,9 +1227,20 @@ export class FavoritesPanel {
                 }
                 break;
             case 'Tab':
-                this.close(false);
+                if (!e.shiftKey && this.controls().length) {
+                    e.preventDefault();
+                    this.controls()[0]?.focus();
+                } else this.close(false);
                 break;
         }
+    }
+
+    private controls(): HTMLElement[] {
+        return [
+            ...this.panelItems.querySelectorAll<HTMLElement>(
+                'button:not(:disabled), input:not(:disabled)',
+            ),
+        ];
     }
 
     private moveHighlight(index: number): void {
@@ -779,6 +1253,7 @@ export class FavoritesPanel {
             next.el.classList.add('proto-dropdown-item--highlighted');
             this.button.setAttribute('aria-activedescendant', next.el.id);
             next.el.scrollIntoView({ block: 'nearest' });
+            if (!this.embeddedMark) next.el.focus();
         } else {
             this.button.removeAttribute('aria-activedescendant');
         }
@@ -842,6 +1317,24 @@ export class FavoritesPanel {
 }
 
 const panelsByButton = new WeakMap<HTMLElement, FavoritesPanel>();
+const embeddedPanels = new WeakMap<HTMLElement, FavoritesPanel>();
+
+/** Mount Favorites within MarkingField and TagInput's branding popover. */
+export function ensureMarkingFavorites(
+    wrap: HTMLElement,
+    host: FavoritesPanelHost,
+): FavoritesPanel | null {
+    if (!host.config && !schemeOffersPresets(host.scheme, host.scope))
+        return null;
+    const existing = embeddedPanels.get(wrap);
+    if (existing) {
+        existing.updateHost(host);
+        return existing;
+    }
+    const panel = new FavoritesPanel(wrap, host, true);
+    embeddedPanels.set(wrap, panel);
+    return panel;
+}
 
 /**
  * Mount (or return the existing) favorites button on `wrap`, next to the

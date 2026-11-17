@@ -147,6 +147,11 @@ export class MarkedInput extends MarkedFieldBase<HTMLTextAreaElement> {
     /** What writing the mark did, from the read that recorded its fixes. */
     private _fixesAssessment: RenderAssessment | undefined;
     private favoritesPanel: FavoritesPanel | null = null;
+
+    protected override isFieldChrome(node: Node): boolean {
+        return !!this.favoritesPanel?.contains(node);
+    }
+
     /**
      * Bound `paste` handler: the owned editor is a `<textarea>`, and a paste
      * containing newlines would otherwise land them straight in `.value`,
@@ -1515,8 +1520,7 @@ export class MarkedInput extends MarkedFieldBase<HTMLTextAreaElement> {
                 onCancel: () => this.escapeClosePicker(),
                 // The favorites button stamps onto the open segment, so
                 // focus moving to it must not close the editor first.
-                isFieldChrome: (node) =>
-                    !!this.favoritesPanel?.button.contains(node),
+                isFieldChrome: (node) => this.isFieldChrome(node),
                 label: () =>
                     accessibleLabel(this.input, t('aria.markingInput')),
                 root: this.container,

@@ -269,6 +269,11 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
      */
     private activeSegmentIndex = -1;
     private favoritesPanel: FavoritesPanel | null = null;
+
+    protected override isFieldChrome(node: Node): boolean {
+        return !!this.favoritesPanel?.contains(node);
+    }
+
     /**
      * Caret position snapshotted on every focused selectionchange. The
      * favorites panel applies "stamp at caret" against THIS, not the live
@@ -507,8 +512,19 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
                 applyPreset: (presetId) =>
                     this.callApplyPreset(presetId, this.scanFormat),
                 getCurrent: () => this.currentFavoritesMarking(),
-                onApply: (marking) => void this.applyFavorite(marking),
-                focusField: () => this.textarea.focus(),
+                describeTarget: () =>
+                    this.activeSegmentIndex >= 0
+                        ? t('favorites.editingMarking')
+                              .replace(
+                                  '{n}',
+                                  String(this.activeSegmentIndex + 1),
+                              )
+                              .replace('{total}', String(this.segments.length))
+                        : t('favorites.insertParagraph'),
+                onApply: (marking, signal) =>
+                    this.applyFavorite(marking, signal),
+                focusField: () =>
+                    this.picker ? this.picker.focus() : this.textarea.focus(),
             });
             this.favoritesPanel?.syncStar();
         }
@@ -2332,8 +2348,8 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
                 onCancel: () => this.escapeClosePicker(),
                 // The favorites button stamps onto the open segment, so
                 // focus moving to it must not close the editor first.
-                isFieldChrome: (node) =>
-                    !!this.favoritesPanel?.button.contains(node),
+                isFieldChrome: (node) => this.isFieldChrome(node),
+                sheetTools: () => this.favoritesPanel?.button ?? null,
                 // Which paragraph's mark this is, ahead of the field's own
                 // label, so the sheet's title says it even when it has to
                 // truncate.
@@ -2642,6 +2658,8 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
     private currentFavoritesMarking(): { rendered: string; valid: boolean } {
         const seg = this.segments[this.activeSegmentIndex];
         if (!seg) return { rendered: '', valid: false };
+        const draft = this.picker?.getDraftMarking();
+        if (draft) return draft;
         return {
             rendered: seg.rendered,
             valid: seg.valid && !!seg.rendered,
@@ -2688,18 +2706,30 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
      * freshly templated (Ctrl+Enter, nothing typed yet) or a previously
      * loaded/edited marking.
      */
-    private async applyFavorite(marking: string): Promise<void> {
+    private async applyFavorite(
+        marking: string,
+        signal?: AbortSignal,
+    ): Promise<void> {
         const result = await this.readForFavorites(marking);
+        if (signal?.aborted) return;
         const rendered = result.rendered.trim();
         const wrapped = this.wrapRendered(rendered);
 
-        if (this.picker && this.activeRange) {
+        // A recent close can deliberately hold the editor closed while the
+        // caret already targets another marking. That marking remains the
+        // replacement target shown by Favorites, even without an open picker.
+        const range =
+            this.activeRange ??
+            (this.textarea.value === this.lastSegmentedText
+                ? this.segments[this.activeSegmentIndex]
+                : undefined);
+        if (range) {
             // Replacing an existing segment's span excludes the template's
             // trailing separator (the span ends at the marking's own close
             // delimiter, not past it), so the replacement text must not
             // carry one either, so trimming here is correct, not an oversight.
             const insert = wrapped.trimEnd();
-            const { start, end } = this.activeRange;
+            const { start, end } = range;
             const v = this.textarea.value;
             this.setHostValue(v.slice(0, start) + insert + v.slice(end));
             this.lastScannedText = '';

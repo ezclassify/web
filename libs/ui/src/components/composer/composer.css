@@ -61,6 +61,28 @@
     column-gap: 0.5rem;
     min-height: 2.75rem;
 }
+/* Host tools and Done share the trailing column without adding a second
+   copy of the field's control or changing its provider/focus ownership. */
+.ez-composer__sheet-actions,
+.ez-composer__sheet-tools {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.25rem;
+}
+.ez-composer__sheet-tools > button {
+    width: 2.75rem;
+    height: 2.75rem;
+    min-width: 2.75rem;
+    min-height: 2.75rem;
+}
+.ez-composer__sheet-tools > button::after {
+    inset: 0;
+}
+.ez-composer__sheet-tools svg {
+    width: 1.25rem;
+    height: 1.25rem;
+}
 .ez-composer__sheet-label {
     min-width: 0;
     overflow: hidden;

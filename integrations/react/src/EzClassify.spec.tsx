@@ -401,16 +401,26 @@ describe('<EzClassifyProvider> props', () => {
         }
         const withFavorites = render(<Page options={{ favorites }} />);
         await flush();
+        withFavorites.container
+            .querySelector<HTMLButtonElement>('.ez-status-mark')!
+            .click();
         expect(
-            withFavorites.container.querySelector('.ez-favorites-button'),
-        ).not.toBeNull();
+            [...document.querySelectorAll('[role=tab]')].map(
+                (tab) => tab.textContent,
+            ),
+        ).toContain('Favorites');
         withFavorites.unmount();
 
         const without = render(<Page />);
         await flush();
+        without.container
+            .querySelector<HTMLButtonElement>('.ez-status-mark')!
+            .click();
         expect(
-            without.container.querySelector('.ez-favorites-button'),
-        ).toBeNull();
+            [...document.querySelectorAll('[role=tab]')].map(
+                (tab) => tab.textContent,
+            ),
+        ).not.toContain('Favorites');
     });
 });
 

@@ -45,7 +45,7 @@ import {
     type FieldChrome,
 } from './field-chrome';
 import {
-    ensureFavoritesButton,
+    ensureMarkingFavorites,
     schemeOffersPresets,
     type FavoritesConfig,
     type FavoritesPanel,
@@ -370,7 +370,7 @@ export class TagInput extends ComponentBase {
         this.controller.syncCommitted();
 
         // One status mark per field, mutated in place (Enhancement Status
-        // Indicator contract). The mark, ★ favorites button and clear sit
+        // Indicator contract). Branding and clear sit
         // inline at the field's trailing edge; the wrap reserves the room they
         // take so chips and the filter never run under them. The chrome is
         // mounted once, after the filter, where a render pass never reaches.
@@ -378,20 +378,21 @@ export class TagInput extends ComponentBase {
             root: this.options.root,
         });
         ensureStatusMark(this.chrome.status, {
+            tools: true,
             shape: 'chrome',
             root: this.options.root,
             shouldShowTooltip: () => this.shouldShowTooltip(),
             ...this.statusMarkUndo(),
         });
         setStatusMarkFixes(this.chrome.status, this.fieldStatusChanges());
-        // The ★ mounts on host favorites wiring OR scheme-declared presets
-        // (ensureFavoritesButton owns the OR); favoritesHost tolerates an
+        // Favorites are available for host wiring OR scheme-declared presets
+        // (ensureMarkingFavorites owns the OR); favoritesHost tolerates an
         // undefined config, running the panel read-only in that case.
         if (
             this.options.favorites ||
             schemeOffersPresets(this.scheme, this.options.scope)
         ) {
-            this.favoritesPanel = ensureFavoritesButton(
+            this.favoritesPanel = ensureMarkingFavorites(
                 this.chrome.status,
                 this.favoritesHost(this.options.favorites),
             );

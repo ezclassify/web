@@ -862,6 +862,11 @@ export abstract class MarkedFieldBase<
      */
     protected abstract afterCancel(valueRestored: boolean): void;
 
+    /** Controls acting on the open edit remain part of the field. */
+    protected isFieldChrome(_node: Node): boolean {
+        return false;
+    }
+
     /**
      * Capture-phase Escape handler for a picker whose editor does not have
      * focus (an invalid draft left on screen while the user is elsewhere in the
@@ -875,6 +880,7 @@ export abstract class MarkedFieldBase<
     protected onDocKeydown(e: KeyboardEvent): void {
         if (!this.picker) return;
         const target = e.target as Node;
+        if (this.isFieldChrome(target)) return;
         if (this.pickerMount?.contains(target) || this.picker.owns(target)) {
             return;
         }
@@ -897,6 +903,7 @@ export abstract class MarkedFieldBase<
     protected async onDocClick(e: MouseEvent): Promise<void> {
         if (!this.picker) return;
         const t = e.target as Node;
+        if (this.isFieldChrome(t)) return;
         if (this.pickerMount?.contains(t) || this.picker.owns(t)) return;
         if (this.display.contains(t)) return;
         this._explicitClose = true;
