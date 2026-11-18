@@ -6,6 +6,7 @@ name: CI
 on:
   pull_request:
     branches: [main]
+    types: [opened, synchronize, reopened, edited]
   workflow_dispatch:
     inputs:
       full:
@@ -16,6 +17,7 @@ on:
 permissions:
   contents: read
   packages: read
+  pull-requests: read
 
 concurrency:
   group: ci-${{ github.ref }}
@@ -71,6 +73,25 @@ jobs:
             exit 1
           fi
 
+      - name: Resolve declared JavaScript SDK dependency
+        id: sdk
+        if: github.event_name == 'pull_request'
+        env:
+          NODE_AUTH_TOKEN: ${{ github.token }}
+        uses: ezclassify/.github/actions/check-pr-dependencies@dc3d8f56f975fe4f50dc00727ade1089db09b4f7
+        with:
+          producer: ezclassify/sdk-js
+          packages: '@ezclassify/rest-client'
+          require-pins: 'false'
+          publication-app-id: '5819382'
+          token: ${{ github.token }}
+
+      - name: Pin the REST client for this CI install
+        if: steps.sdk.outputs.version != ''
+        env:
+          REST_CLIENT_SNAPSHOT: ${{ steps.sdk.outputs.version }}
+        run: node scripts/ci-rest-client.mjs pin
+
       - name: Install dependencies
         # Generate a portable, date-bounded lock from empty state, then install
         # exactly those bytes.
@@ -80,6 +101,12 @@ jobs:
         with:
           mode: generated
           relock-installs: 'false'
+
+      - name: Verify the installed REST client snapshot
+        if: steps.sdk.outputs.version != ''
+        env:
+          REST_CLIENT_SNAPSHOT: ${{ steps.sdk.outputs.version }}
+        run: node scripts/ci-rest-client.mjs verify
 
       - name: Lint
         run: npm run lint
