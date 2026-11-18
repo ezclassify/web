@@ -41,6 +41,7 @@ export default defineConfig({
         // test-support/demo-runtime.ts.
         globalSetup: ['./test-support/demo-runtime-global-setup.ts'],
         setupFiles: [
+            './test-support/fail-on-console-error.ts',
             './tests/setup/constructable-stylesheets.ts',
             './test-support/demo-runtime-setup-file.ts',
         ],

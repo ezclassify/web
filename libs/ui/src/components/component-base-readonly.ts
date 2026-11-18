@@ -626,6 +626,7 @@ export abstract class ReadOnlyComponentBase implements ComponentInstance {
         while (initialValue) {
             try {
                 const initResult = await this.readHeld(initialValue);
+                if (this.abandoned) return;
                 if (initialRead !== this.valueReadSeq) break;
                 if (fromNative && this.enhancedInput!.value !== initialValue) {
                     initialValue = this.enhancedInput!.value;
@@ -643,6 +644,7 @@ export abstract class ReadOnlyComponentBase implements ComponentInstance {
                         initResult.warnings,
                     );
             } catch (error) {
+                if (this.abandoned) return;
                 if (initialRead !== this.valueReadSeq) break;
                 if (fromNative && this.enhancedInput!.value !== initialValue) {
                     initialValue = this.enhancedInput!.value;

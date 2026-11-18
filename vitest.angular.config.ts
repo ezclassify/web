@@ -38,6 +38,7 @@ export default defineConfig({
         // The demo runtime's recordings, as in vitest.config.ts.
         globalSetup: ['./test-support/demo-runtime-global-setup.ts'],
         setupFiles: [
+            './test-support/fail-on-console-error.ts',
             './tests/setup/constructable-stylesheets.ts',
             './integrations/angular/vitest.setup.ts',
             './test-support/demo-runtime-setup-file.ts',

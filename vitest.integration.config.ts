@@ -32,7 +32,10 @@ export default defineConfig({
             'libs/ui-tools/src/record-replay/**/*.spec.ts',
         ],
         globalSetup: ['test-support/demo-runtime-global-setup.ts'],
-        setupFiles: ['test-support/demo-runtime-setup-file.ts'],
+        setupFiles: [
+            'test-support/fail-on-console-error.ts',
+            'test-support/demo-runtime-setup-file.ts',
+        ],
         environment: 'node',
         globals: false,
     },

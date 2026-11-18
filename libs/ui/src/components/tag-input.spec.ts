@@ -28,6 +28,8 @@ import { dirname, join } from 'node:path';
 import type { RemoteContextSchemeEngineAdapter } from '@ezclassify/types';
 import { EzClassifyUI } from '../ezclassify-ui';
 import { TagInput } from './tag-input';
+import { createAsyncMockEngine } from './async-engine-mock';
+import { mockProcessResult } from '../engine-result-mock';
 import type { EzClassifyClient } from '@ezclassify/rest-client';
 import { connectDemoContext } from '../../../../test-support/demo-runtime';
 
@@ -489,6 +491,40 @@ describe('TagInput', () => {
         } finally {
             sheet.remove();
         }
+    });
+
+    it('can be destroyed while its initial read is pending', async () => {
+        const engine = createAsyncMockEngine();
+        const read = vi.spyOn(engine, 'process').mockResolvedValue(
+            mockProcessResult({
+                valid: false,
+                rendered: 'A',
+                errors: [
+                    {
+                        constraintId: 'initial-read',
+                        message: 'The marking could not be read.',
+                    },
+                ],
+            }),
+        );
+        root.innerHTML = '<input value="A" /><div id="mount"></div>';
+        const mount = root.querySelector<HTMLDivElement>('#mount')!;
+        const component = new TagInput();
+        const initialized = component.init(mount, engine as never);
+
+        try {
+            expect(read).toHaveBeenCalledOnce();
+            expect(() => component.destroy()).not.toThrow();
+        } finally {
+            await initialized;
+        }
+
+        expect(mount.querySelector('.tag-input-wrap')).toBeNull();
+        expect(mount.hasAttribute('data-ezclassify-invalid')).toBe(false);
+        expect(root.textContent).not.toContain(
+            'The marking could not be read.',
+        );
+        expect(root.querySelector('input')?.value).toBe('A');
     });
 
     it('retains the explicit library-styled input opt-in', async () => {

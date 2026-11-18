@@ -409,25 +409,37 @@ describe('injectEzClassifyFacet before the runtime has mounted', () => {
     });
 
     it('keeps a pick made in the constructor, before the store exists, on top of the served value', async () => {
-        const { fixture, ready, facet } = mountRuntimeForm(
-            'INTERNAL//DO NOT FORWARD',
-            true,
-        );
-        await settleRuntime(ready);
-        fixture.detectChanges();
+        const errors = vi.spyOn(console, 'error');
+        try {
+            const { fixture, ready, facet } = mountRuntimeForm(
+                'INTERNAL//DO NOT FORWARD',
+                true,
+            );
+            await settleRuntime(ready);
+            fixture.detectChanges();
 
-        expect(facet().value()).toEqual(['CONFIDENTIAL']);
-        expect(facet().rendered()).toBe('CONFIDENTIAL//DO NOT FORWARD');
-        fixture.destroy();
+            expect(facet().value()).toEqual(['CONFIDENTIAL']);
+            expect(facet().rendered()).toBe('CONFIDENTIAL//DO NOT FORWARD');
+            fixture.destroy();
+            expect(errors).not.toHaveBeenCalled();
+        } finally {
+            errors.mockRestore();
+        }
     });
 
     it('keeps a pick over the value the root was served with', async () => {
-        const { fixture, ready, facet } = mountRuntimeForm('INTERNAL');
-        facet().setValue(['CONFIDENTIAL']);
-        await settleRuntime(ready);
-        fixture.detectChanges();
+        const errors = vi.spyOn(console, 'error');
+        try {
+            const { fixture, ready, facet } = mountRuntimeForm('INTERNAL');
+            facet().setValue(['CONFIDENTIAL']);
+            await settleRuntime(ready);
+            fixture.detectChanges();
 
-        expect(facet().value()).toEqual(['CONFIDENTIAL']);
-        fixture.destroy();
+            expect(facet().value()).toEqual(['CONFIDENTIAL']);
+            fixture.destroy();
+            expect(errors).not.toHaveBeenCalled();
+        } finally {
+            errors.mockRestore();
+        }
     });
 });
