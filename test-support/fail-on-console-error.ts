@@ -9,11 +9,17 @@ console.error = (...args: unknown[]) => {
     originalError.apply(console, args);
 };
 
-/** Assert and consume one deliberately triggered diagnostic. Extra calls still fail. */
+/**
+ * Assert and consume one deliberately triggered diagnostic. Extra calls still
+ * fail.
+ */
 export function expectConsoleError(...args: unknown[]) {
     const expected = format(...args);
     const index = errors.indexOf(expected);
-    expect(index, `Missing expected console error: ${expected}`).toBeGreaterThanOrEqual(0);
+    expect(
+        index,
+        `Missing expected console error: ${expected}`,
+    ).toBeGreaterThanOrEqual(0);
     errors.splice(index, 1);
 }
 
