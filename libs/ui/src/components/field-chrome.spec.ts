@@ -8,7 +8,7 @@
  * (e2e/examples/document-form.spec.ts) measures the same thing on real layout.
  */
 
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -68,6 +68,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+    vi.useRealTimers();
     globalThis.ResizeObserver = originalObserver as typeof ResizeObserver;
     FakeResizeObserver.live.clear();
 });
@@ -163,9 +164,17 @@ describe('mountFieldChrome', () => {
     });
 
     it('follows the row when its contents change size', () => {
+        vi.useFakeTimers();
         const chrome = mountFieldChrome(wrap, {});
+        const original = wrap.style.getPropertyValue(FIELD_CHROME_INLINE_SIZE);
         place(chrome.element, 340, 56);
         FakeResizeObserver.resize(chrome.element);
+        FakeResizeObserver.resize(wrap);
+        expect(wrap.style.getPropertyValue(FIELD_CHROME_INLINE_SIZE)).toBe(
+            original,
+        );
+        expect(vi.getTimerCount()).toBe(1);
+        vi.advanceTimersToNextFrame();
         expect(wrap.style.getPropertyValue(FIELD_CHROME_INLINE_SIZE)).toBe(
             '60px',
         );
@@ -175,6 +184,7 @@ describe('mountFieldChrome', () => {
         chrome.status.appendChild(count);
         place(chrome.element, 316, 80);
         FakeResizeObserver.resize(chrome.element);
+        vi.advanceTimersToNextFrame();
         expect(wrap.style.getPropertyValue(FIELD_CHROME_INLINE_SIZE)).toBe(
             '84px',
         );
@@ -183,20 +193,23 @@ describe('mountFieldChrome', () => {
         count.remove();
         place(chrome.element, 340, 56);
         FakeResizeObserver.resize(chrome.element);
+        vi.advanceTimersToNextFrame();
         expect(wrap.style.getPropertyValue(FIELD_CHROME_INLINE_SIZE)).toBe(
             '60px',
         );
     });
 
     it('re-measures when the wrap itself resizes', () => {
+        vi.useFakeTimers();
         const chrome = mountFieldChrome(wrap, {});
         place(chrome.element, 340, 56);
         chrome.measure();
         place(wrap, 0, 300);
-        place(chrome.element, 240, 56);
+        place(chrome.element, 218, 56);
         FakeResizeObserver.resize(wrap);
+        vi.advanceTimersToNextFrame();
         expect(wrap.style.getPropertyValue(FIELD_CHROME_INLINE_SIZE)).toBe(
-            '60px',
+            '82px',
         );
     });
 
@@ -210,13 +223,16 @@ describe('mountFieldChrome', () => {
     });
 
     it('removes the row, its reserve and its observer on destroy', () => {
+        vi.useFakeTimers();
         const chrome = mountFieldChrome(wrap, {});
         place(chrome.element, 340, 56);
         chrome.measure();
+        FakeResizeObserver.resize(wrap);
         chrome.destroy();
         expect(wrap.querySelector('.ez-field-chrome')).toBeNull();
         expect(wrap.style.getPropertyValue(FIELD_CHROME_INLINE_SIZE)).toBe('');
         expect(FakeResizeObserver.live.size).toBe(0);
+        expect(vi.getTimerCount()).toBe(0);
     });
 
     it('works without ResizeObserver, measuring on demand', () => {
