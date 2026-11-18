@@ -912,12 +912,12 @@ describe('GuideChecklist', () => {
             evaluateMany?: () => Promise<EvaluationResult>,
         ): Promise<void> {
             const ctx = toCtx(engine);
-            (
-                ctx as unknown as { guide: { buildGuideViews: () => unknown } }
-            ).guide = {
+            const remoteGuide = {
                 buildGuideViews: () => views,
                 ...(evaluateMany && { evaluateMany }),
-            } as typeof ctx.guide & { buildGuideViews: () => unknown };
+            };
+            (ctx as unknown as { guide: typeof remoteGuide }).guide =
+                remoteGuide;
             await checklist.init(container, ctx);
         }
 
