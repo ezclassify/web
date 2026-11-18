@@ -44,6 +44,52 @@
             "method": "GET",
             "statusCode": 200
         },
+        "0a8370da5ceacc66b12148edd50acd4977b8855a4d79b5ed1b5ea988cd4312fa": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "mi-bare",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "mi-bare",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "suggestions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "U",
+                            "description": "Unclassified",
+                            "group": "Level",
+                            "label": "U",
+                            "name": "Unclassified",
+                            "order": 1,
+                            "selected": false,
+                            "views": { "default": "U" }
+                        },
+                        {
+                            "categoryId": "level",
+                            "conceptId": "S",
+                            "description": "Secret",
+                            "group": "Level",
+                            "label": "S",
+                            "name": "Secret",
+                            "order": 2,
+                            "selected": false,
+                            "views": { "default": "S" }
+                        }
+                    ],
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
         "0ae9d86d4fd585c04e3c73eb23dfc1577c4650b6bcba34259e57deaab5857e98": {
             "body": {
                 "resolution": {
@@ -437,6 +483,42 @@
             "method": "GET",
             "statusCode": 200
         },
+        "2b5dae39125a59b1f7c19d5f652b93da7c96d244c65d50c9f56b098270e37e8d": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "mi-bare",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "mi-bare",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "S",
+                            "confidence": "certain",
+                            "source": "aggregate"
+                        }
+                    ],
+                    "errors": [],
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "S",
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
         "2d167681cbf4563492c6e2b7121b499b86eae5b4e5e9216b11f9be1bcd84da79": {
             "body": {
                 "resolution": {
@@ -783,6 +865,60 @@
             "method": "POST",
             "statusCode": 200
         },
+        "3e45b35a45679c3e006858599e4ccc0a28106d7e40a58adb8c5a0c18c2da9035": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "mi-fav-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "mi-fav-test",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "S",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            { "categoryId": "level", "conceptId": "S" }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "recognition": {
+                        "corrections": [],
+                        "inputFormat": "portion",
+                        "status": "complete",
+                        "surface": "marking",
+                        "unmatched": []
+                    },
+                    "rendered": "S",
+                    "renders": {},
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
         "47b876151cb3aa7154f94a15385eda3b4b40f9d5f29beded2c10ed18b97c0764": {
             "body": [
                 {
@@ -955,6 +1091,88 @@
             "method": "GET",
             "statusCode": 200
         },
+        "673db40708303b5fbd0289079bfb18bb24ea636c6950122ccd8536a440a750a5": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "mi-bare",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "mi-bare",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "S",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            { "categoryId": "level", "conceptId": "S" }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "S",
+                    "renders": {},
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "6c5725b34688b3e158a9ef68415d55fb13ea576df3dc5e5d307d9b8767baf7ea": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "mi-fav-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "mi-fav-test",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "suggestions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "S",
+                            "description": "Secret",
+                            "group": "Level",
+                            "label": "S",
+                            "name": "Secret",
+                            "order": 2,
+                            "selected": true,
+                            "views": { "default": "S" }
+                        }
+                    ],
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
         "6f45d33ecba4dd8f9596b00948745dcbe94b0040f91ba4bcfd73d0595eebe6fe": {
             "body": {
                 "resolution": {
@@ -1037,6 +1255,53 @@
                             "views": { "default": "S" }
                         }
                     ],
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "769006d12cae497013674b268ff9fd43099b8e04b3066d4a15264549872f6869": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "mi-fav-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "mi-fav-test",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "S",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            { "categoryId": "level", "conceptId": "S" }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "S",
+                    "renders": {},
+                    "valid": true,
                     "warnings": []
                 }
             },
@@ -1236,6 +1501,41 @@
             },
             "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "GET",
+            "statusCode": 200
+        },
+        "8b98cbfec5be61b64be11db04060369fea3d410c8c78af31570806e9f2b7eabb": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "mi-bare",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "mi-bare",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "suggestions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "S",
+                            "description": "Secret",
+                            "group": "Level",
+                            "label": "S",
+                            "name": "Secret",
+                            "order": 2,
+                            "selected": true,
+                            "views": { "default": "S" }
+                        }
+                    ],
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
             "statusCode": 200
         },
         "8bfbc521e99660a27bf41ad25da8a33eeaf185fcb36a707f2bb464efd64e1970": {
@@ -1476,6 +1776,60 @@
             },
             "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "GET",
+            "statusCode": 200
+        },
+        "a0586cbecd15c98597cf43109f03a1856276d72336b760ecdaaf73c7eec48396": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "mi-bare",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "mi-bare",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "S",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            { "categoryId": "level", "conceptId": "S" }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "recognition": {
+                        "corrections": [],
+                        "inputFormat": "portion",
+                        "status": "complete",
+                        "surface": "marking",
+                        "unmatched": []
+                    },
+                    "rendered": "S",
+                    "renders": {},
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
             "statusCode": 200
         },
         "a1524e0f54e1dd0349306095b61c6efe3d5b79c354c0dd60ca6f3ad9f4fa330a": {
@@ -2302,6 +2656,41 @@
             ],
             "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "GET",
+            "statusCode": 200
+        },
+        "fe4b1469aa91e31bbb1ae155b5c8d486ea0bca79b111ddbebed127417231357e": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "mi-fav-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "mi-fav-test",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "suggestions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "S",
+                            "description": "Secret",
+                            "group": "Level",
+                            "label": "S",
+                            "name": "Secret",
+                            "order": 2,
+                            "selected": true,
+                            "views": { "default": "S" }
+                        }
+                    ],
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
             "statusCode": 200
         }
     }

@@ -211,12 +211,14 @@ async function settle(): Promise<void> {
     for (let i = 0; i < 6; i++) await wait();
 }
 
-/** Hover the field's status mark past its delay, so its list is reviewed. */
+/** Open the field's tools so its corrections are reviewed, then close. */
 async function review(root: Element): Promise<void> {
     const mark = root.querySelector<HTMLElement>('.ez-status-mark')!;
-    mark.dispatchEvent(new Event('mouseenter'));
+    mark.click();
     await wait(400);
-    mark.dispatchEvent(new Event('mouseleave'));
+    const tipId = mark.getAttribute('aria-describedby');
+    const tip = tipId ? document.getElementById(tipId) : null;
+    tip?.querySelector<HTMLButtonElement>('.ez-marking-tools__close')?.click();
     await wait();
 }
 
@@ -338,8 +340,9 @@ describe('the undo of the author last edit', () => {
 
     /** Press the field's status mark open and read its list. */
     function openList(): HTMLElement {
-        container.querySelector<HTMLElement>('.ez-status-mark')!.click();
-        return document.querySelector<HTMLElement>('.ez-tooltip')!;
+        const mark = container.querySelector<HTMLElement>('.ez-status-mark')!;
+        mark.click();
+        return document.getElementById(mark.getAttribute('aria-describedby')!)!;
     }
 
     it('is not offered for a value the field loaded', async () => {

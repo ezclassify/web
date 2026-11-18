@@ -51,4 +51,8 @@ export { MarkedInput, type MarkedInputOptions } from './marked-input';
 export { MarkingField, type MarkingFieldOptions } from './marking-field';
 export { EquivalencyMap, type EquivalencyEntry } from './equivalency-map';
 export { getComponentStyles, COMPONENT_CSS } from './component-utils';
-export { type FavoriteEntry, type FavoritesConfig } from './favorites-panel';
+export {
+    type FavoriteEntry,
+    type FavoritesConfig,
+    type FavoritesContext,
+} from './favorites-panel';

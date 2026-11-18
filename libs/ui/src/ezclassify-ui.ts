@@ -17,6 +17,7 @@
  * design.
  */
 import { acceptedValue, judgedAsHeld } from './loaded-value';
+import { fixAssertions } from './components/rule-errors';
 import {
     type Assertion as EngineAssertion,
     type ContextSchemeEngineAdapter,
@@ -30,7 +31,10 @@ import {
     tearingDownRuntime,
 } from './components/teardown-write';
 import type { ComponentInstance } from './components/component-base';
-import type { ComponentSchemeEngine } from './components/component-base-readonly';
+import {
+    partsOption,
+    type ComponentSchemeEngine,
+} from './components/component-base-readonly';
 import {
     ContextResolutionError,
     ContextSet,
@@ -42,7 +46,22 @@ import {
     type EzClassifyContexts,
     type ResolvedContext,
 } from './context-binding';
-import type { FavoritesConfig } from './components/favorites-panel';
+import {
+    ensureMarkingFavorites,
+    type FavoritesConfig,
+} from './components/favorites-panel';
+import { bindTextToolsEdges } from './components/text-caret-edge';
+import {
+    dismissStatusMarkPopover,
+    statusMarkOwnsNode,
+    setStatusMarkError,
+} from './components/status-mark';
+import { observeNativeLock } from './components/dom-helpers';
+import {
+    setMarkingTarget,
+    markingEntry,
+    type MarkingTarget,
+} from './components/marking-target';
 import {
     cleanupTooltipForRoot,
     ensureStatusMark,
@@ -321,6 +340,22 @@ function signAssertions(
 }
 
 /**
+ * Compare public JSON state semantically, including stores that return cloned
+ * snapshots.
+ */
+function signEntryState(state: EzClassifyState): string {
+    return JSON.stringify(state, (_key, value: unknown) =>
+        value !== null && typeof value === 'object' && !Array.isArray(value)
+            ? Object.fromEntries(
+                  Object.entries(value).sort(([left], [right]) =>
+                      left.localeCompare(right),
+                  ),
+              )
+            : value,
+    );
+}
+
+/**
  * Top-level controller that binds one or more Contexts to DOM input fields,
  * managing tag inputs, validation, and rollup.
  *
@@ -358,6 +393,14 @@ export class EzClassifyUI {
      * `docs/binding-model.md` §5 + §8.
      */
     store: EzClassifyStore;
+    /**
+     * The existing entry binding's projection, awaited by explicit marking
+     * actions.
+     */
+    private readonly markedTextareaReflectors = new WeakMap<
+        ComponentInstance,
+        (entryId: string) => Promise<void>
+    >();
     /**
      * Marking-ids whose host element (a marking host, see `binding-model.ts`)
      * exists in the scanned tree. Views naming a marking-id not in this set are
@@ -451,9 +494,8 @@ export class EzClassifyUI {
      * `ComponentOptions`. Instance-level rather than a `data-ezclassify-*`
      * attribute on purpose: `load`/`save`/`remove` are functions, and
      * function-bearing config has no serializable data-attribute form (see
-     * `docs/attributes.md` "Instance-level options"). Omitted (undefined), the
-     * ★ button never renders, same as leaving it unset on a
-     * directly-constructed component.
+     * `docs/attributes.md` "Instance-level options"). Without a provider,
+     * Favorites offers scheme presets when they are available.
      *
      * @internal
      */
@@ -2286,10 +2328,6 @@ export class EzClassifyUI {
                 statusWrap.className = 'ez-plain-field-wrap';
                 priorParent?.insertBefore(statusWrap, input);
                 statusWrap.appendChild(input);
-                ensureStatusMark(statusWrap, {
-                    shape: 'input',
-                    root: this.root,
-                });
                 // Wire two-way store sync with the marking the input holds or
                 // edits, so sibling views (tag inputs, etc.) stay in step with
                 // it and its commits reach the levels above it.
@@ -2305,7 +2343,7 @@ export class EzClassifyUI {
                           )
                         : null;
                 if (sb) this.helperInputs.add(input);
-                this.attachPlainInputBehavior(input, binding, sb);
+                this.attachPlainInputBehavior(input, binding, sb, statusWrap);
                 const priorCleanup = this.plainBehaviorCleanups.get(input);
                 this.plainBehaviorCleanups.set(input, () => {
                     priorCleanup?.();
@@ -2402,6 +2440,88 @@ export class EzClassifyUI {
         });
     }
 
+    /** Full store marking shared by its associated editable views. */
+    private createMarkingTarget(
+        el: HTMLElement,
+        associatedId: string,
+        controller?: ControllerName,
+        component?: ComponentInstance,
+    ): MarkingTarget {
+        const entry = () => (component ? markingEntry(component) : undefined);
+        const targetId = () =>
+            controller === 'marked-textarea' ? entry()?.id() : associatedId;
+        const host = this.markingHosts.get(associatedId) ?? el;
+        const engine = schemeEngineOf(this.resolveContext(host), host);
+        const outputFormat = () => {
+            const formats = this.formatsOf(host);
+            if (controller === 'marked-textarea') return formats.part;
+            if (controller === 'marked-input' && host.id === associatedId)
+                return component?.writtenOutput?.() || formats.part;
+            return formats[holdsPart(host) ? 'part' : 'whole'];
+        };
+        const publish = async (id: string, operation: () => Promise<void>) => {
+            const finish = entry()?.prepareApply();
+            try {
+                await operation();
+                if (component && !this._destroyed)
+                    await this.markedTextareaReflectors.get(component)?.(id);
+            } finally {
+                if (typeof finish === 'function') finish();
+            }
+        };
+        return {
+            schemeId: engine.getSchemeMeta().id,
+            get scheme() {
+                return engine.getScheme();
+            },
+            scope: host.getAttribute('data-ezclassify-scope') ?? undefined,
+            get formatId() {
+                return outputFormat();
+            },
+            read: (marking) =>
+                engine.validate(
+                    marking,
+                    partsOption(
+                        controller !== 'marked-input' &&
+                            controller !== 'marked-textarea'
+                            ? () => this.partMarkingsOf(associatedId)
+                            : undefined,
+                        { outputFormat: outputFormat() },
+                    ),
+                ),
+            applyPreset: (presetId) =>
+                engine.applyPreset(presetId, { outputFormat: outputFormat() }),
+            getCurrent: () => {
+                const id = targetId();
+                if (!id) return { rendered: '', valid: false };
+                const state = this.store.get(id);
+                return {
+                    rendered: state.rendered,
+                    valid: state.valid && state.assertions.length > 0,
+                };
+            },
+            onApply: (marking, signal) => {
+                if (this._destroyed || signal.aborted) return;
+                const id = targetId();
+                if (!id) return;
+                return publish(id, () =>
+                    this.store.publishRendered(id, marking),
+                );
+            },
+            applyFix: (fix, signal) => {
+                if (this._destroyed || signal.aborted) return;
+                const id = targetId();
+                if (!id) return;
+                return publish(id, () =>
+                    this.store.publishAssertions(
+                        id,
+                        fixAssertions(fix, this.store.get(id).assertions),
+                    ),
+                );
+            },
+        };
+    }
+
     /**
      * Wire a plain input that holds or views a marking without a controller.
      * When `storeBinding` is provided the input participates in a named marking
@@ -2412,6 +2532,7 @@ export class EzClassifyUI {
         input: HTMLInputElement,
         binding: BehaviorBinding,
         storeBinding?: StoreBinding | null,
+        statusWrap?: HTMLElement,
     ): void {
         if (this.plainBehaviorCleanups.has(input)) return;
         if (
@@ -2439,6 +2560,8 @@ export class EzClassifyUI {
         // While this input commits, the store's answer to its own publish is
         // painted by the commit, which announces it the way a host form expects.
         let commitsInFlight = 0;
+        let toolsHeld = false;
+        let disposed = false;
 
         /**
          * A committed state as this input shows it: the state's own rendering
@@ -2463,6 +2586,18 @@ export class EzClassifyUI {
         /** Write a committed state's facts in this input's format. */
         const writeFacts = async (s: EzClassifyState): Promise<RenderResult> =>
             engineOf().render(s.assertions, fmt);
+        /** Project committed state without publishing native text. */
+        const readCommittedState = async (sb: StoreBinding) => {
+            const committed = this.store.get(sb.markingId);
+            const written =
+                writtenIn(committed) ?? (await writeFacts(committed));
+            return {
+                ...written,
+                assertions: committed.assertions,
+                valid: committed.valid,
+                errors: committed.errors,
+            };
+        };
         /**
          * Commit typed text as the marking's state: one publish, which is the
          * read every view of the marking shares, then that state as this input
@@ -2482,49 +2617,18 @@ export class EzClassifyUI {
                     commitsInFlight -= 1;
                 }
             }
-            const committed = this.store.get(sb.markingId);
-            const written =
-                writtenIn(committed) ?? (await writeFacts(committed));
-            return {
-                ...written,
-                assertions: committed.assertions,
-                valid: committed.valid,
-                errors: committed.errors,
-            };
+            return readCommittedState(sb);
         };
 
         const processText = (text: string) =>
             engineOf().process(text, { outputFormat: fmt });
 
-        const commitValue = async (): Promise<void> => {
-            const raw = input.value;
-            if (!raw.trim()) {
-                this.fieldAssertions.delete(input);
-                this.lastValidated.delete(input);
-                this.setPlainInputValidation(input, true, []);
-                await rollup.updateRollup(this);
-                input.dispatchEvent(
-                    new CustomEvent('ezclassify:change', {
-                        bubbles: true,
-                        detail: {
-                            assertions: [],
-                            rendered: '',
-                        },
-                    }),
-                );
-                if (storeBinding) storeBinding.publish([], '');
-                return;
-            }
-
-            // Either way `rendered` is written in `fmt`, and its own assessment
-            // says whether that write was refused.
-            const result = storeBinding
-                ? await commitThroughStore(storeBinding, raw)
-                : await Promise.resolve(
-                      judgedAsHeld(raw, processText(raw), (settled) =>
-                          processText(settled.rendered),
-                      ),
-                  );
+        const paintResult = async (
+            raw: string,
+            result:
+                | Awaited<ReturnType<typeof commitThroughStore>>
+                | Awaited<ReturnType<typeof processText>>,
+        ): Promise<void> => {
             // A refused projection is the opaque marker and nothing else, so
             // writing it here would replace the author's own text with a
             // marker and then report the field as holding a marking it does
@@ -2577,15 +2681,148 @@ export class EzClassifyUI {
             );
         };
 
-        const handleBlur = () => {
+        const commitValue = async (): Promise<void> => {
+            const raw = input.value;
+            if (!raw.trim()) {
+                this.fieldAssertions.delete(input);
+                this.lastValidated.delete(input);
+                this.setPlainInputValidation(input, true, []);
+                await rollup.updateRollup(this);
+                input.dispatchEvent(
+                    new CustomEvent('ezclassify:change', {
+                        bubbles: true,
+                        detail: {
+                            assertions: [],
+                            rendered: '',
+                        },
+                    }),
+                );
+                if (storeBinding) storeBinding.publish([], '');
+                return;
+            }
+
+            // Either way `rendered` is written in `fmt`, and its own assessment
+            // says whether that write was refused.
+            const result = storeBinding
+                ? await commitThroughStore(storeBinding, raw)
+                : await Promise.resolve(
+                      judgedAsHeld(raw, processText(raw), (settled) =>
+                          processText(settled.rendered),
+                      ),
+                  );
+            await paintResult(raw, result);
+        };
+
+        const mark = statusWrap
+            ? ensureStatusMark(statusWrap, {
+                  shape: 'input',
+                  tools: true,
+                  keyboardRoot: statusWrap,
+                  root: this.root,
+                  onToolsOpen: () => {
+                      toolsHeld = true;
+                  },
+              })
+            : null;
+        const releaseLock = mark
+            ? observeNativeLock(input, (locked) => {
+                  (mark as HTMLButtonElement).disabled = locked;
+                  if (locked) dismissStatusMarkPopover(mark);
+              })
+            : undefined;
+        const releaseTextEdges =
+            statusWrap && mark
+                ? bindTextToolsEdges(
+                      statusWrap,
+                      () => input,
+                      () => mark,
+                  )
+                : undefined;
+        const target = storeBinding
+            ? this.createMarkingTarget(input, storeBinding.markingId)
+            : null;
+        const favorites =
+            statusWrap && target
+                ? ensureMarkingFavorites(statusWrap, {
+                      root: this.root,
+                      config: this.favorites,
+                      ...target,
+                      onApply: async (marking, signal) => {
+                          if (
+                              disposed ||
+                              signal.aborted ||
+                              input.matches(':disabled, [readonly]')
+                          )
+                              return;
+                          if (!storeBinding) return;
+                          toolsHeld = false;
+                          // Retire the previous projection before publishing;
+                          // a later commit may legitimately restore that value.
+                          storeBinding.viewRequest += 1;
+                          storeBinding.lastSeenViewSignature = '';
+                          commitsInFlight += 1;
+                          try {
+                              await target.onApply(marking, signal);
+                          } finally {
+                              commitsInFlight -= 1;
+                          }
+                          if (disposed || signal.aborted) return;
+                          const viewRequest = ++storeBinding.viewRequest;
+                          const result = await readCommittedState(storeBinding);
+                          if (
+                              disposed ||
+                              signal.aborted ||
+                              viewRequest !== storeBinding.viewRequest
+                          )
+                              return;
+                          await paintResult(marking, result);
+                      },
+                      focusField: () => input.focus(),
+                  })
+                : null;
+        const handleBlur = (event: FocusEvent) => {
+            if (
+                event.relatedTarget instanceof Node &&
+                statusMarkOwnsNode(mark, event.relatedTarget)
+            ) {
+                toolsHeld = true;
+                return;
+            }
+            if (toolsHeld && !event.relatedTarget) return;
+            toolsHeld = false;
             void commitValue();
         };
+        const resumeDraft = () => {
+            toolsHeld = false;
+        };
+        const leaveTools = () => {
+            if (!toolsHeld) return;
+            // Closing the dialog restores its branding button synchronously.
+            // Only the completed focus move decides whether the author left.
+            queueMicrotask(() => {
+                if (disposed || !toolsHeld) return;
+                const active = input.ownerDocument.activeElement;
+                if (
+                    active === input ||
+                    (active && statusMarkOwnsNode(mark, active))
+                )
+                    return;
+                toolsHeld = false;
+                void commitValue();
+            });
+        };
         input.addEventListener('blur', handleBlur);
+        input.addEventListener('focus', resumeDraft);
+        input.ownerDocument.addEventListener('focusout', leaveTools);
         let storeUnsub: (() => void) | undefined;
         if (storeBinding) {
             // Reflect commits from other views (tag inputs, etc.) back into the input.
             const applyState = (s: EzClassifyState) => {
-                if (commitsInFlight > 0) return;
+                if (
+                    commitsInFlight > 0 ||
+                    (toolsHeld && input.value !== storeBinding.lastSeenRendered)
+                )
+                    return;
                 const sourceErrors = s.errors.map((error) => error.message);
                 // An empty canonical view can still have a nonempty alternate.
                 // Only a genuinely empty store bypasses format selection.
@@ -2722,7 +2959,14 @@ export class EzClassifyUI {
 
         this.plainBehaviorCleanups.set(input, () => {
             if (storeBinding) storeBinding.viewRequest += 1;
+            disposed = true;
+            releaseTextEdges?.();
+            releaseLock?.();
+            favorites?.destroy();
+            if (mark) dismissStatusMarkPopover(mark);
             input.removeEventListener('blur', handleBlur);
+            input.removeEventListener('focus', resumeDraft);
+            input.ownerDocument.removeEventListener('focusout', leaveTools);
             storeUnsub?.();
         });
     }
@@ -2756,6 +3000,14 @@ export class EzClassifyUI {
         _errors: string[],
     ): void {
         const container = input.parentElement;
+        if (container?.classList.contains('ez-plain-field-wrap'))
+            setStatusMarkError(
+                container,
+                valid
+                    ? null
+                    : _errors.filter(Boolean).join('\n') ||
+                          'This marking is invalid.',
+            );
         if (valid) {
             container?.removeAttribute('data-ezclassify-invalid');
             input.removeAttribute('aria-invalid');
@@ -3523,6 +3775,17 @@ export class EzClassifyUI {
         // Instantiate component
         const component = createComponent(controller);
         if (!component) return;
+        if (storeBinding && resolved) {
+            setMarkingTarget(
+                component,
+                this.createMarkingTarget(
+                    el,
+                    storeBinding.markingId,
+                    controller,
+                    component,
+                ),
+            );
+        }
         // The marking host a field's uncommitted draft is kept in if the field
         // goes away mid-edit (see keepDraft). Only a field holding the whole
         // marking: a facet is one category of it.
@@ -4126,6 +4389,10 @@ export class EzClassifyUI {
         const host = binding.token.token as HTMLElement;
         if (!isFacet && isMarkingController(host))
             binding.lastSeenRendered = component.getRendered();
+        const boundGuide =
+            host.getAttribute('data-ezclassify-controller') ===
+                'guide-checklist' &&
+            host.hasAttribute('data-ezclassify-bound-to');
         const applyState = (state: EzClassifyState) => {
             if (isFacet) {
                 const cat = category ?? '';
@@ -4145,6 +4412,14 @@ export class EzClassifyUI {
                     source: 'user' as const,
                 }));
                 component.setAssertions(promoted);
+            } else if (boundGuide) {
+                // Copy writes the associated marking, while the checklist's
+                // computed result stays independent. Its own commit must
+                // refresh the Current marking row just like a sibling edit.
+                binding.lastSeenRendered = state.rendered;
+                component.setAssertions(
+                    this.factsOfOwnScopes(host, state.assertions ?? []),
+                );
             } else if (binding.publishesFacts) {
                 // The view publishes facts, so its own echo is the same facts.
                 const sig = signAssertions(state.assertions);
@@ -4200,7 +4475,7 @@ export class EzClassifyUI {
         const unsubState = this.store.subscribe(
             binding.markingId,
             applyState,
-            binding.token,
+            boundGuide ? undefined : binding.token,
         );
         this.hydrateFromStore(binding.markingId, applyState);
 
@@ -4218,7 +4493,8 @@ export class EzClassifyUI {
         // Wire the per-category facet allowability subscription for facet pickers.
         // The store owns the suggest traffic for every subscribed category on a
         // commit, and decides whether that is one batched call or a fan-out; the
-        // component never calls suggest itself.
+        // store supplies baseline allowability; a component can also ask beside
+        // its current additive choices through the shared composer path.
         let unsubFacet: (() => void) | undefined;
         if (
             isFacet &&
@@ -4308,7 +4584,7 @@ export class EzClassifyUI {
                 : null;
         let stopped = false;
         let queued = false;
-        let reflecting = false;
+        let reflecting: Promise<void> | null = null;
         let reflectAgain = false;
         let reflectRevision = 0;
         let sourceAmbiguous = false;
@@ -4332,15 +4608,10 @@ export class EzClassifyUI {
                 if (segment.entryId)
                     local.set(segment.entryId, segment.assertions);
         };
-        const reflect = async () => {
+        const reflectOnce = async () => {
             if (!collections || stopped || this._destroyed || sourceAmbiguous)
                 return;
-            if (reflecting) {
-                reflectAgain = true;
-                return;
-            }
             const ids = collections.get(binding.markingId) ?? [];
-            reflecting = true;
             try {
                 const revision = reflectRevision;
                 // An entry still awaiting its first commit keeps the portion
@@ -4360,14 +4631,31 @@ export class EzClassifyUI {
                           }
                         : this.store.get(entryId);
                 };
+                const states = ids.map((entryId) => ({
+                    entryId,
+                    state: stateOf(entryId),
+                }));
+                const signatures = states.map(({ state }) =>
+                    signEntryState(state),
+                );
+                const current = () =>
+                    !stopped &&
+                    !this._destroyed &&
+                    revision === reflectRevision &&
+                    JSON.stringify(collections.get(binding.markingId) ?? []) ===
+                        JSON.stringify(ids) &&
+                    states.every(
+                        ({ entryId }, index) =>
+                            signEntryState(stateOf(entryId)) ===
+                            signatures[index],
+                    );
                 const applied = await component.applyEntryStates(
-                    ids.map((entryId) => ({
-                        entryId,
-                        state: stateOf(entryId),
-                    })),
-                    () => !stopped && revision === reflectRevision,
+                    states,
+                    current,
                 );
                 if (applied) snapshotLocal();
+                else if (!current() && !stopped && !this._destroyed)
+                    reflectAgain = true;
             } catch (error) {
                 // A failed remote rendering leaves the entire body untouched.
                 textarea.dispatchEvent(
@@ -4376,14 +4664,34 @@ export class EzClassifyUI {
                         detail: { error },
                     }),
                 );
-            } finally {
-                reflecting = false;
-                if (reflectAgain) {
-                    reflectAgain = false;
-                    scheduleReflect();
-                }
             }
         };
+        const reflect = async () => {
+            if (!collections || stopped || this._destroyed || sourceAmbiguous)
+                return;
+            if (reflecting) reflectAgain = true;
+            else {
+                const run = async () => {
+                    try {
+                        do {
+                            reflectAgain = false;
+                            await reflectOnce();
+                        } while (reflectAgain && !stopped && !this._destroyed);
+                    } finally {
+                        reflecting = null;
+                    }
+                };
+                reflecting = run();
+            }
+            // A caller applying an entry waits for the active pass and its
+            // latest queued state, including a pass started as this one ends.
+            while (reflecting) await reflecting;
+        };
+        this.markedTextareaReflectors.set(component, async (entryId) => {
+            awaitingCommit.delete(entryId);
+            ++reflectRevision;
+            await reflect();
+        });
         const scheduleReflect = () => {
             ++reflectRevision;
             if (queued || stopped) return;
@@ -4568,6 +4876,7 @@ export class EzClassifyUI {
             stopped = true;
             unsubscribeMembership?.();
             unsubscribeParent?.();
+            this.markedTextareaReflectors.delete(component);
             for (const unsubscribe of entrySubscriptions.values())
                 unsubscribe();
             textarea.removeEventListener('ezclassify:marked-change', handler);

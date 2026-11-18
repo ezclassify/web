@@ -1,8 +1,8 @@
 /**
  * `[ezClassifyOptions]` forwards `favorites` to the UI runtime, the same option
- * the vanilla `EzClassifyUI` constructor takes. A root that sets it shows the
- * favorites button on its scanner-mounted fields; one that does not, shows
- * none.
+ * the vanilla `EzClassifyUI` constructor takes. Scanner-mounted controls use
+ * that provider in their branding tools; scheme presets remain available
+ * without a provider.
  */
 import { describe, it, expect } from 'vitest';
 import { TestBed } from '@angular/core/testing';
@@ -88,7 +88,7 @@ async function flush(): Promise<void> {
 }
 
 describe('EzClassifyDirective ezClassifyOptions.favorites', () => {
-    it('forwards favorites through to EzClassifyUI: the ★ button renders on a scanner-mounted field', async () => {
+    it('forwards Favorites to the branding popover on a scanner-mounted field', async () => {
         await TestBed.configureTestingModule({
             imports: [FavoritesHostComponent],
             providers: [
@@ -104,12 +104,15 @@ describe('EzClassifyDirective ezClassifyOptions.favorites', () => {
         fixture.detectChanges(false);
         await flush();
 
+        fixture.nativeElement.querySelector('.ez-status-mark').click();
         expect(
-            fixture.nativeElement.querySelector('.ez-favorites-button'),
-        ).not.toBeNull();
+            [...document.querySelectorAll('[role=tab]')].map((tab) =>
+                tab.getAttribute('aria-label'),
+            ),
+        ).toContain('Favorites');
     });
 
-    it('renders no ★ button when favorites is omitted (default, unchanged)', async () => {
+    it('omits the Favorites tab when no provider or presets exist', async () => {
         await TestBed.configureTestingModule({
             imports: [FavoritesHostComponent],
             providers: [
@@ -124,8 +127,11 @@ describe('EzClassifyDirective ezClassifyOptions.favorites', () => {
         fixture.detectChanges(false);
         await flush();
 
+        fixture.nativeElement.querySelector('.ez-status-mark').click();
         expect(
-            fixture.nativeElement.querySelector('.ez-favorites-button'),
-        ).toBeNull();
+            [...document.querySelectorAll('[role=tab]')].map((tab) =>
+                tab.getAttribute('aria-label'),
+            ),
+        ).not.toContain('Favorites');
     });
 });

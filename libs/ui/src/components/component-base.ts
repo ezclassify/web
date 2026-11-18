@@ -1,3 +1,4 @@
+import { conceptHint, conceptHintName } from './concept-hint';
 /**
  * Interactive base class for form components that support editing.
  *
@@ -17,7 +18,7 @@ import type {
     Warning,
 } from '@ezclassify/types';
 import { buildTokenTree, type TokenTree } from '../token-tree/token-tree';
-import { createKeyboardHints, attachTooltip } from './component-utils';
+import { attachTooltip } from './component-utils';
 import {
     ReadOnlyComponentBase,
     type ComponentEngineSource,
@@ -32,6 +33,12 @@ import {
     type UndoKind,
 } from './marking-undo';
 import { t } from '../i18n';
+import {
+    ensureMarkingFavorites,
+    type FavoritesPanel,
+    type FavoritesPanelHost,
+} from './favorites-panel';
+import { markingTarget } from './marking-target';
 import {
     assertDescribesConcepts,
     createConceptDescriber,
@@ -298,7 +305,7 @@ export abstract class ComponentBase extends ReadOnlyComponentBase {
     protected focusField(): void {
         const target = [
             ...this.fieldScope().querySelectorAll<HTMLElement>(
-                'input:not([type="hidden"]), textarea, button, [tabindex]',
+                'input:not([type="hidden"]), textarea, select, button, [tabindex]',
             ),
         ].find(
             (el) =>
@@ -335,6 +342,7 @@ export abstract class ComponentBase extends ReadOnlyComponentBase {
      * until the component mounts one.
      */
     protected suiteChrome: FieldChrome | null = null;
+    private suiteFavorites: FavoritesPanel | null = null;
 
     /** The root the component's styles and overlays live in. */
     private get styleRoot(): HTMLElement {
@@ -360,6 +368,7 @@ export abstract class ComponentBase extends ReadOnlyComponentBase {
     protected mountSuiteChrome(
         row: HTMLElement,
         placement: 'inline' | 'overlay' = 'inline',
+        header?: () => HTMLElement | null,
     ): FieldChrome {
         if (this.suiteChrome) {
             row.appendChild(this.suiteChrome.element);
@@ -368,8 +377,11 @@ export abstract class ComponentBase extends ReadOnlyComponentBase {
         const chrome = mountFieldChrome(row, {
             root: this.styleRoot,
             placement,
+            header,
         });
         ensureStatusMark(chrome.status, {
+            tools: true,
+            keyboardRoot: this.container,
             shape: 'chrome',
             root: this.styleRoot,
             shouldShowTooltip: () => this.shouldShowTooltip(),
@@ -377,6 +389,10 @@ export abstract class ComponentBase extends ReadOnlyComponentBase {
             onReviewChange: () => this.onStatusReviewChange(),
         });
         this.suiteChrome = chrome;
+        this.suiteFavorites = ensureMarkingFavorites(
+            chrome.status,
+            this.suiteFavoritesHost(),
+        );
         this.updateSuiteStatusMark();
         return chrome;
     }
@@ -390,8 +406,42 @@ export abstract class ComponentBase extends ReadOnlyComponentBase {
 
     /** Remove the suite's chrome; every component's destroy() calls this. */
     protected destroySuiteChrome(): void {
+        this.suiteFavorites?.destroy();
+        this.suiteFavorites = null;
         this.suiteChrome?.destroy();
         this.suiteChrome = null;
+    }
+
+    private suiteFavoritesHost(): FavoritesPanelHost {
+        return {
+            root: this.styleRoot,
+            schemeId: this.schemeId,
+            scheme: this.scheme,
+            scope: this.options.scope,
+            formatId: this.formatId,
+            config: this.options.favorites,
+            read: (marking) =>
+                this.callValidate(marking, { outputFormat: this.formatId }),
+            applyPreset: (presetId) =>
+                this.callApplyPreset(presetId, this.formatId),
+            getCurrent: () => ({
+                rendered: this._lastRendered,
+                valid:
+                    this.assertions.length > 0 &&
+                    !this.container.hasAttribute('data-ezclassify-invalid'),
+            }),
+            onApply: (marking) => {
+                this.beginUserEdit();
+                return this.setValue(marking);
+            },
+            focusField: () =>
+                this.container
+                    .querySelector<HTMLElement>(
+                        'input:not([type="hidden"]), select, button, [tabindex="0"]',
+                    )
+                    ?.focus(),
+            ...markingTarget(this),
+        };
     }
 
     protected hasClearValue(): boolean {
@@ -440,6 +490,7 @@ export abstract class ComponentBase extends ReadOnlyComponentBase {
      */
     protected updateSuiteStatusMark(): void {
         if (!this.suiteChrome) return;
+        this.suiteFavorites?.updateHost(this.suiteFavoritesHost());
         const category = this.options.facetOf
             ? this.options.categoryId
             : undefined;
@@ -708,7 +759,7 @@ export abstract class ComponentBase extends ReadOnlyComponentBase {
         return (fix) => {
             if (this._destroyed) return;
             this.beginUserEdit();
-            this.reprocessEdit(fixAssertions(fix));
+            this.reprocessEdit(fixAssertions(fix, this.assertions));
         };
     }
 
@@ -1091,6 +1142,49 @@ export abstract class ComponentBase extends ReadOnlyComponentBase {
         return this._conceptDescriber.resolve(conceptId, categoryId);
     }
 
+    /** DF-style native help, with no dwell popup or focus side effects. */
+    protected attachConceptTitle(
+        el: HTMLElement,
+        conceptId: string,
+        _categoryId: string,
+        reason?: string,
+        label?: string,
+    ): void {
+        if (!this.shouldShowTooltip()) return;
+        const concept = this.scheme.concepts.find(
+            (one) => one.id === conceptId,
+        );
+        if (!concept) return;
+        const visible =
+            label ??
+            el.querySelector('.proto-tag-label')?.textContent?.trim() ??
+            el.textContent?.trim() ??
+            '';
+        const hint = conceptHint(
+            conceptHintName(concept, this.options.tooltipConceptProperty),
+            visible,
+            concept.definition ?? '',
+            reason,
+        );
+        if (hint.title) el.title = hint.title;
+        if (hint.description)
+            el.setAttribute('aria-description', hint.description);
+    }
+
+    /** The same simple scheme description for a composer's active concept row. */
+    protected simpleConceptDescription(conceptId: string): string | undefined {
+        const concept = this.scheme.concepts.find(
+            (one) => one.id === conceptId,
+        );
+        return concept
+            ? conceptHint(
+                  conceptHintName(concept, this.options.tooltipConceptProperty),
+                  concept.views.default ?? concept.name ?? '',
+                  concept.definition ?? '',
+              ).title || undefined
+            : undefined;
+    }
+
     /**
      * Attach a concept tooltip to a DOM element. Shows on hover/focus with full
      * concept description including rules.
@@ -1437,19 +1531,6 @@ export abstract class ComponentBase extends ReadOnlyComponentBase {
         this.assertions = statedAssertions(this.heldFacts(reading.assertions));
         this.recordAppliedFixes(reading.appliedFixes, commit.replaces);
         await this.reprocessNow();
-    }
-
-    /** Append keyboard hint bar to the container */
-    /**
-     * The control's keys, in the suite's quiet hint row under the control. The
-     * row shows while the control has focus, on a pointer with keys.
-     */
-    protected appendKeyboardHints(
-        hints: Array<{ keys: string; action: string }>,
-    ): void {
-        const row = createKeyboardHints(hints);
-        row.classList.add('ez-field-hints');
-        this.container.appendChild(row);
     }
 
     /** Darken a hex color */

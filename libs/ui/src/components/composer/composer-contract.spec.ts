@@ -385,16 +385,14 @@ describe.each(KINDS)('the commit table in %s', (kind) => {
     });
 });
 
-/**
- * What the field's status mark says EzClassify fixed: hover it past the
- * tooltip's hover-intent delay and read the lines, then move away again.
- */
+/** Read the field's Corrections tab, then close its tools window. */
 async function markedFixes(): Promise<string[]> {
     const mark = root.querySelector<HTMLElement>('.ez-status-mark');
     if (!mark) throw new Error('the field has no status mark');
-    mark.dispatchEvent(new Event('mouseenter'));
+    mark.click();
     await wait(400);
-    const tip = document.querySelector<HTMLElement>('.ez-tooltip');
+    const tipId = mark.getAttribute('aria-describedby');
+    const tip = tipId ? document.getElementById(tipId) : null;
     const shown =
         !!tip && !tip.hidden && !!mark.getAttribute('aria-describedby');
     const lines = shown
@@ -404,7 +402,7 @@ async function markedFixes(): Promise<string[]> {
               ),
           ].map((line) => line.textContent ?? '')
         : [];
-    mark.dispatchEvent(new Event('mouseleave'));
+    tip?.querySelector<HTMLButtonElement>('.ez-marking-tools__close')?.click();
     await wait();
     return lines;
 }

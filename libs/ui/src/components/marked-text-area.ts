@@ -1,3 +1,4 @@
+import { markingTarget, setMarkingEntry } from './marking-target';
 /**
  * MarkedTextArea: progressively enhances a <textarea> whose value contains
  * inline markings (e.g. "(U) Para one.\n\n(S) Para two."). The textarea
@@ -39,13 +40,15 @@ import { revealClearOfPinned } from './composer/composer-placement';
 import { replacesMarks } from './composer/composer-controller';
 import {
     ensureStatusMark,
+    statusMarkOwnsNode,
+    statusMarkFavoriteApplyOwner,
     recordAppliedFixes,
     setStatusMarkError,
     setStatusMarkGroups,
     type StatusMarkGroup,
 } from './status-mark';
 import {
-    ensureFavoritesButton,
+    ensureMarkingFavorites,
     schemeOffersPresets,
     type FavoritesPanel,
 } from './favorites-panel';
@@ -222,13 +225,11 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
     readonly authorsWhole = false;
     protected readonly componentLabel = 'MarkedTextArea';
     protected readonly css = markedCss;
-    protected readonly hintSuffix = ` ${t('hint.toAddMarking')}`;
-    protected readonly hintActionKey = 'hint.addMarking' as const;
+    protected readonly markingActionKey = 'hint.addMarking' as const;
     protected readonly classNames: MarkedFieldClassNames = {
         wrap: 'marked-textarea-wrap',
         display: 'marked-textarea-display',
         footer: 'marked-textarea-footer',
-        kbHint: 'marked-textarea-kb-hint',
         touchAdd: 'marked-textarea-touch-add',
         pickerActive: 'marked-textarea-picker-active',
     };
@@ -258,9 +259,36 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
     private hiddenContainers: HTMLDivElement[] = [];
     private hiddenGeneration = 0;
     private entryWriteSeq = 0;
+    /**
+     * Native focus restoration cannot enter source whose store rendering is
+     * pending.
+     */
+    private renderingEntrySeq: number | null = null;
+    private applyingEntry: {
+        entryId: string | undefined;
+        owner: HTMLElement | undefined;
+    } | null = null;
     private entryOrder: readonly string[] = [];
     private emptyEntries: Array<MarkingEntrySpan & { entryId: string }> = [];
     private applyingEntryState = false;
+    /** The committed source geometry before a picker inserts or edits a mark. */
+    private pickerCommittedState: {
+        segments: MarkedSegment[];
+        heldPortions: MarkedSegment[];
+        emptyEntries: Array<MarkingEntrySpan & { entryId: string }>;
+        entryOrder: readonly string[];
+        lastSegmentedText: string;
+        lastScannedText: string;
+        lastMarkingStrings: string[];
+        userEditPending: boolean;
+        scanComplete: boolean;
+        scanFailed: boolean;
+    } | null = null;
+    /** Only the latest store projection declined while its source is edited. */
+    private pendingEntryStates: {
+        entries: readonly { entryId: string; state: EzClassifyState }[];
+        current: () => boolean;
+    } | null = null;
 
     private activeRange: { start: number; end: number } | null = null;
     /**
@@ -269,15 +297,44 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
      */
     private activeSegmentIndex = -1;
     private favoritesPanel: FavoritesPanel | null = null;
+    private toolsButton: HTMLElement | null = null;
+
+    protected override isFieldChrome(node: Node): boolean {
+        return !!(
+            (node === this.host && this.picker?.isToolsSuspended) ||
+            statusMarkOwnsNode(this.toolsButton, node) ||
+            this.favoritesPanel?.contains(node)
+        );
+    }
+
     /**
      * Caret position snapshotted on every focused selectionchange. The
      * favorites panel applies "stamp at caret" against THIS, not the live
-     * `textarea.selectionStart`: Tab-ing from the textarea to the ★ button
-     * blurs the field, but the caret position the user meant to stamp at is the
-     * one they left behind, not wherever the DOM selection happens to report
-     * once focus has moved on.
+     * `textarea.selectionStart`: Moving from the textarea into its tools blurs
+     * the field, but the caret position the user meant to stamp at is the one
+     * they left behind, not wherever the DOM selection happens to report once
+     * focus has moved on.
      */
     private _lastCaret = 0;
+    private readonly onBrandDown = (event: KeyboardEvent): void => {
+        if (
+            event.key !== 'ArrowDown' ||
+            event.altKey ||
+            event.ctrlKey ||
+            event.metaKey ||
+            event.shiftKey ||
+            event.isComposing ||
+            event.keyCode === 229 ||
+            event.defaultPrevented ||
+            event.target !== this.toolsButton
+        )
+            return;
+        event.preventDefault();
+        event.stopPropagation();
+        if (this.picker) this.picker.focus();
+        else
+            this.focusAt(Math.min(this._lastCaret, this.textarea.value.length));
+    };
 
     /**
      * Resolved in init(), after bindEngine(), from the options or the resolved
@@ -363,12 +420,45 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
      */
     private lastSegmentedText = '';
 
+    /**
+     * The caret's entry, or the entry still owned by the active Favorite
+     * application.
+     */
+    private favoriteEntryId(): string | undefined {
+        const owner = statusMarkFavoriteApplyOwner(this.toolsButton);
+        return (
+            this.segments[this.activeSegmentIndex]?.entryId ??
+            (owner && owner === this.applyingEntry?.owner
+                ? this.applyingEntry.entryId
+                : undefined)
+        );
+    }
+
     async init(
         container: HTMLDivElement,
         engineOrContext?: ComponentEngineSource | null,
         options?: MarkedTextAreaOptions,
     ): Promise<void> {
         this.options = options ?? {};
+        setMarkingEntry(this, {
+            id: () => this.favoriteEntryId(),
+            prepareApply: () => {
+                const apply = {
+                    entryId: this.favoriteEntryId(),
+                    owner: statusMarkFavoriteApplyOwner(this.toolsButton),
+                };
+                this.applyingEntry = apply;
+                // The store will project the selected entry back into its
+                // existing source span. Its discarded picker must not write
+                // the previous draft over that update.
+                this.finishClose();
+                this.activeRange = null;
+                this.activeSegmentIndex = -1;
+                return () => {
+                    if (this.applyingEntry === apply) this.applyingEntry = null;
+                };
+            },
+        });
         // `data-ezclassify-format` names the format the field reads its marks
         // in and writes each one back in; without it, the scheme's part
         // default.
@@ -481,22 +571,26 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
 
         // The field's single status mark (starless "enhanced" until the
         // engine applies a fix), in the field's inline chrome.
-        ensureStatusMark(this.chrome.status, {
+        this.toolsButton = ensureStatusMark(this.chrome.status, {
+            tools: true,
+            onToolsOpen: () => {
+                if (document.activeElement === this.textarea)
+                    this._lastCaret = this.textarea.selectionStart;
+                this.toolsButton?.focus();
+                this.picker?.suspendForTools();
+            },
             shape: 'chrome',
             root: this.container,
             shouldShowTooltip: () => this.shouldShowTooltip(),
             words: this.changeWords(),
         });
-        // The ★ mounts on host favorites wiring OR scheme-declared presets
-        // (ensureFavoritesButton owns the OR); an undefined `config` runs the
-        // panel read-only, "From the scheme" only: caret-scoped stamping
-        // (onKeydown's Ctrl+Shift+Enter path below) still works against those
-        // presets with no provider wired.
+        // Scheme presets remain available without a persistence provider;
+        // all actions still target only the caret's marking.
         if (
             this.options.favorites ||
             schemeOffersPresets(this.scheme, this.options.scope)
         ) {
-            this.favoritesPanel = ensureFavoritesButton(this.chrome.status, {
+            this.favoritesPanel = ensureMarkingFavorites(this.chrome.status, {
                 root: this.container,
                 schemeId: this.schemeId,
                 scope: this.options.scope,
@@ -506,12 +600,31 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
                 read: (marking) => this.readForFavorites(marking),
                 applyPreset: (presetId) =>
                     this.callApplyPreset(presetId, this.scanFormat),
-                getCurrent: () => this.currentFavoritesMarking(),
-                onApply: (marking) => void this.applyFavorite(marking),
-                focusField: () => this.textarea.focus(),
+                describeTarget: () =>
+                    this.activeSegmentIndex >= 0
+                        ? t('favorites.editingMarking')
+                              .replace(
+                                  '{n}',
+                                  String(this.activeSegmentIndex + 1),
+                              )
+                              .replace('{total}', String(this.segments.length))
+                        : t('favorites.insertParagraph'),
+                ...markingTarget(this),
+                getCurrent: () =>
+                    markingTarget(this)?.getCurrent() ??
+                    this.currentFavoritesMarking(),
+                onApply: (marking, signal) => {
+                    const target = markingTarget(this);
+                    return target && this.favoriteEntryId()
+                        ? target.onApply(marking, signal)
+                        : this.applyFavorite(marking, signal);
+                },
+                focusField: () =>
+                    this.picker ? this.picker.focus() : this.textarea.focus(),
             });
-            this.favoritesPanel?.syncStar();
         }
+
+        this.toolsButton?.addEventListener('keydown', this.onBrandDown, true);
 
         this.boundInput = () => this.onTextareaInput();
         this.boundKeydown = (e) => this.onKeydown(e);
@@ -524,6 +637,28 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
             this.hasFocus = true;
             this.display.style.borderColor = focusBorderColor;
             this.renderDisplay();
+            if (this.picker?.isToolsSuspended && !this.pressing) {
+                const retained = this.picker;
+                // A keyboard focus move can set the textarea caret in the
+                // same turn. Let its existing entry-navigation logic choose
+                // the target before resuming the held editor.
+                queueMicrotask(() => {
+                    if (
+                        this.tornDown ||
+                        this.picker !== retained ||
+                        document.activeElement !== this.textarea ||
+                        this.pressing
+                    )
+                        return;
+                    this.onSelectionChange();
+                    if (
+                        this.picker === retained &&
+                        retained.isToolsSuspended &&
+                        this.activeSegmentIndex >= 0
+                    )
+                        retained.focus();
+                });
+            }
         });
         this.textarea.addEventListener('blur', () => {
             this.hasFocus = false;
@@ -711,9 +846,13 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
         entries: readonly { entryId: string; state: EzClassifyState }[],
         current: () => boolean = () => true,
     ): Promise<boolean> {
+        if (this.tornDown || !current()) return false;
+        if (this.picker) {
+            ++this.entryWriteSeq;
+            this.pendingEntryStates = { entries, current };
+            return false;
+        }
         if (
-            this.tornDown ||
-            this.picker ||
             this.textarea.value !== this.lastSegmentedText ||
             // A held portion has no mark in the text to write a state into,
             // and the text past the cut is unread; a complete scan settles
@@ -791,6 +930,7 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
         )
             this.textarea.removeAttribute('data-ezclassify-entry-conflict');
         const successfulReads = new Map<string, ProcessResult>();
+        this.renderingEntrySeq = seq;
         const rendered = await Promise.all(
             entries.map(async ({ entryId, state }) => {
                 const previous = existing.get(entryId);
@@ -831,7 +971,18 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
                     marking: this.wrapRendered(result.rendered).trimEnd(),
                 };
             }),
-        );
+        ).finally(() => {
+            if (this.renderingEntrySeq === seq) this.renderingEntrySeq = null;
+        });
+        if (
+            this.picker &&
+            !this.tornDown &&
+            current() &&
+            seq === this.entryWriteSeq
+        ) {
+            this.pendingEntryStates = { entries, current };
+            return false;
+        }
         if (
             this.tornDown ||
             !current() ||
@@ -953,19 +1104,27 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
         if (!this.picker) return;
         this._explicitClose = true;
         await this.closePicker();
-        if (!this.picker) await this.syncFromTextarea();
+        if (!this.picker) await this.settleClosedEditor();
     }
 
     private teardown(): void {
         this.tornDown = true;
+        this.pickerCommittedState = null;
+        this.pendingEntryStates = null;
         if (this.syncTimer) clearTimeout(this.syncTimer);
         this._resizeObserver?.disconnect();
         this._resizeObserver = null;
         this.disconnectThemeObserver();
         cleanupTooltipForRoot(this.container);
         this.destroyPicker();
+        this.toolsButton?.removeEventListener(
+            'keydown',
+            this.onBrandDown,
+            true,
+        );
         this.favoritesPanel?.destroy();
         this.favoritesPanel = null;
+        this.toolsButton = null;
         this.textarea.removeEventListener('input', this.boundInput);
         this.textarea.removeEventListener('keydown', this.boundKeydown);
         document.removeEventListener('keydown', this.boundDocKeydown, true);
@@ -1752,7 +1911,14 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
             const segmentsFresh =
                 this.textarea.value === this.lastSegmentedText;
             // A held press leaves the move to its release (openFromClick).
-            if (!hasSelection && segmentsFresh && !this.pressing) {
+            if (
+                !hasSelection &&
+                segmentsFresh &&
+                !this.pressing &&
+                (this.picker ||
+                    (this.applyingEntry === null &&
+                        this.renderingEntrySeq === null))
+            ) {
                 const segIdx = this.segments.findIndex(
                     (s) => cursorPos > s.start && cursorPos < s.end,
                 );
@@ -1768,11 +1934,6 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
                     }
                 }
             }
-            // Sync the favorites star AFTER activeSegmentIndex is settled for
-            // this tick (not before, which would read the previous caret
-            // move's segment): the star's fill is caret-scoped and must never
-            // lag one selectionchange behind the actual caret.
-            this.favoritesPanel?.syncStar();
             // If any segment has a pending repair and the cursor is no longer inside
             // it, schedule a sync so the deferred repair applies.
             const hasDeferredRepair = this.segments.some(
@@ -1793,7 +1954,8 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
         const selEnd = this.hasFocus ? this.textarea.selectionEnd : -1;
         const hasSelection = selStart !== selEnd && selStart >= 0;
 
-        hideTooltip(this.container);
+        if (!statusMarkFavoriteApplyOwner(this.toolsButton))
+            hideTooltip(this.container);
         this.display.innerHTML = '';
 
         let cursor = 0;
@@ -2089,7 +2251,6 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
         this.display.scrollLeft = this.textarea.scrollLeft;
         this._lastPaintKey = this.paintKey();
         this.exposePickerInDisplay();
-        this.favoritesPanel?.syncStar();
     }
 
     private syncHiddenFields(): void {
@@ -2219,6 +2380,39 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
     /** Selected text a Ctrl+Enter moved into a new mark, for the next open. */
     private _pickerDraft: string | undefined;
 
+    /** Capture source and ownership together, before any provisional edit. */
+    private capturePickerCancelState(): void {
+        if (this._pickerCancelSnapshot) return;
+        this._pickerCancelSnapshot = {
+            value: this.textarea.value,
+            caret: this.textarea.selectionStart,
+        };
+        const copy = (segments: readonly MarkedSegment[]) =>
+            segments.map((segment) => ({
+                ...segment,
+                assertions: segment.assertions.map((assertion) => ({
+                    ...assertion,
+                })),
+            }));
+        this.pickerCommittedState = {
+            segments: copy(this.segments),
+            heldPortions: copy(this.heldPortions),
+            emptyEntries: this.emptyEntries.map((span) => ({ ...span })),
+            entryOrder: [...this.entryOrder],
+            lastSegmentedText: this.lastSegmentedText,
+            lastScannedText:
+                this.lastScannedText === this.lastSegmentedText
+                    ? this.lastScannedText
+                    : '',
+            lastMarkingStrings: [...this.lastMarkingStrings],
+            userEditPending: this.userEditPending,
+            scanComplete: this.scanComplete,
+            scanFailed: this.scanFailed,
+        };
+        // A read started before the edit must not land over its snapshot.
+        ++this.scanSeq;
+    }
+
     /**
      * Open the inline editor on the marking at `[start, end)`.
      *
@@ -2237,12 +2431,7 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
         const openSeq = this.pickerOpenSeq;
         // Escape cancels the edit. The Ctrl+Enter path snapshots before its
         // template insertion; the click/caret-driven opens snapshot here.
-        if (!this._pickerCancelSnapshot) {
-            this._pickerCancelSnapshot = {
-                value: this.textarea.value,
-                caret: this.textarea.selectionStart,
-            };
-        }
+        this.capturePickerCancelState();
         // Cancel any debounced scan that hasn't fired yet. With the picker now
         // open, syncFromTextarea would skip anyway, but clearing the timer avoids
         // a spurious no-op setTimeout callback on the scheduler queue.
@@ -2305,7 +2494,7 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
                             : this.textarea.selectionStart;
                         if (fromSheet) this.leaveCaretAt(pos);
                         else this.focusAt(pos);
-                        await this.syncFromTextarea();
+                        await this.settleClosedEditor();
                         this.revealCaret();
                     });
                 },
@@ -2329,11 +2518,12 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
                     this.textarea.focus();
                     this.textarea.setSelectionRange(pos, pos);
                 },
-                onCancel: () => this.escapeClosePicker(),
-                // The favorites button stamps onto the open segment, so
+                onCancel: (fromSheet) => this.escapeClosePicker(fromSheet),
+                focusTarget: this.wrap,
+                // Tools act on the open segment, so
                 // focus moving to it must not close the editor first.
-                isFieldChrome: (node) =>
-                    !!this.favoritesPanel?.button.contains(node),
+                isFieldChrome: (node) => this.isFieldChrome(node),
+                sheetTools: () => this.toolsButton,
                 // Which paragraph's mark this is, ahead of the field's own
                 // label, so the sheet's title says it even when it has to
                 // truncate.
@@ -2414,14 +2604,35 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
         openList: boolean,
         caret?: number,
     ): void {
+        const target = this.segments[segIdx];
+        const intended = target ? { ...target } : undefined;
+        const entryId = intended?.entryId;
+        const source = this.textarea.value;
         this._explicitClose = true;
         this.activeSegmentIndex = -1;
         void this.closePicker().then(async () => {
-            await this.syncFromTextarea();
-            if (segIdx >= 0 && this.hasFocus && !this.picker) {
-                const next = this.segments[segIdx];
+            await this.settleClosedEditor();
+            if (intended && this.hasFocus && !this.picker) {
+                const edit = entryId
+                    ? null
+                    : textEdit(source, this.textarea.value);
+                const span = edit
+                    ? {
+                          start: rebaseOffset(edit, intended.start),
+                          end: rebaseOffset(edit, intended.end),
+                      }
+                    : null;
+                const index = this.segments.findIndex((segment) =>
+                    entryId
+                        ? segment.entryId === entryId
+                        : span &&
+                          segment.start === span.start &&
+                          segment.end === span.end &&
+                          segment.marking === intended.marking,
+                );
+                const next = this.segments[index];
                 if (next) {
-                    this.activeSegmentIndex = segIdx;
+                    this.activeSegmentIndex = index;
                     await this.openPicker(
                         next.start,
                         next.end,
@@ -2430,7 +2641,6 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
                     );
                 }
             }
-            this.favoritesPanel?.syncStar();
         });
     }
 
@@ -2617,35 +2827,15 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
         if (!skipRender) this.renderDisplay();
     }
 
-    /**
-     * The favorites panel's notion of "current marking": the segment the caret
-     * sits inside, tracked continuously, NOT gated on an inline editor being
-     * open. A multi-segment textarea has no single whole-field marking to
-     * compare/save, so this is caret-scoped end to end: star-fill lights up
-     * gold only while the caret sits inside a segment whose rendered form
-     * matches a loaded favorite (outline in body text, at a boundary, or with
-     * no match), and the pinned save/remove row offers itself (and is otherwise
-     * absent) on exactly the same condition.
-     *
-     * Reads `activeSegmentIndex` rather than re-deriving "which segment is the
-     * caret in" from `hasFocus`/`textarea.selectionStart` directly:
-     * `onSelectionChange`'s auto-open/close transition already maintains that
-     * index as the single source of truth for exactly this question, updated on
-     * every caret move (including the brief post-close cooldown window where a
-     * NEW segment is entered but the picker deliberately doesn't auto-reopen
-     * yet; see its own comment), and reset to -1 by `closePicker` on every exit
-     * path. Deriving it independently here would have to reinvent that same
-     * state machine and would disagree with it the moment the inline editor's
-     * own input (not the textarea) holds DOM focus, since `hasFocus` tracks the
-     * TEXTAREA's native focus/blur only.
-     */
+    /** The caret segment remains the target while its tools hold focus. */
     private currentFavoritesMarking(): { rendered: string; valid: boolean } {
-        const seg = this.segments[this.activeSegmentIndex];
-        if (!seg) return { rendered: '', valid: false };
-        return {
-            rendered: seg.rendered,
-            valid: seg.valid && !!seg.rendered,
-        };
+        const segment = this.segments[this.activeSegmentIndex];
+        return segment
+            ? {
+                  rendered: segment.rendered,
+                  valid: segment.valid && !!segment.rendered,
+              }
+            : { rendered: '', valid: false };
     }
 
     /**
@@ -2664,7 +2854,7 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
     } {
         const v = this.textarea.value;
         // A caret snapshot taken before a host-driven value replacement (the
-        // Tab-to-star path snapshots on blur) can be stale by the time it's
+        // Tab-to-tools path snapshots on blur) can be stale by the time it's
         // used here: clamp it to the current text's length instead of
         // resolving line geometry against an offset the text no longer has.
         const safeCaret = Math.min(caret, v.length);
@@ -2688,18 +2878,30 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
      * freshly templated (Ctrl+Enter, nothing typed yet) or a previously
      * loaded/edited marking.
      */
-    private async applyFavorite(marking: string): Promise<void> {
+    private async applyFavorite(
+        marking: string,
+        signal?: AbortSignal,
+    ): Promise<void> {
         const result = await this.readForFavorites(marking);
+        if (signal?.aborted) return;
         const rendered = result.rendered.trim();
         const wrapped = this.wrapRendered(rendered);
 
-        if (this.picker && this.activeRange) {
+        // A recent close can deliberately hold the editor closed while the
+        // caret already targets another marking. That marking remains the
+        // replacement target shown by Favorites, even without an open picker.
+        const range =
+            this.activeRange ??
+            (this.textarea.value === this.lastSegmentedText
+                ? this.segments[this.activeSegmentIndex]
+                : undefined);
+        if (range) {
             // Replacing an existing segment's span excludes the template's
             // trailing separator (the span ends at the marking's own close
             // delimiter, not past it), so the replacement text must not
             // carry one either, so trimming here is correct, not an oversight.
             const insert = wrapped.trimEnd();
-            const { start, end } = this.activeRange;
+            const { start, end } = range;
             const v = this.textarea.value;
             this.setHostValue(v.slice(0, start) + insert + v.slice(end));
             this.lastScannedText = '';
@@ -2714,7 +2916,7 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
             this.activeRange = null;
             this.activeSegmentIndex = -1;
             this.focusAt(start + insert.length);
-            void this.syncFromTextarea().then(() => this.revealCaret());
+            void this.settleClosedEditor().then(() => this.revealCaret());
             return;
         }
 
@@ -2735,7 +2937,7 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
         const caretAfter = insertAt + inserted.length;
         this.focusAt(caretAfter);
         this._lastCaret = caretAfter;
-        void this.syncFromTextarea().then(() => this.revealCaret());
+        void this.settleClosedEditor().then(() => this.revealCaret());
     }
 
     private onKeydown(e: KeyboardEvent): void {
@@ -2745,24 +2947,13 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
             return;
         }
 
-        // Ctrl+Shift+Enter (Win/Linux) or Cmd+Shift+Enter (Mac): open the
-        // favorites panel at the caret, instead of the concept picker.
+        // Ctrl+Enter (Win/Linux) or Cmd+Enter (Mac): open picker
         if (
             !this.picker &&
+            !e.shiftKey &&
             e.key === 'Enter' &&
-            (e.ctrlKey || e.metaKey) &&
-            e.shiftKey
+            (e.ctrlKey || e.metaKey)
         ) {
-            e.preventDefault();
-            if (this.favoritesPanel) {
-                this._lastCaret = this.textarea.selectionStart;
-                void this.favoritesPanel.open();
-            }
-            return;
-        }
-
-        // Ctrl+Enter (Win/Linux) or Cmd+Enter (Mac): open picker
-        if (!this.picker && e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
             e.preventDefault();
             const selStart = this.textarea.selectionStart;
             const selEnd = this.textarea.selectionEnd;
@@ -2775,13 +2966,6 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
                 }
             }
 
-            // Snapshot BEFORE any edit below so an Escape cancel restores the
-            // text exactly, template and selection included.
-            this._pickerCancelSnapshot = {
-                value: this.textarea.value,
-                caret: selStart,
-            };
-
             // A selection is text the user means as the marking: it moves
             // into the new mark as the editor's draft and is read there,
             // instead of an empty mark landing in front of it. One line only;
@@ -2790,6 +2974,7 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
             if (selStart !== selEnd) {
                 const selected = this.textarea.value.slice(selStart, selEnd);
                 if (/[\r\n]/.test(selected) || !selected.trim()) return;
+                this.capturePickerCancelState();
                 draft = selected.trim();
                 const removed = selEnd - selStart;
                 const without =
@@ -2808,6 +2993,7 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
                 }
                 this.textarea.setSelectionRange(selStart, selStart);
             }
+            this.capturePickerCancelState();
             const caret = selStart;
 
             const v = this.textarea.value;
@@ -2945,11 +3131,9 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
     private leaveCaretAt(pos: number): void {
         this.textarea.setSelectionRange(pos, pos);
         const active = this.textarea.ownerDocument.activeElement;
-        if (
-            active instanceof HTMLElement &&
-            active !== this.textarea.ownerDocument.body
-        )
-            active.blur();
+        // The permanent field box or a newer outside control can already own
+        // focus when an asynchronous sheet commit finishes.
+        if (active === this.textarea) this.textarea.blur();
     }
 
     /**
@@ -2968,23 +3152,50 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
     }
 
     protected afterClose(): void {
-        void this.syncFromTextarea();
+        void this.settleClosedEditor();
     }
 
     /**
-     * Reset segment state after an Escape cancel. When the cancel rewrote the
-     * textarea, every segment offset (including the temp segment pushed for a
-     * fresh template) was computed against the discarded value; drop them and
-     * force the post-cancel sync to rescan from scratch.
+     * All ended edits settle source once, then retry a still-current store
+     * view.
      */
-    protected afterCancel(valueRestored: boolean): void {
+    private async settleClosedEditor(): Promise<void> {
+        const pending = this.pendingEntryStates;
+        this.pendingEntryStates = null;
+        this.pickerCommittedState = null;
+        await this.syncFromTextarea();
+        if (pending?.current() && !this.tornDown) {
+            try {
+                await this.applyEntryStates(pending.entries, pending.current);
+            } catch (error) {
+                this.textarea.dispatchEvent(
+                    new CustomEvent('ezclassify:entry-error', {
+                        bubbles: true,
+                        detail: { error },
+                    }),
+                );
+            }
+        }
+    }
+
+    /** Restore the committed ownership baseline, never provisional positions. */
+    protected afterCancel(_valueRestored: boolean): void {
         this.activeRange = null;
         this.activeSegmentIndex = -1;
-        if (valueRestored) {
-            this.segments = [];
-            this.lastMarkingStrings = [];
-            this.lastScannedText = '';
-            this.lastSegmentedText = '';
+        const state = this.pickerCommittedState;
+        this.pickerCommittedState = null;
+        if (state) {
+            ++this.scanSeq;
+            this.segments = state.segments;
+            this.heldPortions = state.heldPortions;
+            this.emptyEntries = state.emptyEntries;
+            this.entryOrder = state.entryOrder;
+            this.lastSegmentedText = state.lastSegmentedText;
+            this.lastScannedText = state.lastScannedText;
+            this.lastMarkingStrings = state.lastMarkingStrings;
+            this.userEditPending = state.userEditPending;
+            this.scanComplete = state.scanComplete;
+            this.scanFailed = state.scanFailed;
         }
         this.renderDisplay();
     }

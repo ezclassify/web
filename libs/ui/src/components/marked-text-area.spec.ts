@@ -462,7 +462,7 @@ describe('MarkedTextArea', () => {
         ).toBeTruthy();
     });
 
-    it('the "to add marking" keyboard hint is a real button that opens the picker on click', async () => {
+    it('the plain Add marking action opens the picker on click', async () => {
         const engine = await createBareFormatEngine();
         root.innerHTML = `
       <textarea id="body" data-ezclassify-controller="marked-textarea"></textarea>
@@ -472,7 +472,7 @@ describe('MarkedTextArea', () => {
         await wait(80);
 
         const hint = root.querySelector(
-            '.marked-textarea-kb-hint',
+            '.marked-textarea-touch-add',
         ) as HTMLButtonElement;
         expect(hint).toBeTruthy();
         expect(hint.tagName).toBe('BUTTON');
@@ -490,10 +490,10 @@ describe('MarkedTextArea', () => {
         ).toBeTruthy();
     });
 
-    it('omits the keyboard hint button entirely when hints are disabled', async () => {
+    it('keeps the direct marking action without instruction chrome', async () => {
         const engine = await createBareFormatEngine();
         root.innerHTML = `
-      <textarea id="body" data-ezclassify-controller="marked-textarea" data-ezclassify-no-hints></textarea>
+      <textarea id="body" data-ezclassify-controller="marked-textarea"></textarea>
     `;
         const forms = new EzClassifyUI(asContext(engine as never), { root });
         activeForms.push(forms);
@@ -874,8 +874,7 @@ describe('MarkedTextArea', () => {
         expect(editingChip).toBeTruthy();
 
         // Reads the source CSS directly: jsdom does not apply an injected
-        // <style>'s cascade to getComputedStyle here (established pattern;
-        // see e.g. tag-input.spec.ts's keyboard-hint CSS-source test), so a
+        // <style>'s cascade to getComputedStyle here, so a
         // getComputedStyle assertion on the mounted chip would pass
         // regardless of what marked-text-area.css actually says.
         const css = readFileSync(
@@ -1179,6 +1178,18 @@ describe('MarkedTextArea scan freshness and document work', () => {
     });
 });
 
+/** Open the tools and explicitly choose Favorites when corrections lead. */
+async function openFavoriteTools(button: HTMLButtonElement): Promise<void> {
+    button.click();
+    await wait(80);
+    const tab = [
+        ...document.querySelectorAll<HTMLButtonElement>('[role="tab"]'),
+    ].find((tab) => tab.getAttribute('aria-label') === 'Favorites');
+    expect(tab).toBeDefined();
+    tab!.click();
+    await wait(30);
+}
+
 describe('MarkedTextArea favorites', () => {
     /** Mount MarkedTextArea directly (see createTestContext's doc comment). */
     async function mountDirect(
@@ -1196,9 +1207,17 @@ describe('MarkedTextArea favorites', () => {
         return { ta, field };
     }
 
-    it('renders no ★ button when favorites is not wired', async () => {
+    it('does not offer Favorites without a provider or scheme presets', async () => {
         await mountDirect('');
-        expect(root.querySelector('.ez-favorites-button')).toBeNull();
+        root.querySelector<HTMLButtonElement>(
+            '.ez-status-mark--tools',
+        )!.click();
+        await wait();
+        expect(
+            [...document.querySelectorAll('[role=tab]')].some(
+                (tab) => tab.getAttribute('aria-label') === 'Favorites',
+            ),
+        ).toBe(false);
     });
 
     it('Cmd/Ctrl+Shift+Enter stamps a NEW marking segment at the caret in plain body text', async () => {
@@ -1219,7 +1238,7 @@ describe('MarkedTextArea favorites', () => {
         await wait(80);
 
         const row = document.body.querySelector(
-            '.ez-favorites-panel .proto-dropdown-item',
+            '.ez-favorites-panel__embedded .proto-dropdown-item',
         ) as HTMLElement;
         expect(row).not.toBeNull();
         row.dispatchEvent(new MouseEvent('click', { bubbles: true }));
@@ -1253,13 +1272,12 @@ describe('MarkedTextArea favorites', () => {
         ).not.toBeNull();
 
         const button = root.querySelector(
-            '.ez-favorites-button',
+            '.ez-status-mark--tools',
         ) as HTMLButtonElement;
-        button.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-        await wait(80);
+        await openFavoriteTools(button);
 
         const row = document.body.querySelector(
-            '.ez-favorites-panel .proto-dropdown-item',
+            '.ez-favorites-panel__embedded .proto-dropdown-item',
         ) as HTMLElement;
         row.dispatchEvent(new MouseEvent('click', { bubbles: true }));
         await wait(80);
@@ -1270,23 +1288,22 @@ describe('MarkedTextArea favorites', () => {
         expect(root.querySelector('.marked-textarea-picker-mount')).toBeNull();
     });
 
-    it('Esc closes the favorites panel and returns focus to the textarea, not the button', async () => {
+    it('Esc closes the tools and returns focus to the branding button', async () => {
         const load = vi.fn(async () => [{ marking: 'S' }]);
         const { ta } = await mountDirect('', { favorites: { load } });
         ta.focus();
 
         const button = root.querySelector(
-            '.ez-favorites-button',
+            '.ez-status-mark--tools',
         ) as HTMLButtonElement;
-        button.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-        await wait(80);
-        expect(document.activeElement).toBe(button);
+        await openFavoriteTools(button);
+        expect(document.activeElement?.getAttribute('role')).toBe('tab');
 
-        button.dispatchEvent(
+        document.activeElement!.dispatchEvent(
             new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }),
         );
 
-        expect(document.activeElement).toBe(ta);
+        expect(document.activeElement).toBe(button);
         expect(button.getAttribute('aria-expanded')).toBe('false');
     });
 
@@ -1312,7 +1329,7 @@ describe('MarkedTextArea favorites', () => {
         await wait(80);
 
         const row = document.body.querySelector(
-            '.ez-favorites-panel .proto-dropdown-item',
+            '.ez-favorites-panel__embedded .proto-dropdown-item',
         ) as HTMLElement;
         row.dispatchEvent(new MouseEvent('click', { bubbles: true }));
         await wait(80);
@@ -1344,7 +1361,7 @@ describe('MarkedTextArea favorites', () => {
         await wait(80);
 
         const row = document.body.querySelector(
-            '.ez-favorites-panel .proto-dropdown-item',
+            '.ez-favorites-panel__embedded .proto-dropdown-item',
         ) as HTMLElement;
         row.dispatchEvent(new MouseEvent('click', { bubbles: true }));
         await wait(80);
@@ -1356,7 +1373,7 @@ describe('MarkedTextArea favorites', () => {
     });
 });
 
-describe('MarkedTextArea favorites: caret-scoped star fill and pinned row', () => {
+describe('MarkedTextArea favorites: caret-scoped selection and pinned row', () => {
     /** Mount MarkedTextArea directly (see createTestContext's doc comment). */
     async function mountDirect(
         initialValue: string,
@@ -1379,7 +1396,268 @@ describe('MarkedTextArea favorites: caret-scoped star fill and pinned row', () =
         document.dispatchEvent(new Event('selectionchange'));
     }
 
-    it('star fills gold when the caret sits inside a segment matching a favorite', async () => {
+    it.each(['reorder', 'remove'] as const)(
+        'keeps a caret-requested entry identity across queued %s projection',
+        async (action) => {
+            const { ta, field } = await mountDirect(
+                '(U) First.\n\n(S) Second.',
+            );
+            try {
+                const portions = field.getCommittedPortions();
+                expect(portions).toHaveLength(2);
+                expect(portions.every((portion) => !!portion.entryId)).toBe(
+                    true,
+                );
+                ta.focus();
+                moveCaret(ta, portions[action === 'remove' ? 1 : 0]!.start + 1);
+                await wait(80);
+                expect(
+                    root.querySelector('.inline-editor-input'),
+                ).not.toBeNull();
+                const projection = (
+                    action === 'reorder'
+                        ? [portions[1]!, portions[0]!]
+                        : [portions[1]!]
+                ).map((portion) => ({
+                    entryId: portion.entryId!,
+                    state: {
+                        assertions: portion.assertions,
+                        rendered: portion.rendered,
+                        renders: {},
+                        valid: portion.valid,
+                        errors: portion.validationErrors,
+                    },
+                }));
+                expect(await field.applyEntryStates(projection)).toBe(false);
+                ta.focus();
+                moveCaret(ta, portions[action === 'remove' ? 0 : 1]!.start + 1);
+                await wait(240);
+                expect(field.getEntryIds()).toEqual(
+                    projection.map((entry) => entry.entryId),
+                );
+                const editor = root.querySelector<HTMLInputElement>(
+                    '.inline-editor-input',
+                );
+                if (action === 'reorder') expect(editor?.value).toBe('S');
+                else expect(editor).toBeNull();
+            } finally {
+                field.destroy();
+            }
+        },
+    );
+
+    it.each([false, true])(
+        'returns brand Down to its existing working area without opening tools or inserting a mark (held=%s)',
+        async (held) => {
+            const { ta, field } = await mountDirect(
+                '(U) First.\n\n(S) Second.',
+            );
+            try {
+                const text = ta.value;
+                ta.focus();
+                moveCaret(ta, text.length);
+                const caret = ta.selectionStart;
+                let draft: HTMLInputElement | null = null;
+                if (held) {
+                    moveCaret(ta, 1);
+                    await wait(80);
+                    draft = root.querySelector<HTMLInputElement>(
+                        '.inline-editor-input',
+                    )!;
+                    draft.value = 'S';
+                    draft.dispatchEvent(new Event('input', { bubbles: true }));
+                    await wait(80);
+                    draft.setSelectionRange(0, 0);
+                }
+                const retainedCaret = held ? 1 : caret;
+                const brand =
+                    root.querySelector<HTMLElement>('.ez-status-mark')!;
+                brand.focus();
+                brand.dispatchEvent(
+                    new KeyboardEvent('keydown', {
+                        key: 'ArrowDown',
+                        bubbles: true,
+                        cancelable: true,
+                    }),
+                );
+                await wait(80);
+                expect(document.activeElement).toBe(held ? draft : ta);
+                if (held) expect(draft?.selectionStart).toBe(0);
+                else expect(ta.selectionStart).toBe(retainedCaret);
+                expect(ta.value).toBe(text);
+                if (held) {
+                    expect(draft?.isConnected).toBe(true);
+                    expect(draft?.value).toBe('S');
+                    ta.dispatchEvent(
+                        new KeyboardEvent('keydown', {
+                            key: 'Escape',
+                            bubbles: true,
+                            cancelable: true,
+                        }),
+                    );
+                    await wait(80);
+                } else
+                    expect(
+                        root.querySelector('.inline-editor-input'),
+                    ).toBeNull();
+                expect(
+                    document.querySelector('.ez-tooltip--tools:not([hidden])'),
+                ).toBeNull();
+            } finally {
+                field.destroy();
+            }
+        },
+    );
+
+    it('keeps a still-present unrecognized caret target when leaving a recognized entry', async () => {
+        const { ta, field } = await mountDirect(
+            '(U) First.\n\n(junkxyz) Second.',
+        );
+        try {
+            const segments = field.getSegments();
+            expect(segments).toHaveLength(2);
+            expect(segments[0]!.entryId).toBeDefined();
+            expect(segments[1]!.entryId).toBeUndefined();
+            const ids = field.getEntryIds();
+            ta.focus();
+            moveCaret(ta, segments[0]!.start + 1);
+            await wait(80);
+            ta.focus();
+            moveCaret(ta, segments[1]!.start + 1);
+            await wait(240);
+            expect(
+                root.querySelector<HTMLInputElement>('.inline-editor-input')
+                    ?.value,
+            ).toBe('junkxyz');
+            expect(field.getEntryIds()).toEqual(ids);
+        } finally {
+            field.destroy();
+        }
+    });
+
+    it.each(['pointer', 'keyboard'] as const)(
+        'resumes the same held marking from tools by %s without rewriting either entry',
+        async (mode) => {
+            const value = '(Unclassified) First.\n\n(SECRET) Second.';
+            const { ta, field } = await mountDirect(value, {
+                favorites: { load: async () => [{ marking: 'S' }] },
+            });
+            ta.focus();
+            moveCaret(ta, 3);
+            await wait(80);
+            const editor = root.querySelector<HTMLInputElement>(
+                '.inline-editor-input',
+            )!;
+            editor.value = 'S';
+            editor.dispatchEvent(new Event('input', { bubbles: true }));
+            await wait(80);
+            await openFavoriteTools(
+                root.querySelector<HTMLButtonElement>(
+                    '.ez-status-mark--tools',
+                )!,
+            );
+            document
+                .querySelector<HTMLButtonElement>('.ez-marking-tools__close')!
+                .click();
+            if (mode === 'pointer')
+                ta.dispatchEvent(
+                    new MouseEvent('mousedown', {
+                        button: 0,
+                        detail: 1,
+                        bubbles: true,
+                    }),
+                );
+            ta.focus();
+            if (mode === 'pointer') {
+                ta.setSelectionRange(3, 3);
+                ta.dispatchEvent(
+                    new MouseEvent('mouseup', {
+                        button: 0,
+                        detail: 1,
+                        bubbles: true,
+                    }),
+                );
+            }
+            await wait(180);
+            expect(root.querySelector('.inline-editor-input')).toBe(editor);
+            expect(editor.value).toBe('S');
+            expect(document.activeElement).toBe(editor);
+            expect(ta.value).toBe(value);
+            const outside = document.createElement('button');
+            document.body.append(outside);
+            outside.dispatchEvent(
+                new MouseEvent('mousedown', { button: 0, bubbles: true }),
+            );
+            outside.focus();
+            await wait(180);
+            expect(ta.value).toBe('(S) First.\n\n(SECRET) Second.');
+            outside.remove();
+            field.destroy();
+        },
+    );
+
+    it('keeps the caret marking targeted through a keyboard pause and real Favorite pointer events', async () => {
+        const value = '(U) Body text here.';
+        const { ta } = await mountDirect(value, {
+            favorites: { load: async () => [{ marking: 'U' }] },
+        });
+        ta.focus();
+        moveCaret(ta, 1);
+        await wait(80);
+        root.querySelector<HTMLButtonElement>(
+            '.ez-status-mark--tools',
+        )!.click();
+        await wait(80);
+        expect(document.activeElement?.getAttribute('role')).toBe('tab');
+        expect(
+            document.body.querySelector<HTMLElement>('.ez-composer')?.hidden,
+        ).toBe(true);
+        const row = document.body.querySelector<HTMLButtonElement>(
+            '[data-favorite-marking="U"]',
+        )!;
+        row.focus();
+        await wait(180);
+        expect(
+            root.querySelector('.marked-textarea-picker-mount'),
+        ).not.toBeNull();
+        row.dispatchEvent(new Event('pointerdown', { bubbles: true }));
+        row.dispatchEvent(
+            new MouseEvent('mousedown', { bubbles: true, cancelable: true }),
+        );
+        await wait(180);
+        expect(
+            root.querySelector('.marked-textarea-picker-mount'),
+        ).not.toBeNull();
+        row.click();
+        await wait(80);
+        expect(ta.value).toBe(value);
+    });
+
+    it('replaces the caret marking during the post-close cooldown without inserting a paragraph', async () => {
+        const value = '(U) Body text here.';
+        const { ta } = await mountDirect(value, {
+            favorites: { load: async () => [{ marking: 'U' }] },
+        });
+        ta.focus();
+        moveCaret(ta, 1);
+        await wait(30);
+        ta.dispatchEvent(
+            new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }),
+        );
+        ta.focus();
+        moveCaret(ta, 1);
+        expect(root.querySelector('.marked-textarea-picker-mount')).toBeNull();
+        await openFavoriteTools(
+            root.querySelector<HTMLButtonElement>('.ez-status-mark--tools')!,
+        );
+        document.body
+            .querySelector<HTMLButtonElement>('[data-favorite-marking="U"]')!
+            .click();
+        await wait(80);
+        expect(ta.value).toBe(value);
+    });
+
+    it('selects the Favorite matching the caret segment', async () => {
         const load = vi.fn(async () => [
             { marking: 'U', label: 'Unclassified' },
         ]);
@@ -1388,7 +1666,7 @@ describe('MarkedTextArea favorites: caret-scoped star fill and pinned row', () =
         await wait(80);
 
         const button = root.querySelector(
-            '.ez-favorites-button',
+            '.ez-status-mark--tools',
         ) as HTMLButtonElement;
 
         ta.focus();
@@ -1398,12 +1676,15 @@ describe('MarkedTextArea favorites: caret-scoped star fill and pinned row', () =
         // whether an editor happens to be open for it.
         moveCaret(ta, 1);
         await wait(20);
-        expect(button.classList.contains('ez-favorites-button--active')).toBe(
-            true,
-        );
+        await openFavoriteTools(button);
+        expect(
+            document
+                .querySelector('[data-favorite-marking="U"]')
+                ?.classList.contains('proto-dropdown-item--selected'),
+        ).toBe(true);
     });
 
-    it('star reverts to outline when the caret leaves the segment for body text', async () => {
+    it('clears the Favorite selection when the caret leaves the segment for body text', async () => {
         const load = vi.fn(async () => [
             { marking: 'U', label: 'Unclassified' },
         ]);
@@ -1412,15 +1693,20 @@ describe('MarkedTextArea favorites: caret-scoped star fill and pinned row', () =
         await wait(80);
 
         const button = root.querySelector(
-            '.ez-favorites-button',
+            '.ez-status-mark--tools',
         ) as HTMLButtonElement;
 
         ta.focus();
         moveCaret(ta, 1); // inside "(U)"
         await wait(20);
-        expect(button.classList.contains('ez-favorites-button--active')).toBe(
-            true,
-        );
+        await openFavoriteTools(button);
+        expect(
+            document
+                .querySelector('[data-favorite-marking="U"]')
+                ?.classList.contains('proto-dropdown-item--selected'),
+        ).toBe(true);
+
+        button.click();
 
         // Simulate the user clicking back into the textarea at the new
         // position (refocusing it, since the caret-move above auto-opened
@@ -1428,27 +1714,36 @@ describe('MarkedTextArea favorites: caret-scoped star fill and pinned row', () =
         // programmatic setSelectionRange the field would never see focus for.
         ta.focus();
         moveCaret(ta, value.length); // end of the body text
-        await wait(20);
-        expect(button.classList.contains('ez-favorites-button--active')).toBe(
-            false,
+        await waitFor(
+            () => !root.querySelector('.marked-textarea-picker-mount'),
         );
+        expect(root.querySelector('.marked-textarea-picker-mount')).toBeNull();
+        await openFavoriteTools(button);
+        expect(
+            document
+                .querySelector('[data-favorite-marking]')
+                ?.classList.contains('proto-dropdown-item--selected'),
+        ).toBe(false);
     });
 
-    it('star stays outline when the caret is in a segment with no matching favorite', async () => {
+    it('leaves a different Favorite unselected', async () => {
         const load = vi.fn(async () => [{ marking: 'S', label: 'Secret' }]);
         const value = '(U) Body text here.';
         const { ta } = await mountDirect(value, { favorites: { load } });
         await wait(80);
 
         const button = root.querySelector(
-            '.ez-favorites-button',
+            '.ez-status-mark--tools',
         ) as HTMLButtonElement;
         ta.focus();
         moveCaret(ta, 1); // inside "(U)", which is not the loaded "(S)" favorite
         await wait(20);
-        expect(button.classList.contains('ez-favorites-button--active')).toBe(
-            false,
-        );
+        await openFavoriteTools(button);
+        expect(
+            document
+                .querySelector('[data-favorite-marking]')
+                ?.classList.contains('proto-dropdown-item--selected'),
+        ).toBe(false);
     });
 
     it("the pinned save row offers the caret segment's marking and is absent when the caret is in body text", async () => {
@@ -1459,7 +1754,7 @@ describe('MarkedTextArea favorites: caret-scoped star fill and pinned row', () =
         await wait(80);
 
         const button = root.querySelector(
-            '.ez-favorites-button',
+            '.ez-status-mark--tools',
         ) as HTMLButtonElement;
 
         // Caret in body text: no concrete segment to save, so the pinned row
@@ -1467,8 +1762,7 @@ describe('MarkedTextArea favorites: caret-scoped star fill and pinned row', () =
         ta.focus();
         moveCaret(ta, value.length);
         await wait(20);
-        button.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-        await wait(80);
+        await openFavoriteTools(button);
         expect(
             document.body.querySelector('.ez-favorites-panel__pinned'),
         ).toBeNull();
@@ -1482,8 +1776,7 @@ describe('MarkedTextArea favorites: caret-scoped star fill and pinned row', () =
         ta.focus();
         moveCaret(ta, 1);
         await wait(20);
-        button.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-        await wait(80);
+        await openFavoriteTools(button);
         const pinned = document.body.querySelector(
             '.ez-favorites-panel__pinned',
         ) as HTMLElement;

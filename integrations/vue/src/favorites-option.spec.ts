@@ -109,19 +109,31 @@ async function flush(): Promise<void> {
 }
 
 describe('createEzClassify({ options: { favorites } })', () => {
-    it('forwards favorites to every root: the ★ button renders on a scanner-mounted field', async () => {
+    it('forwards Favorites to the branding popover on a scanner-mounted field', async () => {
         const mountedRoot = await mountTagsField(noopFavorites);
         await flush();
 
+        mountedRoot
+            .querySelector<HTMLButtonElement>('.ez-status-mark')!
+            .click();
         expect(
-            mountedRoot.querySelector('.ez-favorites-button'),
-        ).not.toBeNull();
+            [...document.querySelectorAll('[role=tab]')].map((tab) =>
+                tab.getAttribute('aria-label'),
+            ),
+        ).toContain('Favorites');
     });
 
-    it('renders no ★ button when favorites is omitted', async () => {
+    it('omits the Favorites tab when no provider or presets exist', async () => {
         const mountedRoot = await mountTagsField();
         await flush();
 
-        expect(mountedRoot.querySelector('.ez-favorites-button')).toBeNull();
+        mountedRoot
+            .querySelector<HTMLButtonElement>('.ez-status-mark')!
+            .click();
+        expect(
+            [...document.querySelectorAll('[role=tab]')].map((tab) =>
+                tab.getAttribute('aria-label'),
+            ),
+        ).not.toContain('Favorites');
     });
 });

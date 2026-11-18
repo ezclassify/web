@@ -1081,7 +1081,6 @@ export class ContextReference
             root: this.options.root,
             colorScheme: this.options.colorScheme,
             tooltips: this.options.tooltips,
-            hints: this.options.hints,
             categoryColors: this.options.categoryColors,
             colorMap: this.options.colorMap,
             tooltipConceptProperty: this.options.tooltipConceptProperty,

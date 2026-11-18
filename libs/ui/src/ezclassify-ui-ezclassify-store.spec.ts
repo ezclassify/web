@@ -16,6 +16,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { openSurface } from './components/composer/composer-harness';
 import { loadMultiScopeRegression } from '../test-fixtures/load-multi-scope-regression';
 import { EzClassifyUI } from './ezclassify-ui';
+import { markingTarget } from './components/marking-target';
 import {
     VanillaEzClassifyStore,
     type EzClassifyState,
@@ -86,6 +87,54 @@ describe('EzClassifyUI store wireup', () => {
     afterEach(() => {
         forms?.destroy();
         document.body.innerHTML = '';
+    });
+
+    it('applies a Favorite selected in a category picker to the complete shared marking', async () => {
+        const engine = await loadMultiScopeRegression();
+        const ready = new Promise((resolve) =>
+            root.addEventListener('ezclassify:ready', resolve, { once: true }),
+        );
+        const save = vi.fn();
+        forms = new EzClassifyUI(asContext(engine), {
+            root,
+            favorites: { load: () => [], save },
+        });
+        await ready;
+        await flush();
+        await forms.store.publishRendered('doc-marking', 'STUDENTS');
+        await flush();
+        const components = (
+            forms as unknown as { components: Map<HTMLElement, SingleSelect> }
+        ).components;
+        const picker = components.get(root.querySelector('#level')!)!;
+        const publish = vi.spyOn(forms.store, 'publishRendered');
+        const target = markingTarget(picker)!;
+        expect(target).toBeDefined();
+        expect(target.getCurrent().rendered).toBe(
+            forms.store.get('doc-marking').rendered,
+        );
+        await target.onApply(
+            'DISTRICT COORDINATORS',
+            new AbortController().signal,
+        );
+        await flush();
+        expect(publish).toHaveBeenCalledWith(
+            'doc-marking',
+            'DISTRICT COORDINATORS',
+        );
+        expect(picker.getAssertions()).toEqual(
+            expect.arrayContaining([
+                expect.objectContaining({
+                    conceptId: 'DISTRICT_COORDINATORS',
+                    categoryId: 'level',
+                }),
+            ]),
+        );
+        expect(forms.store.get('doc-marking').rendered).toBe(
+            'DISTRICT COORDINATORS',
+        );
+        const chrome = root.querySelector('.ez-status-mark--tools');
+        expect(chrome).not.toBeNull();
     });
 
     it('indexes standalone marking and tags before source views and contributes once per part', async () => {

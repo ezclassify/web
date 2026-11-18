@@ -187,6 +187,403 @@ describe('CategoryChecklist', () => {
         } as CategoryChecklistOptions);
     }
 
+    const boxes = () => [
+        ...container.querySelectorAll<HTMLInputElement>(
+            '.category-checklist-checkbox',
+        ),
+    ];
+    const press = (
+        target: HTMLElement,
+        key: string,
+        modifiers: KeyboardEventInit = {},
+    ) => {
+        const event = new KeyboardEvent('keydown', {
+            key,
+            bubbles: true,
+            cancelable: true,
+            ...modifiers,
+        });
+        target.dispatchEvent(event);
+        return event;
+    };
+    it.each(['ltr', 'rtl'])(
+        'moves horizontally among header actions in physical %s order without activating',
+        async (direction) => {
+            await init();
+            const header = container.querySelector<HTMLElement>(
+                '.category-checklist-header',
+            )!;
+            header.style.direction = direction;
+            const buttons = [
+                ...header.querySelectorAll<HTMLButtonElement>('button'),
+            ];
+            expect(buttons).toHaveLength(3);
+            const physical =
+                direction === 'rtl' ? [...buttons].reverse() : buttons;
+            physical.forEach((button, index) => {
+                button.getBoundingClientRect = () =>
+                    ({
+                        left: 20 + index * 80,
+                        right: 90 + index * 80,
+                        top: 10,
+                        bottom: 40,
+                        width: 70,
+                        height: 30,
+                    }) as DOMRect;
+            });
+            const activated = buttons.map(() => vi.fn());
+            buttons.forEach((button, index) =>
+                button.addEventListener('click', activated[index]),
+            );
+            const originalStops = buttons.map((button) => button.tabIndex);
+            const before = checklist.getAssertions();
+            physical[0].focus();
+            expect(press(physical[0], 'ArrowLeft').defaultPrevented).toBe(true);
+            expect(document.activeElement).toBe(physical[0]);
+            for (let index = 1; index < physical.length; index++) {
+                expect(
+                    press(physical[index - 1], 'ArrowRight').defaultPrevented,
+                ).toBe(true);
+                expect(document.activeElement).toBe(physical[index]);
+            }
+            expect(press(physical.at(-1)!, 'ArrowRight').defaultPrevented).toBe(
+                true,
+            );
+            expect(document.activeElement).toBe(physical.at(-1));
+            for (let index = physical.length - 2; index >= 0; index--) {
+                press(physical[index + 1], 'ArrowLeft');
+                expect(document.activeElement).toBe(physical[index]);
+            }
+            expect(buttons.map((button) => button.tabIndex)).toEqual(
+                originalStops,
+            );
+            expect(checklist.getAssertions()).toEqual(before);
+            activated.forEach((click) => expect(click).not.toHaveBeenCalled());
+            expect(press(physical[0], 'Tab').defaultPrevented).toBe(false);
+            for (const modifiers of [
+                { altKey: true },
+                { ctrlKey: true },
+                { metaKey: true },
+                { shiftKey: true },
+                { isComposing: true },
+            ]) {
+                expect(
+                    press(physical[0], 'ArrowRight', modifiers)
+                        .defaultPrevented,
+                ).toBe(false);
+                expect(document.activeElement).toBe(physical[0]);
+            }
+        },
+    );
+
+    it('skips unavailable header actions and leaves vertical action contracts alone', async () => {
+        await init();
+        const buttons = [
+            ...container.querySelectorAll<HTMLButtonElement>(
+                '.category-checklist-header button',
+            ),
+        ];
+        buttons.forEach((button, index) => {
+            button.getBoundingClientRect = () =>
+                ({
+                    left: index * 80,
+                    right: index * 80 + 70,
+                    top: 10,
+                    bottom: 40,
+                    width: 70,
+                    height: 30,
+                }) as DOMRect;
+        });
+        buttons[1].disabled = true;
+        buttons[0].focus();
+        press(buttons[0], 'ArrowRight');
+        expect(document.activeElement).toBe(buttons[2]);
+        buttons[1].disabled = false;
+        buttons[1].hidden = true;
+        press(buttons[2], 'ArrowLeft');
+        expect(document.activeElement).toBe(buttons[0]);
+        const vertical = vi.fn();
+        buttons[0].addEventListener('keydown', vertical);
+        expect(press(buttons[0], 'ArrowDown').defaultPrevented).toBe(false);
+        expect(vertical).toHaveBeenCalledOnce();
+        expect(press(buttons[0], 'Enter').defaultPrevented).toBe(false);
+        expect(press(buttons[0], ' ').defaultPrevented).toBe(false);
+    });
+
+    const allow = (ids: string[]) =>
+        checklist.applyAllowableOptions(
+            engine
+                .getScheme()
+                .concepts.filter((concept) => ids.includes(concept.id))
+                .map((concept) => ({
+                    conceptId: concept.id,
+                    categoryId: 'items',
+                    label: concept.name,
+                    name: concept.name,
+                    description: '',
+                    views: concept.views,
+                    selected: false,
+                    order: concept.position,
+                    group: 'items',
+                })),
+        );
+
+    it('puts the first working item before header actions in native Tab order and returns from its header', async () => {
+        await init({ initialValue: 'item-b', showSearch: true });
+        const first = boxes()[0];
+        const brand = container.querySelector<HTMLElement>('.ez-status-mark')!;
+        const clear = [
+            ...container.querySelectorAll<HTMLButtonElement>(
+                '.category-checklist-toggle button',
+            ),
+        ].at(-1)!;
+        expect(first.tabIndex).toBe(0);
+        expect(boxes()[1].checked).toBe(true);
+        expect(
+            first.compareDocumentPosition(brand) &
+                Node.DOCUMENT_POSITION_FOLLOWING,
+        ).toBeTruthy();
+        const before = checklist.getAssertions();
+        first.focus();
+        press(first, 'ArrowUp');
+        expect(document.activeElement).toBe(brand);
+        press(brand, 'ArrowDown');
+        expect(document.activeElement).toBe(first);
+        clear.focus();
+        press(clear, 'ArrowDown');
+        expect(document.activeElement).toBe(first);
+        expect(checklist.getAssertions()).toEqual(before);
+        expect(
+            container.querySelector('.ez-tooltip--tools:not([hidden])'),
+        ).toBeNull();
+    });
+
+    it('uses one first-item Tab stop until the author chooses another item', async () => {
+        await init({ initialValue: 'item-b,item-d' });
+        expect(
+            boxes()
+                .filter((box) => box.tabIndex === 0)
+                .map((box) => box.dataset.conceptId),
+        ).toEqual(['item-a']);
+        boxes()[2].focus();
+        checklist.setAssertions([
+            {
+                conceptId: 'item-d',
+                categoryId: 'items',
+                confidence: 'certain',
+                source: 'user',
+            },
+        ]);
+        expect(
+            boxes()
+                .filter((box) => box.tabIndex === 0)
+                .map((box) => box.dataset.conceptId),
+        ).toEqual(['item-c']);
+        expect(press(boxes()[2], 'Tab').defaultPrevented).toBe(false);
+        expect(
+            press(boxes()[2], 'Tab', { shiftKey: true }).defaultPrevented,
+        ).toBe(false);
+        expect(
+            container.querySelectorAll('.category-checklist-toggle button'),
+        ).toHaveLength(2);
+        expect(
+            container
+                .querySelector('.ez-status-mark')
+                ?.getAttribute('tabindex'),
+        ).not.toBe('-1');
+    });
+
+    it('moves through the vertical list, contains edges and horizontal arrows, and never toggles by navigation', async () => {
+        await init();
+        boxes()[0].focus();
+        let escaped = 0;
+        container.addEventListener('keydown', () => escaped++);
+        expect(press(boxes()[0], 'ArrowUp').defaultPrevented).toBe(true);
+        expect(document.activeElement).toBe(
+            container.querySelector('.ez-status-mark'),
+        );
+        press(document.activeElement as HTMLElement, 'ArrowDown');
+        expect(document.activeElement).toBe(boxes()[0]);
+        for (let index = 1; index < boxes().length; index++) {
+            press(boxes()[index - 1], 'ArrowDown');
+            expect(document.activeElement).toBe(boxes()[index]);
+            expect(boxes().filter((box) => box.tabIndex === 0)).toEqual([
+                boxes()[index],
+            ]);
+        }
+        press(boxes().at(-1)!, 'ArrowDown');
+        expect(document.activeElement).toBe(boxes().at(-1));
+        press(boxes().at(-1)!, 'Home');
+        expect(document.activeElement).toBe(boxes()[0]);
+        press(boxes()[0], 'End');
+        expect(document.activeElement).toBe(boxes().at(-1));
+        press(boxes().at(-1)!, 'ArrowUp');
+        expect(document.activeElement).toBe(boxes().at(-2));
+        for (const key of ['ArrowLeft', 'ArrowRight']) {
+            expect(press(boxes().at(-2)!, key).defaultPrevented).toBe(true);
+            expect(document.activeElement).toBe(boxes().at(-2));
+        }
+        expect(checklist.getAssertions()).toEqual([]);
+        expect(escaped).toBe(0);
+    });
+
+    it('skips native-disabled items while retaining one available Tab stop', async () => {
+        await init();
+        boxes()[1].disabled = true;
+        boxes()[0].focus();
+        press(boxes()[0], 'ArrowDown');
+        expect(document.activeElement).toBe(boxes()[2]);
+        expect(
+            boxes().filter((box) => !box.disabled && box.tabIndex === 0),
+        ).toEqual([boxes()[2]]);
+        press(boxes()[2], 'ArrowUp');
+        expect(document.activeElement).toBe(boxes()[0]);
+    });
+
+    it('Enter toggles the native checkbox exactly once through async processing while Space remains native', async () => {
+        await init();
+        const process = vi.mocked(engine.process).getMockImplementation()!;
+        vi.mocked(engine.process).mockImplementation(async (...args) =>
+            process(...args),
+        );
+        const box = boxes()[1];
+        box.focus();
+        for (const selected of [true, false]) {
+            expect(press(box, 'Enter').defaultPrevented).toBe(true);
+            await vi.waitFor(() => expect(box.checked).toBe(selected));
+            await vi.waitFor(() =>
+                expect(
+                    checklist
+                        .getAssertions()
+                        .some((a) => a.conceptId === 'item-b'),
+                ).toBe(selected),
+            );
+            expect(document.activeElement).toBe(box);
+        }
+        expect(press(box, ' ').defaultPrevented).toBe(false);
+        // Jsdom does not supply the browser's default Space activation.
+        box.click();
+        await vi.waitFor(() =>
+            expect(
+                checklist.getAssertions().some((a) => a.conceptId === 'item-b'),
+            ).toBe(true),
+        );
+        expect(document.activeElement).toBe(box);
+    });
+
+    it('preserves native modifiers, composition, and filter-input caret keys', async () => {
+        await init({ showSearch: true });
+        boxes()[0].focus();
+        for (const modifiers of [
+            { ctrlKey: true },
+            { metaKey: true },
+            { altKey: true },
+            { shiftKey: true },
+            { isComposing: true },
+        ]) {
+            expect(
+                press(boxes()[0], 'ArrowDown', modifiers).defaultPrevented,
+            ).toBe(false);
+            expect(press(boxes()[0], 'Enter', modifiers).defaultPrevented).toBe(
+                false,
+            );
+            expect(document.activeElement).toBe(boxes()[0]);
+        }
+        const search = container.querySelector<HTMLInputElement>(
+            '.category-checklist-search',
+        )!;
+        search.focus();
+        expect(press(search, 'ArrowDown').defaultPrevented).toBe(false);
+        expect(press(search, 'ArrowLeft').defaultPrevented).toBe(false);
+        expect(document.activeElement).toBe(search);
+        expect(checklist.getAssertions()).toEqual([]);
+    });
+
+    it('restores a live checkbox by identity on allowability redraw, falling back only when removed', async () => {
+        await init();
+        boxes()[1].focus();
+        allow(['item-b', 'item-c', 'item-d']);
+        expect(document.activeElement).toBe(boxes()[0]);
+        expect((document.activeElement as HTMLElement).dataset.conceptId).toBe(
+            'item-b',
+        );
+        expect(boxes()[0].tabIndex).toBe(0);
+        allow(['item-c', 'item-d']);
+        expect(document.activeElement).toBe(boxes()[0]);
+        expect((document.activeElement as HTMLElement).dataset.conceptId).toBe(
+            'item-c',
+        );
+        allow([]);
+        expect(document.activeElement).toBe(
+            container.querySelector('.category-checklist-list'),
+        );
+        expect(boxes()).toHaveLength(0);
+    });
+
+    it.each([false, true])(
+        'returns from a temporarily empty group only while it still owns focus (outside: %s)',
+        async (outside) => {
+            await init();
+            boxes().at(-1)!.focus();
+            allow([]);
+            expect(document.activeElement).toBe(
+                container.querySelector('.category-checklist-list'),
+            );
+            const elsewhere = document.createElement('button');
+            document.body.appendChild(elsewhere);
+            if (outside) elsewhere.focus();
+            allow(['item-a', 'item-b']);
+            expect(document.activeElement).toBe(
+                outside ? elsewhere : boxes()[0],
+            );
+            expect(boxes()[0].tabIndex).toBe(0);
+            elsewhere.remove();
+        },
+    );
+
+    it.each(['outside', 'search', 'header'])(
+        'never reclaims %s focus during a list refresh',
+        async (location) => {
+            await init({ showSearch: true });
+            boxes()[2].focus();
+            const outside = document.createElement('button');
+            document.body.appendChild(outside);
+            const target =
+                location === 'outside'
+                    ? outside
+                    : container.querySelector<HTMLElement>(
+                          location === 'search'
+                              ? '.category-checklist-search'
+                              : '.category-checklist-toggle button',
+                      )!;
+            target.focus();
+            allow(['item-a', 'item-c']);
+            expect(document.activeElement).toBe(target);
+            outside.remove();
+        },
+    );
+
+    it('preserves checkbox identity through filter redraw and leaves the focused search input alone', async () => {
+        await init({ showSearch: true });
+        const search = container.querySelector<HTMLInputElement>(
+            '.category-checklist-search',
+        )!;
+        boxes()[2].focus();
+        search.value = 'Charlie';
+        search.dispatchEvent(new Event('input', { bubbles: true }));
+        expect(document.activeElement).toBe(boxes()[0]);
+        expect(boxes()[0].dataset.conceptId).toBe('item-c');
+        search.value = 'Delta';
+        search.dispatchEvent(new Event('input', { bubbles: true }));
+        expect(document.activeElement).toBe(boxes()[0]);
+        expect(boxes()[0].dataset.conceptId).toBe('item-d');
+        search.focus();
+        search.value = 'Alpha';
+        search.dispatchEvent(new Event('input', { bubbles: true }));
+        expect(document.activeElement).toBe(search);
+        expect(boxes().filter((box) => box.tabIndex === 0)).toHaveLength(1);
+    });
+
     it('names its category in the first row, which is not a heading the host did not write', async () => {
         await init();
         const header = container.querySelector('.category-checklist-header')!;

@@ -167,12 +167,13 @@ function engine() {
 
 const wait = (ms = 400) => new Promise((r) => setTimeout(r, ms));
 
-/** Hover the field's status mark past its delay and read its list. */
+/** Read the field's Corrections tab through its branding button. */
 async function markList(root: Element): Promise<string[]> {
     const mark = root.querySelector<HTMLElement>('.ez-status-mark')!;
-    mark.dispatchEvent(new Event('mouseenter'));
+    mark.click();
     await wait();
-    const tip = document.querySelector<HTMLElement>('.ez-tooltip');
+    const tipId = mark.getAttribute('aria-describedby');
+    const tip = tipId ? document.getElementById(tipId) : null;
     const lines =
         tip && !tip.hidden
             ? [
@@ -186,7 +187,7 @@ async function markList(root: Element): Promise<string[]> {
                           : '') + (row.textContent ?? ''),
               )
             : [];
-    mark.dispatchEvent(new Event('mouseleave'));
+    tip?.querySelector<HTMLButtonElement>('.ez-marking-tools__close')?.click();
     return lines;
 }
 

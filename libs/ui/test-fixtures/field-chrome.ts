@@ -1,10 +1,9 @@
 /**
  * What every field in the family promises about its inline chrome, as
  * assertions the component specs share: the chrome row is the wrap's last
- * child, its status group holds the status mark (and the favorites button where
- * one is mounted) ahead of clear, the field's text layers are the ones the
- * stylesheet pads by the chrome's reserve, and the mark's tone follows whether
- * the field has a message.
+ * child, its status group holds the branding/tools button ahead of clear, the
+ * field's text layers are the ones the stylesheet pads by the chrome's reserve,
+ * and the mark's tone follows whether the field has a message.
  */
 
 import { readFileSync } from 'node:fs';

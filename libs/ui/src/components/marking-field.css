@@ -36,6 +36,13 @@
 .marking-field-wrap:focus-within {
     outline: none;
 }
+/* An ended phone sheet parks the painted field box, keeping the text input
+   unfocused so its software keyboard stays closed. */
+.marking-field-wrap:focus {
+    outline: 0.125rem solid var(--ez-color-primary, #fdb827);
+    outline-offset: -0.125rem;
+    border-radius: var(--ez-border-radius, 0.25rem);
+}
 
 /* The editable surface is a <textarea>: a single-line input cannot wrap
    by construction (browsers force single-line layout on it regardless of

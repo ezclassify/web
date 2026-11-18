@@ -395,6 +395,56 @@ afterEach(() => {
 });
 
 describe('MarkedInput', () => {
+    it('reaches branding only at the complete native field edge', async () => {
+        const engine = await createTestEngine();
+        root.innerHTML =
+            '<input type="text" id="field" data-ezclassify-controller="marked-input" value="body">';
+        const forms = new EzClassifyUI(asContext(engine as never), { root });
+        activeForms.push(forms);
+        await wait();
+        const input = editingField('field')!;
+        input.focus();
+        input.setSelectionRange(input.value.length, input.value.length);
+        press(input, 'ArrowRight');
+        const brand = root.querySelector<HTMLElement>('.ez-status-mark')!;
+        expect(document.activeElement).toBe(brand);
+        press(brand, 'ArrowLeft');
+        expect(document.activeElement).toBe(input);
+        expect(input.selectionStart).toBe(input.value.length);
+        input.setSelectionRange(1, 1);
+        press(input, 'ArrowRight');
+        expect(document.activeElement).toBe(input);
+    });
+
+    it.each(['', ' body'])(
+        'keeps inline-to-body traversal distinct from a whole-field trailing marking %j',
+        async (body) => {
+            const engine = await createBareEngineWithTemplate('({marking})');
+            root.innerHTML = `<input type="text" id="field" data-ezclassify-controller="marked-input" value="(S)${body}">`;
+            const forms = new EzClassifyUI(asContext(engine as never), {
+                root,
+            });
+            activeForms.push(forms);
+            await wait();
+            const native = editingField('field')!;
+            native.focus();
+            press(native, 'Enter', { ctrlKey: true });
+            await wait(100);
+            const editor = root.querySelector<HTMLInputElement>(
+                '.inline-editor-input',
+            )!;
+            editor.focus();
+            editor.setSelectionRange(editor.value.length, editor.value.length);
+            press(editor, 'ArrowRight');
+            await wait(180);
+            expect(document.activeElement).toBe(
+                body ? native : root.querySelector('.ez-status-mark'),
+            );
+            if (!body) expect(editor.isConnected).toBe(true);
+            expect(native.value).toBe(`(S)${body}`);
+        },
+    );
+
     it('mounts without error and enhances the input element', async () => {
         const engine = await createTestEngine();
         root.innerHTML = `
@@ -493,7 +543,6 @@ describe('MarkedInput', () => {
         const here = dirname(fileURLToPath(import.meta.url));
         const css = readFileSync(join(here, 'marked-input.css'), 'utf8');
 
-        expect(css).not.toMatch(/\.marked-input-chip[^{]*\{[^}]*max-width/);
         expect(css).not.toMatch(
             /\.marked-input-chip[^{]*\{[^}]*text-overflow:\s*ellipsis/,
         );
@@ -1415,56 +1464,63 @@ describe('MarkedInput', () => {
         focusSpy.mockRestore();
     });
 
-    it('includes the visible shortcut hint in its accessible name', async () => {
-        const engine = await createTestEngine();
-        root.innerHTML = `
+    it.each([
+        ['MacIntel', '⌘+Enter', 'Meta+Enter'],
+        ['Win32', 'Ctrl+Enter', 'Control+Enter'],
+    ] as const)(
+        'keeps one accessible marking action with its platform shortcut keycap (%s)',
+        async (platform, shortcut, ariaShortcut) => {
+            vi.spyOn(navigator, 'platform', 'get').mockReturnValue(platform);
+            const engine = await createTestEngine();
+            root.innerHTML = `
       <input type="text" id="field" data-ezclassify-controller="marked-input" value="(U) memo text">
-      <textarea id="body" data-ezclassify-controller="marked-textarea"></textarea>
-    `;
-        const forms = new EzClassifyUI(asContext(engine as never), {});
-        activeForms.push(forms);
-        await wait(50);
-
-        for (const [selector, name] of [
-            ['.marked-input-kb-hint', 'Set marking'],
-            ['.marked-textarea-kb-hint', 'Add marking'],
-        ] as const) {
-            const hint = document.querySelector(selector) as HTMLButtonElement;
-            expect(hint.tagName).toBe('BUTTON');
-            expect(hint.getAttribute('aria-label')).toBe(hint.textContent);
-            expect(hint.getAttribute('aria-label')?.toLowerCase()).toContain(
-                name.toLowerCase(),
-            );
-            expect(hint.getAttribute('aria-keyshortcuts')).toMatch(
-                /^(Meta|Control)\+Enter$/,
-            );
-            // Everything visible inside is decoration for a screen reader.
-            for (const child of hint.children) {
-                expect(child.getAttribute('aria-hidden')).toBe('true');
+      <textarea id="body" data-ezclassify-controller="marked-textarea"></textarea>`;
+            const forms = new EzClassifyUI(asContext(engine as never), {});
+            activeForms.push(forms);
+            await wait(50);
+            for (const [selector, name] of [
+                ['.marked-input-touch-add', 'Set marking'],
+                ['.marked-textarea-touch-add', 'Add marking'],
+            ] as const) {
+                const action =
+                    document.querySelector<HTMLButtonElement>(selector)!;
+                expect(action.tagName).toBe('BUTTON');
+                expect(action.getAttribute('aria-label')).toBe(name);
+                expect(action.textContent).toBe(`${shortcut} ${name}`);
+                expect(action.getAttribute('aria-keyshortcuts')).toBe(
+                    ariaShortcut,
+                );
+                expect(action.title).toBe(`${name} (${shortcut})`);
+                const keycap = action.querySelector('kbd')!;
+                expect(keycap.textContent).toBe(shortcut);
+                expect(keycap.getAttribute('aria-hidden')).toBe('true');
+                expect(action.type).toBe('button');
+                expect(document.querySelectorAll(selector)).toHaveLength(1);
+                expect(action.tabIndex).toBe(0);
             }
-        }
-    });
-
-    it('words the touch button like its key hint: MarkedInput sets its one mark, MarkedTextArea adds a portion mark', async () => {
-        const engine = await createTestEngine();
-        root.innerHTML = `
-      <input type="text" id="field" data-ezclassify-controller="marked-input" value="(U) memo text">
-      <textarea id="body" data-ezclassify-controller="marked-textarea"></textarea>
-    `;
-        const forms = new EzClassifyUI(asContext(engine as never), {});
-        activeForms.push(forms);
-        await wait(50);
-
-        for (const [field, verb] of [
-            ['marked-input', 'Set marking'],
-            ['marked-textarea', 'Add marking'],
-        ] as const) {
             expect(
-                document.querySelector(`.${field}-kb-hint`)!.textContent,
-            ).toContain(verb.toLowerCase());
-            expect(
-                document.querySelector(`.${field}-touch-add`)!.textContent,
-            ).toBe(`+ ${verb}`);
+                root.querySelector(
+                    '.marked-input-kb-hint, .marked-textarea-kb-hint',
+                ),
+            ).toBeNull();
+        },
+    );
+
+    it('shows action keycaps on fine pointers and leaves coarse actions plain', () => {
+        const here = dirname(fileURLToPath(import.meta.url));
+        for (const name of ['marked-input', 'marked-textarea']) {
+            const file = name === 'marked-textarea' ? 'marked-text-area' : name;
+            const css = readFileSync(join(here, `${file}.css`), 'utf8');
+            expect(css).toMatch(
+                new RegExp(
+                    String.raw`\.${name}-touch-add \.ez-marked-field-shortcut\s*\{[^}]*display:\s*inline-block`,
+                ),
+            );
+            expect(css).toMatch(
+                new RegExp(
+                    String.raw`@media \(pointer: coarse\)\s*\{\s*\.${name}-touch-add \.ez-marked-field-shortcut\s*\{[^}]*display:\s*none`,
+                ),
+            );
         }
     });
 
@@ -1609,7 +1665,7 @@ describe('MarkedInput', () => {
         ).toBe(true);
     });
 
-    it('the "to set marking" keyboard hint is a real button, not decorative text, and opens the picker on click', async () => {
+    it('the plain Set marking action opens the picker on click', async () => {
         const engine = await createTestEngine();
         root.innerHTML = `
       <input type="text" id="field" data-ezclassify-controller="marked-input">
@@ -1619,7 +1675,7 @@ describe('MarkedInput', () => {
         await wait(50);
 
         const hint = document.querySelector(
-            '.marked-input-kb-hint',
+            '.marked-input-touch-add',
         ) as HTMLButtonElement;
         expect(hint).toBeTruthy();
         // Real button semantics: focusable, correct type, no aria-hidden
@@ -1639,17 +1695,17 @@ describe('MarkedInput', () => {
         ).toBe(true);
     });
 
-    it('omits the keyboard hint button entirely when hints are disabled', async () => {
+    it('keeps only the direct marking action without instruction chrome', async () => {
         const engine = await createTestEngine();
         root.innerHTML = `
-      <input type="text" id="field" data-ezclassify-controller="marked-input" data-ezclassify-no-hints>
+      <input type="text" id="field" data-ezclassify-controller="marked-input">
     `;
         const forms = new EzClassifyUI(asContext(engine as never), {});
         activeForms.push(forms);
         await wait(50);
 
         expect(document.querySelector('.marked-input-kb-hint')).toBeNull();
-        // The touch button (never disabled) is unaffected by the opt-out.
+        // The direct action remains available.
         expect(document.querySelector('.marked-input-touch-add')).toBeTruthy();
     });
 
@@ -2533,10 +2589,88 @@ describe('MarkedInput favorites', () => {
         };
     }
 
-    it('renders no ★ button when favorites is not wired', async () => {
+    it('keeps Favorites hidden when no provider or presets exist', async () => {
         await mountDirect();
-        expect(root.querySelector('.ez-favorites-button')).toBeNull();
+        root.querySelector<HTMLButtonElement>(
+            '.ez-status-mark--tools',
+        )!.click();
+        await wait();
+        expect(
+            [...document.querySelectorAll('[role=tab]')].some(
+                (tab) => tab.getAttribute('aria-label') === 'Favorites',
+            ),
+        ).toBe(false);
     });
+
+    it.each(['pointer', 'keyboard'] as const)(
+        'resumes the held leading marking from tools by %s without committing its draft',
+        async (mode) => {
+            const { input, field } = await mountDirect({
+                favorites: { load: async () => [{ marking: 'S' }] },
+            });
+            const value = '(U) quarterly report';
+            input.value = value;
+            input.dispatchEvent(new Event('input', { bubbles: true }));
+            await wait(80);
+            input.focus();
+            input.dispatchEvent(
+                new KeyboardEvent('keydown', {
+                    key: 'Enter',
+                    ctrlKey: true,
+                    bubbles: true,
+                    cancelable: true,
+                }),
+            );
+            await wait(80);
+            const editor = root.querySelector<HTMLInputElement>(
+                '.inline-editor-input',
+            )!;
+            editor.value = 'S';
+            editor.dispatchEvent(new Event('input', { bubbles: true }));
+            await wait(80);
+            root.querySelector<HTMLButtonElement>(
+                '.ez-status-mark--tools',
+            )!.click();
+            await wait(80);
+            document
+                .querySelector<HTMLButtonElement>('.ez-marking-tools__close')!
+                .click();
+            if (mode === 'pointer')
+                input.dispatchEvent(
+                    new MouseEvent('mousedown', {
+                        button: 0,
+                        detail: 1,
+                        bubbles: true,
+                    }),
+                );
+            input.focus();
+            if (mode === 'pointer') {
+                input.setSelectionRange(1, 1);
+                input.dispatchEvent(
+                    new MouseEvent('mouseup', {
+                        button: 0,
+                        detail: 1,
+                        bubbles: true,
+                    }),
+                );
+            }
+            await wait(180);
+            expect(root.querySelector('.inline-editor-input')).toBe(editor);
+            expect(editor.value).toBe('S');
+            expect(document.activeElement).toBe(editor);
+            expect(input.value).toBe(value);
+            const outside = document.createElement('button');
+            document.body.append(outside);
+            outside.dispatchEvent(
+                new MouseEvent('mousedown', { button: 0, bubbles: true }),
+            );
+            outside.focus();
+            await wait(180);
+            expect(input.value).toBe('(S) quarterly report');
+            outside.remove();
+            field.destroy();
+        },
+    );
 
     it('applies a favorite by REPLACING the leading part mark, preserving free text', async () => {
         const load = vi.fn(async () => [{ marking: 'S', label: 'Secret' }]);
@@ -2546,14 +2680,14 @@ describe('MarkedInput favorites', () => {
         await wait();
 
         const button = root.querySelector(
-            '.ez-favorites-button',
+            '.ez-status-mark--tools',
         ) as HTMLButtonElement;
         expect(button).not.toBeNull();
         button.dispatchEvent(new MouseEvent('click', { bubbles: true }));
         await wait();
 
         const row = document.body.querySelector(
-            '.ez-favorites-panel .proto-dropdown-item',
+            '.ez-favorites-panel__embedded .proto-dropdown-item',
         ) as HTMLElement;
         row.dispatchEvent(new MouseEvent('click', { bubbles: true }));
         await wait();
@@ -2607,11 +2741,11 @@ describe('MarkedInput favorites', () => {
         input.dispatchEvent(new Event('input', { bubbles: true }));
         await wait();
 
-        (root.querySelector('.ez-favorites-button') as HTMLElement).click();
+        (root.querySelector('.ez-status-mark--tools') as HTMLElement).click();
         await wait();
         (
             document.body.querySelector(
-                '.ez-favorites-panel .proto-dropdown-item',
+                '.ez-favorites-panel__embedded .proto-dropdown-item',
             ) as HTMLElement
         ).dispatchEvent(new MouseEvent('click', { bubbles: true }));
         await wait();
@@ -2645,13 +2779,22 @@ describe('MarkedInput favorites', () => {
         );
 
         const button = root.querySelector(
-            '.ez-favorites-button',
+            '.ez-status-mark--tools',
         ) as HTMLButtonElement;
         button.dispatchEvent(new MouseEvent('click', { bubbles: true }));
         await wait();
 
+        expect(document.activeElement?.getAttribute('role')).toBe('tab');
+        expect(document.activeElement?.getAttribute('aria-label')).toBe(
+            'Favorites',
+        );
+        expect(
+            document.body.querySelector<HTMLElement>('.ez-composer')?.hidden,
+        ).toBe(true);
+        expect(root.querySelector('.inline-editor-input')).not.toBeNull();
+
         const row = document.body.querySelector(
-            '.ez-favorites-panel .proto-dropdown-item',
+            '.ez-favorites-panel__embedded .proto-dropdown-item',
         ) as HTMLElement;
         row.dispatchEvent(new MouseEvent('click', { bubbles: true }));
         await wait();

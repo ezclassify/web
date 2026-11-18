@@ -1847,6 +1847,146 @@
             "method": "PUT",
             "statusCode": 200
         },
+        "4b1a61d00d288fd796da41df75149ef4f0ce335226be3b0eab13b8ffe6b53ba8": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "settled-values",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "settled-values",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "A",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "tag",
+                            "conceptId": "G",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "tag",
+                            "conceptId": "O",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "handling",
+                            "conceptId": "STD",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "origin",
+                            "conceptId": "HOME",
+                            "confidence": "certain",
+                            "source": "default"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            { "categoryId": "level", "conceptId": "A" },
+                            { "categoryId": "tag", "conceptId": "G" },
+                            { "categoryId": "tag", "conceptId": "O" },
+                            { "categoryId": "handling", "conceptId": "STD" }
+                        ],
+                        "omitted": [
+                            { "categoryId": "origin", "conceptId": "HOME" }
+                        ],
+                        "unrepresentable": []
+                    },
+                    "errors": [
+                        {
+                            "affectedConcepts": ["B"],
+                            "constraintId": "g-needs-b",
+                            "message": "TAG-G requires LEVEL B."
+                        }
+                    ],
+                    "inputWasValid": false,
+                    "notices": [],
+                    "proposedFixes": [
+                        {
+                            "adds": [
+                                { "categoryId": "level", "conceptId": "B" }
+                            ],
+                            "keeps": [
+                                { "categoryId": "tag", "conceptId": "G" },
+                                { "categoryId": "tag", "conceptId": "O" },
+                                { "categoryId": "handling", "conceptId": "STD" }
+                            ],
+                            "message": "Replace LEVEL A with LEVEL B.",
+                            "removes": [
+                                { "categoryId": "level", "conceptId": "A" }
+                            ],
+                            "rendered": "LEVEL B//TAG-G/TAG-O//STD"
+                        },
+                        {
+                            "adds": [],
+                            "keeps": [
+                                { "categoryId": "level", "conceptId": "A" },
+                                { "categoryId": "tag", "conceptId": "O" },
+                                { "categoryId": "handling", "conceptId": "STD" }
+                            ],
+                            "message": "Remove TAG-G.",
+                            "removes": [
+                                { "categoryId": "tag", "conceptId": "G" }
+                            ],
+                            "rendered": "LEVEL A//TAG-O//STD"
+                        }
+                    ],
+                    "rendered": "LEVEL A//TAG-G/TAG-O//STD",
+                    "renders": {},
+                    "suggestionsFor": {
+                        "level": {
+                            "suggestions": [
+                                {
+                                    "categoryId": "level",
+                                    "conceptId": "A",
+                                    "description": "Name A",
+                                    "group": "level",
+                                    "label": "LEVEL A",
+                                    "name": "Name A",
+                                    "order": 1,
+                                    "selected": false,
+                                    "views": { "default": "LEVEL A" }
+                                },
+                                {
+                                    "categoryId": "level",
+                                    "conceptId": "B",
+                                    "description": "Name B",
+                                    "group": "level",
+                                    "label": "LEVEL B",
+                                    "name": "Name B",
+                                    "order": 2,
+                                    "selected": false,
+                                    "views": { "default": "LEVEL B" }
+                                }
+                            ],
+                            "warnings": []
+                        }
+                    },
+                    "valid": false,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
         "4d37ea94595ec5734b61fa75c2cef70786cd64af540558ab17dc26b065552283": {
             "body": [],
             "headers": { "x-ezclassify-resolved-version": "1.0.0" },
@@ -2432,6 +2572,96 @@
                     "rendered": "LEVEL B//TAG-G/TAG-O//STD",
                     "renders": {},
                     "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "687b0309c39ea05815d0b969e9879eb8ca9934ca19ed664b8e01d7e918b60fb9": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "settled-values",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "settled-values",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "suggestions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "A",
+                            "description": "Name A",
+                            "group": "level",
+                            "label": "LEVEL A",
+                            "name": "Name A",
+                            "order": 1,
+                            "selected": true,
+                            "views": { "default": "LEVEL A" }
+                        },
+                        {
+                            "categoryId": "tag",
+                            "conceptId": "X",
+                            "description": "Name X",
+                            "group": "tag",
+                            "label": "TAG-X",
+                            "name": "Name X",
+                            "order": 3,
+                            "selected": false,
+                            "views": { "default": "TAG-X" }
+                        },
+                        {
+                            "categoryId": "tag",
+                            "conceptId": "G",
+                            "description": "Name G",
+                            "group": "tag",
+                            "label": "TAG-G",
+                            "name": "Name G",
+                            "order": 4,
+                            "selected": true,
+                            "views": { "default": "TAG-G" }
+                        },
+                        {
+                            "categoryId": "tag",
+                            "conceptId": "O",
+                            "description": "Name O",
+                            "group": "tag",
+                            "label": "TAG-O",
+                            "name": "Name O",
+                            "order": 5,
+                            "selected": true,
+                            "views": { "default": "TAG-O" }
+                        },
+                        {
+                            "categoryId": "handling",
+                            "conceptId": "STD",
+                            "description": "Name STD",
+                            "group": "handling",
+                            "label": "STD",
+                            "name": "Name STD",
+                            "order": 7,
+                            "selected": true,
+                            "views": { "default": "STD" }
+                        },
+                        {
+                            "categoryId": "origin",
+                            "conceptId": "HOME",
+                            "description": "Name HOME",
+                            "group": "origin",
+                            "label": "HOME",
+                            "name": "Name HOME",
+                            "order": 8,
+                            "selected": true,
+                            "views": { "default": "HOME" }
+                        }
+                    ],
                     "warnings": []
                 }
             },

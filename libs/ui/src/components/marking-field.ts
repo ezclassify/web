@@ -1,3 +1,4 @@
+import { markingTarget } from './marking-target';
 /**
  * MarkingField: a text-first field whose ENTIRE value is the marking, nothing
  * else.
@@ -32,11 +33,12 @@ import { heightAtLeastFloor } from './dom-helpers';
 import {
     ensureStatusMark,
     setStatusMarkFixes,
+    statusMarkOwnsNode,
     unreviewedAdditions,
 } from './status-mark';
 import { mountFieldChrome, type FieldChrome } from './field-chrome';
 import {
-    ensureFavoritesButton,
+    ensureMarkingFavorites,
     schemeOffersPresets,
     type FavoritesConfig,
     type FavoritesPanel,
@@ -67,8 +69,9 @@ export class MarkingField extends ComponentBase {
     private forwarding = false;
     private syncEditorState: (() => void) | null = null;
     private display!: HTMLDivElement;
-    /** The inline chrome: status mark, ★ favorites button, clear. */
+    /** The inline chrome: marking tools and clear. */
     private chrome: FieldChrome | null = null;
+    private toolsButton: HTMLElement | null = null;
     private favoritesPanel: FavoritesPanel | null = null;
     private controller!: ComposerController;
     private view!: ComposerView;
@@ -265,8 +268,7 @@ export class MarkingField extends ComponentBase {
             singleLine: true,
             placeholder: this.options.placeholder ?? host.placeholder,
             describeConcept: this.shouldShowTooltip()
-                ? (conceptId, categoryId) =>
-                      this.resolveConceptDescription(conceptId, categoryId)
+                ? (conceptId) => this.simpleConceptDescription(conceptId)
                 : undefined,
             onPlacement: (open) => this.setReportInField(open),
             onDraft: (text) => {
@@ -276,16 +278,24 @@ export class MarkingField extends ComponentBase {
                 }
             },
             onBlurCommit: (outcome) => this.rest(outcome),
+            isFieldChrome: (node) => statusMarkOwnsNode(this.toolsButton, node),
+            sheetTools: () => this.toolsButton,
+            textToolsEdges: () => true,
         });
         if (this.editor) this.wireInputEditor();
         this.container.appendChild(this.view.announcer);
         this.wrap.insertAdjacentElement('afterend', this.view.note);
 
-        // The status mark, ★ favorites button and clear sit inline at the
+        // Branding and clear sit inline at the
         // field's trailing edge, at rest and while editing; the text layers
         // reserve the room they take.
         this.chrome = mountFieldChrome(this.wrap, { root: this.options.root });
-        ensureStatusMark(this.chrome.status, {
+        this.toolsButton = ensureStatusMark(this.chrome.status, {
+            tools: true,
+            onToolsOpen: () => {
+                this.toolsButton?.focus();
+                this.view?.suspendForTools();
+            },
             shape: 'chrome',
             root: this.options.root,
             shouldShowTooltip: () => this.options.tooltips !== false,
@@ -301,7 +311,7 @@ export class MarkingField extends ComponentBase {
             this.options.favorites ||
             schemeOffersPresets(this.scheme, this.options.scope)
         ) {
-            this.favoritesPanel = ensureFavoritesButton(
+            this.favoritesPanel = ensureMarkingFavorites(
                 this.chrome.status,
                 this.favoritesHost(this.options.favorites),
             );
@@ -549,7 +559,6 @@ export class MarkingField extends ComponentBase {
             this.favoritesPanel.updateHost(
                 this.favoritesHost(this.options.favorites),
             );
-            this.favoritesPanel.syncStar();
         }
     }
 
@@ -581,18 +590,19 @@ export class MarkingField extends ComponentBase {
             applyPreset: (presetId) =>
                 this.callApplyPreset(presetId, this.formatId),
             getCurrent: () => ({
-                // What the result row shows while a draft is open, the
-                // committed value otherwise.
-                rendered:
-                    this.controller.snapshot().reading?.rendered ??
-                    this._lastRendered,
+                rendered: this._lastRendered,
                 valid:
                     this.assertions.length > 0 &&
                     !this.container.hasAttribute('data-ezclassify-invalid'),
             }),
-            onApply: (marking) => {
+            ...markingTarget(this),
+            onApply: (marking, signal) => {
+                if (signal.aborted) return;
+                this.controller.discard();
+                const target = markingTarget(this);
+                if (target) return target.onApply(marking, signal);
                 this.beginUserEdit();
-                void this.setValue(marking);
+                return this.setValue(marking);
             },
             focusField: () => this.host.focus(),
         };
@@ -651,6 +661,7 @@ export class MarkingField extends ComponentBase {
         this.favoritesPanel = null;
         this.chrome?.destroy();
         this.chrome = null;
+        this.toolsButton = null;
 
         // Undo the enhancement: a host that unmounts this component gets back
         // a plain, visible, unmarked <textarea>.
@@ -793,7 +804,7 @@ export class MarkingField extends ComponentBase {
             return;
         }
         this.beginUserEdit();
-        this.assertions = fixAssertions(fix);
+        this.assertions = fixAssertions(fix, this.assertions);
         this.reprocess();
     }
 
@@ -1090,7 +1101,13 @@ export class MarkingField extends ComponentBase {
                 '--ez-token-underline',
                 colors?.background ?? this.getCategoryColor(token.categoryId),
             );
-            this.attachConceptTooltip(span, token.conceptId, token.categoryId);
+            this.attachConceptTitle(
+                span,
+                token.conceptId,
+                token.categoryId,
+                undefined,
+                label,
+            );
             underline = true;
         }
         this.paintTokenLabel(span, label, underline);

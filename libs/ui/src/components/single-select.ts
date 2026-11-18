@@ -1,3 +1,4 @@
+import { bindTextToolsEdges } from './text-caret-edge';
 /**
  * Single-Select Component
  *
@@ -10,7 +11,8 @@
  * - **cards** (opt-in): a compact radio selector. Choices stay label-first, while
  *   one shared detail panel explains the selected choice (or the choice being
  *   hovered/focused). This keeps policy help available without repeating
- *   paragraphs inside every option.
+ *   paragraphs inside every option. Arrows move focus through the physical
+ *   layout; Enter or Space selects the focused radio.
  *
  * Works with single-category schemes or schemes where the primary category has
  * `single: true`.
@@ -28,9 +30,16 @@ import type {
     Warning,
 } from '@ezclassify/types';
 import { applyTextInputAttributes } from './text-input-attributes';
+import { focusGridNeighbor, type FocusGridArrow } from './focus-grid';
 import singleSelectCss from './single-select.css?inline';
 import { mirrorHostFrame } from './field-chrome';
 import { getMountHost } from '../mount-host-registry';
+import {
+    fieldScopeOf,
+    writtenConcept,
+    type WritingField,
+} from '../written-concept';
+import { viewOutputOf } from '../format-resolver';
 
 const SINGLE_SELECT_CSS: string = singleSelectCss;
 
@@ -100,7 +109,11 @@ export class SingleSelect extends ComponentBase {
     private pendingText: { conceptId: string; value: string } | null = null;
     /** The current supplemental draft's canonical errors, never accepted facts. */
     private pendingTextErrors: readonly ValidationError[] = [];
-    private textFocusSequence = 0;
+    /** Native editor validation stays attached to the same live input node. */
+    private readonly textValidators = new WeakMap<
+        HTMLInputElement,
+        () => boolean
+    >();
     /** The primary category used for selection */
     private primaryCategory!: {
         id: string;
@@ -133,6 +146,31 @@ export class SingleSelect extends ComponentBase {
 
     protected override hasClearValue(): boolean {
         return super.hasClearValue() || this.pendingText !== null;
+    }
+
+    private stopTextToolsEdges: (() => void) | null = null;
+
+    /**
+     * Name choices in their category's role output without changing query
+     * formats.
+     */
+    protected override writingField(): WritingField {
+        const field = super.writingField();
+        if (this.options.formatId !== undefined || !this.primaryCategory)
+            return field;
+        const category = this.scheme.categories.find(
+            (one) => one.id === this.primaryCategory.id,
+        );
+        if (!category) return field;
+        const scope = fieldScopeOf(category, field, this.schemeMeta);
+        return {
+            ...field,
+            formatId: viewOutputOf(
+                this.schemeMeta,
+                scope === undefined ? [] : [scope],
+                field.part,
+            ),
+        };
     }
 
     protected setup(): void {
@@ -168,16 +206,32 @@ export class SingleSelect extends ComponentBase {
             .filter((c) => c.categories.includes(singleCategory.id))
             .sort((a, b) => a.position - b.position);
 
+        const writing = this.conceptWriting()!;
         this.cardConcepts = categoryConcepts.map((c) => ({
             conceptId: c.id,
             categoryId: singleCategory.id,
-            name: c.textInput ? c.name : (c.views['default'] ?? c.name),
+            name: writtenConcept(writing, {
+                categoryId: singleCategory.id,
+                conceptId: c.id,
+            }),
             description: c.definition ?? c.name,
             textInput: c.textInput,
         }));
 
         // Inject styles (shared: dropdown rules live in the same sheet)
         this.injectComponentStyles(SINGLE_SELECT_CSS);
+
+        this.stopTextToolsEdges = bindTextToolsEdges(
+            this.container,
+            () =>
+                this.container.querySelector<HTMLInputElement>(
+                    '.select-card-text-field',
+                ),
+            () =>
+                this.suiteChrome?.status.querySelector<HTMLElement>(
+                    '.ez-status-mark',
+                ) ?? null,
+        );
 
         // Check rendering mode
         const mode = (this.options as unknown as Record<string, unknown>)[
@@ -202,6 +256,7 @@ export class SingleSelect extends ComponentBase {
         this.cardsContainer = document.createElement('div');
         this.cardsContainer.className = 'select-cards';
         this.cardsContainer.setAttribute('role', 'radiogroup');
+        this.cardsContainer.tabIndex = -1;
         this.cardsContainer.setAttribute(
             'aria-label',
             `Select ${singleCategory.label ?? 'option'}`,
@@ -221,13 +276,6 @@ export class SingleSelect extends ComponentBase {
         // Announcer
         this.announcer = createAnnouncer();
         this.container.appendChild(this.announcer);
-
-        // Keyboard hints
-        this.appendKeyboardHints([
-            { keys: '\u2191/\u2193', action: 'navigate' },
-            { keys: 'Enter/ ', action: 'select' },
-            { keys: 'Esc', action: 'deselect' },
-        ]);
 
         // Set initial focus index based on current assertions
         const selectedId = this.assertions.find(
@@ -339,10 +387,20 @@ export class SingleSelect extends ComponentBase {
         // setup() bails early when no matching category exists in the current scheme.
         // Nothing to render; skip rather than crash on undefined cardsContainer / primaryCategory.
         if (!this.primaryCategory) return;
+        const focusedConceptId =
+            this._visibleConcepts[this.focusIndex]?.conceptId;
+        const alignFocus = () => {
+            this.focusIndex = focusedConceptId
+                ? this._visibleConcepts.findIndex(
+                      (entry) => entry.conceptId === focusedConceptId,
+                  )
+                : -1;
+        };
         if (options === null) {
             // Engine has no suggest: show all concepts unchanged.
             if (this._allowedConceptIds !== null) {
                 this._allowedConceptIds = null;
+                alignFocus();
                 this.isDropdownMode
                     ? this.renderDropdown()
                     : this.renderCards();
@@ -369,6 +427,7 @@ export class SingleSelect extends ComponentBase {
         ) {
             if (this._allowedConceptIds !== null) {
                 this._allowedConceptIds = null;
+                alignFocus();
                 this.isDropdownMode
                     ? this.renderDropdown()
                     : this.renderCards();
@@ -389,17 +448,14 @@ export class SingleSelect extends ComponentBase {
         )
             return;
         this._allowedConceptIds = newAllowed;
-        // Re-align focusIndex to the new visible list; reset if the focused concept disappeared.
-        const focusedConceptId = this.cardConcepts[this.focusIndex]?.conceptId;
-        this.focusIndex = focusedConceptId
-            ? this._visibleConcepts.findIndex(
-                  (c) => c.conceptId === focusedConceptId,
-              )
-            : -1;
+        // Keep the same visible-list identity even while focus is outside.
+        alignFocus();
         this.isDropdownMode ? this.renderDropdown() : this.renderCards();
     }
 
     destroy(): void {
+        this.stopTextToolsEdges?.();
+        this.stopTextToolsEdges = null;
         this._destroyed = true;
         this.stopHostFrame();
         this.destroyClearButton();
@@ -467,7 +523,7 @@ export class SingleSelect extends ComponentBase {
         if (
             this.pendingText &&
             selected?.conceptId === this.pendingText.conceptId &&
-            selected.value !== undefined
+            selected.value === this.pendingText.value
         ) {
             this.pendingText = null;
             this.pendingTextErrors = [];
@@ -543,16 +599,32 @@ export class SingleSelect extends ComponentBase {
         this.dropdownEl.value =
             this.pendingText?.conceptId ?? selected?.conceptId ?? '';
 
-        this.dropdownSupplement?.replaceChildren();
         const entry = this.cardConcepts.find(
             (concept) => concept.conceptId === this.dropdownEl?.value,
         );
         if (entry?.textInput && this.dropdownSupplement) {
             this.appendTextInput(entry, this.dropdownSupplement, true);
-        }
+        } else this.dropdownSupplement?.replaceChildren();
     }
 
     private renderCards(): void {
+        const active = document.activeElement;
+        const groupFocused = active === this.cardsContainer;
+        const focused =
+            active instanceof HTMLElement &&
+            this.cardsContainer.contains(active)
+                ? active.closest<HTMLElement>('.select-card')
+                : null;
+        const previousIndex = Number(focused?.dataset.index ?? -1);
+        if (focused) {
+            const index = this._visibleConcepts.findIndex(
+                (entry) => entry.conceptId === focused.dataset.conceptId,
+            );
+            this.focusIndex =
+                index >= 0
+                    ? index
+                    : Math.min(previousIndex, this._visibleConcepts.length - 1);
+        }
         this.cardsContainer.innerHTML = '';
 
         const selectedConceptId = this.selectedConceptId();
@@ -577,6 +649,7 @@ export class SingleSelect extends ComponentBase {
                     : i === 0);
             card.tabIndex = isFocused || isDefaultTabStop ? 0 : -1;
             card.dataset.index = String(i);
+            card.dataset.conceptId = entry.conceptId;
             const labelId = `select-card-label-${this._labelIdPrefix}-${i}`;
 
             // The host owns presentation, so its per-concept override precedes
@@ -685,22 +758,46 @@ export class SingleSelect extends ComponentBase {
         });
 
         this.renderDetail();
+        if (focused) {
+            if (this.focusIndex >= 0) this.focusCard(this.focusIndex);
+            else this.cardsContainer.focus();
+        } else if (groupFocused) {
+            const target = this.cardsContainer.querySelector<HTMLElement>(
+                '.select-card[tabindex="0"]',
+            );
+            if (target) this.focusCard(Number(target.dataset.index));
+        }
     }
 
     /** Render the selected choice's help, temporarily overridden by hover/focus. */
     private renderDetail(): void {
-        this.detailPanel.replaceChildren();
         const selectedConceptId = this.selectedConceptId();
-        const detailConceptId = this.previewConceptId ?? selectedConceptId;
+        const currentInput = this.detailPanel.querySelector<HTMLInputElement>(
+            '.select-card-text-field',
+        );
+        const editing = currentInput === document.activeElement;
+        const detailConceptId = editing
+            ? selectedConceptId
+            : (this.previewConceptId ?? selectedConceptId);
         const entry = this._visibleConcepts.find(
             (concept) => concept.conceptId === detailConceptId,
         );
+        const retained =
+            entry?.textInput &&
+            entry.conceptId === selectedConceptId &&
+            currentInput?.dataset.conceptId === entry.conceptId
+                ? currentInput.closest<HTMLElement>('.select-card-text-input')
+                : null;
+        for (const node of [...this.detailPanel.childNodes])
+            if (node !== retained) node.remove();
+        const append = (node: Node) =>
+            this.detailPanel.insertBefore(node, retained);
 
         if (!entry) {
             const prompt = document.createElement('div');
             prompt.className = 'select-detail-prompt';
             prompt.textContent = `Select ${this.primaryCategory.label ?? 'an option'} to see its details.`;
-            this.detailPanel.appendChild(prompt);
+            append(prompt);
             this.detailPanel.dataset.state = 'empty';
             return;
         }
@@ -711,14 +808,14 @@ export class SingleSelect extends ComponentBase {
         const heading = document.createElement('div');
         heading.className = 'select-detail-heading';
         heading.textContent = entry.name;
-        this.detailPanel.appendChild(heading);
+        append(heading);
 
         const description = this.getShortDescription(entry);
         if (description) {
             const body = document.createElement('div');
             body.className = 'select-detail-description';
             body.textContent = description;
-            this.detailPanel.appendChild(body);
+            append(body);
         }
 
         // A text value belongs to the selected choice, including its local
@@ -734,6 +831,22 @@ export class SingleSelect extends ComponentBase {
         showLabel = false,
     ): void {
         if (!entry.textInput) return;
+        const existing = target.querySelector<HTMLInputElement>(
+            '.select-card-text-field',
+        );
+        if (existing?.dataset.conceptId === entry.conceptId) {
+            const value =
+                this.pendingText?.conceptId === entry.conceptId
+                    ? this.pendingText.value
+                    : (this.assertions.find(
+                          (assertion) =>
+                              assertion.conceptId === entry.conceptId,
+                      )?.value ?? '');
+            if (existing.value !== value) existing.value = value;
+            this.textValidators.get(existing)?.();
+            return;
+        }
+        target.querySelector('.select-card-text-input')?.remove();
         const inputWrap = document.createElement('div');
         inputWrap.className = 'select-card-text-input';
 
@@ -750,6 +863,7 @@ export class SingleSelect extends ComponentBase {
         textField.type = 'text';
         textField.id = inputId;
         textField.className = 'select-card-text-field';
+        textField.dataset.conceptId = entry.conceptId;
         textField.placeholder = entry.textInput.placeholder ?? '';
         textField.setAttribute(
             'aria-label',
@@ -819,16 +933,14 @@ export class SingleSelect extends ComponentBase {
             return !error;
         };
 
+        this.textValidators.set(textField, validateField);
         textField.addEventListener('input', () => {
-            const focusSequence = ++this.textFocusSequence;
-            const hadFocus = document.activeElement === textField;
             this.pendingTextErrors = [];
             this.pendingText = {
                 conceptId: entry.conceptId,
                 value: textField.value,
             };
             const valid = validateField();
-            const caret = textField.selectionStart;
             const assertion = this.assertions.find(
                 (a) => a.conceptId === entry.conceptId,
             );
@@ -856,24 +968,6 @@ export class SingleSelect extends ComponentBase {
             } else if (assertion) {
                 this.removeAssertion(assertion.conceptId, assertion.categoryId);
             }
-            // Synchronous engines can replace the field as soon as a complete
-            // value is processed or a committed value is cleared.
-            const focusAfterEdit = document.activeElement;
-            requestAnimationFrame(() => {
-                if (
-                    !hadFocus ||
-                    focusSequence !== this.textFocusSequence ||
-                    document.activeElement !== focusAfterEdit
-                ) {
-                    return;
-                }
-                const next = target.querySelector<HTMLInputElement>(
-                    '.select-card-text-field',
-                );
-                if (!next) return;
-                next.focus();
-                if (caret !== null) next.setSelectionRange(caret, caret);
-            });
         });
         textField.addEventListener('blur', validateField);
         inputWrap.append(textField, errorEl);
@@ -909,25 +1003,36 @@ export class SingleSelect extends ComponentBase {
         return '';
     }
 
+    /** Change only the roving focus; arrows do not choose a radio value. */
+    private focusCard(index: number): void {
+        const cards = [
+            ...this.cardsContainer.querySelectorAll<HTMLElement>(
+                '.select-card',
+            ),
+        ];
+        const target = cards[index];
+        if (!target) return;
+        this.focusIndex = index;
+        cards.forEach((card) => (card.tabIndex = card === target ? 0 : -1));
+        target.focus();
+    }
+
     private selectCard(index: number): void {
         const entry = this._visibleConcepts[index];
-        if (!entry) return;
-
-        this.focusIndex = index;
-        if (this.selectedConceptId() === entry.conceptId) {
-            // Already selected; clicking again does nothing (use Escape to deselect)
-            this.renderCards();
+        if (
+            !entry ||
+            this._destroyed ||
+            this.enhancedInput?.matches(':disabled, [readonly]')
+        )
             return;
+        this.focusIndex = index;
+        if (this.selectedConceptId() !== entry.conceptId) {
+            this.selectEntry(entry);
+            if (this.announcer)
+                announce(this.announcer, `Selected ${entry.name}`);
         }
-
-        this.selectEntry(entry);
-        if (this.announcer) announce(this.announcer, `Selected ${entry.name}`);
-
-        // Focus the newly selected card
-        const cardEl = this.cardsContainer.querySelector(
-            `[data-index="${index}"]`,
-        ) as HTMLElement;
-        cardEl?.focus();
+        // Repeated activation of a selected radio keeps both value and focus.
+        this.focusCard(index);
     }
 
     private deselectCurrent(): void {
@@ -945,52 +1050,53 @@ export class SingleSelect extends ComponentBase {
     }
 
     private onCardKeydown(e: KeyboardEvent, currentIndex: number): void {
-        const total = this._visibleConcepts.length;
+        if (
+            e.target !== e.currentTarget ||
+            e.defaultPrevented ||
+            e.altKey ||
+            e.ctrlKey ||
+            e.metaKey ||
+            e.shiftKey ||
+            e.isComposing ||
+            e.keyCode === 229
+        )
+            return;
+        const cards = [
+            ...this.cardsContainer.querySelectorAll<HTMLElement>(
+                '.select-card',
+            ),
+        ];
         let handled = true;
-
         switch (e.key) {
             case 'ArrowDown':
-            case 'ArrowRight': {
-                const next = (currentIndex + 1) % total;
-                this.selectCard(next);
-                break;
-            }
+            case 'ArrowRight':
             case 'ArrowUp':
             case 'ArrowLeft': {
-                const prev = (currentIndex - 1 + total) % total;
-                this.selectCard(prev);
+                const target = focusGridNeighbor(
+                    cards,
+                    cards[currentIndex],
+                    e.key as FocusGridArrow,
+                );
+                if (target) this.focusCard(cards.indexOf(target));
                 break;
             }
             case 'Enter':
             case ' ':
-            case 'Spacebar': // legacy key name for older browsers
+            case 'Spacebar':
                 this.selectCard(currentIndex);
                 break;
             case 'Escape':
                 this.deselectCurrent();
                 break;
-            case 'Home': {
-                this.focusIndex = 0;
-                this.renderCards();
-                const el = this.cardsContainer.querySelector(
-                    '[data-index="0"]',
-                ) as HTMLElement;
-                el?.focus();
+            case 'Home':
+                this.focusCard(0);
                 break;
-            }
-            case 'End': {
-                this.focusIndex = total - 1;
-                this.renderCards();
-                const el = this.cardsContainer.querySelector(
-                    `[data-index="${total - 1}"]`,
-                ) as HTMLElement;
-                el?.focus();
+            case 'End':
+                this.focusCard(cards.length - 1);
                 break;
-            }
             default:
                 handled = false;
         }
-
         if (handled) {
             e.preventDefault();
             e.stopPropagation();

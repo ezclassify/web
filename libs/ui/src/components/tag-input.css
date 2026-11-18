@@ -42,21 +42,6 @@
     overflow-wrap: normal;
 }
 
-/* The chip keys, in a quiet row under the field like the marked fields'
-   keyboard hint. Two classes, so the row shows whatever order the root's
-   stylesheets were adopted in: the composer adopts component-utils.css again
-   while it is open, and its `.proto-kbd-hints { display: none }` would
-   otherwise win on source order and hide the row until it closed. A touch
-   screen has no keys to hint at. */
-.proto-kbd-hints.tag-input-hints {
-    display: flex;
-    margin-top: 0.25rem;
-}
-@media (pointer: coarse) {
-    .proto-kbd-hints.tag-input-hints {
-        display: none;
-    }
-}
 .tag-input-filter {
     flex: 1;
     min-width: 3.75rem;

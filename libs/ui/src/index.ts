@@ -56,7 +56,11 @@ export { MarkedTextArea } from './components';
 export type { MarkedTextAreaOptions, MarkedSegment } from './components';
 export { MarkedInput } from './components';
 export type { MarkedInputOptions } from './components';
-export type { FavoriteEntry, FavoritesConfig } from './components';
+export type {
+    FavoriteEntry,
+    FavoritesConfig,
+    FavoritesContext,
+} from './components';
 export { defaultLocale, setLocale, resetLocale, t } from './i18n';
 export { buildCategoryColorMap } from './color-resolver';
 export { bucketKey, bucketParts, contextStoreBuckets } from './context-binding';

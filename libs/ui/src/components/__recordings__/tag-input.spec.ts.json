@@ -365,6 +365,41 @@
             "method": "POST",
             "statusCode": 200
         },
+        "10d220ccc0ec43c3acfa869be002866c2eeb5031527851f69510d4524d045846": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "ti-fav-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "ti-fav-test",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "suggestions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "S",
+                            "description": "Secret",
+                            "group": "Level",
+                            "label": "SECRET",
+                            "name": "Secret",
+                            "order": 1,
+                            "selected": true,
+                            "views": { "default": "SECRET" }
+                        }
+                    ],
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
         "147a9bbd00edb39d42632cf56c813eda9dddc2d71fed98698d993ce5cce680ac": {
             "body": {
                 "defaultRenderFormat": "default",
@@ -2164,6 +2199,57 @@
             "method": "POST",
             "statusCode": 200
         },
+        "9dfe04535b1e4f7bba7986198b275bad3ce8bc12f9c2baea3ebc38b2e7a58f71": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "ti-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "ti-test",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "caveat",
+                            "conceptId": "NF",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            { "categoryId": "caveat", "conceptId": "NF" }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "recognition": {
+                        "inputFormat": "default",
+                        "status": "complete",
+                        "surface": "marking",
+                        "unmatched": []
+                    },
+                    "rendered": "NOFORN",
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
         "9e6031bd985b1187b7d78d3c07c640e0a3a571217504ac78a6acec519e515dcf": {
             "body": {
                 "resolution": {
@@ -2722,27 +2808,43 @@
             "method": "POST",
             "statusCode": 200
         },
-        "b3d71ff0dc6467c40ef9e3b92e1e284b1fd86bfde6ff804ecab2fe0a8d863da1": {
+        "b47333b360103fc35794833d075c5ead72254a3245c31732c76fb82631bd7a62": {
             "body": {
                 "resolution": {
                     "artifacts": [
                         {
-                            "id": "ti-fav-test",
+                            "id": "ti-test",
                             "kind": "scheme",
                             "version": "1.0.0"
                         }
                     ],
-                    "contextId": "ti-fav-test",
+                    "contextId": "ti-test",
                     "requestedVersion": "0.0.0",
                     "resolvedVersion": "1.0.0"
                 },
                 "result": {
                     "appliedFixes": [],
-                    "assertions": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "S",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "caveat",
+                            "conceptId": "NF",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
                     "assessment": {
                         "collapsed": [],
                         "conflicts": [],
-                        "emitted": [],
+                        "emitted": [
+                            { "categoryId": "level", "conceptId": "S" },
+                            { "categoryId": "caveat", "conceptId": "NF" }
+                        ],
                         "omitted": [],
                         "unrepresentable": []
                     },
@@ -2750,7 +2852,14 @@
                     "inputWasValid": true,
                     "notices": [],
                     "proposedFixes": [],
-                    "rendered": "",
+                    "recognition": {
+                        "corrections": [],
+                        "inputFormat": "default",
+                        "status": "complete",
+                        "surface": "marking",
+                        "unmatched": []
+                    },
+                    "rendered": "SECRET//NOFORN",
                     "renders": {},
                     "valid": true,
                     "warnings": []

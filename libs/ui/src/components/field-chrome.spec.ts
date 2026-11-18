@@ -73,6 +73,53 @@ afterEach(() => {
 });
 
 describe('mountFieldChrome', () => {
+    it('anchors logically trailing chrome to a wrapped caption while keeping its label before the work', () => {
+        let header = document.createElement('div');
+        wrap.append(header);
+        const chrome = mountFieldChrome(wrap, { header: () => header });
+        place(chrome.element, 340, 50);
+        header.getBoundingClientRect = () =>
+            ({
+                left: 0,
+                right: 400,
+                top: 20,
+                bottom: 84,
+                width: 400,
+                height: 64,
+            }) as DOMRect;
+        chrome.measure();
+        expect(chrome.element.style.top).toBe('52px');
+        expect(header.style.paddingInlineEnd).toBe('60px');
+        expect(header.style.minBlockSize).toBe('32px');
+        const oldHeader = header;
+        header = document.createElement('div');
+        wrap.insertBefore(header, chrome.element);
+        oldHeader.remove();
+        header.getBoundingClientRect = () =>
+            ({
+                left: 0,
+                right: 400,
+                top: 12,
+                bottom: 52,
+                width: 400,
+                height: 40,
+            }) as DOMRect;
+        chrome.measure();
+        expect(chrome.element.style.top).toBe('32px');
+        expect(
+            [...FakeResizeObserver.live].some((observer) =>
+                observer.targets.has(oldHeader),
+            ),
+        ).toBe(false);
+        expect(
+            [...FakeResizeObserver.live].some((observer) =>
+                observer.targets.has(header),
+            ),
+        ).toBe(true);
+        chrome.destroy();
+        expect(FakeResizeObserver.live.size).toBe(0);
+    });
+
     it('mounts one row as the last child of the wrap, its status group first', () => {
         const field = document.createElement('textarea');
         wrap.appendChild(field);
@@ -123,9 +170,9 @@ describe('mountFieldChrome', () => {
             '60px',
         );
 
-        // A favorites button joins the status group: the row grows by it.
-        const star = document.createElement('button');
-        chrome.status.appendChild(star);
+        // A change count widens the branding group.
+        const count = document.createElement('span');
+        chrome.status.appendChild(count);
         place(chrome.element, 316, 80);
         FakeResizeObserver.resize(chrome.element);
         expect(wrap.style.getPropertyValue(FIELD_CHROME_INLINE_SIZE)).toBe(
@@ -133,7 +180,7 @@ describe('mountFieldChrome', () => {
         );
 
         // And leaves again.
-        star.remove();
+        count.remove();
         place(chrome.element, 340, 56);
         FakeResizeObserver.resize(chrome.element);
         expect(wrap.style.getPropertyValue(FIELD_CHROME_INLINE_SIZE)).toBe(
@@ -184,6 +231,125 @@ describe('mountFieldChrome', () => {
         expect(() => chrome.destroy()).not.toThrow();
     });
 });
+
+describe.each(['overlay', 'inline'] as const)(
+    '%s chrome keyboard navigation',
+    (placement) => {
+        function pair(direction = 'ltr') {
+            wrap.style.direction = direction;
+            const chrome = mountFieldChrome(wrap, { placement });
+            const tools = document.createElement('button');
+            tools.className = 'ez-status-mark';
+            const clear = document.createElement('button');
+            clear.className = 'ez-clear-button';
+            chrome.status.appendChild(tools);
+            chrome.element.appendChild(clear);
+            return { chrome, tools, clear };
+        }
+        function key(
+            target: HTMLElement,
+            key: string,
+            modifiers: KeyboardEventInit = {},
+        ) {
+            const event = new KeyboardEvent('keydown', {
+                key,
+                bubbles: true,
+                cancelable: true,
+                ...modifiers,
+            });
+            target.dispatchEvent(event);
+            return event;
+        }
+        it.each(['ltr', 'rtl'])(
+            'moves in physical %s order and contains both edges',
+            (direction) => {
+                const { tools, clear } = pair(direction);
+                place(tools, direction === 'rtl' ? 36 : 0, 32);
+                place(clear, direction === 'rtl' ? 0 : 36, 32);
+                const [left, right] =
+                    direction === 'rtl' ? [clear, tools] : [tools, clear];
+                let escaped = 0;
+                wrap.addEventListener('keydown', () => escaped++);
+                left.focus();
+                expect(key(left, 'ArrowLeft').defaultPrevented).toBe(true);
+                expect(document.activeElement).toBe(left);
+                key(left, 'ArrowRight');
+                expect(document.activeElement).toBe(right);
+                key(right, 'ArrowRight');
+                expect(document.activeElement).toBe(right);
+                key(right, 'ArrowLeft');
+                expect(document.activeElement).toBe(left);
+                expect(escaped).toBe(0);
+            },
+        );
+        it.each([
+            'disabled',
+            'hidden',
+            'display',
+            'visibility',
+            'aria-disabled',
+        ])('skips a %s clear button without leaking the arrow', (state) => {
+            const { tools, clear } = pair();
+            if (state === 'disabled') clear.disabled = true;
+            if (state === 'hidden') clear.hidden = true;
+            if (state === 'display') clear.style.display = 'none';
+            if (state === 'visibility') clear.style.visibility = 'hidden';
+            if (state === 'aria-disabled')
+                clear.setAttribute('aria-disabled', 'true');
+            tools.focus();
+            expect(key(tools, 'ArrowRight').defaultPrevented).toBe(true);
+            expect(document.activeElement).toBe(tools);
+            clear.disabled = false;
+            clear.hidden = false;
+            clear.style.cssText = '';
+            clear.removeAttribute('aria-disabled');
+            key(tools, 'ArrowRight');
+            expect(document.activeElement).toBe(clear);
+        });
+        it('skips branding hidden with its status group and uses current buttons after replacement', () => {
+            const { chrome, tools, clear } = pair();
+            chrome.status.hidden = true;
+            clear.focus();
+            expect(key(clear, 'ArrowLeft').defaultPrevented).toBe(true);
+            expect(document.activeElement).toBe(clear);
+            chrome.status.hidden = false;
+            const replacement = tools.cloneNode(true) as HTMLButtonElement;
+            tools.replaceWith(replacement);
+            key(clear, 'ArrowLeft');
+            expect(document.activeElement).toBe(replacement);
+        });
+        it('leaves text arrows, modifiers, composition and Tab native', () => {
+            const { chrome, tools } = pair();
+            const input = document.createElement('input');
+            chrome.element.appendChild(input);
+            input.focus();
+            expect(key(input, 'ArrowRight').defaultPrevented).toBe(false);
+            expect(document.activeElement).toBe(input);
+            tools.focus();
+            for (const modifiers of [
+                { altKey: true },
+                { ctrlKey: true },
+                { metaKey: true },
+                { shiftKey: true },
+                { isComposing: true },
+            ]) {
+                expect(
+                    key(tools, 'ArrowRight', modifiers).defaultPrevented,
+                ).toBe(false);
+                expect(document.activeElement).toBe(tools);
+            }
+            expect(key(tools, 'Tab').defaultPrevented).toBe(false);
+        });
+        it('removes the keyboard listener on destroy even if the row is reattached', () => {
+            const { chrome, tools } = pair();
+            chrome.destroy();
+            wrap.appendChild(chrome.element);
+            tools.focus();
+            expect(key(tools, 'ArrowRight').defaultPrevented).toBe(false);
+            expect(document.activeElement).toBe(tools);
+        });
+    },
+);
 
 /** The selector list and body of the stylesheet rule that sets `property`. */
 function ruleSetting(css: string, property: string) {

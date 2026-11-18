@@ -67,6 +67,12 @@ class TestComponent extends ComponentBase {
     doDisambiguateSuggestions(s: Suggestion[]): Suggestion[] {
         return this.disambiguateSuggestions(s);
     }
+    doNativeHint(el: HTMLElement, id: string, reason?: string): void {
+        this.attachConceptTitle(el, id, 'cat1', reason, 'C1');
+    }
+    doSimpleDescription(id: string): string | undefined {
+        return this.simpleConceptDescription(id);
+    }
     doAttachConceptTooltip(
         el: HTMLElement,
         conceptId: string,
@@ -725,6 +731,49 @@ describe('ComponentBase', () => {
         });
     });
 
+    it('a full-marking rule fix retains values on every kept assertion', () => {
+        component.setAssertions([
+            {
+                conceptId: 'c1',
+                categoryId: 'cat1',
+                confidence: 'certain',
+                source: 'user',
+            },
+            {
+                conceptId: 'c2',
+                categoryId: 'cat2',
+                value: 'Analyst One',
+                confidence: 'certain',
+                source: 'user',
+            },
+            {
+                conceptId: 'c2',
+                categoryId: 'cat2',
+                value: 'Analyst Two',
+                confidence: 'certain',
+                source: 'user',
+            },
+        ]);
+        component.doApplyRuleFix({
+            message: 'Replace C1 with C3.',
+            rendered: 'C3/C2',
+            keeps: [{ conceptId: 'c2', categoryId: 'cat2' }],
+            adds: [{ conceptId: 'c3', categoryId: 'cat2' }],
+            removes: [{ conceptId: 'c1', categoryId: 'cat1' }],
+        });
+        expect(
+            component
+                .getAssertions()
+                .filter((assertion) => assertion.conceptId === 'c2')
+                .map((assertion) => assertion.value),
+        ).toEqual(['Analyst One', 'Analyst Two']);
+        expect(
+            component
+                .getAssertions()
+                .some((assertion) => assertion.conceptId === 'c1'),
+        ).toBe(false);
+    });
+
     it('getAppliedFixes returns empty array when the engine applied nothing', () => {
         expect(component.getAppliedFixes()).toEqual([]);
     });
@@ -937,6 +986,52 @@ describe('ComponentBase', () => {
                 .doDisambiguateSuggestions(suggestions)
                 .map((s) => s.label),
         ).toEqual(['C', 'B::C']);
+    });
+
+    it.each([
+        ['tooltip', 'Configured label'],
+        ['missing', 'Concept One'],
+    ])(
+        'honors native hint view %s with name fallback and accessible definitions',
+        async (view, name) => {
+            component.destroy();
+            const concept = engine.getScheme().concepts[0]!;
+            concept.views.tooltip = 'Configured label';
+            concept.definition = 'Canonical definition';
+            component = new TestComponent();
+            await component.init(container, toCtx(engine), {
+                tooltipConceptProperty: view,
+            });
+            const element = document.createElement('span');
+            component.doNativeHint(element, 'c1', 'Included by parent');
+            expect(element.title).toBe(
+                `Included by parent\n${name}\nCanonical definition`,
+            );
+            expect(element.getAttribute('aria-description')).toBe(
+                `Included by parent. ${name}. Canonical definition.`,
+            );
+            expect(component.doSimpleDescription('c1')).toBe(
+                `${name}\nCanonical definition`,
+            );
+            concept.textInput = { label: 'Value', required: false };
+            concept.views.tooltip = 'For {value}';
+            expect(component.doSimpleDescription('c1')).toBe(
+                'Concept One\nCanonical definition',
+            );
+        },
+    );
+
+    it('keeps native concept hints disabled by the existing tooltip opt-out', async () => {
+        component.destroy();
+        component = new TestComponent();
+        await component.init(container, toCtx(engine), {
+            tooltips: false,
+            tooltipConceptProperty: 'default',
+        });
+        const element = document.createElement('span');
+        component.doNativeHint(element, 'c1');
+        expect(element.title).toBe('');
+        expect(element.hasAttribute('aria-description')).toBe(false);
     });
 
     it('attachConceptTooltip does not throw', () => {

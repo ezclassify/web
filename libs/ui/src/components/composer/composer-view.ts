@@ -1,3 +1,5 @@
+import { bindTextToolsEdges } from '../text-caret-edge';
+import { bindMarkingToolsShortcut } from '../marking-tools';
 /**
  * ComposerView: the one row renderer and surface every field's picker paints.
  *
@@ -19,9 +21,8 @@
  * text input owns row and category navigation; heading arrows jump categories.
  * The active row is conveyed through `aria-activedescendant`, `aria-selected`
  * means "in the marking" and nothing else, group labels are presentational and
- * never in the arrow path, key hints are aria-hidden and shown on fine pointers
- * only, and one polite live region per field carries counts, the result,
- * commits and parse failures.
+ * never in the arrow path. One polite live region per field carries counts, the
+ * result, commits and parse failures.
  */
 
 import { t } from '../../i18n';
@@ -92,6 +93,11 @@ export interface ComposerViewOptions {
     /** Owning field when the anchor is an inline editor within body text. */
     readonly field?: HTMLElement;
     /**
+     * Permanent painted field box for ended-sheet focus, when the anchor is
+     * temporary.
+     */
+    readonly focusTarget?: HTMLElement;
+    /**
      * The field's accessible name: the id of a visible label when there is one,
      * and its text for surfaces that need a string.
      */
@@ -111,22 +117,31 @@ export interface ComposerViewOptions {
     ) => string | undefined;
     /** The composer opened, closed or changed side. */
     readonly onPlacement?: (open: boolean) => void;
+    /**
+     * The field control that must remain reachable while its phone sheet is
+     * open.
+     */
+    readonly sheetTools?: () => HTMLElement | null;
+    /** Whole-field text may reach its tools at the collapsed trailing edge. */
+    readonly textToolsEdges?: () => boolean;
+    /** An owned chip preceding the filter, retaining its unfinished draft. */
+    readonly textStartNeighbor?: () => HTMLElement | null;
     /** The draft text changed; the field mirrors it (height, width, paint). */
     readonly onDraft?: (text: string) => void;
     /**
      * Whether a node focus moves to is the field's own chrome (its favorites
-     * button, say). Focus going there waits out the same grace period as a
-     * press on the list instead of committing at once, so a control that works
-     * on the open edit still finds it open.
+     * button, say). Focus there keeps the edit open until it leaves the chrome,
+     * so a control acting on that edit retains its target.
      */
     readonly isFieldChrome?: (node: Node) => boolean;
     /** A blur finished committing. */
     readonly onBlurCommit?: (outcome: CommitOutcome) => void;
     /**
      * Escape found nothing to do in the composer (list closed, draft clean).
-     * Return true when the field used the key.
+     * Return true when the field used the key. Explicit sheet Cancel supplies
+     * `true`; an idle keyboard Escape keeps its ordinary text-editor handoff.
      */
-    readonly onEscapeIdle?: () => boolean;
+    readonly onEscapeIdle?: (fromSheet?: boolean) => boolean;
     /**
      * Up or Down, with any modifier, while the list is closed, for a field
      * whose own text has lines (the inline editor inside a text area). Return
@@ -224,11 +239,14 @@ export class ComposerView {
     private readonly needs: HTMLDivElement;
     private readonly status: HTMLDivElement;
     private readonly gated: HTMLDivElement;
-    private readonly footer: HTMLDivElement;
     private readonly sheetField: HTMLDivElement;
     private readonly sheetDone: HTMLButtonElement;
     private readonly sheetCancel: HTMLButtonElement;
     private readonly sheetLabel: HTMLDivElement;
+    private readonly sheetTools: HTMLDivElement;
+    private readonly sheetActions: HTMLDivElement;
+    private sheetToolsHome: { node: HTMLElement; marker: Comment } | null =
+        null;
     /** The sheet's whole title; the label may show it shortened. */
     private sheetTitle = '';
     private readonly sheetInput: HTMLInputElement;
@@ -236,6 +254,8 @@ export class ComposerView {
     private readonly unsubscribe: () => void;
     private readonly listeners: Array<() => void> = [];
     private sheet = false;
+    /** A synchronous internal handoff must not become a blur commit. */
+    private parkingFocus = false;
     /**
      * The sheet with the keyboard up (see keyboardUp): only the bar, the input,
      * a one-line result and the rules' fold line stay fixed; everything else
@@ -266,6 +286,8 @@ export class ComposerView {
     private blurTimer: ReturnType<typeof setTimeout> | null = null;
     private lastQuery = '';
     private destroyed = false;
+    private chromeSuspended = false;
+    private suspendingTools = false;
     /** Nonzero while the field writes its own committed value back. */
     private muted = 0;
 
@@ -324,7 +346,13 @@ export class ComposerView {
         );
         const bar = document.createElement('div');
         bar.className = 'ez-composer__sheet-bar';
-        bar.append(this.sheetCancel, this.sheetLabel, this.sheetDone);
+        this.sheetTools = document.createElement('div');
+        this.sheetTools.className = 'ez-composer__sheet-tools';
+        this.sheetTools.hidden = true;
+        this.sheetActions = document.createElement('div');
+        this.sheetActions.className = 'ez-composer__sheet-actions';
+        this.sheetActions.append(this.sheetTools, this.sheetDone);
+        bar.append(this.sheetCancel, this.sheetLabel, this.sheetActions);
         this.sheetField.append(bar, this.sheetInput);
 
         this.result = document.createElement('div');
@@ -349,10 +377,6 @@ export class ComposerView {
         this.gated = document.createElement('div');
         this.gated.className = 'ez-composer__gated';
 
-        this.footer = document.createElement('div');
-        this.footer.className = 'ez-composer__footer';
-        this.footer.setAttribute('aria-hidden', 'true');
-
         this.scroller = document.createElement('div');
         this.scroller.className = 'ez-composer__scroll';
         this.scroller.append(
@@ -363,7 +387,28 @@ export class ComposerView {
             this.gated,
         );
 
-        this.surface.append(this.sheetField, this.scroller, this.footer);
+        this.surface.append(this.sheetField, this.scroller);
+        bindMarkingToolsShortcut(this.surface);
+        if (options.textToolsEdges) {
+            this.listeners.push(
+                bindTextToolsEdges(
+                    options.anchor,
+                    () => options.input,
+                    () => options.sheetTools?.() ?? null,
+                    options.textToolsEdges,
+                    options.textStartNeighbor,
+                ),
+            );
+            this.listeners.push(
+                bindTextToolsEdges(
+                    this.surface,
+                    () => this.sheetInput,
+                    () => options.sheetTools?.() ?? null,
+                    options.textToolsEdges,
+                    options.textStartNeighbor,
+                ),
+            );
+        }
         this.portalStyle = portalViewportOverlay(
             this.surface,
             options.anchor,
@@ -406,6 +451,7 @@ export class ComposerView {
     /** Open the composer. `pointer` and `api` opens may move to the sheet. */
     async open(reason: ComposerOpenReason): Promise<void> {
         if (this.destroyed) return;
+        this.chromeSuspended = false;
         const wasOpen = this.controller.isOpen;
         if (!wasOpen) {
             // A hardware keyboard on a tablet keeps the popover: the sheet is
@@ -438,11 +484,29 @@ export class ComposerView {
      * closing sheet hands it to the field box (see {@link parkFocus}).
      */
     close(): void {
-        const wasSheet = this.sheet && this.controller.isOpen;
         this.controller.close();
-        if (wasSheet && this.surface.contains(document.activeElement)) {
-            this.parkFocus();
-        }
+    }
+
+    /** Whether tools currently hold this editor's uncommitted session. */
+    get isToolsSuspended(): boolean {
+        return this.chromeSuspended;
+    }
+
+    /** Return to the retained input without committing or opening suggestions. */
+    resumeFromTools(): void {
+        this.chromeSuspended = false;
+    }
+
+    /** Hide suggestions while field tools keep the current draft and target. */
+    suspendForTools(): void {
+        if (this.destroyed) return;
+        this.chromeSuspended = true;
+        this.suspendingTools = true;
+        // The tools caller transfers focus after the sheet restores its
+        // branding button to the field. Parking it here would commit the
+        // draft while that transfer is still in progress.
+        this.controller.close();
+        this.suspendingTools = false;
     }
 
     /**
@@ -454,7 +518,7 @@ export class ComposerView {
      */
     private parkFocus(): void {
         if (this.destroyed) return;
-        const anchor = this.opts.anchor;
+        const anchor = this.opts.focusTarget ?? this.opts.anchor;
         const focused = document.activeElement;
         // Focus the host has already placed somewhere else stays there.
         if (
@@ -471,7 +535,16 @@ export class ComposerView {
         if (!anchor.isConnected) return leave();
         const borrowed = !anchor.hasAttribute('tabindex');
         if (borrowed) anchor.tabIndex = -1;
-        anchor.focus({ preventScroll: true });
+        if (this.blurTimer) {
+            clearTimeout(this.blurTimer);
+            this.blurTimer = null;
+        }
+        this.parkingFocus = true;
+        try {
+            anchor.focus({ preventScroll: true });
+        } finally {
+            this.parkingFocus = false;
+        }
         if (!borrowed) return;
         if (document.activeElement !== anchor) {
             anchor.removeAttribute('tabindex');
@@ -492,6 +565,8 @@ export class ComposerView {
     /** Tear down listeners and the portaled surface. */
     destroy(): void {
         this.destroyed = true;
+        this.clearHoveredDefinition();
+        this.restoreSheetTools();
         // A blur commit still waiting on a press goes with the view. The field
         // commits an open draft itself before it tears down (see
         // teardown-write.ts), through the same commit a blur would run.
@@ -642,10 +717,24 @@ export class ComposerView {
                 if (this.surface.contains(target)) return;
                 if (this.opts.anchor.contains(target)) return;
                 if (this.opts.input.contains(target)) return;
+                if (this.opts.isFieldChrome?.(target)) return;
                 this.activeInput.blur();
             },
             true,
         );
+        // Chrome can hold focus while the draft stays open (Favorites is
+        // portaled). Its eventual exit must settle through the same blur path.
+        this.on(document, 'focusout', (event) => {
+            if (
+                this.destroyed ||
+                this.suspendingTools ||
+                (!this.controller.isOpen && !this.chromeSuspended)
+            )
+                return;
+            const { target, relatedTarget } = event as FocusEvent;
+            if (target instanceof Node && this.opts.isFieldChrome?.(target))
+                this.onBlur(relatedTarget);
+        });
         // A press on the result row stores it, except on the folded broken
         // rules: opening them to read is not a choice of the result.
         this.on(this.result, 'click', (e) => {
@@ -730,6 +819,15 @@ export class ComposerView {
                 if (this.controller.tab()) e.preventDefault();
                 return;
             case 'Escape': {
+                // Closing suggestions keeps this edit alive. Transfer owned
+                // sheet focus before hiding it, so the browser's blur cannot
+                // commit the draft or tear down an enclosing inline editor.
+                if (
+                    open &&
+                    this.sheet &&
+                    this.surface.contains(document.activeElement)
+                )
+                    this.opts.input.focus({ preventScroll: true });
                 if (this.controller.escape()) {
                     e.preventDefault();
                     e.stopPropagation();
@@ -800,7 +898,7 @@ export class ComposerView {
         if (this.destroyed) return;
         this.close();
         this.controller.escape();
-        if (this.opts.onEscapeIdle?.()) {
+        if (this.opts.onEscapeIdle?.(true)) {
             // The field puts focus back on its own input, which on a phone
             // brings the keyboard up again for an edit the user just
             // canceled.
@@ -816,7 +914,7 @@ export class ComposerView {
      * for its own click to land.
      */
     private onBlur(next: EventTarget | null): void {
-        if (this.destroyed) return;
+        if (this.destroyed || this.parkingFocus) return;
         if (
             next === this.opts.input ||
             next === this.sheetInput ||
@@ -839,6 +937,11 @@ export class ComposerView {
     }
 
     private commitOnBlur(): void {
+        this.chromeSuspended = false;
+        if (this.blurTimer) {
+            clearTimeout(this.blurTimer);
+            this.blurTimer = null;
+        }
         void this.controller.blur().then((outcome) => {
             if (!this.destroyed) this.opts.onBlurCommit?.(outcome);
         });
@@ -866,12 +969,37 @@ export class ComposerView {
             if (
                 active === this.opts.input ||
                 active === this.sheetInput ||
-                (active && this.surface.contains(active))
+                (active &&
+                    (this.surface.contains(active) ||
+                        this.opts.isFieldChrome?.(active)))
             ) {
                 return;
             }
             this.commitOnBlur();
         }, BLUR_COMMIT_DELAY_MS);
+    }
+
+    private mountSheetTools(): void {
+        if (this.sheetToolsHome) return;
+        const node = this.opts.sheetTools?.();
+        if (!node?.parentNode) return;
+        const marker = document.createComment('field tools');
+        node.before(marker);
+        this.sheetToolsHome = { node, marker };
+        this.sheetTools.appendChild(node);
+        this.sheetTools.hidden = false;
+    }
+
+    private restoreSheetTools(): void {
+        const home = this.sheetToolsHome;
+        if (!home) return;
+        // A host that destroyed its control while the sheet was open owns its
+        // removal; closing the sheet must not resurrect that control.
+        if (home.node.parentNode === this.sheetTools && home.marker.parentNode)
+            home.marker.replaceWith(home.node);
+        else home.marker.remove();
+        this.sheetToolsHome = null;
+        this.sheetTools.hidden = true;
     }
 
     // --- Surface choice and placement --------------------------------------------
@@ -1095,6 +1223,17 @@ export class ComposerView {
         }
 
         if (!s.open) {
+            this.clearHoveredDefinition();
+            // Capture owned focus before hiding the surface or restoring a
+            // borrowed tool. Escape's ongoing-edit handoff is already on the
+            // input; tools suspension supplies its own synchronous handoff.
+            if (
+                this.sheet &&
+                !this.suspendingTools &&
+                this.surface.contains(document.activeElement)
+            )
+                this.parkFocus();
+            this.restoreSheetTools();
             this.lastListSignature = '';
             this.surface.hidden = true;
             // A closed surface keeps nothing: text left in it (a reading's
@@ -1120,6 +1259,7 @@ export class ComposerView {
         }
         this.surface.hidden = false;
         this.surface.dataset.surface = this.sheet ? 'sheet' : 'popover';
+        if (this.sheet) this.mountSheetTools();
         this.arrange(this.sheet && keyboardUp());
         this.sheetField.hidden = !this.sheet;
         // Done cannot store a draft that does not read completely. It stays
@@ -1134,7 +1274,6 @@ export class ComposerView {
         else this.sheetDone.removeAttribute('aria-disabled');
         this.paintResult(s);
         this.paintNeeds(s);
-        this.renderFooter(s);
         this.paintList(s);
         this.paintGated(s);
         this.paintStatus(s);
@@ -1197,7 +1336,7 @@ export class ComposerView {
     private paintResult(s: ComposerSnapshot): void {
         // Keep the action outside the repainted reading, so a refused commit
         // never removes the keyboard user's focused button.
-        const parent = this.sheet ? this.sheetLabel.parentElement : this.result;
+        const parent = this.sheet ? this.sheetActions : this.result;
         if (parent && this.sheetDone.parentElement !== parent)
             parent.appendChild(this.sheetDone);
         this.resultContent.replaceChildren();
@@ -1653,6 +1792,7 @@ export class ComposerView {
             return;
         }
         this.lastListSignature = signature;
+        this.clearHoveredDefinition();
         const saved = this.list.scrollTop;
         const savedOuter = this.scroller.scrollTop;
         this.list.replaceChildren();
@@ -1760,6 +1900,8 @@ export class ComposerView {
             'ez-composer__definition',
             detail.replace(/\s*\n+\s*/g, ' ').trim(),
         );
+        def.hidden = true;
+        el.title = detail;
         def.id = `${el.id}-def`;
         el.appendChild(def);
         el.setAttribute('aria-describedby', def.id);
@@ -1780,14 +1922,20 @@ export class ComposerView {
             e.preventDefault();
             void this.controller.activate(row);
         });
-        el.addEventListener('mouseenter', () =>
-            el.classList.add('ez-composer__row--hover'),
-        );
-        el.addEventListener('mouseleave', () =>
-            el.classList.remove('ez-composer__row--hover'),
-        );
+        el.addEventListener('mouseenter', () => {
+            el.classList.add('ez-composer__row--hover');
+            if (row.kind === 'concept') this.describeHoveredRow(el, row);
+        });
+        el.addEventListener('mouseleave', () => {
+            el.classList.remove('ez-composer__row--hover');
+            if (this.hoveredDefinition?.element === el)
+                this.clearHoveredDefinition();
+        });
         switch (row.kind) {
             case 'concept':
+                el.title = this.opts.describeConcept
+                    ? (row.suggestion.description ?? '')
+                    : '';
                 this.fillConceptRow(el, row, active, s);
                 break;
             case 'correction': {
@@ -1873,6 +2021,68 @@ export class ComposerView {
             el.appendChild(this.span('ez-composer__reason', row.gatedReason));
         }
         if (active) this.applyDefinition(el, row);
+    }
+
+    private hoveredDefinition: {
+        element: HTMLElement;
+        query: string;
+        left: number;
+        timer: ReturnType<typeof setTimeout> | null;
+    } | null = null;
+
+    private clearHoveredDefinition(): void {
+        if (this.hoveredDefinition?.timer)
+            clearTimeout(this.hoveredDefinition.timer);
+        this.hoveredDefinition = null;
+    }
+
+    /**
+     * Resolve only the hovered row, for the same bounded interval as an active
+     * row.
+     */
+    private describeHoveredRow(
+        element: HTMLElement,
+        row: Extract<ComposerRow, { kind: 'concept' }>,
+    ): void {
+        this.clearHoveredDefinition();
+        if (!this.opts.describeConcept) return;
+        const held = {
+            element,
+            query: this.controller.snapshot().token.query,
+            left: DEFINITION_RETRIES,
+            timer: null as ReturnType<typeof setTimeout> | null,
+        };
+        this.hoveredDefinition = held;
+        const poll = () => {
+            held.timer = null;
+            const state = this.controller.snapshot();
+            if (
+                this.hoveredDefinition !== held ||
+                this.destroyed ||
+                !this.controller.isOpen ||
+                this.surface.hidden ||
+                !element.isConnected ||
+                !this.list.contains(element) ||
+                !element.classList.contains('ez-composer__row--hover') ||
+                state.token.query !== held.query ||
+                !state.rows.some((current) => current.id === row.id)
+            ) {
+                if (this.hoveredDefinition === held)
+                    this.clearHoveredDefinition();
+                return;
+            }
+            const detail = this.opts.describeConcept?.(
+                row.suggestion.conceptId,
+                row.suggestion.categoryId,
+            );
+            if (detail !== undefined) {
+                if (detail) element.title = detail;
+                this.clearHoveredDefinition();
+            } else if (held.left-- > 0) {
+                held.timer = setTimeout(poll, DEFINITION_RETRY_MS);
+            } else this.clearHoveredDefinition();
+        };
+        poll();
     }
 
     private definitionRetry: {
@@ -1989,28 +2199,5 @@ export class ComposerView {
             this.status.hidden = true;
             this.status.textContent = '';
         }
-    }
-
-    private renderFooter(s: ComposerSnapshot): void {
-        const hint = (keys: string, action: string) => {
-            const span = document.createElement('span');
-            span.className = 'ez-composer__hint';
-            const kbd = document.createElement('kbd');
-            kbd.textContent = keys;
-            span.append(kbd, document.createTextNode(` ${action}`));
-            return span;
-        };
-        const categories = hint(
-            isMacPlatform() ? '⌥↑↓' : 'Alt+↑↓',
-            t('composer.categories'),
-        );
-        categories.classList.add('ez-composer__hint--categories');
-        categories.hidden = s.categories.length < 2;
-        this.footer.replaceChildren(
-            hint('↑↓', t('hint.browse')),
-            categories,
-            hint('Enter', t(s.activeIndex >= 0 ? 'hint.accept' : 'hint.save')),
-            hint('Esc', t('hint.close')),
-        );
     }
 }

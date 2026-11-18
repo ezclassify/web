@@ -36,8 +36,8 @@ export interface EzClassifyPresentationOptions {
     tooltipConceptProperty?: string;
     /**
      * Host-owned favorites persistence for every scanner-mounted field that
-     * supports it (tags/marked-textarea/marked-input/marking). Unset means the
-     * favorites control does not render; see {@link FavoritesConfig} and
+     * supports it (tags/marked-textarea/marked-input/marking). Unset means only
+     * scoped scheme presets are offered; see {@link FavoritesConfig} and
      * `docs/attributes.md`.
      */
     favorites?: FavoritesConfig;

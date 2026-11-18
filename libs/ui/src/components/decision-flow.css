@@ -188,23 +188,10 @@
    wraps from the start edge. */
 .ez-decision-flow__option {
     max-width: 100%;
-    min-height: 2rem;
     padding: 0.25rem 0.625rem;
     text-align: start;
-    border: 1px solid var(--ez-color-border, #d1d5db);
-    border-radius: var(--ez-border-radius, 0.25rem);
-    background: var(--ez-color-background, #fff);
-    color: var(--ez-color-text, inherit);
     font: inherit;
     font-size: 0.8125rem;
-    cursor: pointer;
-    transition:
-        background 0.15s,
-        border-color 0.15s,
-        color 0.15s;
-}
-.ez-decision-flow__option:hover {
-    border-color: var(--ez-color-primary, #fdb827);
 }
 /* A toggle of a multiple-choice step carries a check mark while chosen. */
 .ez-decision-flow__option[role='checkbox'][aria-checked='true']::before {
@@ -214,18 +201,6 @@
 .ez-decision-flow__option:is([aria-checked='true'], [aria-pressed='true']) {
     background: var(--ez-color-primary, #fdb827);
     color: var(--ez-color-primary-contrast, #1c1c1c);
-    border-color: var(--ez-color-primary, #fdb827);
-}
-.ez-decision-flow__option:focus-visible {
-    outline: 2px solid var(--ez-color-primary, #fdb827);
-    outline-offset: 2px;
-}
-/* An option the marking holds only because the engine derived it (a rule
-   added it, or another choice includes it): the family's inferred style,
-   italic with a dashed edge, never the chosen fill. */
-.ez-decision-flow__option--inferred {
-    font-style: italic;
-    border-style: dashed;
     border-color: var(--ez-color-primary, #fdb827);
 }
 /* A value in the marking's text that a rule added and the author has not
@@ -273,12 +248,6 @@
     margin-top: 0.25rem;
     font-size: 0.75rem;
     color: var(--ez-color-muted, #6b7280);
-}
-/* The arrow keys move between the dots, so the key hints show only while a
-   dot has focus. */
-.ez-decision-flow:not(:has(.ez-decision-flow__step-dot:focus))
-    ~ .proto-kbd-hints.ez-field-hints {
-    display: none;
 }
 .ez-decision-flow__text-field {
     width: 100%;
@@ -373,7 +342,6 @@
 .ez-decision-flow__option[data-blocked] {
     border-style: dashed;
     color: var(--ez-color-muted, #6b7280);
-    cursor: not-allowed;
 }
 .ez-decision-flow__option[data-blocked]:hover {
     border-color: var(--ez-color-border, #d1d5db);
@@ -461,7 +429,6 @@
 }
 
 @media (pointer: coarse) {
-    .ez-decision-flow__option,
     .ez-decision-flow__nav-btn {
         min-height: 2.75rem;
     }
@@ -492,14 +459,14 @@
 
 /* Reduced motion: the dot still grows, without the animation. */
 @media (prefers-reduced-motion: reduce) {
-    .ez-decision-flow__step-dot::before,
-    .ez-decision-flow__option {
+    .ez-decision-flow__step-dot::before {
         transition: none;
     }
 }
 
 @media (forced-colors: active) {
     .ez-decision-flow__option:is([aria-checked='true'], [aria-pressed='true']) {
+        border-color: Highlight;
         background: Highlight;
         color: HighlightText;
         forced-color-adjust: none;
@@ -524,4 +491,9 @@
         background: Canvas;
         color: CanvasText;
     }
+}
+
+/* The working step leads native Tab order; its header remains the first row. */
+.ez-decision-flow__header {
+    order: -1;
 }

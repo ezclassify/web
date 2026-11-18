@@ -1,3 +1,4 @@
+import { markingTarget } from './marking-target';
 /**
  * TagInput: chip-based multi-select for discrete-tag schemes.
  *
@@ -25,7 +26,7 @@
 import type { SchemeMetaView } from '@ezclassify/types';
 import { teardownAfterWrite } from './teardown-write';
 import { ComponentBase, type ComponentOptions } from './component-base';
-import { createKeyboardHints, COMPONENT_CSS } from './component-utils';
+import { COMPONENT_CSS } from './component-utils';
 import tagInputCss from './tag-input.css?inline';
 import { t } from '../i18n';
 import { getMountHost } from '../mount-host-registry';
@@ -37,7 +38,11 @@ import {
 import { renderTagChips } from './tag-input-renderer';
 import { inWrittenOrder } from '../written-concept';
 import { scopesOfCategory } from '../scopes';
-import { ensureStatusMark, setStatusMarkFixes } from './status-mark';
+import {
+    ensureStatusMark,
+    setStatusMarkFixes,
+    statusMarkOwnsNode,
+} from './status-mark';
 import {
     applyFieldFrame,
     mirrorHostFrame,
@@ -45,7 +50,7 @@ import {
     type FieldChrome,
 } from './field-chrome';
 import {
-    ensureFavoritesButton,
+    ensureMarkingFavorites,
     schemeOffersPresets,
     type FavoritesConfig,
     type FavoritesPanel,
@@ -62,10 +67,10 @@ import { ComposerView, accessibleLabel } from './composer/composer-view';
 export class TagInput extends ComponentBase {
     private inputWrap!: HTMLDivElement;
     private filterInput!: HTMLInputElement;
-    /** The inline chrome: status mark, ★ favorites button, clear. */
+    /** The inline chrome: marking tools and clear. */
     private chrome: FieldChrome | null = null;
+    private toolsButton: HTMLElement | null = null;
     private favoritesPanel: FavoritesPanel | null = null;
-    private hintsEl!: HTMLElement;
     private wrapOuter!: HTMLDivElement;
     /**
      * Rendered-string preview bar, shared with every other field component;
@@ -218,16 +223,6 @@ export class TagInput extends ComponentBase {
         this.wrapOuter.style.position = 'relative';
         this.wrapOuter.appendChild(this.inputWrap);
 
-        // Keyboard hints for the chips, in a quiet row under the field the way
-        // the marked fields show theirs. The data-ezclassify-no-hints opt-out
-        // keeps it hidden.
-        this.hintsEl = createKeyboardHints([
-            { keys: '←→', action: t('hint.navigateTags') },
-            { keys: 'Del', action: t('hint.removeTag') },
-        ]);
-        this.hintsEl.classList.add('tag-input-hints');
-        if (this.options.hints === false) this.hintsEl.style.display = 'none';
-        this.wrapOuter.appendChild(this.hintsEl);
         this.container.appendChild(this.wrapOuter);
         this.followHostAppearance();
 
@@ -250,10 +245,20 @@ export class TagInput extends ComponentBase {
                     : COMPONENT_CSS + tagInputCss,
             placeholder: this.searchPlaceholder,
             describeConcept: this.shouldShowTooltip()
-                ? (conceptId, categoryId) =>
-                      this.resolveConceptDescription(conceptId, categoryId)
+                ? (conceptId) => this.simpleConceptDescription(conceptId)
                 : undefined,
             onPlacement: (open) => this.setReportInField(open),
+            isFieldChrome: (node) =>
+                statusMarkOwnsNode(this.toolsButton, node) ||
+                this.tagEls.some((chip) => chip.contains(node)),
+            sheetTools: () => this.toolsButton,
+            textToolsEdges: () => true,
+            textStartNeighbor: () => {
+                const index = this.tagEls.length - 1;
+                if (index < 0) return null;
+                this.focusChip(index);
+                return this.tagEls[index] ?? null;
+            },
         });
         this.container.appendChild(this.view.announcer);
         this.wrapOuter.insertAdjacentElement('afterend', this.view.note);
@@ -288,6 +293,7 @@ export class TagInput extends ComponentBase {
         this.favoritesPanel = null;
         this.chrome?.destroy();
         this.chrome = null;
+        this.toolsButton = null;
         this.container.innerHTML = '';
     }
 
@@ -361,7 +367,7 @@ export class TagInput extends ComponentBase {
                 }, 150);
             },
             onChipCreated: (el, conceptId, categoryId, reason) =>
-                this.attachConceptTooltip(el, conceptId, categoryId, reason),
+                this.attachConceptTitle(el, conceptId, categoryId, reason),
         });
 
         this.updateFilterPlaceholder();
@@ -370,32 +376,36 @@ export class TagInput extends ComponentBase {
         this.controller.syncCommitted();
 
         // One status mark per field, mutated in place (Enhancement Status
-        // Indicator contract). The mark, ★ favorites button and clear sit
+        // Indicator contract). Branding and clear sit
         // inline at the field's trailing edge; the wrap reserves the room they
         // take so chips and the filter never run under them. The chrome is
         // mounted once, after the filter, where a render pass never reaches.
         this.chrome ??= mountFieldChrome(this.inputWrap, {
             root: this.options.root,
         });
-        ensureStatusMark(this.chrome.status, {
+        this.toolsButton ??= ensureStatusMark(this.chrome.status, {
+            tools: true,
+            onToolsOpen: () => {
+                this.toolsButton?.focus();
+                this.view?.suspendForTools();
+            },
             shape: 'chrome',
             root: this.options.root,
             shouldShowTooltip: () => this.shouldShowTooltip(),
             ...this.statusMarkUndo(),
         });
         setStatusMarkFixes(this.chrome.status, this.fieldStatusChanges());
-        // The ★ mounts on host favorites wiring OR scheme-declared presets
-        // (ensureFavoritesButton owns the OR); favoritesHost tolerates an
+        // Favorites are available for host wiring OR scheme-declared presets
+        // (ensureMarkingFavorites owns the OR); favoritesHost tolerates an
         // undefined config, running the panel read-only in that case.
         if (
             this.options.favorites ||
             schemeOffersPresets(this.scheme, this.options.scope)
         ) {
-            this.favoritesPanel = ensureFavoritesButton(
+            this.favoritesPanel = ensureMarkingFavorites(
                 this.chrome.status,
                 this.favoritesHost(this.options.favorites),
             );
-            this.favoritesPanel?.syncStar();
         }
 
         if (hadFocus && !this.inputWrap.contains(document.activeElement)) {
@@ -533,8 +543,8 @@ export class TagInput extends ComponentBase {
         const delBtn =
             chip.querySelector<HTMLButtonElement>('.proto-tag-remove');
         if (delBtn) delBtn.tabIndex = 0;
-        chip.focus();
-        this.view.close();
+        chip.focus({ preventScroll: true });
+        this.view.suspendForTools();
     }
 
     private unfocusAllChips(): void {
@@ -618,9 +628,14 @@ export class TagInput extends ComponentBase {
                     this.assertions.length > 0 &&
                     !this.container.hasAttribute('data-ezclassify-invalid'),
             }),
-            onApply: (marking) => {
+            ...markingTarget(this),
+            onApply: (marking, signal) => {
+                if (signal.aborted) return;
+                this.controller.discard();
+                const target = markingTarget(this);
+                if (target) return target.onApply(marking, signal);
                 this.beginUserEdit();
-                void this.setValue(marking);
+                return this.setValue(marking);
             },
             focusField: () => this.filterInput.focus(),
         };

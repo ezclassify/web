@@ -242,10 +242,10 @@ describe('ensureStatusMark', () => {
         expect(document.querySelector('style')).toBeNull();
     });
 
-    it('renders the brand glyph with a separately classed sparkle', () => {
+    it('renders the bracket-sized inline brand glyph with its decorative sparkle', () => {
         const mark = ensureStatusMark(wrap, { shape: 'input' });
         const svg = mark.querySelector('svg');
-        expect(svg?.getAttribute('viewBox')).toBe('-4 -4 72 72');
+        expect(svg?.getAttribute('viewBox')).toBe('11 11 42 42');
         expect(mark.querySelector('.ez-status-mark__sparkle')).not.toBeNull();
         // Three bars: two vertical strokes, three horizontal fills.
         expect(mark.querySelectorAll('path[stroke]')).toHaveLength(2);
@@ -259,10 +259,12 @@ describe('the mark glyph and the plain input it sits on', () => {
     // mobile-font-floor.spec.ts), so these pin the stylesheet's structure.
     const here = dirname(fileURLToPath(import.meta.url));
 
-    it('the sparkle sits in the glyph viewBox top-right corner', () => {
+    it('the decorative sparkle overhangs the bracket-sized glyph', () => {
         const mark = ensureStatusMark(wrap, { shape: 'input' });
         const sparkleGroup = mark.querySelector('svg g');
-        expect(sparkleGroup?.getAttribute('transform')).toBe('translate(59 7)');
+        expect(sparkleGroup?.getAttribute('transform')).toBe(
+            'translate(59.5 4.5) scale(1.25)',
+        );
     });
 
     it("reserves the plain input's trailing room on the edge the mark sits on", () => {

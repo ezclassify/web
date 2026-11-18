@@ -11,6 +11,8 @@ import { mockRenderFormat } from '../render-format-layout-mock';
 import { setMountHost } from '../mount-host-registry';
 import { parseComponentOptions } from '../component-factory';
 import { harvestControllerOptions } from '../element-scanner';
+import { setMarkingTarget } from './marking-target';
+import { cleanupTooltipForRoot } from './tooltip-manager';
 
 const toCtx = (eng: unknown) => schemeOnlyContext(eng as never);
 
@@ -1049,14 +1051,14 @@ describe('GuideChecklist', () => {
 
     describe('data-ezclassify-bound-to', () => {
         /** Mount with a host the runtime would have created the mount for. */
-        async function mountWithHost(boundTo: string | null) {
+        async function mountWithHost(boundTo: string | null, options = {}) {
             const host = document.createElement('div');
             host.setAttribute('data-ezclassify-controller', 'guide-checklist');
             if (boundTo) host.setAttribute('data-ezclassify-bound-to', boundTo);
             container.before(host);
             setMountHost(container, host);
             const onChange = vi.fn();
-            await init({ onChange });
+            await init({ onChange, ...options });
             (
                 checklist as unknown as {
                     guideAdapter: { evaluateMany: () => EvaluationResult };
@@ -1065,6 +1067,98 @@ describe('GuideChecklist', () => {
             checklist.setSelections(inTestGuide('rule-a'));
             return onChange;
         }
+
+        it('uses the associated marking for tools while leaving guide selections and computed results independent', async () => {
+            let current = 'ASSOCIATED';
+            const save = vi.fn();
+            const apply = vi.fn((marking: string) => {
+                current = marking;
+                checklist.setAssertions([]);
+            });
+            setMarkingTarget(checklist, {
+                schemeId: 'test',
+                scheme: engine.getScheme(),
+                formatId: 'default',
+                read: (marking) => ({ rendered: marking }),
+                applyPreset: () => ({ rendered: '' }),
+                getCurrent: () => ({ rendered: current, valid: true }),
+                onApply: apply,
+            });
+            const onChange = await mountWithHost('doc', {
+                favorites: { load: () => [{ marking: 'OTHER' }], save },
+            });
+            try {
+                const checkbox = container.querySelector<HTMLInputElement>(
+                    'input[type="checkbox"]',
+                )!;
+                checkbox.focus();
+                checkbox.dispatchEvent(
+                    new KeyboardEvent('keydown', {
+                        key: 'Enter',
+                        ctrlKey: true,
+                        shiftKey: true,
+                        bubbles: true,
+                        cancelable: true,
+                    }),
+                );
+                await new Promise((resolve) => setTimeout(resolve, 30));
+                expect(document.activeElement?.getAttribute('role')).toBe(
+                    'tab',
+                );
+                expect(
+                    container.querySelector('.ezc-guide-marking-value')
+                        ?.textContent,
+                ).toBe('ASSOCIATED');
+                const mark =
+                    container.querySelector<HTMLElement>('.ez-status-mark')!;
+                const popup = document.getElementById(
+                    mark.getAttribute('aria-describedby')!,
+                )!;
+                popup
+                    .querySelector<HTMLButtonElement>(
+                        '.ez-favorites-panel__pinned',
+                    )!
+                    .click();
+                await new Promise((resolve) => setTimeout(resolve, 30));
+                expect(save).toHaveBeenCalledWith(
+                    'ASSOCIATED',
+                    expect.any(Object),
+                );
+                popup
+                    .querySelector<HTMLButtonElement>(
+                        '[data-favorite-marking="OTHER"]',
+                    )!
+                    .click();
+                await new Promise((resolve) => setTimeout(resolve, 30));
+                expect(apply).toHaveBeenCalledWith(
+                    'OTHER',
+                    expect.any(AbortSignal),
+                );
+                expect(
+                    container.querySelector('.ezc-guide-marking-value')
+                        ?.textContent,
+                ).toBe('OTHER');
+                expect(checklist.getSelections()).toEqual(
+                    inTestGuide('rule-a'),
+                );
+                expect(
+                    container.querySelector('.ezc-guide-result-value')
+                        ?.textContent,
+                ).toBe('MARK-1');
+                expect(onChange).not.toHaveBeenCalled();
+            } finally {
+                checklist.destroy();
+                cleanupTooltipForRoot(container);
+            }
+        });
+
+        it('keeps an unbound guide a computed helper even when a Favorites provider exists', async () => {
+            await mountWithHost(null, { favorites: { load: () => [] } });
+            expect(container.querySelector('.ez-status-mark')).toBeNull();
+            expect(
+                container.querySelector('.ezc-guide-result-value')?.textContent,
+            ).toBe('MARK-1');
+        });
 
         it('writes the copied marking to the bound marking', async () => {
             const onChange = await mountWithHost('doc');

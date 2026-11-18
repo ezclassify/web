@@ -44,6 +44,9 @@ import { createAnnouncer, announce } from './component-utils';
 import { EMPTY_VALUE } from '../text-utils';
 import { getMountHost } from '../mount-host-registry';
 import guideHelperCss from './guide-helper.css?inline';
+import { ensureStatusMark, dismissStatusMarkPopover } from './status-mark';
+import { ensureMarkingFavorites, type FavoritesPanel } from './favorites-panel';
+import { markingTarget } from './marking-target';
 
 const GUIDE_HELPER_DEFAULTS = {
     rule: { singular: 'rule', plural: 'rules' },
@@ -182,6 +185,9 @@ export class GuideChecklist extends ReadOnlyComponentBase {
     private nominationStatus?: HTMLDivElement;
     private matchCountEl!: HTMLSpanElement;
     private evaluationErrorEl!: HTMLDivElement;
+    private markingTools: HTMLElement | null = null;
+    private markingValue: HTMLElement | null = null;
+    private favoritesPanel: FavoritesPanel | null = null;
 
     private views: GuideStructuralView[] = [];
     private ruleByRow = new WeakMap<HTMLElement, GuideRuleView>();
@@ -464,6 +470,7 @@ export class GuideChecklist extends ReadOnlyComponentBase {
         const root = document.createElement('div');
         root.className = 'ezc-guide-helper';
         root.setAttribute('role', 'region');
+        this.mountBoundMarkingTools(root);
         root.setAttribute('aria-label', this.views[0].name);
 
         if (markup.editor) {
@@ -529,6 +536,11 @@ export class GuideChecklist extends ReadOnlyComponentBase {
     }
 
     destroy(): void {
+        this.favoritesPanel?.destroy();
+        this.favoritesPanel = null;
+        if (this.markingTools) dismissStatusMarkPopover(this.markingTools);
+        this.markingTools = null;
+        this.markingValue = null;
         this.removeRuleErrors();
         for (const node of this.placedNodes) node.remove();
         this.placedNodes = [];
@@ -1400,6 +1412,38 @@ export class GuideChecklist extends ReadOnlyComponentBase {
         );
     }
 
+    /** Tools edit the associated marking, independently of guide selections. */
+    private mountBoundMarkingTools(root: HTMLElement): void {
+        const target = this.isBound() ? markingTarget(this) : undefined;
+        if (!target) return;
+        const row = document.createElement('div');
+        row.className = 'ezc-guide-marking-tools';
+        row.setAttribute('role', 'group');
+        const label = document.createElement('span');
+        label.className = 'ezc-guide-marking-label';
+        label.id = `current-marking-label-${this.uid}`;
+        row.setAttribute('aria-labelledby', label.id);
+        label.textContent = 'Current marking:';
+        const value = document.createElement('span');
+        value.className = 'ezc-guide-marking-value';
+        this.markingValue = value;
+        value.textContent = target.getCurrent().rendered || EMPTY_VALUE;
+        row.append(label, value);
+        root.appendChild(row);
+        this.markingTools = ensureStatusMark(row, {
+            tools: true,
+            shape: 'chrome',
+            root: this.options.root ?? this.container,
+            keyboardRoot: this.container,
+        });
+        this.favoritesPanel = ensureMarkingFavorites(row, {
+            root: this.options.root ?? this.container,
+            config: this.options.favorites,
+            ...target,
+            focusField: () => this.searchInput.focus(),
+        });
+    }
+
     /** Whether the host names a marking with `data-ezclassify-bound-to`. */
     private isBound(): boolean {
         const host = getMountHost(this.container) ?? this.container;
@@ -1407,12 +1451,15 @@ export class GuideChecklist extends ReadOnlyComponentBase {
     }
 
     /**
-     * The checklist writes its bound marking and never displays it: a store
-     * commit of that marking keeps the held value current and leaves the
-     * selection and its evaluation as they are.
+     * A bound-store commit updates the Current marking tools row. The guide
+     * selection and its independently computed result stay as they are.
      */
     override setAssertions(assertions: Assertion[]): void {
         this.assertions = [...assertions];
+        const target = markingTarget(this);
+        if (target && this.markingValue)
+            this.markingValue.textContent =
+                target.getCurrent().rendered || EMPTY_VALUE;
     }
 
     private dispatchChangeEvent(): void {

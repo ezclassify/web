@@ -725,15 +725,13 @@ async function mountRuled(markup: string, publish?: [string, string]) {
     return { form, ui };
 }
 
-/**
- * What a field's status mark says EzClassify fixed: hover it past the tooltip's
- * hover-intent delay and read the lines.
- */
+/** Read the field's Corrections tab through its branding button. */
 async function markLines(field: Element): Promise<string[]> {
     const mark = field.querySelector<HTMLElement>('.ez-status-mark')!;
-    mark.dispatchEvent(new Event('mouseenter'));
+    mark.click();
     await new Promise((r) => setTimeout(r, 400));
-    const tip = document.querySelector<HTMLElement>('.ez-tooltip');
+    const tipId = mark.getAttribute('aria-describedby');
+    const tip = tipId ? document.getElementById(tipId) : null;
     const lines =
         tip && !tip.hidden
             ? [
@@ -742,7 +740,7 @@ async function markLines(field: Element): Promise<string[]> {
                   ),
               ].map((line) => line.textContent ?? '')
             : [];
-    mark.dispatchEvent(new Event('mouseleave'));
+    tip?.querySelector<HTMLButtonElement>('.ez-marking-tools__close')?.click();
     return lines;
 }
 

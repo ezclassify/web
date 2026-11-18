@@ -442,3 +442,22 @@
     color: var(--ez-color-error-text, #7f1d1d);
     font-size: 0.875rem;
 }
+
+/* The associated marking has its own tools; the evaluated guide result below
+   still belongs to the checked rules. */
+.ezc-guide-marking-tools {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+}
+.ezc-guide-marking-label {
+    font-size: 0.8125rem;
+    color: var(--ez-color-muted, inherit);
+}
+.ezc-guide-marking-value {
+    flex: 1;
+    min-width: 0;
+    font-size: 0.875rem;
+    overflow-wrap: anywhere;
+}

@@ -1597,6 +1597,79 @@
             "method": "GET",
             "statusCode": 200
         },
+        "a863afc0490626b530ca636fdb885987cbc65e3a48a05a4fcdb17e1d8931a485": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "ref-scheme-1",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "ref-scheme-2",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "ref-scheme-1",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "suggestions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "LOW",
+                            "description": "Low",
+                            "group": "Level",
+                            "label": "LOW",
+                            "name": "Low",
+                            "order": 0,
+                            "selected": true,
+                            "views": { "default": "LOW" }
+                        },
+                        {
+                            "categoryId": "share",
+                            "conceptId": "ALPHA",
+                            "description": "Alpha",
+                            "group": "Share",
+                            "label": "ALPHA",
+                            "name": "Alpha",
+                            "order": 0,
+                            "selected": true,
+                            "views": { "default": "ALPHA" }
+                        },
+                        {
+                            "categoryId": "share",
+                            "conceptId": "BRAVO",
+                            "description": "Bravo",
+                            "group": "Share",
+                            "label": "BRAVO",
+                            "name": "Bravo",
+                            "order": 1,
+                            "selected": false,
+                            "views": { "default": "BRAVO" }
+                        },
+                        {
+                            "categoryId": "share",
+                            "conceptId": "CHARLIE",
+                            "description": "Charlie",
+                            "group": "Share",
+                            "label": "CHARLIE",
+                            "name": "Charlie",
+                            "order": 2,
+                            "selected": false,
+                            "views": { "default": "CHARLIE" }
+                        }
+                    ],
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
         "ae3bcf460880185daf577698af20ff6cbdf3c39848e0acf218d97eba6ea57897": {
             "body": {
                 "resolution": {
@@ -2156,6 +2229,94 @@
                     "notices": [],
                     "proposedFixes": [],
                     "rendered": "LOW",
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "e8be6f62bf3aeed94b393aa070c19c192664b2bb1598703a13565d54ddf97fb6": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "ref-scheme-1",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        },
+                        {
+                            "id": "ref-scheme-2",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "ref-scheme-1",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "LOW",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "share",
+                            "conceptId": "ALPHA",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            { "categoryId": "level", "conceptId": "LOW" },
+                            { "categoryId": "share", "conceptId": "ALPHA" }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "LOW//ALPHA",
+                    "renders": {},
+                    "suggestionsFor": {
+                        "level": {
+                            "suggestions": [
+                                {
+                                    "categoryId": "level",
+                                    "conceptId": "LOW",
+                                    "description": "Low",
+                                    "group": "Level",
+                                    "label": "LOW",
+                                    "name": "Low",
+                                    "order": 0,
+                                    "selected": false,
+                                    "views": { "default": "LOW" }
+                                },
+                                {
+                                    "categoryId": "level",
+                                    "conceptId": "HIGH",
+                                    "description": "High",
+                                    "group": "Level",
+                                    "label": "HIGH",
+                                    "name": "High",
+                                    "order": 1,
+                                    "selected": false,
+                                    "views": { "default": "HIGH" }
+                                }
+                            ],
+                            "warnings": []
+                        }
+                    },
                     "valid": true,
                     "warnings": []
                 }

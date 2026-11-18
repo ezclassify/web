@@ -1,9 +1,8 @@
 /**
  * Declarative opt-outs for optional guidance surfaces (Progressive Enhancement
- * Contract): `data-ezclassify-no-tooltips` and `data-ezclassify-no-hints` let a
- * host disable tooltips and keyboard-hint chrome. They use closest-ancestor
- * semantics and cover ONLY helper surfaces; validation display and core
- * interaction stay non-configurable.
+ * Contract): `data-ezclassify-no-tooltips` lets a host disable optional
+ * tooltips using closest-ancestor semantics and cover ONLY helper surfaces;
+ * validation display and core interaction stay non-configurable.
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
@@ -99,11 +98,9 @@ describe('parseComponentOptions opt-out harvesting', () => {
     it('reads the opt-outs from the host element', () => {
         const el = document.createElement('input');
         el.setAttribute('data-ezclassify-no-tooltips', '');
-        el.setAttribute('data-ezclassify-no-hints', '');
         document.body.appendChild(el);
         const opts = parseComponentOptions(el, {});
         expect(opts.tooltips).toBe(false);
-        expect(opts.hints).toBe(false);
     });
 
     it('cascades from an ancestor element', () => {
@@ -114,8 +111,6 @@ describe('parseComponentOptions opt-out harvesting', () => {
         document.body.appendChild(wrapper);
         const opts = parseComponentOptions(el, {});
         expect(opts.tooltips).toBe(false);
-        // Hints stay enabled (undefined) without their attribute.
-        expect(opts.hints).toBeUndefined();
     });
 
     it('leaves all surfaces enabled without the attributes', () => {
@@ -123,48 +118,36 @@ describe('parseComponentOptions opt-out harvesting', () => {
         document.body.appendChild(el);
         const opts = parseComponentOptions(el, {});
         expect(opts.tooltips).toBeUndefined();
-        expect(opts.hints).toBeUndefined();
     });
 });
 
-describe('data-ezclassify-no-hints', () => {
-    it('suppresses the marked-input keyboard hint but keeps the touch affordance', async () => {
-        const engine = await createEngine();
-        root.innerHTML = `<input type="text" id="mi" data-ezclassify-controller="marked-input" data-ezclassify-no-hints>`;
-        const forms = new EzClassifyUI(asContext(engine as never), { root });
-        activeForms.push(forms);
-        await wait(80);
-
-        expect(root.querySelector('.marked-input-kb-hint')).toBeNull();
-        // Core interaction affordances are not configuration choices.
-        expect(root.querySelector('.marked-input-touch-add')).not.toBeNull();
-    });
-
-    it('keeps the marked-input keyboard hint without the attribute', async () => {
+describe('marking action shortcut hints', () => {
+    it('keeps the direct marking action and its shortcut without generic navigation instructions', async () => {
         const engine = await createEngine();
         root.innerHTML = `<input type="text" id="mi" data-ezclassify-controller="marked-input">`;
         const forms = new EzClassifyUI(asContext(engine as never), { root });
         activeForms.push(forms);
         await wait(80);
-
-        expect(root.querySelector('.marked-input-kb-hint')).not.toBeNull();
-    });
-
-    it('hides the tag-input hint chrome via an ancestor attribute', async () => {
-        const engine = await createEngine();
-        root.innerHTML = `
-      <div data-ezclassify-no-hints>
-        <input id="ac" data-ezclassify-controller="tags" type="text" value="" />
-      </div>`;
-        const forms = new EzClassifyUI(asContext(engine as never), { root });
-        activeForms.push(forms);
-        await wait(80);
-
-        const hints = document.querySelector(
-            '.proto-kbd-hints',
-        ) as HTMLElement | null;
-        expect(hints).not.toBeNull();
-        expect(hints!.style.display).toBe('none');
+        const action = root.querySelector<HTMLButtonElement>(
+            '.marked-input-touch-add',
+        )!;
+        expect(action).not.toBeNull();
+        expect(action.getAttribute('aria-label')).toBe('Set marking');
+        expect(action.querySelector('kbd')?.textContent).toMatch(
+            /^(⌘|Ctrl)\+Enter$/,
+        );
+        expect(action.querySelector('kbd')?.getAttribute('aria-hidden')).toBe(
+            'true',
+        );
+        expect(action.getAttribute('aria-keyshortcuts')).toMatch(
+            /(?:Meta|Control)\+Enter/,
+        );
+        expect(action.title).toContain('Enter');
+        expect(
+            root.querySelector(
+                '.marked-input-kb-hint, .proto-kbd-hints, .ez-field-hints, .ez-composer__footer',
+            ),
+        ).toBeNull();
     });
 });
 

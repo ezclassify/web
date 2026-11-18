@@ -6,6 +6,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type {
     Fix,
+    Assertion,
     FixConceptReference,
     ValidationError,
 } from '@ezclassify/types';
@@ -173,6 +174,124 @@ describe('fixButtonLabel', () => {
 });
 
 describe('fixAssertions', () => {
+    it('expands repeated kept references once without multiplying captured instances', () => {
+        const current: Assertion[] = [
+            {
+                ...ref('TEXT', 'authority'),
+                value: 'First',
+                confidence: 'certain',
+                source: 'user',
+            },
+            {
+                ...ref('TEXT', 'authority'),
+                value: 'Second',
+                confidence: 'certain',
+                source: 'user',
+            },
+            {
+                ...ref('TEXT', 'other'),
+                value: 'Other category',
+                confidence: 'certain',
+                source: 'user',
+            },
+        ];
+        const fix = scenario({
+            message: 'Keep the values.',
+            keeps: [
+                ref('TEXT', 'authority'),
+                ref('TEXT', 'authority'),
+                ref('TEXT', 'other'),
+            ],
+            adds: [ref('NEW')],
+        });
+        expect(fixAssertions(fix, current)).toEqual([
+            {
+                ...ref('TEXT', 'authority'),
+                value: 'First',
+                confidence: 'certain',
+                source: 'user',
+            },
+            {
+                ...ref('TEXT', 'authority'),
+                value: 'Second',
+                confidence: 'certain',
+                source: 'user',
+            },
+            {
+                ...ref('TEXT', 'other'),
+                value: 'Other category',
+                confidence: 'certain',
+                source: 'user',
+            },
+            { ...ref('NEW'), confidence: 'certain', source: 'user' },
+        ]);
+    });
+
+    it('retains every current instance and capture value of a kept canonical reference', () => {
+        const current: Assertion[] = [
+            {
+                ...ref('TEXT', 'authority'),
+                value: 'Jane Analyst',
+                confidence: 'certain',
+                source: 'user',
+            },
+            {
+                ...ref('TEXT', 'authority'),
+                value: 'Second Analyst',
+                confidence: 'inferred',
+                source: 'infer',
+                sourceRule: 'derive-name',
+            },
+            {
+                ...ref('TEXT', 'other'),
+                value: 'Wrong category',
+                confidence: 'certain',
+                source: 'user',
+            },
+            {
+                ...ref('DATE', 'authority'),
+                value: '2040-01-01',
+                confidence: 'certain',
+                source: 'user',
+            },
+            {
+                ...ref('DROP'),
+                value: 'Removed',
+                confidence: 'certain',
+                source: 'user',
+            },
+        ];
+        const fix = scenario({
+            message: 'Raise level.',
+            keeps: [ref('TEXT', 'authority'), ref('DATE', 'authority')],
+            adds: [ref('HIGH', 'level')],
+            removes: [ref('DROP')],
+        });
+        const result = fixAssertions(fix, current);
+        expect(result).toEqual([
+            {
+                ...ref('TEXT', 'authority'),
+                value: 'Jane Analyst',
+                confidence: 'certain',
+                source: 'user',
+            },
+            {
+                ...ref('TEXT', 'authority'),
+                value: 'Second Analyst',
+                confidence: 'certain',
+                source: 'user',
+            },
+            {
+                ...ref('DATE', 'authority'),
+                value: '2040-01-01',
+                confidence: 'certain',
+                source: 'user',
+            },
+            { ...ref('HIGH', 'level'), confidence: 'certain', source: 'user' },
+        ]);
+        expect(current[1].sourceRule).toBe('derive-name');
+    });
+
     it('states what the fix keeps and what it adds as the author marking', () => {
         const next = fixAssertions(
             scenario({
@@ -182,6 +301,7 @@ describe('fixAssertions', () => {
                 adds: [ref('L2', 'level'), ref('B')],
                 removes: [ref('L1', 'level'), ref('C')],
             }),
+            [],
         );
         expect(next).toEqual([
             {
@@ -211,6 +331,7 @@ describe('fixAssertions', () => {
                 message: 'Remove everything.',
                 removes: [ref('A'), ref('B')],
             }),
+            [],
         );
         expect(next).toEqual([]);
     });
@@ -337,7 +458,7 @@ describe('RuleErrorList', () => {
         expect(onApply).toHaveBeenCalledTimes(1);
         expect(onApply).toHaveBeenCalledWith(whole);
         expect(
-            fixAssertions(onApply.mock.calls[0][0]).map((a) => a.conceptId),
+            fixAssertions(onApply.mock.calls[0][0], []).map((a) => a.conceptId),
         ).toEqual(['A']);
     });
 
@@ -456,6 +577,37 @@ describe('RuleErrorList', () => {
         document.body.dispatchEvent(new Event('pointerup', { bubbles: true }));
         button.click();
         expect(returnFocus).toHaveBeenLastCalledWith('keyboard');
+    });
+
+    it('keeps unchanged buttons stable while applying the current same-render proposal and handler', () => {
+        const list = new RuleErrorList(document);
+        host.appendChild(list.element);
+        const previous = vi.fn();
+        list.update(errors, previous);
+        const button = list.element.querySelector<HTMLButtonElement>(
+            '.ez-validation-errors__fix',
+        )!;
+        const current = {
+            ...errors.fixes[0].fix,
+            keeps: [ref('NEW_METADATA', 'metadata')],
+        };
+        const apply = vi.fn();
+        list.update(
+            {
+                ...errors,
+                fixes: [
+                    { ...errors.fixes[0], fix: current },
+                    ...errors.fixes.slice(1),
+                ],
+            },
+            apply,
+        );
+        expect(list.element.querySelector('.ez-validation-errors__fix')).toBe(
+            button,
+        );
+        button.click();
+        expect(previous).not.toHaveBeenCalled();
+        expect(apply).toHaveBeenCalledWith(current);
     });
 
     it('shows the message alone when the owner cannot apply fixes', () => {

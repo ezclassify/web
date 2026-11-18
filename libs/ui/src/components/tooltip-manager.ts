@@ -28,6 +28,10 @@ const tooltipByRoot = new WeakMap<
         target?: Element;
         /** Tells {@link target}'s owner the tooltip no longer describes it. */
         release?: () => void;
+        /** Fixed field edge and opening side for this tools disclosure. */
+        toolsPlacement?: ToolsPlacement;
+        /** Field geometry the cached opening side and edge were measured for. */
+        toolsGeometry?: string;
     }
 >();
 
@@ -104,6 +108,152 @@ interface TooltipHover {
 /** The hover behavior of each target {@link attachTooltip} manages. */
 const hoverByTarget = new WeakMap<Element, TooltipHover>();
 
+/** A native focus reveal can still be scrolling when its dialog opens. */
+interface DialogFocusScroll {
+    active: boolean;
+    dialog?: HTMLElement;
+    readonly origin: HTMLElement;
+    readonly anchor: HTMLElement;
+    stop(): void;
+}
+const dialogFocusScroll = new WeakMap<HTMLElement, DialogFocusScroll>();
+/** Per-root teardown also covers triggers that never opened their tooltip. */
+const dialogFocusObservers = new WeakMap<HTMLElement, Set<() => void>>();
+
+/** Native activation and text/caret keys do not express page-scroll intent. */
+function nativeControlKey(event: KeyboardEvent): boolean {
+    const element = event.target;
+    if (!(element instanceof HTMLElement)) return false;
+    // These controls own page keys as native option/caret navigation too.
+    if (
+        element instanceof HTMLSelectElement ||
+        element instanceof HTMLTextAreaElement ||
+        element.isContentEditable
+    )
+        return true;
+    if (element instanceof HTMLInputElement && element.type === 'radio')
+        return (
+            event.key === ' ' ||
+            ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(
+                event.key,
+            )
+        );
+    const button = element.closest(
+        'button, input[type="button"], input[type="submit"], input[type="reset"], input[type="checkbox"]',
+    );
+    if (button) return event.key === ' ';
+    // Single-line text fields have native caret keys, but no page navigation.
+    if (event.key === 'PageUp' || event.key === 'PageDown') return false;
+    return element instanceof HTMLInputElement;
+}
+
+/** Observe only explicit dialog triggers, until their focus geometry settles. */
+function observeDialogFocusScroll(
+    target: HTMLElement,
+    origin: HTMLElement,
+    anchor: HTMLElement,
+): void {
+    dialogFocusScroll.get(target)?.stop();
+    if (target.getAttribute('aria-haspopup') !== 'dialog') return;
+    const doc = target.ownerDocument;
+    const view = doc.defaultView;
+    if (!view) return;
+    let frame = 0;
+    let stable = 0;
+    let samples = 0;
+    const geometry = () => {
+        const box = anchor.getBoundingClientRect();
+        return [
+            view.scrollX,
+            view.scrollY,
+            box.left,
+            box.top,
+            box.right,
+            box.bottom,
+        ].join(',');
+    };
+    let previous = geometry();
+    const state: DialogFocusScroll = {
+        active: true,
+        origin,
+        anchor,
+        stop: () => {
+            if (!state.active) return;
+            state.active = false;
+            view.cancelAnimationFrame(frame);
+            doc.removeEventListener('wheel', intent, true);
+            doc.removeEventListener('touchstart', intent, true);
+            doc.removeEventListener('pointerdown', intent, true);
+            doc.removeEventListener('keydown', keyIntent);
+            doc.removeEventListener('focusin', focus, true);
+            doc.removeEventListener('scrollend', scrollEnd, true);
+            if (dialogFocusScroll.get(target) === state)
+                dialogFocusScroll.delete(target);
+        },
+    };
+    const intent = () => state.stop();
+    const keyIntent = (event: KeyboardEvent) => {
+        if (
+            !event.defaultPrevented &&
+            !nativeControlKey(event) &&
+            [
+                'PageUp',
+                'PageDown',
+                'Home',
+                'End',
+                ' ',
+                'ArrowUp',
+                'ArrowDown',
+                'ArrowLeft',
+                'ArrowRight',
+            ].includes(event.key)
+        )
+            state.stop();
+    };
+    const focus = (event: FocusEvent) => {
+        if (
+            event.target !== origin &&
+            event.target !== target &&
+            !(
+                event.target instanceof Node &&
+                state.dialog?.contains(event.target)
+            )
+        )
+            state.stop();
+    };
+    const scrollEnd = (event: Event) => {
+        const node = event.target;
+        if (
+            node === doc ||
+            node === view ||
+            (node instanceof Node && node.contains(anchor))
+        )
+            state.stop();
+    };
+    const sample = () => {
+        if (!state.active) return;
+        const current = geometry();
+        stable = current === previous ? stable + 1 : 0;
+        previous = current;
+        // Retire even a continuously animated host; this is opening focus,
+        // never a permanent exemption from scroll dismissal.
+        if (stable >= 2 || ++samples >= 120 || !target.isConnected)
+            state.stop();
+        else frame = view.requestAnimationFrame(sample);
+    };
+    dialogFocusScroll.set(target, state);
+    doc.addEventListener('wheel', intent, { capture: true, passive: true });
+    doc.addEventListener('touchstart', intent, {
+        capture: true,
+        passive: true,
+    });
+    doc.addEventListener('pointerdown', intent, true);
+    doc.addEventListener('keydown', keyIntent);
+    doc.addEventListener('focusin', focus, true);
+    doc.addEventListener('scrollend', scrollEnd, true);
+    frame = view.requestAnimationFrame(sample);
+}
+
 /** Whether the root's tooltip is showing and describes `target`. */
 function describesTarget(target: Element, root?: HTMLElement): boolean {
     const entry = tooltipByRoot.get(root ?? document.body);
@@ -119,6 +269,11 @@ function tooltipOf(target: Element, root?: HTMLElement): HTMLElement | null {
 
 /** Remove tooltip DOM and listener for a root (called from destroy) */
 export function cleanupTooltipForRoot(root: HTMLElement): void {
+    dialogFocusObservers.get(root)?.forEach((detach) => detach());
+    dialogFocusObservers.delete(root);
+    root.querySelectorAll<HTMLElement>('[aria-haspopup="dialog"]').forEach(
+        (target) => dialogFocusScroll.get(target)?.stop(),
+    );
     const entry = tooltipByRoot.get(root);
     if (!entry) return;
     entry.detach?.();
@@ -140,7 +295,8 @@ export interface TooltipPlacement {
      * target in the box's top half opens above it, one in the bottom half below
      * it, and one at its trailing edge beside that edge. Above or below, its
      * trailing edge lines up with the target's; beside, its top lines up with
-     * the target's top. It never crosses the box to the far side. Room is
+     * the target's top. Interactive field tools align to the field's leading
+     * edge and keep their opening side as the active section changes. Room is
      * judged first inside every ancestor that clips the box's overflow, so the
      * tooltip stays by what the reader can see, then inside the viewport alone.
      * Without it, or when no side next to the target has room, the tooltip goes
@@ -280,8 +436,105 @@ function placeClearOf(
     const fitsLeft =
         middleX <= boxMiddleX && clear.left - GAP - width >= area.left;
     // A target in the middle could go either way: its trailing side first.
-    if (rtl) return fitsLeft ? left : fitsRight ? right : null;
-    return fitsRight ? right : fitsLeft ? left : null;
+    const beside = rtl
+        ? fitsLeft
+            ? left
+            : fitsRight
+              ? right
+              : null
+        : fitsRight
+          ? right
+          : fitsLeft
+            ? left
+            : null;
+    return beside;
+}
+
+/** An opening keeps the same field edge while its active section changes. */
+interface ToolsPlacement {
+    left: number;
+    edge: number;
+    side: 'above' | 'below';
+    maxHeight: number;
+}
+
+/** Choose by available space, independently of the current tab's content. */
+function placeTools(
+    anchor: Box,
+    clear: Box,
+    width: number,
+    area: Box,
+    minimumHeight: number,
+    rtl: boolean,
+): ToolsPlacement | null {
+    if (width > area.right - area.left) return null;
+    const above = Math.max(0, clear.top - GAP - area.top);
+    const below = Math.max(0, area.bottom - clear.bottom - GAP);
+    if (Math.max(above, below) < minimumHeight) return null;
+    const side = below >= above ? 'below' : 'above';
+    return {
+        left: clamp(
+            rtl ? anchor.right - width : anchor.left,
+            area.left,
+            area.right - width,
+        ),
+        edge: side === 'below' ? clear.bottom + GAP : clear.top - GAP,
+        side,
+        maxHeight: side === 'below' ? below : above,
+    };
+}
+
+/** Tall controls still leave their tools reachable inside the viewport. */
+function placeToolsInViewport(
+    anchor: Box,
+    clear: Box,
+    target: Box,
+    width: number,
+    minimumHeight: number,
+    rtl: boolean,
+): ToolsPlacement {
+    const area = viewportBox();
+    return (
+        placeTools(anchor, clear, width, area, minimumHeight, rtl) ??
+        placeTools(anchor, target, width, area, minimumHeight, rtl) ?? {
+            left: clamp(
+                rtl ? anchor.right - width : anchor.left,
+                area.left,
+                area.right - width,
+            ),
+            edge: area.top,
+            side: 'below',
+            maxHeight: area.bottom - area.top,
+        }
+    );
+}
+
+/** Keep the tabs, close button, and at least one content row usable. */
+function toolsMinimumHeight(tip: HTMLElement): number {
+    const header = tip.querySelector<HTMLElement>('.ez-marking-tools__header');
+    const body = tip.querySelector<HTMLElement>(
+        '.ez-marking-tools__section:not([hidden])',
+    );
+    const row =
+        body?.querySelector<HTMLElement>(
+            'button, input, [role="status"], li',
+        ) ?? body?.firstElementChild;
+    const style = window.getComputedStyle(tip);
+    const headerStyle = header ? window.getComputedStyle(header) : null;
+    const length = (value: string | undefined) =>
+        Number.parseFloat(value ?? '') || 0;
+    const headerHeight = header?.getBoundingClientRect().height ?? 0;
+    const rowHeight = row?.getBoundingClientRect().height ?? 0;
+    return (
+        headerHeight +
+        Math.max(headerHeight, Math.min(rowHeight, headerHeight || rowHeight)) +
+        length(headerStyle?.marginTop) +
+        length(headerStyle?.marginBottom) +
+        length(style.paddingTop) +
+        length(style.paddingBottom) +
+        length(style.borderTopWidth) +
+        length(style.borderBottomWidth)
+    );
 }
 
 /**
@@ -318,6 +571,8 @@ export function showTooltip(
 
     const effectiveRoot = root ?? document.body;
     const tip = ensureTooltipForRoot(effectiveRoot);
+    const opening = tooltipByRoot.get(effectiveRoot)!;
+    opening.toolsPlacement = undefined;
     // A target can sit in a field's text (a marking in a text area's body),
     // which mirrors the control's font; the tooltip reads its root's.
     copyOverlayTheme(target, tip, effectiveRoot);
@@ -325,6 +580,12 @@ export function showTooltip(
     tip.innerHTML = '';
     const built = typeof content !== 'string';
     tip.classList.toggle('ez-tooltip--built', built);
+    tip.classList.toggle(
+        'ez-tooltip--tools',
+        built &&
+            content instanceof HTMLElement &&
+            content.classList.contains('ez-marking-tools'),
+    );
     // A tooltip holds no controls; built content may, so it is a group.
     tip.setAttribute('role', built ? 'group' : 'tooltip');
     if (built) tip.appendChild(content);
@@ -394,14 +655,97 @@ export function showTooltip(
     target.setAttribute('aria-describedby', tip.id);
     tip.hidden = false;
 
+    repositionTooltip(target, root, placement);
+
+    // The tooltip is position:fixed and anchored to the target's viewport rect at
+    // show time, so once the page (or any nested scroll container) scrolls it
+    // would otherwise hang in place on screen. Dismiss it on scroll/resize, the
+    // standard tooltip behavior. Capture:true catches scrolls from inner
+    // containers; the listeners are torn down in hideTooltip via entry.detach.
+    const entry = tooltipByRoot.get(effectiveRoot);
+    if (entry) {
+        entry.detach?.();
+        const fieldAtOpen = tip.classList.contains('ez-tooltip--tools')
+            ? clearBox(placement?.clearOf)
+            : null;
+        const pendingFocus = dialogFocusScroll.get(target);
+        const focusScroll =
+            tip.classList.contains('ez-tooltip--tools') &&
+            pendingFocus?.anchor === fieldAtOpen?.anchor &&
+            (document.activeElement === target ||
+                document.activeElement === pendingFocus?.origin)
+                ? pendingFocus
+                : undefined;
+        if (focusScroll) focusScroll.dialog = tip;
+        const dismiss = (event: Event) => {
+            const scrolled = event.target;
+            if (scrolled instanceof Node && tip.contains(scrolled)) return;
+            if (
+                event.type === 'scroll' &&
+                focusScroll?.active &&
+                (document.activeElement === target ||
+                    tip.contains(document.activeElement))
+            ) {
+                repositionTooltip(target, root, placement);
+                return;
+            }
+            // A text field can finish scrolling its caret after focus moves
+            // into tools. Its box has not moved, so the tools remain anchored.
+            if (
+                event.type === 'scroll' &&
+                fieldAtOpen &&
+                (scrolled instanceof HTMLInputElement ||
+                    scrolled instanceof HTMLTextAreaElement) &&
+                fieldAtOpen.anchor.contains(scrolled)
+            ) {
+                const current = clearBox(placement?.clearOf);
+                if (
+                    current &&
+                    current.box.left === fieldAtOpen.box.left &&
+                    current.box.top === fieldAtOpen.box.top &&
+                    current.box.right === fieldAtOpen.box.right &&
+                    current.box.bottom === fieldAtOpen.box.bottom
+                )
+                    return;
+            }
+            hideTooltip(effectiveRoot);
+        };
+        const opts: AddEventListenerOptions = { capture: true, passive: true };
+        window.addEventListener('scroll', dismiss, opts);
+        window.addEventListener('resize', dismiss);
+        entry.detach = () => {
+            focusScroll?.stop();
+            window.removeEventListener('scroll', dismiss, opts);
+            window.removeEventListener('resize', dismiss);
+            entry.detach = undefined;
+        };
+    }
+}
+
+/** Reposition visible content without detaching its focused controls. */
+export function repositionTooltip(
+    target: HTMLElement,
+    root?: HTMLElement,
+    placement?: TooltipPlacement,
+): void {
+    const entry = tooltipByRoot.get(root ?? document.body);
+    if (!entry || entry.target !== target || entry.el.hidden) return;
+    const tip = entry.el;
     // Position near the target
     const rect = target.getBoundingClientRect();
     const tipWidth = Math.min(32 * 16, window.innerWidth - 16); // max 32rem
     tip.style.maxWidth = tipWidth + 'px';
 
+    // Natural-size measurement temporarily expands the content section.
+    // Retain its scroll position while laying the same focused actions out.
+    const section = tip.querySelector<HTMLElement>(
+        '.ez-marking-tools__section:not([hidden])',
+    );
+    const scrollTop = section?.scrollTop ?? 0;
     // First render to get actual dimensions
     tip.style.left = '0';
     tip.style.top = '0';
+    tip.style.removeProperty('--ez-tools-max-height');
     const tipRect = tip.getBoundingClientRect();
 
     const margin = VIEWPORT_MARGIN;
@@ -413,52 +757,85 @@ export function showTooltip(
     const rtl = clear
         ? window.getComputedStyle(target).direction === 'rtl'
         : false;
-    const placed = clear
-        ? (placeClearOf(
-              clear.box,
-              rect,
-              tipRect,
-              visibleBox(clear.anchor),
-              rtl,
-          ) ?? placeClearOf(clear.box, rect, tipRect, viewportBox(), rtl))
-        : null;
+    const tools = tip.classList.contains('ez-tooltip--tools');
+    const minimumHeight = tools ? toolsMinimumHeight(tip) : 0;
+    let toolsPlacement: ToolsPlacement | undefined;
+    if (tools) {
+        const anchor = clear?.anchor.getBoundingClientRect() ?? rect;
+        const area = clear ? visibleBox(clear.anchor) : viewportBox();
+        const geometry = JSON.stringify([
+            ...[anchor, clear?.box ?? rect, rect, area, viewportBox()].flatMap(
+                (box) => [box.left, box.top, box.right, box.bottom],
+            ),
+            tipRect.width,
+            rtl,
+        ]);
+        if (entry.toolsGeometry !== geometry) {
+            entry.toolsPlacement = undefined;
+            entry.toolsGeometry = geometry;
+        }
+        toolsPlacement =
+            entry.toolsPlacement ??
+            (clear
+                ? placeTools(
+                      anchor,
+                      clear.box,
+                      tipRect.width,
+                      area,
+                      minimumHeight,
+                      rtl,
+                  )
+                : null) ??
+            placeToolsInViewport(
+                anchor,
+                clear?.box ?? rect,
+                rect,
+                tipRect.width,
+                minimumHeight,
+                rtl,
+            );
+        entry.toolsPlacement = toolsPlacement;
+        tip.style.setProperty(
+            '--ez-tools-max-height',
+            toolsPlacement.maxHeight + 'px',
+        );
+    }
+    const placed =
+        !tools && clear
+            ? (placeClearOf(
+                  clear.box,
+                  rect,
+                  tipRect,
+                  visibleBox(clear.anchor),
+                  rtl,
+              ) ?? placeClearOf(clear.box, rect, tipRect, viewportBox(), rtl))
+            : null;
+    const measured = tools ? tip.getBoundingClientRect() : tipRect;
+    if (section) section.scrollTop = scrollTop;
 
     // Otherwise by the target: prefer below, flip above if needed.
     let top = rect.bottom + GAP;
-    let left = rect.left + rect.width / 2 - tipRect.width / 2;
-    if (placed) {
+    let left = rect.left + rect.width / 2 - measured.width / 2;
+    if (toolsPlacement) {
+        left = toolsPlacement.left;
+        top =
+            toolsPlacement.side === 'below'
+                ? toolsPlacement.edge
+                : toolsPlacement.edge - measured.height;
+    } else if (placed) {
         ({ top, left } = placed);
     } else if (
-        rect.bottom + GAP + tipRect.height > window.innerHeight - margin &&
-        rect.top - GAP - tipRect.height >= margin
+        rect.bottom + GAP + measured.height > window.innerHeight - margin &&
+        rect.top - GAP - measured.height >= margin
     ) {
-        top = rect.top - tipRect.height - GAP;
+        top = rect.top - measured.height - GAP;
     }
     // Keep it on screen.
-    top = clamp(top, margin, window.innerHeight - tipRect.height - margin);
-    left = clamp(left, margin, window.innerWidth - tipRect.width - margin);
+    top = clamp(top, margin, window.innerHeight - measured.height - margin);
+    left = clamp(left, margin, window.innerWidth - measured.width - margin);
 
     tip.style.left = left + 'px';
     tip.style.top = top + 'px';
-
-    // The tooltip is position:fixed and anchored to the target's viewport rect at
-    // show time, so once the page (or any nested scroll container) scrolls it
-    // would otherwise hang in place on screen. Dismiss it on scroll/resize, the
-    // standard tooltip behavior. Capture:true catches scrolls from inner
-    // containers; the listeners are torn down in hideTooltip via entry.detach.
-    const entry = tooltipByRoot.get(effectiveRoot);
-    if (entry) {
-        entry.detach?.();
-        const dismiss = () => hideTooltip(effectiveRoot);
-        const opts: AddEventListenerOptions = { capture: true, passive: true };
-        window.addEventListener('scroll', dismiss, opts);
-        window.addEventListener('resize', dismiss);
-        entry.detach = () => {
-            window.removeEventListener('scroll', dismiss, opts);
-            window.removeEventListener('resize', dismiss);
-            entry.detach = undefined;
-        };
-    }
 }
 
 /** Hide the tooltip */
@@ -577,6 +954,15 @@ export function attachTooltip(
     // Shown already, by this hover or by a press: the dwell has nothing to do.
     const present = (content: TooltipContent) => {
         if (describesTarget(target, root)) return;
+        const current = tooltipByRoot.get(root ?? document.body);
+        // Passive help must not replace a dialog that owns keyboard focus.
+        // An explicit disclosure still opens through showTooltip directly.
+        if (
+            current &&
+            !current.el.hidden &&
+            current.el.classList.contains('ez-tooltip--tools')
+        )
+            return;
         showTooltip(target, content, root, placement?.());
         shown = true;
         onShown?.();
@@ -621,7 +1007,9 @@ export function attachTooltip(
         shown = false;
         cancelShow();
         cancelLeave();
-        hideTooltip(root);
+        // Focus can leave the previous trigger after another control has
+        // already opened its tools in this root's shared tooltip.
+        if (describesTarget(target, root)) hideTooltip(root);
     };
 
     // The pointer left the target or the tooltip. A tooltip the user pressed
@@ -655,9 +1043,44 @@ export function attachTooltip(
         },
     });
 
+    // A keyboard shortcut can open this trigger's Tools while its field,
+    // rather than the trigger, still owns a native focus reveal.
+    const focusOrigin = (event: FocusEvent) => {
+        const origin = event.target;
+        const anchor = clearBox(placement?.()?.clearOf)?.anchor;
+        if (
+            origin instanceof HTMLElement &&
+            (origin === target || anchor?.contains(origin))
+        )
+            observeDialogFocusScroll(target, origin, anchor ?? target);
+    };
+    const observesDialog = target.getAttribute('aria-haspopup') === 'dialog';
+    const observationRoot = root ?? target.ownerDocument.body;
+    const stopObserving = () => {
+        observationRoot.removeEventListener('focusin', focusOrigin, true);
+        dialogFocusScroll.get(target)?.stop();
+        dialogFocusObservers.get(observationRoot)?.delete(stopObserving);
+    };
+    if (observesDialog) {
+        observationRoot.addEventListener('focusin', focusOrigin, true);
+        const observers =
+            dialogFocusObservers.get(observationRoot) ?? new Set<() => void>();
+        observers.add(stopObserving);
+        dialogFocusObservers.set(observationRoot, observers);
+    }
+    const triggerFocus = () => {
+        // Phone sheets temporarily borrow the same trigger outside its root.
+        if (observesDialog && !observationRoot.contains(target))
+            observeDialogFocusScroll(
+                target,
+                target,
+                clearBox(placement?.()?.clearOf)?.anchor ?? target,
+            );
+        show();
+    };
     target.addEventListener('mouseenter', show);
     target.addEventListener('mouseleave', leave);
-    target.addEventListener('focus', show);
+    target.addEventListener('focus', triggerFocus);
     target.addEventListener('blur', blur);
 
     let touching = false;
@@ -712,7 +1135,9 @@ export function attachTooltip(
         hide();
         target.removeEventListener('mouseenter', show);
         target.removeEventListener('mouseleave', leave);
-        target.removeEventListener('focus', show);
+        dialogFocusScroll.get(target)?.stop();
+        target.removeEventListener('focus', triggerFocus);
+        stopObserving();
         target.removeEventListener('blur', blur);
         hoverByTarget.delete(target);
         if (enableLongPressTouch) {

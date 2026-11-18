@@ -102,7 +102,6 @@ export function parseComponentOptions(
     // subtree. Only helper surfaces are configurable; validation display and
     // core interaction behavior are not.
     if (el.closest('[data-ezclassify-no-tooltips]')) opts.tooltips = false;
-    if (el.closest('[data-ezclassify-no-hints]')) opts.hints = false;
 
     // Shared binding attributes (live on the host element, not under the controller prefix).
     // `data-ezclassify-scope` lists scope ids the way `class` lists class

@@ -1674,7 +1674,7 @@ export class ComposerController {
     private async applyFix(
         row: Extract<ComposerRow, { kind: 'fix' }>,
     ): Promise<boolean> {
-        const assertions = fixAssertions(row.fix);
+        const assertions = fixAssertions(row.fix, this.liveAssertions());
         // The whole value was replaced, not typed: nothing to search.
         this.browsing = true;
         if (this.shape === 'additive') {
