@@ -2506,7 +2506,7 @@ describe('DecisionFlow: compact layout', () => {
         expect(step().hidden).toBe(true);
     });
 
-    it('at rest is one line: the dots, its marking and what is wrong with it, then the chrome', async () => {
+    it('keeps the single-scope marking and its problems below the step', async () => {
         await flow.init(container, toCtx(createMockEngine()), {
             initialValue: 'S:P',
         } as never);
@@ -2516,56 +2516,29 @@ describe('DecisionFlow: compact layout', () => {
         ]);
         const frame = container.querySelector('.ez-decision-flow')!;
         const header = frame.querySelector('.ez-decision-flow__header')!;
-        // The header holds the value, after the dots and before the chrome.
-        const value = header.querySelector<HTMLElement>(
-            '.ez-decision-flow__rest .ez-decision-flow__value',
-        )!;
-        expect(
-            value.querySelector('.ez-decision-flow__value-text')?.textContent,
-        ).not.toBe('not set');
-        expect(
-            header.querySelector(
-                '.ez-decision-flow__rest .ez-decision-flow__problems',
-            )?.textContent,
-        ).toContain('Impact is required');
-        expect(
-            header.querySelector('.ez-decision-flow__dot-group-label'),
-        ).toBeNull();
-        const order = [
-            header.querySelector('.ez-decision-flow__progress')!,
-            value,
-            header.querySelector('.ez-status-mark')!,
-        ];
-        for (let i = 1; i < order.length; i++)
-            expect(
-                order[i - 1].compareDocumentPosition(order[i]) &
-                    Node.DOCUMENT_POSITION_FOLLOWING,
-            ).toBeTruthy();
+        const values = frame.querySelector('.ez-decision-flow__values')!;
+        expect(header.querySelector('.ez-decision-flow__value')).toBeNull();
         expect(step().hidden).toBe(true);
-        expect(frame.hasAttribute('data-open')).toBe(false);
-        const before = header.innerHTML;
+        expect(step().compareDocumentPosition(values)).toBe(
+            Node.DOCUMENT_POSITION_FOLLOWING,
+        );
+        const valueText = values.querySelector(
+            '.ez-decision-flow__value-text',
+        )?.textContent;
+        expect(valueText).toBeTruthy();
+        expect(valueText).not.toBe('not set');
+        expect(values.textContent).toContain('Impact is required');
 
-        // Opening adds the step under the header and leaves the header as
-        // it was: the value stays where it was.
         dots()[0].focus();
-        expect(frame.hasAttribute('data-open')).toBe(true);
+        expect(step().hidden).toBe(false);
         expect(title()).toMatch(/^\d of 2 · /);
+        expect(header.querySelector('.ez-decision-flow__value')).toBeNull();
         expect(
-            header.querySelector(
-                '.ez-decision-flow__rest .ez-decision-flow__value',
-            ),
-        ).not.toBeNull();
-        expect(
-            header.querySelectorAll('.ez-decision-flow__value'),
+            values.querySelectorAll('.ez-decision-flow__value'),
         ).toHaveLength(1);
-        const settled = (html: string) =>
-            html.replace(
-                / (tabindex="-?\d"|data-previewing=""|data-current=""|aria-current="step")/g,
-                '',
-            );
-        // Focus moves the dots' tab stop, previews a dot and rings the open
-        // step's dot; nothing else in the header changes.
-        expect(settled(header.innerHTML)).toBe(settled(before));
+        expect(
+            values.querySelector('.ez-decision-flow__value-text')?.textContent,
+        ).toBe(valueText);
     });
 
     it('shows its marking whole, breaking only after a separator and at its own line ends', async () => {
@@ -2574,7 +2547,7 @@ describe('DecisionFlow: compact layout', () => {
         } as never);
         await settle();
         const text = container.querySelector<HTMLElement>(
-            '.ez-decision-flow__rest .ez-decision-flow__value-text',
+            '.ez-decision-flow__values .ez-decision-flow__value-text',
         )!;
         expect(text.innerHTML).toBe(
             'TOP SECRET//<wbr>SI/<wbr>TK//<wbr>REL TO USA, AUS<br>Second line',
@@ -2584,7 +2557,7 @@ describe('DecisionFlow: compact layout', () => {
     it('says "not set" on its value when nothing is answered', async () => {
         await flow.init(container, toCtx(createMockEngine()));
         const text = container.querySelector<HTMLElement>(
-            '.ez-decision-flow__rest .ez-decision-flow__value-text',
+            '.ez-decision-flow__values .ez-decision-flow__value-text',
         )!;
         expect(text.textContent).toBe('not set');
         expect(text.hasAttribute('data-empty')).toBe(true);
@@ -2603,7 +2576,7 @@ describe('DecisionFlow: compact layout', () => {
             document.querySelector<HTMLElement>('.ez-validation-errors');
         expect(list()?.hidden ?? true).toBe(true);
         const problems = container.querySelector<HTMLElement>(
-            '.ez-decision-flow__rest .ez-decision-flow__problems',
+            '.ez-decision-flow__values .ez-decision-flow__problems',
         )!;
         // In words, with no bare count.
         expect(problems.textContent).toBe('Missing: Impact');
@@ -4622,7 +4595,7 @@ describe('DecisionFlow: compact layout', () => {
             }
             outside.focus();
             container
-                .querySelector<HTMLElement>('.ez-decision-flow__rest')!
+                .querySelector<HTMLElement>('.ez-decision-flow__values')!
                 .dispatchEvent(
                     new MouseEvent('click', { bubbles: true, detail: 1 }),
                 );
@@ -4665,7 +4638,7 @@ describe('DecisionFlow: compact layout', () => {
             ]);
             await settle();
             container
-                .querySelector('.ez-decision-flow__rest')!
+                .querySelector('.ez-decision-flow__values')!
                 .dispatchEvent(new MouseEvent('mouseenter'));
             expect(document.activeElement).toBe(outside);
         },
@@ -4702,7 +4675,7 @@ describe('DecisionFlow: compact layout', () => {
             }),
         );
         container
-            .querySelector<HTMLElement>('.ez-decision-flow__rest')!
+            .querySelector<HTMLElement>('.ez-decision-flow__values')!
             .dispatchEvent(
                 new MouseEvent('click', { bubbles: true, detail: 1 }),
             );
@@ -4733,7 +4706,7 @@ describe('DecisionFlow: compact layout', () => {
         await flow.init(container, toCtx(engine));
         await settle();
         container
-            .querySelector<HTMLElement>('.ez-decision-flow__rest')!
+            .querySelector<HTMLElement>('.ez-decision-flow__values')!
             .dispatchEvent(
                 new MouseEvent('click', { bubbles: true, detail: 1 }),
             );
@@ -4773,7 +4746,7 @@ describe('DecisionFlow: compact layout', () => {
         dots()[1].click();
         outside.focus();
         container
-            .querySelector<HTMLElement>('.ez-decision-flow__rest')!
+            .querySelector<HTMLElement>('.ez-decision-flow__values')!
             .dispatchEvent(
                 new MouseEvent('click', { bubbles: true, detail: 1 }),
             );

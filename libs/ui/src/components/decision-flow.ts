@@ -6,22 +6,20 @@ import { focusTextCaretNeighbor } from './text-caret-edge';
  * A field-sized control in the suite's frame. The status mark and clear sit at
  * the trailing end of its first line.
  *
- * One row of dots heads the control, a gap between scopes. A flow of one scope
- * writes its marking beside the dots, or under them, whole, when it does not
- * fit. A flow of several writes each scope's value under its name, below the
- * step. Under a value with something wrong, a line names the steps it is
- * missing, each a way to its step, and gives the engine's other messages.
+ * One row of dots heads the control, with a gap between scopes. Marking values
+ * appear below the step. A flow across scopes labels each value with its scope.
+ * The report under a value lists missing steps and other engine messages.
  *
- * Focusing or pressing the control opens it, and opening adds one thing, the
- * step, at the bottom: its title ("3 of 8 · Dissemination Control") on a line
- * of its own, then the step's options between the previous and next step
- * arrows. Nothing above the step moves, hides or changes size when it opens or
- * when the step changes. Each choice calls `reprocess()` so constraints and
- * inference fire as the author goes; a choice in a single-choice step moves on
- * to the next step, and a multiple-choice step's toggles do not. Every option
- * is a toggle: pressing a chosen one again un-chooses it and the flow stays on
- * the step, and a value step is cleared by emptying its box. There is no clear
- * for one step; the x clears the whole marking, every scope the flow writes. An
+ * Focusing or pressing the control opens the step between the header and the
+ * marking values: its title ("3 of 8 · Dissemination Control") on a line of its
+ * own, then the step's options between the previous and next step arrows.
+ * Nothing above the step moves, hides or changes size when it opens or when the
+ * step changes. Each choice calls `reprocess()` so constraints and inference
+ * fire as the author goes; a choice in a single-choice step moves on to the
+ * next step, and a multiple-choice step's toggles do not. Every option is a
+ * toggle: pressing a chosen one again un-chooses it and the flow stays on the
+ * step, and a value step is cleared by emptying its box. There is no clear for
+ * one step; the x clears the whole marking, every scope the flow writes. An
  * option reads as the flow writes its concept on the step's scope (see
  * written-concept.ts), with the concept's name and definition in its tooltip
  * and description. One the marking's current choices rule out stays in its
@@ -206,19 +204,15 @@ export class DecisionFlow extends ComponentBase {
     protected override clearLabel(): string {
         return t('aria.clearWholeMarking');
     }
-    /** The header row: the dots, the step header and the suite's chrome. */
+    /** The header row: the dots and the suite's chrome. */
     private headerEl!: HTMLDivElement;
     /** The dots, one per visible step. */
     private dotsEl!: HTMLDivElement;
     /** "3 of 8 · Dissemination Control", while the step is open. */
     private titleEl!: HTMLDivElement;
-    /** A flow of one scope's line, in the header while the flow is at rest. */
-    private restEl!: HTMLDivElement;
-    /** The header's line: the dots, then the step's title or the rest line. */
-    private headerMainEl!: HTMLDivElement;
     /** The open step: its options between the previous and next arrows. */
     private stepEl!: HTMLDivElement;
-    /** A flow of several scopes: each scope's caption and value, under the step. */
+    /** Marking values and their reports, below the step. */
     private valuesEl!: HTMLDivElement;
     /** The label a previewed dot shows, laid over the flow. */
     private previewEl!: HTMLDivElement;
@@ -670,15 +664,9 @@ export class DecisionFlow extends ComponentBase {
         this.dotsEl.setAttribute('aria-label', 'Steps');
         this.titleEl = document.createElement('div');
         this.titleEl.className = 'ez-decision-flow__question-label';
-        this.restEl = document.createElement('div');
-        this.restEl.className = 'ez-decision-flow__rest';
-        // One row of dots, and for a flow of one scope its marking beside
-        // them, under them when it does not fit. The chrome keeps the row's
-        // trailing end. Opening the flow changes none of it.
         const headerMain = document.createElement('div');
         headerMain.className = 'ez-decision-flow__header-main';
-        headerMain.append(this.dotsEl, this.restEl);
-        this.headerMainEl = headerMain;
+        headerMain.appendChild(this.dotsEl);
         this.headerEl.appendChild(headerMain);
         this.stepEl = document.createElement('div');
         this.stepEl.className = 'ez-decision-flow__step';
@@ -2745,21 +2733,17 @@ export class DecisionFlow extends ComponentBase {
     }
 
     /**
-     * What the marking writes, never shortened. A flow of one scope shows it
-     * beside the dots. A flow of several shows, under the step, each scope's
-     * caption and its value under it, written in the scope's own output: a
-     * block of several lines keeps its lines. While the flow is open, the
-     * caption of the open step's scope reads as current. Under a value that has
+     * Show the full marking under the step. For several scopes, label each
+     * value and preserve its line breaks. While the flow is open, the caption
+     * of the open step's scope reads as current. Under a value that has
      * something wrong, a line says what: the steps it is missing, each a way to
      * its step, and the engine's other messages.
      */
     private renderValues(): void {
         this.renderRuleFixes();
-        this.restEl.replaceChildren();
         this.valuesEl.replaceChildren();
-        this.valuesEl.hidden = !this.multiScope;
         if (!this.multiScope) {
-            this.restEl.appendChild(
+            this.valuesEl.appendChild(
                 this.valueOf(undefined, this._lastRendered),
             );
             return;
@@ -3096,7 +3080,7 @@ export class DecisionFlow extends ComponentBase {
 
     /** What the author has reviewed changed: draw the values again. */
     protected override onStatusReviewChange(): void {
-        if (this.restEl) this.renderValues();
+        if (this.valuesEl) this.renderValues();
     }
 
     /**
