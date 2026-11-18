@@ -4,6 +4,8 @@ name: CI
 # on demand. A dispatch with `full` set also runs the `full` job, the release
 # evidence: Node 24 and the pack-and-consume proof on both Node versions.
 on:
+  push:
+    branches: [main]
   pull_request:
     branches: [main]
   workflow_dispatch:
@@ -24,6 +26,7 @@ concurrency:
 jobs:
   ci:
     name: ci
+    if: github.event_name != 'push' || (github.repository == 'ezclassify/web' && github.ref == 'refs/heads/main' && vars.EZ_WEB_MAIN_SNAPSHOTS == 'true')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -150,6 +153,82 @@ jobs:
         # nothing is skipped. Whether a recorded answer is still what the engine
         # says is the maintainer lane's check, recordings.yml.
         run: npm test
+
+      - name: Pack the tested Web snapshots
+        if: github.event_name == 'push' && github.repository == 'ezclassify/web' && github.ref == 'refs/heads/main' && vars.EZ_WEB_MAIN_SNAPSHOTS == 'true'
+        id: snapshot
+        run: |
+          set -euo pipefail
+          version="$(node -p "require('./libs/ui/package.json').version.split('-')[0]")-dev.snapshot.g${GITHUB_SHA}"
+          out="$RUNNER_TEMP/web-snapshot"
+          mkdir -p "$out"
+          for package in ui react; do
+            npm pkg set "version=$version" -w "@ezclassify/$package"
+            npm pkg delete publishConfig -w "@ezclassify/$package"
+            npm pack --ignore-scripts --pack-destination "$out" -w "@ezclassify/$package"
+          done
+
+      - name: Retain the snapshot tarballs
+        if: steps.snapshot.outcome == 'success'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: web-snapshot
+          path: ${{ runner.temp }}/web-snapshot/*.tgz
+          if-no-files-found: error
+          retention-days: 7
+
+  publish-snapshot:
+    if: github.event_name == 'push' && github.repository == 'ezclassify/web' && github.ref == 'refs/heads/main' && vars.EZ_WEB_MAIN_SNAPSHOTS == 'true'
+    needs: ci
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      packages: write
+    steps:
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: web-snapshot
+          path: ${{ runner.temp }}/web-snapshot
+          digest-mismatch: error
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '24'
+          registry-url: https://npm.pkg.github.com
+          scope: '@ezclassify'
+          package-manager-cache: false
+      - name: Publish and verify the tested tarballs
+        env:
+          NODE_AUTH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          cd "$RUNNER_TEMP/web-snapshot"
+          shopt -s nullglob
+          files=(*.tgz)
+          test "${#files[@]}" -eq 2
+          npm_args=(--registry=https://npm.pkg.github.com --prefer-online --fetch-retries=0)
+          for package in ui react; do
+            # Existing package ACLs and visibility must be configured before opting in.
+            test "$(npm view "@ezclassify/$package" name "${npm_args[@]}")" = "@ezclassify/$package"
+          done
+          for package in ui react; do
+            matches=(ezclassify-"$package"-*-dev.snapshot.g"$GITHUB_SHA".tgz)
+            test "${#matches[@]}" -eq 1
+            file="${matches[0]}"
+            version="${file#"ezclassify-$package-"}"
+            version="${version%.tgz}"
+            expected="sha512-$(openssl dgst -sha512 -binary "$file" | openssl base64 -A)"
+            spec="@ezclassify/$package@$version"
+            if ! actual="$(npm view "$spec" dist.integrity "${npm_args[@]}" 2>lookup.err)"; then
+              grep -q E404 lookup.err || { cat lookup.err >&2; exit 1; }
+              actual=''
+            fi
+            if [[ -z "$actual" ]]; then
+              npm publish "./$file" --ignore-scripts --access restricted --tag dev-snapshot "${npm_args[@]}"
+              actual="$(npm view "$spec" dist.integrity "${npm_args[@]}")"
+            fi
+            test "$actual" = "$expected"
+            echo "Verified $spec" >> "$GITHUB_STEP_SUMMARY"
+          done
 
   full:
     name: full (${{ matrix.node-version }})
