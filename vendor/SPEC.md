@@ -36,11 +36,11 @@ the reference contract.
 | `openapiVersion`          | `1.0.0-dev.30`          |
 | `abiVersion`              | `v1`              |
 | `replayerContractVersion` | `1` |
-| `contracts@`              | `90a01b9581f2c9d83b3fafaf961144e955a88487`      |
-| `specSourceUrl`           | https://github.com/ezclassify/contracts/tree/90a01b9581f2c9d83b3fafaf961144e955a88487/libs/openapi/openapi.yaml             |
+| `contracts@`              | `97194c8243ff1d3a87af0f1f7842706cff7bbdfa`      |
+| `specSourceUrl`           | https://github.com/ezclassify/contracts/tree/97194c8243ff1d3a87af0f1f7842706cff7bbdfa/libs/openapi/openapi.yaml             |
 | `targetRepo`              | `web`          |
-| `releaseDateUtc`          | `2026-11-16T03:27:46.000Z`          |
-| `generatorScript@`        | `dec8afbeb2b2`      |
+| `releaseDateUtc`          | `2026-11-16T19:39:15.000Z`          |
+| `generatorScript@`        | `f366fadf8457`      |
 
 `abiVersion` is the wire interface version the server reports on `/v1/health`. It is fixed at `v1`.
 
@@ -49,9 +49,11 @@ the reference contract.
 To change anything in this bundle, change it in the [ezclassify/contracts](https://github.com/ezclassify/contracts) repository. When
 the contract changes, the `ezclassify-spec-bot` GitHub App opens a pull request
 here with the new bundle and a fresh copy of this file. Its commits are authored
-as `ezclassify-spec-bot[bot]` with a `chore(spec):` subject, and the
-`vendor-readonly` workflow rejects any other commit that touches
-`vendor/spec/` or `vendor/SPEC.md`.
+as `ezclassify-spec-bot[bot]` with a `chore(spec):` subject. The ci job on
+every pull request checks `vendor/spec/openapi.yaml` against the
+`openapiSha256` recorded in `vendor/spec/MANIFEST.json`,
+so a hand edit fails unless the manifest changes with it, and that change
+shows up in review.
 
 There is no local command that re-vendors the mirror.
 
