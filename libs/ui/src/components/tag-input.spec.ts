@@ -401,6 +401,37 @@ afterEach(() => {
 });
 
 describe('TagInput', () => {
+    it.each(['', 'NOFORN'])(
+        'reaches the last tag from character zero with query %j and preserves the draft',
+        async (query) => {
+            const { tags } = await mountTagInput('SECRET');
+            const filter =
+                root.querySelector<HTMLInputElement>('.tag-input-filter')!;
+            const before = tags.getAssertions();
+            filter.focus();
+            typeText(filter, query);
+            await wait();
+            filter.setSelectionRange(0, 0);
+            press(filter, 'ArrowLeft');
+            const last = [
+                ...root.querySelectorAll<HTMLElement>('.proto-tag'),
+            ].at(-1)!;
+            expect(document.activeElement).toBe(last);
+            await wait(180);
+            expect(filter.value).toBe(query);
+            expect(tags.getAssertions()).toEqual(before);
+            filter.focus();
+            filter.setSelectionRange(filter.value.length, filter.value.length);
+            press(filter, 'ArrowRight');
+            const brand = root.querySelector<HTMLElement>('.ez-status-mark')!;
+            expect(document.activeElement).toBe(brand);
+            press(brand, 'ArrowLeft');
+            expect(document.activeElement).toBe(filter);
+            expect(filter.selectionStart).toBe(query.length);
+            expect(filter.value).toBe(query);
+        },
+    );
+
     it('preserves its own native host appearance instead of replacing it with library colors', async () => {
         root.innerHTML = `
             <input style="background-color: pink" />
@@ -521,24 +552,18 @@ describe('TagInput', () => {
         expect(filter.value).toBe('');
     });
 
-    it('shows a concept dwell tooltip on chip hover', async () => {
+    it('uses native concept titles on chips without a dwell popup', async () => {
         await mountTagInput('SECRET');
-        const chip = root.querySelector('.proto-tag') as HTMLElement;
-
-        expect(document.body.querySelector('.ez-tooltip')).toBeNull();
-        chip.dispatchEvent(new Event('mouseenter'));
+        const element = root.querySelector<HTMLElement>('.proto-tag')!;
+        expect(element.title).toContain('Secret');
+        expect(element.getAttribute('aria-description')).toContain('Secret');
+        const focused = document.activeElement;
+        element.dispatchEvent(new Event('mouseenter'));
         await wait(350);
-
-        const tip = document.body.querySelector(
-            '.ez-tooltip',
-        ) as HTMLElement | null;
-        expect(tip).not.toBeNull();
-        expect(tip!.hidden).toBe(false);
-
-        chip.dispatchEvent(new Event('mouseleave'));
-        // It stays a moment, so the pointer can reach it, then closes.
-        await wait(350);
-        expect(tip!.hidden).toBe(true);
+        expect(
+            document.body.querySelector('.ez-tooltip:not([hidden])'),
+        ).toBeNull();
+        expect(document.activeElement).toBe(focused);
     });
 
     it('honors the data-ezclassify-no-tooltips opt-out for chips', async () => {
@@ -864,7 +889,7 @@ describe('TagInput', () => {
         expect(input.value).toBe('SECRET');
     });
 
-    it('shares the picker footer with every other field and never shows a mode header', async () => {
+    it('keeps the picker instruction-free and never shows a mode header', async () => {
         await mountTagInput('');
         const filter = root.querySelector(
             '.tag-input-filter',
@@ -874,10 +899,11 @@ describe('TagInput', () => {
         await wait();
 
         const surface = openSurface()!;
-        const footers = surface.querySelectorAll('.ez-composer__footer');
-        expect(footers.length).toBe(1);
-        expect(footers[0].textContent).toContain('Enter');
-        expect(footers[0].getAttribute('aria-hidden')).toBe('true');
+        expect(
+            surface.querySelector(
+                '.ez-composer__footer, .ez-composer__hint, kbd',
+            ),
+        ).toBeNull();
         expect(surface.querySelector('[class*="mode-header"]')).toBeNull();
     });
 
@@ -1124,6 +1150,80 @@ describe('TagInput on a phone with the on-screen keyboard up', () => {
         installVisualViewport(undefined);
     });
 
+    it.each(['ctrlKey', 'metaKey'] as const)(
+        'keeps the actual branding tool reachable from the phone sheet with %s',
+        async (modifier) => {
+            const originalMatchMedia = window.matchMedia;
+            const originalWidth = window.innerWidth;
+            window.matchMedia = ((query: string) => ({
+                matches: query.includes('coarse'),
+                media: query,
+                addEventListener() {},
+                removeEventListener() {},
+            })) as unknown as typeof window.matchMedia;
+            Object.defineProperty(window, 'innerWidth', {
+                configurable: true,
+                value: 390,
+            });
+            try {
+                const { tags } = await mountTagInput('SECRET');
+                const mark =
+                    root.querySelector<HTMLButtonElement>('.ez-status-mark')!;
+                const filter =
+                    root.querySelector<HTMLInputElement>('.tag-input-filter')!;
+                filter.click();
+                await wait();
+                const surface = openSurface()!;
+                expect(surface.dataset.surface).toBe('sheet');
+                expect(
+                    surface
+                        .querySelector('.ez-composer__sheet-tools')
+                        ?.contains(mark),
+                ).toBe(true);
+                // External state can repaint the chips while the sheet has
+                // borrowed their branding button. It remains the same tool.
+                await tags.setValue('SECRET');
+                expect(
+                    surface
+                        .querySelector('.ez-composer__sheet-tools')
+                        ?.contains(mark),
+                ).toBe(true);
+                expect(
+                    document.querySelectorAll('.ez-status-mark'),
+                ).toHaveLength(1);
+                const sheetInput = surface.querySelector<HTMLInputElement>(
+                    '.ez-composer__sheet-input',
+                )!;
+                sheetInput.dispatchEvent(
+                    new KeyboardEvent('keydown', {
+                        key: 'Enter',
+                        shiftKey: true,
+                        [modifier]: true,
+                        bubbles: true,
+                        cancelable: true,
+                    }),
+                );
+                await wait(180);
+                expect(root.contains(mark)).toBe(true);
+                expect(root.querySelectorAll('.ez-status-mark')).toHaveLength(
+                    1,
+                );
+                expect(document.activeElement?.getAttribute('role')).toBe(
+                    'tab',
+                );
+                expect(mark.getAttribute('aria-expanded')).toBe('true');
+                expect(openSurface()).toBeNull();
+                expect(tags.getRendered()).toBe('SECRET');
+            } finally {
+                window.matchMedia = originalMatchMedia;
+                Object.defineProperty(window, 'innerWidth', {
+                    configurable: true,
+                    value: originalWidth,
+                });
+            }
+        },
+    );
+
     it('repositions the open list inside the shrunken visual viewport', async () => {
         const vv = new FakeVisualViewport();
         installVisualViewport(vv);
@@ -1159,34 +1259,11 @@ describe('TagInput on a phone with the on-screen keyboard up', () => {
     });
 });
 
-describe('TagInput CSS: keyboard-hint reveal and coarse-pointer chip spacing target the actual wrap class', () => {
-    // jsdom does not apply the author-stylesheet cascade for pseudo-class
-    // selectors like :focus-within (verified empirically: getComputedStyle
-    // never reflects rules from an injected <style> here, regardless of
-    // focus state), so a rendered/computed-style assertion can't catch a
-    // stale selector the way it could in a real browser. This asserts
-    // directly against the source CSS instead, read from disk since the
-    // `?inline` import is stubbed to an empty string under the test
-    // transform (see mobile-font-floor.spec.ts for the same pattern): the
-    // class TagInput actually applies to its wrap (see the "mounts" test
-    // above) must be the class these rules target, so a future rename of one
-    // without the other fails loudly here instead of shipping an invisible
-    // hint bar again.
+describe('TagInput CSS: coarse-pointer chip spacing targets the actual wrap class', () => {
+    // Read real CSS because jsdom does not implement its pseudo-class cascade.
     const here = dirname(fileURLToPath(import.meta.url));
     const readCss = (name: string): string =>
         readFileSync(join(here, name), 'utf8');
-
-    it('shows the chip keys in a row under the field on a keyboard, and none on a touch screen', () => {
-        const css = readCss('tag-input.css');
-        // Both classes, so the row outranks component-utils.css's hidden
-        // default in whichever order a root adopted the two sheets.
-        expect(css).toMatch(
-            /\.proto-kbd-hints\.tag-input-hints \{\s*display: flex;/,
-        );
-        expect(css).toMatch(
-            /@media \(pointer: coarse\) \{\s*\.proto-kbd-hints\.tag-input-hints \{\s*display: none;/,
-        );
-    });
 
     /**
      * Simulates the CSS cascade for one property on one selector across an
@@ -1194,17 +1271,17 @@ describe('TagInput CSS: keyboard-hint reveal and coarse-pointer chip spacing tar
      * resolves it: last declaration wins at equal specificity, in document
      * order, including declarations reached only through a matching @media
      * block. This exists because jsdom's `getComputedStyle` does not consult an
-     * injected `<style>` element's rules at all here (verified empirically; see
-     * the CSS source tests above), so a `getComputedStyle` assertion on a
-     * mounted component would pass regardless of what the CSS actually says.
-     * Walking `CSSStyleSheet. cssRules` directly sidesteps that gap: it's real
-     * CSS parsing (jsdom supports it), not layout or style application, so it
-     * reflects genuine cascade behavior, including a shorthand like `gap: 0` in
-     * a LATER stylesheet silently winning over an earlier `row-gap` set by
-     * itself, exactly the defect this guards against (component-utils.css's
-     * `row-gap` rule was dead in production because tag-input.css's
-     * `.tag-input-wrap { gap: 0; }` always loads after it in the real
-     * `COMPONENT_CSS + tagInputCss` concatenation and wins on source order).
+     * injected `<style>` element's rules at all here, so a `getComputedStyle`
+     * assertion on a mounted component would pass regardless of what the CSS
+     * actually says. Walking `CSSStyleSheet. cssRules` directly sidesteps that
+     * gap: it's real CSS parsing (jsdom supports it), not layout or style
+     * application, so it reflects genuine cascade behavior, including a
+     * shorthand like `gap: 0` in a LATER stylesheet silently winning over an
+     * earlier `row-gap` set by itself, exactly the defect this guards against
+     * (component-utils.css's `row-gap` rule was dead in production because
+     * tag-input.css's `.tag-input-wrap { gap: 0; }` always loads after it in
+     * the real `COMPONENT_CSS + tagInputCss` concatenation and wins on source
+     * order).
      */
     function cascadedGap(
         cssFiles: string[],
@@ -1327,9 +1404,11 @@ describe('TagInput favorites', () => {
         return { input, tags };
     }
 
-    it('renders no ★ button when favorites is not wired', async () => {
+    it('omits the Favorites tab without a provider or scheme presets', async () => {
         await mountDirect();
-        expect(root.querySelector('.ez-favorites-button')).toBeNull();
+        expect(
+            root.querySelector('.ez-status-mark')?.getAttribute('title'),
+        ).toMatch(/^Corrections \(/);
     });
 
     it('opens Favorites from branding and replaces the whole chip set', async () => {
@@ -1362,6 +1441,30 @@ describe('TagInput favorites', () => {
         ).toBeGreaterThan(0);
     });
 
+    it('keeps the additive draft outside the committed marking while tools hold focus', async () => {
+        const save = vi.fn(async () => {});
+        const { tags } = await mountDirect({
+            favorites: { load: async () => [], save },
+        });
+        await tags.setValue('SECRET');
+        const filter =
+            root.querySelector<HTMLInputElement>('.tag-input-filter')!;
+        filter.focus();
+        typeText(filter, 'SECRET');
+        await wait();
+        expect(tags.getRendered()).toBe('SECRET');
+        root.querySelector<HTMLButtonElement>('.ez-status-mark')!.click();
+        await wait(180);
+        expect(document.activeElement?.getAttribute('role')).toBe('tab');
+        expect(openSurface()).toBeNull();
+        expect(tags.getRendered()).toBe('SECRET');
+        expect(
+            tags.getAssertions().map((assertion) => assertion.conceptId),
+        ).toEqual(['S']);
+        expect(filter.value).toBe('SECRET');
+        expect(save).not.toHaveBeenCalled();
+    });
+
     it('offers Unsave when the current chip set matches a saved Favorite', async () => {
         const remove = vi.fn(async () => {});
         const load = vi.fn(async () => [{ marking: 'SECRET' }]);
@@ -1391,37 +1494,20 @@ describe('TagInput favorites', () => {
     });
 });
 
-describe('TagInput keyboard hints', () => {
-    /** Mount TagInput directly (see createTestContext's doc comment). */
-    async function mountDirect(
-        options: Parameters<TagInput['init']>[2] = {},
-    ): Promise<{ input: HTMLInputElement; tags: TagInput }> {
+describe('TagInput instruction-free chrome', () => {
+    it('keeps the field and tools without rendering keyboard instructions', async () => {
         const container = document.createElement('div');
         root.appendChild(container);
         const input = document.createElement('input');
-        input.type = 'text';
         container.appendChild(input);
         const tags = new TagInput();
-        await tags.init(container, await createTestContext(), options);
-        return { input, tags };
-    }
-
-    it('puts the chip keys in a row right under the field, outside its chrome', async () => {
-        await mountDirect();
-        const wrap = root.querySelector('.tag-input-wrap') as HTMLElement;
-        const hints = wrap.nextElementSibling as HTMLElement;
-        expect(hints.classList.contains('proto-kbd-hints')).toBe(true);
-        expect(hints.classList.contains('tag-input-hints')).toBe(true);
-        expect(hints.textContent).toContain('Del');
-        expect(wrap.querySelector('.proto-kbd-hints')).toBeNull();
-    });
-
-    it('honors the no-hints opt-out: hints hidden, status mark still present', async () => {
-        await mountDirect({ hints: false });
-        const hints = root.querySelector('.tag-input-hints') as HTMLElement;
-        expect(hints.style.display).toBe('none');
+        await tags.init(container, await createTestContext(), {});
+        expect(root.querySelector('.tag-input-wrap')).not.toBeNull();
+        expect(root.querySelector('.ez-status-mark')).not.toBeNull();
         expect(
-            root.querySelector('.ez-field-chrome .ez-status-mark'),
-        ).not.toBeNull();
+            root.querySelector('.proto-kbd-hints, .tag-input-hints'),
+        ).toBeNull();
+        expect(root.querySelector('kbd')).toBeNull();
+        tags.destroy();
     });
 });

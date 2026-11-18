@@ -2,8 +2,14 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { DecisionFlow } from './decision-flow';
-import type { SchemeEngineAdapter, Assertion } from '@ezclassify/types';
+import { DecisionFlow, type DecisionFlowOptions } from './decision-flow';
+import type {
+    SchemeEngineAdapter,
+    Assertion,
+    ProcessResult,
+    SuggestResult,
+    Fix,
+} from '@ezclassify/types';
 import type {
     SchemePublicView,
     ConceptView,
@@ -801,9 +807,9 @@ describe('DecisionFlow', () => {
         );
         expect(options.length).toBe(3);
 
-        // Start at index 0, press ArrowDown → should move tabIndex to 1, no assertion
+        // Start at index 0, press ArrowRight → should move tabIndex to 1, no assertion
         options[0].dispatchEvent(
-            new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }),
+            new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }),
         );
         expect(options[1].tabIndex).toBe(0);
         expect(options[0].tabIndex).toBe(-1);
@@ -822,7 +828,7 @@ describe('DecisionFlow', () => {
 
         // Arrow to second option without committing
         options[0].dispatchEvent(
-            new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }),
+            new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }),
         );
         expect(component.getAssertions().length).toBe(0);
 
@@ -2742,10 +2748,10 @@ describe('DecisionFlow: compact layout', () => {
             ),
         ).toEqual(['Marking', 'Admin']);
         expect(header.textContent).not.toMatch(/Marking|Admin/);
-        // The values follow the step: the header, the step, then the values.
+        // Native Tab reaches the working step before its visually first header.
         expect([...frame.children].map((child) => child.className)).toEqual([
-            'ez-decision-flow__header',
             'ez-decision-flow__step',
+            'ez-decision-flow__header',
             'ez-decision-flow__values',
             'ez-decision-flow__dot-preview',
         ]);
@@ -2797,6 +2803,345 @@ describe('DecisionFlow: compact layout', () => {
         ).toMatch(/^Admin · /);
     });
 
+    it('gives a multi-choice step one selected-first native Tab stop and exits to Next', async () => {
+        container.setAttribute(
+            'data-ezclassify-decisionflow-categories',
+            '["caveat","level"]',
+        );
+        await flow.init(container, toCtx(createMixedEngine()));
+        flow.setAssertions([
+            {
+                conceptId: 'CAVEAT_Y',
+                categoryId: 'caveat',
+                source: 'user',
+                confidence: 'certain',
+            },
+        ]);
+        await settle();
+        dots()[0].click();
+        dots()[0].dispatchEvent(
+            new KeyboardEvent('keydown', {
+                key: 'ArrowDown',
+                bubbles: true,
+                cancelable: true,
+            }),
+        );
+        const options = [
+            ...container.querySelectorAll<HTMLButtonElement>(
+                '[role="checkbox"]',
+            ),
+        ];
+        expect(document.activeElement).toBe(options[1]);
+        expect(options.map((option) => option.tabIndex)).toEqual([-1, 0, -1]);
+        const tab = new KeyboardEvent('keydown', {
+            key: 'Tab',
+            bubbles: true,
+            cancelable: true,
+        });
+        options[1].dispatchEvent(tab);
+        expect(tab.defaultPrevented).toBe(false);
+        const nativeStops = [
+            ...step().querySelectorAll<HTMLButtonElement>('button'),
+        ].filter((button) => !button.disabled && button.tabIndex >= 0);
+        expect(nativeStops[nativeStops.indexOf(options[1]) + 1]).toBe(
+            step().querySelector('.ez-decision-flow__nav-btn--end'),
+        );
+    });
+
+    it('keeps a multi-choice current Tab stop through selection, asynchronous redraw and outside focus', async () => {
+        container.setAttribute(
+            'data-ezclassify-decisionflow-categories',
+            '["caveat","level"]',
+        );
+        await flow.init(container, toCtx(createMixedEngine()));
+        await enterFlow(container);
+        const option = (id: string) =>
+            container.querySelector<HTMLButtonElement>(
+                `[role="checkbox"][data-concept-id="${id}"]`,
+            )!;
+        const stops = () => [
+            ...container.querySelectorAll<HTMLButtonElement>(
+                '[role="checkbox"][tabindex="0"]',
+            ),
+        ];
+        option('CAVEAT_X').dispatchEvent(
+            new KeyboardEvent('keydown', {
+                key: 'ArrowRight',
+                bubbles: true,
+                cancelable: true,
+            }),
+        );
+        expect(document.activeElement).toBe(option('CAVEAT_Y'));
+        expect(stops()).toEqual([option('CAVEAT_Y')]);
+        option('CAVEAT_Y').click();
+        await settle();
+        expect(stops()).toEqual([option('CAVEAT_Y')]);
+        expect(document.activeElement).toBe(option('CAVEAT_Y'));
+        const outside = document.createElement('button');
+        document.body.appendChild(outside);
+        outside.focus();
+        flow.setAssertions([
+            {
+                conceptId: 'CAVEAT_Z',
+                categoryId: 'caveat',
+                source: 'user',
+                confidence: 'certain',
+            },
+        ]);
+        await settle();
+        expect(document.activeElement).toBe(outside);
+        expect(stops()).toEqual([option('CAVEAT_Y')]);
+        outside.remove();
+    });
+
+    it.each(['start', 'end'] as const)(
+        'moves Up from the %s navigation arrow to its header target',
+        async (side) => {
+            await flow.init(container, toCtx(createMockEngine()), {
+                initialValue: 'S:P/I:L',
+            } as never);
+            await enterFlow(container);
+            dots()[side === 'start' ? 1 : 0].click();
+            const arrow = () =>
+                step().querySelector<HTMLButtonElement>(
+                    `.ez-decision-flow__nav-btn--${side}`,
+                )!;
+            arrow().focus();
+            await settle();
+            const event = new KeyboardEvent('keydown', {
+                key: 'ArrowUp',
+                bubbles: true,
+                cancelable: true,
+            });
+            arrow().dispatchEvent(event);
+            expect(event.defaultPrevented).toBe(true);
+            expect(document.activeElement).toBe(
+                side === 'start'
+                    ? container.querySelector(
+                          '.ez-decision-flow__step-dot[aria-current="step"]',
+                      )
+                    : container.querySelector('.ez-clear-button'),
+            );
+        },
+    );
+
+    it.each([false, true])(
+        'moves Down from Clear to the visible Next arrow when initially closed=%s',
+        async (closed) => {
+            await flow.init(container, toCtx(createMockEngine()), {
+                initialValue: 'S:P/I:L',
+            } as never);
+            await enterFlow(container);
+            dots()[0].click();
+            await settle();
+            expect(
+                step().querySelector<HTMLButtonElement>(
+                    '.ez-decision-flow__nav-btn--end',
+                )!.disabled,
+            ).toBe(false);
+            if (closed) {
+                const outside = document.createElement('button');
+                document.body.append(outside);
+                outside.focus();
+                outside.remove();
+                expect(step().hidden).toBe(true);
+            }
+            const before = flow.getAssertions();
+            const clear =
+                container.querySelector<HTMLElement>('.ez-clear-button')!;
+            clear.focus();
+            expect(step().hidden).toBe(closed);
+            const event = new KeyboardEvent('keydown', {
+                key: 'ArrowDown',
+                bubbles: true,
+                cancelable: true,
+            });
+            const nativeFocus = HTMLElement.prototype.focus;
+            const nextFocusedWhileHidden: boolean[] = [];
+            const focus = vi
+                .spyOn(HTMLElement.prototype, 'focus')
+                .mockImplementation(function (
+                    this: HTMLElement,
+                    options?: FocusOptions,
+                ) {
+                    // jsdom permits hidden descendants to focus; browsers do not.
+                    // Verify the native precondition before the actual focus call.
+                    if (this.matches('.ez-decision-flow__nav-btn--end'))
+                        nextFocusedWhileHidden.push(
+                            this.closest('[hidden]') !== null,
+                        );
+                    nativeFocus.call(this, options);
+                });
+            try {
+                clear.dispatchEvent(event);
+                expect(event.defaultPrevented).toBe(true);
+                expect(step().hidden).toBe(false);
+                await settle();
+                expect(nextFocusedWhileHidden.length).toBeGreaterThan(0);
+                expect(nextFocusedWhileHidden).not.toContain(true);
+                expect(flow.getAssertions()).toEqual(before);
+                expect(document.activeElement).toBe(
+                    step().querySelector('.ez-decision-flow__nav-btn--end'),
+                );
+            } finally {
+                focus.mockRestore();
+            }
+        },
+    );
+
+    it('enters the current selected working area from its native Tab entry and from brand Down', async () => {
+        await flow.init(container, toCtx(createMockEngine()), {
+            initialValue: 'S:P/I:L',
+        } as never);
+        const field =
+            container.querySelector<HTMLElement>('.ez-decision-flow')!;
+        const brand = container.querySelector<HTMLElement>('.ez-status-mark')!;
+        expect(field.tabIndex).toBe(0);
+        field.focus();
+        await settle();
+        const expected = step().querySelector<HTMLElement>(
+            '[aria-pressed="true"], [role="checkbox"][aria-checked="true"]',
+        )!;
+        expect(document.activeElement).toBe(expected);
+        expect(field.tabIndex).toBe(-1);
+        expect(
+            step().compareDocumentPosition(brand) &
+                Node.DOCUMENT_POSITION_FOLLOWING,
+        ).toBeTruthy();
+        const before = flow.getAssertions();
+        brand.focus();
+        brand.dispatchEvent(
+            new KeyboardEvent('keydown', {
+                key: 'ArrowDown',
+                bubbles: true,
+                cancelable: true,
+            }),
+        );
+        expect(document.activeElement).toBe(expected);
+        expect(flow.getAssertions()).toEqual(before);
+        expect(
+            container.querySelector('.ez-tooltip--tools:not([hidden])'),
+        ).toBeNull();
+    });
+
+    it('does not reclaim outside focus when a Tab entry catalog resolves later', async () => {
+        const engine = createMockEngine();
+        const offered = await engine.suggest!([]);
+        let resolve!: (value: typeof offered) => void;
+        const pending = new Promise<typeof offered>((done) => {
+            resolve = done;
+        });
+        vi.spyOn(engine, 'suggest').mockImplementation(() => pending);
+        await flow.init(container, toCtx(engine));
+        container.querySelector<HTMLElement>('.ez-decision-flow')!.focus();
+        const outside = document.createElement('button');
+        document.body.append(outside);
+        outside.focus();
+        resolve(offered);
+        await settle();
+        expect(document.activeElement).toBe(outside);
+        outside.remove();
+    });
+
+    it('moves between physical value neighbors only at collapsed text edges', async () => {
+        container.setAttribute(
+            'data-ezclassify-decisionflow-categories',
+            '["level","caveat"]',
+        );
+        const engine = createMixedEngine();
+        engine
+            .getScheme()
+            .concepts.find((concept) => concept.id === 'CAVEAT_Z')!.textInput =
+            { label: 'Details', required: false };
+        await flow.init(container, toCtx(engine));
+        flow.setAssertions([
+            {
+                categoryId: 'level',
+                conceptId: 'LEVEL_A',
+                confidence: 'certain',
+                source: 'user',
+            },
+            {
+                categoryId: 'caveat',
+                conceptId: 'CAVEAT_Z',
+                value: 'Detail',
+                confidence: 'certain',
+                source: 'user',
+            },
+        ]);
+        await settle();
+        await enterFlow(container);
+        container
+            .querySelector<HTMLButtonElement>(
+                '.ez-decision-flow__nav-btn--end',
+            )!
+            .click();
+        await settle();
+        const input = container.querySelector<HTMLInputElement>(
+            '.ez-decision-flow__text-field',
+        )!;
+        const choice = container.querySelector<HTMLButtonElement>(
+            '[data-concept-id="CAVEAT_X"]',
+        )!;
+        const rect = (left: number) =>
+            ({
+                left,
+                right: left + 70,
+                top: 20,
+                bottom: 50,
+                width: 70,
+                height: 30,
+            }) as DOMRect;
+        for (const option of step().querySelectorAll<HTMLElement>(
+            '.ez-decision-flow__option',
+        ))
+            option.getBoundingClientRect = () =>
+                ({ ...rect(200), top: 100, bottom: 130 }) as DOMRect;
+        input.getBoundingClientRect = () => rect(100);
+        choice.getBoundingClientRect = () => rect(0);
+        input.focus();
+        input.setSelectionRange(0, 0);
+        input.dispatchEvent(
+            new KeyboardEvent('keydown', {
+                key: 'ArrowLeft',
+                bubbles: true,
+                cancelable: true,
+            }),
+        );
+        expect(document.activeElement).toBe(choice);
+        input.focus();
+        input.setSelectionRange(1, 3);
+        const selected = new KeyboardEvent('keydown', {
+            key: 'ArrowLeft',
+            bubbles: true,
+            cancelable: true,
+        });
+        input.dispatchEvent(selected);
+        expect(selected.defaultPrevented).toBe(false);
+        expect(document.activeElement).toBe(input);
+        expect(input.value).toBe('Detail');
+    });
+
+    it('uses the same native choice implementation for flow single and multi modes', async () => {
+        container.setAttribute(
+            'data-ezclassify-decisionflow-categories',
+            '["level","caveat"]',
+        );
+        await flow.init(container, toCtx(createMixedEngine()));
+        await enterFlow(container);
+        const single = container.querySelector<HTMLButtonElement>(
+            '.ez-decision-flow__option[aria-pressed]',
+        )!;
+        expect(single.classList.contains('ez-choice-button')).toBe(true);
+        expect(single.type).toBe('button');
+        dots()[1].click();
+        const multi = container.querySelector<HTMLButtonElement>(
+            '.ez-decision-flow__option[role="checkbox"]',
+        )!;
+        expect(multi.classList.contains('ez-choice-button')).toBe(true);
+        expect(multi.type).toBe('button');
+    });
+
     it('jumps to a step from its dot and keeps the keyboard on the dots', async () => {
         await flow.init(container, toCtx(createMockEngine()));
         await enterFlow(container);
@@ -2824,6 +3169,85 @@ describe('DecisionFlow: compact layout', () => {
             new KeyboardEvent('keydown', { key: 'Home', bubbles: true }),
         );
         expect(document.activeElement).toBe(dots()[0]);
+    });
+
+    it('moves Right from the last dot to tools without wrapping and Tab from every dot to tools', async () => {
+        await flow.init(container, toCtx(createMockEngine()));
+        await enterFlow(container);
+        const tools =
+            container.querySelector<HTMLButtonElement>('.ez-status-mark')!;
+        const press = (dot: HTMLElement, key: string, shiftKey = false) => {
+            const event = new KeyboardEvent('keydown', {
+                key,
+                shiftKey,
+                bubbles: true,
+                cancelable: true,
+            });
+            dot.dispatchEvent(event);
+            return event;
+        };
+        dots().at(-1)!.focus();
+        expect(press(dots().at(-1)!, 'ArrowRight').defaultPrevented).toBe(true);
+        expect(document.activeElement).toBe(tools);
+        expect(press(tools, 'ArrowLeft').defaultPrevented).toBe(true);
+        expect(document.activeElement).toBe(dots().at(-1));
+        expect(dots().at(-1)?.tabIndex).toBe(0);
+        for (let i = 0; i < dots().length; i++) {
+            dots()[i].focus();
+            expect(press(dots()[i], 'Tab', true).defaultPrevented).toBe(false);
+            expect(document.activeElement).toBe(dots()[i]);
+            expect(press(dots()[i], 'Tab').defaultPrevented).toBe(true);
+            expect(document.activeElement).toBe(tools);
+        }
+    });
+
+    it('keeps the focused step preview through mouse departure and assertion redraw', async () => {
+        await flow.init(container, toCtx(createMockEngine()), {
+            initialValue: 'S:P',
+        } as never);
+        await enterFlow(container);
+        const preview = () =>
+            container.querySelector<HTMLElement>(
+                '.ez-decision-flow__dot-preview',
+            )!;
+        dots()[1].focus();
+        dots()[1].dispatchEvent(
+            new KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true }),
+        );
+        expect(preview().hidden).toBe(false);
+        expect(preview().textContent).toBe('Scope: S:P');
+        dots()[0].dispatchEvent(
+            Object.assign(new Event('pointerleave'), { pointerType: 'mouse' }),
+        );
+        expect(preview().hidden).toBe(false);
+        expect(preview().textContent).toBe('Scope: S:P');
+        dots()[1].dispatchEvent(
+            Object.assign(new Event('pointerenter'), { pointerType: 'mouse' }),
+        );
+        dots()[1].dispatchEvent(
+            Object.assign(new Event('pointerleave'), { pointerType: 'mouse' }),
+        );
+        expect(preview().textContent).toBe('Scope: S:P');
+        await flow.setValue('S:P');
+        expect(document.activeElement).toBe(dots()[0]);
+        expect(preview().hidden).toBe(false);
+        expect(preview().textContent).toBe('Scope: S:P');
+        dots()[0].dispatchEvent(
+            new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }),
+        );
+        expect(preview().textContent).toMatch(/^Impact/);
+    });
+
+    it('never renders keyboard instructions while dots or options own focus', async () => {
+        await flow.init(container, toCtx(createMockEngine()));
+        await enterFlow(container);
+        expect(
+            container.querySelector('.proto-kbd-hints, .ez-field-hints, kbd'),
+        ).toBeNull();
+        dots()[0].focus();
+        expect(
+            container.querySelector('.proto-kbd-hints, .ez-field-hints, kbd'),
+        ).toBeNull();
     });
 
     it('previews a dot on hover with its category and selections, without moving the flow', async () => {
@@ -2871,6 +3295,1495 @@ describe('DecisionFlow: compact layout', () => {
         expect(preview.hidden).toBe(true);
     });
 
+    function multiScopeFixEngine(offerWhole = true, offerScoped = false) {
+        const engine = createScopedEngine();
+        const profile = engine.getScheme();
+        profile.concepts.find((concept) => concept.id === 'ADM_X')!.textInput =
+            { label: 'Analyst', required: false };
+        profile.concepts.push({
+            id: 'ADM_DATE',
+            name: 'Date',
+            views: { default: '{value}' },
+            categories: ['admin_cat'],
+            parents: [],
+            aliases: [],
+            position: 2,
+            textInput: { label: 'Date', required: false },
+        });
+        profile.categories.find(
+            (category) => category.id === 'admin_cat',
+        )!.single = false;
+        const process = vi.mocked(engine.process).getMockImplementation()!;
+        vi.mocked(engine.process).mockImplementation((input, options) => {
+            const result = process(input, options);
+            if (options?.suggestFor) return result;
+            const answer = result as ProcessResult;
+            if (
+                !answer.assertions.some(
+                    (assertion) => assertion.conceptId === 'LEVEL_A',
+                )
+            )
+                return { ...answer, errors: [], proposedFixes: [] };
+            const whole = !options?.outputFormat && !options?.surface;
+            const fix: Fix = {
+                message: whole
+                    ? 'Repair the complete marking.'
+                    : 'Scope-local proposal.',
+                rendered: whole ? 'T:B\nAnalyst\n2040-01-01' : 'T:B',
+                keeps: whole
+                    ? answer.assertions
+                          .filter(
+                              (assertion) =>
+                                  assertion.categoryId === 'admin_cat',
+                          )
+                          .map(({ categoryId, conceptId }) => ({
+                              categoryId,
+                              conceptId,
+                          }))
+                    : [],
+                adds: [{ categoryId: 'level', conceptId: 'LEVEL_B' }],
+                removes: [{ categoryId: 'level', conceptId: 'LEVEL_A' }],
+            };
+            return {
+                ...answer,
+                valid: false,
+                errors: [
+                    {
+                        constraintId: 'level-rule',
+                        message: 'Level A requires Level B.',
+                        affectedConcepts: ['LEVEL_A'],
+                    },
+                ],
+                proposedFixes: (whole ? offerWhole : offerScoped) ? [fix] : [],
+            };
+        });
+        return engine;
+    }
+
+    async function mountMultiScopeFix(
+        engine: SchemeEngineAdapter,
+        options: Partial<DecisionFlowOptions> = {},
+    ) {
+        container.setAttribute(
+            'data-ezclassify-decisionflow-categories',
+            '["level","admin_cat"]',
+        );
+        await flow.init(container, toCtx(engine), {
+            scope: 'marking admin',
+            resolveContext: () => ({ role: 'whole' }),
+            resolveParts: () => ['T:A'],
+            ...options,
+        });
+        flow.setAssertions([
+            {
+                categoryId: 'level',
+                conceptId: 'LEVEL_A',
+                confidence: 'certain',
+                source: 'user',
+            },
+            {
+                categoryId: 'admin_cat',
+                conceptId: 'ADM_X',
+                value: 'Analyst',
+                confidence: 'certain',
+                source: 'user',
+            },
+            {
+                categoryId: 'admin_cat',
+                conceptId: 'ADM_DATE',
+                value: '2040-01-01',
+                confidence: 'certain',
+                source: 'user',
+            },
+        ]);
+        await settle();
+    }
+
+    function extraMetadata(engine: SchemeEngineAdapter): Assertion {
+        engine.getScheme().concepts.push({
+            id: 'ADM_NOTE',
+            name: 'Note',
+            views: { default: '{value}' },
+            categories: ['admin_cat'],
+            parents: [],
+            aliases: [],
+            position: 3,
+            textInput: { label: 'Note', required: false },
+        });
+        return {
+            categoryId: 'admin_cat',
+            conceptId: 'ADM_NOTE',
+            value: 'New captured metadata',
+            confidence: 'certain',
+            source: 'user',
+        };
+    }
+
+    it.each([false, true])(
+        'withdraws stale remedies during new bound-state judgment and retains newly added metadata (%s)',
+        async (leave) => {
+            const engine = multiScopeFixEngine();
+            const added = extraMetadata(engine);
+            const process = vi.mocked(engine.process).getMockImplementation()!;
+            let release!: () => void;
+            const pending = new Promise<void>((resolve) => {
+                release = resolve;
+            });
+            vi.mocked(engine.process).mockImplementation((input, options) => {
+                const result = process(input, options);
+                return options?.surface &&
+                    !options.suggestFor &&
+                    options.assertions?.some(
+                        (assertion) => assertion.conceptId === 'ADM_NOTE',
+                    )
+                    ? pending.then(() => result)
+                    : result;
+            });
+            await mountMultiScopeFix(engine);
+            await enterFlow(container);
+            const old = container.querySelector<HTMLButtonElement>(
+                '.ez-decision-flow__fixes button',
+            )!;
+            old.focus();
+            flow.applyStoreState({
+                rendered: flow.getRendered(),
+                assertions: [...flow.getAssertions(), added],
+                valid: false,
+                errors: [
+                    {
+                        constraintId: 'level-rule',
+                        message: 'Level A requires Level B.',
+                    },
+                ],
+                renders: {},
+                assessment: {
+                    emitted: [],
+                    omitted: [],
+                    collapsed: [],
+                    conflicts: [],
+                    unrepresentable: [],
+                },
+            });
+            expect(old.isConnected).toBe(false);
+            old.click();
+            expect(flow.getAssertions()).toContainEqual(added);
+            expect(
+                flow
+                    .getAssertions()
+                    .some((assertion) => assertion.conceptId === 'LEVEL_A'),
+            ).toBe(true);
+            expect(
+                (document.activeElement as HTMLElement).dataset.conceptId,
+            ).toBe('LEVEL_A');
+            const outside = document.createElement('button');
+            document.body.appendChild(outside);
+            if (leave) outside.focus();
+            release();
+            await settle();
+            const fresh = container.querySelector<HTMLButtonElement>(
+                '.ez-decision-flow__fixes button',
+            )!;
+            expect(fresh).not.toBe(old);
+            fresh.click();
+            await settle();
+            expect(flow.getAssertions()).toContainEqual(added);
+            expect(
+                flow
+                    .getAssertions()
+                    .some((assertion) => assertion.conceptId === 'LEVEL_B'),
+            ).toBe(true);
+            if (leave) expect(document.activeElement).toBe(outside);
+            else
+                expect(
+                    (document.activeElement as HTMLElement).dataset.conceptId,
+                ).toBe('LEVEL_B');
+        },
+    );
+
+    it('withdraws the focused remedy onto the newly selected option when a bound value becomes valid', async () => {
+        await mountMultiScopeFix(multiScopeFixEngine());
+        await enterFlow(container);
+        container
+            .querySelector<HTMLButtonElement>(
+                '.ez-decision-flow__fixes button',
+            )!
+            .focus();
+        flow.applyStoreState({
+            rendered: 'T:B',
+            assertions: [
+                {
+                    categoryId: 'level',
+                    conceptId: 'LEVEL_B',
+                    confidence: 'certain',
+                    source: 'user',
+                },
+            ],
+            valid: true,
+            errors: [],
+            renders: {},
+            assessment: {
+                emitted: [],
+                omitted: [],
+                collapsed: [],
+                conflicts: [],
+                unrepresentable: [],
+            },
+        });
+        await settle();
+        expect((document.activeElement as HTMLElement).dataset.conceptId).toBe(
+            'LEVEL_B',
+        );
+        expect(
+            container.querySelectorAll('.ez-decision-flow__fixes button'),
+        ).toHaveLength(0);
+    });
+
+    it.each(['context', 'parts'] as const)(
+        'rejects a visible remedy when live %s changes before another judgment begins',
+        async (change) => {
+            const engine = multiScopeFixEngine();
+            let whole = 'Original whole';
+            let parts = ['T:A'];
+            await mountMultiScopeFix(engine, {
+                resolveContext: () => ({ role: 'part', whole }),
+                resolveParts: () => parts,
+            });
+            await enterFlow(container);
+            const old = container.querySelector<HTMLButtonElement>(
+                '.ez-decision-flow__fixes button',
+            )!;
+            const before = flow.getAssertions();
+            old.focus();
+            if (change === 'context') whole = 'New whole';
+            else parts = ['T:B'];
+            old.click();
+            expect(flow.getAssertions()).toEqual(before);
+            expect(old.isConnected).toBe(false);
+            expect(
+                (document.activeElement as HTMLElement).dataset.conceptId,
+            ).toBe('LEVEL_A');
+            flow.updateValidationErrors([
+                {
+                    constraintId: 'level-rule',
+                    message: 'Level A requires Level B.',
+                },
+            ]);
+            await settle();
+            container
+                .querySelector<HTMLButtonElement>(
+                    '.ez-decision-flow__fixes button',
+                )!
+                .click();
+            await settle();
+            expect(
+                flow
+                    .getAssertions()
+                    .some((assertion) => assertion.conceptId === 'LEVEL_B'),
+            ).toBe(true);
+        },
+    );
+
+    it('rejects old proof results when a newer asynchronous value read has not started its judgment yet', async () => {
+        const engine = multiScopeFixEngine();
+        const added = extraMetadata(engine);
+        const process = vi.mocked(engine.process).getMockImplementation()!;
+        let releaseProof!: () => void;
+        let releaseRead!: () => void;
+        const proof = new Promise<void>((resolve) => {
+            releaseProof = resolve;
+        });
+        const read = new Promise<void>((resolve) => {
+            releaseRead = resolve;
+        });
+        vi.mocked(engine.process).mockImplementation((input, options) => {
+            const result = process(input, options);
+            const hasNew = options?.assertions?.some(
+                (assertion) => assertion.conceptId === 'ADM_NOTE',
+            );
+            if (
+                options?.assertions?.length &&
+                !options.outputFormat &&
+                !options.surface &&
+                !hasNew
+            )
+                return proof.then(() => result);
+            if (
+                hasNew &&
+                options?.outputFormat &&
+                !options.surface &&
+                !options.suggestFor
+            )
+                return read.then(() => result);
+            return result;
+        });
+        await mountMultiScopeFix(engine);
+        flow.setAssertions([...flow.getAssertions(), added]);
+        releaseProof();
+        await settle();
+        expect(
+            container.querySelectorAll('.ez-decision-flow__fixes button'),
+        ).toHaveLength(0);
+        expect(flow.getAssertions()).toContainEqual(added);
+        releaseRead();
+        await settle();
+        container
+            .querySelector<HTMLButtonElement>(
+                '.ez-decision-flow__fixes button',
+            )!
+            .click();
+        await settle();
+        expect(flow.getAssertions()).toContainEqual(added);
+        expect(
+            flow
+                .getAssertions()
+                .some((assertion) => assertion.conceptId === 'LEVEL_B'),
+        ).toBe(true);
+    });
+
+    it('uses automatic whole-output remedies while preserving scoped messages, context, parts and captured values', async () => {
+        const engine = multiScopeFixEngine();
+        await mountMultiScopeFix(engine);
+        await enterFlow(container);
+        const fixes = [
+            ...container.querySelectorAll<HTMLButtonElement>(
+                '.ez-decision-flow__fixes button',
+            ),
+        ];
+        expect(fixes.map((button) => button.textContent)).toEqual([
+            'Repair the complete marking',
+        ]);
+        expect(container.textContent).toContain('Level A requires Level B.');
+        const automatic = () =>
+            vi
+                .mocked(engine.process)
+                .mock.calls.filter(
+                    ([, options]) =>
+                        options?.assertions?.length &&
+                        !options.outputFormat &&
+                        !options.surface &&
+                        !options.suggestFor,
+                );
+        expect(automatic().length).toBeGreaterThan(0);
+        for (const [input, options] of automatic()) {
+            expect(input).toBe('');
+            expect(options).toMatchObject({
+                context: { role: 'whole' },
+                parts: ['T:A'],
+            });
+            expect(options).not.toHaveProperty('outputFormat');
+            expect(options).not.toHaveProperty('surface');
+            expect(options?.assertions).toContainEqual(
+                expect.objectContaining({
+                    conceptId: 'ADM_DATE',
+                    value: '2040-01-01',
+                }),
+            );
+        }
+        const proofCount = automatic().length;
+        fixes[0].focus();
+        fixes[0].click();
+        await settle();
+        expect(flow.getAssertions()).toEqual(
+            expect.arrayContaining([
+                expect.objectContaining({ conceptId: 'LEVEL_B' }),
+                expect.objectContaining({
+                    conceptId: 'ADM_X',
+                    value: 'Analyst',
+                }),
+                expect.objectContaining({
+                    conceptId: 'ADM_DATE',
+                    value: '2040-01-01',
+                }),
+            ]),
+        );
+        expect(automatic()).toHaveLength(proofCount);
+        expect(
+            container.querySelector('.ez-decision-flow__question-label')
+                ?.textContent,
+        ).toContain('Level');
+        expect((document.activeElement as HTMLElement).dataset.conceptId).toBe(
+            'LEVEL_B',
+        );
+    });
+
+    it('offers no partial fallback when whole-output proof has no canonical remedies', async () => {
+        await mountMultiScopeFix(multiScopeFixEngine(false, true));
+        expect(container.textContent).toContain('Level A requires Level B.');
+        expect(
+            container.querySelectorAll('.ez-decision-flow__fixes button'),
+        ).toHaveLength(0);
+        expect(container.textContent).not.toContain('Scope-local proposal');
+    });
+
+    it('ignores a whole-output remedy report that arrives after a newer valid marking', async () => {
+        const engine = multiScopeFixEngine();
+        const process = vi.mocked(engine.process).getMockImplementation()!;
+        let release!: () => void;
+        const pending = new Promise<void>((resolve) => {
+            release = resolve;
+        });
+        let requested = 0;
+        vi.mocked(engine.process).mockImplementation((input, options) => {
+            const result = process(input, options);
+            if (
+                options?.assertions?.length &&
+                !options.outputFormat &&
+                !options.surface &&
+                !options.suggestFor
+            ) {
+                requested++;
+                return pending.then(() => result);
+            }
+            return result;
+        });
+        await mountMultiScopeFix(engine);
+        expect(requested).toBeGreaterThan(0);
+        flow.setAssertions([
+            {
+                categoryId: 'level',
+                conceptId: 'LEVEL_B',
+                confidence: 'certain',
+                source: 'user',
+            },
+        ]);
+        await settle();
+        release();
+        await settle();
+        expect(
+            container.querySelectorAll('.ez-decision-flow__fixes button'),
+        ).toHaveLength(0);
+        expect(container.textContent).not.toContain(
+            'Level A requires Level B.',
+        );
+        expect(
+            flow.getAssertions().map((assertion) => assertion.conceptId),
+        ).toEqual(['LEVEL_B']);
+    });
+
+    function engineWithFixes() {
+        const engine = createMockEngine();
+        const process = vi.mocked(engine.process).getMockImplementation()!;
+        vi.mocked(engine.process).mockImplementation((input, options) => {
+            const result = process(input, options);
+            if (options?.suggestFor) return result;
+            const answer = result as ProcessResult;
+            if (
+                !answer.assertions.some(
+                    (assertion) => assertion.conceptId === 'SCOPE_PARTIAL',
+                )
+            )
+                return { ...answer, errors: [], proposedFixes: [] };
+            const keeps = answer.assertions
+                .filter((assertion) => assertion.categoryId !== 'scope')
+                .map(({ conceptId, categoryId }) => ({
+                    conceptId,
+                    categoryId,
+                }));
+            const replace: Fix = {
+                message: 'Replace Partial with Full.',
+                rendered: 'S:F/I:L',
+                keeps,
+                adds: [{ categoryId: 'scope', conceptId: 'SCOPE_FULL' }],
+                removes: [{ categoryId: 'scope', conceptId: 'SCOPE_PARTIAL' }],
+            };
+            const remove: Fix = {
+                message: 'Remove Partial.',
+                rendered: 'I:L',
+                keeps,
+                adds: [],
+                removes: replace.removes,
+            };
+            return {
+                ...answer,
+                valid: false,
+                errors: [
+                    {
+                        constraintId: 'needs-full',
+                        message: 'Partial requires Full.',
+                        affectedConcepts: ['SCOPE_PARTIAL'],
+                    },
+                ],
+                proposedFixes: [
+                    replace,
+                    remove,
+                    { ...replace, message: 'Duplicate remedy.' },
+                ],
+            };
+        });
+        return engine;
+    }
+
+    async function mountFlowWithFixes(engine = engineWithFixes()) {
+        await flow.init(container, toCtx(engine));
+        flow.setAssertions([
+            {
+                categoryId: 'scope',
+                conceptId: 'SCOPE_PARTIAL',
+                confidence: 'certain',
+                source: 'user',
+            },
+            {
+                categoryId: 'impact',
+                conceptId: 'IMPACT_LOW',
+                confidence: 'certain',
+                source: 'user',
+            },
+        ]);
+        await settle();
+        await enterFlow(container);
+        return engine;
+    }
+
+    it.each(['start', 'end'] as const)(
+        'moves Down from the %s navigation arrow to the first remedy without applying it',
+        async (side) => {
+            await mountFlowWithFixes();
+            if (side === 'start') dots()[1].click();
+            await settle();
+            const navigation = container.querySelector<HTMLButtonElement>(
+                `.ez-decision-flow__nav-btn--${side}`,
+            )!;
+            expect(navigation.disabled).toBe(false);
+            navigation.focus();
+            const before = flow.getAssertions();
+            const phase = title();
+            const event = new KeyboardEvent('keydown', {
+                key: 'ArrowDown',
+                bubbles: true,
+                cancelable: true,
+            });
+            navigation.dispatchEvent(event);
+            expect(event.defaultPrevented).toBe(true);
+            expect(document.activeElement).toBe(
+                container.querySelector('.ez-decision-flow__fixes button'),
+            );
+            expect(flow.getAssertions()).toEqual(before);
+            expect(title()).toBe(phase);
+        },
+    );
+
+    it('keeps navigation Down in place without page scrolling when no remedies exist', async () => {
+        await flow.init(container, toCtx(createMockEngine()));
+        await enterFlow(container);
+        const navigation = container.querySelector<HTMLButtonElement>(
+            '.ez-decision-flow__nav-btn--end',
+        )!;
+        navigation.focus();
+        const event = new KeyboardEvent('keydown', {
+            key: 'ArrowDown',
+            bubbles: true,
+            cancelable: true,
+        });
+        navigation.dispatchEvent(event);
+        expect(event.defaultPrevented).toBe(true);
+        expect(document.activeElement).toBe(navigation);
+    });
+
+    it('walks checklist options horizontally and reaches the enabled Previous arrow at the edge', async () => {
+        container.setAttribute(
+            'data-ezclassify-decisionflow-categories',
+            '["level","caveat"]',
+        );
+        await flow.init(container, toCtx(createMixedEngine()));
+        await enterFlow(container);
+        container
+            .querySelector<HTMLButtonElement>('[data-concept-id="LEVEL_A"]')!
+            .click();
+        await settle();
+        const options = [
+            ...container.querySelectorAll<HTMLButtonElement>(
+                '[role="checkbox"]',
+            ),
+        ];
+        const before = flow.getAssertions();
+        const key = (value: string) =>
+            document.activeElement!.dispatchEvent(
+                new KeyboardEvent('keydown', {
+                    key: value,
+                    bubbles: true,
+                    cancelable: true,
+                }),
+            );
+        key('ArrowRight');
+        expect(document.activeElement).toBe(options[1]);
+        key('ArrowRight');
+        expect(document.activeElement).toBe(options[2]);
+        key('ArrowRight');
+        expect(document.activeElement).toBe(options[2]);
+        key('ArrowLeft');
+        key('ArrowLeft');
+        key('ArrowLeft');
+        expect(document.activeElement).toBe(
+            container.querySelector('.ez-decision-flow__nav-btn--start'),
+        );
+        key('ArrowRight');
+        expect(document.activeElement).toBe(options[0]);
+        expect(flow.getAssertions()).toEqual(before);
+    });
+
+    it('uses wrapped rows before leaving options for the current dot or engine remedies', async () => {
+        await mountFlowWithFixes();
+        const options = [
+            ...container.querySelectorAll<HTMLButtonElement>(
+                '.ez-decision-flow__option',
+            ),
+        ];
+        const rects = [
+            new DOMRect(0, 0, 60, 32),
+            new DOMRect(70, 0, 100, 32),
+            new DOMRect(10, 42, 80, 32),
+        ];
+        options.forEach((option, index) => {
+            option.getBoundingClientRect = () => rects[index];
+        });
+        const before = flow.getAssertions();
+        const key = (value: string) => {
+            const event = new KeyboardEvent('keydown', {
+                key: value,
+                bubbles: true,
+                cancelable: true,
+            });
+            document.activeElement!.dispatchEvent(event);
+            expect(event.defaultPrevented).toBe(true);
+        };
+        key('ArrowDown');
+        expect(document.activeElement).toBe(options[2]);
+        key('ArrowUp');
+        expect(document.activeElement).toBe(options[0]);
+        key('ArrowUp');
+        expect(document.activeElement).toBe(dots()[0]);
+        key('ArrowDown');
+        expect(document.activeElement).toBe(options[1]);
+        key('ArrowDown');
+        key('ArrowDown');
+        expect(document.activeElement).toBe(
+            container.querySelector('.ez-decision-flow__fixes button'),
+        );
+        key('ArrowUp');
+        expect(document.activeElement).toBe(options[1]);
+        key('ArrowRight');
+        key('ArrowRight');
+        expect(document.activeElement).toBe(
+            container.querySelector('.ez-decision-flow__nav-btn--end'),
+        );
+        key('ArrowLeft');
+        expect(document.activeElement).toBe(options[2]);
+        // Geometry is read again after a responsive reflow, without a fixed column count.
+        rects[0] = new DOMRect(0, 0, 100, 32);
+        rects[1] = new DOMRect(0, 42, 100, 32);
+        rects[2] = new DOMRect(0, 84, 100, 32);
+        key('ArrowUp');
+        expect(document.activeElement).toBe(options[1]);
+        key('ArrowUp');
+        expect(document.activeElement).toBe(options[0]);
+        options[1].setAttribute('aria-disabled', 'true');
+        key('ArrowRight');
+        expect(document.activeElement).toBe(options[2]);
+        expect(flow.getAssertions()).toEqual(before);
+    });
+
+    it('leaves value-input caret keys and modified option arrows native', async () => {
+        container.setAttribute(
+            'data-ezclassify-decisionflow-categories',
+            '["label","level"]',
+        );
+        await flow.init(container, toCtx(createTextInputEngine()));
+        await enterFlow(container);
+        const input = container.querySelector<HTMLInputElement>(
+            '.ez-decision-flow__text-field',
+        )!;
+        input.focus();
+        input.value = 'Analyst';
+        input.setSelectionRange(3, 3);
+        for (const key of [
+            'ArrowLeft',
+            'ArrowRight',
+            'ArrowUp',
+            'ArrowDown',
+            'Tab',
+        ]) {
+            const event = new KeyboardEvent('keydown', {
+                key,
+                bubbles: true,
+                cancelable: true,
+            });
+            input.dispatchEvent(event);
+            expect(event.defaultPrevented).toBe(false);
+            expect(document.activeElement).toBe(input);
+        }
+        container
+            .querySelector<HTMLButtonElement>(
+                '.ez-decision-flow__nav-btn--end',
+            )!
+            .click();
+        const option = container.querySelector<HTMLButtonElement>(
+            '.ez-decision-flow__option',
+        )!;
+        option.focus();
+        const modified = new KeyboardEvent('keydown', {
+            key: 'ArrowRight',
+            ctrlKey: true,
+            bubbles: true,
+            cancelable: true,
+        });
+        option.dispatchEvent(modified);
+        expect(modified.defaultPrevented).toBe(false);
+        expect(document.activeElement).toBe(option);
+    });
+
+    it('shows deduplicated engine remedies and navigates between options, dots and fixes without changing the marking', async () => {
+        await mountFlowWithFixes();
+        const fixes = () => [
+            ...container.querySelectorAll<HTMLButtonElement>(
+                '.ez-decision-flow__fixes .ez-validation-errors__fix',
+            ),
+        ];
+        expect(fixes().map((button) => button.textContent)).toEqual([
+            'Replace Partial with Full',
+            'Remove Partial',
+        ]);
+        const group = container.querySelector<HTMLElement>(
+            '.ez-decision-flow__fixes [role="group"]',
+        )!;
+        expect(
+            document.getElementById(group.getAttribute('aria-labelledby')!)
+                ?.textContent,
+        ).toBe('Ways to fix');
+        expect(
+            container.querySelectorAll(
+                '.ez-decision-flow__fixes .ez-validation-errors__fixes-heading',
+            ),
+        ).toHaveLength(1);
+        const before = flow.getAssertions();
+        const key = (value: string) =>
+            document.activeElement!.dispatchEvent(
+                new KeyboardEvent('keydown', {
+                    key: value,
+                    bubbles: true,
+                    cancelable: true,
+                }),
+            );
+        key('ArrowUp');
+        expect(document.activeElement).toBe(dots()[0]);
+        key('ArrowRight');
+        expect(document.activeElement).toBe(dots()[1]);
+        (document.activeElement as HTMLElement).click();
+        key('ArrowDown');
+        expect((document.activeElement as HTMLElement).dataset.conceptId).toBe(
+            'IMPACT_LOW',
+        );
+        key('ArrowUp');
+        key('ArrowLeft');
+        (document.activeElement as HTMLElement).click();
+        key('ArrowDown');
+        expect((document.activeElement as HTMLElement).dataset.conceptId).toBe(
+            'SCOPE_PARTIAL',
+        );
+        key('ArrowDown');
+        expect(document.activeElement).toBe(fixes()[0]);
+        const first = fixes()[0];
+        await settle();
+        expect(document.activeElement).toBe(first);
+        key('ArrowRight');
+        expect(document.activeElement).toBe(fixes()[1]);
+        key('ArrowLeft');
+        expect(document.activeElement).toBe(first);
+        key('ArrowUp');
+        expect((document.activeElement as HTMLElement).dataset.conceptId).toBe(
+            'SCOPE_PARTIAL',
+        );
+        expect(flow.getAssertions()).toEqual(before);
+        key('ArrowDown');
+        (document.activeElement as HTMLElement).click();
+        await settle();
+        expect(
+            flow
+                .getAssertions()
+                .map((assertion) => assertion.conceptId)
+                .sort(),
+        ).toEqual(['IMPACT_LOW', 'SCOPE_FULL']);
+        expect(title()).toBe('1 of 2 · Scope');
+        expect((document.activeElement as HTMLElement).dataset.conceptId).toBe(
+            'SCOPE_FULL',
+        );
+        expect(
+            container.querySelector<HTMLElement>('.ez-decision-flow__fixes')
+                ?.hidden,
+        ).toBe(true);
+    });
+
+    it.each([false, true])(
+        'settles asynchronous whole-marking remedies without reclaiming outside focus (%s)',
+        async (leave) => {
+            const engine = await mountFlowWithFixes();
+            const process = vi.mocked(engine.process).getMockImplementation()!;
+            let release!: () => void;
+            const pending = new Promise<void>((resolve) => {
+                release = resolve;
+            });
+            vi.mocked(engine.process).mockImplementation((input, options) => {
+                const result = process(input, options);
+                return !options?.suggestFor &&
+                    options?.assertions?.some(
+                        (assertion) => assertion.conceptId === 'SCOPE_FULL',
+                    )
+                    ? pending.then(() => result)
+                    : result;
+            });
+            const fix = container.querySelector<HTMLButtonElement>(
+                '.ez-decision-flow__fixes button',
+            )!;
+            fix.focus();
+            fix.click();
+            const outside = document.createElement('button');
+            document.body.appendChild(outside);
+            if (leave) outside.focus();
+            release();
+            await settle();
+            expect(
+                flow
+                    .getAssertions()
+                    .map((assertion) => assertion.conceptId)
+                    .sort(),
+            ).toEqual(['IMPACT_LOW', 'SCOPE_FULL']);
+            if (leave) expect(document.activeElement).toBe(outside);
+            else
+                expect(
+                    (document.activeElement as HTMLElement).dataset.conceptId,
+                ).toBe('SCOPE_FULL');
+            expect(title()).toBe('1 of 2 · Scope');
+        },
+    );
+
+    it('applies current same-render remedy facts without replacing its focused button', async () => {
+        await mountFlowWithFixes();
+        const first = container.querySelector<HTMLButtonElement>(
+            '.ez-decision-flow__fixes button',
+        )!;
+        first.focus();
+        const fix: Fix = {
+            message: 'Replace Partial with Full.',
+            rendered: 'S:F/I:L',
+            keeps: [{ categoryId: 'impact', conceptId: 'IMPACT_HIGH' }],
+            adds: [{ categoryId: 'scope', conceptId: 'SCOPE_FULL' }],
+            removes: [],
+        };
+        flow.updateValidationErrors(
+            [
+                {
+                    constraintId: 'needs-full',
+                    message: 'Partial requires Full.',
+                    affectedConcepts: ['SCOPE_PARTIAL'],
+                },
+            ],
+            [
+                fix,
+                {
+                    message: 'Remove Partial.',
+                    rendered: 'I:L',
+                    keeps: [],
+                    adds: [],
+                    removes: [],
+                },
+            ],
+        );
+        expect(container.querySelector('.ez-decision-flow__fixes button')).toBe(
+            first,
+        );
+        first.click();
+        await settle();
+        expect(
+            flow
+                .getAssertions()
+                .map((assertion) => assertion.conceptId)
+                .sort(),
+        ).toEqual(['IMPACT_HIGH', 'SCOPE_FULL']);
+    });
+
+    it.each([false, true])(
+        'keeps keyboard selection advance focused on the next checklist unless focus left while options loaded (%s)',
+        async (leave) => {
+            container.setAttribute(
+                'data-ezclassify-decisionflow-categories',
+                '["level","caveat"]',
+            );
+            const engine = createMixedEngine();
+            await flow.init(container, toCtx(engine));
+            await enterFlow(container);
+            const suggest = vi.mocked(engine.suggest).getMockImplementation()!;
+            let release!: () => void;
+            const pending = new Promise<void>((resolve) => {
+                release = resolve;
+            });
+            let hold = true;
+            vi.mocked(engine.suggest).mockImplementation((input, options) => {
+                const result = suggest(input, options);
+                return hold ? pending.then(() => result) : result;
+            });
+            const option = container.querySelector<HTMLButtonElement>(
+                '[data-concept-id="LEVEL_A"]',
+            )!;
+            option.focus();
+            option.dispatchEvent(
+                new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }),
+            );
+            // A native button's Enter default action dispatches this click.
+            option.click();
+            await settle();
+            const outside = document.createElement('button');
+            document.body.appendChild(outside);
+            if (leave) outside.focus();
+            hold = false;
+            release();
+            await settle();
+            if (leave) {
+                expect(document.activeElement).toBe(outside);
+                expect(
+                    container.querySelector<HTMLElement>(
+                        '.ez-decision-flow__step',
+                    )!.hidden,
+                ).toBe(true);
+            } else {
+                expect(document.activeElement).toBe(
+                    container.querySelector(
+                        '[role="checkbox"][data-concept-id="CAVEAT_X"]',
+                    ),
+                );
+                expect(document.activeElement).not.toBe(document.body);
+            }
+        },
+    );
+
+    it('focuses the first selected mixed-step item, using its own value input only when that item comes first', async () => {
+        container.setAttribute(
+            'data-ezclassify-decisionflow-categories',
+            '["level","caveat"]',
+        );
+        const engine = createMixedEngine();
+        engine
+            .getScheme()
+            .concepts.find((concept) => concept.id === 'CAVEAT_Z')!.textInput =
+            { label: 'Details', required: false };
+        await flow.init(container, toCtx(engine));
+        flow.setAssertions([
+            {
+                categoryId: 'level',
+                conceptId: 'LEVEL_A',
+                confidence: 'certain',
+                source: 'user',
+            },
+            {
+                categoryId: 'caveat',
+                conceptId: 'CAVEAT_X',
+                confidence: 'certain',
+                source: 'user',
+            },
+            {
+                categoryId: 'caveat',
+                conceptId: 'CAVEAT_Z',
+                value: 'Detail',
+                confidence: 'certain',
+                source: 'user',
+            },
+        ]);
+        await settle();
+        await enterFlow(container);
+        container
+            .querySelector<HTMLButtonElement>(
+                '.ez-decision-flow__nav-btn--end',
+            )!
+            .click();
+        await settle();
+        expect((document.activeElement as HTMLElement).dataset.conceptId).toBe(
+            'CAVEAT_X',
+        );
+        expect(document.activeElement?.tagName).toBe('BUTTON');
+        container
+            .querySelector<HTMLButtonElement>('[data-concept-id="CAVEAT_X"]')!
+            .click();
+        await settle();
+        container
+            .querySelector<HTMLButtonElement>(
+                '.ez-decision-flow__nav-btn--start',
+            )!
+            .click();
+        await settle();
+        container
+            .querySelector<HTMLButtonElement>(
+                '.ez-decision-flow__nav-btn--end',
+            )!
+            .click();
+        await settle();
+        expect(document.activeElement).toBe(
+            container.querySelector(
+                '.ez-decision-flow__text-field[data-concept-id="CAVEAT_Z"]',
+            ),
+        );
+    });
+
+    it('reveals each available descendant immediately after its parent while keeping sibling order', async () => {
+        container.setAttribute(
+            'data-ezclassify-decisionflow-categories',
+            '["level","caveat"]',
+        );
+        const engine = createMixedEngine();
+        const profile = engine.getScheme();
+        const concept = (
+            id: string,
+            position: number,
+            parents: string[],
+        ): ConceptView => ({
+            id,
+            name: id,
+            views: { default: id },
+            categories: ['caveat'],
+            parents,
+            aliases: [],
+            position,
+        });
+        profile.concepts.push(
+            concept('CHILD', 1.5, ['CAVEAT_X']),
+            concept('LEAF', 10, ['CHILD']),
+        );
+        vi.mocked(engine.suggest).mockImplementation((input) => {
+            const held = new Set(
+                Array.isArray(input)
+                    ? input.map((assertion) => assertion.conceptId)
+                    : [],
+            );
+            return {
+                suggestions: profile.concepts
+                    .filter(
+                        (entry) =>
+                            entry.parents.length === 0 ||
+                            entry.parents.some((parent) => held.has(parent)),
+                    )
+                    .map((entry) => ({
+                        conceptId: entry.id,
+                        categoryId: entry.categories[0],
+                        label: entry.name,
+                        name: entry.name,
+                        group: entry.categories[0],
+                        description: entry.definition ?? '',
+                        views: entry.views ?? {},
+                        selected: held.has(entry.id),
+                        order: entry.position,
+                    })),
+                warnings: [],
+            };
+        });
+        await flow.init(container, toCtx(engine));
+        await enterFlow(container);
+        container
+            .querySelector<HTMLButtonElement>('[data-concept-id="LEVEL_A"]')!
+            .click();
+        await settle();
+        const order = () =>
+            [
+                ...container.querySelectorAll<HTMLElement>('[role="checkbox"]'),
+            ].map((option) => option.dataset.conceptId);
+        expect(order()).toEqual(['CAVEAT_X', 'CAVEAT_Y', 'CAVEAT_Z']);
+        container
+            .querySelector<HTMLButtonElement>('[data-concept-id="CAVEAT_X"]')!
+            .click();
+        await settle();
+        expect(order()).toEqual(['CAVEAT_X', 'CHILD', 'CAVEAT_Y', 'CAVEAT_Z']);
+        container
+            .querySelector<HTMLButtonElement>('[data-concept-id="CHILD"]')!
+            .click();
+        await settle();
+        expect(order()).toEqual([
+            'CAVEAT_X',
+            'CHILD',
+            'LEAF',
+            'CAVEAT_Y',
+            'CAVEAT_Z',
+        ]);
+    });
+
+    it('orders multiply-parented options once and keeps cyclic available options reachable', async () => {
+        container.setAttribute(
+            'data-ezclassify-decisionflow-categories',
+            '["level","caveat"]',
+        );
+        const engine = createMixedEngine();
+        const profile = engine.getScheme();
+        const concept = (
+            id: string,
+            position: number,
+            parents: string[],
+        ): ConceptView => ({
+            id,
+            name: id,
+            views: { default: id },
+            categories: ['caveat'],
+            parents,
+            aliases: [],
+            position,
+        });
+        profile.concepts.push(
+            concept('SHARED', 10, ['CAVEAT_X', 'CAVEAT_Y']),
+            concept('CYCLE_A', 11, ['CYCLE_B']),
+            concept('CYCLE_B', 12, ['CYCLE_A']),
+        );
+        vi.mocked(engine.suggest).mockReturnValue({
+            suggestions: profile.concepts.map((entry) => ({
+                conceptId: entry.id,
+                categoryId: entry.categories[0],
+                label: entry.name,
+                name: entry.name,
+                group: entry.categories[0],
+                description: entry.definition ?? '',
+                views: entry.views ?? {},
+                selected: false,
+                order: entry.position,
+            })),
+            warnings: [],
+        });
+        await flow.init(container, toCtx(engine));
+        await enterFlow(container);
+        container
+            .querySelector<HTMLButtonElement>('[data-concept-id="LEVEL_A"]')!
+            .click();
+        await settle();
+        const order = [
+            ...container.querySelectorAll<HTMLElement>('[role="checkbox"]'),
+        ].map((option) => option.dataset.conceptId);
+        expect(order).toEqual([
+            'CAVEAT_X',
+            'SHARED',
+            'CAVEAT_Y',
+            'CAVEAT_Z',
+            'CYCLE_A',
+            'CYCLE_B',
+        ]);
+    });
+
+    it('keeps pointer Next and Previous transitions on usable destination options', async () => {
+        container.setAttribute(
+            'data-ezclassify-decisionflow-categories',
+            '["level","caveat"]',
+        );
+        await flow.init(container, toCtx(createMixedEngine()));
+        await enterFlow(container);
+        container
+            .querySelector<HTMLButtonElement>('[data-concept-id="LEVEL_A"]')!
+            .click();
+        await settle();
+        container
+            .querySelector<HTMLButtonElement>('[data-concept-id="CAVEAT_X"]')!
+            .click();
+        await settle();
+        container
+            .querySelector<HTMLButtonElement>('[data-concept-id="CAVEAT_Y"]')!
+            .click();
+        await settle();
+        expect((document.activeElement as HTMLElement).dataset.conceptId).toBe(
+            'CAVEAT_Y',
+        );
+        const previous = container.querySelector<HTMLButtonElement>(
+            '.ez-decision-flow__nav-btn--start',
+        )!;
+        previous.focus();
+        previous.dispatchEvent(
+            new MouseEvent('click', { bubbles: true, detail: 1 }),
+        );
+        await settle();
+        expect((document.activeElement as HTMLElement).dataset.conceptId).toBe(
+            'LEVEL_A',
+        );
+        const next = container.querySelector<HTMLButtonElement>(
+            '.ez-decision-flow__nav-btn--end',
+        )!;
+        next.focus();
+        next.dispatchEvent(
+            new MouseEvent('click', { bubbles: true, detail: 1 }),
+        );
+        await settle();
+        expect((document.activeElement as HTMLElement).dataset.conceptId).toBe(
+            'CAVEAT_X',
+        );
+    });
+
+    it('focuses a destination option when Enter advances out of a value input', async () => {
+        container.setAttribute(
+            'data-ezclassify-decisionflow-categories',
+            '["label","level"]',
+        );
+        await flow.init(container, toCtx(createTextInputEngine()));
+        await enterFlow(container);
+        const input = container.querySelector<HTMLInputElement>(
+            '.ez-decision-flow__text-field',
+        )!;
+        input.focus();
+        input.value = 'Analyst';
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+        await settle();
+        container
+            .querySelector<HTMLInputElement>('.ez-decision-flow__text-field')!
+            .dispatchEvent(
+                new KeyboardEvent('keydown', {
+                    key: 'Enter',
+                    bubbles: true,
+                    cancelable: true,
+                }),
+            );
+        await settle();
+        expect((document.activeElement as HTMLElement).dataset.conceptId).toBe(
+            'LEVEL_A',
+        );
+    });
+
+    it.each(['start', 'end'] as const)(
+        'retains %s navigation focus through the asynchronous options refresh that focus starts',
+        async (side) => {
+            const outside = document.createElement('button');
+            document.body.appendChild(outside);
+            await flow.init(container, toCtx(createMockEngine()));
+            await enterFlow(container);
+            if (side === 'start') dots()[1].click();
+            await settle();
+            const navigation = () =>
+                container.querySelector<HTMLButtonElement>(
+                    `.ez-decision-flow__nav-btn--${side}`,
+                )!;
+            const previous = navigation();
+            expect(previous.disabled).toBe(false);
+            previous.focus();
+            expect(document.activeElement).toBe(previous);
+            await settle();
+            expect(navigation()).not.toBe(previous);
+            expect(document.activeElement).toBe(navigation());
+            // A completed Tab exit must not be undone by another queued catalog render.
+            container
+                .querySelector<HTMLElement>('.ez-decision-flow__option')!
+                .focus();
+            navigation().focus();
+            outside.focus();
+            await settle();
+            expect(document.activeElement).toBe(outside);
+        },
+    );
+
+    it('returns navigation focus to a usable current option when a host update disables Next', async () => {
+        const engine = createMockEngine();
+        engine
+            .getScheme()
+            .categories.find((category) => category.id === 'scope')!.required =
+            true;
+        await flow.init(container, toCtx(engine));
+        flow.setAssertions([
+            {
+                categoryId: 'scope',
+                conceptId: 'SCOPE_FULL',
+                confidence: 'certain',
+                source: 'user',
+            },
+        ]);
+        await settle();
+        await enterFlow(container);
+        container
+            .querySelector<HTMLButtonElement>(
+                '.ez-decision-flow__nav-btn--end',
+            )!
+            .focus();
+        await settle();
+        flow.setAssertions([]);
+        await settle();
+        expect(
+            container.querySelector<HTMLButtonElement>(
+                '.ez-decision-flow__nav-btn--end',
+            )!.disabled,
+        ).toBe(true);
+        expect((document.activeElement as HTMLElement).dataset.conceptId).toBe(
+            'SCOPE_NONE',
+        );
+        expect(document.activeElement?.getAttribute('aria-disabled')).not.toBe(
+            'true',
+        );
+    });
+
+    it.each([undefined, 'SCOPE_FULL'])(
+        'focuses a usable option when the compact summary opens, with selected %s',
+        async (selected) => {
+            const outside = document.createElement('button');
+            document.body.appendChild(outside);
+            await flow.init(container, toCtx(createMockEngine()));
+            if (selected) {
+                flow.setAssertions([
+                    {
+                        categoryId: 'scope',
+                        conceptId: selected,
+                        confidence: 'certain',
+                        source: 'user',
+                    },
+                ]);
+                await settle();
+            }
+            outside.focus();
+            container
+                .querySelector<HTMLElement>('.ez-decision-flow__rest')!
+                .dispatchEvent(
+                    new MouseEvent('click', { bubbles: true, detail: 1 }),
+                );
+            const options = () => [
+                ...container.querySelectorAll<HTMLButtonElement>(
+                    '.ez-decision-flow__option',
+                ),
+            ];
+            expect(document.activeElement).toBe(options()[selected ? 2 : 0]);
+            const down = new KeyboardEvent('keydown', {
+                key: selected ? 'ArrowLeft' : 'ArrowRight',
+                bubbles: true,
+                cancelable: true,
+            });
+            document.activeElement!.dispatchEvent(down);
+            expect(down.defaultPrevented).toBe(true);
+            expect(document.activeElement).toBe(options()[1]);
+            (document.activeElement as HTMLButtonElement).click();
+            await settle();
+            expect(title()).toBe('2 of 2 · Impact');
+            const tab = new KeyboardEvent('keydown', {
+                key: 'Tab',
+                bubbles: true,
+                cancelable: true,
+            });
+            document.activeElement!.dispatchEvent(tab);
+            expect(tab.defaultPrevented).toBe(false);
+            outside.focus();
+            expect(
+                container.querySelector<HTMLElement>('.ez-decision-flow__step')!
+                    .hidden,
+            ).toBe(true);
+            flow.setAssertions([
+                {
+                    categoryId: 'scope',
+                    conceptId: 'SCOPE_PARTIAL',
+                    confidence: 'certain',
+                    source: 'user',
+                },
+            ]);
+            await settle();
+            container
+                .querySelector('.ez-decision-flow__rest')!
+                .dispatchEvent(new MouseEvent('mouseenter'));
+            expect(document.activeElement).toBe(outside);
+        },
+    );
+
+    it('focuses the first unanswered step when defaults already answer an earlier step', async () => {
+        await flow.init(container, toCtx(createMockEngine()));
+        flow.applyStoreState({
+            rendered: 'S:F',
+            valid: true,
+            errors: [],
+            renders: {},
+            assessment: {
+                emitted: [{ categoryId: 'scope', conceptId: 'SCOPE_FULL' }],
+                omitted: [],
+                collapsed: [],
+                conflicts: [],
+                unrepresentable: [],
+            },
+            assertions: [
+                {
+                    categoryId: 'scope',
+                    conceptId: 'SCOPE_FULL',
+                    confidence: 'certain',
+                    source: 'default',
+                },
+            ],
+        });
+        await settle();
+        expect(flow.getAssertions()).toContainEqual(
+            expect.objectContaining({
+                conceptId: 'SCOPE_FULL',
+                source: 'default',
+            }),
+        );
+        container
+            .querySelector<HTMLElement>('.ez-decision-flow__rest')!
+            .dispatchEvent(
+                new MouseEvent('click', { bubbles: true, detail: 1 }),
+            );
+        expect(title()).toBe('2 of 2 · Impact');
+        expect((document.activeElement as HTMLElement).dataset.conceptId).toBe(
+            'IMPACT_LOW',
+        );
+    });
+
+    it('skips unavailable options when a summary press opens the flow', async () => {
+        const engine = createMockEngine();
+        vi.mocked(engine.suggest).mockReturnValue({
+            suggestions: [
+                {
+                    categoryId: 'scope',
+                    conceptId: 'SCOPE_PARTIAL',
+                    label: 'Partial',
+                    name: 'Partial',
+                    group: 'scope',
+                    description: '',
+                    views: { default: 'P' },
+                    selected: false,
+                    order: 0,
+                },
+            ],
+            warnings: [],
+        });
+        await flow.init(container, toCtx(engine));
+        await settle();
+        container
+            .querySelector<HTMLElement>('.ez-decision-flow__rest')!
+            .dispatchEvent(
+                new MouseEvent('click', { bubbles: true, detail: 1 }),
+            );
+        expect((document.activeElement as HTMLElement).dataset.conceptId).toBe(
+            'SCOPE_PARTIAL',
+        );
+        expect(document.activeElement?.getAttribute('aria-disabled')).not.toBe(
+            'true',
+        );
+    });
+
+    it('focuses the existing value input when opening its current step from the summary', async () => {
+        const outside = document.createElement('button');
+        document.body.appendChild(outside);
+        container.setAttribute(
+            'data-ezclassify-decisionflow-categories',
+            '["level","label"]',
+        );
+        await flow.init(container, toCtx(createTextInputEngine()));
+        flow.setAssertions([
+            {
+                categoryId: 'level',
+                conceptId: 'LEVEL_A',
+                confidence: 'certain',
+                source: 'user',
+            },
+            {
+                categoryId: 'label',
+                conceptId: 'LABEL_TEXT',
+                value: 'Analyst',
+                confidence: 'certain',
+                source: 'user',
+            },
+        ]);
+        await settle();
+        expect(dots()).toHaveLength(2);
+        dots()[1].click();
+        outside.focus();
+        container
+            .querySelector<HTMLElement>('.ez-decision-flow__rest')!
+            .dispatchEvent(
+                new MouseEvent('click', { bubbles: true, detail: 1 }),
+            );
+        const input = container.querySelector<HTMLInputElement>(
+            '.ez-decision-flow__text-field',
+        )!;
+        expect(document.activeElement).toBe(input);
+        expect(input.value).toBe('Analyst');
+    });
+
     it('moves on to the next step once a single choice settles', async () => {
         await flow.init(container, toCtx(createMockEngine()));
         await enterFlow(container);
@@ -2886,6 +4799,132 @@ describe('DecisionFlow: compact layout', () => {
             .click();
         await settle();
         expect(title()).toBe('2 of 2 · Impact');
+    });
+
+    it.each(['deselect', 'default', 'clear'] as const)(
+        'cancels pending selection navigation after %s',
+        async (action) => {
+            const engine = createMockEngine();
+            const process = vi.mocked(engine.process).getMockImplementation()!;
+            let restoreDefault = false;
+            vi.mocked(engine.process).mockImplementation((input, options) => {
+                const result = process(input, options);
+                if (!restoreDefault || options?.suggestFor) return result;
+                const answer = result as ProcessResult;
+                if (
+                    answer.assertions.some(
+                        (assertion) => assertion.categoryId === 'scope',
+                    )
+                )
+                    return result;
+                return {
+                    ...answer,
+                    assertions: [
+                        ...answer.assertions,
+                        {
+                            categoryId: 'scope',
+                            conceptId: 'SCOPE_PARTIAL',
+                            confidence: 'certain',
+                            source: 'default',
+                        } as Assertion,
+                    ],
+                };
+            });
+            await flow.init(container, toCtx(engine));
+            flow.setAssertions([
+                {
+                    categoryId: 'impact',
+                    conceptId: 'IMPACT_LOW',
+                    confidence: 'certain',
+                    source: 'user',
+                },
+            ]);
+            await settle();
+            await enterFlow(container);
+            let release!: () => void;
+            const pending = new Promise<void>((resolve) => {
+                release = resolve;
+            });
+            const suggest = vi.mocked(engine.suggest).getMockImplementation()!;
+            let hold = true;
+            vi.mocked(engine.suggest).mockImplementation((input, options) => {
+                const result = suggest(input, options);
+                return hold ? pending.then(() => result) : result;
+            });
+            const option = () =>
+                container.querySelector<HTMLButtonElement>(
+                    '.ez-decision-flow__option[data-concept-id="SCOPE_PARTIAL"]',
+                )!;
+            option().click();
+            await vi.waitFor(() =>
+                expect(option().getAttribute('aria-pressed')).toBe('true'),
+            );
+            expect(title()).toBe('1 of 2 · Scope');
+            restoreDefault = action === 'default';
+            if (action === 'clear')
+                container
+                    .querySelector<HTMLButtonElement>('.ez-clear-button')!
+                    .click();
+            else option().click();
+            await settle();
+            hold = false;
+            release();
+            await settle();
+            expect(title()).toBe('1 of 2 · Scope');
+            expect(option().getAttribute('aria-pressed')).toBe('false');
+            if (action === 'clear') expect(flow.getAssertions()).toEqual([]);
+            else
+                expect(flow.getAssertions()).toContainEqual(
+                    expect.objectContaining({ conceptId: 'IMPACT_LOW' }),
+                );
+            if (action === 'default')
+                expect(flow.getAssertions()).toContainEqual(
+                    expect.objectContaining({
+                        conceptId: 'SCOPE_PARTIAL',
+                        source: 'default',
+                    }),
+                );
+            else
+                expect(
+                    flow
+                        .getAssertions()
+                        .some((assertion) => assertion.categoryId === 'scope'),
+                ).toBe(false);
+        },
+    );
+
+    it('advances after a positive selection that the engine corrects to another concept', async () => {
+        const engine = createMockEngine();
+        const process = vi.mocked(engine.process).getMockImplementation()!;
+        vi.mocked(engine.process).mockImplementation((input, options) => {
+            const result = process(input, options);
+            if (options?.suggestFor) return result;
+            const answer = result as ProcessResult;
+            return {
+                ...answer,
+                assertions: answer.assertions.map((assertion) =>
+                    assertion.conceptId === 'SCOPE_PARTIAL'
+                        ? {
+                              ...assertion,
+                              conceptId: 'SCOPE_FULL',
+                              source: 'repair' as const,
+                          }
+                        : assertion,
+                ),
+            };
+        });
+        await flow.init(container, toCtx(engine));
+        await enterFlow(container);
+        container
+            .querySelector<HTMLButtonElement>(
+                '.ez-decision-flow__option[data-concept-id="SCOPE_PARTIAL"]',
+            )!
+            .click();
+        await settle();
+        expect(title()).toBe('2 of 2 · Impact');
+        expect(flow.getAssertions()).toContainEqual(
+            expect.objectContaining({ conceptId: 'SCOPE_FULL' }),
+        );
     });
 
     it('names its x for the whole marking, and clears every scope it walks from it without leaving the step', async () => {
@@ -3132,40 +5171,154 @@ describe('DecisionFlow: compact layout', () => {
         ).toContain('Impact is required');
     });
 
-    it('advances a multi-choice step on Enter and toggles it on a press', async () => {
+    it('leaves Enter and Space as native toggle activation on a multi-choice step', async () => {
         const mixed = document.createElement('div');
         document.body.appendChild(mixed);
+        mixed.setAttribute(
+            'data-ezclassify-decisionflow-categories',
+            '["caveat","level"]',
+        );
         await flow.init(mixed, toCtx(createMixedEngine()));
         await enterFlow(mixed);
-        mixed
-            .querySelectorAll<HTMLButtonElement>('.ez-decision-flow__option')[0]
-            .click();
-        await settle();
         const label = () =>
             mixed.querySelector('.ez-decision-flow__question-label')
                 ?.textContent;
         expect(label()).toContain('Caveat');
-        const box =
-            mixed.querySelector<HTMLButtonElement>('[role="checkbox"]')!;
-        box.click();
-        expect(
-            mixed
-                .querySelector('[role="checkbox"]')
-                ?.getAttribute('aria-checked'),
-        ).toBe('true');
-        // On the last step Enter has nowhere to go and toggles nothing.
-        mixed
-            .querySelector<HTMLButtonElement>('[role="checkbox"]')!
-            .dispatchEvent(
-                new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }),
+        for (const [key, selected] of [
+            ['Enter', 'true'],
+            ['Enter', 'false'],
+            [' ', 'true'],
+            [' ', 'false'],
+        ] as const) {
+            const box =
+                mixed.querySelector<HTMLButtonElement>('[role="checkbox"]')!;
+            box.focus();
+            const event = new KeyboardEvent('keydown', {
+                key,
+                bubbles: true,
+                cancelable: true,
+            });
+            box.dispatchEvent(event);
+            expect(event.defaultPrevented).toBe(false);
+            // Native button activation supplies exactly one click for either key.
+            box.click();
+            await settle();
+            expect(
+                mixed
+                    .querySelector('[role="checkbox"]')
+                    ?.getAttribute('aria-checked'),
+            ).toBe(selected);
+            expect(label()).toContain('1 of 2 · Caveat');
+            expect(document.activeElement).toBe(
+                mixed.querySelector(
+                    `[role="checkbox"][data-concept-id="${box.dataset.conceptId}"]`,
+                ),
             );
-        expect(
-            mixed
-                .querySelector('[role="checkbox"]')
-                ?.getAttribute('aria-checked'),
-        ).toBe('true');
-        expect(label()).toContain('Caveat');
+        }
     });
+
+    it.each([
+        ['Enter', false],
+        [' ', false],
+        ['Enter', true],
+        [' ', true],
+    ] as const)(
+        'restores a deselected live-only parent after delayed dependent catalog refresh (%s, outside %s)',
+        async (key, outside) => {
+            const engine = createMixedEngine();
+            const profile = engine.getScheme() as SchemePublicView;
+            profile.concepts.find(
+                (concept) => concept.id === 'CAVEAT_Y',
+            )!.parents = ['CAVEAT_X'];
+            profile.concepts.find(
+                (concept) => concept.id === 'CAVEAT_Z',
+            )!.parents = ['CAVEAT_X'];
+            const suggest = vi.mocked(engine.suggest).getMockImplementation()!;
+            let hold = false;
+            let release: (() => void) | undefined;
+            vi.mocked(engine.suggest).mockImplementation((...args) => {
+                const assertions = args[0] as Assertion[];
+                const answer = suggest(...args) as SuggestResult;
+                const rows = answer.suggestions;
+                const level = assertions.some((a) => a.conceptId === 'LEVEL_B');
+                const parent = assertions.some(
+                    (a) => a.conceptId === 'CAVEAT_X',
+                );
+                const result: SuggestResult = {
+                    ...answer,
+                    warnings: answer.warnings ?? [],
+                    suggestions: rows.filter(
+                        (row) =>
+                            row.categoryId !== 'caveat' ||
+                            (level &&
+                                (row.conceptId === 'CAVEAT_X' ||
+                                    (parent && row.conceptId === 'CAVEAT_Y'))),
+                    ),
+                };
+                if (hold && level && !parent)
+                    return new Promise<SuggestResult>((resolve) => {
+                        release = () => resolve(result);
+                    });
+                return result;
+            });
+            container.setAttribute(
+                'data-ezclassify-decisionflow-categories',
+                '["level","caveat"]',
+            );
+            await flow.init(container, toCtx(engine));
+            flow.setAssertions([
+                {
+                    categoryId: 'level',
+                    conceptId: 'LEVEL_B',
+                    source: 'user',
+                    confidence: 'certain',
+                },
+                {
+                    categoryId: 'caveat',
+                    conceptId: 'CAVEAT_X',
+                    source: 'user',
+                    confidence: 'certain',
+                },
+            ]);
+            await settle();
+            dots()[1].click();
+            const option = () =>
+                container.querySelector<HTMLButtonElement>(
+                    '[role="checkbox"][data-concept-id="CAVEAT_X"]',
+                );
+            option()!.focus();
+            await settle();
+            expect(
+                container.querySelector('[data-concept-id="CAVEAT_Y"]'),
+            ).not.toBeNull();
+            hold = true;
+            const event = new KeyboardEvent('keydown', {
+                key,
+                bubbles: true,
+                cancelable: true,
+            });
+            option()!.dispatchEvent(event);
+            expect(event.defaultPrevented).toBe(false);
+            option()!.click();
+            await settle();
+            expect(release).toBeDefined();
+            // A transient block is still a focusable explanation control.
+            expect(option()?.getAttribute('aria-disabled')).toBe('true');
+            expect(document.activeElement).toBe(option());
+            const elsewhere = document.createElement('button');
+            document.body.appendChild(elsewhere);
+            if (outside) elsewhere.focus();
+            release!();
+            hold = false;
+            await settle();
+            expect(option()?.getAttribute('aria-checked')).toBe('false');
+            expect(
+                container.querySelector('[data-concept-id="CAVEAT_Y"]'),
+            ).toBeNull();
+            expect(document.activeElement).toBe(outside ? elsewhere : option());
+            expect(title()).toContain('Caveat');
+        },
+    );
 
     it('writes each scope its value, under its name, with the errors judged on that scope', async () => {
         const engine = createScopedEngine();

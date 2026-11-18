@@ -8,7 +8,7 @@
  * collapsed into its group's written name, a default no output prints, a fact a
  * rule adds that the line leaves out) is no change on any of them. TagInput
  * still draws such a fact, faded and dashed with no remove button, and says why
- * the marking holds it in its tooltip and accessible name.
+ * the marking holds it in its native hint and accessible name.
  *
  * The engine is a stand-in (see `label-record-stand-in.ts`). The marking starts
  * as HIGH, which shares with DISTRICT: a fact the line leaves out. Adding GROUP
@@ -67,7 +67,8 @@ function controlOf(id: string): HTMLElement {
 function listOf(id: string): string[] {
     const mark = controlOf(id).querySelector<HTMLElement>('.ez-status-mark')!;
     mark.dispatchEvent(new MouseEvent('click', { bubbles: true, detail: 1 }));
-    const tip = document.querySelector<HTMLElement>('.ez-tooltip');
+    const tipId = mark.getAttribute('aria-describedby');
+    const tip = tipId ? document.getElementById(tipId) : null;
     const open = !!tip && !tip.hidden;
     const lines = open
         ? [
@@ -77,9 +78,9 @@ function listOf(id: string): string[] {
           ].map((row) => row.textContent ?? '')
         : [];
     if (open)
-        mark.dispatchEvent(
-            new MouseEvent('click', { bubbles: true, detail: 1 }),
-        );
+        tip.querySelector<HTMLButtonElement>(
+            '.ez-marking-tools__close',
+        )!.click();
     return lines;
 }
 
@@ -98,17 +99,15 @@ function chips() {
     }));
 }
 
-/** The tooltip a TagInput chip shows on hover, line by line. */
-async function chipTooltip(conceptId: string): Promise<string[]> {
+/** The native hint a TagInput chip exposes, line by line. */
+async function chipHint(conceptId: string): Promise<string[]> {
     const chip = controlOf('ti').querySelector<HTMLElement>(
         `.proto-tag[data-concept-id="${conceptId}"]`,
     )!;
     chip.dispatchEvent(new Event('mouseenter'));
-    await wait(700);
-    const tip = document.querySelector<HTMLElement>('.ez-tooltip');
-    const lines = [...(tip?.querySelectorAll('.ez-tooltip__header') ?? [])].map(
-        (line) => line.textContent ?? '',
-    );
+    await wait(20);
+    expect(document.querySelector('.ez-tooltip:not([hidden])')).toBeNull();
+    const lines = chip.title.split('\n');
     chip.dispatchEvent(new Event('mouseleave'));
     return lines;
 }
@@ -183,8 +182,8 @@ async function expectWrittenAgreement(): Promise<void> {
         'HOME',
         'DISTRICT',
     ]);
-    expect((await chipTooltip('MEMBER'))[0]).toBe('Included by GROUP');
-    expect((await chipTooltip('HOME'))[0]).toBe(
+    expect((await chipHint('MEMBER'))[0]).toBe('Included by GROUP');
+    expect((await chipHint('HOME'))[0]).toBe(
         'Default Owner, not written in the marking',
     );
 }

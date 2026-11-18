@@ -370,6 +370,32 @@ describe('InlineMarkingEditor', () => {
         document.removeEventListener('mousedown', outsideClick);
     });
 
+    it('keeps a complete draft while tools hold focus and commits when focus leaves them', async () => {
+        const tools = document.createElement('button');
+        const outside = document.createElement('button');
+        document.body.append(tools, outside);
+        const onBlurCommit = vi.fn();
+        const { editor, input } = await open('S', ['S'], {
+            isFieldChrome: (node) => tools.contains(node),
+            onBlurCommit,
+        });
+        await type(input, 'S//NF');
+        editor.suspendForTools();
+        tools.focus();
+        await wait(180);
+        expect(openSurface()).toBeNull();
+        expect(editor.getDraftMarking()).toEqual({
+            rendered: 'S//NF',
+            valid: true,
+        });
+        expect(editor.getRendered()).toBe('S');
+        expect(onBlurCommit).not.toHaveBeenCalled();
+        outside.focus();
+        await wait(180);
+        expect(onBlurCommit).toHaveBeenCalledWith('stored');
+        expect(editor.getRendered()).toBe('S//NF');
+    });
+
     it('opens the composer on the document body, outside any clipping ancestor', async () => {
         container.style.overflow = 'hidden';
         await open();
@@ -718,6 +744,29 @@ describe('InlineMarkingEditor under the commit table', () => {
                 .sort(),
         ).toEqual(['MAIN', 'NF', 'S']);
         expect(editor.getRendered()).toBe('S//NF');
+    });
+
+    it('leaves modified boundary arrows and text selections to the native editor', async () => {
+        const onExit = vi.fn();
+        const { input } = await open('S', ['S'], { onExit });
+        input.focus();
+        input.setSelectionRange(1, 1);
+        for (const modifier of [
+            { altKey: true },
+            { ctrlKey: true },
+            { metaKey: true },
+            { shiftKey: true },
+            { isComposing: true },
+        ]) {
+            expect(press(input, 'ArrowRight', modifier).defaultPrevented).toBe(
+                false,
+            );
+        }
+        input.setSelectionRange(0, 1);
+        expect(press(input, 'ArrowRight').defaultPrevented).toBe(false);
+        await wait(80);
+        expect(onExit).not.toHaveBeenCalled();
+        expect(document.activeElement).toBe(input);
     });
 
     it('leaving the marking with Left or Right is a commit boundary; an unreadable draft stays', async () => {

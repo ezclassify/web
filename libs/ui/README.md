@@ -243,8 +243,10 @@ The markup and the rest of `main.ts` stay as they are.
 
 ## Favorites
 
-MarkingField and TagInput put Favorites in the EzClassify branding button's
-popover, beside Corrections. The Favorites tab appears when the host supplies
+Editable marking controls put Favorites in the EzClassify branding button's
+popover, beside Corrections. Enhanced native marking inputs and a
+GuideChecklist bound to a marking use the same tools. The checklist's computed
+result still belongs to its selected guide rules. The Favorites tab appears when the host supplies
 `favorites.load` or the scheme declares a preset for the field's scope. Without
 a provider, the tab offers scheme presets only.
 
@@ -295,20 +297,32 @@ storage. Browser persistence requires the host's consent and retention policy;
 the library never writes storage itself. A provider may supply
 `browserStorage.enabled()` and `browserStorage.setEnabled(enabled)` to offer a
 one-time Remember choice inside Favorites. Return `undefined` before the
-visitor chooses. Once chosen, the prompt is replaced by Manage Favorites.
+visitor chooses. The prompt appears after the first Favorite is saved. Once
+chosen, it is replaced by Manage Favorites.
 The optional `clear(context)` hook clears that list without changing presets.
 
-With the popover open, Left/Right switches tabs and Down enters the active
-section. Up/Down moves through its actions, including Save, saved markings,
+Click the branding button or press Ctrl+Shift+Enter (Cmd+Shift+Enter on Mac)
+while editing a control to open its tools. Hover shows the shortcut hint.
+Opening tools focuses the selected tab and hides editing suggestions. Returning
+to the editor closes tools.
+With the popover open, Left/Right switches tabs from content controls. In the
+header, the arrows cycle through the available tabs and Close. Down from the
+selected tab enters its section; Up closes tools and returns to the branding
+button. Each tab shows its current entry count.
+On a saved marking, Right moves to its Remove button and Left enters Corrections'
+first action. Left on Remove returns to the marking. Up/Down moves through its actions, including Save, saved markings,
 and presets. Enter or Space activates a focused action. Delete removes a
-focused saved Favorite when the host provides `remove`; it never applies the
+focused saved Favorite when the host provides `remove`. The adjacent Remove
+button offers the same action by pointer or Tab; neither action applies the
 marking or deletes a scheme preset. Escape closes the popover and returns
 focus to its branding button. Tab and Shift+Tab retain ordinary focus navigation.
 
-MarkedInput and MarkedTextArea retain their separate Favorites control; applying
-a Favorite preserves their existing marking and caret behavior. In MarkedTextArea,
-Favorites identifies the marking being edited. Save stores only that marking;
-applying replaces only that marking and preserves the other paragraphs. In body
+Every editable marking control opens these tools from its branding button.
+Favorites save the full marking value in the associated store entry. Applying
+one replaces that entry, so a Favorite selected from a category picker also
+updates the other controls bound to the marking. In MarkedTextArea, Favorites
+identifies the entry at the caret. Saving and applying use that entry and
+preserve the other paragraphs. In body
 text, applying inserts a marking at the paragraph start, or starts a new marked
 paragraph after an already marked line. Delete removes the focused saved Favorite
 without applying it.

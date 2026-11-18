@@ -74,6 +74,23 @@ describe('the EzClassify suite', () => {
 
     it('gives every one of the eight controls the shared chrome with one status mark', async () => {
         await mountSuite();
+        expect(
+            document.querySelector(
+                '.proto-kbd-hints, .ez-field-hints, .ez-composer__footer',
+            ),
+        ).toBeNull();
+        for (const id of [...TEXT, ...FRAMED]) {
+            const keycaps = controlOf(id).querySelectorAll('kbd');
+            expect(keycaps.length, id).toBe(
+                id === 'mi' || id === 'mta' ? 1 : 0,
+            );
+            for (const keycap of keycaps)
+                expect(
+                    keycap.closest(
+                        '.marked-input-touch-add, .marked-textarea-touch-add',
+                    ),
+                ).not.toBeNull();
+        }
         for (const id of [...TEXT, ...FRAMED]) {
             const control = controlOf(id);
             const chrome = control.querySelectorAll('.ez-field-chrome');
@@ -135,18 +152,6 @@ describe('the EzClassify suite', () => {
         expect(
             rule(css('marking-field.css'), '.marking-field-host:focus'),
         ).toMatch(ring);
-    });
-
-    it('shows the key-hint row while a control has focus, and hides it on a touch screen', () => {
-        const utils = css('component-utils.css');
-        expect(
-            rule(utils, ':focus-within > .proto-kbd-hints.ez-field-hints'),
-        ).toMatch(/display:\s*flex/);
-        const coarse = utils.slice(utils.indexOf('@media (pointer: coarse)'));
-        // The hint rows are hidden there, and nothing lays them over the page.
-        expect(coarse).toMatch(
-            /\.proto-kbd-hints,\s*:focus-within > \.proto-kbd-hints\.ez-field-hints\s*\{\s*display:\s*none;\s*\}/,
-        );
     });
 
     it("lets a framed control take a text host's own edge, as the text fields do", async () => {

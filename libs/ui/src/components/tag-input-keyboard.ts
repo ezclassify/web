@@ -8,6 +8,7 @@
 
 import type { Assertion } from '@ezclassify/types';
 import { derivedAssertion } from '../assertion-identity';
+import { focusGridNeighbor, type FocusGridArrow } from './focus-grid';
 
 /**
  * Assertion shape keyboard handlers need to tell derived chips from stated
@@ -45,28 +46,32 @@ export function handleChipKeydown(
     chip: HTMLSpanElement,
     ctx: ChipKeyboardContext,
 ): void {
+    if (e.defaultPrevented || e.isComposing || e.keyCode === 229) return;
     const idx = ctx.tagEls.indexOf(chip);
+    const modified = e.altKey || e.ctrlKey || e.metaKey || e.shiftKey;
 
     switch (e.key) {
         case 'ArrowLeft':
-            e.preventDefault();
-            if (idx > 0) ctx.focusChip(idx - 1);
-            break;
         case 'ArrowRight':
+        case 'ArrowUp':
+        case 'ArrowDown': {
+            if (modified) return;
             e.preventDefault();
-            if (idx < ctx.tagEls.length - 1) {
-                ctx.focusChip(idx + 1);
-            } else {
+            e.stopPropagation();
+            const candidates: HTMLElement[] = [...ctx.tagEls, ctx.filterInput];
+            const target = focusGridNeighbor(
+                candidates,
+                chip,
+                e.key as FocusGridArrow,
+            );
+            if (target === ctx.filterInput) {
                 ctx.unfocusAllChips();
                 ctx.filterInput.focus();
+            } else if (target) {
+                ctx.focusChip(ctx.tagEls.indexOf(target as HTMLSpanElement));
             }
             break;
-        case 'ArrowUp':
-        case 'ArrowDown':
-            e.preventDefault();
-            ctx.unfocusAllChips();
-            ctx.filterInput.focus();
-            break;
+        }
         case 'Backspace':
         case 'Delete': {
             e.preventDefault();
@@ -127,6 +132,7 @@ export function handleChipKeydown(
                 e.key.length === 1 &&
                 !e.ctrlKey &&
                 !e.metaKey &&
+                !e.altKey &&
                 !targetIsRemoveButton
             ) {
                 ctx.unfocusAllChips();
@@ -155,7 +161,16 @@ export function handleFilterChipKeys(
     e: KeyboardEvent,
     ctx: FilterChipKeyContext,
 ): void {
-    if (e.isComposing || e.keyCode === 229) return;
+    if (
+        e.defaultPrevented ||
+        e.isComposing ||
+        e.keyCode === 229 ||
+        e.altKey ||
+        e.ctrlKey ||
+        e.metaKey ||
+        e.shiftKey
+    )
+        return;
     if (ctx.filterInput.value || ctx.tagEls.length === 0) return;
     if (e.key === 'ArrowLeft') {
         e.preventDefault();

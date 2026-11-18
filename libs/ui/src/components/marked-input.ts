@@ -1,3 +1,5 @@
+import { bindTextToolsEdges } from './text-caret-edge';
+import { markingTarget } from './marking-target';
 /**
  * Enhances a native text input containing one inline marking and free text. An
  * owned, unnamed textarea provides wrapping and caret hit testing over the
@@ -31,6 +33,7 @@ import { revealClearOfPinned } from './composer/composer-placement';
 import { replacesStated } from './composer/composer-controller';
 import {
     ensureStatusMark,
+    statusMarkOwnsNode,
     recordAppliedFixes,
     setStatusMarkFixes,
 } from './status-mark';
@@ -44,7 +47,7 @@ import {
     type RuleErrorReport,
 } from './rule-errors';
 import {
-    ensureFavoritesButton,
+    ensureMarkingFavorites,
     schemeOffersPresets,
     type FavoritesPanel,
 } from './favorites-panel';
@@ -78,13 +81,11 @@ export interface MarkedInputOptions extends ComponentOptions {
 export class MarkedInput extends MarkedFieldBase<HTMLTextAreaElement> {
     protected readonly componentLabel = 'MarkedInput';
     protected readonly css = markedInputCss;
-    protected readonly hintSuffix = ` ${t('hint.toSetMarking')}`;
-    protected readonly hintActionKey = 'hint.setMarking' as const;
+    protected readonly markingActionKey = 'hint.setMarking' as const;
     protected readonly classNames: MarkedFieldClassNames = {
         wrap: 'marked-input-wrap',
         display: 'marked-input-display',
         footer: 'marked-input-footer',
-        kbHint: 'marked-input-kb-hint',
         touchAdd: 'marked-input-touch-add',
         pickerActive: 'marked-input-picker-active',
     };
@@ -147,9 +148,14 @@ export class MarkedInput extends MarkedFieldBase<HTMLTextAreaElement> {
     /** What writing the mark did, from the read that recorded its fixes. */
     private _fixesAssessment: RenderAssessment | undefined;
     private favoritesPanel: FavoritesPanel | null = null;
+    private toolsButton: HTMLElement | null = null;
 
     protected override isFieldChrome(node: Node): boolean {
-        return !!this.favoritesPanel?.contains(node);
+        return !!(
+            (node === this.host && this.picker?.isToolsSuspended) ||
+            statusMarkOwnsNode(this.toolsButton, node) ||
+            this.favoritesPanel?.contains(node)
+        );
     }
 
     /**
@@ -279,20 +285,23 @@ export class MarkedInput extends MarkedFieldBase<HTMLTextAreaElement> {
 
         // The field's single status mark (starless "enhanced" until the
         // engine applies a fix), in the field's inline chrome.
-        ensureStatusMark(this.chrome.status, {
+        this.toolsButton = ensureStatusMark(this.chrome.status, {
+            tools: true,
+            onToolsOpen: () => {
+                this.toolsButton?.focus();
+                this.picker?.suspendForTools();
+            },
             shape: 'chrome',
             root: this.container,
             shouldShowTooltip: () => this.shouldShowTooltip(),
             words: this.changeWords(),
         });
-        // The ★ mounts on host favorites wiring OR scheme-declared presets
-        // (ensureFavoritesButton owns the OR); an undefined `config` runs the
-        // panel read-only, "From the scheme" only.
+        // Favorites remain available for scheme presets without persistence.
         if (
             this.options.favorites ||
             schemeOffersPresets(this.scheme, this.options.scope)
         ) {
-            this.favoritesPanel = ensureFavoritesButton(this.chrome.status, {
+            this.favoritesPanel = ensureMarkingFavorites(this.chrome.status, {
                 root: this.container,
                 schemeId: this.schemeId,
                 scope: this.options.scope,
@@ -306,10 +315,16 @@ export class MarkedInput extends MarkedFieldBase<HTMLTextAreaElement> {
                     rendered: this.rendered,
                     valid: this.valid && !!this.rendered,
                 }),
-                onApply: (marking) => void this.applyFavorite(marking),
+                ...markingTarget(this),
+                onApply: (marking, signal) => {
+                    const target = markingTarget(this);
+                    if (!target) return this.applyFavorite(marking, signal);
+                    if (signal.aborted) return;
+                    this.finishClose();
+                    return target.onApply(marking, signal);
+                },
                 focusField: () => this.input.focus(),
             });
-            this.favoritesPanel?.syncStar();
         }
 
         this.boundInput = () => this.onInput();
@@ -321,12 +336,25 @@ export class MarkedInput extends MarkedFieldBase<HTMLTextAreaElement> {
 
         this.input.addEventListener('input', this.boundInput);
         this.input.addEventListener('keydown', this.boundKeydown);
+        this.stopTextToolsEdges = bindTextToolsEdges(
+            this.wrap,
+            () =>
+                document.activeElement === this.input ||
+                this.getFreeText().length > 0
+                    ? this.input
+                    : (this.pickerMount?.querySelector<HTMLInputElement>(
+                          '.inline-editor-input',
+                      ) ?? this.input),
+            () => this.toolsButton,
+        );
         this.input.addEventListener('paste', this.boundPaste);
         // Focus keeps the native edge, as MarkingField and TagInput do; the
         // inset ring in marked-input.css is the focus affordance.
         this.input.addEventListener('focus', () => {
             this.hasFocus = true;
             this.renderDisplay();
+            if (this.picker?.isToolsSuspended && !this.pressing)
+                this.picker.focus();
         });
         this.input.addEventListener('blur', () => {
             this.hasFocus = false;
@@ -344,7 +372,31 @@ export class MarkedInput extends MarkedFieldBase<HTMLTextAreaElement> {
         this.watchPresses();
         this.input.addEventListener('mouseup', (event: MouseEvent) => {
             if (event.button !== 0 || event.detail > 1) return;
-            if (!this.hasFocus || this.picker) return;
+            if (!this.hasFocus) return;
+            if (this.picker) {
+                if (
+                    this.picker.isToolsSuspended &&
+                    this.input.selectionStart === this.input.selectionEnd
+                ) {
+                    const caret = this.caretInMark();
+                    const rect = this.pickerMount?.getBoundingClientRect();
+                    const onMark =
+                        caret !== undefined ||
+                        !!(
+                            rect &&
+                            event.clientX >= rect.left &&
+                            event.clientX < rect.right &&
+                            event.clientY >= rect.top &&
+                            event.clientY < rect.bottom
+                        );
+                    if (onMark) this.picker.showList(caret);
+                    else {
+                        this._explicitClose = true;
+                        void this.closePicker().then(() => this.afterClose());
+                    }
+                }
+                return;
+            }
             requestAnimationFrame(() => {
                 if (this.picker) return;
                 if (this.input.selectionStart !== this.input.selectionEnd)
@@ -805,6 +857,8 @@ export class MarkedInput extends MarkedFieldBase<HTMLTextAreaElement> {
     }
 
     private teardown(): void {
+        this.stopTextToolsEdges?.();
+        this.stopTextToolsEdges = null;
         this.destroyed = true;
         if (!this.host || !this.wrap) return;
         this.disconnectThemeObserver();
@@ -812,6 +866,7 @@ export class MarkedInput extends MarkedFieldBase<HTMLTextAreaElement> {
         this.destroyPicker();
         this.favoritesPanel?.destroy();
         this.favoritesPanel = null;
+        this.toolsButton = null;
         this.input.removeEventListener('input', this.boundInput);
         this.input.removeEventListener('keydown', this.boundKeydown);
         this.input.removeEventListener('paste', this.boundPaste);
@@ -1411,7 +1466,6 @@ export class MarkedInput extends MarkedFieldBase<HTMLTextAreaElement> {
             }
         }
 
-        this.favoritesPanel?.syncStar();
         this.exposePickerInDisplay();
     }
 
@@ -1517,10 +1571,13 @@ export class MarkedInput extends MarkedFieldBase<HTMLTextAreaElement> {
                     this.finishPicker();
                     this.afterClose();
                 },
-                onCancel: () => this.escapeClosePicker(),
-                // The favorites button stamps onto the open segment, so
+                onCancel: (fromSheet) => this.escapeClosePicker(fromSheet),
+                focusTarget: this.wrap,
+                // Tools act on the open segment, so
                 // focus moving to it must not close the editor first.
                 isFieldChrome: (node) => this.isFieldChrome(node),
+                sheetTools: () => this.toolsButton,
+                textToolsEdges: () => this.getFreeText().length === 0,
                 label: () =>
                     accessibleLabel(this.input, t('aria.markingInput')),
                 root: this.container,
@@ -1550,8 +1607,12 @@ export class MarkedInput extends MarkedFieldBase<HTMLTextAreaElement> {
      * marking comes from the favorites panel's `read()` call instead of the
      * (possibly not even open) inline picker.
      */
-    private async applyFavorite(marking: string): Promise<void> {
+    private async applyFavorite(
+        marking: string,
+        signal?: AbortSignal,
+    ): Promise<void> {
         const result = await this.readForFavorites(marking);
+        if (signal?.aborted) return;
         this._userEdited = true;
         this._editorAssertions = null;
         this.assertions = result.assertions;
@@ -1640,6 +1701,8 @@ export class MarkedInput extends MarkedFieldBase<HTMLTextAreaElement> {
         this.finishClose();
         this.renderDisplay();
     }
+
+    private stopTextToolsEdges: (() => void) | null = null;
 
     private onKeydown(e: KeyboardEvent): void {
         if (this.picker && e.key === 'Escape') {

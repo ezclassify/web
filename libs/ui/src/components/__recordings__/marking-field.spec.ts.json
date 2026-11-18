@@ -1250,52 +1250,6 @@
             "method": "POST",
             "statusCode": 200
         },
-        "1a91a20e10154b6314909e677e649ba5a28cbaff8d8bdeb06aa257fa25128d4a": {
-            "body": {
-                "resolution": {
-                    "artifacts": [
-                        {
-                            "id": "mf-fav-test",
-                            "kind": "scheme",
-                            "version": "1.0.0"
-                        }
-                    ],
-                    "contextId": "mf-fav-test",
-                    "requestedVersion": "0.0.0",
-                    "resolvedVersion": "1.0.0"
-                },
-                "result": {
-                    "suggestions": [
-                        {
-                            "categoryId": "level",
-                            "conceptId": "S",
-                            "description": "Secret",
-                            "group": "Level",
-                            "label": "SECRET",
-                            "name": "Secret",
-                            "order": 1,
-                            "selected": true,
-                            "views": { "default": "SECRET" }
-                        },
-                        {
-                            "categoryId": "caveat",
-                            "conceptId": "NF",
-                            "description": "No Foreign",
-                            "group": "Caveat",
-                            "label": "NOFORN",
-                            "name": "No Foreign",
-                            "order": 1,
-                            "selected": true,
-                            "views": { "default": "NOFORN" }
-                        }
-                    ],
-                    "warnings": []
-                }
-            },
-            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
-            "method": "POST",
-            "statusCode": 200
-        },
         "1babe26efd1e4aaf93dc6844ee1214a763863deb94da1c634cadbc34c307956f": {
             "body": {
                 "resolution": {
@@ -3714,6 +3668,64 @@
             "method": "GET",
             "statusCode": 200
         },
+        "567afe225565fd73f25485273e81563eb428ae273a5d977ed512c71215f69738": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "mf-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "mf-test",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "S",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "caveat",
+                            "conceptId": "NF",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            { "categoryId": "level", "conceptId": "S" },
+                            { "categoryId": "caveat", "conceptId": "NF" }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "recognition": {
+                        "inputFormat": "default",
+                        "status": "complete",
+                        "surface": "marking",
+                        "unmatched": []
+                    },
+                    "rendered": "SECRET//NOFORN",
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
         "5689d4899979a484f764c99f5f71cc642dc3c6ac0bfd7147fac1daf2d244c109": {
             "body": {
                 "resolution": {
@@ -3879,78 +3891,6 @@
                     },
                     "rendered": "SECRET//TK",
                     "renders": {},
-                    "valid": true,
-                    "warnings": []
-                }
-            },
-            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
-            "method": "POST",
-            "statusCode": 200
-        },
-        "582e0d3303f3ffb6afe6311f0813ef1a776186ee38ebd8f6467eef244708265f": {
-            "body": {
-                "resolution": {
-                    "artifacts": [
-                        {
-                            "id": "mf-fav-test",
-                            "kind": "scheme",
-                            "version": "1.0.0"
-                        }
-                    ],
-                    "contextId": "mf-fav-test",
-                    "requestedVersion": "0.0.0",
-                    "resolvedVersion": "1.0.0"
-                },
-                "result": {
-                    "appliedFixes": [],
-                    "assertions": [
-                        {
-                            "categoryId": "level",
-                            "conceptId": "S",
-                            "confidence": "certain",
-                            "source": "parse"
-                        },
-                        {
-                            "categoryId": "caveat",
-                            "conceptId": "NF",
-                            "confidence": "certain",
-                            "source": "parse"
-                        }
-                    ],
-                    "assessment": {
-                        "collapsed": [],
-                        "conflicts": [],
-                        "emitted": [
-                            { "categoryId": "level", "conceptId": "S" },
-                            { "categoryId": "caveat", "conceptId": "NF" }
-                        ],
-                        "omitted": [],
-                        "unrepresentable": []
-                    },
-                    "errors": [],
-                    "inputWasValid": true,
-                    "notices": [],
-                    "proposedFixes": [],
-                    "rendered": "SECRET//NOFORN",
-                    "renders": {},
-                    "suggestionsFor": {
-                        "level": {
-                            "suggestions": [
-                                {
-                                    "categoryId": "level",
-                                    "conceptId": "S",
-                                    "description": "Secret",
-                                    "group": "Level",
-                                    "label": "SECRET",
-                                    "name": "Secret",
-                                    "order": 1,
-                                    "selected": false,
-                                    "views": { "default": "SECRET" }
-                                }
-                            ],
-                            "warnings": []
-                        }
-                    },
                     "valid": true,
                     "warnings": []
                 }
@@ -10846,6 +10786,57 @@
                     },
                     "rendered": "SECRET",
                     "renders": {},
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "e5bd6723b41cfc372d00b091f8fd4f3b4b2acbbd8cdab6c2d0584c07c0263df5": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "mf-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "mf-test",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "S",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            { "categoryId": "level", "conceptId": "S" }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "recognition": {
+                        "inputFormat": "default",
+                        "status": "complete",
+                        "surface": "marking",
+                        "unmatched": []
+                    },
+                    "rendered": "SECRET",
                     "valid": true,
                     "warnings": []
                 }

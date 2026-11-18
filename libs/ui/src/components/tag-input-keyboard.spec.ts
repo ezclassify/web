@@ -14,6 +14,27 @@ function makeKeyEvent(
     });
 }
 
+function place(
+    element: HTMLElement,
+    left: number,
+    top: number,
+    width = 40,
+    height = 25,
+) {
+    element.getBoundingClientRect = () =>
+        ({
+            x: left,
+            y: top,
+            left,
+            top,
+            right: left + width,
+            bottom: top + height,
+            width,
+            height,
+            toJSON: () => ({}),
+        }) as DOMRect;
+}
+
 function createChipContext(
     overrides?: Partial<ChipKeyboardContext>,
 ): ChipKeyboardContext {
@@ -27,9 +48,13 @@ function createChipContext(
     chip2.dataset.categoryId = 'cat2';
     chip2.tabIndex = 0;
 
+    const filterInput = document.createElement('input');
+    place(chip1, 0, 0);
+    place(chip2, 60, 0);
+    place(filterInput, 120, 0);
     return {
         tagEls: [chip1, chip2],
-        filterInput: document.createElement('input'),
+        filterInput,
         assertions: [
             {
                 conceptId: 'c1',
@@ -80,12 +105,106 @@ describe('handleChipKeydown', () => {
         expect(focusSpy).toHaveBeenCalled();
     });
 
-    it('ArrowUp/ArrowDown unfocuses chips and focuses filter', () => {
+    it('contains vertical edges when every candidate is on one row', () => {
         const ctx = createChipContext();
-        const focusSpy = vi.spyOn(ctx.filterInput, 'focus');
-        handleChipKeydown(makeKeyEvent('ArrowUp'), ctx.tagEls[0], ctx);
-        expect(ctx.unfocusAllChips).toHaveBeenCalled();
-        expect(focusSpy).toHaveBeenCalled();
+        const focus = vi.spyOn(ctx.filterInput, 'focus');
+        for (const key of ['ArrowUp', 'ArrowDown']) {
+            const event = makeKeyEvent(key);
+            handleChipKeydown(event, ctx.tagEls[0], ctx);
+            expect(event.defaultPrevented).toBe(true);
+        }
+        expect(ctx.focusChip).not.toHaveBeenCalled();
+        expect(ctx.unfocusAllChips).not.toHaveBeenCalled();
+        expect(focus).not.toHaveBeenCalled();
+    });
+
+    it('moves between physical wrapped rows and the nearest trailing filter', () => {
+        const ctx = createChipContext();
+        const third = document.createElement('span');
+        ctx.tagEls.push(third);
+        place(ctx.tagEls[0], 0, 0, 90);
+        place(ctx.tagEls[1], 110, 0);
+        place(third, 0, 40);
+        place(ctx.filterInput, 70, 40, 120);
+        const focus = vi.spyOn(ctx.filterInput, 'focus');
+        handleChipKeydown(makeKeyEvent('ArrowDown'), ctx.tagEls[0], ctx);
+        expect(ctx.focusChip).toHaveBeenLastCalledWith(2);
+        handleChipKeydown(makeKeyEvent('ArrowUp'), third, ctx);
+        expect(ctx.focusChip).toHaveBeenLastCalledWith(0);
+        handleChipKeydown(makeKeyEvent('ArrowDown'), ctx.tagEls[1], ctx);
+        expect(ctx.unfocusAllChips).toHaveBeenCalledTimes(1);
+        expect(focus).toHaveBeenCalledTimes(1);
+        vi.mocked(ctx.focusChip).mockClear();
+        handleChipKeydown(makeKeyEvent('ArrowRight'), ctx.tagEls[1], ctx);
+        expect(ctx.focusChip).not.toHaveBeenCalled();
+        expect(focus).toHaveBeenCalledTimes(1);
+    });
+
+    it('follows physical RTL order and freshly reflowed chip rectangles', () => {
+        const ctx = createChipContext();
+        place(ctx.tagEls[0], 120, 0);
+        place(ctx.tagEls[1], 60, 0);
+        place(ctx.filterInput, 0, 0);
+        handleChipKeydown(makeKeyEvent('ArrowLeft'), ctx.tagEls[0], ctx);
+        expect(ctx.focusChip).toHaveBeenLastCalledWith(1);
+        const focus = vi.spyOn(ctx.filterInput, 'focus');
+        handleChipKeydown(makeKeyEvent('ArrowLeft'), ctx.tagEls[1], ctx);
+        expect(focus).toHaveBeenCalledTimes(1);
+        place(ctx.tagEls[1], 120, 40);
+        handleChipKeydown(makeKeyEvent('ArrowDown'), ctx.tagEls[0], ctx);
+        expect(ctx.focusChip).toHaveBeenLastCalledWith(1);
+        expect(focus).toHaveBeenCalledTimes(1);
+    });
+
+    it('does not hijack modified navigation, composition or an already handled key', () => {
+        const ctx = createChipContext();
+        for (const modifier of [
+            { altKey: true },
+            { ctrlKey: true },
+            { metaKey: true },
+            { shiftKey: true },
+            { isComposing: true },
+            { keyCode: 229 },
+        ]) {
+            for (const key of [
+                'ArrowLeft',
+                'ArrowRight',
+                'ArrowUp',
+                'ArrowDown',
+            ]) {
+                const event = makeKeyEvent(key, modifier);
+                handleChipKeydown(event, ctx.tagEls[0], ctx);
+                expect(event.defaultPrevented).toBe(false);
+            }
+        }
+        const handled = makeKeyEvent('ArrowRight');
+        handled.preventDefault();
+        handleChipKeydown(handled, ctx.tagEls[0], ctx);
+        expect(ctx.focusChip).not.toHaveBeenCalled();
+        expect(ctx.unfocusAllChips).not.toHaveBeenCalled();
+    });
+
+    it('retains uppercase printable passthrough and native remove-button activation', () => {
+        const ctx = createChipContext();
+        handleChipKeydown(
+            makeKeyEvent('A', { shiftKey: true }),
+            ctx.tagEls[0],
+            ctx,
+        );
+        expect(ctx.unfocusAllChips).toHaveBeenCalledTimes(1);
+        const button = document.createElement('button');
+        button.className = 'proto-tag-remove';
+        ctx.tagEls[0].append(button);
+        button.addEventListener('keydown', (event) =>
+            handleChipKeydown(event, ctx.tagEls[0], ctx),
+        );
+        for (const key of [' ', 'Enter']) {
+            const event = makeKeyEvent(key);
+            button.dispatchEvent(event);
+            expect(event.defaultPrevented).toBe(false);
+        }
+        expect(ctx.unfocusAllChips).toHaveBeenCalledTimes(1);
+        expect(ctx.removeAssertion).not.toHaveBeenCalled();
     });
 
     it('Delete removes assertion for non-inferred chip', () => {
@@ -216,6 +335,23 @@ describe('handleFilterChipKeys', () => {
             const e = makeKeyEvent(key);
             handleFilterChipKeys(e, ctx);
             expect(e.defaultPrevented).toBe(false);
+        }
+        expect(ctx.focusChip).not.toHaveBeenCalled();
+    });
+
+    it('leaves modified navigation and deletion to the native filter', () => {
+        const ctx = filterContext();
+        for (const modifier of [
+            { altKey: true },
+            { ctrlKey: true },
+            { metaKey: true },
+            { shiftKey: true },
+        ]) {
+            for (const key of ['ArrowLeft', 'Backspace']) {
+                const event = makeKeyEvent(key, modifier);
+                handleFilterChipKeys(event, ctx);
+                expect(event.defaultPrevented).toBe(false);
+            }
         }
         expect(ctx.focusChip).not.toHaveBeenCalled();
     });

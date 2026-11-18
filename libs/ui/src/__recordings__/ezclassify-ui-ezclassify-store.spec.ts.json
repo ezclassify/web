@@ -706,6 +706,72 @@
             "method": "POST",
             "statusCode": 200
         },
+        "1ba9cd33d28b08374a0b16ad58b70b3755d23af0b6f2129e88b093d18671fc31": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "multi-scope-regression",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "multi-scope-regression",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "from_school",
+                            "conceptId": "OUR_SCHOOL",
+                            "confidence": "certain",
+                            "source": "default"
+                        },
+                        {
+                            "categoryId": "filing_status",
+                            "conceptId": "FILED",
+                            "confidence": "certain",
+                            "source": "default"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [],
+                        "omitted": [
+                            {
+                                "categoryId": "from_school",
+                                "conceptId": "OUR_SCHOOL"
+                            },
+                            {
+                                "categoryId": "filing_status",
+                                "conceptId": "FILED"
+                            }
+                        ],
+                        "unrepresentable": []
+                    },
+                    "errors": [
+                        {
+                            "categoryId": "level",
+                            "constraintId": "_required-category:level",
+                            "message": "Minimum audience level is required."
+                        }
+                    ],
+                    "inputWasValid": false,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "",
+                    "renders": {},
+                    "valid": false,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
         "1e34e88ad084146bcae7d9dceee4967dc5771dc9f03b99f46d2d5cfff939fd8a": {
             "body": {
                 "resolution": {
@@ -2790,6 +2856,93 @@
                     "rendered": "ST",
                     "renders": {},
                     "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "6f40b6e125f27719ce685ec44023906e9e57489c4217f33f1cb65520746e1e04": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "multi-scope-regression",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "multi-scope-regression",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "STUDENTS",
+                            "confidence": "certain",
+                            "source": "user",
+                            "value": "REFUSE"
+                        },
+                        {
+                            "categoryId": "from_school",
+                            "conceptId": "OUR_SCHOOL",
+                            "confidence": "certain",
+                            "source": "default"
+                        },
+                        {
+                            "categoryId": "filing_status",
+                            "conceptId": "FILED",
+                            "confidence": "certain",
+                            "source": "default"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [],
+                        "omitted": [
+                            {
+                                "categoryId": "level",
+                                "conceptId": "STUDENTS",
+                                "value": "REFUSE"
+                            },
+                            {
+                                "categoryId": "from_school",
+                                "conceptId": "OUR_SCHOOL"
+                            },
+                            {
+                                "categoryId": "filing_status",
+                                "conceptId": "FILED"
+                            }
+                        ],
+                        "unrepresentable": [
+                            {
+                                "conceptId": "STUDENTS",
+                                "detail": "this concept has no codec in this field.",
+                                "reason": "value-lossy"
+                            }
+                        ]
+                    },
+                    "displayColor": {
+                        "background": "#2e7d32",
+                        "text": "#ffffff"
+                    },
+                    "errors": [
+                        {
+                            "constraintId": "_invalid_render",
+                            "message": "`long` could not write `STUDENTS` (value-lossy): this concept has no codec in this field."
+                        }
+                    ],
+                    "inputWasValid": false,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "[unrepresentable:value-lossy]",
+                    "renders": {},
+                    "valid": false,
                     "warnings": []
                 }
             },
@@ -6110,6 +6263,81 @@
             "method": "POST",
             "statusCode": 200
         },
+        "ae6b90a9623e4431bbfe780aa79a36eec6a52dfc17b6ec1729b0c7b5f0f98e3c": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "multi-scope-regression",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "multi-scope-regression",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "DISTRICT_COORDINATORS",
+                            "confidence": "certain",
+                            "source": "user"
+                        },
+                        {
+                            "categoryId": "from_school",
+                            "conceptId": "OUR_SCHOOL",
+                            "confidence": "certain",
+                            "source": "default"
+                        },
+                        {
+                            "categoryId": "filing_status",
+                            "conceptId": "FILED",
+                            "confidence": "certain",
+                            "source": "default"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            {
+                                "categoryId": "level",
+                                "conceptId": "DISTRICT_COORDINATORS"
+                            }
+                        ],
+                        "omitted": [
+                            {
+                                "categoryId": "from_school",
+                                "conceptId": "OUR_SCHOOL"
+                            },
+                            {
+                                "categoryId": "filing_status",
+                                "conceptId": "FILED"
+                            }
+                        ],
+                        "unrepresentable": []
+                    },
+                    "displayColor": {
+                        "background": "#546e7a",
+                        "text": "#ffffff"
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "DISTRICT COORDINATORS",
+                    "renders": {},
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
         "aeadd4a6e6c3e978a1dfbc833b71611a1e1837cd73d58feaa276892fc3813a37": {
             "body": {
                 "resolution": {
@@ -7858,6 +8086,93 @@
                                 "categoryId": "level",
                                 "conceptId": "STUDENTS",
                                 "value": "SLOW"
+                            },
+                            {
+                                "categoryId": "from_school",
+                                "conceptId": "OUR_SCHOOL"
+                            },
+                            {
+                                "categoryId": "filing_status",
+                                "conceptId": "FILED"
+                            }
+                        ],
+                        "unrepresentable": [
+                            {
+                                "conceptId": "STUDENTS",
+                                "detail": "this concept has no codec in this field.",
+                                "reason": "value-lossy"
+                            }
+                        ]
+                    },
+                    "displayColor": {
+                        "background": "#2e7d32",
+                        "text": "#ffffff"
+                    },
+                    "errors": [
+                        {
+                            "constraintId": "_invalid_render",
+                            "message": "`long` could not write `STUDENTS` (value-lossy): this concept has no codec in this field."
+                        }
+                    ],
+                    "inputWasValid": false,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "[unrepresentable:value-lossy]",
+                    "renders": {},
+                    "valid": false,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "e8ad719a7cc8cc660b0741fcd1f476c5155266fefb746df77f6755c9b218596a": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "multi-scope-regression",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "multi-scope-regression",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "STUDENTS",
+                            "confidence": "certain",
+                            "source": "manual",
+                            "value": "REFUSE"
+                        },
+                        {
+                            "categoryId": "from_school",
+                            "conceptId": "OUR_SCHOOL",
+                            "confidence": "certain",
+                            "source": "default"
+                        },
+                        {
+                            "categoryId": "filing_status",
+                            "conceptId": "FILED",
+                            "confidence": "certain",
+                            "source": "default"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [],
+                        "omitted": [
+                            {
+                                "categoryId": "level",
+                                "conceptId": "STUDENTS",
+                                "value": "REFUSE"
                             },
                             {
                                 "categoryId": "from_school",

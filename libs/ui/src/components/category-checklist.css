@@ -302,3 +302,11 @@
         outline: 2px solid Highlight;
     }
 }
+
+/* Native Tab enters the list; its search and header retain their visual order. */
+.category-checklist-header {
+    order: -2;
+}
+.category-checklist-search {
+    order: -1;
+}

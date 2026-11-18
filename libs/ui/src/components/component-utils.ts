@@ -12,11 +12,7 @@ export {
 } from './tooltip-manager';
 export { createTag, createUnreadTag } from './tag-factory';
 export { ensureStatusMark, setStatusMarkFixes } from './status-mark';
-export {
-    createAnnouncer,
-    announce,
-    createKeyboardHints,
-} from './accessibility-helpers';
+export { createAnnouncer, announce } from './accessibility-helpers';
 export {
     COMPONENT_CSS,
     getComponentStyles,

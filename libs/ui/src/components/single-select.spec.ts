@@ -6,6 +6,7 @@ import {
 import type {
     Assertion,
     LocalContextSchemeEngineAdapter,
+    SchemeEngineAdapter,
 } from '@ezclassify/types';
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
@@ -270,6 +271,371 @@ describe('SingleSelect', () => {
         engine = await makeEngine();
         component = new SingleSelect();
     });
+    /**
+     * UI-lifetime double: each free-text prefix is accepted asynchronously and
+     * trimmed canonically.
+     */
+    function freeTextAdapter() {
+        const original = engine.getScheme();
+        const scheme = {
+            ...original,
+            concepts: original.concepts.map((concept) =>
+                concept.id === 'level-3'
+                    ? {
+                          ...concept,
+                          textInput: {
+                              encoding: { type: 'text' as const },
+                              label: 'Value',
+                              required: true,
+                          },
+                      }
+                    : concept,
+            ),
+        };
+        const write = (assertions: readonly Assertion[]) =>
+            assertions
+                .map((assertion) => assertion.value ?? assertion.conceptId)
+                .join('/');
+        return {
+            getScheme: () => scheme,
+            getSchemeMeta: () => engine.getSchemeMeta(),
+            process: async (
+                _input: string,
+                options?: { assertions?: Assertion[] },
+            ) => {
+                await Promise.resolve();
+                const assertions = (options?.assertions ?? []).map(
+                    (assertion) => ({
+                        ...assertion,
+                        ...(assertion.value === undefined
+                            ? {}
+                            : { value: assertion.value.trim() }),
+                    }),
+                );
+                return {
+                    assertions,
+                    rendered: write(assertions),
+                    valid: true,
+                    errors: [],
+                    proposedFixes: [],
+                };
+            },
+            render: (assertions: Assertion[]) => ({
+                rendered: write(assertions),
+                assessment: {
+                    emitted: [],
+                    omitted: [],
+                    collapsed: [],
+                    conflicts: [],
+                    unrepresentable: [],
+                },
+            }),
+            suggest: () => ({ suggestions: [], warnings: [] }),
+            describeConcept: (conceptId: string) => ({ lines: [conceptId] }),
+        };
+    }
+    /**
+     * A two-scope label fixture; processing remains a full-state UI-lifetime
+     * double.
+     */
+    function writingAdapter() {
+        const base = freeTextAdapter();
+        const source = base.getScheme();
+        const scheme = {
+            ...source,
+            categories: [
+                ...source.categories.map((category) => ({
+                    ...category,
+                    scopes: ['line'],
+                })),
+                {
+                    ...source.categories[0]!,
+                    id: 'authority',
+                    label: 'Authority',
+                    single: false,
+                    scopes: ['authority'],
+                },
+            ],
+            concepts: [
+                ...source.concepts.map((concept) => ({
+                    ...concept,
+                    views: {
+                        default: 'GENERIC',
+                        whole: `Whole ${concept.id}`,
+                        part: `Part ${concept.id}`,
+                        explicit: `Explicit ${concept.id}`,
+                    },
+                })),
+                {
+                    ...source.concepts[2]!,
+                    id: 'author',
+                    name: 'Author',
+                    categories: ['authority'],
+                },
+            ],
+        };
+        const meta: ReturnType<typeof engine.getSchemeMeta> = {
+            ...base.getSchemeMeta(),
+            defaultRenderFormat: 'line/part',
+            defaultPartRenderFormat: 'line/part',
+            defaultWholeRenderFormat: 'authority/block',
+            defaultScope: 'line',
+            scopes: [
+                { id: 'line', label: 'Line' },
+                { id: 'authority', label: 'Authority' },
+            ],
+            formats: [
+                {
+                    id: 'line/whole',
+                    surface: 'line',
+                    mode: 'inline' as const,
+                    categoryOrder: ['level'],
+                    view: 'whole',
+                    defaultFor: ['whole'],
+                },
+                {
+                    id: 'line/part',
+                    surface: 'line',
+                    mode: 'inline' as const,
+                    categoryOrder: ['level'],
+                    view: 'part',
+                    defaultFor: ['part'],
+                },
+                {
+                    id: 'line/explicit',
+                    surface: 'line',
+                    mode: 'inline' as const,
+                    categoryOrder: ['level'],
+                    view: 'explicit',
+                },
+                {
+                    id: 'authority/block',
+                    surface: 'authority',
+                    mode: 'inline' as const,
+                    categoryOrder: ['authority'],
+                    view: 'whole',
+                    defaultFor: ['whole'],
+                },
+            ],
+        };
+        return { ...base, getScheme: () => scheme, getSchemeMeta: () => meta };
+    }
+
+    it.each(['dropdown', 'cards'] as const)(
+        'names %s choices in the category role output without changing full facts or explicit formats',
+        async (mode) => {
+            for (const [options, prefix] of [
+                [{}, 'Whole'],
+                [{ holdsPart: false }, 'Whole'],
+                [{ holdsPart: true }, 'Part'],
+                [{ formatId: 'line/part' }, 'Part'],
+                [{ formatId: 'line/explicit' }, 'Explicit'],
+            ] as const) {
+                const adapter = writingAdapter();
+                const process = vi.spyOn(adapter, 'process');
+                await component.init(container, toCtx(adapter), {
+                    mode,
+                    facetOf: 'shared-marking',
+                    ...options,
+                });
+                const facts: Assertion[] = [
+                    {
+                        conceptId: 'level-1',
+                        categoryId: 'level',
+                        source: 'user',
+                        confidence: 'certain',
+                    },
+                    {
+                        conceptId: 'author',
+                        categoryId: 'authority',
+                        value: 'Jane Analyst',
+                        source: 'user',
+                        confidence: 'certain',
+                    },
+                ];
+                component.setAssertions(facts);
+                await settleText();
+                const label =
+                    mode === 'dropdown'
+                        ? container.querySelector<HTMLOptionElement>(
+                              'option[value="level-1"]',
+                          )!.textContent
+                        : container.querySelector<HTMLElement>(
+                              '.select-card[data-concept-id="level-1"] .select-card-label',
+                          )!.textContent;
+                expect(label).toBe(`${prefix} level-1`);
+                expect(component.getAssertions()).toEqual(facts);
+                const query = process.mock.calls.at(-1)?.[1] as {
+                    outputFormat?: string;
+                };
+                expect(query.outputFormat).toBe(
+                    'formatId' in options ? options.formatId : 'line/part',
+                );
+                expect(adapter.getSchemeMeta().defaultWholeRenderFormat).toBe(
+                    'authority/block',
+                );
+                const valueLabel =
+                    mode === 'dropdown'
+                        ? container.querySelector<HTMLOptionElement>(
+                              'option[value="level-3"]',
+                          )!.textContent
+                        : container.querySelector<HTMLElement>(
+                              '.select-card[data-concept-id="level-3"] .select-card-label',
+                          )!.textContent;
+                expect(valueLabel).toBe('Level 3');
+                if (mode === 'dropdown') {
+                    const dropdown =
+                        container.querySelector<HTMLSelectElement>('select')!;
+                    expect(dropdown.value).toBe('level-1');
+                }
+                component.destroy();
+                component = new SingleSelect();
+            }
+        },
+    );
+
+    const settleText = async () => {
+        for (let i = 0; i < 4; i++)
+            await new Promise((resolve) => setTimeout(resolve, 0));
+    };
+    it.each(['dropdown', 'cards'] as const)(
+        'pairs the %s value companion boundary with branding without choosing',
+        async (mode) => {
+            await component.init(container, toCtx(freeTextAdapter()), { mode });
+            if (mode === 'dropdown') {
+                const select =
+                    container.querySelector<HTMLSelectElement>('select')!;
+                select.value = 'level-3';
+                select.dispatchEvent(new Event('change', { bubbles: true }));
+            } else
+                container
+                    .querySelector<HTMLElement>(
+                        '.select-card[data-concept-id="level-3"]',
+                    )!
+                    .click();
+            const input = container.querySelector<HTMLInputElement>(
+                '.select-card-text-field',
+            )!;
+            input.value = 'Draft text';
+            input.focus();
+            input.setSelectionRange(input.value.length, input.value.length);
+            const before = component.getAssertions();
+            const brand =
+                container.querySelector<HTMLElement>('.ez-status-mark')!;
+            const right = new KeyboardEvent('keydown', {
+                key: 'ArrowRight',
+                bubbles: true,
+                cancelable: true,
+            });
+            input.dispatchEvent(right);
+            expect(right.defaultPrevented).toBe(true);
+            expect(document.activeElement).toBe(brand);
+            brand.dispatchEvent(
+                new KeyboardEvent('keydown', {
+                    key: 'ArrowLeft',
+                    bubbles: true,
+                    cancelable: true,
+                }),
+            );
+            expect(document.activeElement).toBe(input);
+            expect(input.selectionStart).toBe(input.value.length);
+            expect(input.value).toBe('Draft text');
+            expect(component.getAssertions()).toEqual(before);
+            input.setSelectionRange(0, 0);
+            const left = new KeyboardEvent('keydown', {
+                key: 'ArrowLeft',
+                bubbles: true,
+                cancelable: true,
+            });
+            input.dispatchEvent(left);
+            expect(left.defaultPrevented).toBe(false);
+            expect(document.activeElement).toBe(input);
+            component.destroy();
+        },
+    );
+    it.each(['dropdown', 'cards'] as const)(
+        'retains native text identity, raw spaces and selection through async %s echoes',
+        async (mode) => {
+            await component.init(container, toCtx(freeTextAdapter()), { mode });
+            if (mode === 'dropdown') {
+                const select =
+                    container.querySelector<HTMLSelectElement>('select')!;
+                select.value = 'level-3';
+                select.dispatchEvent(new Event('change', { bubbles: true }));
+            } else
+                container
+                    .querySelector<HTMLElement>(
+                        '.select-card[data-concept-id="level-3"]',
+                    )!
+                    .click();
+            const input = container.querySelector<HTMLInputElement>(
+                '.select-card-text-field',
+            )!;
+            input.focus();
+            for (const character of 'Alex Example') {
+                input.setRangeText(
+                    character,
+                    input.selectionStart!,
+                    input.selectionEnd!,
+                    'end',
+                );
+                input.dispatchEvent(
+                    new InputEvent('input', {
+                        bubbles: true,
+                        inputType: 'insertText',
+                        data: character,
+                    }),
+                );
+                await settleText();
+                expect(container.querySelector('.select-card-text-field')).toBe(
+                    input,
+                );
+                expect(document.activeElement).toBe(input);
+                if (character === ' ') {
+                    expect(input.value).toBe('Alex ');
+                    component.setAssertions(component.getAssertions());
+                    await settleText();
+                    expect(input.value).toBe('Alex ');
+                }
+            }
+            expect(input.value).toBe('Alex Example');
+            expect(
+                component
+                    .getAssertions()
+                    .find((assertion) => assertion.conceptId === 'level-3')
+                    ?.value,
+            ).toBe('Alex Example');
+            input.setSelectionRange(2, 7, 'backward');
+            component.setAssertions(component.getAssertions());
+            await settleText();
+            expect(container.querySelector('.select-card-text-field')).toBe(
+                input,
+            );
+            expect([
+                input.selectionStart,
+                input.selectionEnd,
+                input.selectionDirection,
+            ]).toEqual([2, 7, 'backward']);
+            const outside = document.createElement('button');
+            document.body.appendChild(outside);
+            outside.focus();
+            component.setAssertions([
+                {
+                    conceptId: 'level-3',
+                    categoryId: 'level',
+                    source: 'user',
+                    confidence: 'certain',
+                    value: 'External Replacement',
+                },
+            ]);
+            await settleText();
+            expect(input.value).toBe('External Replacement');
+            expect(document.activeElement).toBe(outside);
+            outside.remove();
+            component.destroy();
+        },
+    );
+
     it('renders a conventional select by default', async () => {
         await component.init(container, toCtx(engine));
         const select =
@@ -677,51 +1043,251 @@ describe('SingleSelect', () => {
         component.destroy();
     });
 
-    describe('arrow key navigation (WCAG 4.1.2)', () => {
-        it('ArrowDown selects the next card without requiring Enter or Space', async () => {
+    describe('spatial card keyboard navigation', () => {
+        const cards = () => [
+            ...container.querySelectorAll<HTMLElement>('.select-card'),
+        ];
+        const press = (
+            target: HTMLElement,
+            key: string,
+            modifiers: KeyboardEventInit = {},
+        ) => {
+            const event = new KeyboardEvent('keydown', {
+                key,
+                bubbles: true,
+                cancelable: true,
+                ...modifiers,
+            });
+            target.dispatchEvent(event);
+            return event;
+        };
+        const place = (card: HTMLElement, left: number, top: number) => {
+            card.getBoundingClientRect = () =>
+                ({
+                    left,
+                    right: left + 100,
+                    top,
+                    bottom: top + 50,
+                    width: 100,
+                    height: 50,
+                    x: left,
+                    y: top,
+                    toJSON: () => ({}),
+                }) as DOMRect;
+        };
+        it('moves spatially without changing the selected marking and contains edges', async () => {
             await component.init(container, toCtx(engine), {
                 initialValue: 'L1',
                 mode: 'cards',
             });
-            const cards =
-                container.querySelectorAll<HTMLElement>('.select-card');
-            expect(cards[0].getAttribute('aria-checked')).toBe('true');
-            expect(cards[1].getAttribute('aria-checked')).toBe('false');
-
-            cards[0].dispatchEvent(
-                new KeyboardEvent('keydown', {
-                    key: 'ArrowDown',
-                    bubbles: true,
-                }),
-            );
-            await demoRuntimeSettled();
-
-            const updated =
-                container.querySelectorAll<HTMLElement>('.select-card');
-            expect(updated[0].getAttribute('aria-checked')).toBe('false');
-            expect(updated[1].getAttribute('aria-checked')).toBe('true');
+            place(cards()[0], 0, 0);
+            place(cards()[1], 120, 0);
+            place(cards()[2], 120, 80);
+            cards()[0].focus();
+            let escaped = 0;
+            container.addEventListener('keydown', () => escaped++);
+            expect(press(cards()[0], 'ArrowRight').defaultPrevented).toBe(true);
+            expect(document.activeElement).toBe(cards()[1]);
+            press(cards()[1], 'ArrowRight');
+            expect(document.activeElement).toBe(cards()[1]);
+            press(cards()[1], 'ArrowDown');
+            expect(document.activeElement).toBe(cards()[2]);
+            press(cards()[2], 'ArrowDown');
+            expect(document.activeElement).toBe(cards()[2]);
+            press(cards()[2], 'ArrowUp');
+            expect(document.activeElement).toBe(cards()[1]);
+            press(cards()[1], 'ArrowLeft');
+            expect(document.activeElement).toBe(cards()[0]);
+            press(cards()[0], 'ArrowLeft');
+            expect(document.activeElement).toBe(cards()[0]);
+            press(cards()[0], 'End');
+            expect(document.activeElement).toBe(cards()[2]);
+            press(cards()[2], 'Home');
+            expect(document.activeElement).toBe(cards()[0]);
+            expect(component.getAssertions().map((a) => a.conceptId)).toEqual([
+                'level-1',
+            ]);
+            expect(cards().filter((card) => card.tabIndex === 0)).toEqual([
+                cards()[0],
+            ]);
+            expect(escaped).toBe(0);
+            expect(press(cards()[0], 'Tab').defaultPrevented).toBe(false);
             component.destroy();
         });
-
-        it('ArrowUp selects the previous card without requiring Enter or Space', async () => {
+        it.each(['Enter', ' '])(
+            'retains focus and selection on repeated selected-radio %s activation',
+            async (key) => {
+                await component.init(container, toCtx(engine), {
+                    initialValue: 'L1',
+                    mode: 'cards',
+                });
+                cards()[0].focus();
+                press(cards()[0], key);
+                await demoRuntimeSettled();
+                expect(cards()[0].getAttribute('aria-checked')).toBe('true');
+                expect(document.activeElement).toBe(cards()[0]);
+                component.destroy();
+            },
+        );
+        it.each([false, true])(
+            'preserves focus ownership through asynchronous card selection (outside: %s)',
+            async (outside) => {
+                await component.init(container, toCtx(engine), {
+                    initialValue: 'L1',
+                    mode: 'cards',
+                });
+                const process = engine.process.bind(engine);
+                let release!: () => void;
+                const pending = new Promise<void>((resolve) => {
+                    release = resolve;
+                });
+                // Exercise the async-capable adapter contract used by remote engines.
+                vi.spyOn(
+                    engine as SchemeEngineAdapter,
+                    'process',
+                ).mockImplementation(async (...args) => {
+                    const result = await process(...args);
+                    await pending;
+                    return result;
+                });
+                cards()[1].focus();
+                press(cards()[1], 'Enter');
+                const elsewhere = document.createElement('button');
+                document.body.appendChild(elsewhere);
+                if (outside) elsewhere.focus();
+                release();
+                await demoRuntimeSettled();
+                await vi.waitFor(() =>
+                    expect(cards()[1].getAttribute('aria-checked')).toBe(
+                        'true',
+                    ),
+                );
+                expect(document.activeElement).toBe(
+                    outside ? elsewhere : cards()[1],
+                );
+                elsewhere.remove();
+                component.destroy();
+            },
+        );
+        it('clears an optional radio with Escape while retaining the same card focus', async () => {
             await component.init(container, toCtx(engine), {
-                initialValue: 'L2',
+                initialValue: 'L1',
                 mode: 'cards',
             });
-            const cards =
-                container.querySelectorAll<HTMLElement>('.select-card');
-            expect(cards[1].getAttribute('aria-checked')).toBe('true');
-            expect(cards[0].getAttribute('aria-checked')).toBe('false');
-
-            cards[1].dispatchEvent(
-                new KeyboardEvent('keydown', { key: 'ArrowUp', bubbles: true }),
-            );
+            cards()[0].focus();
+            press(cards()[0], 'Escape');
             await demoRuntimeSettled();
-
-            const updated =
-                container.querySelectorAll<HTMLElement>('.select-card');
-            expect(updated[1].getAttribute('aria-checked')).toBe('false');
-            expect(updated[0].getAttribute('aria-checked')).toBe('true');
+            expect(component.getAssertions()).toEqual([]);
+            expect(document.activeElement).toBe(cards()[0]);
+            expect(cards()[0].getAttribute('aria-checked')).toBe('false');
+            component.destroy();
+        });
+        it('retains card identity across allowability redraw and falls back only when removed', async () => {
+            await component.init(container, toCtx(engine), {
+                initialValue: 'L1',
+                mode: 'cards',
+            });
+            cards()[2].focus();
+            const allow = (ids: string[]) =>
+                component.applyAllowableOptions(
+                    engine
+                        .getScheme()
+                        .concepts.filter((concept) => ids.includes(concept.id))
+                        .map((concept) => ({
+                            conceptId: concept.id,
+                            categoryId: 'level',
+                            label: concept.name,
+                            name: concept.name,
+                            description: '',
+                            views: concept.views,
+                            selected: false,
+                            order: concept.position,
+                            group: 'level',
+                        })),
+                );
+            allow(['level-1', 'level-3']);
+            expect(
+                (document.activeElement as HTMLElement).dataset.conceptId,
+            ).toBe('level-3');
+            expect(cards()[1].tabIndex).toBe(0);
+            const elsewhere = document.createElement('button');
+            document.body.appendChild(elsewhere);
+            elsewhere.focus();
+            component.applyAllowableOptions(null);
+            expect(document.activeElement).toBe(elsewhere);
+            expect(
+                cards()
+                    .filter((card) => card.tabIndex === 0)
+                    .map((card) => card.dataset.conceptId),
+            ).toEqual(['level-3']);
+            elsewhere.remove();
+            cards()[2].focus();
+            allow(['level-1']);
+            expect(document.activeElement).toBe(cards()[0]);
+            expect(cards()[0].tabIndex).toBe(0);
+            component.destroy();
+        });
+        it.each([false, true])(
+            'resumes a temporarily empty card group only while focus is still owned (outside: %s)',
+            async (outside) => {
+                await component.init(container, toCtx(engine), {
+                    mode: 'cards',
+                });
+                cards()[2].focus();
+                component.applyAllowableOptions([]);
+                expect(document.activeElement).toBe(
+                    container.querySelector('.select-cards'),
+                );
+                const elsewhere = document.createElement('button');
+                document.body.appendChild(elsewhere);
+                if (outside) elsewhere.focus();
+                component.applyAllowableOptions(null);
+                expect(document.activeElement).toBe(
+                    outside ? elsewhere : cards()[0],
+                );
+                elsewhere.remove();
+                component.destroy();
+            },
+        );
+        it('leaves modifiers, composition and a native child input untouched', async () => {
+            await component.init(container, toCtx(engine), {
+                initialValue: 'L1',
+                mode: 'cards',
+            });
+            cards()[0].focus();
+            for (const modifiers of [
+                { altKey: true },
+                { ctrlKey: true },
+                { metaKey: true },
+                { shiftKey: true },
+                { isComposing: true },
+            ]) {
+                expect(
+                    press(cards()[0], 'ArrowRight', modifiers).defaultPrevented,
+                ).toBe(false);
+                expect(
+                    press(cards()[0], 'Enter', modifiers).defaultPrevented,
+                ).toBe(false);
+                expect(document.activeElement).toBe(cards()[0]);
+            }
+            // The real supplemental editor is outside the card; keep descendant events native too.
+            const input = document.createElement('input');
+            cards()[0].appendChild(input);
+            input.focus();
+            for (const key of [
+                'ArrowLeft',
+                'ArrowRight',
+                'Home',
+                'End',
+                ' ',
+                'Enter',
+            ]) {
+                expect(press(input, key).defaultPrevented).toBe(false);
+                expect(document.activeElement).toBe(input);
+            }
+            expect(component.getAssertions().map((a) => a.conceptId)).toEqual([
+                'level-1',
+            ]);
             component.destroy();
         });
     });

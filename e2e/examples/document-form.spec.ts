@@ -519,10 +519,12 @@ test.describe('README document form beside monospace fields', () => {
         expect(await family(page.locator('.marked-textarea-display'))).toBe(
             fieldFont,
         );
-        // In-flow chrome beside the field reads the page font.
-        expect(await family(page.locator('.marked-textarea-kb-hint'))).toBe(
-            pageFont,
-        );
+        // The marking action beside the field reads the page font.
+        const markingAction = page.getByRole('button', {
+            name: /^Add marking$/i,
+        });
+        await expect(markingAction).toBeVisible();
+        expect(await family(markingAction)).toBe(pageFont);
 
         // The composer, portaled to the body, reads the page font whether it
         // opens from the tag field or the text area's inline editor, in the

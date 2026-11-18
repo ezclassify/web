@@ -1,8 +1,8 @@
 /**
  * `[ezClassifyOptions]` forwards `favorites` to the UI runtime, the same option
- * the vanilla `EzClassifyUI` constructor takes. A root that sets it shows the
- * favorites button on its scanner-mounted fields; one that does not, shows
- * none.
+ * the vanilla `EzClassifyUI` constructor takes. Scanner-mounted controls use
+ * that provider in their branding tools; scheme presets remain available
+ * without a provider.
  */
 import { describe, it, expect } from 'vitest';
 import { TestBed } from '@angular/core/testing';
@@ -106,8 +106,8 @@ describe('EzClassifyDirective ezClassifyOptions.favorites', () => {
 
         fixture.nativeElement.querySelector('.ez-status-mark').click();
         expect(
-            [...document.querySelectorAll('[role=tab]')].map(
-                (tab) => tab.textContent,
+            [...document.querySelectorAll('[role=tab]')].map((tab) =>
+                tab.getAttribute('aria-label'),
             ),
         ).toContain('Favorites');
     });
@@ -129,8 +129,8 @@ describe('EzClassifyDirective ezClassifyOptions.favorites', () => {
 
         fixture.nativeElement.querySelector('.ez-status-mark').click();
         expect(
-            [...document.querySelectorAll('[role=tab]')].map(
-                (tab) => tab.textContent,
+            [...document.querySelectorAll('[role=tab]')].map((tab) =>
+                tab.getAttribute('aria-label'),
             ),
         ).not.toContain('Favorites');
     });

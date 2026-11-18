@@ -995,6 +995,27 @@ describe('MarkingField format', () => {
 });
 
 describe('MarkingField', () => {
+    it('moves only from the collapsed text end to branding without committing its draft', async () => {
+        const { input, field } = await mount('SECRET');
+        const before = field.getRendered();
+        input.focus();
+        typeText(input, 'SEC');
+        await wait();
+        input.setSelectionRange(input.value.length, input.value.length);
+        press(input, 'ArrowRight');
+        const brand = root.querySelector<HTMLElement>('.ez-status-mark')!;
+        expect(document.activeElement).toBe(brand);
+        await wait(180);
+        expect(input.value).toBe('SEC');
+        expect(field.getRendered()).toBe(before);
+        press(brand, 'ArrowLeft');
+        expect(document.activeElement).toBe(input);
+        expect(input.selectionStart).toBe(input.value.length);
+        input.setSelectionRange(0, 2);
+        press(input, 'ArrowRight');
+        expect(document.activeElement).toBe(input);
+    });
+
     it('keeps host block margins in the resting display', async () => {
         root.innerHTML =
             '<textarea id="mf" style="margin-top: 6px; margin-bottom: 8px" data-ezclassify-controller="marking">SECRET</textarea>';
@@ -1378,6 +1399,18 @@ describe('MarkingField', () => {
         expectInlineChrome(wrap, [display, input]);
     });
 
+    it('paints focus on the parked phone field box independently of its text layers', () => {
+        const css = readFileSync(
+            join(dirname(fileURLToPath(import.meta.url)), 'marking-field.css'),
+            'utf8',
+        );
+        const rule = css.match(/\.marking-field-wrap:focus\s*\{([^}]*)\}/)?.[1];
+        expect(rule).toContain(
+            'outline: 0.125rem solid var(--ez-color-primary',
+        );
+        expect(rule).toContain('outline-offset: -0.125rem');
+    });
+
     it('draws its focus ring inside the field border, like TagInput', () => {
         const here = dirname(fileURLToPath(import.meta.url));
         const css = readFileSync(join(here, 'marking-field.css'), 'utf8');
@@ -1696,32 +1729,22 @@ describe('MarkingField', () => {
         );
     });
 
-    it('shows a concept dwell tooltip on hover over a painted token at rest', async () => {
+    it('uses native concept titles on painted tokens without a dwell popup', async () => {
         const { input } = await mount('SECRET//NOFORN');
         input.dispatchEvent(new FocusEvent('blur'));
         await wait(200);
-
-        const display = root.querySelector(
-            '.marking-field-display',
-        ) as HTMLDivElement;
-        const token = display.querySelector(
+        const element = root.querySelector<HTMLElement>(
             '.marking-field-token',
-        ) as HTMLElement;
-
-        expect(document.body.querySelector('.ez-tooltip')).toBeNull();
-        token.dispatchEvent(new Event('mouseenter'));
+        )!;
+        expect(element.title).toContain('Secret');
+        expect(element.getAttribute('aria-description')).toContain('Secret');
+        const focused = document.activeElement;
+        element.dispatchEvent(new Event('mouseenter'));
         await wait(350);
-
-        const tip = document.body.querySelector(
-            '.ez-tooltip',
-        ) as HTMLElement | null;
-        expect(tip).not.toBeNull();
-        expect(tip!.hidden).toBe(false);
-
-        token.dispatchEvent(new Event('mouseleave'));
-        // It stays a moment, so the pointer can reach it, then closes.
-        await wait(350);
-        expect(tip!.hidden).toBe(true);
+        expect(
+            document.body.querySelector('.ez-tooltip:not([hidden])'),
+        ).toBeNull();
+        expect(document.activeElement).toBe(focused);
     });
 
     it('honors the data-ezclassify-no-tooltips opt-out for painted tokens', async () => {
@@ -2627,10 +2650,12 @@ describe('MarkingField favorites', () => {
         activeForms = null;
     });
 
-    it('renders no ★ button when favorites is not wired', async () => {
+    it('omits the Favorites tab without a provider or scheme presets', async () => {
         const { forms } = await mountWithFavorites(undefined);
         activeForms = forms;
-        expect(root.querySelector('.ez-favorites-button')).toBeNull();
+        expect(
+            root.querySelector('.ez-status-mark')?.getAttribute('title'),
+        ).toMatch(/^Corrections \(/);
     });
 
     it('opens Favorites from branding and replaces the whole marking', async () => {
@@ -2674,6 +2699,38 @@ describe('MarkingField favorites', () => {
         ).toContain('Standard secret');
     });
 
+    it.each(['Corrections', 'Favorites'])(
+        'returns focus to the branding button when Up closes the %s tab',
+        async (label) => {
+            const { forms } = await mountWithFavorites({
+                load: async () => [],
+            });
+            activeForms = forms;
+            const mark =
+                root.querySelector<HTMLButtonElement>('.ez-status-mark')!;
+            mark.click();
+            await wait();
+            const popup = document.getElementById(
+                mark.getAttribute('aria-describedby')!,
+            )!;
+            const tab = popup.querySelector<HTMLButtonElement>(
+                `[role="tab"][aria-label="${label}"]`,
+            )!;
+            tab.click();
+            expect(document.activeElement).toBe(tab);
+            const event = new KeyboardEvent('keydown', {
+                key: 'ArrowUp',
+                bubbles: true,
+                cancelable: true,
+            });
+            tab.dispatchEvent(event);
+            expect(event.defaultPrevented).toBe(true);
+            expect(popup.hidden).toBe(true);
+            expect(mark.getAttribute('aria-expanded')).toBe('false');
+            expect(document.activeElement).toBe(mark);
+        },
+    );
+
     it('offers the pinned save row for a valid non-empty marking and calls config.save', async () => {
         const save = vi.fn(async () => {});
         const { forms } = await mountWithFavorites(
@@ -2703,41 +2760,138 @@ describe('MarkingField favorites', () => {
     });
 });
 
-describe('Favorites reads the complete current draft', () => {
-    it('saves a valid uncommitted marking typed into an initially empty field', async () => {
+describe('Favorites uses the committed marking while tools hold a draft', () => {
+    it('keeps an uncommitted marking out of Favorites when the committed field is empty', async () => {
         const save = vi.fn(async () => {});
         const { input, field } = await mount('', {
             load: async () => [],
             save,
         });
+        const change = vi.fn();
+        root.addEventListener('ezclassify:change', change);
         input.focus();
         await typeIn(input, 'SECRET');
         expect(field.getAssertions()).toHaveLength(0);
         root.querySelector<HTMLButtonElement>('.ez-status-mark')!.click();
-        await wait();
-        document.body
-            .querySelector<HTMLButtonElement>('.ez-favorites-panel__pinned')!
-            .click();
-        await wait();
-        expect(save).toHaveBeenCalledWith('SECRET', expect.any(Object));
+        await wait(180);
+        expect(document.activeElement?.getAttribute('role')).toBe('tab');
+        expect(openSurface()).toBeNull();
+        expect(field.getRendered()).toBe('');
+        expect(field.getAssertions()).toHaveLength(0);
         expect(input.value).toBe('SECRET');
+        expect(
+            document.body.querySelector('.ez-favorites-panel__pinned'),
+        ).toBeNull();
+        expect(save).not.toHaveBeenCalled();
+        expect(change).not.toHaveBeenCalled();
+        root.removeEventListener('ezclassify:change', change);
     });
 
-    it('does not offer to save an invalid draft using the previous committed validity', async () => {
-        const save = vi.fn(async () => {});
+    it('moves the actual branding tool out of the phone sheet before focusing its tab', async () => {
+        const originalMatchMedia = window.matchMedia;
+        const originalWidth = window.innerWidth;
+        window.matchMedia = ((query: string) => ({
+            matches: query.includes('coarse'),
+            media: query,
+            addEventListener() {},
+            removeEventListener() {},
+        })) as unknown as typeof window.matchMedia;
+        Object.defineProperty(window, 'innerWidth', {
+            configurable: true,
+            value: 390,
+        });
+        try {
+            const { input, field } = await mount('SECRET');
+            const mark =
+                root.querySelector<HTMLButtonElement>('.ez-status-mark')!;
+            input.dispatchEvent(new Event('pointerdown', { bubbles: true }));
+            input.focus();
+            await wait();
+            const surface = openSurface()!;
+            expect(surface.dataset.surface).toBe('sheet');
+            expect(
+                surface
+                    .querySelector('.ez-composer__sheet-tools')
+                    ?.contains(mark),
+            ).toBe(true);
+            const sheetInput = surface.querySelector<HTMLInputElement>(
+                '.ez-composer__sheet-input',
+            )!;
+            sheetInput.dispatchEvent(
+                new KeyboardEvent('keydown', {
+                    key: 'Enter',
+                    ctrlKey: true,
+                    shiftKey: true,
+                    bubbles: true,
+                    cancelable: true,
+                }),
+            );
+            await wait(180);
+            expect(root.contains(mark)).toBe(true);
+            expect(root.querySelectorAll('.ez-status-mark')).toHaveLength(1);
+            expect(document.activeElement?.getAttribute('role')).toBe('tab');
+            expect(openSurface()).toBeNull();
+            expect(field.getRendered()).toBe('SECRET');
+        } finally {
+            window.matchMedia = originalMatchMedia;
+            Object.defineProperty(window, 'innerWidth', {
+                configurable: true,
+                value: originalWidth,
+            });
+        }
+    });
+
+    it('discards the held draft when applying a Favorite so later blur cannot restore it', async () => {
         const { input, field } = await mount('SECRET', {
-            load: async () => [],
+            load: async () => [{ marking: 'SECRET//NOFORN' }],
+        });
+        input.focus();
+        await typeIn(input, 'UNCLASSIFIED');
+        root.querySelector<HTMLButtonElement>('.ez-status-mark')!.click();
+        await wait(180);
+        const tab = [
+            ...document.querySelectorAll<HTMLButtonElement>('[role="tab"]'),
+        ].find((tab) => tab.getAttribute('aria-label') === 'Favorites');
+        tab!.click();
+        document
+            .querySelector<HTMLButtonElement>(
+                '[data-favorite-marking="SECRET//NOFORN"]',
+            )!
+            .click();
+        await wait(180);
+        expect(field.getRendered()).toBe('SECRET//NOFORN');
+        expect(input.value).toBe('SECRET//NOFORN');
+        const outside = document.createElement('button');
+        document.body.append(outside);
+        outside.focus();
+        await wait(180);
+        expect(field.getRendered()).toBe('SECRET//NOFORN');
+        expect(input.value).toBe('SECRET//NOFORN');
+        outside.remove();
+    });
+
+    it('offers the committed Favorite while an invalid draft remains untouched', async () => {
+        const save = vi.fn(async () => {});
+        const remove = vi.fn(async () => {});
+        const { input, field } = await mount('SECRET', {
+            load: async () => [{ marking: 'SECRET' }],
             save,
+            remove,
         });
         input.focus();
         await typeIn(input, 'SECRET//UNCLASSIFIED');
         expect(field.getRendered()).toBe('SECRET');
         root.querySelector<HTMLButtonElement>('.ez-status-mark')!.click();
-        await wait();
-        expect(
-            document.body.querySelector('.ez-favorites-panel__pinned'),
-        ).toBeNull();
+        await wait(180);
+        expect(field.getRendered()).toBe('SECRET');
+        expect(document.activeElement?.getAttribute('role')).toBe('tab');
+        expect(openSurface()).toBeNull();
+        const pinned = document.body.querySelector(
+            '.ez-favorites-panel__pinned',
+        );
+        expect(pinned?.textContent?.toLowerCase()).toContain('unsave');
         expect(input.value).toBe('SECRET//UNCLASSIFIED');
         expect(save).not.toHaveBeenCalled();
+        expect(remove).not.toHaveBeenCalled();
     });
 });

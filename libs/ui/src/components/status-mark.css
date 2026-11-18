@@ -1,13 +1,23 @@
 /* ── Enhancement status mark ─────────────────────────── */
 .ez-marking-tools {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    flex: 1 1 auto;
     width: min(20rem, calc(100vw - 3rem));
 }
 .ez-marking-tools__header {
+    flex: none;
     display: flex;
     align-items: center;
     gap: 0.75rem;
     border-bottom: 1px solid var(--ez-color-border, #d1d5db);
     margin-bottom: 0.625rem;
+}
+.ez-marking-tools__section:not([hidden]) {
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
 }
 .ez-marking-tools__tabs {
     display: flex;
@@ -23,6 +33,10 @@
     cursor: pointer;
 }
 .ez-marking-tools__tab {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    min-height: 2.75rem;
     border: 0;
     border-bottom: 2px solid transparent;
     padding: 0.375rem 0;
@@ -32,11 +46,31 @@
     border-bottom-color: var(--ez-color-primary, #fdb827);
     font-weight: 600;
 }
-.ez-marking-tools__close {
-    border: 0;
-    padding: 0.25rem 0.375rem;
+.ez-marking-tools__count {
+    font-size: 0.6875rem;
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+    color: var(--ez-color-muted, #6b7280);
 }
-.ez-marking-tools__tab:focus-visible,
+.ez-marking-tools__tab:focus-visible {
+    outline: none;
+    box-shadow: inset 0 -3px 0 currentColor;
+}
+.ez-marking-tools__close {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 2.75rem;
+    min-height: 2.75rem;
+    border: 0;
+    border-radius: 0.375rem;
+    padding: 0;
+    font-size: 1.5rem;
+    line-height: 1;
+}
+.ez-marking-tools__close:hover {
+    background: var(--ez-dropdown-item-hover, #f3f4f6);
+}
 .ez-marking-tools__close:focus-visible,
 .ez-marking-tools__section:focus-visible {
     outline: 2px solid var(--ez-color-primary, #fdb827);
@@ -61,12 +95,16 @@
    what changed. Error: the whole mark takes the error color. */
 .ez-status-mark {
     position: absolute;
-    width: 1.25rem;
-    height: 1.25rem;
+    width: 1.5rem;
+    height: 1.5rem;
+    box-sizing: border-box;
     padding: 0;
+    padding-inline: max(0px, calc((1.5rem - 1cap) / 2));
     margin: 0;
     border: none;
     background: transparent;
+    border-radius: 0.25rem;
+    font: inherit;
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -76,8 +114,9 @@
     z-index: 3;
 }
 .ez-status-mark svg {
-    width: 100%;
-    height: 100%;
+    width: 1cap;
+    height: 1cap;
+    flex: 0 0 auto;
     overflow: visible;
 }
 .ez-status-mark.ez-status-mark--tools {
@@ -132,7 +171,7 @@
     align-items: stretch;
     vertical-align: baseline;
 }
-/* The plain input's text stops short of the mark: its width (1.25rem) and
+/* The plain input's text stops short of the cap-height mark, its trailing
    inset (0.375rem), and a little air. Logical, like the mark's own inset, so a
    right-to-left field keeps the room on the side the mark sits. !important
    because the room has to hold over any padding the host gives that edge,
@@ -169,15 +208,19 @@
 }
 .ez-status-mark--unseen {
     width: auto;
-    min-width: 1.25rem;
+    min-width: 1.5rem;
 }
 .ez-status-mark--unseen svg {
-    width: 1.25rem;
-    height: 1.25rem;
+    width: 1cap;
+    height: 1cap;
     flex: 0 0 auto;
 }
 
 @media (forced-colors: active) {
+    .ez-marking-tools__tab:focus-visible {
+        outline: 2px solid Highlight;
+        outline-offset: -2px;
+    }
     .ez-status-mark {
         color: ButtonText;
     }
@@ -190,14 +233,18 @@
     }
 }
 
-/* A finger needs a 44px target. The drawn mark stays 20px; an invisible
-   overlay takes the taps around it. The field's chrome row spaces the mark
-   from its neighbor enough that the two overlays never overlap (see
-   field-chrome.css). */
+/* The bracket height follows the field's capital letters. The button pads
+   the small glyph like its neighboring clear button; a finger gets a 44px
+   target centered around it. field-chrome.css reserves the target's overhang
+   before the neighboring clear button. */
 @media (pointer: coarse) {
     .ez-status-mark::after {
         content: '';
         position: absolute;
-        inset: -0.75rem;
+        width: max(100%, 2.75rem);
+        height: max(100%, 2.75rem);
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
     }
 }

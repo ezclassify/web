@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import {
     CategorySelector,
     type CategorySelectorOptions,
@@ -7,6 +7,8 @@ import type { SchemeEngineAdapter, Assertion } from '@ezclassify/types';
 import type { SchemePublicView } from '@ezclassify/types';
 import { schemeOnlyContext } from '../../test-fixtures/context-doubles';
 import { mockRenderFormats } from '../render-format-layout-mock';
+import { EzClassifyUI } from '../ezclassify-ui';
+import { VanillaEzClassifyStore } from '../store/ezclassify-store';
 
 /** Create a minimal mock engine with configurable categories and concepts */
 function createMockEngine(
@@ -127,17 +129,25 @@ function createMockEngine(
             return assertions.map((a) => a.conceptId).join(':');
         }),
         process: vi.fn(
-            (input: string, options?: { assertions?: Assertion[] }) => {
-                if (options?.assertions) {
-                    const rendered = options.assertions
-                        .map((a) => a.conceptId)
-                        .join(':');
+            (
+                input: string | Assertion[],
+                options?: { assertions?: Assertion[] },
+            ) => {
+                const facts = Array.isArray(input)
+                    ? input
+                    : options?.assertions;
+                if (facts) {
+                    const rendered = facts.map((a) => a.conceptId).join(':');
                     return {
-                        assertions: options.assertions.map((a) => ({ ...a })),
+                        assertions: facts.map((a) => ({ ...a })),
                         rendered,
                         valid: true,
+                        errors: [],
+                        proposedFixes: [],
                     };
                 }
+                if (typeof input !== 'string')
+                    throw new Error('Expected marking text');
                 const ids = input.split(':').filter(Boolean);
                 const assertions = ids.map((id) => {
                     const concept = scheme.concepts.find((c) => c.id === id);
@@ -148,10 +158,28 @@ function createMockEngine(
                         source: 'parse' as const,
                     };
                 });
-                return { assertions, rendered: input, valid: true };
+                return {
+                    assertions,
+                    rendered: input,
+                    valid: true,
+                    errors: [],
+                    proposedFixes: [],
+                };
             },
         ),
-        suggest: vi.fn(() => ({ suggestions: [] })),
+        suggest: vi.fn(() => ({
+            suggestions: scheme.concepts.map((concept) => ({
+                conceptId: concept.id,
+                categoryId: concept.categories[0],
+                label: concept.name,
+                description: '',
+                name: concept.name,
+                views: concept.views,
+                group: concept.categories[0],
+                selected: false,
+                order: concept.position,
+            })),
+        })),
         describeConcept: (conceptId: string, categoryId: string) => {
             const concept = (scheme.concepts ?? []).find(
                 (c) => c.id === conceptId,
@@ -162,6 +190,22 @@ function createMockEngine(
 }
 
 const toCtx = (eng: unknown) => schemeOnlyContext(eng as never);
+/**
+ * Dispatch the real controller key path, then jsdom's missing native button
+ * activation.
+ */
+function activateChoice(button: HTMLElement, key: string): void {
+    const event = new KeyboardEvent('keydown', {
+        key,
+        bubbles: true,
+        cancelable: true,
+    });
+    button.dispatchEvent(event);
+    expect(event.defaultPrevented).toBe(false);
+    button.dispatchEvent(new KeyboardEvent('keyup', { key, bubbles: true }));
+    button.click();
+}
+
 describe('CategorySelector', () => {
     let container: HTMLDivElement;
     let engine: SchemeEngineAdapter;
@@ -173,6 +217,11 @@ describe('CategorySelector', () => {
         engine = createMockEngine();
         selector = new CategorySelector();
     });
+    afterEach(() => {
+        if (container.querySelector('.category-selector-body'))
+            selector.destroy();
+        container.remove();
+    });
 
     async function init(
         opts?: Partial<CategorySelectorOptions>,
@@ -183,6 +232,1058 @@ describe('CategorySelector', () => {
             opts as CategorySelectorOptions,
         );
     }
+
+    it('renders both category modes through DecisionFlow shared native choices', async () => {
+        await init();
+        const choices = [
+            ...container.querySelectorAll<HTMLButtonElement>(
+                '.category-selector-btn',
+            ),
+        ];
+        expect(
+            choices.every((button) =>
+                button.classList.contains('ez-choice-button'),
+            ),
+        ).toBe(true);
+        expect(choices.every((button) => button.type === 'button')).toBe(true);
+        expect(choices[0].getAttribute('role')).toBe('radio');
+        expect(
+            choices
+                .find((button) => button.dataset.categoryId === 'f2')
+                ?.getAttribute('role'),
+        ).toBe('checkbox');
+    });
+    it('shows an engine-offered same-category child after its parent in shared preorder despite a baseline omission', async () => {
+        const profile = engine.getScheme();
+        const child = profile.concepts.find((concept) => concept.id === 'c5')!;
+        child.parents = ['c4'];
+        child.position = 99;
+        await init({ categoryId: 'f2', initialValue: 'c4' });
+        const offered = await engine.suggest!([]);
+        selector.applyAllowableOptions(
+            offered.suggestions.filter((entry) => entry.conceptId !== 'c5'),
+        );
+        expect(
+            [
+                ...container.querySelectorAll<HTMLElement>(
+                    '.category-selector-btn',
+                ),
+            ].map((button) => button.dataset.conceptId),
+        ).toEqual(['c4', 'c5', 'c6']);
+        activateChoice(
+            container.querySelector<HTMLElement>('[data-concept-id="c4"]')!,
+            'Enter',
+        );
+        await vi.waitFor(() =>
+            expect(
+                container.querySelector('[data-concept-id="c5"]'),
+            ).toBeNull(),
+        );
+    });
+    it('uses the shared blocked interaction and DecisionFlow canonical reason without selecting', async () => {
+        const suggest = vi.mocked(engine.suggest!).getMockImplementation()!;
+        vi.mocked(engine.suggest!).mockImplementation(
+            async (input, options) => {
+                const answer = await suggest(input, options);
+                return {
+                    ...answer,
+                    suggestions: answer.suggestions.filter(
+                        (entry) => entry.conceptId !== 'c5',
+                    ),
+                };
+            },
+        );
+        const process = vi.mocked(engine.process).getMockImplementation()!;
+        vi.mocked(engine.process).mockImplementation(async (input, options) => {
+            const answer = await process(input, options);
+            return {
+                ...answer,
+                errors: answer.assertions.some(
+                    (assertion) => assertion.conceptId === 'c5',
+                )
+                    ? [
+                          {
+                              constraintId: 'exclusive',
+                              message: 'Selected X excludes Y.',
+                              affectedConcepts: ['c5'],
+                          },
+                      ]
+                    : [],
+            };
+        });
+        await init({ categoryId: 'f2', initialValue: 'c4' });
+        const blocked = container.querySelector<HTMLButtonElement>(
+            '[data-concept-id="c5"]',
+        )!;
+        expect(blocked.getAttribute('aria-disabled')).toBe('true');
+        expect(
+            container.querySelector('.ez-choice-reason')?.getAttribute('role'),
+        ).toBe('status');
+        blocked.focus();
+        await vi.waitFor(() =>
+            expect(
+                container.querySelector('.ez-choice-reason')?.textContent,
+            ).toContain('Selected X excludes Y.'),
+        );
+        activateChoice(blocked, 'Enter');
+        expect(
+            selector.getAssertions().map((assertion) => assertion.conceptId),
+        ).toEqual(['c4']);
+    });
+
+    it.each([
+        { buttonSelector: '.ez-status-mark', leave: false },
+        { buttonSelector: '.ez-clear-button', leave: false },
+        { buttonSelector: '.ez-status-mark', leave: true },
+        { buttonSelector: '.ez-clear-button', leave: true },
+    ])(
+        'retains $buttonSelector focus through deferred catalog rendering without reclaiming outside focus ($leave)',
+        async ({ buttonSelector, leave }) => {
+            await init({ categoryId: 'f2', initialValue: 'c4' });
+            const suggest = vi.mocked(engine.suggest!).getMockImplementation()!;
+            let release!: () => void;
+            const pending = new Promise<void>((resolve) => {
+                release = resolve;
+            });
+            const started = vi.fn();
+            vi.mocked(engine.suggest!).mockImplementation(
+                async (input, options) => {
+                    const result = await suggest(input, options);
+                    started();
+                    await pending;
+                    return result;
+                },
+            );
+            selector.setAssertions([
+                {
+                    conceptId: 'c5',
+                    categoryId: 'f2',
+                    confidence: 'certain',
+                    source: 'user',
+                },
+            ]);
+            await vi.waitFor(() => expect(started).toHaveBeenCalled());
+            const target =
+                container.querySelector<HTMLButtonElement>(buttonSelector)!;
+            expect(target.disabled).toBe(false);
+            const previous = container.querySelector('.category-selector-btn');
+            target.focus();
+            const outside = document.createElement('button');
+            document.body.appendChild(outside);
+            if (leave) outside.focus();
+            release();
+            await vi.waitFor(() =>
+                expect(
+                    container.querySelector('.category-selector-btn'),
+                ).not.toBe(previous),
+            );
+            expect(container.querySelector(buttonSelector)).toBe(target);
+            expect(target.isConnected).toBe(true);
+            expect(document.activeElement).toBe(leave ? outside : target);
+            outside.remove();
+        },
+    );
+
+    it('leaves the portaled Tools tab focused when a catalog render moves its branding button', async () => {
+        await init({ categoryId: 'f2', initialValue: 'c4' });
+        const suggest = vi.mocked(engine.suggest!).getMockImplementation()!;
+        let release!: () => void;
+        const pending = new Promise<void>((resolve) => {
+            release = resolve;
+        });
+        const started = vi.fn();
+        vi.mocked(engine.suggest!).mockImplementation(
+            async (input, options) => {
+                const result = await suggest(input, options);
+                started();
+                await pending;
+                return result;
+            },
+        );
+        selector.setAssertions([
+            {
+                conceptId: 'c5',
+                categoryId: 'f2',
+                confidence: 'certain',
+                source: 'user',
+            },
+        ]);
+        await vi.waitFor(() => expect(started).toHaveBeenCalled());
+        const brand =
+            container.querySelector<HTMLButtonElement>('.ez-status-mark')!;
+        brand.click();
+        const tab = document
+            .getElementById(brand.getAttribute('aria-describedby')!)!
+            .querySelector<HTMLButtonElement>('[role="tab"]')!;
+        tab.focus();
+        const previous = container.querySelector('.category-selector-btn');
+        release();
+        await vi.waitFor(() =>
+            expect(container.querySelector('.category-selector-btn')).not.toBe(
+                previous,
+            ),
+        );
+        expect(document.activeElement).toBe(tab);
+        expect(tab.isConnected).toBe(true);
+    });
+
+    it.each([false, true])(
+        'gives each category a first-choice Tab stop and retains its own current option (grouped %s)',
+        async (grouped) => {
+            await init({
+                initialValue: 'c2:c5',
+                ...(grouped
+                    ? { categoryGroups: { Second: ['f2'], First: ['f1'] } }
+                    : {}),
+            });
+            const button = (id: string) =>
+                container.querySelector<HTMLButtonElement>(
+                    `[data-concept-id="${id}"]`,
+                )!;
+            const stops = () =>
+                [
+                    ...container.querySelectorAll<HTMLButtonElement>(
+                        '.category-selector-btn[tabindex="0"]',
+                    ),
+                ].map((item) => item.dataset.conceptId);
+            expect(stops()).toEqual(grouped ? ['c4', 'c1'] : ['c1', 'c4']);
+            for (const row of container.querySelectorAll(
+                '.category-selector-row',
+            ))
+                expect(
+                    row.querySelectorAll(
+                        '.category-selector-btn[tabindex="0"]',
+                    ),
+                ).toHaveLength(1);
+            button('c2').focus();
+            button('c2').dispatchEvent(
+                new KeyboardEvent('keydown', {
+                    key: 'ArrowRight',
+                    bubbles: true,
+                    cancelable: true,
+                }),
+            );
+            expect(document.activeElement).toBe(button('c3'));
+            expect(button('c4').tabIndex).toBe(0);
+            selector.setAssertions([
+                {
+                    conceptId: 'c2',
+                    categoryId: 'f1',
+                    confidence: 'certain',
+                    source: 'user',
+                },
+                {
+                    conceptId: 'c4',
+                    categoryId: 'f2',
+                    confidence: 'certain',
+                    source: 'user',
+                },
+            ]);
+            await vi.waitFor(() =>
+                expect(button('c4').getAttribute('aria-checked')).toBe('true'),
+            );
+            expect(document.activeElement).toBe(button('c3'));
+            expect(stops()).toEqual(grouped ? ['c4', 'c3'] : ['c3', 'c4']);
+            button('c4').focus();
+            selector.setAssertions([
+                {
+                    conceptId: 'c2',
+                    categoryId: 'f1',
+                    confidence: 'certain',
+                    source: 'user',
+                },
+                {
+                    conceptId: 'c5',
+                    categoryId: 'f2',
+                    confidence: 'certain',
+                    source: 'user',
+                },
+            ]);
+            await vi.waitFor(() =>
+                expect(button('c5').getAttribute('aria-checked')).toBe('true'),
+            );
+            expect(document.activeElement).toBe(button('c4'));
+            expect(stops()).toEqual(grouped ? ['c4', 'c3'] : ['c3', 'c4']);
+        },
+    );
+
+    it('keeps one default stop per category when other rows are navigated or filtered', async () => {
+        await init();
+        const button = (id: string) =>
+            container.querySelector<HTMLButtonElement>(
+                `[data-concept-id="${id}"]`,
+            )!;
+        expect(button('c1').tabIndex).toBe(0);
+        expect(button('c4').tabIndex).toBe(0);
+        button('c2').focus();
+        button('c5').focus();
+        expect(button('c2').tabIndex).toBe(0);
+        expect(button('c5').tabIndex).toBe(0);
+        button('c5').dispatchEvent(
+            new KeyboardEvent('keydown', {
+                key: 'Home',
+                bubbles: true,
+                cancelable: true,
+            }),
+        );
+        expect(button('c2').tabIndex).toBe(0);
+        expect(button('c4').tabIndex).toBe(0);
+        const outside = document.createElement('button');
+        document.body.appendChild(outside);
+        outside.focus();
+        const options = await engine.suggest!([]);
+        selector.applyAllowableOptions(
+            options.suggestions.filter((option) =>
+                ['c2', 'c5'].includes(option.conceptId),
+            ),
+        );
+        expect(document.activeElement).toBe(outside);
+        expect(
+            [
+                ...container.querySelectorAll<HTMLButtonElement>(
+                    '.category-selector-btn[tabindex="0"]',
+                ),
+            ].map((item) => item.dataset.conceptId),
+        ).toEqual(['c2', 'c5']);
+        outside.remove();
+    });
+
+    it.each(['local', 'dependent', 'stale', 'outside'])(
+        'applies a canonical whole %s remedy through the associated store while retaining captured values',
+        async (choice) => {
+            const scheme = engine.getScheme();
+            (scheme.scopes ??= []).push(
+                { id: 'default', label: 'Default' },
+                { id: 'authority', label: 'Authority' },
+            );
+            scheme.defaultScope = 'default';
+            engine.aggregateAssertions = vi.fn((sets: Assertion[][]) => ({
+                assertions: sets.flat(),
+                rendered: sets
+                    .flat()
+                    .map((fact) => fact.conceptId)
+                    .join(':'),
+                valid: true,
+                errors: [],
+                warnings: [],
+                appliedFixes: [],
+                notices: [],
+                proposedFixes: [],
+            }));
+            scheme.categories.push(
+                {
+                    ...scheme.categories[1],
+                    id: 'related',
+                    label: 'Related values',
+                },
+                {
+                    ...scheme.categories[1],
+                    id: 'capture',
+                    label: 'Captured values',
+                    scopes: ['authority'],
+                },
+            );
+            scheme.concepts.push(
+                {
+                    ...scheme.concepts[0],
+                    id: 'country',
+                    name: 'Country',
+                    categories: ['related'],
+                },
+                {
+                    ...scheme.concepts[0],
+                    id: 'name',
+                    name: 'Name',
+                    categories: ['capture'],
+                },
+                {
+                    ...scheme.concepts[0],
+                    id: 'date',
+                    name: 'Date',
+                    categories: ['capture'],
+                },
+            );
+            const process = vi.mocked(engine.process).getMockImplementation()!;
+            const first: Assertion = {
+                conceptId: 'c4',
+                categoryId: 'f2',
+                confidence: 'certain',
+                source: 'user',
+            };
+            const second: Assertion = { ...first, conceptId: 'c5' };
+            const country: Assertion = {
+                ...first,
+                conceptId: 'country',
+                categoryId: 'related',
+            };
+            const name: Assertion = {
+                ...first,
+                conceptId: 'name',
+                categoryId: 'capture',
+                value: 'Jane Analyst',
+            };
+            const date: Assertion = {
+                ...name,
+                conceptId: 'date',
+                value: '2040-01-01',
+            };
+            const refs = (facts: Assertion[]) =>
+                facts.map(({ conceptId, categoryId }) => ({
+                    conceptId,
+                    categoryId,
+                }));
+            let holdUpdate = false;
+            const updateReleases: Array<() => void> = [];
+            vi.mocked(engine.process).mockImplementation(
+                async (input, options) => {
+                    const answer = await process(input, options);
+                    if (
+                        holdUpdate &&
+                        options?.outputFormat === undefined &&
+                        options?.surface === undefined
+                    )
+                        await new Promise<void>((resolve) =>
+                            updateReleases.push(resolve),
+                        );
+                    const conflict =
+                        answer.assertions.some(
+                            (fact) => fact.conceptId === 'c4',
+                        ) &&
+                        answer.assertions.some(
+                            (fact) => fact.conceptId === 'c5',
+                        );
+                    const fixes = [
+                        {
+                            message: 'Remove Option X.',
+                            rendered: 'c5:country:name:date',
+                            keeps: refs([second, country, name, date]),
+                            adds: [],
+                            removes: refs([first]),
+                        },
+                        {
+                            message: 'Remove Option Y and Country.',
+                            rendered: 'c4:name:date',
+                            keeps: refs([first, name, date]),
+                            adds: [],
+                            removes: refs([second, country]),
+                        },
+                    ];
+                    return {
+                        ...answer,
+                        valid: !conflict,
+                        errors: conflict
+                            ? [
+                                  {
+                                      constraintId: 'exclusive',
+                                      categoryId: 'f2',
+                                      message: 'These options conflict.',
+                                  },
+                              ]
+                            : [],
+                        proposedFixes:
+                            conflict &&
+                            !options?.outputFormat &&
+                            !options?.surface
+                                ? fixes
+                                : [],
+                    };
+                },
+            );
+            container.innerHTML =
+                '<input id="canonical-whole" type="hidden" data-ezclassify-marking><fieldset data-ezclassify-controller="selector" data-ezclassify-facet-of="canonical-whole" data-ezclassify-category="f2"></fieldset>';
+            const store = new VanillaEzClassifyStore(engine);
+            await store.publishAssertions('canonical-whole', [
+                first,
+                second,
+                country,
+                name,
+                date,
+            ]);
+            const forms = new EzClassifyUI(toCtx(engine), {
+                root: container,
+                store,
+            });
+            try {
+                const actions = () => [
+                    ...container.querySelectorAll<HTMLButtonElement>(
+                        '.ez-validation-errors__fix',
+                    ),
+                ];
+                await vi.waitFor(() =>
+                    expect(
+                        actions().map((button) => button.textContent),
+                    ).toEqual([
+                        'Remove Option X',
+                        'Remove Option Y and Country',
+                    ]),
+                );
+                if (choice === 'stale') {
+                    const previous = actions()[0];
+                    previous.focus();
+                    const newer = { ...name, value: 'A newer captured name' };
+                    const newerDate = { ...date, value: '2050-02-03' };
+                    holdUpdate = true;
+                    await store.publishAssertions('canonical-whole', [
+                        first,
+                        second,
+                        country,
+                        newer,
+                        newerDate,
+                    ]);
+                    await vi.waitFor(() =>
+                        expect(updateReleases.length).toBeGreaterThan(0),
+                    );
+                    const publish = vi.spyOn(store, 'publishAssertions');
+                    previous.click();
+                    expect(publish).not.toHaveBeenCalled();
+                    expect(
+                        store.get('canonical-whole').assertions,
+                    ).toContainEqual(expect.objectContaining(newer));
+                    expect(
+                        store
+                            .get('canonical-whole')
+                            .assertions.map((fact) => fact.conceptId),
+                    ).toEqual(expect.arrayContaining(['c4', 'c5', 'country']));
+                    expect(actions()).toHaveLength(0);
+                    expect(document.activeElement).not.toBe(document.body);
+                    holdUpdate = false;
+                    updateReleases.splice(0).forEach((release) => release());
+                    await vi.waitFor(() => expect(actions()).toHaveLength(2));
+                    actions()[1].click();
+                    await vi.waitFor(() =>
+                        expect(
+                            store
+                                .get('canonical-whole')
+                                .assertions.some(
+                                    (fact) => fact.conceptId === 'c5',
+                                ),
+                        ).toBe(false),
+                    );
+                    expect(
+                        store.get('canonical-whole').assertions,
+                    ).toContainEqual(expect.objectContaining(newer));
+                    expect(
+                        store.get('canonical-whole').assertions,
+                    ).toContainEqual(expect.objectContaining(newerDate));
+                    return;
+                }
+                const action = actions()[choice === 'local' ? 0 : 1];
+                action.focus();
+                action.click();
+                const outside = document.createElement('button');
+                if (choice === 'outside') {
+                    container.appendChild(outside);
+                    outside.focus();
+                }
+                await vi.waitFor(() =>
+                    expect(
+                        store
+                            .get('canonical-whole')
+                            .assertions.some(
+                                (fact) =>
+                                    fact.conceptId ===
+                                    (choice === 'local' ? 'c4' : 'c5'),
+                            ),
+                    ).toBe(false),
+                );
+                expect(store.get('canonical-whole').assertions).toContainEqual(
+                    expect.objectContaining(name),
+                );
+                expect(store.get('canonical-whole').assertions).toContainEqual(
+                    expect.objectContaining(date),
+                );
+                expect(
+                    store
+                        .get('canonical-whole')
+                        .assertions.some(
+                            (fact) => fact.conceptId === 'country',
+                        ),
+                ).toBe(choice === 'local');
+                await vi.waitFor(() =>
+                    expect(
+                        container
+                            .querySelector(
+                                `[data-concept-id="${choice === 'local' ? 'c4' : 'c5'}"]`,
+                            )
+                            ?.getAttribute('aria-checked'),
+                    ).toBe('false'),
+                );
+                if (choice === 'outside')
+                    expect(document.activeElement).toBe(outside);
+                else {
+                    expect(
+                        (
+                            document.activeElement as HTMLElement
+                        ).classList.contains('category-selector-btn'),
+                    ).toBe(true);
+                    expect(
+                        (document.activeElement as HTMLButtonElement).disabled,
+                    ).toBe(false);
+                }
+            } finally {
+                forms.destroy();
+            }
+        },
+    );
+
+    it.each(['sibling', 'context', 'parts'])(
+        'rejects an automatic whole proof after its %s input changes before a newer judgment starts',
+        async (changed) => {
+            const process = vi.mocked(engine.process).getMockImplementation()!;
+            let name = 'Original name';
+            let context = 'PARENT-A';
+            let parts = ['PART-A'];
+            let release: (() => void) | undefined;
+            vi.mocked(engine.process).mockImplementation(
+                async (input, options) => {
+                    const answer = await process(input, options);
+                    const result = {
+                        ...answer,
+                        valid: false,
+                        errors: [
+                            {
+                                constraintId: 'exclusive',
+                                categoryId: 'f2',
+                                message: 'These options conflict.',
+                            },
+                        ],
+                        proposedFixes: [] as import('@ezclassify/types').Fix[],
+                    };
+                    if (
+                        options?.outputFormat === undefined &&
+                        options?.surface === undefined
+                    ) {
+                        expect(options?.context).toEqual({
+                            partOf: { rendered: 'PARENT-A' },
+                        });
+                        expect(options?.parts).toEqual(['PART-A']);
+                        await new Promise<void>((resolve) => {
+                            release = resolve;
+                        });
+                        result.proposedFixes = [
+                            {
+                                message: 'Remove Option Y.',
+                                rendered: 'c4',
+                                keeps: [{ conceptId: 'c4', categoryId: 'f2' }],
+                                adds: [],
+                                removes: [
+                                    { conceptId: 'c5', categoryId: 'f2' },
+                                ],
+                            },
+                        ];
+                    }
+                    return result;
+                },
+            );
+            const mounting = init({
+                facetOf: 'doc',
+                categoryId: 'f2',
+                initialValue: 'c4:c5',
+                resolveFacetSiblings: () => [
+                    {
+                        conceptId: 'c1',
+                        categoryId: 'f1',
+                        value: name,
+                        confidence: 'certain',
+                        source: 'user',
+                    },
+                ],
+                resolveContext: () => ({ partOf: { rendered: context } }),
+                resolveParts: () => parts,
+            });
+            await vi.waitFor(() => expect(release).toBeTypeOf('function'));
+            if (changed === 'sibling') name = 'New name';
+            else if (changed === 'context') context = 'PARENT-B';
+            else parts = ['PART-B'];
+            release!();
+            await mounting;
+            expect(
+                container.nextElementSibling?.querySelectorAll(
+                    '.ez-validation-errors__fix',
+                ).length ?? 0,
+            ).toBe(0);
+            expect(
+                selector.getAssertions().map((fact) => fact.conceptId),
+            ).toEqual(['c4', 'c5']);
+        },
+    );
+
+    it('settles initial multi-choice availability before mounting completes', async () => {
+        const suggest = vi.mocked(engine.suggest!).getMockImplementation()!;
+        vi.mocked(engine.suggest!).mockImplementation(
+            async (input, options) => {
+                const result = await suggest(input, options);
+                return {
+                    ...result,
+                    suggestions: result.suggestions.filter(
+                        (entry) => entry.conceptId !== 'c5',
+                    ),
+                };
+            },
+        );
+        await init({ facetOf: 'doc', categoryId: 'f2', initialValue: 'c4' });
+        expect(
+            container
+                .querySelector('[data-concept-id="c5"]')
+                ?.getAttribute('aria-disabled'),
+        ).toBe('true');
+        expect(
+            container
+                .querySelector('[data-concept-id="c4"]')
+                ?.getAttribute('aria-disabled'),
+        ).toBeNull();
+    });
+
+    it('does not redraw a destroyed mount when initial availability settles', async () => {
+        const suggest = vi.mocked(engine.suggest!).getMockImplementation()!;
+        let release!: () => void;
+        const pending = new Promise<void>((resolve) => {
+            release = resolve;
+        });
+        vi.mocked(engine.suggest!).mockImplementation(
+            async (input, options) => {
+                const result = await suggest(input, options);
+                await pending;
+                return result;
+            },
+        );
+        const mounting = init({ categoryId: 'f2', initialValue: 'c4' });
+        await vi.waitFor(() => expect(engine.suggest).toHaveBeenCalled());
+        selector.destroy();
+        release();
+        await mounting;
+        expect(container.children).toHaveLength(0);
+    });
+
+    it('reports a loaded invalid category after its rows are initialized', async () => {
+        const process = vi.mocked(engine.process).getMockImplementation()!;
+        vi.mocked(engine.process).mockImplementation(
+            async (input, options) => ({
+                ...(await process(input, options)),
+                valid: false,
+                errors: [
+                    {
+                        constraintId: 'exclusive',
+                        categoryId: 'f2',
+                        message: 'Loaded options conflict.',
+                    },
+                ],
+                proposedFixes: [],
+            }),
+        );
+        await init({ facetOf: 'doc', categoryId: 'f2', initialValue: 'c4:c5' });
+        expect(container.nextElementSibling?.textContent).toContain(
+            'Loaded options conflict.',
+        );
+        expect(container.hasAttribute('data-ezclassify-invalid')).toBe(true);
+    });
+
+    it('keeps the native-enabled deselected option focused while its former availability is replaced', async () => {
+        const suggest = vi.mocked(engine.suggest!).getMockImplementation()!;
+        vi.mocked(engine.suggest!).mockImplementation(
+            async (input, options) => {
+                const result = await suggest(input, options);
+                return {
+                    ...result,
+                    suggestions: result.suggestions.filter(
+                        (entry) => entry.conceptId !== 'c4',
+                    ),
+                };
+            },
+        );
+        await init({ categoryId: 'f2', initialValue: 'c4' });
+        const option = () =>
+            container.querySelector<HTMLButtonElement>(
+                '[data-concept-id="c4"]',
+            )!;
+        option().focus();
+        activateChoice(option(), 'Enter');
+        await vi.waitFor(() =>
+            expect(option().getAttribute('aria-checked')).toBe('false'),
+        );
+        expect(option().disabled).toBe(false);
+        expect(document.activeElement).toBe(option());
+    });
+
+    it.each(['Enter', ' '])(
+        'retains a deselected option after async %s processing without reclaiming outside focus',
+        async (key) => {
+            await init({ categoryId: 'f2' });
+            selector.setAssertions([
+                {
+                    conceptId: 'c4',
+                    categoryId: 'f2',
+                    confidence: 'certain',
+                    source: 'user',
+                },
+                {
+                    conceptId: 'c5',
+                    categoryId: 'f2',
+                    confidence: 'certain',
+                    source: 'user',
+                },
+            ]);
+            const option = () =>
+                container.querySelector<HTMLButtonElement>(
+                    '[data-concept-id="c4"]',
+                )!;
+            await vi.waitFor(() =>
+                expect(option().getAttribute('aria-checked')).toBe('true'),
+            );
+            const process = vi.mocked(engine.process).getMockImplementation()!;
+            let release!: () => void;
+            let pending = new Promise<void>((resolve) => {
+                release = resolve;
+            });
+            vi.mocked(engine.process).mockImplementation(
+                async (input, options) => {
+                    const result = await process(input, options);
+                    await pending;
+                    return result;
+                },
+            );
+            option().focus();
+            activateChoice(option(), key);
+            release();
+            await vi.waitFor(() =>
+                expect(option().getAttribute('aria-checked')).toBe('false'),
+            );
+            expect(document.activeElement).toBe(option());
+
+            pending = new Promise<void>((resolve) => {
+                release = resolve;
+            });
+            activateChoice(option(), key);
+            const outside = document.createElement('button');
+            document.body.appendChild(outside);
+            outside.focus();
+            release();
+            await vi.waitFor(() =>
+                expect(option().getAttribute('aria-checked')).toBe('true'),
+            );
+            expect(document.activeElement).toBe(outside);
+            outside.remove();
+        },
+    );
+
+    it('preserves focused option identity when allowability changes its column', async () => {
+        await init({ categoryId: 'f2' });
+        const option = () =>
+            container.querySelector<HTMLButtonElement>(
+                '[data-concept-id="c5"]',
+            )!;
+        option().focus();
+        selector.applyAllowableOptions([
+            {
+                conceptId: 'c5',
+                categoryId: 'f2',
+                label: 'Option Y',
+                name: 'Option Y',
+                description: '',
+                views: { default: 'Option Y' },
+                selected: false,
+                order: 0,
+                group: 'f2',
+            },
+        ]);
+        expect(document.activeElement).toBe(option());
+        expect(option().tabIndex).toBe(0);
+        expect(option().dataset.colIndex).toBe('0');
+    });
+
+    it('offers multi-choice options beside existing choices and refuses an unavailable addition', async () => {
+        const suggest = vi.mocked(engine.suggest!).getMockImplementation()!;
+        vi.mocked(engine.suggest!).mockImplementation((input, options) => {
+            const result = suggest(input, options);
+            const held =
+                Array.isArray(input) &&
+                input.some((assertion) => assertion.conceptId === 'c4');
+            return Promise.resolve(result).then((answer) => ({
+                ...answer,
+                suggestions: answer.suggestions.filter(
+                    (suggestion) => !held || suggestion.conceptId !== 'c5',
+                ),
+            }));
+        });
+        await init({ facetOf: 'doc', categoryId: 'f2' });
+        selector.setAssertions([
+            {
+                conceptId: 'c4',
+                categoryId: 'f2',
+                confidence: 'certain',
+                source: 'user',
+            },
+        ]);
+        const blocked = () =>
+            container.querySelector<HTMLButtonElement>(
+                '[data-concept-id="c5"]',
+            )!;
+        await vi.waitFor(() =>
+            expect(blocked().getAttribute('aria-disabled')).toBe('true'),
+        );
+        blocked().click();
+        await Promise.resolve();
+        expect(
+            selector.getAssertions().map((assertion) => assertion.conceptId),
+        ).toEqual(['c4']);
+        expect(
+            container
+                .querySelector('[data-concept-id="c4"]')
+                ?.getAttribute('aria-disabled'),
+        ).toBeNull();
+        selector.setAssertions([]);
+        await vi.waitFor(() =>
+            expect(blocked().getAttribute('aria-disabled')).toBeNull(),
+        );
+    });
+
+    it('reports category conflicts and slice-safe canonical fixes through refusal refreshes without importing sibling values', async () => {
+        const sibling: Assertion = {
+            conceptId: 'c1',
+            categoryId: 'f1',
+            value: 'Held sibling value',
+            confidence: 'certain',
+            source: 'user',
+        };
+        const process = vi.mocked(engine.process).getMockImplementation()!;
+        let refused = false;
+        const fix = {
+            message: 'Remove Option Y.',
+            rendered: 'c1:c4',
+            keeps: [
+                { conceptId: 'c1', categoryId: 'f1' },
+                { conceptId: 'c4', categoryId: 'f2' },
+            ],
+            adds: [],
+            removes: [{ conceptId: 'c5', categoryId: 'f2' }],
+        };
+        vi.mocked(engine.process).mockImplementation(async (input, options) => {
+            const answer = await process(input, options);
+            if (refused)
+                return {
+                    ...answer,
+                    rendered: 'refused',
+                    errors: [],
+                    proposedFixes: [],
+                    assessment: {
+                        emitted: [],
+                        omitted: [],
+                        collapsed: [],
+                        conflicts: [],
+                        unrepresentable: [
+                            {
+                                output: 'default',
+                                reason: 'ambiguous-representation',
+                                concepts: ['c4', 'c5'],
+                            },
+                        ],
+                    },
+                };
+            const conflict =
+                answer.assertions.some(
+                    (assertion) => assertion.conceptId === 'c4',
+                ) &&
+                answer.assertions.some(
+                    (assertion) => assertion.conceptId === 'c5',
+                );
+            return {
+                ...answer,
+                valid: !conflict,
+                errors: conflict
+                    ? [
+                          {
+                              constraintId: 'exclusive',
+                              message: 'These options cannot be combined.',
+                              affectedConcepts: ['c4', 'c5'],
+                          },
+                          {
+                              constraintId: 'other',
+                              message: 'An unrelated category is incomplete.',
+                              categoryId: 'f1',
+                          },
+                      ]
+                    : [],
+                proposedFixes: conflict
+                    ? [
+                          fix,
+                          {
+                              ...fix,
+                              rendered: 'c4:c5',
+                              message: 'Remove Low.',
+                              removes: [{ conceptId: 'c1', categoryId: 'f1' }],
+                          },
+                      ]
+                    : [],
+            };
+        });
+        const onChange = vi.fn();
+        await init({
+            facetOf: 'doc',
+            categoryId: 'f2',
+            resolveFacetSiblings: () => [sibling],
+            resolveFacetRefusal: () => [],
+            onChange,
+        });
+        selector.setAssertions([
+            {
+                conceptId: 'c4',
+                categoryId: 'f2',
+                confidence: 'certain',
+                source: 'user',
+            },
+            {
+                conceptId: 'c5',
+                categoryId: 'f2',
+                confidence: 'certain',
+                source: 'user',
+            },
+        ]);
+        const errors = () => container.nextElementSibling;
+        await vi.waitFor(() =>
+            expect(errors()?.textContent).toContain(
+                'These options cannot be combined.',
+            ),
+        );
+        expect(errors()?.textContent).not.toContain('An unrelated category');
+        expect(
+            [...errors()!.querySelectorAll('button')].map(
+                (button) => button.textContent,
+            ),
+        ).toEqual(['Remove Option Y']);
+        selector.refreshFacetRefusal();
+        expect(errors()?.textContent).toContain(
+            'These options cannot be combined.',
+        );
+        refused = true;
+        onChange.mockClear();
+        selector.setAssertions(selector.getAssertions());
+        await vi.waitFor(() => expect(onChange).toHaveBeenCalled());
+        // Refusal-only reports do not erase the category's current judgment.
+        expect(errors()?.textContent).toContain(
+            'These options cannot be combined.',
+        );
+        refused = false;
+        errors()!.querySelector<HTMLButtonElement>('button')!.click();
+        await vi.waitFor(() =>
+            expect(
+                selector
+                    .getAssertions()
+                    .map((assertion) => assertion.conceptId),
+            ).toEqual(['c4']),
+        );
+        await vi.waitFor(() =>
+            expect(onChange).toHaveBeenLastCalledWith(
+                [
+                    expect.objectContaining({
+                        conceptId: 'c4',
+                        categoryId: 'f2',
+                    }),
+                ],
+                expect.any(String),
+            ),
+        );
+        expect(sibling.value).toBe('Held sibling value');
+    });
 
     it('refuses an engine without describeConcept when it binds', async () => {
         delete (engine as { describeConcept?: unknown }).describeConcept;
@@ -209,7 +1310,10 @@ describe('CategorySelector', () => {
             expect(row.children[1].className).toBe('category-selector-options');
         }
         const firstHead = rows[0].querySelector('.category-selector-head')!;
-        const chrome = firstHead.querySelector('.ez-field-chrome')!;
+        const chrome = body.querySelector(':scope > .ez-field-chrome')!;
+        expect(
+            firstHead.id || firstHead.querySelector('[id]')?.id,
+        ).toBeTruthy();
         expect(chrome.querySelector('.ez-status-mark')).not.toBeNull();
         expect(chrome.querySelector('.ez-clear-button')).not.toBeNull();
         // One chrome for the control, however many categories it shows.
@@ -221,7 +1325,7 @@ describe('CategorySelector', () => {
         await new Promise((resolve) => setTimeout(resolve, 0));
         expect(
             container.querySelector(
-                '.category-selector-row .category-selector-head .ez-field-chrome',
+                '.category-selector-body > .ez-field-chrome',
             ),
         ).toBe(chrome);
     });
@@ -380,6 +1484,13 @@ describe('CategorySelector', () => {
         ) as HTMLElement;
         btnX.click();
         btnY.click();
+        await vi.waitFor(() =>
+            expect(
+                selector
+                    .getAssertions()
+                    .some((assertion) => assertion.conceptId === 'c5'),
+            ).toBe(true),
+        );
         const assertions = selector.getAssertions();
         expect(
             assertions.some(
@@ -477,6 +1588,78 @@ describe('CategorySelector', () => {
         expect(codes[0].textContent).toBe('L');
     });
 
+    it('uses the shared native definition hint without a custom hover popup', async () => {
+        engine.getScheme().concepts[0]!.definition = 'Canonical definition';
+        await init();
+        const choice = container.querySelector<HTMLButtonElement>(
+            '.category-selector-btn',
+        )!;
+        expect(choice.title).toBe('Canonical definition');
+        expect(choice.getAttribute('aria-description')).toBe(
+            'Canonical definition.',
+        );
+        const before = selector.getAssertions();
+        choice.focus();
+        choice.dispatchEvent(new Event('mouseenter'));
+        await new Promise((resolve) => setTimeout(resolve, 350));
+        expect(document.querySelector('.ez-tooltip:not([hidden])')).toBeNull();
+        expect(document.activeElement).toBe(choice);
+        expect(selector.getAssertions()).toEqual(before);
+    });
+
+    it('puts working category stops before chrome and returns from top-row Up without choosing', async () => {
+        await init();
+        const options = [
+            ...container.querySelectorAll<HTMLButtonElement>(
+                '.category-selector-btn',
+            ),
+        ];
+        const brand = container.querySelector<HTMLElement>('.ez-status-mark')!;
+        for (const option of options)
+            option.getBoundingClientRect = () =>
+                ({
+                    left: 0,
+                    right: 60,
+                    top: 20,
+                    bottom: 50,
+                    width: 60,
+                    height: 30,
+                }) as DOMRect;
+        expect(
+            options
+                .filter((option) => option.tabIndex === 0)
+                .every(
+                    (option) =>
+                        !!(
+                            option.compareDocumentPosition(brand) &
+                            Node.DOCUMENT_POSITION_FOLLOWING
+                        ),
+                ),
+        ).toBe(true);
+        const before = selector.getAssertions();
+        options[0].focus();
+        options[0].dispatchEvent(
+            new KeyboardEvent('keydown', {
+                key: 'ArrowUp',
+                bubbles: true,
+                cancelable: true,
+            }),
+        );
+        expect(document.activeElement).toBe(brand);
+        brand.dispatchEvent(
+            new KeyboardEvent('keydown', {
+                key: 'ArrowDown',
+                bubbles: true,
+                cancelable: true,
+            }),
+        );
+        expect(document.activeElement).toBe(options[0]);
+        expect(selector.getAssertions()).toEqual(before);
+        expect(
+            container.querySelector('.ez-tooltip--tools:not([hidden])'),
+        ).toBeNull();
+    });
+
     it('should handle keyboard ArrowRight navigation', async () => {
         await init();
         const btns = container
@@ -523,204 +1706,52 @@ describe('CategorySelector', () => {
         expect(col1.tabIndex).toBe(-1);
     });
 
-    describe('WCAG 2.1.1: single-row ArrowDown/ArrowUp navigation', () => {
-        it('ArrowDown moves to next option when there is only one category row', async () => {
-            // Create a mock engine with a single category row (single-select, 3 concepts)
-            const singleRowEngine = createMockEngine({
-                categories: [
-                    {
-                        id: 'status',
-                        label: 'Status',
-                        required: false,
-                        single: true,
-                        rollupOperator: 'highest',
-                        order: 0,
-                    },
-                ] as any,
-                concepts: [
-                    {
-                        id: 'on-hold',
-                        name: 'On Hold',
-                        views: { default: 'On Hold' },
-                        aliases: [],
-                        categories: ['status'],
-                        parents: [],
-                        position: 0,
-                    },
-                    {
-                        id: 'not-yet',
-                        name: 'Not Yet',
-                        views: { default: 'Not Yet' },
-                        aliases: [],
-                        categories: ['status'],
-                        parents: [],
-                        position: 1,
-                    },
-                    {
-                        id: 'being-checked',
-                        name: 'Being Checked',
-                        views: { default: 'Being Checked' },
-                        aliases: [],
-                        categories: ['status'],
-                        parents: [],
-                        position: 2,
-                    },
-                ] as any,
-            });
-            const singleSelector = new CategorySelector();
-            await singleSelector.init(container, toCtx(singleRowEngine));
-
-            const col0 = container.querySelector(
-                '[data-row-index="0"][data-col-index="0"]',
-            ) as HTMLElement;
-            col0.focus();
-            col0.dispatchEvent(
-                new KeyboardEvent('keydown', {
-                    key: 'ArrowDown',
-                    bubbles: true,
-                }),
-            );
-
-            const col1 = container.querySelector(
-                '[data-row-index="0"][data-col-index="1"]',
-            ) as HTMLElement;
-            expect(col1.tabIndex).toBe(0);
-            expect(col0.tabIndex).toBe(-1);
-
-            singleSelector.destroy();
+    it('navigates physical wrapped rows without changing selection or scrolling at their edges', async () => {
+        await init({ categoryId: 'f2' });
+        const buttons = [
+            ...container.querySelectorAll<HTMLButtonElement>(
+                '.category-selector-btn',
+            ),
+        ];
+        let boxes = [
+            new DOMRect(0, 0, 60, 30),
+            new DOMRect(80, 0, 60, 30),
+            new DOMRect(160, 0, 60, 30),
+        ];
+        buttons.forEach((button, index) => {
+            button.getBoundingClientRect = () => boxes[index];
         });
-
-        it('ArrowUp moves to previous option when there is only one category row', async () => {
-            const singleRowEngine = createMockEngine({
-                categories: [
-                    {
-                        id: 'status',
-                        label: 'Status',
-                        required: false,
-                        single: true,
-                        rollupOperator: 'highest',
-                        order: 0,
-                    },
-                ] as any,
-                concepts: [
-                    {
-                        id: 'on-hold',
-                        name: 'On Hold',
-                        views: { default: 'On Hold' },
-                        aliases: [],
-                        categories: ['status'],
-                        parents: [],
-                        position: 0,
-                    },
-                    {
-                        id: 'not-yet',
-                        name: 'Not Yet',
-                        views: { default: 'Not Yet' },
-                        aliases: [],
-                        categories: ['status'],
-                        parents: [],
-                        position: 1,
-                    },
-                    {
-                        id: 'being-checked',
-                        name: 'Being Checked',
-                        views: { default: 'Being Checked' },
-                        aliases: [],
-                        categories: ['status'],
-                        parents: [],
-                        position: 2,
-                    },
-                ] as any,
+        const key = (name: string, ctrlKey = false) => {
+            const event = new KeyboardEvent('keydown', {
+                key: name,
+                ctrlKey,
+                bubbles: true,
+                cancelable: true,
             });
-            const singleSelector = new CategorySelector();
-            await singleSelector.init(container, toCtx(singleRowEngine));
-
-            // Move to col 1 first
-            const col0 = container.querySelector(
-                '[data-row-index="0"][data-col-index="0"]',
-            ) as HTMLElement;
-            col0.focus();
-            col0.dispatchEvent(
-                new KeyboardEvent('keydown', {
-                    key: 'ArrowRight',
-                    bubbles: true,
-                }),
-            );
-            const col1 = container.querySelector(
-                '[data-row-index="0"][data-col-index="1"]',
-            ) as HTMLElement;
-            // Now ArrowUp from col 1 should go back to col 0
-            col1.dispatchEvent(
-                new KeyboardEvent('keydown', { key: 'ArrowUp', bubbles: true }),
-            );
-            expect(col0.tabIndex).toBe(0);
-            expect(col1.tabIndex).toBe(-1);
-
-            singleSelector.destroy();
-        });
-
-        it('ArrowDown wraps from last option to first in single-row', async () => {
-            const singleRowEngine = createMockEngine({
-                categories: [
-                    {
-                        id: 'status',
-                        label: 'Status',
-                        required: false,
-                        single: true,
-                        rollupOperator: 'highest',
-                        order: 0,
-                    },
-                ] as any,
-                concepts: [
-                    {
-                        id: 'a',
-                        name: 'A',
-                        views: { default: 'A' },
-                        aliases: [],
-                        categories: ['status'],
-                        parents: [],
-                        position: 0,
-                    },
-                    {
-                        id: 'b',
-                        name: 'B',
-                        views: { default: 'B' },
-                        aliases: [],
-                        categories: ['status'],
-                        parents: [],
-                        position: 1,
-                    },
-                ] as any,
-            });
-            const singleSelector = new CategorySelector();
-            await singleSelector.init(container, toCtx(singleRowEngine));
-
-            // Move to col 1 (last)
-            const col0 = container.querySelector(
-                '[data-row-index="0"][data-col-index="0"]',
-            ) as HTMLElement;
-            col0.focus();
-            col0.dispatchEvent(
-                new KeyboardEvent('keydown', {
-                    key: 'ArrowRight',
-                    bubbles: true,
-                }),
-            );
-            const col1 = container.querySelector(
-                '[data-row-index="0"][data-col-index="1"]',
-            ) as HTMLElement;
-            // ArrowDown from last should wrap to first
-            col1.dispatchEvent(
-                new KeyboardEvent('keydown', {
-                    key: 'ArrowDown',
-                    bubbles: true,
-                }),
-            );
-            expect(col0.tabIndex).toBe(0);
-            expect(col1.tabIndex).toBe(-1);
-
-            singleSelector.destroy();
-        });
+            document.activeElement!.dispatchEvent(event);
+            return event;
+        };
+        buttons[0].focus();
+        expect(key('ArrowDown').defaultPrevented).toBe(true);
+        expect(document.activeElement).toBe(buttons[0]);
+        key('ArrowRight');
+        expect(document.activeElement).toBe(buttons[1]);
+        // A phone-sized wrap changes the physical row, not the category identity.
+        boxes = [
+            new DOMRect(0, 0, 60, 30),
+            new DOMRect(80, 0, 60, 30),
+            new DOMRect(10, 40, 60, 30),
+        ];
+        buttons[0].focus();
+        key('ArrowDown');
+        expect(document.activeElement).toBe(buttons[2]);
+        key('ArrowUp');
+        expect(document.activeElement).toBe(buttons[0]);
+        key('ArrowLeft');
+        expect(document.activeElement).toBe(buttons[0]);
+        expect(key('ArrowRight', true).defaultPrevented).toBe(false);
+        expect(key('Tab').defaultPrevented).toBe(false);
+        expect(selector.getAssertions()).toEqual([]);
     });
 
     it('should handle keyboard Enter to select', async () => {
@@ -729,9 +1760,7 @@ describe('CategorySelector', () => {
             '[data-concept-id="c1"]',
         ) as HTMLElement;
         btn.focus();
-        btn.dispatchEvent(
-            new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }),
-        );
+        activateChoice(btn, 'Enter');
         expect(selector.getAssertions().some((a) => a.conceptId === 'c1')).toBe(
             true,
         );
@@ -743,9 +1772,7 @@ describe('CategorySelector', () => {
             '[data-concept-id="c1"]',
         ) as HTMLElement;
         btn.focus();
-        btn.dispatchEvent(
-            new KeyboardEvent('keydown', { key: ' ', bubbles: true }),
-        );
+        activateChoice(btn, ' ');
         expect(selector.getAssertions().some((a) => a.conceptId === 'c1')).toBe(
             true,
         );

@@ -1,7 +1,6 @@
 /**
- * Whole-marking Favorites and scoped scheme presets. MarkingField and TagInput
- * embed this list in their branding popover; marked editors use its separate
- * star control.
+ * Whole-marking Favorites and scoped scheme presets, embedded in each editable
+ * control's tabbed branding popover.
  *
  * The component stores nothing. A host wires `favorites.load` (and optionally
  * `save`/`remove`) on `ComponentOptions`; this module never touches
@@ -10,12 +9,12 @@
  * every other field mutation already dispatches (Host Form Contract); there is
  * no separate favorites-specific event.
  *
- * The ★ also renders with no host wiring at all, as long as the loaded scheme
- * declares `labelPresets` for the field's scope: the panel then opens
- * read-only, offering just the "From the scheme" section (no pinned row, no
- * user-favorites section) so a scheme's curated presets are reachable even on a
- * host that never set up favorites persistence. See
- * {@link ensureFavoritesButton} and {@link schemeOffersPresets}.
+ * The Favorites tab also renders with no host wiring at all, as long as the
+ * loaded scheme declares `labelPresets` for the field's scope: the panel then
+ * opens read-only, offering just the "From the scheme" section (no pinned row,
+ * no user-favorites section) so a scheme's curated presets are reachable even
+ * on a host that never set up favorites persistence. See
+ * {@link ensureMarkingFavorites} and {@link schemeOffersPresets}.
  *
  * The popover owns its own list rendering (the `proto-dropdown` classes in
  * component-utils.css). A saved marking is a whole value, not a concept, so
@@ -29,9 +28,8 @@ import type {
     MaybePromise,
     SchemePublicView,
 } from '@ezclassify/types';
-import { createAnnouncer, announce, readGeometry } from './component-utils';
-import { copyOverlayTheme, portalViewportOverlay } from './overlay-portal';
-import { adoptStylesOnce, type AdoptedStyles } from '../styles/adopt';
+import { createAnnouncer, announce } from './component-utils';
+import { adoptStylesOnce } from '../styles/adopt';
 import { t } from '../i18n';
 import favoritesPanelCss from './favorites-panel.css?inline';
 import {
@@ -104,8 +102,8 @@ export interface FavoritesPanelHost {
     /**
      * Undefined when the host wires no persistence at all. The panel still
      * mounts in that case if the scheme offers `labelPresets` for this field's
-     * scope (see {@link ensureFavoritesButton}); it just runs read-only, showing
-     * "From the scheme" and nothing else: no pinned save/remove row, no
+     * scope (see {@link ensureMarkingFavorites}); it just runs read-only,
+     * showing "From the scheme" and nothing else: no pinned save/remove row, no
      * user-favorites section.
      */
     config?: FavoritesConfig;
@@ -114,7 +112,7 @@ export interface FavoritesPanelHost {
      * scheme/format, as the reader's call: a saved marking is read, not
      * corrected. Used both to translate a favorite/preset into the field's
      * shape on apply and to compare against the field's current value for
-     * star-fill, so favorites are format-portable by construction: a
+     * current-row matching, so favorites are format-portable by construction: a
      * banner-stored "HIGH/CTRL-A" resolves to "[[H/A]]" inside a MarkedTextArea
      * segment through this same call. Fields hand in their own richer
      * `readForFavorites` closure (which also returns assertions and applied
@@ -127,7 +125,7 @@ export interface FavoritesPanelHost {
     /** Expand a scheme preset through the adapter that owns its definition. */
     applyPreset: (presetId: string) => MaybePromise<{ rendered: string }>;
     /**
-     * The field's current marking for star-fill comparison and the pinned row's
+     * The complete current marking for comparison and the pinned row's
      * save/remove eligibility. `valid` gates the pinned row: an in-progress or
      * empty marking has nothing coherent to save.
      */
@@ -140,13 +138,7 @@ export interface FavoritesPanelHost {
      * action supersedes this one.
      */
     onApply: (marking: string, signal: AbortSignal) => MaybePromise<void>;
-    /**
-     * Return keyboard focus to the field's own native element (Esc's "return
-     * focus to field" contract). Applying a row already moves focus itself
-     * (into the field, at whatever position the apply landed the caret); this
-     * hook exists for the plain "opened, then backed out" path, so Esc never
-     * strands focus on a button the field's own tab order doesn't expect.
-     */
+    /** Return focus to the host's working control after applying a marking. */
     focusField: () => void;
 }
 
@@ -161,7 +153,7 @@ function injectStyles(root: HTMLElement | undefined): void {
     adoptStylesOnce(favoritesPanelCss, root);
 }
 
-/** Build the ★ glyph markup, mirroring status-mark's outline/filled toggle. */
+/** Star glyph for the pinned Save or Unsave action inside Favorites. */
 function buildStarSvg(): string {
     return (
         '<svg viewBox="0 0 20 20" aria-hidden="true" focusable="false">' +
@@ -210,19 +202,13 @@ export function getScopedPresets(
     });
 }
 
-/**
- * The ★ favorites button plus its popover panel. One instance per field; mount
- * with {@link ensureFavoritesButton}, which owns the "only when wired, never
- * stacked" invariant the way `ensureStatusMark` does for the status mark.
- */
+/** Favorites content owned by one editable control's tabbed tools. */
 export class FavoritesPanel {
-    /** The ★ trigger button, mounted on the field's chrome wrap. */
+    /** The existing branding button that opens the field's tools. */
     readonly button: HTMLButtonElement;
     private host: FavoritesPanelHost;
-    private panel: HTMLDivElement;
     private panelItems: HTMLDivElement;
     private announcer: HTMLDivElement;
-    private dropdownPortalStyle: AdoptedStyles | null;
     private wrap: HTMLElement;
 
     private _isOpen = false;
@@ -240,79 +226,38 @@ export class FavoritesPanel {
     private _highlightIndex = -1;
     private applyAbort: AbortController | null = null;
     /**
-     * The last-loaded favorites, each paired with its rendered form in THIS
-     * field's own format. Loaded once at construction so the button's
-     * filled/outline state is correct before the user ever opens the panel (a
-     * field mounted with its value already saved as a favorite starts filled,
-     * not blank-until-first-open); refreshed again on every open and reused
-     * between opens by `syncStar()` so fill comparison costs no engine call
-     * outside an actual load.
+     * Saved values read in the owning marking's format for current-row
+     * matching.
      */
     private _cachedFavorites: Array<{
         entry: FavoriteEntry;
         rendered: string;
     }> = [];
-    /**
-     * The scheme's own scoped presets, each paired with its rendered form in
-     * THIS field's own format: the star-fill counterpart to `_cachedFavorites`.
-     * A scheme preset is scheme-authored data, not a user favorite, but the
-     * button's filled state should still read "gold" when the field's current
-     * value matches one: a provider-less field (nothing in `_cachedFavorites`
-     * ever) still needs SOME way to show the star filled, and a provider-wired
-     * field's presets are just as much "this value is already one click away"
-     * as its saved favorites are. Loaded on the same mount + every-open cadence
-     * as `_cachedFavorites`, through the same stale-load guard.
-     */
+    /** Scheme presets read in the same format as saved values. */
     private _cachedPresets: Array<{
         preset: LabelPresetView;
         rendered: string;
     }> = [];
-    private boundDocPointerDown: (e: Event) => void;
-    private embeddedMark: HTMLElement | null = null;
     private managing = false;
 
-    constructor(wrap: HTMLElement, host: FavoritesPanelHost, embedded = false) {
+    constructor(wrap: HTMLElement, host: FavoritesPanelHost) {
         this.wrap = wrap;
         this.host = host;
         injectStyles(host.root);
-
-        this.button = document.createElement('button');
-        this.button.type = 'button';
-        // No self-positioning: the button sits in normal flow as a flex child
-        // of the field's inline chrome, mirroring status-mark.ts's 'chrome'
-        // shape.
-        this.button.className =
-            'ez-favorites-button ez-favorites-button--chrome';
-        this.button.innerHTML = buildStarSvg();
-        this.button.setAttribute('aria-haspopup', 'dialog');
-        this.button.setAttribute('aria-expanded', 'false');
-        this.button.setAttribute('aria-label', t('aria.favorites'));
-        // The button is a separate popover trigger, not part of the field's
-        // native editing surface; a mouse/touch press on it must never blur
-        // the field (which would fire the field's own commit/rest side
-        // effects mid-interaction). Keyboard Tab reaches it normally, since
-        // that only relies on tabIndex (default 0 for a <button>), never on
-        // mousedown.
-        this.button.addEventListener('mousedown', (e) => e.preventDefault());
-        this.button.addEventListener('click', () => void this.open());
-        this.button.addEventListener('keydown', (e) => this.onButtonKeydown(e));
-        if (!embedded) wrap.appendChild(this.button);
-
-        this.panel = document.createElement('div');
-        this.panel.className = 'proto-dropdown ez-favorites-panel';
-        this.panel.id =
-            'ez-favorites-panel-' + Math.random().toString(36).slice(2, 8);
-        this.panel.style.display = 'none';
-        this.panel.setAttribute('role', 'dialog');
-        this.panel.setAttribute('aria-label', t('aria.favorites'));
-        this.panel.addEventListener('mousedown', (e) => e.preventDefault());
-
+        adoptStylesOnce(favoritesPanelCss, document.body);
+        const mark = wrap.querySelector<HTMLButtonElement>(
+            ':scope > .ez-status-mark',
+        );
+        if (!mark)
+            throw new Error('Favorites require the field branding tools.');
+        this.button = mark;
         this.panelItems = document.createElement('div');
-        this.panelItems.className = 'proto-dropdown__items';
+        this.panelItems.className =
+            'proto-dropdown__items ez-favorites-panel__embedded';
         this.panelItems.setAttribute('role', 'group');
         this.panelItems.setAttribute('aria-label', t('aria.favorites'));
-        this.panelItems.id = this.panel.id + '-items';
-        this.panel.appendChild(this.panelItems);
+        this.panelItems.id =
+            'ez-favorites-panel-' + Math.random().toString(36).slice(2, 8);
         this.panelItems.addEventListener('focusin', () => {
             this._highlightIndex = this._rows.findIndex(
                 (row) => row.el === document.activeElement,
@@ -324,97 +269,25 @@ export class FavoritesPanel {
                 ),
             );
         });
-        this.panel.addEventListener('keydown', (event) => {
-            if (this.embeddedMark) return;
-            if (event.key === 'Escape') {
-                event.preventDefault();
-                this.close(true);
-                return;
-            }
-            if (event.key === 'Tab') {
-                const controls = this.controls();
-                const edge = event.shiftKey ? controls[0] : controls.at(-1);
-                if (document.activeElement === edge) {
-                    if (event.shiftKey) {
-                        event.preventDefault();
-                        this.button.focus();
-                    } else {
-                        const next = [
-                            ...document.querySelectorAll<HTMLElement>(
-                                'a[href], button, input, select, textarea, [tabindex]',
-                            ),
-                        ].filter(
-                            (element) =>
-                                element.tabIndex >= 0 &&
-                                !element.matches(':disabled') &&
-                                !this.panel.contains(element) &&
-                                element.getClientRects().length > 0,
-                        );
-                        const target = next[next.indexOf(this.button) + 1];
-                        this.close(false);
-                        if (target) {
-                            event.preventDefault();
-                            target.focus();
-                        }
-                    }
-                }
-                return;
-            }
-            if (event.key !== 'ArrowDown' && event.key !== 'ArrowUp') return;
-            event.preventDefault();
-            const controls = this.controls();
-            const index = controls.indexOf(
-                document.activeElement as HTMLElement,
-            );
-            const next = index + (event.key === 'ArrowDown' ? 1 : -1);
-            if (next < 0) this.button.focus();
-            else controls[Math.min(next, controls.length - 1)]?.focus();
-        });
-        this.button.setAttribute('aria-controls', this.panelItems.id);
-
         this.announcer = createAnnouncer();
         wrap.appendChild(this.announcer);
-
-        this.dropdownPortalStyle = embedded
-            ? null
-            : portalViewportOverlay(this.panel, wrap, favoritesPanelCss);
-        if (embedded) {
-            adoptStylesOnce(favoritesPanelCss, document.body);
-            this.embeddedMark = wrap.querySelector(':scope > .ez-status-mark');
-            this.panelItems.setAttribute('role', 'group');
-            this.panelItems.classList.add('ez-favorites-panel__embedded');
-            setStatusMarkFavorites(wrap, {
-                element: this.panelItems,
-                open: () => {
-                    void this.open();
-                },
-                close: () => {
-                    this.abortApply();
-                    this._isOpen = false;
-                    this.managing = false;
-                },
-            });
-        }
-
-        this.boundDocPointerDown = (e: Event) => {
-            const target = e.target as Node;
-            if (
-                !this.embeddedMark &&
-                this._isOpen &&
-                !this.panel.contains(target) &&
-                !this.button.contains(target)
-            ) {
-                this.close(false);
-            }
-        };
-        document.addEventListener('mousedown', this.boundDocPointerDown);
-
-        // Load once at mount so a field whose current value is already a
-        // saved favorite starts with a filled star, not an outline star that
-        // only fills once the user opens the popover for the first time.
-        void this.loadAndCacheFavorites().then(() => {
-            if (!this._destroyed) this.syncStar();
+        setStatusMarkFavorites(wrap, {
+            element: this.panelItems,
+            isApplying: () => this.applyAbort !== null,
+            count: () =>
+                this._cachedFavorites.length +
+                getScopedPresets(this.host.scheme, this.host.scope).length,
+            open: () => {
+                void this.open();
+            },
+            close: () => {
+                this.abortApply();
+                this._isOpen = false;
+                this.managing = false;
+            },
         });
+        // Providers load at mount as well as each tools open.
+        void this.loadAndCacheFavorites();
     }
 
     /** Refresh the closures a host rebuilds on every render pass. */
@@ -423,32 +296,8 @@ export class FavoritesPanel {
     }
 
     /**
-     * Sync the button's filled/outline state against the LAST loaded favorites
-     * AND scheme presets (no engine call: reuses the rendered forms cached by
-     * the most recent {@link open}/mount load). A field that has never opened
-     * its favorites panel simply shows the outline star until it does.
-     */
-    syncStar(): void {
-        const current = this.host.getCurrent();
-        const isFavorite =
-            current.valid &&
-            !!current.rendered &&
-            (this._cachedFavorites.some(
-                (f) => f.rendered === current.rendered,
-            ) ||
-                this._cachedPresets.some(
-                    (p) => p.rendered === current.rendered,
-                ));
-        this.button.classList.toggle('ez-favorites-button--active', isFavorite);
-        this.button.setAttribute(
-            'aria-label',
-            isFavorite ? t('aria.favoritesActive') : t('aria.favorites'),
-        );
-    }
-
-    /**
      * Load `config.load`, read every returned favorite into this field's own
-     * rendered form, and cache the result for star-fill comparison. Shared by
+     * rendered form, and cache the result for current-row matching. Shared by
      * the mount-time load ({@link FavoritesPanel} constructor, per
      * `FavoritesConfig.load`'s documented mount + on-open cadence) and every
      * {@link open}, so both go through the identical stale-load guard: a
@@ -467,7 +316,7 @@ export class FavoritesPanel {
 
         let entries: FavoriteEntry[];
         try {
-            // No config at all (presets-only mount, see ensureFavoritesButton)
+            // No config at all (presets-only mount, see ensureMarkingFavorites)
             // means no user favorites to load: the panel still renders,
             // just with nothing above the scheme's own presets.
             entries = this.host.config
@@ -494,7 +343,7 @@ export class FavoritesPanel {
                 } catch {
                     // A favorite that no longer parses (scheme drift) still
                     // shows in the list under its raw marking; it just never
-                    // matches the star-fill/dedup comparison.
+                    // matches the current-row comparison.
                     return { entry, rendered: entry.marking };
                 }
             }),
@@ -503,12 +352,7 @@ export class FavoritesPanel {
 
         this._cachedFavorites = processed;
 
-        // Same treatment for the scheme's own presets, so syncStar() can
-        // gold-fill against them too (see `_cachedPresets`'s doc). Kept in
-        // this same load pass rather than a separate cadence: presets rarely
-        // change mid-session, but reading them again alongside the favorites
-        // load costs nothing extra to reason about and stays correct if a
-        // host ever does hot-swap schemes.
+        // Presets and saved values share one stale-load guard.
         const scopedPresets = getScopedPresets(
             this.host.scheme,
             this.host.scope,
@@ -539,7 +383,7 @@ export class FavoritesPanel {
      *
      * @param restoreHighlightIndex - Re-highlight this row once rendering
      *   completes. A fresh user-initiated open (button click, or the initial
-     *   Enter/Space/ArrowDown while closed) leaves this unset: the list opens
+     *   Enter/Space while closed) leaves this unset: the list opens
      *   unhighlighted until the user arrows into it, matching the dropdown
      *   convention elsewhere in the field family. {@link togglePinned} is
      *   different: it re-opens the panel to show the save/remove it just
@@ -550,41 +394,17 @@ export class FavoritesPanel {
      */
     async open(restoreHighlightIndex?: number): Promise<void> {
         if (this._destroyed) return;
-        const wasOpen = this._isOpen;
         this._isOpen = true;
-        this.button.setAttribute('aria-expanded', 'true');
-        // mousedown preventDefault (above) suppresses the browser's normal
-        // click-to-focus so a mouse press never blurs the field mid-click;
-        // that means opening never focuses the button on its own either, so
-        // Up/Down/Enter/Esc would have nowhere to land afterward without
-        // this explicit call. A keyboard open (button already focused to
-        // receive the keydown that triggered this) makes this a no-op.
-        if (!this.embeddedMark && !wasOpen) this.button.focus();
         this.renderLoading();
-        if (!this.embeddedMark) {
-            this.showPanel();
-            this.position();
-        }
-
         const processed = await this.loadAndCacheFavorites();
         if (processed === null) return;
-        // Resync the button's fill state against the fresh cache BEFORE the
-        // open-state check below: the ★ button lives on the field's chrome
-        // and stays visible whether or not this popover is open, so a load
-        // that lands after the popover already closed (Escape, an outside
-        // click, or applying a different row can all close it while this
-        // await is in flight) must still correct the button's class. Only
-        // the popover's OWN rows are gated on `_isOpen`: there is nothing
-        // to rerender into.
-        this.syncStar();
         if (!this._isOpen) return;
 
         this.renderRows(processed);
         if (restoreHighlightIndex !== undefined) {
             this.moveHighlight(restoreHighlightIndex);
         }
-        if (this.embeddedMark) refreshStatusMarkPopover(this.embeddedMark);
-        else this.position();
+        refreshStatusMarkPopover(this.button);
         announce(
             this.announcer,
             `${processed.length} favorite${processed.length === 1 ? '' : 's'} available`,
@@ -593,25 +413,25 @@ export class FavoritesPanel {
 
     /**
      * Close the panel. `returnFocusToField` moves focus to the host field's own
-     * native element (Esc and apply both want this; an outside click or Tab
-     * does not, the browser is already moving focus somewhere else).
+     * native element after applying a saved value. The tools popover owns
+     * dismissal keys and their focus destination.
      */
     close(returnFocusToField: boolean): void {
         if (!this._isOpen) return;
         this.abortApply();
         this._isOpen = false;
-        this.panel.style.display = 'none';
-        this.button.setAttribute('aria-expanded', 'false');
-        this.button.removeAttribute('aria-activedescendant');
         this._highlightIndex = -1;
-        if (this.embeddedMark) dismissStatusMarkPopover(this.embeddedMark);
+        dismissStatusMarkPopover(this.button);
         if (returnFocusToField) this.host.focusField();
     }
 
     /** Whether focus is moving within this field's Favorites controls. */
     contains(node: Node | null): boolean {
+        if (!node) return false;
+        const popupId = this.button.getAttribute('aria-describedby');
         return (
-            !!node && (this.button.contains(node) || this.panel.contains(node))
+            this.button.contains(node) ||
+            !!(popupId && document.getElementById(popupId)?.contains(node))
         );
     }
 
@@ -624,24 +444,13 @@ export class FavoritesPanel {
         this.abortApply();
         this._destroyed = true;
         embeddedPanels.delete(this.wrap);
-        if (this.embeddedMark) {
-            dismissStatusMarkPopover(this.embeddedMark);
-            setStatusMarkFavorites(this.wrap, null);
-            this.panelItems.remove();
-        }
-        document.removeEventListener('mousedown', this.boundDocPointerDown);
-        this.panel.remove();
-        this.dropdownPortalStyle?.release();
-        this.dropdownPortalStyle = null;
-        this.button.remove();
+        dismissStatusMarkPopover(this.button);
+        setStatusMarkFavorites(this.wrap, null);
+        this.panelItems.remove();
         this.announcer.remove();
     }
 
     // --- Rendering -----------------------------------------------------
-
-    private showPanel(): void {
-        this.panel.style.display = 'block';
-    }
 
     private renderLoading(): void {
         if (this.panelItems.childElementCount > 0) return;
@@ -685,13 +494,12 @@ export class FavoritesPanel {
                 (f) => f.rendered === current.rendered,
             );
             this.addRow(
-                this.buildPinnedRow(isCurrentFavorite, current.rendered),
-                () =>
-                    void this.togglePinned(isCurrentFavorite, current.rendered),
+                this.buildPinnedRow(isCurrentFavorite),
+                () => void this.togglePinned(isCurrentFavorite),
             );
         }
 
-        if (this.embeddedMark && this.host.config) {
+        if (processed.length > 0) {
             const header = document.createElement('div');
             header.className = 'proto-dropdown-group';
             header.textContent = t('favorites.saved');
@@ -707,6 +515,26 @@ export class FavoritesPanel {
             row.dataset.favoriteMarking = entry.marking;
             this.addRow(row, () => this.applyAndClose(entry.marking));
             if (this.host.config?.remove) {
+                const savedRow = document.createElement('div');
+                savedRow.className = 'ez-favorites-panel__saved-row';
+                row.replaceWith(savedRow);
+                const remove = document.createElement('button');
+                remove.type = 'button';
+                remove.className = 'ez-favorites-panel__remove';
+                remove.dataset.favoriteRemove = entry.marking;
+                remove.setAttribute(
+                    'aria-label',
+                    t('favorites.removeEntry').replace(
+                        '{marking}',
+                        entry.marking,
+                    ),
+                );
+                remove.innerHTML =
+                    '<svg viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M4.5 4.5l11 11M15.5 4.5l-11 11" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>';
+                remove.addEventListener('click', () => {
+                    void this.removeFavorite(entry.marking, favoriteIndex);
+                });
+                savedRow.append(row, remove);
                 this._rows[this._rows.length - 1].el.addEventListener(
                     'keydown',
                     (event) => {
@@ -750,7 +578,12 @@ export class FavoritesPanel {
             empty.textContent = t('favorites.empty');
             this.panelItems.appendChild(empty);
         }
-        if (this.host.config?.browserStorage) this.renderStorageChoice();
+        const storage = this.host.config?.browserStorage;
+        if (
+            storage &&
+            (processed.length > 0 || storage.enabled() !== undefined)
+        )
+            this.renderStorageChoice();
         restoreFocus();
     }
 
@@ -763,8 +596,19 @@ export class FavoritesPanel {
         )
             return () => {};
         const identity = Object.entries(focused.dataset).find(([name]) =>
-            ['favoriteMarking', 'presetId', 'favoritesAction'].includes(name),
+            [
+                'favoriteMarking',
+                'favoriteRemove',
+                'presetId',
+                'favoritesAction',
+            ].includes(name),
         );
+        // Removing a focused row sends focus outside the dialog in browsers.
+        // Keep the edit suspended while replacing its controls.
+        const tab = this.panelItems
+            .closest('.ez-tooltip--tools')
+            ?.querySelector<HTMLElement>('[role=tab][aria-selected=true]');
+        (tab ?? this.button).focus({ preventScroll: true });
         return () => {
             if (!identity || this.panelItems.closest('[hidden]')) return;
             const [name, value] = identity;
@@ -795,43 +639,50 @@ export class FavoritesPanel {
         const footer = document.createElement('div');
         footer.className = 'ez-favorites-panel__settings';
         if (storage.enabled() === undefined) {
+            footer.classList.add('ez-favorites-panel__settings--choice');
             const prompt = document.createElement('div');
+            prompt.className = 'ez-favorites-panel__remember-title';
             prompt.textContent = t('favorites.rememberPrompt');
             footer.appendChild(prompt);
+            const choices = document.createElement('div');
+            choices.className = 'ez-favorites-panel__storage-actions';
             for (const [label, enabled] of [
                 [t('favorites.remember'), true],
                 [t('favorites.visitOnly'), false],
             ] as const) {
-                footer.appendChild(
-                    this.settingsButton(label, (keyboard) => {
-                        const focused = document.activeElement;
-                        void Promise.resolve()
-                            .then(() => storage.setEnabled(enabled))
-                            .then(() => {
-                                if (!this._isOpen || this._destroyed) return;
-                                const restoreFocus =
-                                    keyboard &&
-                                    document.activeElement === focused &&
-                                    !this.panelItems.closest('[hidden]');
-                                this.renderRows(this._cachedFavorites);
-                                if (restoreFocus)
-                                    this.panelItems
-                                        .querySelector<HTMLButtonElement>(
-                                            '.ez-favorites-panel__settings-action',
-                                        )
-                                        ?.focus();
-                                if (this.embeddedMark)
-                                    refreshStatusMarkPopover(this.embeddedMark);
-                            })
-                            .catch(() =>
-                                announce(
-                                    this.announcer,
-                                    t('favorites.storageFailed'),
-                                ),
-                            );
-                    }),
-                );
+                const button = this.settingsButton(label, (keyboard) => {
+                    const focused = document.activeElement;
+                    void Promise.resolve()
+                        .then(() => storage.setEnabled(enabled))
+                        .then(() => {
+                            if (!this._isOpen || this._destroyed) return;
+                            const restoreFocus =
+                                keyboard &&
+                                document.activeElement === focused &&
+                                !this.panelItems.closest('[hidden]');
+                            this.renderRows(this._cachedFavorites);
+                            if (restoreFocus)
+                                this.panelItems
+                                    .querySelector<HTMLButtonElement>(
+                                        '.ez-favorites-panel__settings-action',
+                                    )
+                                    ?.focus();
+                            refreshStatusMarkPopover(this.button);
+                        })
+                        .catch(() =>
+                            announce(
+                                this.announcer,
+                                t('favorites.storageFailed'),
+                            ),
+                        );
+                });
+                if (enabled)
+                    button.classList.add(
+                        'ez-favorites-panel__settings-action--primary',
+                    );
+                choices.appendChild(button);
             }
+            footer.appendChild(choices);
         } else {
             footer.appendChild(
                 this.settingsButton(t('favorites.manage'), (keyboard) => {
@@ -841,8 +692,7 @@ export class FavoritesPanel {
                         this.panelItems
                             .querySelector<HTMLButtonElement>('button')
                             ?.focus();
-                    if (this.embeddedMark)
-                        refreshStatusMarkPopover(this.embeddedMark);
+                    refreshStatusMarkPopover(this.button);
                 }),
             );
         }
@@ -861,8 +711,7 @@ export class FavoritesPanel {
                             '.ez-favorites-panel__settings-action',
                         )
                         ?.focus();
-                if (this.embeddedMark)
-                    refreshStatusMarkPopover(this.embeddedMark);
+                refreshStatusMarkPopover(this.button);
             }),
         );
         if (storage) {
@@ -909,6 +758,7 @@ export class FavoritesPanel {
                                 await this.loadAndCacheFavorites();
                             if (!processed || !this._isOpen || this._destroyed)
                                 return;
+                            refreshStatusMarkPopover(this.button);
                             announce(this.announcer, t('favorites.cleared'));
                         })
                         .catch(() =>
@@ -925,13 +775,13 @@ export class FavoritesPanel {
     private addRow(el: HTMLElement, apply: () => void): void {
         const index = this._rows.length;
         el.setAttribute('role', 'button');
-        el.id = `${this.panel.id}-row-${index}`;
+        el.id = `${this.panelItems.id}-row-${index}`;
         el.addEventListener('click', () => apply());
         this.panelItems.appendChild(el);
         this._rows.push({ el, apply });
     }
 
-    private buildPinnedRow(isFavorite: boolean, marking: string): HTMLElement {
+    private buildPinnedRow(isFavorite: boolean): HTMLElement {
         const row = this.createRow();
         row.className = 'proto-dropdown-item ez-favorites-panel__pinned';
         row.dataset.favoritesAction = 'pin';
@@ -939,26 +789,14 @@ export class FavoritesPanel {
             row.disabled = isFavorite && !this.host.config?.remove;
         const label = document.createElement('div');
         label.className = 'proto-dropdown-item__label';
-        label.textContent = isFavorite
-            ? t(
-                  this.embeddedMark
-                      ? 'favorites.unsaveCurrent'
-                      : 'favorites.remove',
-              )
-            : this.embeddedMark
-              ? t('favorites.saveCurrent')
-              : t('favorites.save').replace('{marking}', marking);
-        if (this.embeddedMark) {
-            const star = document.createElement('span');
-            star.className = 'ez-favorites-panel__star';
-            star.innerHTML = buildStarSvg();
-            star.classList.toggle(
-                'ez-favorites-panel__star--saved',
-                isFavorite,
-            );
-            row.appendChild(star);
-        }
-        row.appendChild(label);
+        label.textContent = t(
+            isFavorite ? 'favorites.unsaveCurrent' : 'favorites.saveCurrent',
+        );
+        const star = document.createElement('span');
+        star.className = 'ez-favorites-panel__star';
+        star.innerHTML = buildStarSvg();
+        star.classList.toggle('ez-favorites-panel__star--saved', isFavorite);
+        row.append(star, label);
         return row;
     }
 
@@ -1098,40 +936,40 @@ export class FavoritesPanel {
                 (tab ?? this.button).focus();
             }
         }
-        this.syncStar();
-        if (this.embeddedMark) refreshStatusMarkPopover(this.embeddedMark);
+        refreshStatusMarkPopover(this.button);
         announce(this.announcer, t('favorites.removed'));
     }
 
     /** Pinned row: save the current marking, or remove it, then reload. */
-    private async togglePinned(
-        isFavorite: boolean,
-        currentRendered: string,
-    ): Promise<void> {
+    private async togglePinned(isFavorite: boolean): Promise<void> {
         this.abortApply();
+        // The store may have changed since this row was drawn. Keep the
+        // displayed action's intent, but always act on its current marking.
+        const current = this.host.getCurrent();
         // The pinned row is always row 0. Capture whether THIS toggle came
-        // from a keyboard Enter on that row (moveHighlight is the only thing
-        // that sets _highlightIndex; a mouse click never does) before the
+        // from focus on that row before the
         // reload below wipes it, so the reopen can restore it and a second
         // Enter keeps working without forcing the user to arrow back onto
         // the row they just acted on.
         const restoreHighlight = this._highlightIndex === 0 ? 0 : undefined;
         const focused = document.activeElement;
         try {
-            if (isFavorite) {
-                const match = this._cachedFavorites.find(
-                    (f) => f.rendered === currentRendered,
-                );
-                await Promise.resolve(
-                    this.host.config?.remove?.(
-                        match?.entry.marking ?? currentRendered,
+            if (current.valid && current.rendered) {
+                if (isFavorite) {
+                    const match = this._cachedFavorites.find(
+                        (favorite) => favorite.rendered === current.rendered,
+                    );
+                    if (match)
+                        await this.host.config?.remove?.(
+                            match.entry.marking,
+                            this.context(),
+                        );
+                } else {
+                    await this.host.config?.save?.(
+                        current.rendered,
                         this.context(),
-                    ),
-                );
-            } else {
-                await Promise.resolve(
-                    this.host.config?.save?.(currentRendered, this.context()),
-                );
+                    );
+                }
             }
         } catch {
             // Persistence failure: leave the panel open on its current
@@ -1139,7 +977,7 @@ export class FavoritesPanel {
             return;
         }
         if (this._destroyed) return;
-        // This reload+resync must run unconditionally once persistence
+        // This reload must run unconditionally once persistence
         // resolves, even if a newer open() has started (and possibly
         // already landed) in the meantime. That newer open's own read can
         // race ahead of THIS call's write and settle first, showing
@@ -1152,13 +990,8 @@ export class FavoritesPanel {
         // that guard on its own merits, it just must never be skipped
         // outright.
         //
-        // A fast follow-up action (Escape, an outside click, applying a
-        // different row) can close the popover while the save/remove call
-        // above was still in flight. The popover itself has nothing left to
-        // rerender into, but the ★ button is still sitting on the field's
-        // chrome and must still pick up what just persisted: reload the
-        // cache and resync its class without reopening the popover the user
-        // already dismissed. See {@link refreshStar}.
+        // A completed write must refresh the cache even after the author
+        // dismisses the tools; it must not reopen them or reclaim focus.
         if (this._isOpen) {
             const restoreFocus =
                 this.panelItems.contains(focused) &&
@@ -1177,70 +1010,8 @@ export class FavoritesPanel {
             )
                 this._rows[0]?.el.focus();
         } else {
-            void this.refreshStar();
+            void this.loadAndCacheFavorites();
         }
-    }
-
-    /**
-     * Reload the favorites/presets cache and resync the ★ button's fill state
-     * with no popover visible to rerender: the counterpart to `open()`'s reload
-     * for a togglePinned save/remove that settles after the popover already
-     * closed (see the call site in {@link togglePinned}). Goes through the same
-     * stale-load guard as every other load.
-     */
-    private async refreshStar(): Promise<void> {
-        const processed = await this.loadAndCacheFavorites();
-        if (processed === null || this._destroyed) return;
-        this.syncStar();
-    }
-
-    // --- Keyboard --------------------------------------------------------
-
-    private onButtonKeydown(e: KeyboardEvent): void {
-        if (!this._isOpen) {
-            if (e.key === 'ArrowDown' || e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault();
-                void this.open();
-            }
-            return;
-        }
-        switch (e.key) {
-            case 'Escape':
-                e.preventDefault();
-                this.close(true);
-                break;
-            case 'ArrowDown':
-                e.preventDefault();
-                if (this._rows.length)
-                    this.moveHighlight(this._highlightIndex + 1);
-                else this.controls()[0]?.focus();
-                break;
-            case 'ArrowUp':
-                e.preventDefault();
-                this.moveHighlight(Math.max(this._highlightIndex - 1, -1));
-                break;
-            case 'Enter':
-            case ' ':
-                if (this._highlightIndex >= 0) {
-                    e.preventDefault();
-                    this._rows[this._highlightIndex]?.apply();
-                }
-                break;
-            case 'Tab':
-                if (!e.shiftKey && this.controls().length) {
-                    e.preventDefault();
-                    this.controls()[0]?.focus();
-                } else this.close(false);
-                break;
-        }
-    }
-
-    private controls(): HTMLElement[] {
-        return [
-            ...this.panelItems.querySelectorAll<HTMLElement>(
-                'button:not(:disabled), input:not(:disabled)',
-            ),
-        ];
     }
 
     private moveHighlight(index: number): void {
@@ -1251,75 +1022,14 @@ export class FavoritesPanel {
         const next = this._rows[clamped];
         if (next) {
             next.el.classList.add('proto-dropdown-item--highlighted');
-            this.button.setAttribute('aria-activedescendant', next.el.id);
             next.el.scrollIntoView({ block: 'nearest' });
-            if (!this.embeddedMark) next.el.focus();
-        } else {
-            this.button.removeAttribute('aria-activedescendant');
-        }
-    }
-
-    // --- Positioning -------------------------------------------------------
-
-    /**
-     * Position the panel under the button, flipping above when there is more
-     * room there, clamped to the viewport. Deliberately independent of the
-     * composer's `positionPopover`: that function anchors to a field and its
-     * text input, and this panel anchors to a `<button>`; the geometry math is
-     * the same shape but small enough not to warrant forcing a shared signature
-     * across two different anchor element types.
-     */
-    private position(): void {
-        const [buttonRect] = readGeometry(this.button);
-        copyOverlayTheme(this.wrap, this.panel);
-        const panelHeight = Math.min(this.panel.scrollHeight, 320);
-        const spaceBelow = window.innerHeight - buttonRect.bottom - 8;
-        const spaceAbove = buttonRect.top - 8;
-
-        const panelWidth = this.panel.offsetWidth || 288;
-        const maxLeft = window.innerWidth - panelWidth - 8;
-        let left = Math.min(buttonRect.right - panelWidth, maxLeft);
-        if (left < 8) left = 8;
-        this.panel.style.position = 'fixed';
-        this.panel.style.left = left + 'px';
-
-        const availableHeight = Math.max(
-            100,
-            Math.min(320, spaceBelow >= spaceAbove ? spaceBelow : spaceAbove),
-        );
-        this.panelItems.style.maxHeight = availableHeight + 'px';
-
-        if (spaceBelow >= panelHeight || spaceBelow >= spaceAbove) {
-            this.panel.style.top =
-                Math.max(
-                    8,
-                    Math.min(
-                        buttonRect.bottom + 4,
-                        window.innerHeight -
-                            Math.min(panelHeight, availableHeight) -
-                            8,
-                    ),
-                ) + 'px';
-            this.panel.style.bottom = 'auto';
-        } else {
-            const visibleHeight = Math.min(panelHeight, availableHeight);
-            this.panel.style.top =
-                Math.max(
-                    8,
-                    Math.min(
-                        buttonRect.top - visibleHeight - 4,
-                        window.innerHeight - visibleHeight - 8,
-                    ),
-                ) + 'px';
-            this.panel.style.bottom = 'auto';
         }
     }
 }
 
-const panelsByButton = new WeakMap<HTMLElement, FavoritesPanel>();
 const embeddedPanels = new WeakMap<HTMLElement, FavoritesPanel>();
 
-/** Mount Favorites within MarkingField and TagInput's branding popover. */
+/** Mount Favorites in an editable control's existing tabbed branding popover. */
 export function ensureMarkingFavorites(
     wrap: HTMLElement,
     host: FavoritesPanelHost,
@@ -1331,47 +1041,7 @@ export function ensureMarkingFavorites(
         existing.updateHost(host);
         return existing;
     }
-    const panel = new FavoritesPanel(wrap, host, true);
-    embeddedPanels.set(wrap, panel);
-    return panel;
-}
-
-/**
- * Mount (or return the existing) favorites button on `wrap`, next to the
- * field's status mark. Renders when EITHER of two things is true: the host
- * wires `config.load` (the original contract), or the loaded scheme declares
- * `labelPresets` for this field's effective scope ({@link schemeOffersPresets}):
- * a scheme-authored preset list is worth surfacing even when no host
- * persistence exists to back user favorites. With no `config` at all, the
- * mounted panel still opens; it just runs read-only (see
- * `FavoritesPanelHost.config`'s doc). Returns `null` only when neither
- * condition holds, matching the Enhancement Status Indicator sibling contract:
- * no ★ chrome for a field with nothing behind it.
- *
- * Idempotent and safe to call on every render pass, mirroring
- * `ensureStatusMark`: a re-render never stacks a second button, and the host's
- * closures (which capture `this` and can go stale across renders) are refreshed
- * in place via {@link FavoritesPanel.updateHost}.
- */
-export function ensureFavoritesButton(
-    wrap: HTMLElement,
-    host: FavoritesPanelHost,
-): FavoritesPanel | null {
-    const wired = typeof host.config?.load === 'function';
-    if (!wired && !schemeOffersPresets(host.scheme, host.scope)) return null;
-
-    const existing = wrap.querySelector<HTMLButtonElement>(
-        ':scope > .ez-favorites-button',
-    );
-    if (existing) {
-        const panel = panelsByButton.get(existing);
-        if (panel) {
-            panel.updateHost(host);
-            return panel;
-        }
-    }
-
     const panel = new FavoritesPanel(wrap, host);
-    panelsByButton.set(panel.button, panel);
+    embeddedPanels.set(wrap, panel);
     return panel;
 }

@@ -36,6 +36,12 @@
 
 /* Interactive field helpers use the control palette, rather than a prose tooltip's ink. */
 .ez-tooltip--tools {
+    padding-top: 0.125rem;
+    display: flex;
+    flex-direction: column;
+    box-sizing: border-box;
+    max-height: var(--ez-tools-max-height, none);
+    overflow: clip;
     color: var(--ez-dropdown-color, var(--ez-color-text, #1a1a2e));
     background: var(--ez-dropdown-background, var(--ez-color-background, #fff));
 }

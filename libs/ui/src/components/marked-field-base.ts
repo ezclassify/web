@@ -9,10 +9,10 @@
  * list of segments.
  *
  * Everything else is identical: engine/scheme/format binding, theme variable
- * sync, the keyboard hint + touch "Add marking" footer, the inline-picker
- * lifecycle (close/destroy, close-on-Escape, close-on-outside-click), and the
- * teardown sequence. That shared logic lives here. The genuine differences are
- * abstract hooks the subclasses provide.
+ * sync, the marking action footer, the inline-picker lifecycle (close/destroy,
+ * close-on-Escape, close-on-outside-click), and the teardown sequence. That
+ * shared logic lives here. The genuine differences are abstract hooks the
+ * subclasses provide.
  *
  * This base introduces NO new public surface: subclasses keep their existing
  * exported names and option shapes. It exists only to remove duplication.
@@ -73,7 +73,7 @@ import { mountFieldChrome, type FieldChrome } from './field-chrome';
 
 /**
  * CSS class-name set a concrete field uses. Keeps the shared scaffolding (wrap,
- * display, hint, touch-add, picker-active marker) host-specific so the existing
+ * display, marking action, picker-active marker) host-specific so the existing
  * stylesheets keep matching byte-for-byte.
  */
 export interface MarkedFieldClassNames {
@@ -81,14 +81,9 @@ export interface MarkedFieldClassNames {
     wrap: string;
     /** Visible display layer that mirrors the host. */
     display: string;
-    /**
-     * Footer row under the field: the keyboard hint / touch "Add marking"
-     * button.
-     */
+    /** Footer row under the field containing the marking action. */
     footer: string;
-    /** Keyboard-hint footer. */
-    kbHint: string;
-    /** Touch "Add marking" button. */
+    /** Set or add the marking. */
     touchAdd: string;
     /** Marker class toggled on the container while the picker is open. */
     pickerActive: string;
@@ -147,8 +142,8 @@ export abstract class MarkedFieldBase<
     protected display!: HTMLDivElement;
     /**
      * The field's inline chrome, mounted by {@link appendFooter}. The subclass
-     * mounts its status mark and (when wired) favorites button into
-     * `chrome.status` with `shape: 'chrome'`; clear follows them.
+     * mounts its branding/tools button into `chrome.status` with `shape:
+     * 'chrome'`; clear follows it.
      */
     protected chrome!: FieldChrome;
     /**
@@ -257,10 +252,8 @@ export abstract class MarkedFieldBase<
     protected abstract readonly classNames: MarkedFieldClassNames;
     /** The component's inline CSS string. */
     protected abstract readonly css: string;
-    /** Footer hint suffix text (e.g. " to set marking" / " to add marking"). */
-    protected abstract readonly hintSuffix: string;
-    /** I18n key naming the footer hint button's action. */
-    protected abstract readonly hintActionKey:
+    /** I18n key naming the marking button's action. */
+    protected abstract readonly markingActionKey:
         'hint.setMarking' | 'hint.addMarking';
 
     /** Resolve the host element (input vs textarea) for this container. */
@@ -501,9 +494,8 @@ export abstract class MarkedFieldBase<
     }
 
     /**
-     * Append the footer row (keyboard hint + touch "Add marking") and the
-     * field's inline chrome to the wrap. The touch-add click delegates to
-     * {@link triggerAddMarking}.
+     * Append the marking action footer and the field's inline chrome to the
+     * wrap. The touch-add click delegates to {@link triggerAddMarking}.
      *
      * The chrome ({@link chrome}) sits inside the field's trailing edge in every
      * state, so its controls never move while the inline editor opens, and the
@@ -513,55 +505,24 @@ export abstract class MarkedFieldBase<
         const footer = document.createElement('div');
         footer.className = this.classNames.footer;
 
-        // Keyboard hint is optional guidance; hosts disable it with
-        // data-ezclassify-no-hints. The touch "Add marking" button below is
-        // core interaction on coarse pointers and is never disabled.
-        //
-        // A REAL button, not decorative text: it performs the exact same
-        // action as the ⌘/Ctrl+Enter shortcut it documents (insert the
-        // marking template at caret + open the inline picker: the same
-        // triggerAddMarking() path the touch "+ Add marking" button uses),
-        // so a mouse/trackpad user who never learns the shortcut still has a
-        // click path to it. Real button semantics (focusable, hoverable,
-        // clickable) with the same quiet hint styling; see
-        // .marked-input-kb-hint / .marked-textarea-kb-hint's button reset.
-        if (this.options.hints !== false) {
-            const mac = isMacPlatform();
-            const hint = document.createElement('button');
-            hint.type = 'button';
-            hint.className = this.classNames.kbHint;
-            // Keep the visible label in the accessible name for voice control.
-            // aria-keyshortcuts also exposes the platform shortcut semantically.
-            hint.setAttribute(
-                'aria-keyshortcuts',
-                mac ? 'Meta+Enter' : 'Control+Enter',
-            );
-            const kbd = document.createElement('kbd');
-            kbd.setAttribute('aria-hidden', 'true');
-            kbd.textContent = `${mac ? '\u2318' : 'Ctrl'}+Enter`;
-            hint.setAttribute(
-                'aria-label',
-                `${kbd.textContent}${this.hintSuffix}`,
-            );
-            hint.appendChild(kbd);
-            const suffix = document.createElement('span');
-            suffix.setAttribute('aria-hidden', 'true');
-            suffix.textContent = this.hintSuffix;
-            hint.appendChild(suffix);
-            hint.addEventListener('click', (e) => {
-                e.preventDefault();
-                this.triggerAddMarking();
-            });
-            footer.appendChild(hint);
-        }
-
-        // Touch affordance: a tappable "Add marking" with the SAME effect as
-        // Cmd/Ctrl+Enter. Shown only on coarse pointers (CSS), where the keyboard
-        // hint is hidden; there is no keyboard there.
+        // One direct action and Tab stop: its desktop keycap documents the
+        // shortcut; coarse pointers keep the same plain action button.
         const touchAdd = document.createElement('button');
         touchAdd.type = 'button';
         touchAdd.className = this.classNames.touchAdd;
-        touchAdd.textContent = `+ ${t(this.hintActionKey)}`;
+        const label = t(this.markingActionKey);
+        const shortcut = isMacPlatform() ? '⌘+Enter' : 'Ctrl+Enter';
+        const keycap = document.createElement('kbd');
+        keycap.className = 'ez-marked-field-shortcut';
+        keycap.setAttribute('aria-hidden', 'true');
+        keycap.textContent = shortcut;
+        touchAdd.append(keycap, document.createTextNode(` ${label}`));
+        touchAdd.setAttribute('aria-label', label);
+        touchAdd.title = `${label} (${shortcut})`;
+        touchAdd.setAttribute(
+            'aria-keyshortcuts',
+            isMacPlatform() ? 'Meta+Enter' : 'Control+Enter',
+        );
         touchAdd.addEventListener('click', (e) => {
             e.preventDefault();
             this.triggerAddMarking();
@@ -570,7 +531,7 @@ export abstract class MarkedFieldBase<
 
         this.wrap.appendChild(footer);
 
-        // Last in the wrap, so Tab reaches the field, its fixes and the hint
+        // Last in the wrap, so Tab reaches the field, its fixes and the action
         // before the chrome.
         this.chrome = mountFieldChrome(this.wrap, {
             root: this.container,
@@ -915,15 +876,18 @@ export abstract class MarkedFieldBase<
     }
 
     /**
-     * Cancel the picker in response to a host-level Escape, refocus the host,
-     * place the caret, and run the post-close sync. The caret target is
-     * captured BEFORE the close (the textarea clears its active range on
-     * close); placement is delegated to {@link restoreCaretAfterEscape}.
+     * Cancel the picker, place the caret, and run the post-close sync. A
+     * host-level Escape refocuses the text host; explicit sheet Cancel keeps
+     * the already parked permanent field box. The caret target is captured
+     * BEFORE the close (the textarea clears its active range on close);
+     * placement is delegated to {@link restoreCaretAfterEscape}.
      */
-    protected escapeClosePicker(): void {
+    protected escapeClosePicker(fromSheet = false): void {
         const caretTarget = this.escapeCaretTarget();
         this.cancelPicker();
-        this.host.focus();
+        // Explicit sheet cancellation already parked the permanent visual box;
+        // keyboard idle Escape still returns to the ordinary text editor.
+        if (!fromSheet) this.host.focus();
         this.restoreCaretAfterEscape(caretTarget);
         this.afterClose();
     }

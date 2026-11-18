@@ -15,6 +15,7 @@ import { createAnnouncer, announce } from './component-utils';
 import type { ConceptView, Suggestion } from '@ezclassify/types';
 import type { ComponentEngineSource } from './component-base-readonly';
 import categoryChecklistCss from './category-checklist.css?inline';
+import { focusGridNeighbor } from './focus-grid';
 
 const CATEGORY_CHECKLIST_CSS: string = categoryChecklistCss;
 
@@ -59,6 +60,8 @@ export class CategoryChecklist extends ComponentBase {
     private categoryId!: string;
     /** Current filter text */
     private filterText = '';
+    /** The checkbox reached by the author; unset until the first interaction. */
+    private activeConceptId: string | null = null;
     /**
      * Whether the search input shows: always, never, or when the list
      * overflows.
@@ -125,6 +128,7 @@ export class CategoryChecklist extends ComponentBase {
 
         this.headerEl = document.createElement('div');
         this.headerEl.className = 'category-checklist-header';
+        this.headerEl.addEventListener('keydown', this.onHeaderKeydown, true);
 
         const name = document.createElement('span');
         name.className = 'category-checklist-name';
@@ -169,8 +173,6 @@ export class CategoryChecklist extends ComponentBase {
         // Clear all is this control's clear, so the chrome carries the mark.
         this.mountSuiteChrome(controls);
 
-        frame.appendChild(this.headerEl);
-
         // Search input
         this.searchMode =
             opts.showSearch === true
@@ -187,16 +189,16 @@ export class CategoryChecklist extends ComponentBase {
             this.filterText = this.searchInput.value;
             this.renderList();
         });
-        if (this.searchMode !== 'never') {
-            frame.appendChild(this.searchInput);
-        }
 
         // Checkbox list
         this.listEl = document.createElement('div');
         this.listEl.className = 'category-checklist-list';
         this.listEl.setAttribute('role', 'group');
+        this.listEl.tabIndex = -1;
         this.listEl.setAttribute('aria-label', category.label);
         frame.appendChild(this.listEl);
+        if (this.searchMode !== 'never') frame.appendChild(this.searchInput);
+        frame.appendChild(this.headerEl);
         if (
             this.searchMode === 'overflow' &&
             typeof ResizeObserver === 'function'
@@ -256,12 +258,96 @@ export class CategoryChecklist extends ComponentBase {
 
     destroy(): void {
         this._destroyed = true;
+        this.headerEl?.removeEventListener(
+            'keydown',
+            this.onHeaderKeydown,
+            true,
+        );
         this.listResize?.disconnect();
         this.listResize = null;
         this.destroyClearButton();
         this.removeRuleErrors();
         this.container.innerHTML = '';
     }
+
+    /** Header actions share physical horizontal navigation, before chrome. */
+    private readonly onHeaderKeydown = (event: KeyboardEvent): void => {
+        if (
+            event.key === 'ArrowDown' &&
+            !event.altKey &&
+            !event.ctrlKey &&
+            !event.metaKey &&
+            !event.shiftKey &&
+            !event.isComposing &&
+            !event.defaultPrevented &&
+            (event.target ===
+                this.suiteChrome?.status.querySelector('.ez-status-mark') ||
+                event.target ===
+                    this.suiteChrome?.element.querySelector(
+                        '.ez-clear-button',
+                    ) ||
+                event.target ===
+                    this.headerEl.querySelector(
+                        '.category-checklist-toggle button:last-child',
+                    ))
+        ) {
+            event.preventDefault();
+            event.stopPropagation();
+            (
+                this.checkboxes().find((checkbox) => checkbox.tabIndex === 0) ??
+                this.listEl
+            ).focus({ preventScroll: true });
+            return;
+        }
+        if (
+            !['ArrowLeft', 'ArrowRight'].includes(event.key) ||
+            event.defaultPrevented ||
+            event.altKey ||
+            event.ctrlKey ||
+            event.metaKey ||
+            event.shiftKey ||
+            event.isComposing ||
+            event.keyCode === 229
+        )
+            return;
+        const target =
+            event.target instanceof Element
+                ? event.target.closest('button')
+                : null;
+        const buttons = [
+            ...this.headerEl.querySelectorAll<HTMLButtonElement>('button'),
+        ].filter((button) => {
+            if (
+                button.disabled ||
+                button.getAttribute('aria-disabled') === 'true'
+            )
+                return false;
+            for (
+                let node: HTMLElement | null = button;
+                node;
+                node = node.parentElement
+            ) {
+                const style = getComputedStyle(node);
+                if (
+                    node.hidden ||
+                    style.display === 'none' ||
+                    style.visibility === 'hidden' ||
+                    style.visibility === 'collapse'
+                )
+                    return false;
+                if (node === this.headerEl) break;
+            }
+            return true;
+        });
+        if (!buttons.includes(target as HTMLButtonElement)) return;
+        event.preventDefault();
+        event.stopPropagation();
+        focusGridNeighbor(
+            buttons,
+            target as HTMLButtonElement,
+            event.key as 'ArrowLeft' | 'ArrowRight',
+        )?.focus();
+    };
 
     protected render(): void {
         // Update preview
@@ -305,6 +391,7 @@ export class CategoryChecklist extends ComponentBase {
             domHasAllSelected
         ) {
             this.syncCheckboxStates();
+            this.updateTabStop();
         } else {
             this.renderList();
         }
@@ -370,11 +457,107 @@ export class CategoryChecklist extends ComponentBase {
 
     /** Render the checkbox list, filtered by search text and engine allowability */
     private renderList(): void {
+        const before = this.checkboxes();
+        const focused = before.find(
+            (checkbox) => checkbox === document.activeElement,
+        );
+        const index = focused ? before.indexOf(focused) : -1;
+        const groupFocused = document.activeElement === this.listEl;
         try {
             this.fillList();
+            const after = this.checkboxes();
+            const target = focused
+                ? (after.find(
+                      (checkbox) =>
+                          checkbox.dataset.conceptId ===
+                          focused.dataset.conceptId,
+                  ) ?? after[Math.min(index, after.length - 1)])
+                : undefined;
+            if (target) this.activeConceptId = target.dataset.conceptId ?? null;
+            this.updateTabStop();
+            if (focused) (target ?? this.listEl).focus();
+            else if (groupFocused)
+                after.find((checkbox) => checkbox.tabIndex === 0)?.focus();
         } finally {
             this.updateSearchVisibility();
         }
+    }
+
+    private checkboxes(): HTMLInputElement[] {
+        return [
+            ...this.listEl.querySelectorAll<HTMLInputElement>(
+                '.category-checklist-checkbox:not(:disabled)',
+            ),
+        ];
+    }
+
+    /** One native Tab stop, initially the first item, then the author's item. */
+    private updateTabStop(): void {
+        const checkboxes = this.checkboxes();
+        const target =
+            checkboxes.find(
+                (checkbox) =>
+                    checkbox.dataset.conceptId === this.activeConceptId,
+            ) ?? checkboxes[0];
+        for (const checkbox of checkboxes)
+            checkbox.tabIndex = checkbox === target ? 0 : -1;
+    }
+
+    /** This checklist is a vertical list; horizontal arrows have no neighbor. */
+    private onCheckboxKeydown(
+        event: KeyboardEvent,
+        checkbox: HTMLInputElement,
+    ): void {
+        if (
+            event.altKey ||
+            event.ctrlKey ||
+            event.metaKey ||
+            event.shiftKey ||
+            event.isComposing ||
+            event.keyCode === 229
+        )
+            return;
+        if (
+            ![
+                'Enter',
+                'ArrowUp',
+                'ArrowDown',
+                'ArrowLeft',
+                'ArrowRight',
+                'Home',
+                'End',
+            ].includes(event.key)
+        )
+            return;
+        event.preventDefault();
+        event.stopPropagation();
+        if (event.key === 'Enter') {
+            if (
+                !this._destroyed &&
+                !this.enhancedInput?.matches(':disabled, [readonly]')
+            )
+                checkbox.click();
+            return;
+        }
+        const checkboxes = this.checkboxes();
+        const index = checkboxes.indexOf(checkbox);
+        if (event.key === 'ArrowUp' && index === 0) {
+            this.suiteChrome?.status
+                .querySelector<HTMLElement>('.ez-status-mark')
+                ?.focus({ preventScroll: true });
+            return;
+        }
+        const next =
+            event.key === 'Home'
+                ? 0
+                : event.key === 'End'
+                  ? checkboxes.length - 1
+                  : event.key === 'ArrowUp'
+                    ? Math.max(0, index - 1)
+                    : event.key === 'ArrowDown'
+                      ? Math.min(checkboxes.length - 1, index + 1)
+                      : index;
+        checkboxes[next]?.focus();
     }
 
     private fillList(): void {
@@ -433,8 +616,16 @@ export class CategoryChecklist extends ComponentBase {
             checkbox.id = `checklist-${this.categoryId}-${concept.id}`;
             checkbox.checked = isChecked;
             checkbox.dataset.conceptId = concept.id;
+            checkbox.addEventListener('focus', () => {
+                this.activeConceptId = concept.id;
+                this.updateTabStop();
+            });
+            checkbox.addEventListener('keydown', (event) =>
+                this.onCheckboxKeydown(event, checkbox),
+            );
 
             checkbox.addEventListener('change', () => {
+                this.activeConceptId = concept.id;
                 if (checkbox.checked) {
                     this.addAssertion(concept.id, this.categoryId);
                     announce(
@@ -453,6 +644,7 @@ export class CategoryChecklist extends ComponentBase {
                     checkbox.checked,
                 );
                 this.updateCount();
+                this.updateTabStop();
             });
 
             const box = document.createElement('span');

@@ -804,6 +804,67 @@ describe('the commit table', () => {
         },
     );
 
+    it.each(['whole', 'additive'] as const)(
+        'a %s fix retains values from its live draft rather than old committed facts',
+        async (shape) => {
+            const capture = (value: string): Assertion => ({
+                conceptId: 'TEXT',
+                categoryId: 'authority',
+                value,
+                confidence: 'certain',
+                source: 'user',
+            });
+            port.value = {
+                assertions: [
+                    assertion(CONCEPTS[1]),
+                    capture('Old committed analyst'),
+                ],
+                rendered: 'SECRET',
+            };
+            port.fixes = [
+                {
+                    message: 'Remove ORCON.',
+                    rendered: 'SECRET',
+                    keeps: [
+                        { conceptId: 'S', categoryId: 'level' },
+                        { conceptId: 'TEXT', categoryId: 'authority' },
+                    ],
+                    adds: [],
+                    removes: [{ conceptId: 'OC', categoryId: 'caveat' }],
+                },
+            ];
+            const read = port.read.bind(port);
+            port.read = async (text, base) => {
+                const reading = await read(text, base);
+                if (!text.includes('ORCON')) return reading;
+                return {
+                    ...reading,
+                    assertions: [
+                        ...reading.assertions.filter(
+                            (assertion) => assertion.categoryId !== 'authority',
+                        ),
+                        capture('Live draft analyst'),
+                        capture('Second live analyst'),
+                    ],
+                };
+            };
+            const c = controller(shape);
+            await c.open();
+            await typed(c, 'SECRET ORCON');
+            await c.activate(
+                c.snapshot().rows.find((row) => row.kind === 'fix')!,
+            );
+            expect(
+                port.stored
+                    .at(-1)
+                    ?.assertions.filter(
+                        (assertion) => assertion.categoryId === 'authority',
+                    )
+                    .map((assertion) => assertion.value),
+            ).toEqual(['Live draft analyst', 'Second live analyst']);
+        },
+    );
+
     it('a fix that leaves the same rendering still stores', async () => {
         // The committed value renders as SECRET, and so does the fix, which
         // removes a concept the rendering never showed.

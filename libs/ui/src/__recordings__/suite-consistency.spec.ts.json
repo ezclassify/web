@@ -167,6 +167,72 @@
             "method": "POST",
             "statusCode": 200
         },
+        "1ba9cd33d28b08374a0b16ad58b70b3755d23af0b6f2129e88b093d18671fc31": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "multi-scope-regression",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "multi-scope-regression",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "from_school",
+                            "conceptId": "OUR_SCHOOL",
+                            "confidence": "certain",
+                            "source": "default"
+                        },
+                        {
+                            "categoryId": "filing_status",
+                            "conceptId": "FILED",
+                            "confidence": "certain",
+                            "source": "default"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [],
+                        "omitted": [
+                            {
+                                "categoryId": "from_school",
+                                "conceptId": "OUR_SCHOOL"
+                            },
+                            {
+                                "categoryId": "filing_status",
+                                "conceptId": "FILED"
+                            }
+                        ],
+                        "unrepresentable": []
+                    },
+                    "errors": [
+                        {
+                            "categoryId": "level",
+                            "constraintId": "_required-category:level",
+                            "message": "Minimum audience level is required."
+                        }
+                    ],
+                    "inputWasValid": false,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "",
+                    "renders": {},
+                    "valid": false,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
         "1e5491a07a51e88ec63402810d6613f4faa97a7c9079198b93b9ed79b27f5560": {
             "body": {
                 "resolution": {
@@ -431,258 +497,6 @@
                     "renders": {},
                     "valid": true,
                     "warnings": []
-                }
-            },
-            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
-            "method": "POST",
-            "statusCode": 200
-        },
-        "26c0ea6014b320e7c7b23586adbb11923d4daa1860782f3c23e5905db6ad2542": {
-            "body": {
-                "resolution": {
-                    "artifacts": [
-                        {
-                            "id": "multi-scope-regression",
-                            "kind": "scheme",
-                            "version": "1.0.0"
-                        }
-                    ],
-                    "contextId": "multi-scope-regression",
-                    "requestedVersion": "0.0.0",
-                    "resolvedVersion": "1.0.0"
-                },
-                "result": {
-                    "artifact": {
-                        "suggestions": [
-                            {
-                                "categoryId": "artifact",
-                                "conceptId": "TEST",
-                                "description": "Test",
-                                "group": "What It Is",
-                                "label": "TEST",
-                                "name": "Test",
-                                "order": 0,
-                                "selected": false,
-                                "views": {
-                                    "default": "TEST",
-                                    "long": "TEST",
-                                    "short": "TEST"
-                                }
-                            }
-                        ],
-                        "warnings": []
-                    },
-                    "level": {
-                        "suggestions": [
-                            {
-                                "categoryId": "level",
-                                "conceptId": "STUDENTS",
-                                "description": "Students",
-                                "group": "Minimum audience level",
-                                "label": "STUDENTS",
-                                "name": "Students",
-                                "order": 0,
-                                "selected": false,
-                                "views": {
-                                    "default": "STUDENTS",
-                                    "long": "STUDENTS",
-                                    "short": "ST"
-                                }
-                            },
-                            {
-                                "categoryId": "level",
-                                "conceptId": "SCHOOL_STAFF",
-                                "description": "School Staff",
-                                "group": "Minimum audience level",
-                                "label": "SCHOOL STAFF",
-                                "name": "School Staff",
-                                "order": 0,
-                                "selected": false,
-                                "views": {
-                                    "default": "SCHOOL STAFF",
-                                    "long": "SCHOOL STAFF",
-                                    "short": "SS"
-                                }
-                            },
-                            {
-                                "categoryId": "level",
-                                "conceptId": "DISTRICT_COORDINATORS",
-                                "description": "District Coordinators",
-                                "group": "Minimum audience level",
-                                "label": "DISTRICT COORDINATORS",
-                                "name": "District Coordinators",
-                                "order": 0,
-                                "selected": false,
-                                "views": {
-                                    "default": "DISTRICT COORDINATORS",
-                                    "long": "DISTRICT COORDINATORS",
-                                    "short": "DC"
-                                }
-                            },
-                            {
-                                "categoryId": "level",
-                                "conceptId": "STATE_ASSESSMENT_STAFF",
-                                "description": "State Assessment Staff",
-                                "group": "Minimum audience level",
-                                "label": "STATE ASSESSMENT STAFF",
-                                "name": "State Assessment Staff",
-                                "order": 0,
-                                "selected": false,
-                                "views": {
-                                    "default": "STATE ASSESSMENT STAFF",
-                                    "long": "STATE ASSESSMENT STAFF",
-                                    "short": "SA"
-                                }
-                            }
-                        ],
-                        "warnings": []
-                    },
-                    "status": {
-                        "suggestions": [
-                            {
-                                "categoryId": "status",
-                                "conceptId": "FINAL",
-                                "description": "Final",
-                                "group": "Release Status",
-                                "label": "FINAL",
-                                "name": "Final",
-                                "order": 0,
-                                "selected": false,
-                                "views": {
-                                    "default": "FINAL",
-                                    "long": "FINAL",
-                                    "short": "FINAL"
-                                }
-                            }
-                        ],
-                        "warnings": []
-                    }
-                }
-            },
-            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
-            "method": "POST",
-            "statusCode": 200
-        },
-        "32a016dc19365c82f3d15378eb09d1e27b28e7d4812edde9506826bc6de8484b": {
-            "body": {
-                "resolution": {
-                    "artifacts": [
-                        {
-                            "id": "multi-scope-regression",
-                            "kind": "scheme",
-                            "version": "1.0.0"
-                        }
-                    ],
-                    "contextId": "multi-scope-regression",
-                    "requestedVersion": "0.0.0",
-                    "resolvedVersion": "1.0.0"
-                },
-                "result": {
-                    "artifact": {
-                        "suggestions": [
-                            {
-                                "categoryId": "artifact",
-                                "conceptId": "TEST",
-                                "description": "Test",
-                                "group": "What It Is",
-                                "label": "TEST",
-                                "name": "Test",
-                                "order": 0,
-                                "selected": false,
-                                "views": {
-                                    "default": "TEST",
-                                    "long": "TEST",
-                                    "short": "TEST"
-                                }
-                            }
-                        ],
-                        "warnings": []
-                    },
-                    "level": {
-                        "suggestions": [
-                            {
-                                "categoryId": "level",
-                                "conceptId": "STUDENTS",
-                                "description": "Students",
-                                "group": "Minimum audience level",
-                                "label": "STUDENTS",
-                                "name": "Students",
-                                "order": 0,
-                                "selected": false,
-                                "views": {
-                                    "default": "STUDENTS",
-                                    "long": "STUDENTS",
-                                    "short": "ST"
-                                }
-                            },
-                            {
-                                "categoryId": "level",
-                                "conceptId": "SCHOOL_STAFF",
-                                "description": "School Staff",
-                                "group": "Minimum audience level",
-                                "label": "SCHOOL STAFF",
-                                "name": "School Staff",
-                                "order": 0,
-                                "selected": false,
-                                "views": {
-                                    "default": "SCHOOL STAFF",
-                                    "long": "SCHOOL STAFF",
-                                    "short": "SS"
-                                }
-                            },
-                            {
-                                "categoryId": "level",
-                                "conceptId": "DISTRICT_COORDINATORS",
-                                "description": "District Coordinators",
-                                "group": "Minimum audience level",
-                                "label": "DISTRICT COORDINATORS",
-                                "name": "District Coordinators",
-                                "order": 0,
-                                "selected": false,
-                                "views": {
-                                    "default": "DISTRICT COORDINATORS",
-                                    "long": "DISTRICT COORDINATORS",
-                                    "short": "DC"
-                                }
-                            },
-                            {
-                                "categoryId": "level",
-                                "conceptId": "STATE_ASSESSMENT_STAFF",
-                                "description": "State Assessment Staff",
-                                "group": "Minimum audience level",
-                                "label": "STATE ASSESSMENT STAFF",
-                                "name": "State Assessment Staff",
-                                "order": 0,
-                                "selected": false,
-                                "views": {
-                                    "default": "STATE ASSESSMENT STAFF",
-                                    "long": "STATE ASSESSMENT STAFF",
-                                    "short": "SA"
-                                }
-                            }
-                        ],
-                        "warnings": []
-                    },
-                    "status": {
-                        "suggestions": [
-                            {
-                                "categoryId": "status",
-                                "conceptId": "FINAL",
-                                "description": "Final",
-                                "group": "Release Status",
-                                "label": "FINAL",
-                                "name": "Final",
-                                "order": 0,
-                                "selected": false,
-                                "views": {
-                                    "default": "FINAL",
-                                    "long": "FINAL",
-                                    "short": "FINAL"
-                                }
-                            }
-                        ],
-                        "warnings": []
-                    }
                 }
             },
             "headers": { "x-ezclassify-resolved-version": "1.0.0" },
@@ -968,6 +782,238 @@
             },
             "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "GET",
+            "statusCode": 200
+        },
+        "6e05585442b787280b967dd7d68e38816cacb37dc4205da09ca966f7fcaed7d5": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "multi-scope-regression",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "multi-scope-regression",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "artifact": {
+                        "suggestions": [
+                            {
+                                "categoryId": "artifact",
+                                "conceptId": "TEST",
+                                "description": "Test",
+                                "group": "What It Is",
+                                "label": "TEST",
+                                "name": "Test",
+                                "order": 0,
+                                "selected": false,
+                                "views": {
+                                    "default": "TEST",
+                                    "long": "TEST",
+                                    "short": "TEST"
+                                }
+                            }
+                        ],
+                        "warnings": []
+                    },
+                    "level": {
+                        "suggestions": [
+                            {
+                                "categoryId": "level",
+                                "conceptId": "STUDENTS",
+                                "description": "Students",
+                                "group": "Minimum audience level",
+                                "label": "STUDENTS",
+                                "name": "Students",
+                                "order": 0,
+                                "selected": false,
+                                "views": {
+                                    "default": "STUDENTS",
+                                    "long": "STUDENTS",
+                                    "short": "ST"
+                                }
+                            },
+                            {
+                                "categoryId": "level",
+                                "conceptId": "SCHOOL_STAFF",
+                                "description": "School Staff",
+                                "group": "Minimum audience level",
+                                "label": "SCHOOL STAFF",
+                                "name": "School Staff",
+                                "order": 0,
+                                "selected": false,
+                                "views": {
+                                    "default": "SCHOOL STAFF",
+                                    "long": "SCHOOL STAFF",
+                                    "short": "SS"
+                                }
+                            },
+                            {
+                                "categoryId": "level",
+                                "conceptId": "DISTRICT_COORDINATORS",
+                                "description": "District Coordinators",
+                                "group": "Minimum audience level",
+                                "label": "DISTRICT COORDINATORS",
+                                "name": "District Coordinators",
+                                "order": 0,
+                                "selected": false,
+                                "views": {
+                                    "default": "DISTRICT COORDINATORS",
+                                    "long": "DISTRICT COORDINATORS",
+                                    "short": "DC"
+                                }
+                            },
+                            {
+                                "categoryId": "level",
+                                "conceptId": "STATE_ASSESSMENT_STAFF",
+                                "description": "State Assessment Staff",
+                                "group": "Minimum audience level",
+                                "label": "STATE ASSESSMENT STAFF",
+                                "name": "State Assessment Staff",
+                                "order": 0,
+                                "selected": false,
+                                "views": {
+                                    "default": "STATE ASSESSMENT STAFF",
+                                    "long": "STATE ASSESSMENT STAFF",
+                                    "short": "SA"
+                                }
+                            }
+                        ],
+                        "warnings": []
+                    },
+                    "status": {
+                        "suggestions": [
+                            {
+                                "categoryId": "status",
+                                "conceptId": "FINAL",
+                                "description": "Final",
+                                "group": "Release Status",
+                                "label": "FINAL",
+                                "name": "Final",
+                                "order": 0,
+                                "selected": false,
+                                "views": {
+                                    "default": "FINAL",
+                                    "long": "FINAL",
+                                    "short": "FINAL"
+                                }
+                            }
+                        ],
+                        "warnings": []
+                    }
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "712a8e47ba5dd208350acedae148e5137a69ca6e6d52b2ae4975f892958f94a7": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "multi-scope-regression",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "multi-scope-regression",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "artifact": {
+                        "suggestions": [
+                            {
+                                "categoryId": "artifact",
+                                "conceptId": "TEST",
+                                "description": "Test",
+                                "group": "What It Is",
+                                "label": "TEST",
+                                "name": "Test",
+                                "order": 0,
+                                "selected": false,
+                                "views": {
+                                    "default": "TEST",
+                                    "long": "TEST",
+                                    "short": "TEST"
+                                }
+                            }
+                        ],
+                        "warnings": []
+                    },
+                    "level": {
+                        "suggestions": [
+                            {
+                                "categoryId": "level",
+                                "conceptId": "STUDENTS",
+                                "description": "Students",
+                                "group": "Minimum audience level",
+                                "label": "STUDENTS",
+                                "name": "Students",
+                                "order": 0,
+                                "selected": false,
+                                "views": {
+                                    "default": "STUDENTS",
+                                    "long": "STUDENTS",
+                                    "short": "ST"
+                                }
+                            },
+                            {
+                                "categoryId": "level",
+                                "conceptId": "SCHOOL_STAFF",
+                                "description": "School Staff",
+                                "group": "Minimum audience level",
+                                "label": "SCHOOL STAFF",
+                                "name": "School Staff",
+                                "order": 0,
+                                "selected": false,
+                                "views": {
+                                    "default": "SCHOOL STAFF",
+                                    "long": "SCHOOL STAFF",
+                                    "short": "SS"
+                                }
+                            },
+                            {
+                                "categoryId": "level",
+                                "conceptId": "DISTRICT_COORDINATORS",
+                                "description": "District Coordinators",
+                                "group": "Minimum audience level",
+                                "label": "DISTRICT COORDINATORS",
+                                "name": "District Coordinators",
+                                "order": 0,
+                                "selected": false,
+                                "views": {
+                                    "default": "DISTRICT COORDINATORS",
+                                    "long": "DISTRICT COORDINATORS",
+                                    "short": "DC"
+                                }
+                            },
+                            {
+                                "categoryId": "level",
+                                "conceptId": "STATE_ASSESSMENT_STAFF",
+                                "description": "State Assessment Staff",
+                                "group": "Minimum audience level",
+                                "label": "STATE ASSESSMENT STAFF",
+                                "name": "State Assessment Staff",
+                                "order": 0,
+                                "selected": false,
+                                "views": {
+                                    "default": "STATE ASSESSMENT STAFF",
+                                    "long": "STATE ASSESSMENT STAFF",
+                                    "short": "SA"
+                                }
+                            }
+                        ],
+                        "warnings": []
+                    }
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
             "statusCode": 200
         },
         "7abd87a9a534444e20a13ff9111abe818c081c5e5abcad51a6ead078cc409de5": {
@@ -1892,6 +1938,132 @@
                     "renders": {},
                     "valid": true,
                     "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "9c712d6672f746e7716f8448cd89145bb92a98c1e92da6481df7e553193664a3": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "multi-scope-regression",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "multi-scope-regression",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "artifact": {
+                        "suggestions": [
+                            {
+                                "categoryId": "artifact",
+                                "conceptId": "TEST",
+                                "description": "Test",
+                                "group": "What It Is",
+                                "label": "TEST",
+                                "name": "Test",
+                                "order": 0,
+                                "selected": false,
+                                "views": {
+                                    "default": "TEST",
+                                    "long": "TEST",
+                                    "short": "TEST"
+                                }
+                            }
+                        ],
+                        "warnings": []
+                    },
+                    "level": {
+                        "suggestions": [
+                            {
+                                "categoryId": "level",
+                                "conceptId": "STUDENTS",
+                                "description": "Students",
+                                "group": "Minimum audience level",
+                                "label": "STUDENTS",
+                                "name": "Students",
+                                "order": 0,
+                                "selected": false,
+                                "views": {
+                                    "default": "STUDENTS",
+                                    "long": "STUDENTS",
+                                    "short": "ST"
+                                }
+                            },
+                            {
+                                "categoryId": "level",
+                                "conceptId": "SCHOOL_STAFF",
+                                "description": "School Staff",
+                                "group": "Minimum audience level",
+                                "label": "SCHOOL STAFF",
+                                "name": "School Staff",
+                                "order": 0,
+                                "selected": false,
+                                "views": {
+                                    "default": "SCHOOL STAFF",
+                                    "long": "SCHOOL STAFF",
+                                    "short": "SS"
+                                }
+                            },
+                            {
+                                "categoryId": "level",
+                                "conceptId": "DISTRICT_COORDINATORS",
+                                "description": "District Coordinators",
+                                "group": "Minimum audience level",
+                                "label": "DISTRICT COORDINATORS",
+                                "name": "District Coordinators",
+                                "order": 0,
+                                "selected": false,
+                                "views": {
+                                    "default": "DISTRICT COORDINATORS",
+                                    "long": "DISTRICT COORDINATORS",
+                                    "short": "DC"
+                                }
+                            },
+                            {
+                                "categoryId": "level",
+                                "conceptId": "STATE_ASSESSMENT_STAFF",
+                                "description": "State Assessment Staff",
+                                "group": "Minimum audience level",
+                                "label": "STATE ASSESSMENT STAFF",
+                                "name": "State Assessment Staff",
+                                "order": 0,
+                                "selected": false,
+                                "views": {
+                                    "default": "STATE ASSESSMENT STAFF",
+                                    "long": "STATE ASSESSMENT STAFF",
+                                    "short": "SA"
+                                }
+                            }
+                        ],
+                        "warnings": []
+                    },
+                    "status": {
+                        "suggestions": [
+                            {
+                                "categoryId": "status",
+                                "conceptId": "FINAL",
+                                "description": "Final",
+                                "group": "Release Status",
+                                "label": "FINAL",
+                                "name": "Final",
+                                "order": 0,
+                                "selected": false,
+                                "views": {
+                                    "default": "FINAL",
+                                    "long": "FINAL",
+                                    "short": "FINAL"
+                                }
+                            }
+                        ],
+                        "warnings": []
+                    }
                 }
             },
             "headers": { "x-ezclassify-resolved-version": "1.0.0" },
@@ -3167,6 +3339,78 @@
                     "notices": [],
                     "proposedFixes": [],
                     "rendered": "STUDENTS",
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "f33146b9fbfe70c7dccfa4f48cf48d81ccbc7c6c5d18839284cd3e7b09790f4b": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "multi-scope-regression",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "multi-scope-regression",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "STUDENTS",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "from_school",
+                            "conceptId": "OUR_SCHOOL",
+                            "confidence": "certain",
+                            "source": "default"
+                        },
+                        {
+                            "categoryId": "filing_status",
+                            "conceptId": "FILED",
+                            "confidence": "certain",
+                            "source": "default"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            { "categoryId": "level", "conceptId": "STUDENTS" }
+                        ],
+                        "omitted": [
+                            {
+                                "categoryId": "from_school",
+                                "conceptId": "OUR_SCHOOL"
+                            },
+                            {
+                                "categoryId": "filing_status",
+                                "conceptId": "FILED"
+                            }
+                        ],
+                        "unrepresentable": []
+                    },
+                    "displayColor": {
+                        "background": "#2e7d32",
+                        "text": "#ffffff"
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "STUDENTS",
+                    "renders": {},
                     "valid": true,
                     "warnings": []
                 }

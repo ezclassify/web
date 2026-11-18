@@ -90,15 +90,86 @@ Embedded components are customizable by contract. The host controls presentation
 
 Configuration stays narrow. Subjective and optional helper surfaces, such as tooltips, may be disabled. Core correctness and interaction behavior are not configuration choices.
 
+### Keyboard Navigation
+
+DecisionFlow and CategorySelector share the private choice controls extracted
+from DecisionFlow. The shared layer owns native button activation, accepted
+selection semantics, inferred presentation, blocked-option interaction and
+common focus styling. Controllers supply canonical state and explanations;
+DecisionFlow retains step progression and CategorySelector retains category
+grouping. A choice never changes its accepted state optimistically.
+
+Custom option grids use `focus-grid.ts` to follow physical rows: Left/Right
+moves within a row, and Up/Down chooses the nearest horizontal center in the
+adjacent row. An option-grid edge stays put unless its controller supplies a
+neighbor. Native text controls keep interior caret movement, Space, selections
+and modifier keys. Card arrows move focus; activation chooses the
+radio value. Checklist Enter and Space toggle its native checkbox.
+
+Each nonempty CategorySelector category and Checklist list has one native Tab
+stop, initially its first item. DecisionFlow starts on the current step's first
+selected item or first available item. Each group remembers its current working
+control through redraws. Working controls precede header actions in native DOM
+order, while the header remains visually above them. Tab enters the choices or
+list; a collapsed DecisionFlow uses its own field entry to open and focus the
+current step's selected/default control.
+
+`field-chrome.ts` owns Left/Right between the branding and clear buttons;
+Checklist's header includes its bulk actions in that physical path. Up from the
+top CategorySelector or Checklist row reaches branding, and Down from its
+header returns to the working group. DecisionFlow keeps its option-to-current-dot
+Up path, its dot-to-branding header path and its Clear-to-Next Down path. A
+focused dot previews its step, and Tab reaches branding. Down on branding never
+opens tools: it returns to the working area in CategorySelector, Checklist,
+DecisionFlow and MarkedTextArea, and leaves focus in place on other controls.
+Enter, Space, click and the field shortcut activate the tools.
+
+`text-caret-edge.ts` handles only collapsed, unmodified native text boundaries.
+The field's end hands focus to branding, whose Left returns to that editor's
+end. TagInput's start reaches the last tag while preserving its search draft.
+DecisionFlow value fields use their physical option or navigation neighbor;
+its Clear button's Down opens the step and reaches Next. MarkedInput retains
+inline-to-body traversal before its whole-field end; MarkedTextArea keeps
+native body navigation. Date controls and composition retain native handling.
+Navigation instruction strips are not rendered. MarkedInput and MarkedTextArea
+retain a platform shortcut keycap in their Set/Add Marking action on fine
+pointers; touch layouts keep the plain action. Action names, shortcut titles
+and `aria-keyshortcuts` remain available.
+
+`concept-hint.ts` shares DecisionFlow's plain name, definition and reason
+formatting. CategorySelector choices, TagInput chips, MarkingField annotations
+and shared composer suggestions use native titles with accessible descriptions.
+Concept hints do not mount a separate interactive popup or change editor focus.
+Composer definition nodes stay available to assistive technology without a
+visible detail pane; error reports and fix actions remain visible.
+
+A redraw preserves the identity of a focused option, including a temporarily
+blocked but natively enabled option while its catalog refreshes. A removed
+option uses an available/default group target. Checklist and card groups can
+recover their own parked focus when options return; a refresh never reclaims
+focus from another field.
+
+The private `marking-target.ts` registry associates a controller with its full
+store entry, independently of a Favorites provider. Favorites use that entry's
+value. Canonical remedies use the same association to publish structured facts:
+`fixAssertions` resolves kept references against the current entry so captured
+values survive, and dependent-category changes are applied together. A facet
+can display errors for its categories while obtaining remedies from an automatic
+whole-marking judgment, preserving context, parts and every marking scope.
+Proofs and actions are invalidated when their input changes.
+
 ### Enhancement Status Indicator
 
-Every enhanced input and textarea, including a data-only field, has one EzClassify status mark: the 3-bar-plus-sparkle brand glyph. MarkingField, TagInput, MarkedInput and MarkedTextArea put it in their inline chrome (`field-chrome.ts`): one row inside the field's trailing edge holding the mark, the ★ favorites button where it applies, and clear. The row sits in the same place at rest and while the field is focused, centered on a single-line field and pinned to the first line of a text area. It measures how far it reaches into the field and publishes that as `--ez-field-chrome-inline-size` on the field's wrap; the field's text layers reserve that much trailing padding, so text, wrapped lines and chips never run under it, and the reserve follows the row when its contents change. The one remaining absolutely-positioned placement (an input's right edge) belongs to the plain, chrome-less `<input>` binding path in `ezclassify-ui.ts`: a bare field with no chrome row of its own to fold the mark into.
+Every enhanced input and textarea, including a data-only field, has one EzClassify status mark: the 3-bar-plus-sparkle brand glyph. MarkingField, TagInput, MarkedInput and MarkedTextArea put it in their inline chrome (`field-chrome.ts`): one row inside the field's trailing edge holding the mark and clear. Editable marking controls open tabbed Corrections and Favorites from the mark. Favorites appears when a host provider or scheme presets are available. Opening the tools suspends suggestions and focuses the selected tab. Tools line up with the control's leading edge and choose above or below from the available space when opened. That side stays fixed as tabs, counts, or saved entries change; the active section scrolls within its available height. Internal text-field caret scrolling leaves the tools open while their anchor stays in place; page or ancestor scrolling still closes them. When the control fills the viewport, the focused dialog stays inside the viewport. The row sits in the same place at rest and while the field is focused, centered on a single-line field and pinned to the first line of a text area. It measures how far it reaches into the field and publishes that as `--ez-field-chrome-inline-size` on the field's wrap; the field's text layers reserve that much trailing padding, so text, wrapped lines and chips never run under it, and the reserve follows the row when its contents change. The one remaining absolutely-positioned placement (an input's right edge) belongs to the plain, chrome-less `<input>` binding path in `ezclassify-ui.ts`: a bare field with no chrome row of its own to fold the mark into.
 
 - **Quiet** is the default: the whole glyph sits muted (`--ez-status-mark-color`). It means the field is enhanced by EzClassify and nothing has been fixed. A proposed fix does not change the mark; only an applied fix does.
 - The glyph is the logo, so its bars and sparkle always share one color; a state never colors the sparkle on its own.
 - Every other state means the field has a message for the user, and the glyph turns strong (`--ez-status-mark-strong-color`): the field's text color on a light palette, gold on a dark one. The accessible label then carries the message too.
 - **Unseen**: a marking rule changed the marking and the user has not yet been shown what. The whole mark is strong and the number of changes stands on the icon's leading side, so the icon keeps its place when the number goes and never moves out from under the pointer that opened the list. Its label says so: "1 change made by a marking rule, not yet reviewed", or "{n} changes made by marking rules, not yet reviewed".
-- **Seen**: the list has actually presented, past its hover-intent delay, or the mark was focused. The number goes; the strong mark persists as "done and known", and the label drops ", not yet reviewed".
+- **Seen**: the changes were actually presented. Editable controls show them
+  in Corrections; marks without tools can preview them by hover or focus. The
+  number goes, the strong mark persists as "done and known", and the label
+  drops ", not yet reviewed".
 - **Error**: the field could not check all of its text, as when a
   MarkedTextArea's scan stops before the end of the body. The whole mark takes
   the error color and the popover and accessible label lead with the reason, ahead
@@ -106,14 +177,18 @@ Every enhanced input and textarea, including a data-only field, has one EzClassi
   clears when its cause does. The tooltip opt-out never hides it.
 - A fix not yet shown re-arms unseen even if the field was previously seen. Clearing the fix set (a clean reprocess) returns to quiet and forgets what was shown, so the next fix starts unseen again. State is per-field, in-memory only.
 - A field always has one status mark. Multiple fixes never create a stack of icons.
-- Hovering (past hover-intent) or focusing an active mark explains every change EzClassify made to what the author chose, one line per change to the marking: "Added {value} to {Category}.", "Removed {value} from {Category}." or "Replaced {old} with {new} in {Category}.", where a value is its concept as the field writes it (see "How a field names a concept") and a category is its label, with "Rule: {rule}" small and muted under it. A change that adds or removes nothing (a spelling or order the reading went through) keeps the engine's `message`, and an engine-owned id (one beginning with `_`) names no rule. Two rules that add the same concept made one change and list one line, under the first rule; one rule that removes three concepts made three changes and lists three lines; reading the same text again does not repeat a line. Seen and unseen follow the same identity, so a change already shown stays seen when another rule makes it again.
+- On a passive status mark, hovering (past hover-intent) or focusing it explains every change EzClassify made to what the author chose, one line per change to the marking: "Added {value} to {Category}.", "Removed {value} from {Category}." or "Replaced {old} with {new} in {Category}.", where a value is its concept as the field writes it (see "How a field names a concept") and a category is its label, with "Rule: {rule}" small and muted under it. A change that adds or removes nothing (a spelling or order the reading went through) keeps the engine's `message`, and an engine-owned id (one beginning with `_`) names no rule. Two rules that add the same concept made one change and list one line, under the first rule; one rule that removes three concepts made three changes and lists three lines; reading the same text again does not repeat a line. Seen and unseen follow the same identity, so a change already shown stays seen when another rule makes it again.
 - A field that holds several markings (MarkedTextArea) still has one mark and counts every change in it, and its list puts each marking's changes under a small muted heading naming that marking as the text now writes it, in the order of the text. The same change made to two markings is two changes. Only a marking with changes gets a heading, and a list of changes to one marking needs none.
 - While the marking offers the undo of the author's last edit (see "Undo"), the list ends with one button, "Undo last edit", described as "Puts the marking back to what it was before your last edit." Tab from the pressed mark reaches it.
 - A value a rule added that the author has not reviewed yet is drawn in the family's inferred style wherever the field shows the marking as text: MarkingField's painted text and DecisionFlow's value line put it in italics over a dashed rule until the mark's list has been shown. TagInput's chips and DecisionFlow's options draw every derived fact that way for good (see "Marking state is a display of the engine result"); an option another choice includes is described "Included by {choice}".
 - The mark lists only what the field's scopes write or what it changed: a change to a category of a scope the field does not write is left out, and so is an applied change the value has moved on from, an addition the field no longer holds or a removal whose concept it holds again.
 - The author signs what the marking writes, so the mark lists only changes to what it writes. Which facts it writes is read from the engine's render assessments (`emitted`, `omitted`, `collapsed`; see `written-facts.ts`), never from concept ids: a fact a rule derived that the marking does not write (a member collapsed into its group's written name, a default no output prints) changed nothing the author sees and is not listed, even when `appliedFixes` names it. A result whose only changes are such facts leaves the mark quiet, so it offers no undo either. A value a rule added that the marking does write is listed and counted whether or not the author wrote it. A field that shows its marking in several forms (DecisionFlow writes each scope in that scope's own output) counts a change to any of them; a form speaks only for the categories of its own surface.
 - A field that shows each fact (TagInput's chips, DecisionFlow's dots, a picker's rows) also explains a written fact a rule filled in that no applied change names, as one more change worded as an addition like any other. A text field (MarkedInput, MarkedTextArea, MarkingField) shows only its text, so it lists only the engine's applied changes. A category's default and a value a part takes from its whole are not changes.
-- The popover opens outside the field's box (the suite frame, or the text field's wrap) and its error list: below them, above them, or beside them when neither has room, judged inside any ancestor that clips the field before the viewport alone. It never covers the field it explains: where no side has room it closes instead. In DecisionFlow the open step and its options are part of the field.
+- Popovers prefer space outside the field's box (the suite frame, or the text field's wrap) and its error list: below them, above them, or beside them, judged inside any ancestor that clips the field before the viewport alone. A passive explanation closes when no side has room. Explicit tools align with the control's leading edge, keep the same opening side during content changes, and use a viewport-bounded dialog with a fixed header and scrolling content when a tall control leaves no exterior space. In DecisionFlow the open step and its options are part of the field.
+
+Favorites save the full value of the controller's associated store marking and replace that marking through `publishRendered`. Existing store subscriptions project the update into every category control. The persistence provider does not own category filtering or field binding. MarkedTextArea resolves the caret's existing entry identity; its parent aggregate and body text are never a Favorite. In plain body text, choosing a Favorite inserts a new marking entry through the editor's normal insertion path.
+
+Targeted entry applications suspend automatic caret entry through publication and the owning binding's queued projection, so returning focus cannot reopen the discarded marking. They reuse the ordinary store projection and release their owned guard on settlement or failure.
 
 The indicator communicates state; it is not a per-fix activity feed.
 
@@ -388,7 +463,7 @@ processing is a separate `Change` in `appliedFixes` (`ruleId`, `action`,
   (an invalid marking, or one with unread text) shows that state's errors and
   ways to fix, so every field bound to the marking offers the same fixes.
 - The list sits inside the field's own wrapper, after the editable surface and
-  before what follows it (the inline chrome, or the marked input's hint row),
+  before what follows it (the inline chrome, or the marked input's action row),
   so Tab goes field, fixes, chrome. The chrome sits inside the field's trailing
   edge, so it never covers the list. TagInput keeps its chrome inside the chip
   box, so its list still follows the box.

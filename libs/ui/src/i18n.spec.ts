@@ -8,7 +8,7 @@ describe('i18n', () => {
 
     describe('t()', () => {
         it('returns the default translation for a known key', () => {
-            expect(t('hint.type')).toBe('Type');
+            expect(t('hint.setMarking')).toBe('Set marking');
         });
 
         it('returns the key itself when the key is not found', () => {
@@ -16,7 +16,7 @@ describe('i18n', () => {
         });
 
         it('returns correct value for each default locale key', () => {
-            expect(t('hint.browse')).toBe('browse');
+            expect(t('hint.addMarking')).toBe('Add marking');
             expect(t('aria.markingInput')).toBe('Marking input');
         });
 
@@ -27,54 +27,54 @@ describe('i18n', () => {
 
     describe('setLocale()', () => {
         it('overrides a single key', () => {
-            setLocale({ 'hint.type': 'Typ' } as any);
-            expect(t('hint.type')).toBe('Typ');
+            setLocale({ 'hint.setMarking': 'Markierung' } as any);
+            expect(t('hint.setMarking')).toBe('Markierung');
         });
 
         it('preserves non-overridden keys', () => {
-            setLocale({ 'hint.type': 'Typ' } as any);
-            expect(t('hint.browse')).toBe('browse');
+            setLocale({ 'hint.setMarking': 'Markierung' } as any);
+            expect(t('hint.addMarking')).toBe('Add marking');
         });
 
         it('applies multiple overrides at once', () => {
             setLocale({
-                'hint.type': 'Typ',
-                'hint.browse': 'durchsuchen',
+                'hint.setMarking': 'Markierung',
+                'hint.addMarking': 'hinzufügen',
             } as any);
-            expect(t('hint.type')).toBe('Typ');
-            expect(t('hint.browse')).toBe('durchsuchen');
+            expect(t('hint.setMarking')).toBe('Markierung');
+            expect(t('hint.addMarking')).toBe('hinzufügen');
         });
 
         it('stacks successive setLocale calls', () => {
-            setLocale({ 'hint.type': 'Typ' } as any);
-            setLocale({ 'hint.browse': 'durchsuchen' } as any);
-            expect(t('hint.type')).toBe('Typ');
-            expect(t('hint.browse')).toBe('durchsuchen');
+            setLocale({ 'hint.setMarking': 'Markierung' } as any);
+            setLocale({ 'hint.addMarking': 'hinzufügen' } as any);
+            expect(t('hint.setMarking')).toBe('Markierung');
+            expect(t('hint.addMarking')).toBe('hinzufügen');
         });
 
         it('later setLocale overwrites earlier override for same key', () => {
-            setLocale({ 'hint.type': 'Typ' } as any);
-            setLocale({ 'hint.type': 'Tippen' } as any);
-            expect(t('hint.type')).toBe('Tippen');
+            setLocale({ 'hint.setMarking': 'Markierung' } as any);
+            setLocale({ 'hint.setMarking': 'Kennzeichnung' } as any);
+            expect(t('hint.setMarking')).toBe('Kennzeichnung');
         });
     });
 
     describe('resetLocale()', () => {
         it('restores defaults after setLocale', () => {
-            setLocale({ 'hint.type': 'Typ' } as any);
+            setLocale({ 'hint.setMarking': 'Markierung' } as any);
             resetLocale();
-            expect(t('hint.type')).toBe('Type');
+            expect(t('hint.setMarking')).toBe('Set marking');
         });
 
         it('is idempotent when called without prior setLocale', () => {
             resetLocale();
-            expect(t('hint.type')).toBe('Type');
+            expect(t('hint.setMarking')).toBe('Set marking');
         });
     });
 
     describe('defaultLocale', () => {
         it('is a frozen-shape object with expected keys', () => {
-            expect(defaultLocale).toHaveProperty('hint.type');
+            expect(defaultLocale).toHaveProperty('hint.setMarking');
             expect(defaultLocale).toHaveProperty('aria.markingInput');
         });
     });

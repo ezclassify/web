@@ -258,13 +258,6 @@ export interface ComponentOptions {
      * Default: enabled.
      */
     tooltips?: boolean;
-    /**
-     * False disables keyboard-hint chrome (hint footers and floating hint
-     * chips). Wired from `data-ezclassify-no-hints`. The touch "Add marking"
-     * affordance is core interaction, not a hint, and is never disabled.
-     * Default: enabled.
-     */
-    hints?: boolean;
     /** For step-based UIs: which step to start on (0-based, default 0) */
     startStep?: number;
     /**
@@ -379,13 +372,11 @@ export interface ComponentOptions {
      */
     resolveFacetSiblings?: () => readonly Assertion[];
     /**
-     * Host-fed favorites surface: a ★ button on the field chrome, next to the
-     * status mark. Renders when this is supplied, OR when left unset but the
-     * loaded scheme declares `labelPresets` for the field's scope: in that case
-     * the panel still opens, read-only, showing just the scheme's own presets.
-     * The component stores nothing; the host owns persistence and observes
-     * applied favorites through the field's ordinary native/ezclassify events,
-     * the same as any other user edit. See `favorites-panel.ts`.
+     * Host-fed Favorites in the branding button's tabbed tools. The tab is
+     * available when this provider or scoped scheme presets are present.
+     * Favorites use the complete associated store marking; persistence stays
+     * with the host. Store subscriptions update every bound control through its
+     * ordinary native and EzClassify events. See `favorites-panel.ts`.
      */
     favorites?: FavoritesConfig;
 }
@@ -881,15 +872,30 @@ export abstract class ReadOnlyComponentBase implements ComponentInstance {
         input: string | Assertion[],
         options?: ProcessOptions,
     ) {
+        return this.processInput(
+            input,
+            this.options.scope
+                ? { ...options, surface: this.options.scope }
+                : options,
+        );
+    }
+
+    /** Prove a complete marking in the engine's automatic whole output. */
+    protected callWholeProcess(assertions: readonly Assertion[]) {
+        return this.processInput('', {
+            assertions: [...assertions],
+            context: this.getProcessingContext(),
+        });
+    }
+
+    private processInput(
+        input: string | Assertion[],
+        options?: ProcessOptions,
+    ) {
         // Values taken from a whole are never sent back: the engine takes
         // them again from the whole this call supplies.
         const stated = withStatedAssertions(options);
-        const withParts = partsOption(
-            this._resolveParts,
-            this.options.scope
-                ? { ...stated, surface: this.options.scope }
-                : stated,
-        );
+        const withParts = partsOption(this._resolveParts, stated);
         const read =
             typeof input === 'string' ? input : withoutTakenFromWhole(input);
         return this.engine.process(read, withParts);
@@ -1004,11 +1010,11 @@ export abstract class ReadOnlyComponentBase implements ComponentInstance {
         warnings: readonly Warning[] = [],
     ): void {
         // Facet-of: this component renders one category slice of a larger
-        // marking. The host renders validation once at the parent field, so a
-        // facet says nothing about the marking's rules.
+        // marking. Its report policy decides which judgments belong beside
+        // that slice; the default leaves them with the parent field.
         this.showRuleErrors(
             this.options.facetOf
-                ? this.facetReport()
+                ? this.facetReport(errors, proposedFixes, warnings)
                 : ruleErrorsFrom(errors, proposedFixes, warnings),
         );
     }
@@ -1043,7 +1049,13 @@ export abstract class ReadOnlyComponentBase implements ComponentInstance {
         warnings: readonly Warning[] = [],
     ): void {
         if (this.options.facetOf) {
-            this.showRuleErrors(this.facetReport());
+            this.showRuleErrors(
+                this.facetReport(
+                    errors.length > 0 ? errors : undefined,
+                    proposedFixes,
+                    warnings,
+                ),
+            );
             return;
         }
         const report = ruleErrorsFrom(errors, proposedFixes, warnings);
@@ -1066,10 +1078,14 @@ export abstract class ReadOnlyComponentBase implements ComponentInstance {
     }
 
     /**
-     * What a facet shows: nothing, unless it is where its marking's refusal is
-     * said (see {@link ComponentOptions.resolveFacetRefusal}).
+     * What a facet shows. By default only its marking's refusal is reported; a
+     * category editor can also report judgments on its own displayed facts.
      */
-    private facetReport(): RuleErrorReport {
+    protected facetReport(
+        _errors?: readonly ValidationError[],
+        _proposedFixes: readonly Fix[] = [],
+        _warnings: readonly Warning[] = [],
+    ): RuleErrorReport {
         const messages = this.options.resolveFacetRefusal?.() ?? [];
         return messages.length > 0
             ? { ...NO_RULE_ERRORS, messages: [...messages] }

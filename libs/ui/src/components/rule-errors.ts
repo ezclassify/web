@@ -120,18 +120,42 @@ export function readFailureReport(error: unknown): RuleErrorReport {
 /**
  * The author's marking once a fix is applied: the concepts it keeps and the
  * ones it adds, stated by the author. The caller stores them in one write and
- * lets the engine work out everything it derives from them.
+ * lets the engine work out everything it derives from them. Repeated kept
+ * references expand once, retaining every matching current value.
  *
  * @param fix - The fix the user pressed
+ * @param current - The facts the proposed remedy was offered for; kept capture
+ *   values stay intact
  * @returns A new assertion set
  */
-export function fixAssertions(fix: Fix): Assertion[] {
-    return [...fix.keeps, ...fix.adds].map((ref) => ({
+export function fixAssertions(
+    fix: Fix,
+    current: readonly Assertion[],
+): Assertion[] {
+    const stated = (ref: Fix['keeps'][number], value?: string): Assertion => ({
         conceptId: ref.conceptId,
         categoryId: ref.categoryId,
-        confidence: 'certain' as const,
-        source: 'user' as const,
-    }));
+        ...(value !== undefined ? { value } : {}),
+        confidence: 'certain',
+        source: 'user',
+    });
+    const expanded = new Set<string>();
+    return [
+        ...fix.keeps.flatMap((ref) => {
+            const key = JSON.stringify([ref.categoryId, ref.conceptId]);
+            if (expanded.has(key)) return [];
+            expanded.add(key);
+            const kept = current.filter(
+                (assertion) =>
+                    assertion.conceptId === ref.conceptId &&
+                    assertion.categoryId === ref.categoryId,
+            );
+            return kept.length > 0
+                ? kept.map((assertion) => stated(ref, assertion.value))
+                : [stated(ref)];
+        }),
+        ...fix.adds.map((ref) => stated(ref)),
+    ];
 }
 
 /**
@@ -174,6 +198,54 @@ export function placeUnderField(
 
 let nextHeadingId = 0;
 
+/** Build the shared engine-proposed Ways to Fix heading and action group. */
+export function buildRuleFixes(
+    doc: Document,
+    fixes: readonly RuleErrorFix[],
+    onApply: (fix: Fix) => void,
+    returnFocus?: (pointerType?: string) => void,
+): HTMLElement[] {
+    adoptStylesOnce(ruleErrorsCss, doc);
+    const heading = doc.createElement('div');
+    heading.className = 'ez-validation-errors__fixes-heading';
+    heading.id = `ez-fix-heading-${++nextHeadingId}`;
+    heading.textContent = t('fix.heading');
+    const group = doc.createElement('div');
+    group.className = 'ez-validation-errors__fixes';
+    for (const { fix, label } of fixes) {
+        const button = doc.createElement('button');
+        button.type = 'button';
+        button.className = 'ez-validation-errors__fix';
+        button.textContent = label;
+        let pointerType = 'keyboard';
+        button.addEventListener('pointerdown', (event) => {
+            pointerType = event.pointerType;
+        });
+        button.addEventListener('pointercancel', () => {
+            pointerType = 'keyboard';
+        });
+        button.addEventListener('keydown', () => {
+            pointerType = 'keyboard';
+        });
+        // A pointer press leaves focus where it was, so pressing a fix
+        // never blurs the field it corrects.
+        button.addEventListener('mousedown', (event) => event.preventDefault());
+        button.addEventListener('click', (event) => {
+            event.preventDefault();
+            const activation = event.detail === 0 ? 'keyboard' : pointerType;
+            pointerType = 'keyboard';
+            onApply(fix);
+            // The pressed button disappears. Keep the activation type so a
+            // pointer repair can retain its place without opening the editor.
+            returnFocus?.(activation);
+        });
+        group.appendChild(button);
+    }
+    group.setAttribute('role', 'group');
+    group.setAttribute('aria-labelledby', heading.id);
+    return [heading, group];
+}
+
 /**
  * The rendered list. One instance per field; `update` replaces its content each
  * time the engine reports on the field's value.
@@ -189,6 +261,8 @@ export class RuleErrorList {
      * report, so the field shows one list, not two.
      */
     private suppressed = false;
+    private currentFixes: readonly RuleErrorFix[] = [];
+    private currentApply: ((fix: Fix) => void) | null = null;
 
     /**
      * @param doc - The document the field lives in
@@ -216,6 +290,8 @@ export class RuleErrorList {
         report: RuleErrorReport,
         onApply: ((fix: Fix) => void) | null,
     ): void {
+        this.currentFixes = report.fixes;
+        this.currentApply = onApply;
         const shown = JSON.stringify([
             onApply !== null,
             report.messages,
@@ -250,58 +326,21 @@ export class RuleErrorList {
         if (onApply && report.messages.length > 0 && report.fixes.length > 0) {
             // Without a heading the buttons read as one per error, or as a
             // list to work through; each is a way to fix the marking.
-            const heading = doc.createElement('div');
-            heading.className = 'ez-validation-errors__fixes-heading';
-            heading.id = `ez-fix-heading-${++nextHeadingId}`;
-            heading.textContent = t('fix.heading');
-            const group = this.fixGroup(report.fixes, onApply);
-            group.setAttribute('role', 'group');
-            group.setAttribute('aria-labelledby', heading.id);
-            children.push(heading, group);
+            children.push(
+                ...buildRuleFixes(
+                    doc,
+                    report.fixes,
+                    (previous) => {
+                        const current = this.currentFixes.find(
+                            ({ fix }) => fix.rendered === previous.rendered,
+                        );
+                        if (current) this.currentApply?.(current.fix);
+                    },
+                    this.returnFocus,
+                ),
+            );
         }
         this.element.replaceChildren(...children);
-    }
-
-    private fixGroup(
-        fixes: readonly RuleErrorFix[],
-        onApply: (fix: Fix) => void,
-    ): HTMLElement {
-        const doc = this.element.ownerDocument;
-        const group = doc.createElement('div');
-        group.className = 'ez-validation-errors__fixes';
-        for (const { fix, label } of fixes) {
-            const button = doc.createElement('button');
-            button.type = 'button';
-            button.className = 'ez-validation-errors__fix';
-            button.textContent = label;
-            let pointerType = 'keyboard';
-            button.addEventListener('pointerdown', (event) => {
-                pointerType = event.pointerType;
-            });
-            button.addEventListener('pointercancel', () => {
-                pointerType = 'keyboard';
-            });
-            button.addEventListener('keydown', () => {
-                pointerType = 'keyboard';
-            });
-            // A pointer press leaves focus where it was, so pressing a fix
-            // never blurs the field it corrects.
-            button.addEventListener('mousedown', (event) =>
-                event.preventDefault(),
-            );
-            button.addEventListener('click', (event) => {
-                event.preventDefault();
-                const activation =
-                    event.detail === 0 ? 'keyboard' : pointerType;
-                pointerType = 'keyboard';
-                onApply(fix);
-                // The pressed button disappears. Keep the activation type so a
-                // pointer repair can retain its place without opening the editor.
-                this.returnFocus?.(activation);
-            });
-            group.appendChild(button);
-        }
-        return group;
     }
 
     /**

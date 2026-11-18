@@ -405,8 +405,8 @@ describe('<EzClassifyProvider> props', () => {
             .querySelector<HTMLButtonElement>('.ez-status-mark')!
             .click();
         expect(
-            [...document.querySelectorAll('[role=tab]')].map(
-                (tab) => tab.textContent,
+            [...document.querySelectorAll('[role=tab]')].map((tab) =>
+                tab.getAttribute('aria-label'),
             ),
         ).toContain('Favorites');
         withFavorites.unmount();
@@ -417,8 +417,8 @@ describe('<EzClassifyProvider> props', () => {
             .querySelector<HTMLButtonElement>('.ez-status-mark')!
             .click();
         expect(
-            [...document.querySelectorAll('[role=tab]')].map(
-                (tab) => tab.textContent,
+            [...document.querySelectorAll('[role=tab]')].map((tab) =>
+                tab.getAttribute('aria-label'),
             ),
         ).not.toContain('Favorites');
     });

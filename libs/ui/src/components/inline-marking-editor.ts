@@ -93,15 +93,23 @@ export interface InlineMarkingEditorOptions {
     onBlurCommit?: (outcome: CommitOutcome) => void;
     /**
      * Escape with nothing left for the composer to do (list closed, draft
-     * clean): the host cancels the editing session.
+     * clean): the host cancels the editing session. Explicit sheet Cancel
+     * supplies `true` so teardown keeps focus off the native text input.
      */
-    onCancel?: () => void;
+    onCancel?: (fromSheet?: boolean) => void;
     /** The host field's own container, where the live region and note mount. */
     root?: HTMLElement;
+    /**
+     * Permanent painted field box, distinct from this editor's temporary
+     * anchor.
+     */
+    focusTarget?: HTMLElement;
     /** See `ComposerViewOptions.isFieldChrome`. */
     isFieldChrome?: (node: Node) => boolean;
     /** Keep the host's control reachable in the phone sheet. */
     sheetTools?: () => HTMLElement | null;
+    /** Whether this mark ends the host's complete editable text. */
+    textToolsEdges?: () => boolean;
     /** The host field's accessible name, for the combobox and listbox. */
     label?: () => { id?: string; text: string };
     /**
@@ -253,6 +261,7 @@ export class InlineMarkingEditor {
             anchor: container,
             bounds: root,
             field: root,
+            focusTarget: options.focusTarget,
             label:
                 options.label ??
                 (() => accessibleLabel(this.input, t('aria.markingInput'))),
@@ -268,8 +277,9 @@ export class InlineMarkingEditor {
                 this.options.onExit?.('commit', fromSheet),
             isFieldChrome: options.isFieldChrome,
             sheetTools: options.sheetTools,
-            onEscapeIdle: () => {
-                this.options.onCancel?.();
+            textToolsEdges: options.textToolsEdges,
+            onEscapeIdle: (fromSheet) => {
+                this.options.onCancel?.(fromSheet);
                 return true;
             },
             onLineMove: options.onLineMove
@@ -325,12 +335,23 @@ export class InlineMarkingEditor {
      */
     showList(caret?: number): void {
         if (this.destroyed || !this.view) return;
+        if (this.view.isToolsSuspended) this.focus();
         if (caret !== undefined && this.view.activeInput === this.input) {
             const at = this.clampCaret(caret);
             this.input.setSelectionRange(at, at);
             void this.controller.input(this.input.value, at);
         }
         void this.view.open('pointer');
+    }
+
+    /** Whether field tools hold this editor's uncommitted session. */
+    get isToolsSuspended(): boolean {
+        return this.view?.isToolsSuspended ?? false;
+    }
+
+    /** Hide the composer while field tools operate on this same edit. */
+    suspendForTools(): void {
+        this.view?.suspendForTools();
     }
 
     /**
@@ -426,6 +447,7 @@ export class InlineMarkingEditor {
      * pull focus out of the sheet and the on-screen keyboard with it.
      */
     focus(): void {
+        this.view?.resumeFromTools();
         (this.view?.activeInput ?? this.input)?.focus();
     }
 
@@ -443,7 +465,16 @@ export class InlineMarkingEditor {
     }
 
     private onKeydown(e: KeyboardEvent): void {
-        if (e.isComposing || e.keyCode === 229) return;
+        if (
+            e.defaultPrevented ||
+            e.altKey ||
+            e.ctrlKey ||
+            e.metaKey ||
+            e.shiftKey ||
+            e.isComposing ||
+            e.keyCode === 229
+        )
+            return;
         const atStart =
             this.input.selectionStart === 0 && this.input.selectionEnd === 0;
         const len = this.input.value.length;

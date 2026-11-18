@@ -6,6 +6,8 @@
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ComposerController } from './composer-controller';
+import { createConceptDescriber } from '../concept-description';
+import type { ConceptDescription } from '@ezclassify/types';
 import {
     ComposerView,
     accessibleLabel,
@@ -90,8 +92,10 @@ describe('the result row', () => {
         ).toBe(true);
         expect(scroll.contains(view.list)).toBe(true);
         expect(
-            scroll.contains(surface.querySelector('.ez-composer__footer')),
-        ).toBe(false);
+            surface.querySelector(
+                '.ez-composer__footer, .ez-composer__hint, kbd',
+            ),
+        ).toBeNull();
     });
 
     it('shows what a commit stores, with a change mark per fact', async () => {
@@ -596,7 +600,7 @@ describe('accessibility contract', () => {
         expect(secret.getAttribute('aria-selected')).toBe('true');
     });
 
-    it('keeps key hints and check glyphs out of option names', async () => {
+    it('keeps check glyphs out of option names and renders no keyboard instructions', async () => {
         mount();
         input.focus();
         await type('SECRET NOFORN s');
@@ -607,10 +611,10 @@ describe('accessibility contract', () => {
             expect(row.textContent).not.toMatch(/Enter|Tab/);
         }
         expect(
-            openSurface()!
-                .querySelector('.ez-composer__footer')!
-                .getAttribute('aria-hidden'),
-        ).toBe('true');
+            openSurface()!.querySelector(
+                '.ez-composer__footer, .ez-composer__hint, kbd',
+            ),
+        ).toBeNull();
     });
 
     it('gives a row the same id for the same concept across renders', async () => {
@@ -649,24 +653,23 @@ describe('accessibility contract', () => {
         ['SECRET nof', 'SECRET//NOFORN'],
         ['SECRET NOFORN nof', 'SECRET'],
     ])(
-        'names Enter as accept for %s, then save for the resulting draft',
+        'accepts %s and then saves the resulting draft without an instruction strip',
         async (draft, saved) => {
             mount();
             input.focus();
             await type(draft);
             press(input, 'ArrowUp');
             press(input, 'ArrowDown');
-            const enterHint = () =>
-                [...openSurface()!.querySelectorAll('.ez-composer__hint')].find(
-                    (hint) =>
-                        hint.querySelector('kbd')?.textContent === 'Enter',
-                )?.textContent;
-            expect(enterHint()).toBe('Enter accept');
+            expect(
+                openSurface()!.querySelector('.ez-composer__footer, kbd'),
+            ).toBeNull();
             press(input, 'Enter');
             await controller.settle();
             await wait();
             expect(resultValue()).toBe(saved);
-            expect(enterHint()).toBe('Enter save');
+            expect(
+                openSurface()!.querySelector('.ez-composer__footer, kbd'),
+            ).toBeNull();
             press(input, 'Enter');
             await controller.settle();
             await wait();
@@ -690,6 +693,101 @@ describe('accessibility contract', () => {
         c.dispose();
     });
 });
+
+it('gives an inactive hovered concept a native title and keeps active descriptions accessible but hidden', async () => {
+    mount('whole', { describeConcept: (id) => `Meaning of ${id}` });
+    input.focus();
+    await view.open('keyboard');
+    await wait();
+    const candidates = rows().filter((row) => row.dataset.kind === 'concept');
+    expect(candidates.length).toBeGreaterThan(1);
+    const before = input.value;
+    const index = controller.snapshot().activeIndex;
+    candidates.at(-1)!.dispatchEvent(new Event('mouseenter'));
+    expect(candidates.at(-1)!.title).toMatch(/^Meaning of /);
+    expect(controller.snapshot().activeIndex).toBe(index);
+    expect(input.value).toBe(before);
+    expect(document.activeElement).toBe(input);
+    press(input, 'ArrowDown');
+    await wait();
+    const active = activeRow(input)!;
+    const definition = document.getElementById(
+        active.getAttribute('aria-describedby')!,
+    )!;
+    expect(definition.hidden).toBe(true);
+    expect(definition.textContent).toMatch(/^Meaning of /);
+    expect(active.title).toMatch(/^Meaning of /);
+    expect(document.querySelector('.ez-tooltip:not([hidden])')).toBeNull();
+});
+
+it('populates a first-hover native title when its remote description finishes without reentering', async () => {
+    let resolve!: (description: ConceptDescription) => void;
+    const pending = new Promise<ConceptDescription>((done) => {
+        resolve = done;
+    });
+    const describeConcept = vi.fn(() => pending);
+    const describer = createConceptDescriber({
+        engine: () => ({ describeConcept }) as never,
+        options: () => ({}),
+    });
+    mount('whole', { describeConcept: describer.resolve });
+    input.focus();
+    await view.open('keyboard');
+    await wait();
+    const row = rows()
+        .filter((element) => element.dataset.kind === 'concept')
+        .at(-1)!;
+    const index = controller.snapshot().activeIndex;
+    const query = input.value;
+    row.dispatchEvent(new Event('mouseenter'));
+    expect(row.title).not.toBe('Remote definition');
+    const requests = describeConcept.mock.calls.length;
+    resolve({ lines: ['Remote definition'] } as ConceptDescription);
+    await wait(230);
+    expect(row.title).toBe('Remote definition');
+    expect(describeConcept.mock.calls.length).toBe(requests);
+    expect(document.activeElement).toBe(input);
+    expect(input.value).toBe(query);
+    expect(controller.snapshot().activeIndex).toBe(index);
+});
+
+it.each(['leave', 'close', 'replace', 'destroy'] as const)(
+    'cancels pending native hover description on %s without writing a stale row',
+    async (action) => {
+        let resolve!: (description: ConceptDescription) => void;
+        const pending = new Promise<ConceptDescription>((done) => {
+            resolve = done;
+        });
+        const describer = createConceptDescriber({
+            engine: () => ({ describeConcept: () => pending }) as never,
+            options: () => ({}),
+        });
+        const describe = vi.fn(describer.resolve);
+        mount('whole', { describeConcept: describe });
+        input.focus();
+        await view.open('keyboard');
+        await wait();
+        const row = rows()
+            .filter((element) => element.dataset.kind === 'concept')
+            .at(-1)!;
+        row.dispatchEvent(new Event('mouseenter'));
+        const before = row.title;
+        if (action === 'leave') row.dispatchEvent(new Event('mouseleave'));
+        else if (action === 'close') view.close();
+        else if (action === 'replace') await type('SECRET');
+        else view.destroy();
+        const calls = describe.mock.calls.length;
+        const outside = document.createElement('button');
+        document.body.append(outside);
+        outside.focus();
+        resolve({ lines: ['Late remote definition'] } as ConceptDescription);
+        await wait(230);
+        expect(row.title).toBe(before);
+        expect(describe.mock.calls.length).toBe(calls);
+        expect(document.activeElement).toBe(outside);
+        outside.remove();
+    },
+);
 
 describe('the sheet bar', () => {
     const originalMatchMedia = window.matchMedia;
@@ -736,6 +834,179 @@ describe('the sheet bar', () => {
         await wait(10);
     }
 
+    it('hands first sheet Escape to the ongoing editor before hiding, preserving the Escape ladder without a blur commit', async () => {
+        asPhone();
+        port.value = {
+            assertions: [assertion(CONCEPTS[1])],
+            rendered: 'SECRET',
+        };
+        const onBlurCommit = vi.fn(() => input.remove());
+        const onEscapeIdle = vi.fn(() => false);
+        mount('whole', { onBlurCommit, onEscapeIdle });
+        await openSheetAndType('SECRET NOFORN');
+        const surface = openSurface()!;
+        const editor = sheetInput();
+        expect(document.activeElement).toBe(editor);
+        // Browsers blur a focused input when its ancestor is hidden; jsdom does not.
+        Object.defineProperty(surface, 'hidden', {
+            configurable: true,
+            get: () => surface.hasAttribute('hidden'),
+            set: (hidden: boolean) => {
+                surface.toggleAttribute('hidden', hidden);
+                if (hidden && surface.contains(document.activeElement))
+                    (document.activeElement as HTMLElement).blur();
+            },
+        });
+        expect(press(editor, 'Escape').defaultPrevented).toBe(true);
+        await wait();
+        await controller.settle();
+        expect(openSurface()).toBeNull();
+        expect(document.activeElement).toBe(input);
+        expect(input.isConnected).toBe(true);
+        expect(input.value).toBe('SECRET NOFORN');
+        expect(controller.isDirty()).toBe(true);
+        expect(port.value.rendered).toBe('SECRET');
+        expect(onBlurCommit).not.toHaveBeenCalled();
+        expect(onEscapeIdle).not.toHaveBeenCalled();
+        expect(press(input, 'Escape').defaultPrevented).toBe(true);
+        expect(input.value).toBe('SECRET');
+        expect(document.activeElement).toBe(input);
+        expect(controller.isDirty()).toBe(false);
+        expect(press(input, 'Escape').defaultPrevented).toBe(false);
+        expect(onEscapeIdle).toHaveBeenCalledOnce();
+    });
+
+    it('does not reclaim an outside focus owner when a sheet Escape is dispatched elsewhere', async () => {
+        asPhone();
+        mount();
+        await view.open('api');
+        const editor = sheetInput();
+        const outside = document.createElement('button');
+        document.body.appendChild(outside);
+        outside.focus();
+        press(editor, 'Escape');
+        await wait();
+        await controller.settle();
+        expect(document.activeElement).toBe(outside);
+        outside.remove();
+    });
+
+    it.each(['done', 'enter', 'cancel'] as const)(
+        'parks ended %s on the permanent visual field before inline teardown',
+        async (action) => {
+            asPhone();
+            port.value = {
+                assertions: [assertion(CONCEPTS[1])],
+                rendered: 'SECRET',
+            };
+            const box = document.createElement('div');
+            const temporary = document.createElement('span');
+            temporary.appendChild(input);
+            box.appendChild(temporary);
+            root.appendChild(box);
+            const onBlurCommit = vi.fn();
+            const onEscapeIdle = vi.fn((fromSheet?: boolean) => {
+                if (!fromSheet) input.focus();
+                temporary.remove();
+                view.destroy();
+                return true;
+            });
+            mount('whole', {
+                anchor: temporary,
+                field: root,
+                focusTarget: box,
+                onBlurCommit,
+                onEnterCommit: () => {
+                    temporary.remove();
+                    view.destroy();
+                },
+                onEscapeIdle,
+            });
+            await openSheetAndType('SECRET NOFORN');
+            if (action === 'enter') press(sheetInput(), 'Enter');
+            else button(action).click();
+            await controller.settle();
+            await wait(30);
+            expect(temporary.isConnected).toBe(false);
+            expect(document.activeElement).toBe(box);
+            expect(box.isConnected).toBe(true);
+            expect(box.tabIndex).toBe(-1);
+            expect(port.value.rendered).toBe(
+                action === 'cancel' ? 'SECRET' : 'SECRET//NOFORN',
+            );
+            expect(onBlurCommit).not.toHaveBeenCalled();
+            if (action === 'cancel')
+                expect(onEscapeIdle).toHaveBeenCalledWith(true);
+            const outside = document.createElement('button');
+            root.appendChild(outside);
+            outside.focus();
+            expect(box.hasAttribute('tabindex')).toBe(false);
+        },
+    );
+
+    it.each(['done', 'cancel'] as const)(
+        'does not report the ended %s field-box handoff as another blur commit',
+        async (action) => {
+            asPhone();
+            port.value = {
+                assertions: [assertion(CONCEPTS[1])],
+                rendered: 'SECRET',
+            };
+            const onBlurCommit = vi.fn();
+            const onEnterCommit = vi.fn();
+            mount('whole', { onBlurCommit, onEnterCommit });
+            await openSheetAndType('SECRET NOFORN');
+            button(action).click();
+            await controller.settle();
+            await wait(30);
+            expect(document.activeElement).toBe(root);
+            expect(onBlurCommit).not.toHaveBeenCalled();
+            expect(onEnterCommit).toHaveBeenCalledTimes(
+                action === 'done' ? 1 : 0,
+            );
+            expect(port.value.rendered).toBe(
+                action === 'cancel' ? 'SECRET' : 'SECRET//NOFORN',
+            );
+        },
+    );
+
+    it('keeps an outside owner when an ended sheet store finishes after focus has left', async () => {
+        asPhone();
+        const box = document.createElement('div');
+        const temporary = document.createElement('span');
+        temporary.appendChild(input);
+        box.appendChild(temporary);
+        root.appendChild(box);
+        mount('whole', {
+            anchor: temporary,
+            field: root,
+            focusTarget: box,
+            onEnterCommit: () => {
+                temporary.remove();
+                view.destroy();
+            },
+        });
+        await openSheetAndType('SECRET');
+        const store = port.store.bind(port);
+        let release!: () => void;
+        const pending = new Promise<void>((resolve) => {
+            release = resolve;
+        });
+        vi.spyOn(port, 'store').mockImplementation(async (...args) => {
+            await pending;
+            await store(...args);
+        });
+        button('done').click();
+        const outside = document.createElement('button');
+        root.appendChild(outside);
+        outside.focus();
+        release();
+        await controller.settle();
+        await wait(30);
+        expect(document.activeElement).toBe(outside);
+        expect(port.value.rendered).toBe('SECRET');
+    });
+
     it('is not part of the desktop popover', async () => {
         mount();
         input.focus();
@@ -767,6 +1038,30 @@ describe('the sheet bar', () => {
         expect(done.textContent).toBe('Done');
     });
 
+    it('pairs the phone text boundary with its borrowed tools without committing or opening tools', async () => {
+        asPhone();
+        const tool = document.createElement('button');
+        root.append(tool);
+        const activated = vi.fn();
+        tool.addEventListener('click', activated);
+        mount('whole', { sheetTools: () => tool, textToolsEdges: () => true });
+        await view.open('api');
+        const editor = view.activeInput;
+        typeText(editor, 'SEC');
+        await wait();
+        const committed = port.committed();
+        editor.setSelectionRange(editor.value.length, editor.value.length);
+        press(editor, 'ArrowRight');
+        expect(document.activeElement).toBe(tool);
+        await wait(180);
+        expect(editor.value).toBe('SEC');
+        expect(port.committed()).toEqual(committed);
+        press(tool, 'ArrowLeft');
+        expect(document.activeElement).toBe(editor);
+        expect(editor.selectionStart).toBe(3);
+        expect(activated).not.toHaveBeenCalled();
+    });
+
     it('keeps the same field tool reachable on the phone and restores its exact position on close', async () => {
         asPhone();
         const tool = document.createElement('button');
@@ -788,6 +1083,76 @@ describe('the sheet bar', () => {
         view.destroy();
         expect(tool.parentNode).toBe(root);
         expect(tool.nextSibling).toBe(after);
+    });
+
+    it.each(['ctrlKey', 'metaKey'] as const)(
+        'opens tools from the portaled phone input with %s without committing',
+        async (modifier) => {
+            asPhone();
+            const tool = document.createElement('button');
+            tool.className = 'ez-status-mark--tools';
+            const tab = document.createElement('button');
+            document.body.append(tab);
+            root.append(tool);
+            const opened = vi.fn(() => {
+                tool.focus();
+                view.suspendForTools();
+                tab.focus();
+            });
+            tool.addEventListener('click', opened);
+            mount('whole', {
+                sheetTools: () => tool,
+                isFieldChrome: (node) =>
+                    tool.contains(node) || tab.contains(node),
+            });
+            await openSheetAndType('SECRET');
+            const event = new KeyboardEvent('keydown', {
+                key: 'Enter',
+                shiftKey: true,
+                [modifier]: true,
+                bubbles: true,
+                cancelable: true,
+            });
+            sheetInput().dispatchEvent(event);
+            await wait(180);
+            expect(event.defaultPrevented).toBe(true);
+            expect(opened).toHaveBeenCalledOnce();
+            expect(document.activeElement).toBe(tab);
+            expect(port.stored).toHaveLength(0);
+            expect(openSurface()).toBeNull();
+            tab.remove();
+        },
+    );
+
+    it('restores a focused phone tool without committing its draft before the tab receives focus', async () => {
+        asPhone();
+        const tool = document.createElement('button');
+        const tab = document.createElement('button');
+        const outside = document.createElement('button');
+        root.append(tool);
+        document.body.append(tab, outside);
+        const onBlurCommit = vi.fn();
+        mount('whole', {
+            sheetTools: () => tool,
+            isFieldChrome: (node) => tool.contains(node) || tab.contains(node),
+            onBlurCommit,
+        });
+        await openSheetAndType('SECRET');
+        tool.focus();
+        view.suspendForTools();
+        tab.focus();
+        await wait(180);
+        expect(openSurface()).toBeNull();
+        expect(tool.parentElement).toBe(root);
+        expect(port.stored).toHaveLength(0);
+        expect(onBlurCommit).not.toHaveBeenCalled();
+        outside.focus();
+        await wait(180);
+        expect(port.value.rendered).toBe('SECRET');
+        expect(port.stored).toHaveLength(1);
+        expect(onBlurCommit).toHaveBeenCalledWith('stored');
+        tab.remove();
+        outside.remove();
     });
 
     it('does not resurrect a host tool removed while its sheet was open', async () => {
@@ -1340,50 +1705,43 @@ describe('category navigation', () => {
     });
 
     it.each([
-        ['MacIntel', '⌥↑↓', 'Option'],
-        ['Win32', 'Alt+↑↓', 'Alt'],
-        ['Linux x86_64', 'Alt+↑↓', 'Alt'],
-    ])(
-        'labels category shortcuts for %s',
-        async (platform, visible, modifier) => {
-            const platformGetter = vi
-                .spyOn(navigator, 'platform', 'get')
-                .mockReturnValue(platform);
-            try {
-                mount();
-                input.focus();
-                await view.open('keyboard');
-                expect(
-                    openSurface()!.querySelector(
-                        '.ez-composer__hint--categories kbd',
-                    )?.textContent,
-                ).toBe(visible);
-                expect(arrow(0, 'Next').title).toBe(
-                    `Next category (${modifier}+↓)`,
-                );
-                expect(arrow(1, 'Previous').title).toBe(
-                    `Previous category (${modifier}+↑)`,
-                );
-                // The field announces the shortcuts; the listbox keeps only
-                // groups and options in the accessibility tree.
-                expect(input.getAttribute('aria-keyshortcuts')).toBe(
-                    'Alt+ArrowUp Alt+ArrowDown',
-                );
-                const list = openSurface()!.querySelector('[role="listbox"]')!;
-                for (const button of list.querySelectorAll('button')) {
-                    expect(
-                        button.closest('[aria-hidden="true"]'),
-                    ).not.toBeNull();
-                }
-                press(input, 'ArrowDown', { altKey: true });
-                expect(activeRow(input)?.dataset.categoryId).toBe('caveat');
-                expect(document.activeElement).toBe(input);
-                expect(port.stored).toHaveLength(0);
-            } finally {
-                platformGetter.mockRestore();
+        ['MacIntel', 'Option'],
+        ['Win32', 'Alt'],
+        ['Linux x86_64', 'Alt'],
+    ])('labels category shortcuts for %s', async (platform, modifier) => {
+        const platformGetter = vi
+            .spyOn(navigator, 'platform', 'get')
+            .mockReturnValue(platform);
+        try {
+            mount();
+            input.focus();
+            await view.open('keyboard');
+            expect(
+                openSurface()!.querySelector('.ez-composer__footer, kbd'),
+            ).toBeNull();
+            expect(arrow(0, 'Next').title).toBe(
+                `Next category (${modifier}+↓)`,
+            );
+            expect(arrow(1, 'Previous').title).toBe(
+                `Previous category (${modifier}+↑)`,
+            );
+            // The field announces the shortcuts; the listbox keeps only
+            // groups and options in the accessibility tree.
+            expect(input.getAttribute('aria-keyshortcuts')).toBe(
+                'Alt+ArrowUp Alt+ArrowDown',
+            );
+            const list = openSurface()!.querySelector('[role="listbox"]')!;
+            for (const button of list.querySelectorAll('button')) {
+                expect(button.closest('[aria-hidden="true"]')).not.toBeNull();
             }
-        },
-    );
+            press(input, 'ArrowDown', { altKey: true });
+            expect(activeRow(input)?.dataset.categoryId).toBe('caveat');
+            expect(document.activeElement).toBe(input);
+            expect(port.stored).toHaveLength(0);
+        } finally {
+            platformGetter.mockRestore();
+        }
+    });
 
     it('navigates categories with identical labels by their IDs', async () => {
         const original = port.categories.bind(port);

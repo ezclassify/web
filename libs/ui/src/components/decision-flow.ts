@@ -1,3 +1,5 @@
+import { conceptHint } from './concept-hint';
+import { focusTextCaretNeighbor } from './text-caret-edge';
 /**
  * DecisionFlow: sequential decision-point stepper component.
  *
@@ -85,7 +87,6 @@ import { statedAssertions } from './composer/composer-controller';
 import type { ComposerPort } from './composer/composer-controller';
 import type {
     Assertion,
-    AssertionRef,
     ConceptTextInput,
     Fix,
     ProcessResult,
@@ -95,6 +96,10 @@ import type {
     Warning,
 } from '@ezclassify/types';
 import { applyTextInputAttributes } from './text-input-attributes';
+import { createChoiceButton } from './choice-button';
+import choiceButtonCss from './choice-button.css?inline';
+import { focusGridRows, focusGridNeighbor } from './focus-grid';
+import { orderChoiceOptions, choiceBlockReason } from './choice-options';
 import decisionFlowCss from './decision-flow.css?inline';
 import { getPublicFormatLayout, viewForCategory } from '../format-layout';
 import { observeNativeLock } from './dom-helpers';
@@ -112,6 +117,11 @@ import { t } from '../i18n';
 import { derivedAssertion } from '../assertion-identity';
 import { unreviewedAdditions } from './status-mark';
 import { locateTokenSpans } from '../token-tree/token-tree';
+import {
+    buildRuleFixes,
+    ruleErrorsFrom,
+    type RuleErrorFix,
+} from './rule-errors';
 import {
     categoriesByScope,
     factsInScopes,
@@ -291,8 +301,11 @@ export class DecisionFlow extends ComponentBase {
     private _currentCategoryId = '';
     private flowEl!: HTMLDivElement;
     private announcer!: HTMLDivElement;
-    /** When true, render() focuses the active option after rebuilding the DOM. */
-    private _restoreFocusAfterRender = false;
+    /**
+     * Restore an edited option, or a destination step's first selected/usable
+     * option.
+     */
+    private _restoreFocusAfterRender: boolean | 'step' = false;
     /** When true, render() focuses the chosen option's value field instead. */
     private _focusValueField = false;
     /**
@@ -324,6 +337,8 @@ export class DecisionFlow extends ComponentBase {
     private editedCategory = '';
     private optionsSequence = 0;
     private pickSequence = 0;
+    /** A later user choice cancels an earlier choice's pending navigation. */
+    private choiceSequence = 0;
     private judgeSequence = 0;
     private locked = false;
     private stopObservingLock?: () => void;
@@ -331,6 +346,11 @@ export class DecisionFlow extends ComponentBase {
     private rendering = false;
     private catalogChangedDuringPress = false;
     private pendingText: PendingText | null = null;
+    private ruleFixes: readonly RuleErrorFix[] = [];
+    private ruleFixesInput: string | null = null;
+    private fixesEl: HTMLDivElement | null = null;
+    private fixesSignature = '';
+    private focusAfterRuleFix = false;
     /** True while a committed store state is being applied. */
     private applyingStoreState = false;
     /**
@@ -556,6 +576,7 @@ export class DecisionFlow extends ComponentBase {
     }
 
     protected setup(): void {
+        this.injectComponentStyles(choiceButtonCss);
         this.injectComponentStyles(decisionFlowCss);
 
         const listed = this.listedScopes();
@@ -634,6 +655,12 @@ export class DecisionFlow extends ComponentBase {
         this.flowEl.className = 'ez-decision-flow';
         this.flowEl.setAttribute('role', 'group');
         this.flowEl.setAttribute('aria-label', 'Decision flow');
+        this.flowEl.tabIndex = 0;
+        this.flowEl.addEventListener('focus', () => {
+            if (document.activeElement !== this.flowEl) return;
+            this.setOpen(true);
+            this.focusCurrentStep();
+        });
         this.applySuiteFrame(this.flowEl);
         this.headerEl = document.createElement('div');
         this.headerEl.className = 'ez-decision-flow__header';
@@ -667,8 +694,8 @@ export class DecisionFlow extends ComponentBase {
         this.previewEl.setAttribute('aria-hidden', 'true');
         this.previewEl.hidden = true;
         this.flowEl.append(
-            this.headerEl,
             this.stepEl,
+            this.headerEl,
             this.valuesEl,
             this.previewEl,
         );
@@ -680,10 +707,6 @@ export class DecisionFlow extends ComponentBase {
 
         this.announcer = createAnnouncer();
         this.container.appendChild(this.announcer);
-        this.appendKeyboardHints([
-            { keys: '\u2190/\u2192', action: 'steps' },
-            { keys: 'Enter', action: 'go to step' },
-        ]);
 
         this.pickerPort = this.composerPort('additive');
         if (this.multiScope) {
@@ -719,6 +742,11 @@ export class DecisionFlow extends ComponentBase {
                 this.setOpen(true);
         });
         this.flowEl.addEventListener('focusout', this.focusOut);
+        this.flowEl.addEventListener(
+            'keydown',
+            (event) => this.onSectionKeydown(event),
+            true,
+        );
         this.flowEl.addEventListener('pointerdown', (event) => {
             this.pointerActive = true;
             this.lastPointerType = event.pointerType;
@@ -728,10 +756,22 @@ export class DecisionFlow extends ComponentBase {
                 this.dismissSuiteStatusPopover();
         });
         this.flowEl.addEventListener('click', (event) => {
+            const path = event.composedPath();
+            const chrome =
+                this.suiteChrome && path.includes(this.suiteChrome.element);
+            const control = path.some(
+                (node) =>
+                    node instanceof Element &&
+                    node.matches('button, input, select, textarea, a[href]'),
+            );
             this.finishPointer();
             this.requestOptions();
-            if (!this.suiteChrome?.element.contains(event.target as Node))
+            if (!chrome) {
                 this.setOpen(true);
+                // The compact summary has no native focus behavior. Opening
+                // it must put the keyboard on the step it just revealed.
+                if (!control) this.focusCurrentStep();
+            }
         });
         // Touch browsers may dispatch click after pointerup in a later task.
         // Keep an inside press mounted until click; an outside release cancels it.
@@ -785,6 +825,11 @@ export class DecisionFlow extends ComponentBase {
     }
 
     protected override onAssertionsChanged(): void {
+        if (this.focusAfterRuleFix) {
+            this.focusAfterRuleFix = false;
+            if (this.open && this.flowEl?.contains(document.activeElement))
+                this._restoreFocusAfterRender = 'step';
+        }
         ++this.optionsSequence;
         ++this.pickSequence;
         const contextKey = JSON.stringify(this.getProcessingContext()) ?? '';
@@ -856,6 +901,8 @@ export class DecisionFlow extends ComponentBase {
         refused?: { assessment?: RenderAssessment },
         byScope?: ReadonlyMap<string, readonly ValidationError[]>,
     ): void {
+        this.ruleFixes = ruleErrorsFrom(errors, proposedFixes, warnings).fixes;
+        this.ruleFixesInput = this.proofInputKey();
         this.allErrors = errors.map((error) => error.message);
         this.errorsByCategory = new Map();
         // An error belongs to the category it names, or to the categories
@@ -957,13 +1004,15 @@ export class DecisionFlow extends ComponentBase {
     }
 
     /**
-     * Read the stated marking on each of the flow's scopes and merge the
-     * reports.
+     * Judge each scope's output, then ask for whole-marking remedies using the
+     * automatic output that preserves every represented surface.
      */
     private async judgeInScopes(refused?: {
         assessment?: RenderAssessment;
     }): Promise<void> {
         const sequence = ++this.judgeSequence;
+        const inputKey = this.proofInputKey();
+        this.clearRuleFixes();
         const show = (
             errors: ValidationError[],
             proposedFixes: Fix[] = [],
@@ -998,7 +1047,12 @@ export class DecisionFlow extends ComponentBase {
                     ),
                 ),
             );
-            if (this._destroyed || sequence !== this.judgeSequence) return;
+            if (
+                this._destroyed ||
+                sequence !== this.judgeSequence ||
+                inputKey !== this.proofInputKey()
+            )
+                return;
             const once = <T>(items: T[]) => {
                 const seen = new Set<string>();
                 return items.filter((item) => {
@@ -1008,9 +1062,22 @@ export class DecisionFlow extends ComponentBase {
                     return true;
                 });
             };
+            const errors = once(results.flatMap((r) => r.errors ?? []));
+            const whole =
+                this.multiScope && errors.length > 0
+                    ? await Promise.resolve(this.callWholeProcess(stated))
+                    : null;
+            if (
+                this._destroyed ||
+                sequence !== this.judgeSequence ||
+                inputKey !== this.proofInputKey()
+            )
+                return;
             show(
-                once(results.flatMap((r) => r.errors ?? [])),
-                once(results.flatMap((r) => r.proposedFixes ?? [])),
+                errors,
+                this.multiScope
+                    ? (whole?.proposedFixes ?? [])
+                    : once(results.flatMap((r) => r.proposedFixes ?? [])),
                 once(results.flatMap((r) => r.warnings ?? [])),
                 new Map(
                     scopes.flatMap((scope, i) =>
@@ -1019,9 +1086,36 @@ export class DecisionFlow extends ComponentBase {
                 ),
             );
         } catch (error) {
-            if (this._destroyed || sequence !== this.judgeSequence) return;
+            if (
+                this._destroyed ||
+                sequence !== this.judgeSequence ||
+                inputKey !== this.proofInputKey()
+            )
+                return;
             this.showReadFailure(error);
         }
+    }
+
+    /**
+     * The complete input a remedy was proved against, including external
+     * coverage.
+     */
+    private proofInputKey(): string {
+        return JSON.stringify([
+            statedAssertions(this.assertions),
+            this.getProcessingContext(),
+            (this.options.resolveParts?.() ?? []).filter((part) => part.trim()),
+        ]);
+    }
+
+    /**
+     * Pending or superseded judgments cannot leave their previous actions
+     * active.
+     */
+    private clearRuleFixes(): void {
+        this.ruleFixes = [];
+        this.ruleFixesInput = null;
+        if (this.flowEl) this.renderRuleFixes();
     }
 
     destroy(): void {
@@ -1039,12 +1133,19 @@ export class DecisionFlow extends ComponentBase {
         this.container.innerHTML = '';
     }
 
+    /** A new author edit cancels any earlier pending automatic step change. */
+    protected override beginUserEdit(): void {
+        ++this.choiceSequence;
+        super.beginUserEdit();
+    }
+
     /**
      * Drop a value-taking choice still waiting for its value. The flow stays on
      * its step: a clear or an undo changes the marking, not where the author
      * is.
      */
     protected override discardDraft(): void {
+        ++this.choiceSequence;
         this.pendingText = null;
     }
 
@@ -1082,6 +1183,15 @@ export class DecisionFlow extends ComponentBase {
             )
                 ? (prevFocused.dataset.index ?? null)
                 : null;
+            const prevNavigation = prevFocused?.classList?.contains(
+                'ez-decision-flow__nav-btn',
+            )
+                ? prevFocused.classList.contains(
+                      'ez-decision-flow__nav-btn--start',
+                  )
+                    ? 'start'
+                    : 'end'
+                : null;
             const prevWasTextField =
                 prevFocused?.classList?.contains(
                     'ez-decision-flow__text-field',
@@ -1112,6 +1222,7 @@ export class DecisionFlow extends ComponentBase {
                 ) {
                     field.setSelectionRange(selection[0], selection[1]);
                 }
+                return !!field && document.activeElement === field;
             };
 
             this.renderProgress();
@@ -1124,7 +1235,9 @@ export class DecisionFlow extends ComponentBase {
             // Restore keyboard focus after DOM rebuild. Set _restoreFocusAfterRender before
             // any action that calls render() as a side-effect (concept selection, Next/Back).
             // Initial setup render leaves the flag false so mount doesn't steal page focus.
-            if (this._focusValueField) {
+            if (document.activeElement === this.flowEl && this.open) {
+                this.focusCurrentStep();
+            } else if (this._focusValueField) {
                 this._focusValueField = false;
                 this._restoreFocusAfterRender = false;
                 this.flowEl
@@ -1133,12 +1246,15 @@ export class DecisionFlow extends ComponentBase {
                     )
                     ?.focus();
             } else if (this._restoreFocusAfterRender) {
+                const destination = this._restoreFocusAfterRender === 'step';
                 this._restoreFocusAfterRender = false;
                 const step = this.steps[this.currentStep];
-                if (prevWasTextField) {
-                    restoreTextFocus();
+                if (destination) {
+                    this.focusCurrentStep();
+                } else if (prevWasTextField) {
+                    if (!restoreTextFocus()) this.focusCurrentStep();
                 } else if (step && this.isTextInputStep(step)) {
-                    restoreTextFocus();
+                    if (!restoreTextFocus()) this.focusCurrentStep();
                 } else if (step?.single) {
                     // Toggle group: restore to the last-interacted option, or
                     // the roving-tabindex owner (the chosen option or first)
@@ -1151,7 +1267,11 @@ export class DecisionFlow extends ComponentBase {
                         this.flowEl.querySelector<HTMLElement>(
                             '[aria-pressed][tabindex="0"]',
                         );
-                    target?.focus();
+                    // A blocked button still accepts focus to explain its
+                    // reason. Keep this same-step target while live options
+                    // refresh; destination focus separately skips blocks.
+                    if (target && !target.matches(':disabled')) target.focus();
+                    else this.focusCurrentStep();
                 } else {
                     // Checkbox group: restore to the last-interacted option, or the first
                     const target = this._lastFocusConceptId
@@ -1161,7 +1281,11 @@ export class DecisionFlow extends ComponentBase {
                         : this.flowEl.querySelector<HTMLElement>(
                               '[role="checkbox"]',
                           );
-                    target?.focus();
+                    // A blocked button still accepts focus to explain its
+                    // reason. Keep this same-step target while live options
+                    // refresh; destination focus separately skips blocks.
+                    if (target && !target.matches(':disabled')) target.focus();
+                    else this.focusCurrentStep();
                 }
             } else if (focusedInComponent) {
                 // Secondary render (e.g. from catalog updates), restore to whatever was
@@ -1175,6 +1299,18 @@ export class DecisionFlow extends ComponentBase {
                             '.ez-decision-flow__step-dot[tabindex="0"]',
                         )
                     )?.focus();
+                } else if (prevNavigation) {
+                    const navigation =
+                        this.stepEl.querySelector<HTMLButtonElement>(
+                            `.ez-decision-flow__nav-btn--${prevNavigation}:not(:disabled)`,
+                        );
+                    if (navigation) navigation.focus();
+                    else if (!this.focusCurrentStep())
+                        this.dotsEl
+                            .querySelector<HTMLElement>(
+                                '.ez-decision-flow__step-dot[tabindex="0"]',
+                            )
+                            ?.focus();
                 } else if (prevWasTextField) {
                     restoreTextFocus();
                 } else if (prevConceptId) {
@@ -1191,6 +1327,11 @@ export class DecisionFlow extends ComponentBase {
                     restored?.focus();
                 }
             }
+            // Rebuilding the focused dot must not erase its keyboard preview.
+            const focusedDot = this.dotsEl.querySelector<HTMLElement>(
+                '.ez-decision-flow__step-dot:focus',
+            );
+            if (focusedDot) this.setPreview(Number(focusedDot.dataset.index));
         } finally {
             this.rendering = false;
         }
@@ -1531,8 +1672,12 @@ export class DecisionFlow extends ComponentBase {
             if (event.pointerType !== 'touch') this.setPreview(i);
         });
         dot.addEventListener('pointerleave', (event) => {
-            if (event.pointerType !== 'touch' && this.previewIndex === i)
-                this.setPreview(null);
+            if (event.pointerType !== 'touch' && this.previewIndex === i) {
+                const focused = this.dotsEl.querySelector<HTMLElement>(
+                    '.ez-decision-flow__step-dot:focus',
+                );
+                this.setPreview(focused ? Number(focused.dataset.index) : null);
+            }
         });
         dot.addEventListener('focus', () => {
             this.dotFocus = i;
@@ -1548,9 +1693,37 @@ export class DecisionFlow extends ComponentBase {
 
     /** Arrow keys, Home and End move between the dots. */
     private onDotKeydown(event: KeyboardEvent, i: number): void {
+        if (
+            event.altKey ||
+            event.ctrlKey ||
+            event.metaKey ||
+            event.shiftKey ||
+            event.isComposing
+        )
+            return;
+        if (event.key === 'ArrowDown') {
+            event.preventDefault();
+            this.focusCurrentStep();
+            return;
+        }
         const count = this.steps.length;
+        if (
+            event.key === 'Tab' ||
+            (event.key === 'ArrowRight' && i === count - 1)
+        ) {
+            const tools =
+                this.suiteChrome?.status.querySelector<HTMLButtonElement>(
+                    '.ez-status-mark:not(:disabled):not([aria-disabled="true"])',
+                );
+            if (tools && !tools.hidden) {
+                event.preventDefault();
+                event.stopPropagation();
+                tools.focus();
+            }
+            return;
+        }
         const next =
-            event.key === 'ArrowRight' || event.key === 'ArrowDown'
+            event.key === 'ArrowRight'
                 ? (i + 1) % count
                 : event.key === 'ArrowLeft' || event.key === 'ArrowUp'
                   ? (i - 1 + count) % count
@@ -1630,6 +1803,7 @@ export class DecisionFlow extends ComponentBase {
         const shown = this.shownCategories();
         this.open = open;
         this.stepEl.hidden = !open;
+        this.flowEl.tabIndex = open ? -1 : 0;
         this.flowEl.toggleAttribute('data-open', open);
         // Opening holds back what the author has not reached yet; at rest
         // everything missing shows. The open step's scope reads as current
@@ -1637,7 +1811,11 @@ export class DecisionFlow extends ComponentBase {
         if (open) {
             this.openWhereNeeded();
             this.furthestStep = Math.max(this.furthestStep, this.currentStep);
-        } else this.placeOnOptions = false;
+        } else {
+            this.placeOnOptions = false;
+            this.focusAfterRuleFix = false;
+            this._restoreFocusAfterRender = false;
+        }
         // Going to rest lets go of a step shown only because the author was
         // on it; the dots are drawn again only then, so a dot pressed to open
         // the flow stays in place for its click.
@@ -1694,6 +1872,52 @@ export class DecisionFlow extends ComponentBase {
         // The step left may have shown only because the author was on it.
         this.currentStep = this.steps.indexOf(target);
         return true;
+    }
+
+    /** Keep the current option as this step's one native Tab stop. */
+    private rememberStepOption(target: HTMLButtonElement): void {
+        this._lastFocusConceptId = target.dataset.conceptId ?? '';
+        for (const option of this.stepEl.querySelectorAll<HTMLButtonElement>(
+            '.ez-decision-flow__option',
+        ))
+            option.tabIndex = option === target ? 0 : -1;
+    }
+
+    /**
+     * Focus the first selected item in render order, otherwise the first usable
+     * item.
+     */
+    private focusCurrentStep(): boolean {
+        const options = [
+            ...this.stepEl.querySelectorAll<HTMLButtonElement>(
+                '[aria-pressed]:not(:disabled):not([aria-disabled="true"]), [role="checkbox"]:not(:disabled):not([aria-disabled="true"])',
+            ),
+        ];
+        const selected = options.find(
+            (option) =>
+                option.getAttribute('aria-pressed') === 'true' ||
+                option.getAttribute('aria-checked') === 'true',
+        );
+        const input = selected
+            ? selected
+                  .closest('.ez-decision-flow__value-option')
+                  ?.querySelector<HTMLInputElement>(
+                      '.ez-decision-flow__text-field:not(:disabled)',
+                  )
+            : options.length === 0
+              ? this.stepEl.querySelector<HTMLInputElement>(
+                    '.ez-decision-flow__text-field:not(:disabled)',
+                )
+              : null;
+        if (input) {
+            if (selected) this.rememberStepOption(selected);
+            input.focus();
+            return document.activeElement === input;
+        }
+        const target = selected ?? options[0];
+        if (target) this.rememberStepOption(target);
+        target?.focus();
+        return !!target && document.activeElement === target;
     }
 
     /** The step under the header: its title, its options and the arrows. */
@@ -1819,19 +2043,6 @@ export class DecisionFlow extends ComponentBase {
         return inferred;
     }
 
-    /** Draw an option the marking holds only by derivation (see inferredIn). */
-    private markInferred(btn: HTMLButtonElement): void {
-        btn.classList.add('ez-decision-flow__option--inferred');
-        btn.setAttribute(
-            btn.hasAttribute('aria-pressed') ? 'aria-pressed' : 'aria-checked',
-            'false',
-        );
-        btn.setAttribute(
-            'aria-label',
-            `${btn.textContent ?? ''}${t('aria.inferredSuffix')}`,
-        );
-    }
-
     /**
      * A single-choice step's options: toggle buttons, at most one pressed.
      * Pressing an unpressed option chooses it in place of the step's other
@@ -1849,17 +2060,76 @@ export class DecisionFlow extends ComponentBase {
             // pressing it makes it the author's own choice.
             const pressed =
                 concept.id === selected && !inferred.has(concept.id);
-            const btn = document.createElement('button');
-            btn.type = 'button';
-            btn.disabled = this.locked;
-            btn.className = 'ez-decision-flow__option';
-            btn.setAttribute('aria-pressed', pressed ? 'true' : 'false');
-            btn.tabIndex =
-                concept.id === selected || (!selected && concept.id === first)
-                    ? 0
-                    : -1;
-            btn.textContent = concept.label;
-            btn.dataset.conceptId = concept.id;
+            const btn = createChoiceButton(this.container.ownerDocument, {
+                mode: 'toggle',
+                label: concept.label,
+                reference: {
+                    conceptId: concept.id,
+                    categoryId: step.categoryId,
+                },
+                selected: pressed,
+                disabled: this.locked,
+                blocked,
+                tabIndex:
+                    concept.id === selected ||
+                    (!selected && concept.id === first)
+                        ? 0
+                        : -1,
+                className:
+                    'ez-decision-flow__option' +
+                    (inferred.has(concept.id)
+                        ? ' ez-decision-flow__option--inferred'
+                        : ''),
+                inferred: inferred.has(concept.id),
+                onExplainBlocked: () =>
+                    void this.showBlockReason(step, concept),
+                onHideExplanation: () => {
+                    if (this.reasonConcept === concept.id)
+                        this.hideBlockReason();
+                },
+                onActivate: () => {
+                    if (
+                        this._destroyed ||
+                        this.enhancedInput?.matches(':disabled, [readonly]')
+                    )
+                        return;
+                    // Restore focus to this option after the DOM rebuild that follows reprocess().
+                    this._restoreFocusAfterRender = true;
+                    this._lastFocusConceptId = concept.id;
+                    this.pick(step, concept.id, () => {
+                        if (concept.textInput)
+                            this.chooseValueConcept(step, concept);
+                        else if (pressed)
+                            this.toggleConcept(
+                                step.categoryId,
+                                concept.id,
+                                true,
+                            );
+                        // A plain choice answers the step, so the flow moves on;
+                        // a value-taking one waits for its value.
+                        else {
+                            const choice = this.choiceSequence;
+                            void this.selectConcept(
+                                step.categoryId,
+                                concept.id,
+                            ).then(
+                                () =>
+                                    void this.advanceFrom(
+                                        step.categoryId,
+                                        choice,
+                                    ),
+                            );
+                        }
+                        announce(
+                            this.announcer,
+                            pressed
+                                ? `Deselected ${concept.label}`
+                                : `Selected ${concept.label}`,
+                        );
+                    });
+                },
+            });
+            btn.addEventListener('focus', () => this.rememberStepOption(btn));
             this.describeOption(
                 btn,
                 step,
@@ -1867,69 +2137,6 @@ export class DecisionFlow extends ComponentBase {
                 optionsEl,
                 inferred.get(concept.id),
             );
-            if (inferred.has(concept.id)) this.markInferred(btn);
-            if (blocked) this.blockOption(btn, step, concept);
-
-            btn.addEventListener('click', () => {
-                if (
-                    this._destroyed ||
-                    this.enhancedInput?.matches(':disabled, [readonly]')
-                )
-                    return;
-                if (blocked) {
-                    void this.showBlockReason(step, concept);
-                    return;
-                }
-                // Restore focus to this option after the DOM rebuild that follows reprocess().
-                this._restoreFocusAfterRender = true;
-                this._lastFocusConceptId = concept.id;
-                this.pick(step, concept.id, () => {
-                    if (concept.textInput)
-                        this.chooseValueConcept(step, concept);
-                    else if (pressed)
-                        this.toggleConcept(step.categoryId, concept.id, true);
-                    // A plain choice answers the step, so the flow moves on;
-                    // a value-taking one waits for its value.
-                    else
-                        void this.selectConcept(
-                            step.categoryId,
-                            concept.id,
-                        ).then(() => void this.advanceFrom(step.categoryId));
-                    announce(
-                        this.announcer,
-                        pressed
-                            ? `Deselected ${concept.label}`
-                            : `Selected ${concept.label}`,
-                    );
-                });
-            });
-
-            btn.addEventListener('keydown', (e: KeyboardEvent) => {
-                const toggles = Array.from(
-                    optionsEl.querySelectorAll<HTMLButtonElement>(
-                        '[aria-pressed]',
-                    ),
-                );
-                const idx = toggles.indexOf(btn);
-                let next = -1;
-
-                if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
-                    next = (idx + 1) % toggles.length;
-                } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
-                    next = (idx - 1 + toggles.length) % toggles.length;
-                }
-
-                if (next >= 0) {
-                    e.preventDefault();
-                    // Arrow keys move focus only: no selection commit. The user presses
-                    // Enter or Space (which triggers a click event on the focused button)
-                    // to choose or un-choose.
-                    toggles.forEach((o, j) => {
-                        o.tabIndex = j === next ? 0 : -1;
-                    });
-                    toggles[next].focus();
-                }
-            });
 
             optionsEl.appendChild(
                 concept.textInput && chosen.has(concept.id)
@@ -1944,34 +2151,44 @@ export class DecisionFlow extends ComponentBase {
      * back only because they conflict with what the marking holds, which show
      * blocked with the reason. An option under a parent concept stays out until
      * one of its parents is chosen, and one outside the step's scope never
-     * shows.
+     * shows. Roots and siblings keep their position order, with each available
+     * descendant immediately following its parent.
      */
     private stepOptions(
         step: StepDef,
     ): { concept: ConceptDef; blocked: boolean }[] {
         const offered = new Set(this.visibleConcepts(step).map((c) => c.id));
         if (!this.catalogReady || !this.catalogFor(step))
-            return step.concepts.map((concept) => ({
-                concept,
-                blocked: false,
-            }));
+            return orderChoiceOptions(
+                step.concepts.map((concept) => ({
+                    concept,
+                    blocked: false,
+                })),
+                this.scheme.concepts,
+            );
         const held = new Set(this.assertions.map((a) => a.conceptId));
-        return step.concepts.flatMap<{
-            concept: ConceptDef;
-            blocked: boolean;
-        }>((concept) => {
-            if (offered.has(concept.id)) return [{ concept, blocked: false }];
-            const view = this.scheme.concepts.find((c) => c.id === concept.id);
-            const parents = view?.parents ?? [];
-            const inScope =
-                !step.scope ||
-                !view?.scopes ||
-                view.scopes.includes(step.scope);
-            return inScope &&
-                (parents.length === 0 || parents.some((p) => held.has(p)))
-                ? [{ concept, blocked: true }]
-                : [];
-        });
+        return orderChoiceOptions(
+            step.concepts.flatMap<{
+                concept: ConceptDef;
+                blocked: boolean;
+            }>((concept) => {
+                if (offered.has(concept.id))
+                    return [{ concept, blocked: false }];
+                const view = this.scheme.concepts.find(
+                    (c) => c.id === concept.id,
+                );
+                const parents = view?.parents ?? [];
+                const inScope =
+                    !step.scope ||
+                    !view?.scopes ||
+                    view.scopes.includes(step.scope);
+                return inScope &&
+                    (parents.length === 0 || parents.some((p) => held.has(p)))
+                    ? [{ concept, blocked: true }]
+                    : [];
+            }),
+            this.scheme.concepts,
+        );
     }
 
     /**
@@ -1985,47 +2202,20 @@ export class DecisionFlow extends ComponentBase {
         optionsEl: HTMLElement,
         why?: string | null,
     ): void {
-        const lines = [
-            why ?? '',
-            concept.name !== concept.label ? concept.name : '',
+        const hint = conceptHint(
+            concept.name,
+            concept.label,
             concept.description,
-        ].filter(Boolean);
-        if (lines.length === 0) return;
-        btn.title = lines.join('\n');
+            why,
+        );
+        if (!hint.title) return;
+        btn.title = hint.title;
         const description = document.createElement('span');
         description.hidden = true;
         description.id = `df-desc-${step.categoryId}-${concept.id}`;
-        description.textContent = lines
-            .map((line) => (/[.!?]$/.test(line) ? line : `${line}.`))
-            .join(' ');
+        description.textContent = hint.description;
         optionsEl.appendChild(description);
         btn.setAttribute('aria-describedby', description.id);
-    }
-
-    /**
-     * An option the marking's current choices rule out: it stays in its place,
-     * unavailable, and says why on hover, focus or a tap. Choosing it never
-     * takes another choice away.
-     */
-    private blockOption(
-        btn: HTMLButtonElement,
-        step: StepDef,
-        concept: ConceptDef,
-    ): void {
-        btn.setAttribute('aria-disabled', 'true');
-        btn.dataset.blocked = '';
-        const show = () => void this.showBlockReason(step, concept);
-        const hide = () => {
-            if (this.reasonConcept === concept.id) this.hideBlockReason();
-        };
-        btn.addEventListener('pointerenter', (event) => {
-            if (event.pointerType !== 'touch') show();
-        });
-        btn.addEventListener('pointerleave', (event) => {
-            if (event.pointerType !== 'touch') hide();
-        });
-        btn.addEventListener('focus', show);
-        btn.addEventListener('blur', hide);
     }
 
     /** Show why `concept` is unavailable, under the step's options. */
@@ -2092,19 +2282,7 @@ export class DecisionFlow extends ComponentBase {
                 ...(step.scope ? { surface: step.scope } : {}),
             }),
         );
-        const fresh = (message: string) => !this.allErrors.includes(message);
-        const errors = (result.errors ?? []).filter((e) => fresh(e.message));
-        const fixes = result.appliedFixes ?? [];
-        const touches = (refs: readonly AssertionRef[] | undefined) =>
-            (refs ?? []).some((ref) => ref.conceptId === concept.id);
-        return (
-            errors.find((e) => e.affectedConcepts?.includes(concept.id))
-                ?.message ??
-            fixes.find((f) => touches(f.remove) || touches(f.add))?.message ??
-            fixes.find((f) => (f.remove ?? []).length > 0)?.message ??
-            errors[0]?.message ??
-            t('composer.unavailable')
-        );
+        return choiceBlockReason(result, concept.id, this.allErrors);
     }
 
     /**
@@ -2393,22 +2571,73 @@ export class DecisionFlow extends ComponentBase {
     private renderCheckboxOptions(step: StepDef, optionsEl: HTMLElement): void {
         const selectedIds = this.chosenIn(step);
         const inferred = this.inferredIn(step);
+        const options = this.stepOptions(step);
+        const stop =
+            options.find(
+                ({ concept }) => concept.id === this._lastFocusConceptId,
+            ) ??
+            options.find(
+                ({ concept }) =>
+                    selectedIds.has(concept.id) && !inferred.has(concept.id),
+            ) ??
+            options.find(({ blocked }) => !blocked) ??
+            options[0];
 
-        for (const { concept, blocked } of this.stepOptions(step)) {
+        for (const { concept, blocked } of options) {
             // An option the marking holds only by derivation is not checked:
             // pressing it makes it the author's own choice.
             const isChecked =
                 selectedIds.has(concept.id) && !inferred.has(concept.id);
-            const btn = document.createElement('button');
-            btn.type = 'button';
-            btn.disabled = this.locked;
-            btn.className = 'ez-decision-flow__option';
-            btn.setAttribute('role', 'checkbox');
-            btn.setAttribute('aria-checked', isChecked ? 'true' : 'false');
-            // Checkboxes are independently focusable: no roving tabindex.
-            btn.tabIndex = 0;
-            btn.textContent = concept.label;
-            btn.dataset.conceptId = concept.id;
+            const btn = createChoiceButton(this.container.ownerDocument, {
+                mode: 'checkbox',
+                label: concept.label,
+                reference: {
+                    conceptId: concept.id,
+                    categoryId: step.categoryId,
+                },
+                selected: isChecked,
+                disabled: this.locked,
+                blocked,
+                tabIndex: concept.id === stop?.concept.id ? 0 : -1,
+                className:
+                    'ez-decision-flow__option' +
+                    (inferred.has(concept.id)
+                        ? ' ez-decision-flow__option--inferred'
+                        : ''),
+                inferred: inferred.has(concept.id),
+                onExplainBlocked: () =>
+                    void this.showBlockReason(step, concept),
+                onHideExplanation: () => {
+                    if (this.reasonConcept === concept.id)
+                        this.hideBlockReason();
+                },
+                onActivate: () => {
+                    if (
+                        this._destroyed ||
+                        this.enhancedInput?.matches(':disabled, [readonly]')
+                    )
+                        return;
+                    this._restoreFocusAfterRender = true;
+                    this._lastFocusConceptId = concept.id;
+                    this.pick(step, concept.id, () => {
+                        if (concept.textInput)
+                            this.chooseValueConcept(step, concept);
+                        else
+                            this.toggleConcept(
+                                step.categoryId,
+                                concept.id,
+                                isChecked,
+                            );
+                        announce(
+                            this.announcer,
+                            isChecked
+                                ? `Deselected ${concept.label}`
+                                : `Selected ${concept.label}`,
+                        );
+                    });
+                },
+            });
+            btn.addEventListener('focus', () => this.rememberStepOption(btn));
             this.describeOption(
                 btn,
                 step,
@@ -2416,45 +2645,6 @@ export class DecisionFlow extends ComponentBase {
                 optionsEl,
                 inferred.get(concept.id),
             );
-            if (inferred.has(concept.id)) this.markInferred(btn);
-            if (blocked) this.blockOption(btn, step, concept);
-
-            btn.addEventListener('click', () => {
-                if (
-                    this._destroyed ||
-                    this.enhancedInput?.matches(':disabled, [readonly]')
-                )
-                    return;
-                if (blocked) {
-                    void this.showBlockReason(step, concept);
-                    return;
-                }
-                this._restoreFocusAfterRender = true;
-                this._lastFocusConceptId = concept.id;
-                this.pick(step, concept.id, () => {
-                    if (concept.textInput)
-                        this.chooseValueConcept(step, concept);
-                    else
-                        this.toggleConcept(
-                            step.categoryId,
-                            concept.id,
-                            isChecked,
-                        );
-                    announce(
-                        this.announcer,
-                        isChecked
-                            ? `Deselected ${concept.label}`
-                            : `Selected ${concept.label}`,
-                    );
-                });
-            });
-
-            // Space toggles a choice; Enter moves on to the next step.
-            btn.addEventListener('keydown', (event: KeyboardEvent) => {
-                if (event.key !== 'Enter') return;
-                event.preventDefault();
-                this.goToStep(this.currentStep + 1);
-            });
 
             optionsEl.appendChild(
                 concept.textInput && isChecked
@@ -2467,7 +2657,8 @@ export class DecisionFlow extends ComponentBase {
     /**
      * Move to another step. A value-taking choice left without a value is
      * dropped; one with a value is in the marking already. A jump from a dot
-     * keeps the keyboard on the dots; any other move takes it to the step.
+     * keeps the keyboard on the dots; any other move focuses the destination's
+     * first selected item in render order, otherwise its first usable item.
      */
     private goToStep(index: number, from: 'dot' | 'step' = 'step'): void {
         const steps = this.steps;
@@ -2478,7 +2669,7 @@ export class DecisionFlow extends ComponentBase {
         this.furthestStep = Math.max(this.furthestStep, index);
         this._currentCategoryId = steps[index].categoryId;
         this.dotFocus = index;
-        this._restoreFocusAfterRender = from === 'step';
+        this._restoreFocusAfterRender = from === 'step' ? 'step' : false;
         this.render();
         if (from === 'dot')
             this.dotsEl
@@ -2493,10 +2684,13 @@ export class DecisionFlow extends ComponentBase {
     }
 
     /**
-     * After a choice in the step for `categoryId` settles, move on to the next
-     * step, unless the author has moved somewhere else meanwhile.
+     * After a positive choice settles, move on unless a later user choice
+     * replaced that intent or the author moved to another step.
      */
-    private async advanceFrom(categoryId: string): Promise<void> {
+    private async advanceFrom(
+        categoryId: string,
+        choice: number,
+    ): Promise<void> {
         // Which step comes next is the engine's answer for the new marking: a
         // choice can bring steps or take them away. Wait for the options it
         // started loading, and for any load that one started in turn, a
@@ -2506,7 +2700,13 @@ export class DecisionFlow extends ComponentBase {
             await loading.catch(() => {});
             if (loading === this.optionsLoading) break;
         }
-        if (this._destroyed || this._currentCategoryId !== categoryId) return;
+        if (
+            this._destroyed ||
+            !this.open ||
+            this._currentCategoryId !== categoryId ||
+            choice !== this.choiceSequence
+        )
+            return;
         this.goToStep(this.currentStep + 1);
     }
 
@@ -2554,6 +2754,7 @@ export class DecisionFlow extends ComponentBase {
      * its step, and the engine's other messages.
      */
     private renderValues(): void {
+        this.renderRuleFixes();
         this.restEl.replaceChildren();
         this.valuesEl.replaceChildren();
         this.valuesEl.hidden = !this.multiScope;
@@ -2586,6 +2787,266 @@ export class DecisionFlow extends ComponentBase {
             this.valuesEl.appendChild(block);
         }
         if (!texts && this.resultWriting !== key) void this.writeResult(key);
+    }
+
+    /** Show the engine's whole-marking remedies once, beside the scoped report. */
+    private renderRuleFixes(): void {
+        const fixes = this.locked ? [] : this.ruleFixes;
+        const signature = JSON.stringify(
+            fixes.map(({ label, fix }) => [label, fix.rendered]),
+        );
+        if (signature === this.fixesSignature) return;
+        this.fixesSignature = signature;
+        if (!this.fixesEl && fixes.length === 0) return;
+        if (!this.fixesEl) {
+            this.fixesEl = document.createElement('div');
+            this.fixesEl.className =
+                'ez-validation-errors ez-decision-flow__fixes';
+            this.flowEl.insertBefore(this.fixesEl, this.previewEl);
+        }
+        if (this.open && this.fixesEl.contains(document.activeElement)) {
+            this.focusCurrentStep();
+            this._restoreFocusAfterRender = 'step';
+        }
+        this.fixesEl.hidden = fixes.length === 0;
+        this.fixesEl.replaceChildren(
+            ...(fixes.length
+                ? buildRuleFixes(
+                      this.container.ownerDocument,
+                      fixes,
+                      (previous) => {
+                          if (
+                              this._destroyed ||
+                              this.locked ||
+                              this.enhancedInput?.matches(
+                                  ':disabled, [readonly]',
+                              )
+                          )
+                              return;
+                          if (this.ruleFixesInput !== this.proofInputKey()) {
+                              this.clearRuleFixes();
+                              return;
+                          }
+                          const current = this.ruleFixes.find(
+                              ({ fix }) => fix.rendered === previous.rendered,
+                          );
+                          if (!current) return;
+                          const focus =
+                              this.open &&
+                              this.flowEl.contains(document.activeElement);
+                          if (focus) this.focusCurrentStep();
+                          this.focusAfterRuleFix = focus;
+                          this.ruleFixHandler()(current.fix);
+                      },
+                  )
+                : []),
+        );
+    }
+
+    /** Move between steps, options and remedies without trapping normal Tab. */
+    private onSectionKeydown(event: KeyboardEvent): void {
+        if (
+            event.altKey ||
+            event.ctrlKey ||
+            event.metaKey ||
+            event.shiftKey ||
+            event.isComposing
+        )
+            return;
+        const target = event.target as HTMLElement;
+        if (
+            target ===
+                this.suiteChrome?.status.querySelector('.ez-status-mark') &&
+            event.key === 'ArrowDown'
+        ) {
+            event.preventDefault();
+            event.stopPropagation();
+            this.setOpen(true);
+            this.focusCurrentStep();
+            return;
+        }
+        const clear =
+            this.suiteChrome?.element.querySelector('.ez-clear-button');
+        if (target === clear && event.key === 'ArrowDown') {
+            event.preventDefault();
+            event.stopPropagation();
+            this.setOpen(true);
+            this.stepEl
+                .querySelector<HTMLButtonElement>(
+                    '.ez-decision-flow__nav-btn--end:not(:disabled)',
+                )
+                ?.focus({ preventScroll: true });
+            return;
+        }
+        if (
+            event.key === 'ArrowLeft' &&
+            target === this.suiteChrome?.status.querySelector('.ez-status-mark')
+        ) {
+            const dots = [
+                ...this.dotsEl.querySelectorAll<HTMLButtonElement>(
+                    '.ez-decision-flow__step-dot',
+                ),
+            ];
+            if (dots.length) {
+                event.preventDefault();
+                event.stopPropagation();
+                dots.forEach(
+                    (dot, index) =>
+                        (dot.tabIndex = index === dots.length - 1 ? 0 : -1),
+                );
+                this.dotFocus = dots.length - 1;
+                dots.at(-1)?.focus();
+            }
+            return;
+        }
+        const fixes = [
+            ...(this.fixesEl?.querySelectorAll<HTMLButtonElement>(
+                '.ez-validation-errors__fix',
+            ) ?? []),
+        ];
+        const index = fixes.indexOf(target as HTMLButtonElement);
+        if (index >= 0) {
+            if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
+                event.preventDefault();
+                event.stopPropagation();
+                fixes[
+                    (index +
+                        (event.key === 'ArrowRight' ? 1 : -1) +
+                        fixes.length) %
+                        fixes.length
+                ]?.focus();
+            } else if (event.key === 'ArrowUp') {
+                event.preventDefault();
+                event.stopPropagation();
+                this.focusCurrentStep();
+            }
+            return;
+        }
+        const options = [
+            ...this.stepEl.querySelectorAll<HTMLButtonElement>(
+                '.ez-decision-flow__option:not(:disabled):not([aria-disabled="true"])',
+            ),
+        ];
+        const previous = this.stepEl.querySelector<HTMLButtonElement>(
+            '.ez-decision-flow__nav-btn--start:not(:disabled)',
+        );
+        const next = this.stepEl.querySelector<HTMLButtonElement>(
+            '.ez-decision-flow__nav-btn--end:not(:disabled)',
+        );
+        if (
+            (target === previous || target === next) &&
+            event.key === 'ArrowDown'
+        ) {
+            event.preventDefault();
+            event.stopPropagation();
+            if (!this.fixesEl?.hidden) fixes[0]?.focus();
+            return;
+        }
+        if (
+            (target === previous || target === next) &&
+            event.key === 'ArrowUp'
+        ) {
+            event.preventDefault();
+            event.stopPropagation();
+            if (target === next) {
+                this.suiteChrome?.element
+                    .querySelector<HTMLButtonElement>(
+                        '.ez-clear-button:not(:disabled):not([aria-disabled="true"])',
+                    )
+                    ?.focus();
+            } else {
+                const current = this.dotsEl.querySelector<HTMLButtonElement>(
+                    '[aria-current="step"]',
+                );
+                if (current) {
+                    this.dotsEl
+                        .querySelectorAll<HTMLButtonElement>(
+                            '.ez-decision-flow__step-dot',
+                        )
+                        .forEach(
+                            (dot) => (dot.tabIndex = dot === current ? 0 : -1),
+                        );
+                    current.focus();
+                }
+            }
+            return;
+        }
+        if (
+            focusTextCaretNeighbor(event, (edge) => {
+                const choices = [
+                    ...this.stepEl.querySelectorAll<HTMLElement>(
+                        '.ez-decision-flow__option:not(:disabled):not([aria-disabled="true"]), input:not(:disabled):not([aria-disabled="true"])',
+                    ),
+                ].filter(
+                    (choice) =>
+                        !choice.hidden &&
+                        getComputedStyle(choice).display !== 'none',
+                );
+                return (
+                    focusGridNeighbor(
+                        choices,
+                        target,
+                        edge === 'left' ? 'ArrowLeft' : 'ArrowRight',
+                    ) ?? (edge === 'left' ? previous : next)
+                );
+            })
+        )
+            return;
+        if (target === previous && event.key === 'ArrowRight') {
+            event.preventDefault();
+            event.stopPropagation();
+            options[0]?.focus();
+            return;
+        }
+        if (target === next && event.key === 'ArrowLeft') {
+            event.preventDefault();
+            event.stopPropagation();
+            options.at(-1)?.focus();
+            return;
+        }
+        const optionIndex = options.indexOf(target as HTMLButtonElement);
+        if (
+            optionIndex < 0 ||
+            !['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(
+                event.key,
+            )
+        )
+            return;
+        event.preventDefault();
+        event.stopPropagation();
+        let destination: HTMLElement | undefined;
+        if (event.key === 'ArrowLeft')
+            destination = options[optionIndex - 1] ?? previous ?? undefined;
+        else if (event.key === 'ArrowRight')
+            destination = options[optionIndex + 1] ?? next ?? undefined;
+        else {
+            const rows = focusGridRows(options);
+            const row = rows.findIndex((items) =>
+                items.includes(target as HTMLButtonElement),
+            );
+            const adjacent = rows[row + (event.key === 'ArrowUp' ? -1 : 1)];
+            if (adjacent) {
+                const current = target.getBoundingClientRect();
+                const center = (current.left + current.right) / 2;
+                destination = adjacent.reduce((best, candidate) => {
+                    const distance = (option: HTMLElement) => {
+                        const rect = option.getBoundingClientRect();
+                        return Math.abs((rect.left + rect.right) / 2 - center);
+                    };
+                    return distance(candidate) < distance(best)
+                        ? candidate
+                        : best;
+                });
+            } else if (event.key === 'ArrowUp') {
+                destination =
+                    this.dotsEl.querySelector<HTMLElement>(
+                        '[aria-current="step"]',
+                    ) ?? undefined;
+            } else if (!this.fixesEl?.hidden) destination = fixes[0];
+        }
+        if (destination?.matches('.ez-decision-flow__option'))
+            this.rememberStepOption(destination as HTMLButtonElement);
+        destination?.focus();
     }
 
     /**

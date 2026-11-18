@@ -104,6 +104,29 @@ afterEach(() => {
 });
 
 describe('editable component clear controls', () => {
+    it('returns keyboard Clear and Undo to a native select without an explicit tabindex', async () => {
+        const root = document.createElement('div');
+        root.innerHTML = '<input value="LOW">';
+        document.body.appendChild(root);
+        mounted = new SingleSelect();
+        await mounted.init(root, await engine(), { initialValue: 'LOW' });
+        const select = root.querySelector<HTMLSelectElement>('select')!;
+        expect(select.hasAttribute('tabindex')).toBe(false);
+        // Jsdom has no layout; model the visible native select the browser renders.
+        Object.defineProperty(select, 'offsetParent', { get: () => root });
+        const clear =
+            root.querySelector<HTMLButtonElement>('.ez-clear-button')!;
+        clear.focus();
+        clear.click();
+        await vi.waitFor(() => expect(mounted!.getAssertions()).toEqual([]));
+        expect(document.activeElement).toBe(select);
+        expect(clear.getAttribute('aria-label')).toBe('Undo clear');
+        clear.focus();
+        clear.click();
+        await vi.waitFor(() => expect(mounted!.getRendered()).toBe('LOW'));
+        await vi.waitFor(() => expect(document.activeElement).toBe(select));
+    });
+
     it('does not create a clear control for a decision flow with no categories', async () => {
         const root = document.createElement('div');
         root.setAttribute('data-ezclassify-decisionflow-categories', '[]');

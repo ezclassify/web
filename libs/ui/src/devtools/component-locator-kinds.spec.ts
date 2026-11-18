@@ -34,7 +34,6 @@ const HOST_OPTIONS = new Set([
     'data-ezclassify-hide-when-parent-has',
     'data-ezclassify-error-target',
     'data-ezclassify-no-tooltips',
-    'data-ezclassify-no-hints',
 ]);
 
 /** Every author attribute in the reference's host-level table. */

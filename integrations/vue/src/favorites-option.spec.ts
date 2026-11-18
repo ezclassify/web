@@ -117,8 +117,8 @@ describe('createEzClassify({ options: { favorites } })', () => {
             .querySelector<HTMLButtonElement>('.ez-status-mark')!
             .click();
         expect(
-            [...document.querySelectorAll('[role=tab]')].map(
-                (tab) => tab.textContent,
+            [...document.querySelectorAll('[role=tab]')].map((tab) =>
+                tab.getAttribute('aria-label'),
             ),
         ).toContain('Favorites');
     });
@@ -131,8 +131,8 @@ describe('createEzClassify({ options: { favorites } })', () => {
             .querySelector<HTMLButtonElement>('.ez-status-mark')!
             .click();
         expect(
-            [...document.querySelectorAll('[role=tab]')].map(
-                (tab) => tab.textContent,
+            [...document.querySelectorAll('[role=tab]')].map((tab) =>
+                tab.getAttribute('aria-label'),
             ),
         ).not.toContain('Favorites');
     });

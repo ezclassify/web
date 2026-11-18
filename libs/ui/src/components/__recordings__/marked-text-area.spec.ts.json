@@ -58,6 +58,231 @@
             "method": "POST",
             "statusCode": 200
         },
+        "0431a04402b7acb919e2681d7c6c583130166b00929bebb0960380037a854013": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "mta-fav-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "mta-fav-test",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "limits": { "regionsFound": 2, "status": "complete" },
+                    "results": [
+                        {
+                            "end": 3,
+                            "inner": "U",
+                            "marking": "(U)",
+                            "result": {
+                                "appliedFixes": [],
+                                "assertions": [
+                                    {
+                                        "categoryId": "level",
+                                        "conceptId": "U",
+                                        "confidence": "certain",
+                                        "source": "parse"
+                                    }
+                                ],
+                                "assessment": {
+                                    "collapsed": [],
+                                    "conflicts": [],
+                                    "emitted": [
+                                        {
+                                            "categoryId": "level",
+                                            "conceptId": "U"
+                                        }
+                                    ],
+                                    "omitted": [],
+                                    "unrepresentable": []
+                                },
+                                "errors": [],
+                                "inputWasValid": true,
+                                "notices": [],
+                                "recognition": {
+                                    "inputFormat": "portion",
+                                    "status": "complete",
+                                    "surface": "marking",
+                                    "unmatched": []
+                                },
+                                "rendered": "U",
+                                "valid": true,
+                                "warnings": []
+                            },
+                            "role": "part",
+                            "start": 0,
+                            "type": "portion",
+                            "wrapped": true
+                        },
+                        {
+                            "end": 15,
+                            "inner": "S",
+                            "marking": "(S)",
+                            "result": {
+                                "appliedFixes": [],
+                                "assertions": [
+                                    {
+                                        "categoryId": "level",
+                                        "conceptId": "S",
+                                        "confidence": "certain",
+                                        "source": "parse"
+                                    }
+                                ],
+                                "assessment": {
+                                    "collapsed": [],
+                                    "conflicts": [],
+                                    "emitted": [
+                                        {
+                                            "categoryId": "level",
+                                            "conceptId": "S"
+                                        }
+                                    ],
+                                    "omitted": [],
+                                    "unrepresentable": []
+                                },
+                                "errors": [],
+                                "inputWasValid": true,
+                                "notices": [],
+                                "recognition": {
+                                    "inputFormat": "portion",
+                                    "status": "complete",
+                                    "surface": "marking",
+                                    "unmatched": []
+                                },
+                                "rendered": "S",
+                                "valid": true,
+                                "warnings": []
+                            },
+                            "role": "part",
+                            "start": 12,
+                            "type": "portion",
+                            "wrapped": true
+                        }
+                    ],
+                    "unread": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "04737f4cb646b905ac889308b05ab4cc31a20cd67cb10031e7e239ae8819680b": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "mta-fav-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "mta-fav-test",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "limits": { "regionsFound": 2, "status": "complete" },
+                    "results": [
+                        {
+                            "end": 3,
+                            "inner": "S",
+                            "marking": "(S)",
+                            "result": {
+                                "appliedFixes": [],
+                                "assertions": [
+                                    {
+                                        "categoryId": "level",
+                                        "conceptId": "S",
+                                        "confidence": "certain",
+                                        "source": "parse"
+                                    }
+                                ],
+                                "assessment": {
+                                    "collapsed": [],
+                                    "conflicts": [],
+                                    "emitted": [
+                                        {
+                                            "categoryId": "level",
+                                            "conceptId": "S"
+                                        }
+                                    ],
+                                    "omitted": [],
+                                    "unrepresentable": []
+                                },
+                                "errors": [],
+                                "inputWasValid": true,
+                                "notices": [],
+                                "recognition": {
+                                    "inputFormat": "portion",
+                                    "status": "complete",
+                                    "surface": "marking",
+                                    "unmatched": []
+                                },
+                                "rendered": "S",
+                                "valid": true,
+                                "warnings": []
+                            },
+                            "role": "part",
+                            "start": 0,
+                            "type": "portion",
+                            "wrapped": true
+                        }
+                    ],
+                    "unread": [
+                        {
+                            "end": 20,
+                            "inner": "SECRET",
+                            "leading": true,
+                            "start": 12,
+                            "text": "(SECRET)"
+                        }
+                    ]
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "05c6f27aed53bf8b12ba6084c403df95489c29c4ed52c9ed254203939c3a9d74": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "mta-fav-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "mta-fav-test",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "suggestions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "S",
+                            "description": "Secret",
+                            "group": "Level",
+                            "label": "S",
+                            "name": "Secret",
+                            "order": 2,
+                            "selected": true,
+                            "views": { "default": "S" }
+                        }
+                    ],
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
         "0eeed68bede351e44bd5ef92b0ab5a2ef92273b8533787b7ba1eadef8efeb2be": {
             "body": {
                 "resolution": {
@@ -132,6 +357,45 @@
             },
             "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "GET",
+            "statusCode": 200
+        },
+        "136b04f0e4e5538f1073c149fa0f47f611565a5e69d06524db91ae7f281c2e06": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "mta-fav-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "mta-fav-test",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "limits": { "regionsFound": 2, "status": "complete" },
+                    "results": [],
+                    "unread": [
+                        {
+                            "end": 14,
+                            "inner": "Unclassified",
+                            "leading": true,
+                            "start": 0,
+                            "text": "(Unclassified)"
+                        },
+                        {
+                            "end": 31,
+                            "inner": "SECRET",
+                            "leading": true,
+                            "start": 23,
+                            "text": "(SECRET)"
+                        }
+                    ]
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
             "statusCode": 200
         },
         "138a2b360d81d2e66224b89653a5fba38c214e9331002d538239c838f42d4ab4": {
@@ -1345,6 +1609,83 @@
             "method": "POST",
             "statusCode": 200
         },
+        "74114f194665f99afcc132b24c65f7f270f4928d4f402ec2a08614b7a2fc7d85": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "mta-fav-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "mta-fav-test",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "limits": { "regionsFound": 2, "status": "complete" },
+                    "results": [
+                        {
+                            "end": 3,
+                            "inner": "U",
+                            "marking": "(U)",
+                            "result": {
+                                "appliedFixes": [],
+                                "assertions": [
+                                    {
+                                        "categoryId": "level",
+                                        "conceptId": "U",
+                                        "confidence": "certain",
+                                        "source": "parse"
+                                    }
+                                ],
+                                "assessment": {
+                                    "collapsed": [],
+                                    "conflicts": [],
+                                    "emitted": [
+                                        {
+                                            "categoryId": "level",
+                                            "conceptId": "U"
+                                        }
+                                    ],
+                                    "omitted": [],
+                                    "unrepresentable": []
+                                },
+                                "errors": [],
+                                "inputWasValid": true,
+                                "notices": [],
+                                "recognition": {
+                                    "inputFormat": "portion",
+                                    "status": "complete",
+                                    "surface": "marking",
+                                    "unmatched": []
+                                },
+                                "rendered": "U",
+                                "valid": true,
+                                "warnings": []
+                            },
+                            "role": "part",
+                            "start": 0,
+                            "type": "portion",
+                            "wrapped": true
+                        }
+                    ],
+                    "unread": [
+                        {
+                            "end": 21,
+                            "inner": "junkxyz",
+                            "leading": true,
+                            "start": 12,
+                            "text": "(junkxyz)"
+                        }
+                    ]
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
         "75b574958d872209bb1ebc4b6674f9e2d05521e2e06195eec99129deb0b25f57": {
             "body": {
                 "resolution": {
@@ -1373,6 +1714,53 @@
                     "notices": [],
                     "proposedFixes": [],
                     "rendered": "S",
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "772367eb33205eaec5d465f84d85abc991ff413ea2d48a8d3264f94f620ccd67": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "mta-fav-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "mta-fav-test",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "S",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            { "categoryId": "level", "conceptId": "S" }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "S",
+                    "renders": {},
                     "valid": true,
                     "warnings": []
                 }
@@ -1437,6 +1825,60 @@
                     "missing": [],
                     "missingLabels": [],
                     "rendered": "S"
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "7a781855b9abeeb837ba95021c224c4aec1d65cef3409a2f2ee9e71efea897d3": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "mta-fav-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "mta-fav-test",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [
+                        {
+                            "constraintId": "_recognition_incomplete",
+                            "message": "The input does not read as a marking."
+                        },
+                        {
+                            "constraintId": "_unmatched_token",
+                            "message": "\"Unclassified\" was not recognized: it matched no known concept and will be kept visible in the rendered marking."
+                        }
+                    ],
+                    "inputWasValid": false,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "recognition": {
+                        "corrections": [],
+                        "status": "unrecognized",
+                        "unmatched": [
+                            { "end": 12, "start": 0, "text": "Unclassified" }
+                        ]
+                    },
+                    "rendered": "Unclassified",
+                    "renders": {},
+                    "valid": false,
+                    "warnings": []
                 }
             },
             "headers": { "x-ezclassify-resolved-version": "1.0.0" },
@@ -2929,6 +3371,60 @@
             "method": "POST",
             "statusCode": 200
         },
+        "db01434c32bccf71331c12b8cd6ed060fd067c576474dab136ed71af024f230a": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "mta-fav-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "mta-fav-test",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [
+                        {
+                            "constraintId": "_recognition_incomplete",
+                            "message": "The input does not read as a marking."
+                        },
+                        {
+                            "constraintId": "_unmatched_token",
+                            "message": "\"junkxyz\" was not recognized: it matched no known concept and will be kept visible in the rendered marking."
+                        }
+                    ],
+                    "inputWasValid": false,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "recognition": {
+                        "corrections": [],
+                        "status": "unrecognized",
+                        "unmatched": [
+                            { "end": 7, "start": 0, "text": "junkxyz" }
+                        ]
+                    },
+                    "rendered": "junkxyz",
+                    "renders": {},
+                    "valid": false,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
         "db3bf77b93a0215f3a3002db854785cfbc2c456f9999e81ff8dc7668fdd92f8f": {
             "body": [],
             "headers": { "x-ezclassify-resolved-version": "1.0.0" },
@@ -3444,6 +3940,41 @@
             "body": [],
             "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "GET",
+            "statusCode": 200
+        },
+        "f7717575d1bae01d7f62ebd80ea78c806580fd0e1d882e9e012d41b04a56e3fc": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "mta-fav-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "mta-fav-test",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "suggestions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "S",
+                            "description": "Secret",
+                            "group": "Level",
+                            "label": "S",
+                            "name": "Secret",
+                            "order": 2,
+                            "selected": true,
+                            "views": { "default": "S" }
+                        }
+                    ],
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
             "statusCode": 200
         },
         "fa91f81bf7ec6fe4f19f0ebd85527cb2a74a0f407f003bab26957f229ba498e2": {

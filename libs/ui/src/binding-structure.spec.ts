@@ -56,6 +56,16 @@ function createContext(): ContextAdapter {
         appliedFixes: [],
     };
     const scheme = {
+        getScheme: () => ({
+            ...scheme.getSchemeMeta(),
+            referenceSurfaceLabel: {
+                singular: 'Handbook',
+                plural: 'Handbooks',
+            },
+            categories: scheme.listCategories(),
+            concepts,
+            labelPresets: [],
+        }),
         getSchemeMeta: () => ({
             id: 'test',
             version: '1.0.0',
