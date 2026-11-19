@@ -11,7 +11,9 @@ jobs:
     if: github.repository == 'ezclassify/web' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    environment: development-signal
+    environment:
+      name: development-signal
+      deployment: false
     steps:
       - name: Require the configured signal destination
         env:
