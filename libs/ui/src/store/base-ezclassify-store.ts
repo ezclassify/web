@@ -245,8 +245,10 @@ function withCategoriesFrom(
     ];
 }
 
+const abortedComposition = Symbol('aborted composition');
+
 /**
- * The engine's answer, or a rejection as soon as `signal` aborts. A superseded
+ * The engine's answer, or a sentinel as soon as `signal` aborts. A superseded
  * or torn-down composition settles at once even when the engine ignores the
  * signal and never answers. A synchronous answer passes straight through, so
  * the in-process engine keeps its single microtask.
@@ -254,13 +256,22 @@ function withCategoriesFrom(
 function answerOrAbort<T>(
     answer: T | PromiseLike<T>,
     signal: AbortSignal,
-): T | Promise<T> {
+): T | Promise<T | typeof abortedComposition> {
     if (!isPromiseLike(answer)) return answer;
-    return new Promise<T>((resolve, reject) => {
-        answer.then(resolve, reject);
-        signal.addEventListener('abort', () => reject(signal.reason), {
-            once: true,
-        });
+    return new Promise((resolve, reject) => {
+        const abort = () => resolve(abortedComposition);
+        answer.then(
+            (value) => {
+                signal.removeEventListener('abort', abort);
+                resolve(value);
+            },
+            (error: unknown) => {
+                signal.removeEventListener('abort', abort);
+                reject(error);
+            },
+        );
+        if (signal.aborted) abort();
+        else signal.addEventListener('abort', abort, { once: true });
     });
 }
 
@@ -1031,11 +1042,13 @@ export abstract class BaseEzClassifyStore implements EzClassifyStore {
             if (composition.kind === 'unread') {
                 const { layer } = composition;
                 const read = this.readRendered(id, layer.text, publish, []);
-                const reading = read.settle(
-                    await answerOrAbort(read.answer, publish.signal),
-                );
-                if (!this.isNewest(id, publish.sequence)) return;
-                layer.read = reading;
+                const answer = await answerOrAbort(read.answer, publish.signal);
+                if (
+                    answer === abortedComposition ||
+                    !this.isNewest(id, publish.sequence)
+                )
+                    return;
+                layer.read = read.settle(answer);
                 composition = this.compose(id);
                 // Still unread only if the layers changed, and the change that
                 // did it composes again.
@@ -1057,7 +1070,11 @@ export abstract class BaseEzClassifyStore implements EzClassifyStore {
                     ),
                     publish.signal,
                 );
-                if (!this.isNewest(id, publish.sequence)) return;
+                if (
+                    result === abortedComposition ||
+                    !this.isNewest(id, publish.sequence)
+                )
+                    return;
                 const edits = this.layersOf(id).edits.categories;
                 if (edits.size > 0) {
                     // An explicit category edit starts from this contributor
@@ -1068,9 +1085,12 @@ export abstract class BaseEzClassifyStore implements EzClassifyStore {
                         (category) => edits.has(category),
                     );
                     const read = this.readAssertions(id, assertions, publish);
-                    state = read.settle(
-                        await answerOrAbort(read.answer, publish.signal),
+                    const answer = await answerOrAbort(
+                        read.answer,
+                        publish.signal,
                     );
+                    if (answer === abortedComposition) return;
+                    state = read.settle(answer);
                 } else state = this.fromProcessResult('', result);
             } else if (composition.kind === 'blocked') {
                 // A category picker cannot correct text the parser did not
@@ -1090,9 +1110,9 @@ export abstract class BaseEzClassifyStore implements EzClassifyStore {
             } else if (composition.kind === 'text') {
                 const { layer, scoped } = composition;
                 const read = this.readRendered(id, layer.text, publish, scoped);
-                state = read.settle(
-                    await answerOrAbort(read.answer, publish.signal),
-                );
+                const answer = await answerOrAbort(read.answer, publish.signal);
+                if (answer === abortedComposition) return;
+                state = read.settle(answer);
                 if (this.isNewest(id, publish.sequence)) {
                     layer.read = {
                         ...state,
@@ -1107,9 +1127,9 @@ export abstract class BaseEzClassifyStore implements EzClassifyStore {
                     composition.assertions,
                     publish,
                 );
-                state = read.settle(
-                    await answerOrAbort(read.answer, publish.signal),
-                );
+                const answer = await answerOrAbort(read.answer, publish.signal);
+                if (answer === abortedComposition) return;
+                state = read.settle(answer);
             }
             if (!this.isNewest(id, publish.sequence)) return;
             this.keepRepairs(id, state);

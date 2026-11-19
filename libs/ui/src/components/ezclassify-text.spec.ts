@@ -99,6 +99,10 @@ function createMockEngine(): SchemeEngineAdapter {
             (scheme.concepts ?? []).filter((c: any) =>
                 c.categories?.includes(catId),
             ),
+        describeConcept: (id: string) => {
+            const concept = scheme.concepts.find((entry) => entry.id === id);
+            return { name: concept?.name ?? id, lines: [] };
+        },
         aggregate: vi.fn((inputs: string[]) => {
             const all = inputs.flatMap((s) =>
                 s
@@ -693,6 +697,9 @@ describe('EzClassifyText (declarative via EzClassifyUI)', () => {
                     `<input id="doc" data-ezclassify-controller="marking" value="c1,c2"><code data-ezclassify-controller="text" data-ezclassify-part-of="doc">c1</code>`,
                 ),
             ).toMatchObject({ role: 'part' });
+            expect(
+                root.querySelector('.marking-field-wrap #doc'),
+            ).not.toBeNull();
         });
     });
 

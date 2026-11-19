@@ -192,10 +192,20 @@ export function mountFieldChrome(
     // Every child change that resizes the row resizes its border box, which
     // is what the observer reports; the wrap itself is observed too, because a
     // border or direction change moves the row without resizing it.
+    // Measuring also writes styles that affect these boxes. Do that on the
+    // next frame so the observer can finish delivering the current sizes.
+    let frame: number | undefined;
+    const scheduleMeasure = () => {
+        if (frame !== undefined) return;
+        frame = requestAnimationFrame(() => {
+            frame = undefined;
+            measure();
+        });
+    };
     const observer =
         typeof ResizeObserver === 'undefined'
             ? null
-            : new ResizeObserver(measure);
+            : new ResizeObserver(scheduleMeasure);
     observer?.observe(element);
     observer?.observe(wrap);
     measure();
@@ -206,6 +216,7 @@ export function mountFieldChrome(
         measure,
         destroy() {
             observer?.disconnect();
+            if (frame !== undefined) cancelAnimationFrame(frame);
             element.removeEventListener('keydown', onKeydown);
             element.remove();
             wrap.style.removeProperty(FIELD_CHROME_INLINE_SIZE);

@@ -909,11 +909,15 @@ describe('GuideChecklist', () => {
          */
         async function initRemote(
             views: Promise<GuideStructuralView[]>,
+            evaluateMany?: () => Promise<EvaluationResult>,
         ): Promise<void> {
             const ctx = toCtx(engine);
-            (
-                ctx as unknown as { guide: { buildGuideViews: () => unknown } }
-            ).guide = { buildGuideViews: () => views };
+            const remoteGuide = {
+                buildGuideViews: () => views,
+                ...(evaluateMany && { evaluateMany }),
+            };
+            (ctx as unknown as { guide: typeof remoteGuide }).guide =
+                remoteGuide;
             await checklist.init(container, ctx);
         }
 
@@ -934,7 +938,9 @@ describe('GuideChecklist', () => {
 
         it('retains a selection set before the remote views arrive', async () => {
             const pending = deferred<GuideStructuralView[]>();
-            await initRemote(pending.promise);
+            const result = makeEvaluation('MARK-A');
+            const evaluateMany = vi.fn(async () => result);
+            await initRemote(pending.promise, evaluateMany);
             expect(() =>
                 checklist.setSelections(inTestGuide('rule-a')),
             ).not.toThrow();
@@ -945,6 +951,12 @@ describe('GuideChecklist', () => {
                         'input[value="rule-a"]',
                     )?.checked,
                 ).toBe(true),
+            );
+            await vi.waitFor(() =>
+                expect(checklist.getEvaluation()).toBe(result),
+            );
+            expect(evaluateMany).toHaveBeenCalledExactlyOnceWith(
+                inTestGuide('rule-a'),
             );
         });
 

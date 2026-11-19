@@ -907,12 +907,21 @@ export function runEzClassifyStoreSeedConformance(
 
         it('takes two seeds in a row, the second as the baseline, and keeps an edit made between them', async () => {
             const store = factory(lateEngine());
-            const first = store.seedRendered('doc', 'tier:secret');
-            const edit = pick(store, 'ctrl', 'alpha');
-            const second = store.seedRendered('doc', 'tier:confidential');
-            await Promise.all([first, edit, second]);
+            const errors = vi.spyOn(console, 'error');
+            try {
+                const first = store.seedRendered('doc', 'tier:secret');
+                const edit = pick(store, 'ctrl', 'alpha');
+                const second = store.seedRendered('doc', 'tier:confidential');
+                await Promise.all([first, edit, second]);
 
-            expect(facts(store)).toEqual(['ctrl:alpha', 'tier:confidential']);
+                expect(facts(store)).toEqual([
+                    'ctrl:alpha',
+                    'tier:confidential',
+                ]);
+                expect(errors).not.toHaveBeenCalled();
+            } finally {
+                errors.mockRestore();
+            }
         });
 
         it('lets a publish that names its category put back the value its caller read', async () => {

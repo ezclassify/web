@@ -993,6 +993,38 @@ describe('MarkedTextArea', () => {
  * scan bookkeeping advances only after the scan lands.
  */
 describe('MarkedTextArea scan failures', () => {
+    it('discards a pending scan rejection after teardown', async () => {
+        const container = document.createElement('div');
+        root.appendChild(container);
+        const textarea = document.createElement('textarea');
+        textarea.value = '(U) One paragraph.';
+        container.appendChild(textarea);
+        const engine = createAsyncMockEngine({ scheme: createProfile() });
+        let rejectScan!: (error: Error) => void;
+        const scan = vi.spyOn(engine, 'scan').mockReturnValueOnce(
+            new Promise<never>((_resolve, reject) => {
+                rejectScan = reject;
+            }),
+        );
+        const reported = vi.spyOn(console, 'error');
+        const field = new MarkedTextArea();
+        const initialized = field.init(container, engine as never);
+
+        try {
+            expect(scan).toHaveBeenCalledOnce();
+            field.destroy();
+            rejectScan(new Error('The host closed its connection.'));
+            await initialized;
+            expect(reported).not.toHaveBeenCalled();
+            expect(root.querySelector('.marked-textarea-display')).toBeNull();
+            expect(textarea.value).toBe('(U) One paragraph.');
+        } finally {
+            rejectScan(new Error('Test cleanup.'));
+            await initialized;
+            reported.mockRestore();
+        }
+    });
+
     it('re-scans text whose scan rejected', async () => {
         const container = document.createElement('div');
         root.appendChild(container);

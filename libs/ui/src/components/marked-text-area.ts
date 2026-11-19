@@ -1226,6 +1226,7 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
                 }),
             );
         } catch (error) {
+            if (this.tornDown) return;
             // The scan never landed, so the display still shows the previous
             // text's marks. Put the bookkeeping back where it was, guarded so a
             // late failure cannot undo a newer scan, and this text is scanned

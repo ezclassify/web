@@ -22,6 +22,7 @@ import type {
 } from '@ezclassify/types';
 import { ContextReference } from './context-reference';
 import { createAsyncMockEngine } from './async-engine-mock';
+import { schemeOnlyContext } from '../../test-fixtures/context-doubles';
 import {
     connectDemoContext,
     demoRuntimeSettled,
@@ -144,12 +145,11 @@ function remoteCtx(opts: {
     // listing reports the real composition: rules, empty, or an
     // absent-artifact route that rejects.
     return {
-        connected: true,
+        ...schemeOnlyContext(scheme),
         compositionPresence: {
             guides: opts.guides > 0,
             access: opts.access !== 'absent',
         },
-        scheme: scheme as never,
         // guide ops ALWAYS present, like the real client; inventory drives presence.
         guide: {
             listGuideMeta: () => guideMetas,
@@ -167,13 +167,9 @@ function remoteCtx(opts: {
                       : Promise.reject(new Error('404: no access policy')),
             describeAccessMarking: () => Promise.resolve(undefined),
         } as never,
+        describeCrosswalks: () => Promise.resolve([]),
         describeSchemes: () => Promise.resolve([]),
-        audit: () => Promise.resolve({} as never),
-        checkContextAccess: () => Promise.resolve({} as never),
-        accessRequirements: () => Promise.resolve({} as never),
-        translate: () => Promise.resolve({} as never),
-        destroy: () => {},
-    } as unknown as ContextAdapter;
+    };
 }
 
 function makeContainer(): HTMLDivElement {
@@ -312,21 +308,21 @@ describe('ContextReference', () => {
         });
 
         it('shows access synchronously for a full remote context', async () => {
-            component.init(
-                container,
-                remoteCtx({ guides: 1, access: 'rules' }),
-            );
-            expect(tabIds(container)).toEqual([
-                'handbook',
-                'guidebook',
-                'access',
-            ]);
-            await flush();
-            expect(tabIds(container)).toEqual([
-                'handbook',
-                'guidebook',
-                'access',
-            ]);
+            const remote = remoteCtx({ guides: 1, access: 'rules' });
+            const crosswalks = vi.spyOn(remote, 'describeCrosswalks');
+            const errors = vi.spyOn(console, 'error');
+            const tabs = ['handbook', 'guidebook', 'access'];
+            try {
+                const initialized = component.init(container, remote);
+                expect(tabIds(container)).toEqual(tabs);
+                await initialized;
+                await flush();
+                expect(tabIds(container)).toEqual(tabs);
+                expect(crosswalks).toHaveBeenCalledOnce();
+                expect(errors).not.toHaveBeenCalled();
+            } finally {
+                errors.mockRestore();
+            }
         });
 
         it('resolves the async guide surface into its panel', async () => {

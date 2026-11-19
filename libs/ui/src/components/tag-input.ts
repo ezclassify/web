@@ -285,6 +285,8 @@ export class TagInput extends ComponentBase {
         this.destroyClearButton();
         this.removeRuleErrors();
         this._destroyed = true;
+        // The initial read can still be pending, before setup creates the view.
+        if (!this.view) return;
         this.stopHostFrame();
         this.stopHostFrame = () => {};
         this.view.destroy();

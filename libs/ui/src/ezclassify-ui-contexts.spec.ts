@@ -8,6 +8,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import type { ContextAdapter } from '@ezclassify/types';
 import { EzClassifyUI } from './ezclassify-ui';
 import { connectDemoContext } from '../../../test-support/demo-runtime';
+import { expectConsoleError } from '../../../test-support/fail-on-console-error';
 
 function waitForReady(root: HTMLElement): Promise<void> {
     return new Promise((resolve) => {
@@ -95,6 +96,7 @@ describe('EzClassifyUI Contexts', () => {
         expect(errors).toHaveLength(1);
         expect(errors[0].code).toBe('context-unresolved');
         expect(errors[0].message).toContain("'first', 'second'");
+        expectConsoleError(errors[0].message);
     });
 
     describe('a level view on a page with two Contexts and no wrapper', () => {
@@ -147,6 +149,7 @@ describe('EzClassifyUI Contexts', () => {
             );
 
             expect(errors.map((e) => e.code)).toEqual(['context-unresolved']);
+            expectConsoleError(errors[0].message);
             expect(
                 forms!.components.has(root.querySelector<HTMLElement>('#one')!),
             ).toBe(false);
