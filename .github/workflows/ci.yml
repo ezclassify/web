@@ -73,16 +73,17 @@ jobs:
             exit 1
           fi
 
-      - name: Resolve declared JavaScript SDK dependency
+      - name: Resolve the qualified JavaScript SDK snapshot
         id: sdk
         if: github.event_name == 'pull_request'
         env:
           NODE_AUTH_TOKEN: ${{ github.token }}
-        uses: ezclassify/.github/actions/check-pr-dependencies@dc3d8f56f975fe4f50dc00727ade1089db09b4f7
+        uses: ezclassify/.github/actions/check-pr-dependencies@f271388f9def45e8c8a5d4e9a888581aac4e5694
         with:
           producer: ezclassify/sdk-js
           packages: '@ezclassify/rest-client'
           require-pins: 'false'
+          use-published-default: 'true'
           publication-app-id: '5819382'
           token: ${{ github.token }}
 
