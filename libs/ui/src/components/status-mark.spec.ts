@@ -21,6 +21,7 @@ import {
     setStatusMarkFixes,
 } from './status-mark';
 import type { ConceptWriting } from '../written-concept';
+import { writtenFactTest } from '../written-facts';
 import { cleanupTooltipForRoot, showTooltip } from './tooltip-manager';
 import { markTone } from '../../test-fixtures/field-chrome';
 
@@ -814,6 +815,49 @@ describe('tooltip content', () => {
                 SHOWS_FACTS,
             ).map((change) => change.message),
         ).toEqual(['Rule "drops": removed "GONE"']);
+    });
+
+    it('explains repaired tier prefixes inside a token and leaves out hidden additions', () => {
+        const tierRule = '_tier_child_requires_parent';
+        const applied = [
+            makeFix(tierRule, 'Added head', 'HEAD'),
+            makeFix(tierRule, 'Added middle tier', 'MIDDLE'),
+            makeFix(tierRule, 'Added an omitted parent', 'OMITTED'),
+            makeFix('expand', 'Added a group member', 'MEMBER'),
+        ];
+        const holds = [
+            held('HEAD', tierRule),
+            held('MIDDLE', tierRule),
+            held('CHILD'),
+            held('OMITTED', tierRule),
+            held('GROUP'),
+            held('MEMBER', 'expand'),
+        ];
+        const [head, middle, child, omitted, group, member] = holds;
+        const written = writtenFactTest(
+            [
+                {
+                    assessment: {
+                        emitted: [child, group],
+                        omitted: [omitted],
+                        collapsed: [
+                            [head, middle],
+                            [middle, child],
+                            [member, group],
+                        ],
+                    },
+                },
+            ],
+            [{ id: 'cat' }],
+            {},
+        );
+
+        expect(
+            explainedChanges(applied, holds, {
+                written,
+                showsUnwritten: false,
+            }),
+        ).toEqual(applied.slice(0, 2));
     });
 
     it('a field that shows only its text lists no fact a rule filled in', () => {
