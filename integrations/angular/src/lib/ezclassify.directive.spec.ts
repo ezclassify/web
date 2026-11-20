@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { TestBed, type ComponentFixture } from '@angular/core/testing';
-import { Component, ErrorHandler } from '@angular/core';
+import { Component, ErrorHandler, signal } from '@angular/core';
 import type { EzClassifyClient } from '@ezclassify/rest-client';
 import {
     EzClassifyDirective,
@@ -71,10 +71,10 @@ class BareRootComponent {}
     selector: 'test-options-root',
     standalone: true,
     imports: [EzClassifyDirective],
-    template: `<form [ezClassifyOptions]="options" ezClassify></form>`,
+    template: `<form [ezClassifyOptions]="options()" ezClassify></form>`,
 })
 class OptionsRootComponent {
-    options: { format?: string } = {};
+    readonly options = signal<{ format?: string }>({});
 }
 
 function rootDirective(
@@ -152,7 +152,7 @@ describe('EzClassifyDirective: a bare root', () => {
         const directive = rootDirective(fixture);
         const firstStore = directive.getStore();
 
-        fixture.componentInstance.options = { format: 'default' };
+        fixture.componentInstance.options.set({ format: 'default' });
         fixture.detectChanges(false);
 
         const nextStore = directive.getStore();
