@@ -69,8 +69,10 @@ import { categoriesByScope, listedScopesOf, scopeSetOf } from '../scopes';
 import type { ConceptWriting, WritingField } from '../written-concept';
 import {
     unwrittenFactLookup,
+    writtenFactTest,
     type ShownForm,
     type UnwrittenFact,
+    type WrittenFactTest,
 } from '../written-facts';
 
 /**
@@ -770,11 +772,12 @@ export abstract class ReadOnlyComponentBase implements ComponentInstance {
      * marking holds but writes nowhere, such as a member collapsed into its
      * group's name, is not a value of the marking the author sees.
      */
-    protected writtenFact(): (
-        ref: Pick<AssertionRef, 'categoryId' | 'conceptId'>,
-    ) => boolean {
-        const unwritten = this.unwrittenFact();
-        return (ref) => unwritten(ref) === undefined;
+    protected writtenFact(): WrittenFactTest {
+        return writtenFactTest(
+            this.shownForms(),
+            this.scheme?.categories ?? [],
+            this.schemeMeta ?? {},
+        );
     }
 
     /**

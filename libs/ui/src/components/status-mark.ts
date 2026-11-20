@@ -66,6 +66,7 @@ import { derivedAssertion, takenFromWhole } from '../assertion-identity';
 import { t } from '../i18n';
 import { isMacPlatform } from './dom-helpers';
 import { writtenConcept, type ConceptWriting } from '../written-concept';
+import type { WrittenFactTest } from '../written-facts';
 import { adoptStylesOnce } from '../styles/adopt';
 import statusMarkCss from './status-mark.css?inline';
 import {
@@ -121,7 +122,7 @@ export interface ExplainedField {
      * assessments of the forms it shows (see written-facts.ts). Every fact when
      * omitted.
      */
-    written?: (ref: Pick<AssertionRef, 'categoryId' | 'conceptId'>) => boolean;
+    written?: WrittenFactTest;
     /**
      * Whether the field shows each fact, a chip or a dot or a row for each, so
      * a fact a rule filled in that no applied change names would show up
@@ -140,7 +141,9 @@ export interface ExplainedField {
  * group's members, collapsed into the group's written name, or a default no
  * output prints) changed nothing the author sees, so it is no change, and a
  * change that touched only such facts is left out. A fact a rule added that the
- * marking does write is a change whether or not the author wrote it.
+ * marking does write is a change whether or not the author wrote it. An added
+ * tier parent can contribute its spelling to a composed token while the render
+ * assessment reports it as collapsed.
  *
  * A field that shows each fact also lists the written facts a rule filled in
  * that no applied change names, each as one change in the engine's wording for
@@ -181,8 +184,10 @@ export function explainedChanges(
             current.push(change);
             continue;
         }
-        const add = added.filter(written);
-        const remove = removed.filter(written);
+        const tierParent =
+            change.ruleId === '_tier_child_requires_parent' ? true : undefined;
+        const add = added.filter((ref) => written(ref, tierParent));
+        const remove = removed.filter((ref) => written(ref));
         const touched = [...add, ...remove];
         if (!touched.some((ref) => writes(ref.categoryId))) continue;
         current.push(

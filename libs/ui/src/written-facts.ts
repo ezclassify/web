@@ -57,6 +57,8 @@ const pick = (ref: FactRef): FactRef => ({
  * has none.
  */
 export interface UnwrittenFact {
+    /** The render combined this assertion with another assertion. */
+    collapsed?: true;
     /** The written value the fact collapsed into, when it collapsed. */
     into?: Pick<AssertionRef, 'categoryId' | 'conceptId'>;
 }
@@ -108,7 +110,9 @@ export function unwrittenFactLookup(
             if (emitted.has(key) || !owns(ref.categoryId)) return;
             // A collapse names the value the fact is written under; that is
             // the better answer when another form only left the fact out.
-            if (!unwritten.get(key)?.into) unwritten.set(key, why);
+            const previous = unwritten.get(key);
+            if (!previous || (why.collapsed && !previous.into))
+                unwritten.set(key, why);
         };
         for (const ref of assessment.omitted ?? []) note(ref, {});
         for (const group of assessment.collapsed ?? []) {
@@ -118,13 +122,19 @@ export function unwrittenFactLookup(
                 note(
                     ref,
                     into && keyOf(into) !== keyOf(ref)
-                        ? { into: pick(into) }
-                        : {},
+                        ? { collapsed: true, into: pick(into) }
+                        : { collapsed: true },
                 );
         }
     }
     return (ref) => unwritten.get(keyOf(ref));
 }
+
+/** Whether any shown form writes the fact, optionally inside a composed token. */
+export type WrittenFactTest = (
+    ref: FactRef,
+    includeCollapsed?: true,
+) => boolean;
 
 /**
  * A test of whether the marking a field shows writes a fact (see
@@ -139,7 +149,12 @@ export function writtenFactTest(
     forms: readonly ShownForm[],
     categories: ReadonlyArray<{ id: string; scopes?: readonly string[] }>,
     meta: WrittenFactSource,
-): (ref: FactRef) => boolean {
+): WrittenFactTest {
     const unwritten = unwrittenFactLookup(forms, categories, meta);
-    return (ref) => unwritten(ref) === undefined;
+    return (ref, includeCollapsed) => {
+        const hidden = unwritten(ref);
+        return (
+            !hidden || (includeCollapsed === true && hidden.collapsed === true)
+        );
+    };
 }
