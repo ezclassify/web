@@ -6,7 +6,11 @@ import {
     CategoryChecklist,
     type CategoryChecklistOptions,
 } from './category-checklist';
-import type { SchemeEngineAdapter, Assertion } from '@ezclassify/types';
+import type {
+    SchemeEngineAdapter,
+    Assertion,
+    Suggestion,
+} from '@ezclassify/types';
 import type { SchemePublicView } from '@ezclassify/types';
 import { schemeOnlyContext } from '../../test-fixtures/context-doubles';
 import { mockRenderFormats } from '../render-format-layout-mock';
@@ -310,23 +314,82 @@ describe('CategoryChecklist', () => {
         expect(press(buttons[0], ' ').defaultPrevented).toBe(false);
     });
 
+    const suggestions = (ids: string[]): Suggestion[] =>
+        engine
+            .getScheme()
+            .concepts.filter((concept) => ids.includes(concept.id))
+            .map((concept) => ({
+                conceptId: concept.id,
+                categoryId: 'items',
+                label: concept.name,
+                name: concept.name,
+                description: '',
+                views: concept.views,
+                selected: false,
+                order: concept.position,
+                group: 'items',
+            }));
     const allow = (ids: string[]) =>
-        checklist.applyAllowableOptions(
-            engine
-                .getScheme()
-                .concepts.filter((concept) => ids.includes(concept.id))
-                .map((concept) => ({
-                    conceptId: concept.id,
-                    categoryId: 'items',
-                    label: concept.name,
-                    name: concept.name,
-                    description: '',
-                    views: concept.views,
-                    selected: false,
-                    order: concept.position,
-                    group: 'items',
-                })),
-        );
+        checklist.applyAllowableOptions(suggestions(ids));
+    const visibleChoices = () => boxes().map((box) => box.dataset.conceptId);
+
+    it('offers an item the Runtime adds beside a checked choice and removes it when unchecked', async () => {
+        vi.mocked(engine.suggest).mockImplementation((input) => ({
+            warnings: [],
+            suggestions: suggestions(
+                Array.isArray(input) &&
+                    input.some((a) => a.conceptId === 'item-a')
+                    ? ['item-c']
+                    : [],
+            ),
+        }));
+        await init();
+        allow(['item-a', 'item-b']);
+        expect(visibleChoices()).toEqual(['item-a', 'item-b']);
+
+        const first = boxes()[0];
+        first.focus();
+        first.click();
+        await expect
+            .poll(visibleChoices)
+            .toEqual(['item-a', 'item-b', 'item-c']);
+        expect(document.activeElement).toBe(boxes()[0]);
+
+        boxes()[0].click();
+        await expect.poll(visibleChoices).toEqual(['item-a', 'item-b']);
+    });
+
+    it('refreshes additional options when the store updates the choice or its sibling context', async () => {
+        const selected: Assertion = {
+            conceptId: 'item-a',
+            categoryId: 'items',
+            confidence: 'certain',
+            source: 'user',
+        };
+        let siblings: Assertion[] = [];
+        vi.mocked(engine.suggest).mockImplementation((input) => ({
+            warnings: [],
+            suggestions: suggestions(
+                Array.isArray(input) &&
+                    input.some((a) => a.conceptId === 'other-1')
+                    ? ['item-d']
+                    : ['item-c'],
+            ),
+        }));
+        await init({ resolveFacetSiblings: () => siblings, facetOf: 'doc' });
+        allow(['item-a', 'item-b']);
+        checklist.setAssertions([selected]);
+        await expect
+            .poll(visibleChoices)
+            .toEqual(['item-a', 'item-b', 'item-c']);
+
+        siblings = [{ ...selected, conceptId: 'other-1', categoryId: 'other' }];
+        checklist.refreshFacetRefusal();
+        await expect
+            .poll(visibleChoices)
+            .toEqual(['item-a', 'item-b', 'item-d']);
+        expect(boxes()[0].checked).toBe(true);
+    });
 
     it('puts the first working item before header actions in native Tab order and returns from its header', async () => {
         await init({ initialValue: 'item-b', showSearch: true });

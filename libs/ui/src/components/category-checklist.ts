@@ -75,6 +75,73 @@ export class CategoryChecklist extends ComponentBase {
      */
     private _allowedConceptIds: Set<string> | null = null;
 
+    private liveAllowed: Set<string> | null = null;
+    private availabilityInput = '';
+    private availabilitySequence = 0;
+
+    protected override onAssertionsChanged(): void {
+        super.onAssertionsChanged();
+        void this.refreshAvailability();
+    }
+
+    override refreshFacetRefusal(): void {
+        super.refreshFacetRefusal();
+        void this.refreshAvailability();
+    }
+
+    /** Ask the Runtime what it offers alongside the current checked choices. */
+    private async refreshAvailability(): Promise<void> {
+        const live = [
+            ...(this.options.resolveFacetSiblings?.() ?? []),
+            ...this.assertions,
+        ];
+        // Store facets offer replacements by removing their own category.
+        // Preserve that baseline and add what the current choices open up.
+        const additive =
+            this._allowedConceptIds !== null &&
+            this.assertions.some((a) => a.categoryId === this.categoryId);
+        const input = additive
+            ? JSON.stringify([live, this.getProcessingContext()])
+            : '';
+        if (input === this.availabilityInput) return;
+        this.availabilityInput = input;
+        const sequence = ++this.availabilitySequence;
+        let allowed: Set<string> | null = null;
+        if (additive) {
+            try {
+                const suggestions = await this.composerSuggestions(live);
+                allowed = new Set(
+                    suggestions
+                        .filter(
+                            (s) => s.categoryId === this.categoryId && !s.gated,
+                        )
+                        .map((s) => s.conceptId),
+                );
+            } catch {
+                // Keep using the store's answer when live suggestions fail.
+            }
+        }
+        if (this._destroyed || sequence !== this.availabilitySequence) return;
+        this.liveAllowed = allowed;
+        this.render();
+    }
+
+    private availableConcepts(): ConceptView[] {
+        const allowed = this._allowedConceptIds;
+        if (allowed === null) return this.categoryConcepts;
+        const selected = new Set(
+            this.assertions
+                .filter((a) => a.categoryId === this.categoryId)
+                .map((a) => a.conceptId),
+        );
+        return this.categoryConcepts.filter(
+            (concept) =>
+                allowed.has(concept.id) ||
+                this.liveAllowed?.has(concept.id) ||
+                selected.has(concept.id),
+        );
+    }
+
     override async init(
         container: HTMLDivElement,
         engineOrContext?: ComponentEngineSource | null,
@@ -217,43 +284,33 @@ export class CategoryChecklist extends ComponentBase {
     }
 
     /**
-     * Apply the allowable concept set pushed from the store's facet
-     * subscription. The store runs suggest once per marking commit and calls
-     * this with the filtered results for this component's category.
+     * Update the store's baseline. With a baseline, the checklist also asks
+     * what the Runtime offers beside its checked items.
      *
-     * `null`: engine has no suggest; show all. `[]`: engine ran, nothing
-     * available for this category (gated); show only selected.
+     * `null` means the store has no answer, so show all metadata choices. `[]`
+     * means no baseline choices, so show checked and live choices only.
      */
     applyAllowableOptions(options: Suggestion[] | null): void {
-        if (options === null) {
-            if (this._allowedConceptIds !== null) {
-                this._allowedConceptIds = null;
-                this.renderList();
-                this.updateCount();
-            }
-            return;
-        }
-        const selectedIds = new Set(
-            this.assertions
-                .filter((a) => a.categoryId === this.categoryId)
-                .map((a) => a.conceptId),
-        );
-        const newAllowed = new Set([
-            ...options
-                .filter((s) => s.categoryId === this.categoryId)
-                .map((s) => s.conceptId),
-            ...selectedIds, // always keep selected visible so the user can deselect it
-        ]);
-        const prev = this._allowedConceptIds;
+        const allowed =
+            options === null
+                ? null
+                : new Set(
+                      options
+                          .filter((s) => s.categoryId === this.categoryId)
+                          .map((s) => s.conceptId),
+                  );
+        const previous = this._allowedConceptIds;
         if (
-            prev !== null &&
-            prev.size === newAllowed.size &&
-            [...newAllowed].every((id) => prev.has(id))
+            previous === allowed ||
+            (previous !== null &&
+                allowed !== null &&
+                previous.size === allowed.size &&
+                [...allowed].every((id) => previous.has(id)))
         )
             return;
-        this._allowedConceptIds = newAllowed;
-        this.renderList();
-        this.updateCount();
+        this._allowedConceptIds = allowed;
+        void this.refreshAvailability();
+        this.render();
     }
 
     destroy(): void {
@@ -355,40 +412,18 @@ export class CategoryChecklist extends ComponentBase {
             this.preview.textContent = this.getRendered();
         }
 
-        // A selected concept must always be visible, even when a prior
-        // allowability push gated it out (same rule applyAllowableOptions
-        // applies in the other order). Without this, an external publish that
-        // selects a gated-out concept renders unchecked-and-hidden.
-        const selectedIds = new Set(
-            this.assertions
-                .filter((a) => a.categoryId === this.categoryId)
-                .map((a) => a.conceptId),
-        );
-        if (this._allowedConceptIds !== null) {
-            for (const id of selectedIds) this._allowedConceptIds.add(id);
-        }
-
-        // Update count badge
         this.updateCount();
 
-        // If the list is already built and every selected concept has a
-        // checkbox in the DOM, do a lightweight sync instead of a full rebuild
-        // to preserve focus. A selected concept missing from the DOM (it was
-        // filtered out before being selected externally) forces the rebuild.
-        const domConceptIds = new Set(
-            [
-                ...this.listEl.querySelectorAll<HTMLInputElement>(
-                    '.category-checklist-checkbox',
-                ),
-            ].map((cb) => cb.dataset.conceptId),
-        );
-        const domHasAllSelected = [...selectedIds].every((id) =>
-            domConceptIds.has(id),
-        );
+        // Keep the existing inputs when only their checked state changes.
+        const available = this.availableConcepts();
+        const boxes = this.checkboxes();
         if (
             this.listEl.children.length > 0 &&
             !this.filterText &&
-            domHasAllSelected
+            available.length === boxes.length &&
+            boxes.every(
+                (box, index) => box.dataset.conceptId === available[index].id,
+            )
         ) {
             this.syncCheckboxStates();
             this.updateTabStop();
@@ -424,12 +459,7 @@ export class CategoryChecklist extends ComponentBase {
 
     /** Update the count */
     private updateCount(): void {
-        const visible =
-            this._allowedConceptIds !== null
-                ? this.categoryConcepts.filter((c) =>
-                      this._allowedConceptIds!.has(c.id),
-                  )
-                : this.categoryConcepts;
+        const visible = this.availableConcepts();
         const total = visible.length;
         const selected = this.assertions.filter(
             (a) =>
@@ -564,12 +594,7 @@ export class CategoryChecklist extends ComponentBase {
         this.listEl.innerHTML = '';
 
         // Apply engine availability filter first, then user text filter
-        const available =
-            this._allowedConceptIds !== null
-                ? this.categoryConcepts.filter((c) =>
-                      this._allowedConceptIds!.has(c.id),
-                  )
-                : this.categoryConcepts;
+        const available = this.availableConcepts();
         const filtered = this.filterText
             ? available.filter(
                   (c) =>
@@ -678,12 +703,7 @@ export class CategoryChecklist extends ComponentBase {
                 .filter((a) => a.categoryId === this.categoryId)
                 .map((a) => a.conceptId),
         );
-        const available =
-            this._allowedConceptIds !== null
-                ? this.categoryConcepts.filter((c) =>
-                      this._allowedConceptIds!.has(c.id),
-                  )
-                : this.categoryConcepts;
+        const available = this.availableConcepts();
 
         for (const concept of available) {
             if (!selectedIds.has(concept.id)) {
