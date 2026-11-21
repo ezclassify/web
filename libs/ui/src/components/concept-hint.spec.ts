@@ -21,18 +21,23 @@ describe('native concept hints', () => {
 
     it('matches the flow name, definition and optional explanation contract', () => {
         expect(
-            conceptHint('Full name', 'CODE', 'Definition', 'Why it is present'),
+            conceptHint(
+                'Category',
+                'Full name',
+                'Definition',
+                'Why it is present',
+            ),
         ).toEqual({
-            title: 'Why it is present\nFull name\nDefinition',
-            description: 'Why it is present. Full name. Definition.',
+            title: 'Category: Full name\nDefinition\nWhy it is present',
+            description: 'Category: Full name. Definition. Why it is present.',
         });
-        expect(conceptHint('Same', 'Same', 'Definition.')).toEqual({
-            title: 'Definition.',
-            description: 'Definition.',
+        expect(conceptHint('Category', 'Same', 'Definition.')).toEqual({
+            title: 'Category: Same\nDefinition.',
+            description: 'Category: Same. Definition.',
         });
-        expect(conceptHint('Same', 'Same', '')).toEqual({
-            title: '',
-            description: '',
+        expect(conceptHint('Category', 'Same', '')).toEqual({
+            title: 'Category: Same',
+            description: 'Category: Same.',
         });
     });
 });

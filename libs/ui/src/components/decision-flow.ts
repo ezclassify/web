@@ -1,4 +1,3 @@
-import { conceptHint } from './concept-hint';
 import { focusTextCaretNeighbor } from './text-caret-edge';
 /**
  * DecisionFlow: sequential decision-point stepper component.
@@ -145,9 +144,8 @@ interface ConceptDef {
      * scope (see written-concept.ts). A value-taking concept's name.
      */
     label: string;
-    /** The concept's name, for its tooltip, description and value box. */
+    /** The concept's name, for its value box. */
     name: string;
-    description: string;
     /**
      * Present when the concept accepts a user-typed value (e.g. "{value}"
      * view).
@@ -599,7 +597,6 @@ export class DecisionFlow extends ComponentBase {
                         id: c.id,
                         label: this.writtenAs(catId, c.id),
                         name: c.name || c.id,
-                        description: c.definition ?? '',
                         textInput: c.textInput ?? undefined,
                     })),
                     requiredHeader: headersByCategory.get(catId),
@@ -2178,10 +2175,7 @@ export class DecisionFlow extends ComponentBase {
         );
     }
 
-    /**
-     * An option's tooltip and description: the concept's name, when the option
-     * does not already read as it, and what the concept means.
-     */
+    /** Use the shared hint and reference its text for keyboard navigation. */
     private describeOption(
         btn: HTMLButtonElement,
         step: StepDef,
@@ -2189,13 +2183,12 @@ export class DecisionFlow extends ComponentBase {
         optionsEl: HTMLElement,
         why?: string | null,
     ): void {
-        const hint = conceptHint(
-            concept.name,
-            concept.label,
-            concept.description,
-            why,
+        const hint = this.getConceptHint(
+            concept.id,
+            step.categoryId,
+            why ?? undefined,
         );
-        if (!hint.title) return;
+        if (!hint) return;
         btn.title = hint.title;
         const description = document.createElement('span');
         description.hidden = true;

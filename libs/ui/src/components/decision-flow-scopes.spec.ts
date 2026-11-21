@@ -219,7 +219,9 @@ describe('DecisionFlow across scopes', () => {
         // The origin step has its options, so the required choice can be made.
         // Each reads as the origin block writes it, its name in its tooltip.
         expect(optionNames(host)).toEqual(['Original', 'Copied']);
-        expect(option(host, 'Original').title).toBe('Original Decision');
+        expect(option(host, 'Original').title).toBe(
+            'Decision Type: Original Decision',
+        );
         await choose(host, 'Copied');
         expect(dotFor(host, 'Decision Type').dataset.state).toBe('answered');
     });

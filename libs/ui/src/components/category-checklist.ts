@@ -724,13 +724,7 @@ export class CategoryChecklist extends ComponentBase {
             const label = document.createElement('span');
             label.className = 'category-checklist-label';
             label.textContent = concept.views['default'] ?? concept.name;
-            this.attachConceptTitle(
-                checkbox,
-                concept.id,
-                this.categoryId,
-                undefined,
-                label.textContent,
-            );
+            this.attachConceptTitle(checkbox, concept.id, this.categoryId);
             if (checkbox.title) item.title = checkbox.title;
 
             item.append(checkbox, box, label);

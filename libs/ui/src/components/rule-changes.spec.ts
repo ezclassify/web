@@ -568,14 +568,14 @@ describe('a DecisionFlow option the author did not choose', () => {
         // Each named as the marking writes it, the name in the tooltip.
         expect(member.getAttribute('aria-label')).toBe('MEMBER (inferred)');
         expect(member.title.split('\n')).toEqual([
+            'Groups: Member',
             'Included by GROUP',
-            'Member',
         ]);
         const description = document.getElementById(
             member.getAttribute('aria-describedby')!,
         );
         expect(description?.textContent).toContain(
-            'Included by GROUP. Member.',
+            'Groups: Member. Included by GROUP.',
         );
     });
 });

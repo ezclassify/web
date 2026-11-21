@@ -232,6 +232,37 @@ describe('a seed and an edit, in any order', () => {
         expect(facts(store)).toEqual(['handling:LOCAL', 'level:SECRET']);
     });
 
+    it('publishes an explicit choice when the same fact was already inferred', async () => {
+        const { harness, store } = setup();
+        const level = assertion('level', 'SECRET');
+        const caveat = assertion('handling', 'DNF');
+        const first = store.publishAssertions('doc', [level]);
+        await harness.flush();
+        harness.pending('process')[0].resolve({
+            rendered: 'level:SECRET handling:DNF',
+            assessment: {},
+            renders: {},
+            assertions: [
+                level,
+                { ...caveat, confidence: 'inferred', source: 'infer' },
+            ],
+            valid: true,
+            errors: [],
+        });
+        await first;
+        const committed = store.get('doc');
+        const stated = {
+            ...caveat,
+            confidence: 'certain',
+            source: 'user',
+        } as const;
+        const edit = store.publishAssertions('doc', [level, stated]);
+        await harness.settleAll();
+        await edit;
+        expect(store.get('doc').assertions).toContainEqual(stated);
+        expect(store.get('doc').rendered).toBe(committed.rendered);
+    });
+
     it('tells a publishing view the committed value when its edit lands on a seed', async () => {
         const { harness, store } = setup();
         const token = {};

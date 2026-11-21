@@ -232,7 +232,8 @@ export class TagInput extends ComponentBase {
                     : COMPONENT_CSS + tagInputCss,
             placeholder: this.searchPlaceholder,
             describeConcept: this.shouldShowTooltip()
-                ? (conceptId) => this.simpleConceptDescription(conceptId)
+                ? (conceptId, categoryId) =>
+                      this.getConceptHint(conceptId, categoryId)?.title
                 : undefined,
             onPlacement: (open) => this.setReportInField(open),
             isFieldChrome: (node) =>

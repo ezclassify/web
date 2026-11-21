@@ -261,7 +261,8 @@ export class MarkingField extends ComponentBase {
             singleLine: true,
             placeholder: this.options.placeholder ?? host.placeholder,
             describeConcept: this.shouldShowTooltip()
-                ? (conceptId) => this.simpleConceptDescription(conceptId)
+                ? (conceptId, categoryId) =>
+                      this.getConceptHint(conceptId, categoryId)?.title
                 : undefined,
             onPlacement: (open) => this.setReportInField(open),
             onDraft: (text) => {
@@ -1067,13 +1068,7 @@ export class MarkingField extends ComponentBase {
                 '--ez-token-underline',
                 colors?.background ?? this.getCategoryColor(token.categoryId),
             );
-            this.attachConceptTitle(
-                span,
-                token.conceptId,
-                token.categoryId,
-                undefined,
-                label,
-            );
+            this.attachConceptTitle(span, token.conceptId, token.categoryId);
             underline = true;
         }
         this.paintTokenLabel(span, label, underline);

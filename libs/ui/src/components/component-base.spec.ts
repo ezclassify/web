@@ -68,10 +68,10 @@ class TestComponent extends ComponentBase {
         return this.disambiguateSuggestions(s);
     }
     doNativeHint(el: HTMLElement, id: string, reason?: string): void {
-        this.attachConceptTitle(el, id, 'cat1', reason, 'C1');
+        this.attachConceptTitle(el, id, 'cat1', reason);
     }
     doSimpleDescription(id: string): string | undefined {
-        return this.simpleConceptDescription(id);
+        return this.getConceptHint(id, 'cat1')?.title;
     }
     doAttachConceptTooltip(
         el: HTMLElement,
@@ -1005,18 +1005,18 @@ describe('ComponentBase', () => {
             const element = document.createElement('span');
             component.doNativeHint(element, 'c1', 'Included by parent');
             expect(element.title).toBe(
-                `Included by parent\n${name}\nCanonical definition`,
+                `Category 1: ${name}\nCanonical definition\nIncluded by parent`,
             );
             expect(element.getAttribute('aria-description')).toBe(
-                `Included by parent. ${name}. Canonical definition.`,
+                `Category 1: ${name}. Canonical definition. Included by parent.`,
             );
             expect(component.doSimpleDescription('c1')).toBe(
-                `${name}\nCanonical definition`,
+                `Category 1: ${name}\nCanonical definition`,
             );
             concept.textInput = { label: 'Value', required: false };
             concept.views.tooltip = 'For {value}';
             expect(component.doSimpleDescription('c1')).toBe(
-                'Concept One\nCanonical definition',
+                'Category 1: Concept One\nCanonical definition',
             );
         },
     );

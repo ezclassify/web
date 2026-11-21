@@ -182,10 +182,14 @@ async function expectWrittenAgreement(): Promise<void> {
         'HOME',
         'DISTRICT',
     ]);
-    expect((await chipHint('MEMBER'))[0]).toBe('Included by GROUP');
-    expect((await chipHint('HOME'))[0]).toBe(
+    expect(await chipHint('MEMBER')).toEqual([
+        'Groups: Member',
+        'Included by GROUP',
+    ]);
+    expect(await chipHint('HOME')).toEqual([
+        'Owner: Home',
         'Default Owner, not written in the marking',
-    );
+    ]);
 }
 
 describe('a change to the shared marking', () => {

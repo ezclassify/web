@@ -1330,6 +1330,43 @@ describe('CategorySelector', () => {
         ).toBe(chrome);
     });
 
+    it('displays a derived option as inferred until the author chooses it', async () => {
+        await init();
+        selector.applyStoreState({
+            rendered: 'Local',
+            renders: {},
+            valid: true,
+            errors: [],
+            assertions: [
+                {
+                    conceptId: 'c4',
+                    categoryId: 'f2',
+                    confidence: 'inferred',
+                    source: 'infer',
+                    sourceRule: 'adds-local',
+                },
+            ],
+        } as never);
+        const local = () =>
+            container.querySelector<HTMLButtonElement>(
+                '[data-concept-id="c4"]',
+            )!;
+        expect(local().classList).toContain('ez-choice-button--inferred');
+        expect(local().getAttribute('aria-checked')).toBe('false');
+        expect(local().getAttribute('aria-disabled')).toBeNull();
+
+        local().click();
+        await vi.waitFor(() => {
+            expect(local().getAttribute('aria-checked')).toBe('true');
+            expect(local().classList).not.toContain(
+                'ez-choice-button--inferred',
+            );
+            expect(selector.getAssertions()).toContainEqual(
+                expect.objectContaining({ conceptId: 'c4', source: 'user' }),
+            );
+        });
+    });
+
     it("marks a facet's status only with fixes to its own category", async () => {
         await init({ facetOf: 'doc', categoryId: 'f1' });
         const mark = () =>
@@ -1594,9 +1631,9 @@ describe('CategorySelector', () => {
         const choice = container.querySelector<HTMLButtonElement>(
             '.category-selector-btn',
         )!;
-        expect(choice.title).toBe('Canonical definition');
+        expect(choice.title).toBe('Metric A: Low\nCanonical definition');
         expect(choice.getAttribute('aria-description')).toBe(
-            'Canonical definition.',
+            'Metric A: Low. Canonical definition.',
         );
         const before = selector.getAssertions();
         choice.focus();

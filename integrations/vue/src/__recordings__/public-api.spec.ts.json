@@ -848,6 +848,51 @@
             "method": "POST",
             "statusCode": 200
         },
+        "fdf08bb2d733b566cba56c6f29d239e9f5586f8eae2baa4b183f6898609c2d63": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "public-api-test",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "public-api-test",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "f1",
+                            "conceptId": "A",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [{ "categoryId": "f1", "conceptId": "A" }],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "A",
+                    "renders": {},
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
         "fefec138c5372598d9ed7e23889e8b9d96f1576370008a20a52b991b0993dd7b": {
             "body": [
                 {

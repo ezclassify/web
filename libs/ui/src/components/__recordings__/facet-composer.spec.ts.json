@@ -841,6 +841,60 @@
             "method": "POST",
             "statusCode": 200
         },
+        "ad33a28e44b9a0a8931e85a1bb2a1126a14d583a9e0ac924fc1323cc670551a5": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "facet-composer",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "facet-composer",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "S",
+                            "confidence": "certain",
+                            "source": "parse"
+                        },
+                        {
+                            "categoryId": "caveat",
+                            "conceptId": "NF",
+                            "confidence": "certain",
+                            "source": "parse"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            { "categoryId": "level", "conceptId": "S" },
+                            { "categoryId": "caveat", "conceptId": "NF" }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "SECRET//NOFORN",
+                    "renders": {},
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
         "b96c88f70d44c663395fc2f5d2faa6c0c73c510a98463cd690e03d97927847ce": {
             "body": {
                 "resolution": {
@@ -1051,31 +1105,6 @@
             },
             "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "POST",
-            "statusCode": 200
-        },
-        "ec184e75fe2fee5165f1c68c3addefe1e5b164f3917b3ac3f0ad77e6761f13cc": {
-            "body": {
-                "resolution": {
-                    "artifacts": [
-                        {
-                            "id": "facet-composer",
-                            "kind": "scheme",
-                            "version": "1.0.0"
-                        }
-                    ],
-                    "contextId": "facet-composer",
-                    "requestedVersion": "0.0.0",
-                    "resolvedVersion": "1.0.0"
-                },
-                "result": {
-                    "categoryId": "caveat",
-                    "conceptId": "NF",
-                    "lines": ["Caveat: Noforn"],
-                    "name": "Noforn"
-                }
-            },
-            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
-            "method": "GET",
             "statusCode": 200
         },
         "ef91944475c4178dd68e1470d1d652b97e053145e6c5f2c4df0df14e02c129f0": {

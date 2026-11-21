@@ -18,6 +18,7 @@ import { bindTextToolsEdges } from './text-caret-edge';
  * `single: true`.
  */
 
+import { conceptHintHeading } from './concept-hint';
 import { ComponentBase } from './component-base';
 import { createAnnouncer, announce } from './component-utils';
 import { resolveMarkingColor } from '../color-resolver';
@@ -305,20 +306,6 @@ export class SingleSelect extends ComponentBase {
         placeholder.textContent = `Select ${this.primaryCategory.label ?? 'tier'}\u2026`;
         select.appendChild(placeholder);
 
-        // One option per concept (filtered list will be updated by _refreshAllowed later)
-        for (const c of this._visibleConcepts) {
-            const opt = document.createElement('option');
-            opt.value = c.conceptId;
-            opt.textContent = c.name;
-            select.appendChild(opt);
-        }
-
-        // Reflect any pre-existing assertion
-        const existing = this.assertions.find(
-            (a) => a.categoryId === this.primaryCategory.id,
-        );
-        if (existing) select.value = existing.conceptId;
-
         select.addEventListener('change', () => {
             const val = select.value;
             if (!val) {
@@ -593,6 +580,11 @@ export class SingleSelect extends ComponentBase {
                 const opt = document.createElement('option');
                 opt.value = c.conceptId;
                 opt.textContent = c.name;
+                this.attachConceptTitle(
+                    opt,
+                    c.conceptId,
+                    this.primaryCategory.id,
+                );
                 this.dropdownEl.appendChild(opt);
             }
         }
@@ -807,7 +799,10 @@ export class SingleSelect extends ComponentBase {
 
         const heading = document.createElement('div');
         heading.className = 'select-detail-heading';
-        heading.textContent = entry.name;
+        heading.textContent = conceptHintHeading(
+            this.primaryCategory.label ?? '',
+            entry.name,
+        );
         append(heading);
 
         const description = this.getShortDescription(entry);

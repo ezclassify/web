@@ -1,12 +1,17 @@
+/** The heading shared by concept tooltips and detail panels. */
+export function conceptHintHeading(category: string, name: string): string {
+    return category ? `${category}: ${name}` : name;
+}
+
 /** The native title and accessible explanation used by editable choices. */
 export function conceptHint(
+    category: string,
     name: string,
-    label: string,
     definition: string,
     why?: string | null,
 ): { title: string; description: string } {
-    const lines = [why ?? '', name !== label ? name : '', definition].filter(
-        Boolean,
+    const lines = [conceptHintHeading(category, name), definition, why].filter(
+        (line): line is string => Boolean(line),
     );
     return {
         title: lines.join('\n'),

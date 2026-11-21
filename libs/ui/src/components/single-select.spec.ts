@@ -698,7 +698,7 @@ describe('SingleSelect', () => {
         cards[0].dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }));
         await demoRuntimeSettled();
         expect(detail.dataset.state).toBe('preview');
-        expect(detail.textContent).toContain('L1');
+        expect(detail.textContent).toContain('Level: L1');
         expect(detail.textContent).toContain(
             'Choose this level for the first tier.',
         );
@@ -710,7 +710,7 @@ describe('SingleSelect', () => {
         cards[0].click();
         await demoRuntimeSettled();
         expect(detail.dataset.state).toBe('selected');
-        expect(detail.textContent).toContain('L1');
+        expect(detail.textContent).toContain('Level: L1');
         component.destroy();
     });
     it('fills cards from authority-mandated colors (render.color_from)', async () => {

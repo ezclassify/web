@@ -37,6 +37,7 @@ import { statedAssertions } from './composer/composer-controller';
 import { focusGridNeighbor, type FocusGridArrow } from './focus-grid';
 import { getMountHost } from '../mount-host-registry';
 import { createChoiceButton } from './choice-button';
+import { derivedAssertion, takenFromWhole } from '../assertion-identity';
 import { orderChoiceOptions, choiceBlockReason } from './choice-options';
 import { t } from '../i18n';
 import choiceButtonCss from './choice-button.css?inline';
@@ -686,29 +687,37 @@ export class CategorySelector extends ComponentBase {
         const optionsEl = document.createElement('div');
         optionsEl.className = 'category-selector-options';
 
-        const categoryColor = this.getCategoryColor(row.category.id);
-
-        // Selected concept IDs for this category
-        const selectedIds = new Set(
-            this.assertions
-                .filter((a) => a.categoryId === row.category.id)
-                .map((a) => a.conceptId),
+        const held = this.assertions.filter(
+            (a) => a.categoryId === row.category.id,
+        );
+        const inheritedIds = new Set(
+            held.filter(takenFromWhole).map((assertion) => assertion.conceptId),
+        );
+        const heldIds = new Set(
+            held
+                .filter((assertion) => !takenFromWhole(assertion))
+                .map((assertion) => assertion.conceptId),
+        );
+        const statedIds = new Set(
+            held
+                .filter((assertion) => !derivedAssertion(assertion))
+                .map((assertion) => assertion.conceptId),
         );
 
-        // Filter concepts to those currently allowed by the engine.
+        const candidates = row.concepts.filter(
+            (concept) =>
+                heldIds.has(concept.id) ||
+                (!inheritedIds.has(concept.id) &&
+                    (this._allowedConceptIds === null ||
+                        this._allowedConceptIds.has(concept.id) ||
+                        this.liveAllowed?.has(concept.id))),
+        );
         const visibleConcepts = orderChoiceOptions(
-            (this._allowedConceptIds !== null
-                ? row.concepts.filter(
-                      (concept) =>
-                          this._allowedConceptIds!.has(concept.id) ||
-                          this.liveAllowed?.has(concept.id),
-                  )
-                : row.concepts
-            ).map((concept) => ({ concept })),
+            candidates.map((concept) => ({ concept })),
             this.scheme.concepts,
         ).map(({ concept }) => concept);
         const available = (concept: ConceptView) =>
-            selectedIds.has(concept.id) ||
+            heldIds.has(concept.id) ||
             isSingle ||
             this.liveAllowed === null ||
             this.liveAllowed.has(concept.id);
@@ -722,7 +731,8 @@ export class CategorySelector extends ComponentBase {
 
         for (let colIdx = 0; colIdx < visibleConcepts.length; colIdx++) {
             const concept = visibleConcepts[colIdx];
-            const isSelected = selectedIds.has(concept.id);
+            const isSelected = statedIds.has(concept.id);
+            const isInferred = heldIds.has(concept.id) && !isSelected;
 
             const labelProp = opts.labelProperty ?? 'label';
             const labelText =
@@ -740,6 +750,7 @@ export class CategorySelector extends ComponentBase {
                 },
                 selected: isSelected,
                 blocked: !available(concept),
+                inferred: isInferred,
                 tabIndex: concept.id === stop?.id ? 0 : -1,
                 className:
                     'category-selector-btn' +
@@ -749,6 +760,7 @@ export class CategorySelector extends ComponentBase {
                         concept.id,
                         row.category.id,
                         isSelected,
+                        isInferred,
                     ),
                 onExplainBlocked: () =>
                     void this.showChoiceReason(concept, row.category.id),
@@ -759,14 +771,6 @@ export class CategorySelector extends ComponentBase {
             });
             btn.dataset.rowIndex = String(rowIndex);
             btn.dataset.colIndex = String(colIdx);
-            if (isSelected) {
-                btn.style.setProperty('--category-btn-color', categoryColor);
-                btn.style.setProperty(
-                    '--category-btn-bg',
-                    categoryColor + '20',
-                );
-            }
-
             // Optional code badge
             if (opts.showCodes) {
                 const codeView =
@@ -780,13 +784,7 @@ export class CategorySelector extends ComponentBase {
             }
 
             // Tooltip
-            this.attachConceptTitle(
-                btn,
-                concept.id,
-                row.category.id,
-                undefined,
-                labelText,
-            );
+            this.attachConceptTitle(btn, concept.id, row.category.id);
 
             btn.addEventListener('focus', () => this.rememberOption(btn));
 
@@ -856,6 +854,7 @@ export class CategorySelector extends ComponentBase {
         conceptId: string,
         categoryId: string,
         isSelected: boolean,
+        isInferred: boolean,
     ): void {
         if (
             this._destroyed ||
@@ -869,6 +868,7 @@ export class CategorySelector extends ComponentBase {
         const focused = document.activeElement;
         if (
             !isSelected &&
+            !isInferred &&
             row?.category.single !== true &&
             this.assertions.some(
                 (assertion) => assertion.categoryId === categoryId,

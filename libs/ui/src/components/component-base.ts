@@ -714,9 +714,16 @@ export abstract class ComponentBase extends ReadOnlyComponentBase {
             (a) => a.conceptId === conceptId && a.categoryId === categoryId,
         );
         if (existing) {
-            if (existing.confidence === 'inferred') {
-                existing.confidence = 'certain';
-                existing.source = 'user';
+            if (derivedAssertion(existing) && !takenFromWhole(existing)) {
+                const authored: Assertion = {
+                    ...existing,
+                    confidence: 'certain',
+                    source: 'user',
+                };
+                delete authored.sourceRule;
+                this.assertions = this.assertions.map((assertion) =>
+                    assertion === existing ? authored : assertion,
+                );
                 this.reprocess();
             }
             return;
@@ -1135,47 +1142,38 @@ export abstract class ComponentBase extends ReadOnlyComponentBase {
         return this._conceptDescriber.resolve(conceptId, categoryId);
     }
 
-    /** DF-style native help, with no dwell popup or focus side effects. */
-    protected attachConceptTitle(
-        el: HTMLElement,
+    protected getConceptHint(
         conceptId: string,
-        _categoryId: string,
+        categoryId: string,
         reason?: string,
-        label?: string,
-    ): void {
-        if (!this.shouldShowTooltip()) return;
+    ) {
+        if (!this.shouldShowTooltip()) return undefined;
         const concept = this.scheme.concepts.find(
             (one) => one.id === conceptId,
         );
-        if (!concept) return;
-        const visible =
-            label ??
-            el.querySelector('.proto-tag-label')?.textContent?.trim() ??
-            el.textContent?.trim() ??
-            '';
-        const hint = conceptHint(
+        if (!concept) return undefined;
+        const category = this.scheme.categories.find(
+            (one) => one.id === categoryId,
+        );
+        return conceptHint(
+            category?.label ?? '',
             conceptHintName(concept, this.options.tooltipConceptProperty),
-            visible,
             concept.definition ?? '',
             reason,
         );
-        if (hint.title) el.title = hint.title;
-        if (hint.description)
-            el.setAttribute('aria-description', hint.description);
     }
 
-    /** The same simple scheme description for a composer's active concept row. */
-    protected simpleConceptDescription(conceptId: string): string | undefined {
-        const concept = this.scheme.concepts.find(
-            (one) => one.id === conceptId,
-        );
-        return concept
-            ? conceptHint(
-                  conceptHintName(concept, this.options.tooltipConceptProperty),
-                  concept.views.default ?? concept.name ?? '',
-                  concept.definition ?? '',
-              ).title || undefined
-            : undefined;
+    /** Attach native help without a dwell popup or focus side effects. */
+    protected attachConceptTitle(
+        el: HTMLElement,
+        conceptId: string,
+        categoryId: string,
+        reason?: string,
+    ): void {
+        const hint = this.getConceptHint(conceptId, categoryId, reason);
+        if (!hint) return;
+        el.title = hint.title;
+        el.setAttribute('aria-description', hint.description);
     }
 
     /**
