@@ -12,6 +12,7 @@ import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { SingleSelect } from './single-select';
+import { VanillaEzClassifyStore } from '../store/ezclassify-store';
 import {
     connectDemoContext,
     demoRuntimeSettled,
@@ -271,6 +272,69 @@ describe('SingleSelect', () => {
         engine = await makeEngine();
         component = new SingleSelect();
     });
+    it('lets a native select author a Runtime-inferred value without changing the rendered marking', async () => {
+        await component.init(container, toCtx(engine));
+        component.applyStoreState({
+            rendered: 'L1',
+            renders: {},
+            valid: true,
+            errors: [],
+            assertions: [
+                {
+                    conceptId: 'level-1',
+                    categoryId: 'level',
+                    source: 'infer',
+                    confidence: 'inferred',
+                },
+            ],
+        } as never);
+        const select =
+            container.querySelector<HTMLSelectElement>('.select-dropdown')!;
+        expect(select.value).toBe('');
+        expect(select.selectedOptions[0].textContent).toBe('L1 (inferred)');
+        select.value = 'level-1';
+        select.dispatchEvent(new Event('change', { bubbles: true }));
+        await demoRuntimeSettled();
+        expect(select.value).toBe('level-1');
+        expect(component.getRendered()).toBe('L1');
+        expect(component.getAssertions()).toContainEqual(
+            expect.objectContaining({ conceptId: 'level-1', source: 'user' }),
+        );
+        component.destroy();
+    });
+
+    it('uses the Runtime replacement rows and does not expand a selected-only answer', async () => {
+        await component.init(container, toCtx(engine), { initialValue: 'L1' });
+        const store = new VanillaEzClassifyStore(engine);
+        await store.publishRendered('doc', 'L1');
+        const unsubscribe = store.subscribeFacet(
+            'doc',
+            'level',
+            ({ allowableOptions }) =>
+                component.applyAllowableOptions(allowableOptions),
+        );
+        await demoRuntimeSettled();
+        const options = () =>
+            Array.from(
+                container.querySelector<HTMLSelectElement>('.select-dropdown')!
+                    .options,
+            )
+                .slice(1)
+                .map((option) => option.value);
+        expect(options()).toEqual(['level-1', 'level-2', 'level-3']);
+        const replacement = store.getFacet('doc', 'level').allowableOptions!;
+        component.applyAllowableOptions([
+            {
+                ...replacement.find((row) => row.conceptId === 'level-1')!,
+                selected: true,
+            },
+        ]);
+        expect(options()).toEqual(['level-1']);
+        unsubscribe();
+        store.destroy();
+        component.destroy();
+    });
+
     /**
      * UI-lifetime double: each free-text prefix is accepted asynchronously and
      * trimmed canonically.

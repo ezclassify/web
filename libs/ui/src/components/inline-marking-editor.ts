@@ -43,7 +43,7 @@ import {
     assertDescribesConcepts,
     createConceptDescriber,
 } from './concept-description';
-import { recordAppliedFixes } from './status-mark';
+import { AppliedFixHistory } from './applied-fix-history';
 import { createComposerPort } from './composer/composer-port';
 import { withoutTakenFromWhole } from '../assertion-identity';
 import { renderViewRefused } from '../render-refusal';
@@ -175,7 +175,7 @@ export class InlineMarkingEditor {
     private controller!: ComposerController;
     private view!: ComposerView;
     /** Fixes the engine applied during this session, deduplicated by rule. */
-    private _appliedFixes = new Map<string, Change>();
+    private readonly _appliedFixes = new AppliedFixHistory();
     private readonly _conceptDescriber = createConceptDescriber({
         engine: () => this.engine,
         options: () => this.options,
@@ -438,7 +438,7 @@ export class InlineMarkingEditor {
      * session discards them.
      */
     getAppliedFixes(): Change[] {
-        return [...this._appliedFixes.values()];
+        return this._appliedFixes.values();
     }
 
     /**
@@ -672,8 +672,8 @@ export class InlineMarkingEditor {
         if (commit.replaces) this._appliedFixes.clear();
         // Processing the statement repairs it again but cannot see how the
         // draft's text was read; those fixes come with the reading.
-        recordAppliedFixes(this._appliedFixes, reading.appliedFixes);
-        recordAppliedFixes(this._appliedFixes, result.appliedFixes);
+        this._appliedFixes.append(reading.appliedFixes);
+        this._appliedFixes.append(result.appliedFixes);
         this.options.onChange?.(this.rendered, this.assertions);
     }
 

@@ -713,6 +713,37 @@ injectDefaultStyles();
 }
 ```
 
+### Fit fields to a host form
+
+Style your native form controls as you normally would. Enhanced editors mirror
+their host's typography, padding, and border. Set tokens such as
+`--ez-color-primary`, `--ez-color-primary-contrast`, and `--ez-border-radius`
+on a form wrapper to style the library's buttons, panels, and focus indicators
+in that form. The picker also takes the field's theme when it opens in an
+overlay.
+
+### Category colors
+
+MarkingField tokens and TagInput chips expose `data-category-id`,
+`data-category-name`, and `data-concept-id` for styling. Match the category ID
+when the display name might change. A selector on your form wrapper limits the
+override to that form.
+
+```css
+.case-form [data-category-id='classification'] {
+    --ez-category-accent: #5144a1;
+    --ez-category-background: #eeeaff;
+    --ez-category-text: #342775;
+}
+```
+
+`--ez-category-accent` sets the MarkingField underline.
+`--ez-category-background` and `--ez-category-text` set the TagInput chip
+colors. Specify the chip colors together for readable contrast. Categories
+with no override keep their scheme or default palette. Category CSS affects
+display only. Runtime still supplies the marking, its rules, and whether
+a concept was inferred.
+
 ### Fonts
 
 Text you type into a field takes the font of the control it enhances, so the

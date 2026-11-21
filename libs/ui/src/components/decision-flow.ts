@@ -1,3 +1,4 @@
+import { ChoiceExplanation } from './choice-explanation';
 import { focusTextCaretNeighbor } from './text-caret-edge';
 /**
  * DecisionFlow: sequential decision-point stepper component.
@@ -92,11 +93,19 @@ import type {
     ValidationError,
     Warning,
 } from '@ezclassify/types';
-import { applyTextInputAttributes } from './text-input-attributes';
+import {
+    applyTextInputAttributes,
+    capturedValueProblem,
+    statedCapture,
+} from './text-input-attributes';
 import { createChoiceButton } from './choice-button';
 import choiceButtonCss from './choice-button.css?inline';
 import { focusGridRows, focusGridNeighbor } from './focus-grid';
-import { orderChoiceOptions, choiceBlockReason } from './choice-options';
+import {
+    orderChoiceOptions,
+    choiceBlockReason,
+    choiceOrigins,
+} from './choice-options';
 import decisionFlowCss from './decision-flow.css?inline';
 import { getPublicFormatLayout, viewForCategory } from '../format-layout';
 import { observeNativeLock } from './dom-helpers';
@@ -114,7 +123,7 @@ import { t } from '../i18n';
 import { derivedAssertion } from '../assertion-identity';
 import { locateTokenSpans } from '../token-tree/token-tree';
 import {
-    buildRuleFixes,
+    RuleErrorList,
     ruleErrorsFrom,
     type RuleErrorFix,
 } from './rule-errors';
@@ -307,12 +316,7 @@ export class DecisionFlow extends ComponentBase {
     /** Refits the open value fields' expected form as their boxes resize. */
     private formatObserver: ResizeObserver | null = null;
     /** Under the step's options: why the option in question is unavailable. */
-    private reasonEl!: HTMLDivElement;
-    /** The concept whose reason shows, if any. */
-    private reasonConcept: string | null = null;
-    /** Reasons already asked, by step and concept, for the facts below. */
-    private readonly blockReasons = new Map<string, string>();
-    private reasonsFacts = '';
+    private explanation!: ChoiceExplanation;
     /**
      * The concept id last interacted with: used to restore focus after
      * multi-select toggles.
@@ -339,8 +343,7 @@ export class DecisionFlow extends ComponentBase {
     private pendingText: PendingText | null = null;
     private ruleFixes: readonly RuleErrorFix[] = [];
     private ruleFixesInput: string | null = null;
-    private fixesEl: HTMLDivElement | null = null;
-    private fixesSignature = '';
+    private fixesList: RuleErrorList | null = null;
     private focusAfterRuleFix = false;
     /** True while a committed store state is being applied. */
     private applyingStoreState = false;
@@ -550,20 +553,24 @@ export class DecisionFlow extends ComponentBase {
     }
 
     private visibleConcepts(step: StepDef): ConceptDef[] {
+        const origins = choiceOrigins(this.assertions, step.categoryId);
+        const concepts = step.concepts.filter(
+            (concept) => origins.get(concept.id) !== 'inherited',
+        );
         const catalog = this.catalogFor(step);
-        if (!this.catalogReady || !catalog) return step.concepts;
+        if (!this.catalogReady || !catalog) return concepts;
         const offered = new Set(
             catalog
                 .rows()
                 .filter((s) => !s.gated && s.categoryId === step.categoryId)
                 .map((s) => s.conceptId),
         );
-        for (const a of this.assertions) {
-            if (a.categoryId === step.categoryId) offered.add(a.conceptId);
+        for (const [id, origin] of origins) {
+            if (origin !== 'inherited') offered.add(id);
         }
         if (this.pendingText?.categoryId === step.categoryId)
             offered.add(this.pendingText.conceptId);
-        return step.concepts.filter((c) => offered.has(c.id));
+        return concepts.filter((c) => offered.has(c.id));
     }
 
     protected setup(): void {
@@ -667,10 +674,10 @@ export class DecisionFlow extends ComponentBase {
         this.stepEl = document.createElement('div');
         this.stepEl.className = 'ez-decision-flow__step';
         this.stepEl.hidden = true;
-        this.reasonEl = document.createElement('div');
-        this.reasonEl.className = 'ez-decision-flow__option-reason';
-        this.reasonEl.setAttribute('role', 'status');
-        this.reasonEl.hidden = true;
+        this.explanation = new ChoiceExplanation(
+            this.container.ownerDocument,
+            'ez-decision-flow__option-reason',
+        );
         this.valuesEl = document.createElement('div');
         this.valuesEl.className = 'ez-decision-flow__values';
         this.previewEl = document.createElement('div');
@@ -1968,9 +1975,15 @@ export class DecisionFlow extends ComponentBase {
                       .filter((o) => o.blocked)
                       .map((o) => o.concept.id),
         );
-        if (this.reasonConcept !== null && !blocked.has(this.reasonConcept))
+        this.explanation.resetIfChanged(
+            JSON.stringify([this.factsKey(), step.categoryId]),
+        );
+        if (
+            this.explanation.target !== null &&
+            !blocked.has(this.explanation.target)
+        )
             this.hideBlockReason();
-        q.appendChild(this.reasonEl);
+        q.appendChild(this.explanation.element);
         this.stepEl.appendChild(q);
     }
 
@@ -1980,9 +1993,9 @@ export class DecisionFlow extends ComponentBase {
      */
     private chosenIn(step: StepDef): Set<string> {
         const chosen = new Set(
-            this.assertions
-                .filter((a) => a.categoryId === step.categoryId)
-                .map((a) => a.conceptId),
+            [...choiceOrigins(this.assertions, step.categoryId)]
+                .filter(([, origin]) => origin !== 'inherited')
+                .map(([id]) => id),
         );
         if (this.pendingText?.categoryId === step.categoryId) {
             if (step.single) chosen.clear();
@@ -1998,22 +2011,19 @@ export class DecisionFlow extends ComponentBase {
      * one is. The author did not choose them, so they never look chosen.
      */
     private inferredIn(step: StepDef): Map<string, string | null> {
-        const held = this.assertions.filter(
-            (a) => a.categoryId === step.categoryId,
-        );
-        const stated = new Set(
-            held.filter((a) => !derivedAssertion(a)).map((a) => a.conceptId),
-        );
         const inferred = new Map<string, string | null>();
-        for (const a of held) {
-            if (stated.has(a.conceptId) || !derivedAssertion(a)) continue;
+        for (const [id, origin] of choiceOrigins(
+            this.assertions,
+            step.categoryId,
+        )) {
+            if (origin !== 'inferred') continue;
             const includer = this.assertions.find((other) =>
                 this.scheme.concepts
                     .find((c) => c.id === other.conceptId)
-                    ?.members?.includes(a.conceptId),
+                    ?.members?.includes(id),
             );
             inferred.set(
-                a.conceptId,
+                id,
                 includer
                     ? t('flow.includedBy').replace('{choice}', () =>
                           this.writtenAs(
@@ -2068,7 +2078,7 @@ export class DecisionFlow extends ComponentBase {
                 onExplainBlocked: () =>
                     void this.showBlockReason(step, concept),
                 onHideExplanation: () => {
-                    if (this.reasonConcept === concept.id)
+                    if (this.explanation.target === concept.id)
                         this.hideBlockReason();
                 },
                 onActivate: () => {
@@ -2141,21 +2151,24 @@ export class DecisionFlow extends ComponentBase {
     private stepOptions(
         step: StepDef,
     ): { concept: ConceptDef; blocked: boolean }[] {
-        const offered = new Set(this.visibleConcepts(step).map((c) => c.id));
+        const visible = this.visibleConcepts(step);
+        const offered = new Set(visible.map((c) => c.id));
         if (!this.catalogReady || !this.catalogFor(step))
             return orderChoiceOptions(
-                step.concepts.map((concept) => ({
+                visible.map((concept) => ({
                     concept,
                     blocked: false,
                 })),
                 this.scheme.concepts,
             );
         const held = new Set(this.assertions.map((a) => a.conceptId));
+        const origins = choiceOrigins(this.assertions, step.categoryId);
         return orderChoiceOptions(
             step.concepts.flatMap<{
                 concept: ConceptDef;
                 blocked: boolean;
             }>((concept) => {
+                if (origins.get(concept.id) === 'inherited') return [];
                 if (offered.has(concept.id))
                     return [{ concept, blocked: false }];
                 const view = this.scheme.concepts.find(
@@ -2199,39 +2212,17 @@ export class DecisionFlow extends ComponentBase {
     }
 
     /** Show why `concept` is unavailable, under the step's options. */
-    private async showBlockReason(
-        step: StepDef,
-        concept: ConceptDef,
-    ): Promise<void> {
-        const facts = this.factsKey();
-        if (facts !== this.reasonsFacts) {
-            this.reasonsFacts = facts;
-            this.blockReasons.clear();
-        }
-        const key = `${step.categoryId}\u0000${concept.id}`;
-        this.reasonConcept = concept.id;
-        const known = this.blockReasons.get(key);
-        this.reasonEl.hidden = false;
-        this.reasonEl.textContent = known
-            ? `${concept.label} is not available: ${known}`
-            : '';
-        if (known) return;
-        let reason: string;
-        try {
-            reason = await this.blockReason(step, concept);
-        } catch {
-            reason = t('composer.unavailable');
-        }
-        if (this._destroyed || facts !== this.reasonsFacts) return;
-        this.blockReasons.set(key, reason);
-        if (this.reasonConcept === concept.id)
-            this.reasonEl.textContent = `${concept.label} is not available: ${reason}`;
+    private showBlockReason(step: StepDef, concept: ConceptDef): Promise<void> {
+        return this.explanation.show(
+            () => JSON.stringify([this.factsKey(), step.categoryId]),
+            concept.id,
+            concept.label,
+            () => this.blockReason(step, concept),
+        );
     }
 
     private hideBlockReason(): void {
-        this.reasonConcept = null;
-        this.reasonEl.hidden = true;
-        this.reasonEl.textContent = '';
+        this.explanation.hide();
     }
 
     /**
@@ -2381,13 +2372,11 @@ export class DecisionFlow extends ComponentBase {
         after.push(errorEl);
 
         const showError = (blurred: boolean) => {
-            const value = input.value.trim();
-            const message =
-                value && !input.validity.valid
-                    ? `Invalid format. Expected: ${ti.placeholder ?? 'the required value format'}`
-                    : !value && input.required && blurred
-                      ? 'Required'
-                      : '';
+            const message = capturedValueProblem(
+                input,
+                ti,
+                input.required && blurred,
+            );
             errorEl.textContent = message;
             if (message) input.setAttribute('aria-invalid', 'true');
             else input.removeAttribute('aria-invalid');
@@ -2482,26 +2471,17 @@ export class DecisionFlow extends ComponentBase {
         // Restore focus to this field after the DOM rebuild that follows reprocess().
         this._restoreFocusAfterRender = true;
         if (complete && index >= 0) {
-            const edited: Assertion = {
-                ...this.assertions[index],
-                value,
-                source: 'user',
-                confidence: 'certain',
-            };
-            delete edited.sourceRule;
+            const edited = statedCapture(this.assertions[index], value);
             this.assertions = this.assertions.map((a, i) =>
                 i === index ? edited : a,
             );
         } else if (complete) {
             this.assertions = [
                 ...this.assertions,
-                {
-                    conceptId: concept.id,
-                    categoryId: step.categoryId,
-                    confidence: 'certain',
-                    source: 'user',
+                statedCapture(
+                    { conceptId: concept.id, categoryId: step.categoryId },
                     value,
-                },
+                ),
             ];
         } else {
             this.assertions = this.assertions.filter((_, i) => i !== index);
@@ -2588,7 +2568,7 @@ export class DecisionFlow extends ComponentBase {
                 onExplainBlocked: () =>
                     void this.showBlockReason(step, concept),
                 onHideExplanation: () => {
-                    if (this.reasonConcept === concept.id)
+                    if (this.explanation.target === concept.id)
                         this.hideBlockReason();
                 },
                 onActivate: () => {
@@ -2768,55 +2748,46 @@ export class DecisionFlow extends ComponentBase {
     /** Show the engine's whole-marking remedies once, beside the scoped report. */
     private renderRuleFixes(): void {
         const fixes = this.locked ? [] : this.ruleFixes;
-        const signature = JSON.stringify(
-            fixes.map(({ label, fix }) => [label, fix.rendered]),
-        );
-        if (signature === this.fixesSignature) return;
-        this.fixesSignature = signature;
-        if (!this.fixesEl && fixes.length === 0) return;
-        if (!this.fixesEl) {
-            this.fixesEl = document.createElement('div');
-            this.fixesEl.className =
-                'ez-validation-errors ez-decision-flow__fixes';
-            this.flowEl.insertBefore(this.fixesEl, this.previewEl);
+        if (!this.fixesList) {
+            if (!fixes.length) return;
+            this.fixesList = new RuleErrorList(
+                this.container.ownerDocument,
+                undefined,
+                {
+                    remediesOnly: true,
+                    beforeReplace: () => {
+                        if (
+                            this.open &&
+                            this.fixesList?.element.contains(
+                                document.activeElement,
+                            )
+                        ) {
+                            this.focusCurrentStep();
+                            this._restoreFocusAfterRender = 'step';
+                        }
+                    },
+                },
+            );
+            this.fixesList.element.classList.add('ez-decision-flow__fixes');
+            this.flowEl.insertBefore(this.fixesList.element, this.previewEl);
         }
-        if (this.open && this.fixesEl.contains(document.activeElement)) {
-            this.focusCurrentStep();
-            this._restoreFocusAfterRender = 'step';
-        }
-        this.fixesEl.hidden = fixes.length === 0;
-        this.fixesEl.replaceChildren(
-            ...(fixes.length
-                ? buildRuleFixes(
-                      this.container.ownerDocument,
-                      fixes,
-                      (previous) => {
-                          if (
-                              this._destroyed ||
-                              this.locked ||
-                              this.enhancedInput?.matches(
-                                  ':disabled, [readonly]',
-                              )
-                          )
-                              return;
-                          if (this.ruleFixesInput !== this.proofInputKey()) {
-                              this.clearRuleFixes();
-                              return;
-                          }
-                          const current = this.ruleFixes.find(
-                              ({ fix }) => fix.rendered === previous.rendered,
-                          );
-                          if (!current) return;
-                          const focus =
-                              this.open &&
-                              this.flowEl.contains(document.activeElement);
-                          if (focus) this.focusCurrentStep();
-                          this.focusAfterRuleFix = focus;
-                          this.ruleFixHandler()(current.fix);
-                      },
-                  )
-                : []),
-        );
+        this.fixesList.update({ messages: [], warnings: [], fixes }, (fix) => {
+            if (
+                this._destroyed ||
+                this.locked ||
+                this.enhancedInput?.matches(':disabled, [readonly]')
+            )
+                return;
+            if (this.ruleFixesInput !== this.proofInputKey()) {
+                this.clearRuleFixes();
+                return;
+            }
+            const focus =
+                this.open && this.flowEl.contains(document.activeElement);
+            if (focus) this.focusCurrentStep();
+            this.focusAfterRuleFix = focus;
+            this.ruleFixHandler()(fix);
+        });
     }
 
     /** Move between steps, options and remedies without trapping normal Tab. */
@@ -2876,7 +2847,7 @@ export class DecisionFlow extends ComponentBase {
             return;
         }
         const fixes = [
-            ...(this.fixesEl?.querySelectorAll<HTMLButtonElement>(
+            ...(this.fixesList?.element.querySelectorAll<HTMLButtonElement>(
                 '.ez-validation-errors__fix',
             ) ?? []),
         ];
@@ -2915,7 +2886,7 @@ export class DecisionFlow extends ComponentBase {
         ) {
             event.preventDefault();
             event.stopPropagation();
-            if (!this.fixesEl?.hidden) fixes[0]?.focus();
+            if (!this.fixesList?.element.hidden) fixes[0]?.focus();
             return;
         }
         if (
@@ -3018,7 +2989,7 @@ export class DecisionFlow extends ComponentBase {
                     this.dotsEl.querySelector<HTMLElement>(
                         '[aria-current="step"]',
                     ) ?? undefined;
-            } else if (!this.fixesEl?.hidden) destination = fixes[0];
+            } else if (!this.fixesList?.element.hidden) destination = fixes[0];
         }
         if (destination?.matches('.ez-decision-flow__option'))
             this.rememberStepOption(destination as HTMLButtonElement);

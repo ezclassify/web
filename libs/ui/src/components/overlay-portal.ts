@@ -51,10 +51,8 @@ const UI_ROOT = '.ez-root, [data-ezclassify]';
 const FORM_CONTROL = 'input, textarea, select';
 
 /**
- * A custom property that holds one of these names no family. Browsers resolve
- * the root rule's `--ez-font-family: inherit` before reporting it, so this only
- * matters where the cascade is not resolved, but a keyword must never reach
- * `font-family` as if a host had chosen it.
+ * A host can unset its font token. A CSS-wide keyword must never reach the
+ * overlay as if the host had chosen a font family.
  */
 const CSS_WIDE_KEYWORD = /^(?:inherit|initial|unset|revert|revert-layer)$/;
 
@@ -107,6 +105,7 @@ export function copyOverlayTheme(
     for (const property of THEME_PROPERTIES) {
         const value = style.getPropertyValue(property);
         if (value) overlay.style.setProperty(property, value);
+        else overlay.style.removeProperty(property);
     }
     overlay.style.fontFamily = uiFontFamily(owner);
 }

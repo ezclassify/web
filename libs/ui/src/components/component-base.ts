@@ -1,3 +1,4 @@
+import { AppliedFixHistory } from './applied-fix-history';
 import { conceptHint, conceptHintName } from './concept-hint';
 /**
  * Interactive base class for form components that support editing.
@@ -43,7 +44,6 @@ import { removeAssertionCascade } from './assertion-removal';
 import {
     dismissStatusMarkPopover,
     explainedChanges,
-    recordAppliedFixes,
     setStatusMarkFixes,
     type StatusMarkOptions,
 } from './status-mark';
@@ -563,7 +563,7 @@ export abstract class ComponentBase extends ReadOnlyComponentBase {
      * setValue, a replacing composer commit, or an edit that drops something
      * the field stated).
      */
-    protected _appliedFixes = new Map<string, Change>();
+    private readonly _appliedFixes = new AppliedFixHistory();
 
     /**
      * Fixes the engine applied while producing the field's current value,
@@ -571,7 +571,7 @@ export abstract class ComponentBase extends ReadOnlyComponentBase {
      * with no rule-driven changes.
      */
     getAppliedFixes(): readonly Change[] {
-        return [...this._appliedFixes.values()];
+        return this._appliedFixes.values();
     }
 
     protected override recordAppliedFixes(
@@ -579,7 +579,7 @@ export abstract class ComponentBase extends ReadOnlyComponentBase {
         reset = false,
     ): void {
         if (reset) this._appliedFixes.clear();
-        recordAppliedFixes(this._appliedFixes, fixes);
+        this._appliedFixes.append(fixes);
     }
 
     /**
@@ -997,7 +997,7 @@ export abstract class ComponentBase extends ReadOnlyComponentBase {
             const refused = renderViewRefused(result);
             if (!refused) this._lastRendered = result.rendered;
             this.noteReading(refused ? {} : result);
-            recordAppliedFixes(this._appliedFixes, result.appliedFixes);
+            this._appliedFixes.append(result.appliedFixes);
             if (refused)
                 this.showRenderRefusal(
                     result,
@@ -1078,10 +1078,15 @@ export abstract class ComponentBase extends ReadOnlyComponentBase {
      * field, so the record starts over and the reprocess records the repairs
      * that still apply. An edit that only adds keeps them.
      */
-    protected reprocessEdit(next: Assertion[]): void {
-        if (replacesStated(this.assertions, next)) this._appliedFixes.clear();
+    protected reprocessEdit(
+        next: Assertion[],
+        options?: { processEmpty?: boolean; resetCorrections?: boolean },
+    ): void {
+        if (options?.resetCorrections || replacesStated(this.assertions, next))
+            this._appliedFixes.clear();
         this.assertions = next;
-        this.reprocess();
+        if (options?.processEmpty) void this.reprocessNow(true);
+        else this.reprocess();
     }
 
     /**

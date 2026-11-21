@@ -22,9 +22,8 @@
  * MarkingField instead.
  */
 
-import type { SchemeMetaView } from '@ezclassify/types';
-import { teardownAfterWrite } from './teardown-write';
-import { ComponentBase, type ComponentOptions } from './component-base';
+import type { ComponentOptions } from './component-base';
+import { ComposerFieldBase } from './composer-field-base';
 import { COMPONENT_CSS } from './component-utils';
 import tagInputCss from './tag-input.css?inline';
 import { t } from '../i18n';
@@ -44,15 +43,14 @@ import {
     mountFieldChrome,
     type FieldChrome,
 } from './field-chrome';
-import { ComposerController } from './composer/composer-controller';
-import { ComposerView, accessibleLabel } from './composer/composer-view';
+import { accessibleLabel } from './composer/composer-view';
 
 /**
  * Chip-based multi-select: typing composes additions to the chips, the result
  * row shows what will be stored, and the roving chip focus supports
  * keyboard-only removal.
  */
-export class TagInput extends ComponentBase {
+export class TagInput extends ComposerFieldBase {
     private inputWrap!: HTMLDivElement;
     private filterInput!: HTMLInputElement;
     /** The inline chrome: marking tools and clear. */
@@ -70,8 +68,6 @@ export class TagInput extends ComponentBase {
      * keyboard delete)
      */
     private _pendingFocusConceptId: string | null = null;
-    private controller!: ComposerController;
-    private view!: ComposerView;
     /** Filter-input prompt shown once a marking is present (search hint). */
     private searchPlaceholder = '';
     /**
@@ -84,11 +80,6 @@ export class TagInput extends ComponentBase {
 
     /** CSS for TagInput (exported for external injection) */
     static readonly CSS: string = COMPONENT_CSS + tagInputCss;
-
-    /** The value is the WHOLE marking: same format role as MarkingField. */
-    protected override resolveDefaultFormatId(meta: SchemeMetaView): string {
-        return meta.defaultWholeRenderFormat ?? meta.defaultRenderFormat ?? '';
-    }
 
     protected override clearButtonMount(): HTMLElement | null {
         return this.chrome?.element ?? null;
@@ -213,72 +204,43 @@ export class TagInput extends ComponentBase {
         this.container.appendChild(this.wrapOuter);
         this.followHostAppearance();
 
-        this.controller = new ComposerController({
-            port: this.composerPort('additive'),
-            shape: 'additive',
-            announce: (text) => this.view?.announce(text),
-        });
-        this.view = new ComposerView({
-            controller: this.controller,
-            committedValidity: () => this.valueValidationMessage,
-            input: this.filterInput,
-            anchor: this.inputWrap,
-            bounds: this.wrapOuter,
-            label: () =>
-                accessibleLabel(this.filterInput, t('aria.searchMarkings')),
-            css:
-                this.options.injectStyles === false
-                    ? undefined
-                    : COMPONENT_CSS + tagInputCss,
-            placeholder: this.searchPlaceholder,
-            describeConcept: this.shouldShowTooltip()
-                ? (conceptId, categoryId) =>
-                      this.getConceptHint(conceptId, categoryId)?.title
-                : undefined,
-            onPlacement: (open) => this.setReportInField(open),
-            isFieldChrome: (node) =>
-                statusMarkOwnsNode(this.toolsButton, node) ||
-                this.tagEls.some((chip) => chip.contains(node)),
-            sheetTools: () => this.toolsButton,
-            textToolsEdges: () => true,
-            textStartNeighbor: () => {
-                const index = this.tagEls.length - 1;
-                if (index < 0) return null;
-                this.focusChip(index);
-                return this.tagEls[index] ?? null;
+        this.mountComposer(
+            'additive',
+            {
+                input: this.filterInput,
+                anchor: this.inputWrap,
+                bounds: this.wrapOuter,
+                label: () =>
+                    accessibleLabel(this.filterInput, t('aria.searchMarkings')),
+                css:
+                    this.options.injectStyles === false
+                        ? undefined
+                        : COMPONENT_CSS + tagInputCss,
+                placeholder: this.searchPlaceholder,
+                isFieldChrome: (node) =>
+                    statusMarkOwnsNode(this.toolsButton, node) ||
+                    this.tagEls.some((chip) => chip.contains(node)),
+                sheetTools: () => this.toolsButton,
+                textStartNeighbor: () => {
+                    const index = this.tagEls.length - 1;
+                    if (index < 0) return null;
+                    this.focusChip(index);
+                    return this.tagEls[index] ?? null;
+                },
             },
-        });
-        this.container.appendChild(this.view.announcer);
-        this.wrapOuter.insertAdjacentElement('afterend', this.view.note);
+            this.wrapOuter,
+        );
 
         this.render();
     }
 
-    /** Also read an open draft again, so its fix rows account for the parts. */
-    override refreshParts(): void {
-        super.refreshParts();
-        if (this.coversParts && !this._destroyed)
-            void this.controller?.refreshContext();
-    }
-
     destroy(): void {
-        teardownAfterWrite(
-            this,
-            this.controller?.isDirty() ? () => this.controller.commit() : null,
-            () => this.teardown(),
-        );
+        this.destroyComposerAfterWrite(() => this.teardown());
     }
 
     private teardown(): void {
-        this.destroyClearButton();
-        this.removeRuleErrors();
-        this._destroyed = true;
-        // The initial read can still be pending, before setup creates the view.
-        if (!this.view) return;
         this.stopHostFrame();
         this.stopHostFrame = () => {};
-        this.view.destroy();
-        this.controller.dispose();
         this.destroyFieldTools();
         this.chrome?.destroy();
         this.chrome = null;
@@ -376,10 +338,7 @@ export class TagInput extends ComponentBase {
             this.chrome.status,
             {
                 correctionCategory: this.options.categoryId,
-                onToolsOpen: () => {
-                    this.toolsButton?.focus();
-                    this.view?.suspendForTools();
-                },
+                onToolsOpen: () => this.focusComposerTools(this.toolsButton),
                 root: this.options.root,
                 shouldShowTooltip: () => this.shouldShowTooltip(),
                 ...this.statusMarkUndo(),
@@ -575,10 +534,6 @@ export class TagInput extends ComponentBase {
         this.filterInput.value = pasted;
         void this.controller.startOver(pasted);
         if (!this.controller.isOpen) void this.view.open('typing');
-    }
-
-    protected override onRuleErrorsChanged(): void {
-        this.view?.refreshValidity();
     }
 }
 

@@ -321,8 +321,12 @@ describe('MarkedInput: corrupted mark surfaces as invalid, never a silent downgr
         expect(chip?.classList.contains('marked-input-chip--invalid')).toBe(
             true,
         );
-        // ... its title carries the engine's message naming the unread text ...
-        expect(chip?.getAttribute('title')).toMatch(/"sx"/i);
+        // Its hover feedback still names the token the Runtime could not read.
+        chip!.dispatchEvent(new MouseEvent('mouseenter'));
+        await wait(350);
+        expect(
+            document.querySelector('.ez-tooltip:not([hidden])')?.textContent,
+        ).toMatch(/"sx"/i);
         // ... and the published state did NOT silently downgrade.
         expect(
             levelState(forms.store).assertions.some((a) => a.conceptId === 'S'),

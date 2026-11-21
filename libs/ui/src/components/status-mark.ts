@@ -462,7 +462,12 @@ function visibleError(mark: HTMLElement): string | undefined {
  * For a mark whose field holds several markings, the marking each of its
  * changes was made to, by the change's key in {@link markFixes}.
  */
-const markGroups = new WeakMap<HTMLElement, Map<string, string>>();
+interface StatusGroupLabel {
+    id: string;
+    label?: string;
+}
+
+const markGroups = new WeakMap<HTMLElement, Map<string, StatusGroupLabel>>();
 
 /**
  * The changes, by effect, that have actually been shown to the user (tooltip
@@ -638,17 +643,18 @@ const markOptions = new WeakMap<HTMLElement, StatusMarkOptions>();
  */
 function linesOf(
     mark: HTMLElement,
-): { text: string; rule: string; group?: string }[] {
+): { text: string; rule: string; group?: StatusGroupLabel }[] {
     const words = markOptions.get(mark)?.words;
     const groups = markGroups.get(mark);
     const seen = new Set<string>();
-    const lines: { text: string; rule: string; group?: string }[] = [];
+    const lines: { text: string; rule: string; group?: StatusGroupLabel }[] =
+        [];
     const draft = draftFixesOf(mark);
     const fixes = draft?.map((change) => [effectKey(change), change] as const);
     for (const [key, change] of fixes ?? markFixes.get(mark) ?? []) {
         const group = draft ? undefined : groups?.get(key);
         for (const text of changeLines(change, words)) {
-            const once = `${group ?? ''}\u0000${text}`;
+            const once = `${group?.id ?? ''}\u0000${text}`;
             if (seen.has(once)) continue;
             seen.add(once);
             lines.push({ text, rule: change.ruleId, group });
@@ -1077,6 +1083,7 @@ export function setStatusMarkFixes(
 
 /** The changes made to one of the markings a field holds. */
 export interface StatusMarkGroup {
+    entryId: string;
     /** The marking as the field now writes it in its text. */
     marking: string;
     /** What {@link explainedChanges} gives for that marking. */
@@ -1100,18 +1107,19 @@ export function setStatusMarkGroups(
     const changed = groups.filter((group) => group.changes.length > 0);
     setMarkChanges(
         wrap,
-        changed.length > 1
-            ? changed.map(({ marking, changes }) => ({
-                  label: marking,
-                  changes,
-              }))
-            : changed.map(({ changes }) => ({ changes })),
+        changed.map(({ entryId, marking, changes }) => ({
+            group: {
+                id: entryId,
+                label: changed.length > 1 ? marking : undefined,
+            },
+            changes,
+        })),
     );
 }
 
 function setMarkChanges(
     wrap: HTMLElement,
-    groups: readonly { label?: string; changes: readonly Change[] }[],
+    groups: readonly { group?: StatusGroupLabel; changes: readonly Change[] }[],
 ): void {
     const mark = statusMarkOf(wrap);
     if (!mark) return;
@@ -1122,17 +1130,17 @@ function setMarkChanges(
     // A change is known by what it did, within its marking: the same change
     // made to two markings is two changes.
     const changes = new Map<string, Change>();
-    const labels = new Map<string, string>();
-    for (const { label, changes: list } of groups) {
+    const labels = new Map<string, StatusGroupLabel>();
+    for (const { group, changes: list } of groups) {
         for (const change of changesInCategory(mark, list)) {
             const effect = effectKey(change);
             const key =
-                label === undefined
+                group === undefined
                     ? effect
-                    : JSON.stringify(['marking', label, effect]);
+                    : JSON.stringify(['marking', group.id, effect]);
             if (changes.has(key)) continue;
             changes.set(key, change);
-            if (label !== undefined) labels.set(key, label);
+            if (group) labels.set(key, group);
         }
     }
     markFixes.set(mark, changes);
@@ -1194,16 +1202,16 @@ function changeList(
     heading.textContent = changesLabel(lines.length);
     list.appendChild(heading);
     let items: HTMLUListElement | null = null;
-    let group: string | undefined;
+    let group: StatusGroupLabel | undefined;
     for (const line of lines) {
         // A field of several markings lists each marking's changes under the
         // marking, as its text now writes it.
-        if (!items || line.group !== group) {
+        if (!items || line.group?.id !== group?.id) {
             group = line.group;
-            if (group !== undefined) {
+            if (group?.label !== undefined) {
                 const name = document.createElement('div');
                 name.className = 'ez-status-list__marking';
-                name.textContent = group;
+                name.textContent = group.label;
                 list.appendChild(name);
             }
             items = document.createElement('ul');

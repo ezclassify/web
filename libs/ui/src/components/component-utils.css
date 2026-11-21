@@ -14,10 +14,10 @@
     font-size: 0.8125rem;
     border-radius: 999px;
     background: var(
-        --ez-tag-bg,
-        var(--ez-color-surface-active, rgba(0, 0, 0, 0.08))
+        --ez-category-background,
+        var(--ez-tag-bg, var(--ez-color-surface-active, rgba(0, 0, 0, 0.08)))
     );
-    color: var(--ez-tag-color, inherit);
+    color: var(--ez-category-text, var(--ez-tag-color, inherit));
     border: none;
     cursor: default;
     user-select: none;
@@ -47,7 +47,11 @@
 .proto-tag--unprinted {
     background: color-mix(
         in srgb,
-        var(--ez-tag-bg, var(--ez-color-surface-active, #e5e7eb)) 15%,
+        var(
+                --ez-category-background,
+                var(--ez-tag-bg, var(--ez-color-surface-active, #e5e7eb))
+            )
+            15%,
         var(--ez-color-surface, #f8fafc)
     );
     color: var(--ez-color-text, inherit);

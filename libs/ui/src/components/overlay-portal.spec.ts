@@ -78,6 +78,25 @@ describe('copyOverlayTheme', () => {
         expect(getComputedStyle(overlay).fontFamily).toBe('Georgia, serif');
     });
 
+    it('discards an old dropdown override when the next anchor stops supplying it', () => {
+        const anchor = fieldLayer();
+        anchor.style.setProperty('--ez-dropdown-background', '#123456');
+        copyOverlayTheme(anchor, overlay);
+        expect(overlay.style.getPropertyValue('--ez-dropdown-background')).toBe(
+            '#123456',
+        );
+
+        anchor.style.removeProperty('--ez-dropdown-background');
+        anchor.style.setProperty('--ez-color-background', '#234567');
+        copyOverlayTheme(anchor, overlay);
+        expect(overlay.style.getPropertyValue('--ez-dropdown-background')).toBe(
+            '',
+        );
+        expect(overlay.style.getPropertyValue('--ez-color-background')).toBe(
+            '#234567',
+        );
+    });
+
     it('outside any root, reads the nearest ancestor that is not a form control', () => {
         pageStyles(
             '.page { font-family: Georgia, serif; } .page textarea { font: 13px monospace; }',

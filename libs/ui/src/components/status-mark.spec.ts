@@ -1520,7 +1520,10 @@ describe('status mark tone', () => {
     });
 
     it('is the text color on a light palette and gold on a dark one', () => {
-        for (const light of [':root {', "[data-color-scheme='light'],"]) {
+        for (const light of [
+            ':where(:root) {',
+            "[data-color-scheme='light'],",
+        ]) {
             const block = paletteBlock(light);
             expect(block).toMatch(/--ez-status-mark-color:\s*#9ca3af;/);
             expect(block).toMatch(

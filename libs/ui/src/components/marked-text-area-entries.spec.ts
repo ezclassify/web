@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
     projectEntrySpans,
     reconcileEntryIds,
+    textEdit,
 } from './marked-text-area-entries';
 
 describe('marked body entry ownership', () => {
@@ -75,6 +76,46 @@ describe('marked body entry ownership', () => {
             ),
         ).toEqual(['one']);
     });
+    it('aligns an unambiguous middle-paragraph deletion with its complete lines', () => {
+        const oldText = '(A) First.\n(A) Middle.\n(A) Last.';
+        const newText = '(A) First.\n(A) Last.';
+        expect(textEdit(oldText, newText)).toEqual({
+            prefix: 11,
+            oldEnd: 23,
+            delta: -12,
+        });
+    });
+
+    it('keeps the original entry after a new paragraph repeats its marking', () => {
+        const oldText = '(H) one.\n(LOW//STD) survivor.';
+        const newText = '(H) one.\n(LOW//STD) new.\n(LOW//STD) survivor.';
+        expect(
+            reconcileEntryIds(
+                oldText,
+                [
+                    { entryId: 'first', start: 0, end: 3 },
+                    { entryId: 'survivor', start: 9, end: 19 },
+                ],
+                newText,
+                [
+                    { start: 0, end: 3 },
+                    { start: 9, end: 19 },
+                    { start: 25, end: 35 },
+                ],
+                () => 'fresh',
+            ),
+        ).toEqual(['first', 'fresh', 'survivor']);
+    });
+
+    it('keeps the native diff when duplicate paragraphs make the deleted line ambiguous', () => {
+        const line = '(A) Body.\n';
+        expect(textEdit(line.repeat(3), line.repeat(2))).toEqual({
+            prefix: line.length * 2,
+            oldEnd: line.length * 3,
+            delta: -line.length,
+        });
+    });
+
     it('does not attach replaced multi-paragraph content to old identities', () => {
         expect(
             reconcileEntryIds(

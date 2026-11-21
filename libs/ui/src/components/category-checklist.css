@@ -212,6 +212,13 @@
     line-height: 1.4;
     flex: 1;
 }
+.category-checklist-item--inferred .category-checklist-box {
+    border-style: dashed;
+}
+.category-checklist-item--inferred .category-checklist-label {
+    font-style: italic;
+}
+
 .category-checklist-item--checked .category-checklist-label {
     font-weight: 600;
 }

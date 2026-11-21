@@ -44,8 +44,7 @@ import { createAnnouncer, announce } from './component-utils';
 import { EMPTY_VALUE } from '../text-utils';
 import { getMountHost } from '../mount-host-registry';
 import guideHelperCss from './guide-helper.css?inline';
-import { ensureStatusMark, dismissStatusMarkPopover } from './status-mark';
-import { ensureMarkingFavorites, type FavoritesPanel } from './favorites-panel';
+import { dismissStatusMarkPopover } from './status-mark';
 import { markingTarget } from './marking-target';
 
 const GUIDE_HELPER_DEFAULTS = {
@@ -187,7 +186,6 @@ export class GuideChecklist extends ReadOnlyComponentBase {
     private evaluationErrorEl!: HTMLDivElement;
     private markingTools: HTMLElement | null = null;
     private markingValue: HTMLElement | null = null;
-    private favoritesPanel: FavoritesPanel | null = null;
 
     private views: GuideStructuralView[] = [];
     private ruleByRow = new WeakMap<HTMLElement, GuideRuleView>();
@@ -536,8 +534,7 @@ export class GuideChecklist extends ReadOnlyComponentBase {
     }
 
     destroy(): void {
-        this.favoritesPanel?.destroy();
-        this.favoritesPanel = null;
+        this.destroyFieldTools();
         if (this.markingTools) dismissStatusMarkPopover(this.markingTools);
         this.markingTools = null;
         this.markingValue = null;
@@ -1430,18 +1427,19 @@ export class GuideChecklist extends ReadOnlyComponentBase {
         value.textContent = target.getCurrent().rendered || EMPTY_VALUE;
         row.append(label, value);
         root.appendChild(row);
-        this.markingTools = ensureStatusMark(row, {
-            tools: true,
-            shape: 'chrome',
-            root: this.options.root ?? this.container,
-            keyboardRoot: this.container,
-        });
-        this.favoritesPanel = ensureMarkingFavorites(row, {
-            root: this.options.root ?? this.container,
-            config: this.options.favorites,
-            ...target,
-            focusField: () => this.searchInput.focus(),
-        });
+        this.markingTools = this.mountFieldTools(
+            row,
+            {
+                root: this.options.root ?? this.container,
+                keyboardRoot: this.container,
+            },
+            () => ({
+                root: this.options.root ?? this.container,
+                config: this.options.favorites,
+                ...target,
+                focusField: () => this.searchInput.focus(),
+            }),
+        );
     }
 
     /** Whether the host names a marking with `data-ezclassify-bound-to`. */

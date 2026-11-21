@@ -15,15 +15,15 @@
  * keeps the draft visible, marked invalid, instead of painting the old value
  * over it: the typed text stays on screen and nothing is stored.
  *
- * Built on {@link ComponentBase} rather than MarkedFieldBase: that base exists
- * for MarkedInput's "one embedded marking inside larger free text" shape. The
- * base's enhancedInput always remains the original control; only the private
- * host getter selects the owned wrapping editor for presentation.
+ * Built on {@link ComposerFieldBase} rather than MarkedFieldBase: that base
+ * exists for MarkedInput's "one embedded marking inside larger free text"
+ * shape. The base's enhancedInput always remains the original control; only the
+ * private host getter selects the owned wrapping editor for presentation.
  */
 
-import type { Fix, SchemeMetaView } from '@ezclassify/types';
-import { ComponentBase, type ComponentOptions } from './component-base';
-import { teardownAfterWrite } from './teardown-write';
+import type { Fix } from '@ezclassify/types';
+import type { ComponentOptions } from './component-base';
+import { ComposerFieldBase } from './composer-field-base';
 import { returnToField } from './component-base-readonly';
 import { getMountHost } from '../mount-host-registry';
 import { resolveMarkingColor } from '../color-resolver';
@@ -34,13 +34,9 @@ import { mountFieldChrome, type FieldChrome } from './field-chrome';
 import { t } from '../i18n';
 import { locateTokenSpans, type TokenNode } from '../token-tree/token-tree';
 import { derivedAssertion } from '../assertion-identity';
-import {
-    ComposerController,
-    type CommitOutcome,
-} from './composer/composer-controller';
+import type { CommitOutcome } from './composer/composer-controller';
 import {
     COMPOSER_DISMISSED,
-    ComposerView,
     accessibleLabel,
     type ComposerDismissal,
 } from './composer/composer-view';
@@ -52,7 +48,7 @@ import { inDeclarationOrder, listedScopesOf } from '../scopes';
  * Enhances a native text input or textarea whose `.value` is the complete
  * rendered marking. No leading/trailing free text, no chips.
  */
-export class MarkingField extends ComponentBase {
+export class MarkingField extends ComposerFieldBase {
     static readonly CSS: string = COMPONENT_CSS + markingFieldCss;
 
     private wrap!: HTMLDivElement;
@@ -64,8 +60,6 @@ export class MarkingField extends ComponentBase {
     /** The inline chrome: marking tools and clear. */
     private chrome: FieldChrome | null = null;
     private toolsButton: HTMLElement | null = null;
-    private controller!: ComposerController;
-    private view!: ComposerView;
     /** True while the host textarea is the visible, editable surface. */
     private hasFocus = false;
     /**
@@ -88,11 +82,6 @@ export class MarkingField extends ComponentBase {
 
     private boundFocus!: () => void;
     private boundDisplayMouseDown!: (e: MouseEvent) => void;
-
-    /** The value is the WHOLE marking: same format role as TagInput. */
-    protected override resolveDefaultFormatId(meta: SchemeMetaView): string {
-        return meta.defaultWholeRenderFormat ?? meta.defaultRenderFormat ?? '';
-    }
 
     /** A marking field shows its marking as one string of text. */
     protected override writesScopesAsText(): boolean {
@@ -238,58 +227,49 @@ export class MarkingField extends ComponentBase {
         this.syncHostHeight();
         this.observeHostWidth();
 
-        this.controller = new ComposerController({
-            port: this.composerPort('whole'),
-            shape: 'whole',
-            announce: (text) => this.view?.announce(text),
-        });
-        this.view = new ComposerView({
-            controller: this.controller,
-            committedValidity: () => this.valueValidationMessage,
-            input: host,
-            anchor: this.wrap,
-            bounds: (this.options.root as HTMLElement | undefined) ?? this.wrap,
-            label: () =>
-                accessibleLabel(
-                    this.enhancedInput ?? host,
-                    t('aria.markingInput'),
-                ),
-            css:
-                this.options.injectStyles === false
-                    ? undefined
-                    : COMPONENT_CSS + markingFieldCss,
-            singleLine: true,
-            placeholder: this.options.placeholder ?? host.placeholder,
-            describeConcept: this.shouldShowTooltip()
-                ? (conceptId, categoryId) =>
-                      this.getConceptHint(conceptId, categoryId)?.title
-                : undefined,
-            onPlacement: (open) => this.setReportInField(open),
-            onDraft: (text) => {
-                if (this.editor) this.enhancedInput!.value = text;
-                if (this.hasFocus || this.controller.snapshot().invalid) {
-                    this.syncHostHeight();
-                }
+        this.mountComposer(
+            'whole',
+            {
+                input: host,
+                anchor: this.wrap,
+                bounds:
+                    (this.options.root as HTMLElement | undefined) ?? this.wrap,
+                label: () =>
+                    accessibleLabel(
+                        this.enhancedInput ?? host,
+                        t('aria.markingInput'),
+                    ),
+                css:
+                    this.options.injectStyles === false
+                        ? undefined
+                        : COMPONENT_CSS + markingFieldCss,
+                singleLine: true,
+                placeholder: this.options.placeholder ?? host.placeholder,
+                onDraft: (text) => {
+                    if (this.editor) this.enhancedInput!.value = text;
+                    if (this.hasFocus || this.controller.snapshot().invalid) {
+                        this.syncHostHeight();
+                    }
+                },
+                parkOnCleanSheetEscape: true,
+                onBlurCommit: (outcome) => this.rest(outcome),
+                onEscapeIdle: (fromSheet) => {
+                    // Cancel reverts the draft after closing the sheet.
+                    if (fromSheet) this.rest('unchanged');
+                    return false;
+                },
+                isFieldChrome: (node) =>
+                    statusMarkOwnsNode(this.toolsButton, node),
+                sheetTools: () => this.toolsButton,
             },
-            parkOnCleanSheetEscape: true,
-            onBlurCommit: (outcome) => this.rest(outcome),
-            onEscapeIdle: (fromSheet) => {
-                // Cancel reverts the draft after closing the sheet.
-                if (fromSheet) this.rest('unchanged');
-                return false;
-            },
-            isFieldChrome: (node) => statusMarkOwnsNode(this.toolsButton, node),
-            sheetTools: () => this.toolsButton,
-            textToolsEdges: () => true,
-        });
+            this.wrap,
+        );
         this.view.surface.addEventListener(COMPOSER_DISMISSED, (event) => {
             if ((event as CustomEvent<ComposerDismissal>).detail.clean) {
                 this.rest('unchanged');
             }
         });
         if (this.editor) this.wireInputEditor();
-        this.container.appendChild(this.view.announcer);
-        this.wrap.insertAdjacentElement('afterend', this.view.note);
 
         // Branding and clear sit inline at the
         // field's trailing edge, at rest and while editing; the text layers
@@ -299,10 +279,7 @@ export class MarkingField extends ComponentBase {
             this.chrome.status,
             {
                 correctionCategory: this.options.categoryId,
-                onToolsOpen: () => {
-                    this.toolsButton?.focus();
-                    this.view?.suspendForTools();
-                },
+                onToolsOpen: () => this.focusComposerTools(this.toolsButton),
                 root: this.options.root,
                 shouldShowTooltip: () => this.options.tooltips !== false,
                 ...this.statusMarkUndo(),
@@ -557,10 +534,6 @@ export class MarkingField extends ComponentBase {
         }
     }
 
-    protected override onRuleErrorsChanged(): void {
-        this.view?.refreshValidity();
-    }
-
     /**
      * Return the complete uncommitted marking, or null when no complete draft
      * exists.
@@ -573,32 +546,13 @@ export class MarkingField extends ComponentBase {
         return reading && !reading.refusal ? reading.rendered : null;
     }
 
-    /** Also read an open draft again, so its fix rows account for the parts. */
-    override refreshParts(): void {
-        super.refreshParts();
-        if (this.coversParts && !this._destroyed)
-            void this.controller?.refreshContext();
-    }
-
     destroy(): void {
-        teardownAfterWrite(
-            this,
-            this.controller?.isDirty() ? () => this.controller.commit() : null,
-            () => this.teardown(),
-        );
+        this.destroyComposerAfterWrite(() => this.teardown());
     }
 
     private teardown(): void {
-        this.destroyClearButton();
-        this.removeRuleErrors();
-        this._destroyed = true;
-        // Torn down during its first read: setup never ran, and there is nothing
-        // to undo.
-        if (!this.view) return;
         this.releaseEditor?.();
         this.releaseEditor = null;
-        this.view.destroy();
-        this.controller.dispose();
         this.host.removeEventListener('focus', this.boundFocus);
         this.display.removeEventListener(
             'mousedown',
@@ -779,7 +733,7 @@ export class MarkingField extends ComponentBase {
      * any commit that changes it.
      */
     protected override async storeComposerReading(
-        ...args: Parameters<ComponentBase['storeComposerReading']>
+        ...args: Parameters<ComposerFieldBase['storeComposerReading']>
     ): Promise<void> {
         const rendered = this._lastRendered;
         const hostText = this.host.value;
@@ -1043,6 +997,13 @@ export class MarkingField extends ComponentBase {
         if (inferred) span.classList.add('marking-field-token--inferred');
         let underline = false;
         if (token.conceptId) {
+            span.dataset.conceptId = token.conceptId;
+            span.dataset.categoryId = token.categoryId;
+            const category = this.scheme.categories.find(
+                (item) => item.id === token.categoryId,
+            );
+            if (category) span.dataset.categoryName = category.label;
+
             const concept = this.scheme.concepts.find(
                 (c) => c.id === token.conceptId,
             );

@@ -157,8 +157,8 @@
 .marking-field-token-run {
     text-decoration-line: underline;
     text-decoration-color: var(
-        --ez-token-underline,
-        var(--ez-color-primary, #fdb827)
+        --ez-category-accent,
+        var(--ez-token-underline, var(--ez-color-primary, #fdb827))
     );
     text-decoration-thickness: 0.1875rem;
     text-underline-offset: 0.125rem;
