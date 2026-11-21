@@ -764,10 +764,14 @@ a concept was inferred.
 ### Fonts
 
 Set `--ez-font-family` on the form to change the font for controls and their
-pickers together. Set `font-family` on a native control for a field-specific
-override. TagInput uses the same font and size for its chips and search text.
-Use `--ez-tag-input-font-size` to adjust both. Touch devices keep a minimum
-of 16px for those labels to avoid zooming when the search field receives focus.
+pickers together. Set `--ez-font-size` for primary values and choice labels.
+For a field-specific override, style its native control with ordinary CSS.
+TagInput uses the same font and size for its chips and search text. Use
+`--ez-tag-input-font-size` to adjust both. Touch devices keep a minimum of
+16px for those labels to avoid zooming when the search field receives focus.
+
+For an inline banner, set `data-ezclassify-banner-size="compact"` on the
+banner host. Use `--ez-banner-font-size` to adjust its marking label.
 
 ## Adapter capabilities used by the UI
 

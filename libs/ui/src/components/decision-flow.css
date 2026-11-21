@@ -121,7 +121,7 @@
 /* The open step's title: the step's first line, whole, never shortened. */
 .ez-decision-flow__question-label {
     grid-column: 1 / -1;
-    font-size: 0.8125rem;
+    font-size: var(--ez-font-size, 1rem);
     font-weight: 600;
     color: var(--ez-color-text, inherit);
 }
@@ -177,7 +177,7 @@
     padding: 0.25rem 0.625rem;
     text-align: start;
     font: inherit;
-    font-size: 0.8125rem;
+    font-size: var(--ez-font-size, 1rem);
 }
 /* A value in the marking's text that Runtime inferred. */
 .ez-decision-flow__value-inferred {
@@ -233,7 +233,7 @@
     background: var(--ez-color-background, #fff);
     color: var(--ez-color-text, inherit);
     font: inherit;
-    font-size: 0.875rem;
+    font-size: var(--ez-font-size, 1rem);
     box-sizing: border-box;
 }
 .ez-decision-flow__text-field:focus {
@@ -352,7 +352,7 @@
     background: transparent;
     color: var(--ez-color-text, inherit);
     font: inherit;
-    font-size: 0.875rem;
+    font-size: var(--ez-font-size, 1rem);
     text-align: start;
 }
 /* Whole: breaks at spaces, line ends and separators, a token only when it is
@@ -391,6 +391,9 @@
 }
 
 @media (pointer: coarse) {
+    .ez-decision-flow__text-field {
+        font-size: max(var(--ez-font-size, 1rem), 16px);
+    }
     .ez-decision-flow__nav-btn {
         width: 2.75rem;
         min-height: 2.75rem;

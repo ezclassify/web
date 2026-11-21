@@ -26,11 +26,11 @@
 }
 
 .status-banner--prominent .status-banner-label {
-    font-size: 1.5rem;
+    font-size: var(--ez-banner-font-size, 1.5rem);
 }
 
 .status-banner--compact .status-banner-label {
-    font-size: 1rem;
+    font-size: var(--ez-banner-font-size, var(--ez-font-size, 1rem));
 }
 
 .status-banner-subtitle {

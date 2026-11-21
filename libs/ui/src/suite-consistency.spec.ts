@@ -154,6 +154,22 @@ describe('the EzClassify suite', () => {
         ).toMatch(ring);
     });
 
+    it('uses the field font size for primary choice labels and marking values', () => {
+        const primaryText = [
+            ['category-selector.css', '.category-selector-label'],
+            ['category-selector.css', '.category-selector-btn'],
+            ['category-checklist.css', '.category-checklist-name'],
+            ['category-checklist.css', '.category-checklist-label'],
+            ['decision-flow.css', '.ez-decision-flow__question-label'],
+            ['decision-flow.css', '.ez-decision-flow__option'],
+            ['decision-flow.css', '.ez-decision-flow__value'],
+        ] as const;
+        for (const [file, selector] of primaryText)
+            expect(rule(css(file), selector), selector).toContain(
+                'font-size: var(--ez-font-size, 1rem)',
+            );
+    });
+
     it("lets a framed control take a text host's own edge, as the text fields do", async () => {
         const style = document.createElement('style');
         style.textContent =
