@@ -764,8 +764,9 @@ a concept was inferred.
 ### Fonts
 
 Set `--ez-font-family` on the form to change the font for controls and their
-pickers together. Set `--ez-font-size` on the form to scale the controls.
-Primary values and choice labels use that inherited size. Captions, help
+pickers together. The controls follow the form's ordinary `font-size`.
+Set `--ez-font-size` to override that size for EzClassify alone.
+Primary values and choice labels use the same inherited size. Captions, help
 text, and other secondary labels use proportions of the same value.
 Use `rem` for the base so it follows the user's browser font setting.
 For a field-specific override, style its native control with ordinary CSS.

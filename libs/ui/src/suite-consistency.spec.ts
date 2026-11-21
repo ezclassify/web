@@ -166,7 +166,7 @@ describe('the EzClassify suite', () => {
         ] as const;
         for (const [file, selector] of primaryText)
             expect(rule(css(file), selector), selector).toContain(
-                'font-size: var(--ez-font-size, 1rem)',
+                'font-size: var(--ez-font-size, 1em)',
             );
     });
 
@@ -177,7 +177,7 @@ describe('the EzClassify suite', () => {
         ] as const;
         for (const [file, selector] of secondaryText)
             expect(rule(css(file), selector), selector).toContain(
-                'font-size: calc(var(--ez-font-size, 1rem) * 0.75)',
+                'font-size: calc(var(--ez-font-size, 1em) * 0.75)',
             );
     });
 

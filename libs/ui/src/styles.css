@@ -84,7 +84,6 @@
        standalone .ez-input.ez-styled inputs from :root. Unlike the focus
        aliases, they do not require redeclaration in each theme scope. */
     --ez-font-family: system-ui, sans-serif;
-    --ez-font-size: var(--ez-font-size, 1rem);
     --ez-font-weight: 400;
     --ez-line-height: 1.5;
     --ez-focus-ring-width: 2px;
@@ -285,7 +284,7 @@
 }
 
 :where(.ez-native-field) {
-    font: var(--ez-font-weight) var(--ez-font-size) / var(--ez-line-height)
+    font: var(--ez-font-weight) var(--ez-font-size, 1em) / var(--ez-line-height)
         var(--ez-font-family);
     color: var(--ez-color-text, inherit);
     background: var(--ez-color-background);
@@ -298,7 +297,7 @@
 .ez-styled-inputs .ez-input,
 .ez-input.ez-styled {
     font-family: var(--ez-font-family);
-    font-size: var(--ez-font-size);
+    font-size: var(--ez-font-size, 1em);
     font-weight: var(--ez-font-weight);
     line-height: var(--ez-line-height);
     color: var(--ez-color-text);
@@ -335,7 +334,7 @@
 /* Display */
 .ez-display {
     font-family: var(--ez-font-family);
-    font-size: var(--ez-font-size);
+    font-size: var(--ez-font-size, 1em);
     font-weight: 600;
     color: var(--ez-color-text);
     letter-spacing: 0.02em;

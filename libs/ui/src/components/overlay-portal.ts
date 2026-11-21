@@ -74,13 +74,16 @@ const CSS_WIDE_KEYWORD = /^(?:inherit|initial|unset|revert|revert-layer)$/;
  *
  * @param owner - The component the chrome belongs to: its root container, or an
  *   element of it that sits outside the field's text layers
- * @returns A `font-family` value
+ * @returns The CSS style of the surrounding UI
  */
-function uiFontFamily(owner: HTMLElement): string {
+function uiFontStyle(owner: HTMLElement): CSSStyleDeclaration {
     let surrounding = owner.closest<HTMLElement>(UI_ROOT) ?? owner;
     while (surrounding.matches(FORM_CONTROL) && surrounding.parentElement)
         surrounding = surrounding.parentElement;
-    const style = window.getComputedStyle(surrounding);
+    return window.getComputedStyle(surrounding);
+}
+
+function uiFontFamily(style: CSSStyleDeclaration): string {
     const host = style.getPropertyValue('--ez-font-family').trim();
     return host && !CSS_WIDE_KEYWORD.test(host) ? host : style.fontFamily;
 }
@@ -111,7 +114,14 @@ export function copyOverlayTheme(
         if (value) overlay.style.setProperty(property, value);
         else overlay.style.removeProperty(property);
     }
-    overlay.style.fontFamily = uiFontFamily(owner);
+    const fontStyle = uiFontStyle(owner);
+    overlay.style.fontFamily = uiFontFamily(fontStyle);
+    if (
+        !style.getPropertyValue('--ez-font-size').trim() &&
+        fontStyle.fontSize
+    ) {
+        overlay.style.setProperty('--ez-font-size', fontStyle.fontSize);
+    }
 }
 
 /**

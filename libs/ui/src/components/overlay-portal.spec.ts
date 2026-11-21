@@ -65,6 +65,21 @@ describe('copyOverlayTheme', () => {
         expect(getComputedStyle(overlay).fontFamily).toBe('Inter, sans-serif');
     });
 
+    it('uses the surrounding font size when the form supplies no size token', () => {
+        const anchor = fieldLayer();
+        const owner = page.querySelector<HTMLElement>('[data-ezclassify]')!;
+        owner.style.fontSize = '14px';
+
+        copyOverlayTheme(anchor, overlay, owner);
+        expect(overlay.style.getPropertyValue('--ez-font-size')).toBe('14px');
+
+        anchor.style.setProperty('--ez-font-size', '1.25rem');
+        copyOverlayTheme(anchor, overlay, owner);
+        expect(overlay.style.getPropertyValue('--ez-font-size')).toBe(
+            '1.25rem',
+        );
+    });
+
     it("reads the owner's root when the source sits in field text beside it", () => {
         // A text area's root container is mounted beside its text layers, so
         // an inline editor inside the text has no root among its ancestors.
