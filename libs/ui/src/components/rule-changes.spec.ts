@@ -15,6 +15,8 @@ import { mockRenderFormats } from '../render-format-layout-mock';
 import { derivedAssertion } from '../assertion-identity';
 import { DecisionFlow } from './decision-flow';
 import { MarkingField } from './marking-field';
+import { MarkedInput } from './marked-input';
+import { MarkedTextArea } from './marked-text-area';
 import { TagInput } from './tag-input';
 import type { ComponentInstance } from './component-base';
 import { cleanupTooltipForRoot } from './tooltip-manager';
@@ -276,7 +278,7 @@ describe('a value a rule added is drawn inferred until it is reviewed', () => {
     });
 });
 
-describe('autofixes committed in a phone picker', () => {
+describe('autofixes in a phone picker', () => {
     beforeEach(() => {
         vi.stubGlobal('innerWidth', 390);
         vi.stubGlobal('matchMedia', (query: string) => ({
@@ -293,13 +295,27 @@ describe('autofixes committed in a phone picker', () => {
         {
             control: MarkingField,
             opener: '.marking-field-host',
-            showsText: true,
+            markup: '<input value="HIGH">',
         },
-        { control: TagInput, opener: '.tag-input-filter', showsText: false },
+        {
+            control: TagInput,
+            opener: '.tag-input-filter',
+            markup: '<input value="HIGH">',
+        },
+        {
+            control: MarkedInput,
+            opener: '.marked-input-touch-add',
+            markup: '<input>',
+        },
+        {
+            control: MarkedTextArea,
+            opener: '.marked-textarea-touch-add',
+            markup: '<textarea></textarea>',
+        },
     ])(
-        'shows the applied rule in $control.name after Done',
-        async ({ control, opener, showsText }) => {
-            container.innerHTML = '<input value="HIGH">';
+        'previews the rule in $control.name without saving when tools open',
+        async ({ control, opener, markup }) => {
+            container.innerHTML = markup;
             const field = new control();
             mounted = field;
             await field.init(container, context());
@@ -308,59 +324,90 @@ describe('autofixes committed in a phone picker', () => {
             const badge =
                 container.querySelector<HTMLButtonElement>('.ez-status-mark')!;
             const input = container.querySelector<HTMLElement>(opener)!;
-            input.dispatchEvent(new Event('pointerdown', { bubbles: true }));
-            input.focus();
-            input.click();
-
-            const sheet = await vi.waitFor(() => {
-                const open = document.querySelector<HTMLElement>(
-                    '.ez-composer[data-surface="sheet"]:not([hidden])',
+            const count = () =>
+                badge.querySelector('.ez-status-mark__count')?.textContent;
+            const tools = () =>
+                document.getElementById(
+                    badge.getAttribute('aria-describedby') ?? '',
                 );
+            const before = field.getAssertions();
+            const openDraft = async () => {
+                input.dispatchEvent(
+                    new Event('pointerdown', { bubbles: true }),
+                );
+                input.focus();
+                input.click();
+                const sheet = await vi.waitFor(() => {
+                    const open = document.querySelector<HTMLElement>(
+                        '.ez-composer[data-surface="sheet"]:not([hidden])',
+                    );
+                    expect(
+                        open
+                            ?.querySelector('.ez-composer__sheet-tools')
+                            ?.contains(badge),
+                    ).toBe(true);
+                    return open!;
+                });
+                const draft = sheet.querySelector<HTMLInputElement>(
+                    '.ez-composer__sheet-input',
+                )!;
+                draft.value = 'LOW';
+                draft.dispatchEvent(new Event('input', { bubbles: true }));
+                await vi.waitFor(() => expect(count()).toBe('1'));
+                return sheet;
+            };
+
+            const sheet = await openDraft();
+            badge.click();
+            await vi.waitFor(() => {
                 expect(
-                    open
-                        ?.querySelector('.ez-composer__sheet-tools')
-                        ?.contains(badge),
-                ).toBe(true);
-                return open!;
+                    tools()?.querySelector('.ez-status-list__rule')
+                        ?.textContent,
+                ).toBe('Rule: adds-std');
+                expect(
+                    tools()?.querySelector('.ez-status-list__text')
+                        ?.textContent,
+                ).toContain('STD');
+                expect(document.activeElement?.getAttribute('role')).toBe(
+                    'tab',
+                );
             });
-            const draft = sheet.querySelector<HTMLInputElement>(
-                '.ez-composer__sheet-input',
-            )!;
-            draft.value = 'LOW';
-            draft.dispatchEvent(new Event('input', { bubbles: true }));
+            await wait(150);
+            expect(sheet.hidden).toBe(false);
+            expect(field.getAssertions()).toEqual(before);
+            tools()
+                ?.querySelector<HTMLButtonElement>('.ez-marking-tools__close')
+                ?.click();
+            expect(tools()).toBeNull();
             sheet
+                .querySelector<HTMLButtonElement>('.ez-composer__sheet-cancel')!
+                .click();
+            await vi.waitFor(() => expect(sheet.hidden).toBe(true));
+            expect(field.getAssertions()).toEqual(before);
+            expect(count()).toBe('');
+
+            // The embedded fields' commit goes through their scan adapters.
+            // This fixture covers the standalone fields' post-commit badge.
+            if (control === MarkedInput || control === MarkedTextArea) return;
+
+            const reopened = await openDraft();
+            reopened
                 .querySelector<HTMLButtonElement>('.ez-composer__sheet-done')!
                 .click();
-
             await vi.waitFor(() => {
-                expect(sheet.hidden).toBe(true);
-                expect(field.getRendered()).toBe('LOW//STD');
+                expect(reopened.hidden).toBe(true);
+                expect(field.getAssertions().map((a) => a.conceptId)).toContain(
+                    'STD',
+                );
                 expect(container.querySelector('.ez-status-mark')).toBe(badge);
-                expect(
-                    badge.querySelector('.ez-status-mark__count')?.textContent,
-                ).toBe('1');
+                expect(count()).toBe('1');
             });
-            if (showsText) {
+            if (control === MarkingField) {
                 expect(
                     container.querySelector('.marking-field-token--inferred')
                         ?.textContent,
                 ).toBe('STD');
             }
-            badge.click();
-            await vi.waitFor(() => {
-                const id = badge.getAttribute('aria-describedby');
-                const tools = id && document.getElementById(id);
-                expect(
-                    tools &&
-                        tools.querySelector('.ez-status-list__rule')
-                            ?.textContent,
-                ).toBe('Rule: adds-std');
-                expect(
-                    tools &&
-                        tools.querySelector('.ez-status-list__text')
-                            ?.textContent,
-                ).toContain('STD');
-            });
         },
     );
 });

@@ -2863,7 +2863,7 @@ describe('Favorites uses the committed marking while tools hold a draft', () => 
         },
     );
 
-    it('moves the actual branding tool out of the phone sheet before focusing its tab', async () => {
+    it('keeps the phone sheet open when the branding shortcut focuses its tab', async () => {
         const originalMatchMedia = window.matchMedia;
         const originalWidth = window.innerWidth;
         window.matchMedia = ((query: string) => ({
@@ -2903,10 +2903,12 @@ describe('Favorites uses the committed marking while tools hold a draft', () => 
                 }),
             );
             await wait(180);
-            expect(root.contains(mark)).toBe(true);
-            expect(root.querySelectorAll('.ez-status-mark')).toHaveLength(1);
+            expect(surface.contains(mark)).toBe(true);
+            expect(document.querySelectorAll('.ez-status-mark')).toHaveLength(
+                1,
+            );
             expect(document.activeElement?.getAttribute('role')).toBe('tab');
-            expect(openSurface()).toBeNull();
+            expect(openSurface()).toBe(surface);
             expect(field.getRendered()).toBe('SECRET');
         } finally {
             window.matchMedia = originalMatchMedia;
