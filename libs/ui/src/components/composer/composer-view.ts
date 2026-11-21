@@ -47,6 +47,7 @@ import {
     type ComposerRow,
     type ComposerSnapshot,
 } from './composer-controller';
+import { suggestionDepth } from './suggestion-catalog';
 import { ruleErrorsFrom } from '../rule-errors';
 import composerCss from './composer.css?inline';
 
@@ -1781,7 +1782,7 @@ export class ComposerView {
                             row.replaces ?? '',
                             row.gated,
                             row.suggestion.label,
-                            row.suggestion.depth ?? 0,
+                            suggestionDepth(row.suggestion) ?? 0,
                             row.ranked?.matchedSpelling ?? '',
                         ].join(':'),
                     );
@@ -1953,12 +1954,8 @@ export class ComposerView {
         });
         switch (row.kind) {
             case 'concept': {
-                const depth = row.suggestion.depth ?? 0;
-                if (
-                    s.mode === 'browse' &&
-                    Number.isInteger(depth) &&
-                    depth > 0
-                ) {
+                const depth = suggestionDepth(row.suggestion) ?? 0;
+                if (s.mode === 'browse' && depth > 0) {
                     el.style.setProperty(
                         '--ez-composer-indent',
                         `${Math.min(depth, 6) * 0.25}rem`,

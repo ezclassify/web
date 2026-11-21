@@ -1,5 +1,14 @@
 import type { Assertion, Suggestion } from '@ezclassify/types';
 
+export function suggestionDepth(row: Suggestion): number | undefined {
+    const depth = 'depth' in row ? row.depth : undefined;
+    return typeof depth === 'number' &&
+        Number.isSafeInteger(depth) &&
+        depth >= 0
+        ? depth
+        : undefined;
+}
+
 const keyOf = (row: { conceptId: string; categoryId: string }) =>
     JSON.stringify([row.conceptId, row.categoryId]);
 
@@ -43,7 +52,8 @@ export class SuggestionCatalog {
 
     private rememberHierarchies(rows: readonly Suggestion[]): void {
         for (const row of rows) {
-            if (row.depth !== undefined) this.hierarchies.add(row.categoryId);
+            if (suggestionDepth(row) !== undefined)
+                this.hierarchies.add(row.categoryId);
         }
     }
 
