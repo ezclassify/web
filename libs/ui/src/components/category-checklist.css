@@ -42,7 +42,7 @@
 
 /* ── "1 of 2" ────────────────────────────────────── */
 .category-checklist-count {
-    font-size: 0.75rem;
+    font-size: calc(var(--ez-font-size, 1rem) * 0.75);
     font-variant-numeric: tabular-nums;
     color: var(--ez-color-muted, #555);
     white-space: nowrap;
@@ -55,7 +55,7 @@
 }
 .category-checklist-toggle button {
     font: inherit;
-    font-size: 0.75rem;
+    font-size: calc(var(--ez-font-size, 1rem) * 0.75);
     font-weight: 500;
     /* Each stays on one line: the row wraps before a button does. */
     white-space: nowrap;
@@ -227,7 +227,7 @@
 /* ── No results message ──────────────────────────── */
 .category-checklist-empty {
     padding: 1rem 0.625rem;
-    font-size: 0.8125rem;
+    font-size: calc(var(--ez-font-size, 1rem) * 0.8125);
     color: var(--ez-color-muted, #9ca3af);
     text-align: center;
 }

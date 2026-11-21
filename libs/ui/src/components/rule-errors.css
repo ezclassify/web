@@ -10,7 +10,7 @@
     margin: 0.25rem 0 0;
     padding: 0;
     color: var(--ez-color-error, #b91c1c);
-    font-size: 0.75rem;
+    font-size: calc(var(--ez-font-size, 1rem) * 0.75);
     line-height: 1.4;
     text-align: start;
 }

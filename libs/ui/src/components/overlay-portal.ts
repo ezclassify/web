@@ -89,9 +89,9 @@ function uiFontFamily(owner: HTMLElement): string {
  * Copy documented presentation tokens from an in-flow anchor to an overlay, and
  * give the overlay the surrounding UI font (see {@link uiFontFamily}).
  *
- * Only the family travels. Size, weight and line height stay with the overlay's
- * own stylesheet, so chrome reads at the library's scale whatever size the
- * field it opened from uses.
+ * The overlay keeps the theme's base size and font family. Its stylesheet
+ * supplies the relative sizes for labels and help text, independent of any font
+ * applied directly to the native field.
  *
  * @param source - The in-flow element whose tokens the overlay takes
  * @param overlay - The portaled element

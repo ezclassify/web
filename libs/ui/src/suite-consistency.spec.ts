@@ -170,6 +170,17 @@ describe('the EzClassify suite', () => {
             );
     });
 
+    it('scales secondary labels proportionally to the inherited field size', () => {
+        const secondaryText = [
+            ['category-checklist.css', '.category-checklist-count'],
+            ['decision-flow.css', '.ez-decision-flow__scope-caption'],
+        ] as const;
+        for (const [file, selector] of secondaryText)
+            expect(rule(css(file), selector), selector).toContain(
+                'font-size: calc(var(--ez-font-size, 1rem) * 0.75)',
+            );
+    });
+
     it("lets a framed control take a text host's own edge, as the text fields do", async () => {
         const style = document.createElement('style');
         style.textContent =

@@ -84,7 +84,7 @@
        standalone .ez-input.ez-styled inputs from :root. Unlike the focus
        aliases, they do not require redeclaration in each theme scope. */
     --ez-font-family: system-ui, sans-serif;
-    --ez-font-size: 1rem;
+    --ez-font-size: var(--ez-font-size, 1rem);
     --ez-font-weight: 400;
     --ez-line-height: 1.5;
     --ez-focus-ring-width: 2px;
@@ -344,7 +344,7 @@
 /* Validation */
 .ez-validation {
     font-family: var(--ez-font-family);
-    font-size: calc(var(--ez-font-size) - 0.125rem);
+    font-size: calc(var(--ez-font-size, 1rem) * 0.875);
     margin-top: var(--ez-spacing-xs, 0.25rem);
 }
 

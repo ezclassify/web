@@ -764,7 +764,10 @@ a concept was inferred.
 ### Fonts
 
 Set `--ez-font-family` on the form to change the font for controls and their
-pickers together. Set `--ez-font-size` for primary values and choice labels.
+pickers together. Set `--ez-font-size` on the form to scale the controls.
+Primary values and choice labels use that inherited size. Captions, help
+text, and other secondary labels use proportions of the same value.
+Use `rem` for the base so it follows the user's browser font setting.
 For a field-specific override, style its native control with ordinary CSS.
 TagInput uses the same font and size for its chips and search text. Use
 `--ez-tag-input-font-size` to adjust both. Touch devices keep a minimum of
