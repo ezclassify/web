@@ -744,6 +744,47 @@ it('notifies the owner once when the picker dismisses, including when a draft re
     expect(dismissals).toEqual([true, false]);
 });
 
+it('keeps the pointer-picked row at the same viewport offset after the list refreshes', async () => {
+    port.value = {
+        assertions: [assertion(CONCEPTS[1])],
+        rendered: 'SECRET',
+    };
+    mount();
+    input.focus();
+    await view.open('keyboard');
+    const picked = rowFor('ORCON')!;
+    const scroll = picked.closest<HTMLElement>('.ez-composer__scroll')!;
+    scroll.scrollTop = 80;
+    const bounds = HTMLElement.prototype.getBoundingClientRect;
+    const layout = vi
+        .spyOn(HTMLElement.prototype, 'getBoundingClientRect')
+        .mockImplementation(function (this: HTMLElement) {
+            if (this === scroll) return new DOMRect(0, 100, 300, 180);
+            if (this.id === picked.id) {
+                // A fresh reading laid out more text above the suggestions.
+                const shift =
+                    this.getAttribute('aria-selected') === 'true' ? 60 : 0;
+                return new DOMRect(0, 230 + shift - scroll.scrollTop, 300, 32);
+            }
+            return bounds.call(this);
+        });
+    try {
+        const before = picked.getBoundingClientRect().top;
+        picked.dispatchEvent(
+            new MouseEvent('click', { bubbles: true, detail: 1 }),
+        );
+        await vi.waitFor(() => {
+            const replacement = rowFor('ORCON')!;
+            expect(replacement).not.toBe(picked);
+            expect(replacement.getAttribute('aria-selected')).toBe('true');
+            expect(replacement.getBoundingClientRect().top).toBe(before);
+        });
+        expect(scroll.scrollTop).toBe(140);
+    } finally {
+        layout.mockRestore();
+    }
+});
+
 it('gives an inactive hovered concept a native title and keeps active descriptions accessible but hidden', async () => {
     mount('whole', { describeConcept: (id) => `Meaning of ${id}` });
     input.focus();
