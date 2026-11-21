@@ -1,5 +1,14 @@
 import type { Assertion, Suggestion } from '@ezclassify/types';
 
+export function suggestionDepth(row: Suggestion): number | undefined {
+    const depth = 'depth' in row ? row.depth : undefined;
+    return typeof depth === 'number' &&
+        Number.isSafeInteger(depth) &&
+        depth >= 0
+        ? depth
+        : undefined;
+}
+
 const keyOf = (row: { conceptId: string; categoryId: string }) =>
     JSON.stringify([row.conceptId, row.categoryId]);
 
@@ -11,7 +20,8 @@ const keyOf = (row: { conceptId: string; categoryId: string }) =>
  */
 export class SuggestionCatalog {
     private base: Suggestion[] = [];
-    private offered: Suggestion[] = [];
+    private offered: Suggestion[] | null = null;
+    private readonly hierarchies = new Set<string>();
     private pending: Promise<void> | null = null;
     private version = 0;
     private liveSequence = 0;
@@ -27,13 +37,24 @@ export class SuggestionCatalog {
         private readonly changed: () => void,
     ) {}
 
-    /** Engine-ordered base choices followed by newly offered qualified choices. */
+    /** A live hierarchy replaces its category's initial choices as a unit. */
     rows(): Suggestion[] {
-        const known = new Set(this.base.map(keyOf));
+        if (this.offered === null) return [...this.base];
+        const base = this.base.filter(
+            (row) => !this.hierarchies.has(row.categoryId),
+        );
+        const known = new Set(base.map(keyOf));
         return [
-            ...this.base,
-            ...this.offered.filter((s) => !known.has(keyOf(s))),
+            ...base,
+            ...this.offered.filter((row) => !known.has(keyOf(row))),
         ];
+    }
+
+    private rememberHierarchies(rows: readonly Suggestion[]): void {
+        for (const row of rows) {
+            if (suggestionDepth(row) !== undefined)
+                this.hierarchies.add(row.categoryId);
+        }
     }
 
     /** Load the base catalog once, sharing concurrent requests. */
@@ -47,6 +68,7 @@ export class SuggestionCatalog {
                     const rows = await this.suggestions();
                     if (this.disposed || version !== this.version) return;
                     this.base = rows;
+                    this.rememberHierarchies(rows);
                 } catch {
                     if (this.disposed || version !== this.version) return;
                     this.base = [];
@@ -75,9 +97,10 @@ export class SuggestionCatalog {
         const sequence = ++this.liveSequence;
         this.livePending = (async () => {
             try {
-                const rows = live.length ? await this.suggestions(live) : [];
+                const rows = live.length ? await this.suggestions(live) : null;
                 if (this.disposed || sequence !== this.liveSequence) return;
                 this.offered = rows;
+                if (rows) this.rememberHierarchies(rows);
                 this.changed();
             } catch {
                 if (sequence === this.liveSequence) this.liveKey = null;
@@ -102,7 +125,7 @@ export class SuggestionCatalog {
         this.liveSequence++;
         this.livePending = null;
         this.liveKey = null;
-        this.offered = [];
+        this.offered = null;
     }
 
     /** Forget an old context without starting work for an inactive field. */
@@ -111,7 +134,8 @@ export class SuggestionCatalog {
         this.liveSequence++;
         this.livePending = null;
         this.base = [];
-        this.offered = [];
+        this.offered = null;
+        this.hierarchies.clear();
         this.liveKey = '[]';
         this.pending = null;
     }

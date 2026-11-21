@@ -393,6 +393,7 @@
     min-height: 2.75rem;
     box-sizing: border-box;
     padding: 0.375rem 0.75rem 0.375rem 0.5rem;
+    padding-inline-start: calc(0.5rem + var(--ez-composer-indent, 0rem));
     cursor: pointer;
     border-left: 0.1875rem solid transparent;
 }

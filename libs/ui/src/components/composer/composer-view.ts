@@ -47,6 +47,7 @@ import {
     type ComposerRow,
     type ComposerSnapshot,
 } from './composer-controller';
+import { suggestionDepth } from './suggestion-catalog';
 import { ruleErrorsFrom } from '../rule-errors';
 import composerCss from './composer.css?inline';
 
@@ -1781,6 +1782,7 @@ export class ComposerView {
                             row.replaces ?? '',
                             row.gated,
                             row.suggestion.label,
+                            suggestionDepth(row.suggestion) ?? 0,
                             row.ranked?.matchedSpelling ?? '',
                         ].join(':'),
                     );
@@ -1951,12 +1953,20 @@ export class ComposerView {
                 this.clearHoveredDefinition();
         });
         switch (row.kind) {
-            case 'concept':
+            case 'concept': {
+                const depth = suggestionDepth(row.suggestion) ?? 0;
+                if (s.mode === 'browse' && depth > 0) {
+                    el.style.setProperty(
+                        '--ez-composer-indent',
+                        `${Math.min(depth, 6) * 0.25}rem`,
+                    );
+                }
                 el.title = this.opts.describeConcept
                     ? (row.suggestion.description ?? '')
                     : '';
                 this.fillConceptRow(el, row, active, s);
                 break;
+            }
             case 'correction': {
                 el.setAttribute('aria-selected', 'false');
                 const main = this.span(

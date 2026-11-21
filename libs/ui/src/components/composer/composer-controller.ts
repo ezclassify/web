@@ -504,9 +504,15 @@ export class ComposerController {
     private readonly suggestionCatalog = new SuggestionCatalog(
         (live) => this.port.suggestions(live),
         () => {
+            const previous = this.snapshotCache;
+            const active = previous?.rows[this.activeIndex];
             this.catalog = this.suggestionCatalog.rows();
             this.reconcileScope();
-            this.emit();
+            this.emit(
+                previous?.mode === 'browse' && active?.kind === 'concept'
+                    ? active.suggestion
+                    : undefined,
+            );
         },
     );
     /**
@@ -561,9 +567,19 @@ export class ComposerController {
         return this.snapshotCache;
     }
 
-    private emit(): void {
+    private emit(active?: Suggestion): void {
         this.snapshotCache = null;
-        const snap = this.snapshot();
+        let snap = this.snapshot();
+        if (active) {
+            this.activeIndex = snap.rows.findIndex(
+                (row) =>
+                    row.kind === 'concept' &&
+                    row.suggestion.categoryId === active.categoryId &&
+                    row.suggestion.conceptId === active.conceptId,
+            );
+            snap = { ...snap, activeIndex: this.activeIndex };
+            this.snapshotCache = snap;
+        }
         for (const listener of this.listeners) listener(snap);
     }
 

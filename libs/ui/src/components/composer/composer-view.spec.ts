@@ -79,6 +79,33 @@ afterEach(() => {
     root.remove();
 });
 
+it('indents browse choices using the depth returned with each row', async () => {
+    const original = await port.suggestions();
+    port.suggestions = async () =>
+        original.map((row) => ({
+            ...row,
+            depth:
+                row.conceptId === 'NF'
+                    ? 0
+                    : row.conceptId === 'OC'
+                      ? 1
+                      : row.conceptId === 'OH'
+                        ? 2
+                        : undefined,
+        }));
+    mount();
+    await controller.open();
+    expect(
+        rowFor('NOFORN')?.style.getPropertyValue('--ez-composer-indent'),
+    ).toBe('');
+    expect(
+        rowFor('ORCON')?.style.getPropertyValue('--ez-composer-indent'),
+    ).toBe('0.25rem');
+    expect(
+        rowFor('ON HOLD')?.style.getPropertyValue('--ez-composer-indent'),
+    ).toBe('0.5rem');
+});
+
 describe('the result row', () => {
     it('keeps the result, required categories and options inside one scrolling body', async () => {
         mount();
