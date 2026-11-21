@@ -279,7 +279,13 @@ export class MarkingField extends ComponentBase {
                     this.syncHostHeight();
                 }
             },
+            onCleanClose: () => this.rest('unchanged'),
             onBlurCommit: (outcome) => this.rest(outcome),
+            onEscapeIdle: (fromSheet) => {
+                // Cancel reverts the draft after closing the sheet.
+                if (fromSheet) this.rest('unchanged');
+                return false;
+            },
             isFieldChrome: (node) => statusMarkOwnsNode(this.toolsButton, node),
             sheetTools: () => this.toolsButton,
             textToolsEdges: () => true,
@@ -761,8 +767,8 @@ export class MarkingField extends ComponentBase {
     }
 
     /**
-     * The composer finished a blur commit. A stored or unchanged value rests on
-     * the painted display; an invalid draft stays visible as typed.
+     * When editing ends, a stored or unchanged value rests on the painted
+     * display. An invalid draft stays visible as typed.
      */
     private rest(outcome: CommitOutcome): void {
         if (this._destroyed || document.activeElement === this.host) return;

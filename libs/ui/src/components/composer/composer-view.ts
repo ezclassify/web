@@ -134,6 +134,8 @@ export interface ComposerViewOptions {
      * so a control acting on that edit retains its target.
      */
     readonly isFieldChrome?: (node: Node) => boolean;
+    /** The picker closed with no pending or invalid draft. */
+    readonly onCleanClose?: () => void;
     /** A blur finished committing. */
     readonly onBlurCommit?: (outcome: CommitOutcome) => void;
     /**
@@ -819,13 +821,13 @@ export class ComposerView {
                 if (this.controller.tab()) e.preventDefault();
                 return;
             case 'Escape': {
-                // Closing suggestions keeps this edit alive. Transfer owned
-                // sheet focus before hiding it, so the browser's blur cannot
-                // commit the draft or tear down an enclosing inline editor.
+                // Keep an ongoing edit alive without committing on blur. A
+                // field with a resting display can park a clean sheet instead.
                 if (
                     open &&
                     this.sheet &&
-                    this.surface.contains(document.activeElement)
+                    this.surface.contains(document.activeElement) &&
+                    (!this.opts.onCleanClose || this.controller.isDirty())
                 )
                     this.opts.input.focus({ preventScroll: true });
                 if (this.controller.escape()) {
@@ -1223,6 +1225,7 @@ export class ComposerView {
         }
 
         if (!s.open) {
+            const wasOpen = !this.surface.hidden;
             this.clearHoveredDefinition();
             // Capture owned focus before hiding the surface or restoring a
             // borrowed tool. Escape's ongoing-edit handoff is already on the
@@ -1255,6 +1258,7 @@ export class ComposerView {
                 this.placed = false;
                 this.opts.onPlacement?.(false);
             }
+            if (wasOpen && !s.dirty && !s.invalid) this.opts.onCleanClose?.();
             return;
         }
         this.surface.hidden = false;

@@ -2787,6 +2787,82 @@ describe('Favorites uses the committed marking while tools hold a draft', () => 
         root.removeEventListener('ezclassify:change', change);
     });
 
+    it.each(['Done', 'Cancel', 'Escape', 'outside focus'])(
+        'restores token underlines after the phone sheet closes via %s',
+        async (action) => {
+            const originalMatchMedia = window.matchMedia;
+            const originalWidth = window.innerWidth;
+            window.matchMedia = ((query: string) => ({
+                matches: query.includes('coarse'),
+                media: query,
+                addEventListener() {},
+                removeEventListener() {},
+            })) as unknown as typeof window.matchMedia;
+            Object.defineProperty(window, 'innerWidth', {
+                configurable: true,
+                value: 390,
+            });
+            try {
+                const { input, field } = await mount('SECRET');
+                const display = root.querySelector<HTMLElement>(
+                    '.marking-field-display',
+                )!;
+                input.dispatchEvent(
+                    new Event('pointerdown', { bubbles: true }),
+                );
+                input.focus();
+                await wait();
+                const surface = openSurface()!;
+                expect(surface.dataset.surface).toBe('sheet');
+                expect(display.style.display).toBe('none');
+                const sheetInput = surface.querySelector<HTMLInputElement>(
+                    '.ez-composer__sheet-input',
+                )!;
+                if (action === 'Cancel') {
+                    sheetInput.value = 'SECRET//UNCLASSIFIED';
+                    sheetInput.dispatchEvent(
+                        new Event('input', { bubbles: true }),
+                    );
+                }
+
+                if (action === 'Escape') {
+                    sheetInput.dispatchEvent(
+                        new KeyboardEvent('keydown', {
+                            key: 'Escape',
+                            bubbles: true,
+                            cancelable: true,
+                        }),
+                    );
+                } else if (action === 'outside focus') {
+                    sheetInput.blur();
+                } else {
+                    surface
+                        .querySelector<HTMLButtonElement>(
+                            action === 'Done'
+                                ? '.ez-composer__sheet-done'
+                                : '.ez-composer__sheet-cancel',
+                        )!
+                        .click();
+                }
+
+                await wait();
+                expect(openSurface()).toBeNull();
+                expect(field.getRendered()).toBe('SECRET');
+                expect(display.style.display).toBe('');
+                expect(
+                    display.querySelector('.marking-field-token-run')
+                        ?.textContent,
+                ).toBe('SECRET');
+            } finally {
+                window.matchMedia = originalMatchMedia;
+                Object.defineProperty(window, 'innerWidth', {
+                    configurable: true,
+                    value: originalWidth,
+                });
+            }
+        },
+    );
+
     it('moves the actual branding tool out of the phone sheet before focusing its tab', async () => {
         const originalMatchMedia = window.matchMedia;
         const originalWidth = window.innerWidth;
