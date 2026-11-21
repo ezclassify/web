@@ -93,6 +93,7 @@ export class MarkingField extends ComponentBase {
     private _originalRows: string | null = null;
     /** The theme MutationObserver installed by {@link installThemeObserver}. */
     private _themeObserver: MutationObserver | null = null;
+    private stopObservingHostWidth: (() => void) | null = null;
 
     private boundFocus!: () => void;
     private boundDisplayMouseDown!: (e: MouseEvent) => void;
@@ -244,6 +245,7 @@ export class MarkingField extends ComponentBase {
         this.captureAndMirrorStyles();
         this.installThemeObserver();
         this.syncHostHeight();
+        this.observeHostWidth();
 
         this.controller = new ComposerController({
             port: this.composerPort('whole'),
@@ -657,6 +659,8 @@ export class MarkingField extends ComponentBase {
         );
         this._themeObserver?.disconnect();
         this._themeObserver = null;
+        this.stopObservingHostWidth?.();
+        this.stopObservingHostWidth = null;
         this.favoritesPanel?.destroy();
         this.favoritesPanel = null;
         this.chrome?.destroy();
@@ -967,6 +971,31 @@ export class MarkingField extends ComponentBase {
             ],
         });
         this._themeObserver = observer;
+    }
+
+    private observeHostWidth(): void {
+        if (typeof ResizeObserver !== 'function') return;
+        let width: number | undefined;
+        let frame: number | undefined;
+        // Content width accounts for the padding reserved for the field tools.
+        const observer = new ResizeObserver(([entry]) => {
+            if (entry.contentRect.width === width) return;
+            width = entry.contentRect.width;
+            if (frame !== undefined) return;
+            // Write after observer delivery, and ignore height-only changes.
+            frame = requestAnimationFrame(() => {
+                frame = undefined;
+                if (
+                    !this.host.classList.contains('marking-field-host--resting')
+                )
+                    this.syncHostHeight();
+            });
+        });
+        observer.observe(this.host);
+        this.stopObservingHostWidth = () => {
+            observer.disconnect();
+            if (frame !== undefined) cancelAnimationFrame(frame);
+        };
     }
 
     /**
