@@ -606,7 +606,11 @@ export abstract class ReadOnlyComponentBase
         this.enhancedInput = host
             ? host.matches(inputSelector)
                 ? (host as HTMLInputElement)
-                : container.querySelector<HTMLInputElement>(inputSelector)
+                : host.matches(
+                        'fieldset[data-ezclassify-controller="selector"], fieldset[data-ezclassify-controller="checklist"]',
+                    )
+                  ? host.querySelector<HTMLInputElement>('input[type="hidden"]')
+                  : container.querySelector<HTMLInputElement>(inputSelector)
             : (container.querySelector<HTMLInputElement>(inputSelector) ??
               container.parentElement?.querySelector<HTMLInputElement>(
                   inputSelector,

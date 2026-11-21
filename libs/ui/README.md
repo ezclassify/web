@@ -679,6 +679,26 @@ rewrites that portion's mark and no other.
 Read-only views report state and do not judge it. `banner` shows the marking,
 or its empty state when there is nothing to render, and never a rule error.
 
+## Native choice controls
+
+Use `data-ezclassify-controller="select"` on an existing single-value
+`<select>` to keep the element, its label, and its form identity. The runtime
+populates its choices while mounted. The original options return when the
+controller is destroyed. Existing text-input hosts and the cards mode remain
+supported.
+
+For an independent Category Selector or Category Checklist, put a named
+`<input type="hidden">` inside the controller's `<fieldset>`. Its value is the
+component's starting value and the value the form submits after an edit.
+Authored checkboxes or radios can show the original form's choices before
+initialization. EzClassify disables those controls while it renders the
+Runtime choices. If several category pickers should edit one marking, use
+`data-ezclassify-facet-of` to point to the same marking instead.
+
+An independent DecisionFlow can enhance a named hidden input directly. With
+more than one scope and no explicit format, its native value uses the Runtime's
+automatic output so the form can submit the whole marking.
+
 ## Theming
 
 `applyTheme` returns a CSS rule scoped to `[data-theme="<name>"]`. Adopt it as a

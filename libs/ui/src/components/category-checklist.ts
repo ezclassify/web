@@ -10,6 +10,7 @@
  * room it is given (it scrolls), or while it holds a filter.
  */
 
+import { suspendNativeChoiceFallback } from '../native-control-host';
 import { ComponentBase, type ComponentOptions } from './component-base';
 import { createAnnouncer, announce } from './component-utils';
 import type { ConceptView, Suggestion } from '@ezclassify/types';
@@ -50,6 +51,8 @@ export interface CategoryChecklistOptions extends ComponentOptions {
  * with optional search filtering.
  */
 export class CategoryChecklist extends ComponentBase {
+    private restoreFallback: (() => void) | null = null;
+
     protected override clearButtonMount(): null {
         // The category header already owns its Clear all action.
         return null;
@@ -154,6 +157,7 @@ export class CategoryChecklist extends ComponentBase {
 
         // Inject styles
         this.injectComponentStyles(CATEGORY_CHECKLIST_CSS);
+        this.restoreFallback = suspendNativeChoiceFallback(this.container);
 
         // Preview bar
         this.preview = this.createPreviewBar();
@@ -272,6 +276,8 @@ export class CategoryChecklist extends ComponentBase {
     }
 
     destroy(): void {
+        this.restoreFallback?.();
+        this.restoreFallback = null;
         this._destroyed = true;
         this.availability.dispose();
         this.headerEl?.removeEventListener(

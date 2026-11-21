@@ -434,6 +434,21 @@ export class DecisionFlow extends ComponentBase {
         } as DecisionFlowOptions);
     }
 
+    protected override valueOutputFormat(): string | undefined {
+        const field = this.enhancedInput;
+        if (
+            field &&
+            !field.hasAttribute('data-ezclassify-bound-to') &&
+            !field.hasAttribute('data-ezclassify-facet-of') &&
+            (this.options.scopes?.length ?? 0) > 1 &&
+            !this.options.formatId
+        ) {
+            // Let the Runtime write all represented surfaces into the native value.
+            return undefined;
+        }
+        return super.valueOutputFormat();
+    }
+
     private get flowOptions(): DecisionFlowOptions {
         return this.options as DecisionFlowOptions;
     }

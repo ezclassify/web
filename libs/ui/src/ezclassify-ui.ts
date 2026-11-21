@@ -16,6 +16,7 @@
  * onto the shared shape or into per-field parameter lists, so it stays here by
  * design.
  */
+import { isNativeSingleSelect } from './native-control-host';
 import { acceptedValue, judgedAsHeld } from './loaded-value';
 import { assertionOriginKey } from './assertion-identity';
 import { fixAssertions } from './components/rule-errors';
@@ -3447,6 +3448,20 @@ export class EzClassifyUI {
         // resolves none stays unenhanced as a host error. A reference drawer
         // shows every Context the instance holds and marks in none, so it
         // resolves no Context of its own.
+        if (
+            controller === 'select' &&
+            el.tagName === 'SELECT' &&
+            !isNativeSingleSelect(el)
+        ) {
+            this.logInitFailure(
+                el,
+                controller,
+                new Error(
+                    'Use a single-value select for the dropdown controller.',
+                ),
+            );
+            return;
+        }
         if (this.mounted.has(el)) return;
         const drawer = controller === 'context-reference';
         const resolved = drawer ? null : this.contextForMount(el);
@@ -3566,6 +3581,7 @@ export class EzClassifyUI {
                 controller !== 'marked-textarea' &&
                 controller !== 'marked-input' &&
                 controller !== 'text' &&
+                !(controller === 'select' && isNativeSingleSelect(el)) &&
                 nativeInput.value !== rendered
             ) {
                 this.settingValue = true;
@@ -5290,6 +5306,16 @@ export class EzClassifyUI {
                 ) {
                     prev.style.display = '';
                     if (prev.tagName === 'FIELDSET') {
+                        const controller = prev.getAttribute(
+                            'data-ezclassify-controller',
+                        );
+                        if (
+                            controller === 'selector' ||
+                            controller === 'checklist'
+                        ) {
+                            mount.remove();
+                            return;
+                        }
                         const hidden = prev.querySelector<HTMLInputElement>(
                             'input[type="hidden"]',
                         );

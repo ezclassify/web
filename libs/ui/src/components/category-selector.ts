@@ -13,6 +13,7 @@
  * grouped under the scope's label when they fall in more than one.
  */
 
+import { suspendNativeChoiceFallback } from '../native-control-host';
 import { ComponentBase, type ComponentOptions } from './component-base';
 import { createAnnouncer, announce } from './component-utils';
 import type {
@@ -76,6 +77,8 @@ interface CategoryRow {
  * rendered as rows of toggle buttons.
  */
 export class CategorySelector extends ComponentBase {
+    private restoreFallback: (() => void) | null = null;
+
     private preview!: HTMLDivElement;
     private bodyEl!: HTMLDivElement;
     private announcer!: HTMLDivElement;
@@ -412,6 +415,7 @@ export class CategorySelector extends ComponentBase {
         // Inject styles
         this.injectComponentStyles(choiceButtonCss);
         this.injectComponentStyles(CATEGORY_SELECTOR_CSS);
+        this.restoreFallback = suspendNativeChoiceFallback(this.container);
 
         // Preview bar
         this.preview = this.createPreviewBar();
@@ -457,6 +461,8 @@ export class CategorySelector extends ComponentBase {
     }
 
     destroy(): void {
+        this.restoreFallback?.();
+        this.restoreFallback = null;
         this.bodyEl?.removeEventListener('keydown', this.onHeaderKeydown, true);
         this._destroyed = true;
         this.fixApplyAbort?.abort();

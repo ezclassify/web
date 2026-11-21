@@ -807,10 +807,15 @@ export abstract class ComponentBase extends ReadOnlyComponentBase {
      * An editable field reads its value as the author's call: the proven fix
      * paths are the buttons under it.
      */
+    /** Output requested when settling the field's own value. */
+    protected valueOutputFormat(): string | undefined {
+        return this.formatId;
+    }
+
     protected override readValue(value: string): Promise<ProcessResult> {
         return Promise.resolve(
             this.callProcess(value, {
-                outputFormat: this.formatId,
+                outputFormat: this.valueOutputFormat(),
                 context: this.getProcessingContext(),
             }),
         );
@@ -1027,7 +1032,7 @@ export abstract class ComponentBase extends ReadOnlyComponentBase {
         // offered back as a way to fix.
         const read = (assertions: Assertion[]) =>
             this.callProcess('', {
-                outputFormat: this.formatId,
+                outputFormat: this.valueOutputFormat(),
                 assertions,
                 context: this.getProcessingContext(),
             });

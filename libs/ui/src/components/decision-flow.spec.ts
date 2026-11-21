@@ -17,6 +17,7 @@ import type {
 } from '@ezclassify/types';
 import { schemeOnlyContext } from '../../test-fixtures/context-doubles';
 import { setStatusMarkFixes } from './status-mark';
+import { mockAssertion, mockProcessResult } from '../engine-result-mock';
 import {
     mockRenderFormat,
     mockRenderFormats,
@@ -2703,6 +2704,54 @@ describe('DecisionFlow: compact layout', () => {
         dots()[1].focus();
         expect(ringed()).toEqual([dots()[0]]);
         expect(dots()[0].getAttribute('aria-current')).toBe('step');
+    });
+
+    it('writes both scopes to its own native field through automatic Runtime output', async () => {
+        const form = document.createElement('form');
+        const field = document.createElement('input');
+        field.type = 'hidden';
+        field.name = 'marking';
+        field.value = 'A/ADMIN';
+        const mount = document.createElement('div');
+        form.append(field, mount);
+        document.body.append(form);
+        const engine = createScopedEngine();
+        const level = mockAssertion({
+            conceptId: 'LEVEL_A',
+            categoryId: 'level',
+        });
+        const admin = mockAssertion({
+            conceptId: 'ADMIN',
+            categoryId: 'admin_cat',
+        });
+        const process = vi.mocked(engine.process);
+        process.mockImplementation((input, options) => {
+            const assertions = options?.assertions ?? [level, admin];
+            return mockProcessResult({
+                assertions,
+                rendered: options?.outputFormat
+                    ? 'A'
+                    : typeof input === 'string' && input
+                      ? input
+                      : 'B/ADMIN',
+                valid: true,
+            });
+        });
+
+        try {
+            await flow.init(mount, toCtx(engine), { scope: 'marking admin' });
+            expect(new FormData(form).get('marking')).toBe('A/ADMIN');
+            flow.setAssertions([
+                mockAssertion({ conceptId: 'LEVEL_B', categoryId: 'level' }),
+                admin,
+            ]);
+            await vi.waitFor(() =>
+                expect(new FormData(form).get('marking')).toBe('B/ADMIN'),
+            );
+        } finally {
+            flow.destroy();
+            form.remove();
+        }
     });
 
     it("across scopes keeps one row of dots, and captions each scope's value under the step", async () => {

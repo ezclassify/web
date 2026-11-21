@@ -274,19 +274,18 @@ describe('Declarative attribute system (EzClassifyUI)', () => {
         });
     });
 
-    it('ezclassify-select on a <select> creates a SingleSelect (select gets hidden, mount div created)', async () => {
+    it('ezclassify-select enhances the original select inside the mount', async () => {
         const select = document.createElement('select');
         select.setAttribute('data-ezclassify-controller', 'select');
         document.body.appendChild(select);
 
         const forms = await createForms();
 
-        // Select should be hidden
-        expect(select.style.display).toBe('none');
-        // A mount div should be created as a sibling
-        const mount = select.nextElementSibling;
-        expect(mount).not.toBeNull();
-        expect(mount?.getAttribute('data-ezclassify-mount')).toBe('select');
+        expect(select.style.display).not.toBe('none');
+        expect(
+            select.closest('[data-ezclassify-mount="select"]'),
+        ).not.toBeNull();
+        expect(document.querySelectorAll('select')).toHaveLength(1);
         // Component should be tracked
         expect(forms.components.has(select)).toBe(true);
 
@@ -543,19 +542,12 @@ describe('Declarative attribute system (EzClassifyUI)', () => {
             );
         });
 
-        // The single-select component mounts next to the hidden select. Changing
-        // its conventional select must write the rendered marking back.
-        const mount = select.nextElementSibling as HTMLElement;
-        const picker = mount?.querySelector(
-            '.select-dropdown',
-        ) as HTMLSelectElement;
-        expect(picker).not.toBeNull();
-        picker.value = 'A';
-        picker.dispatchEvent(new Event('change', { bubbles: true }));
+        select.value = 'A';
+        select.dispatchEvent(new Event('change', { bubbles: true }));
 
         const event = await changePromise;
         expect(event.detail.rendered).not.toBe('');
-        expect(select.value).toBe(event.detail.rendered);
+        expect(select.value).toBe('A');
 
         forms.destroy();
     });
@@ -631,6 +623,95 @@ describe('Declarative attribute system (EzClassifyUI)', () => {
         expect(forms.components.has(fieldset)).toBe(true);
 
         forms.destroy();
+    });
+
+    describe('native control hosts', () => {
+        it('enhances an authored Single Select and restores its own options on teardown', async () => {
+            const form = document.createElement('form');
+            form.innerHTML = `
+                <input type="hidden" id="authored-marking" value="A" data-ezclassify-marking>
+                <label for="authored-select">Classification</label>
+                <select id="authored-select" name="classification" required
+                        data-ezclassify-controller="select"
+                        data-ezclassify-category="level"
+                        data-ezclassify-facet-of="authored-marking">
+                    <option value="">Choose a level</option>
+                    <option value="sample" selected>Sample option</option>
+                </select>`;
+            document.body.append(form);
+            const select = form.querySelector('select')!;
+            const authoredOptions = Array.from(select.options);
+            const forms = await createForms();
+            await vi.waitFor(() => expect(select.value).toBe('A'));
+
+            expect(form.querySelectorAll('select')).toHaveLength(1);
+            expect(forms.components.has(select)).toBe(true);
+            expect(select.labels?.[0]?.textContent).toBe('Classification');
+            expect(select.required).toBe(true);
+            expect(
+                Array.from(select.options, (option) => option.value),
+            ).toEqual(['', 'A', 'B', 'C']);
+
+            select.value = 'B';
+            select.dispatchEvent(new Event('change', { bubbles: true }));
+            await vi.waitFor(() =>
+                expect(
+                    forms.store.get('authored-marking').assertions,
+                ).toMatchObject([{ conceptId: 'B', categoryId: 'level' }]),
+            );
+            expect(new FormData(form).get('classification')).toBe('B');
+            expect(
+                form.querySelector<HTMLInputElement>('#authored-marking')
+                    ?.value,
+            ).toBe('B');
+            form.reset();
+            await vi.waitFor(() => expect(select.value).toBe('B'));
+            expect(
+                form.querySelector<HTMLInputElement>('#authored-marking')
+                    ?.value,
+            ).toBe('B');
+
+            forms.destroy();
+            expect(form.querySelector('select')).toBe(select);
+            expect(Array.from(select.options)).toEqual(authoredOptions);
+            expect(select.value).toBe('sample');
+            expect(form.querySelector('[data-ezclassify-mount]')).toBeNull();
+        });
+
+        it.each(['selector', 'checklist'])(
+            'restores an authored %s fallback after teardown',
+            async (controller) => {
+                const form = document.createElement('form');
+                form.innerHTML = `
+                <input type="hidden" id="fallback-marking" value="A" data-ezclassify-marking>
+                <fieldset data-ezclassify-controller="${controller}"
+                          data-ezclassify-category="level"
+                          data-ezclassify-facet-of="fallback-marking">
+                    <label><input type="checkbox" name="fallback" value="sample" checked>Example</label>
+                    <label><input type="checkbox" value="other" disabled>Unavailable</label>
+                </fieldset>`;
+                document.body.append(form);
+                const [fallback, disabled] = Array.from(
+                    form.querySelectorAll<HTMLInputElement>(
+                        'input[type=checkbox]',
+                    ),
+                );
+                const fields = await createForms();
+                await vi.waitFor(() => expect(fallback.disabled).toBe(true));
+                expect(new FormData(form).has('fallback')).toBe(false);
+
+                fields.destroy();
+
+                expect(fallback.disabled).toBe(false);
+                expect(disabled.disabled).toBe(true);
+                expect(Array.from(new FormData(form))).toEqual([
+                    ['fallback', 'sample'],
+                ]);
+                expect(
+                    form.querySelector('fieldset input[type=hidden]'),
+                ).toBeNull();
+            },
+        );
     });
 
     describe('behavior-only elements (no controller)', () => {
