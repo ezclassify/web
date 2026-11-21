@@ -679,6 +679,50 @@ describe('Declarative attribute system (EzClassifyUI)', () => {
         });
 
         it.each(['selector', 'checklist'])(
+            'keeps the named native group as the submitted value for %s',
+            async (controller) => {
+                const form = document.createElement('form');
+                form.innerHTML = `
+                    <fieldset data-ezclassify-controller="${controller}"
+                              data-ezclassify-category="level">
+                        <label><input type="checkbox" name="level" value="A" checked>Example</label>
+                    </fieldset>
+                    <input name="other" value="unchanged">`;
+                document.body.append(form);
+                expect(new FormData(form).getAll('level')).toEqual(['A']);
+                const host = form.querySelector('fieldset')!;
+                const ready = new Promise<void>((resolve) =>
+                    document.body.addEventListener(
+                        'ezclassify:ready',
+                        () => resolve(),
+                        { once: true },
+                    ),
+                );
+                const fields = await createForms();
+                await ready;
+                const picker = fields.components.get(host)!;
+                expect(picker.getAssertions()).toMatchObject([
+                    { categoryId: 'level', conceptId: 'A' },
+                ]);
+                await picker.setAssertions([
+                    mockAssertion({ categoryId: 'level', conceptId: 'B' }),
+                ]);
+                expect(new FormData(form).getAll('level')).toEqual(['B']);
+                expect(new FormData(form).get('other')).toBe('unchanged');
+                expect(host.querySelector('input[type="hidden"]')).toBeNull();
+
+                form.reset();
+                await vi.waitFor(() =>
+                    expect(picker.getAssertions()).toMatchObject([
+                        { categoryId: 'level', conceptId: 'A' },
+                    ]),
+                );
+                expect(new FormData(form).getAll('level')).toEqual(['A']);
+                fields.destroy();
+            },
+        );
+
+        it.each(['selector', 'checklist'])(
             'restores an authored %s fallback after teardown',
             async (controller) => {
                 const form = document.createElement('form');

@@ -609,7 +609,7 @@ export abstract class ComponentBase extends ReadOnlyComponentBase {
         );
     }
 
-    override setAssertions(assertions: Assertion[]): void {
+    override setAssertions(assertions: Assertion[]): void | Promise<void> {
         // A value from the host or the store is nobody's edit here.
         this.editStart = null;
         this.invalidateValueRead();
@@ -618,7 +618,7 @@ export abstract class ComponentBase extends ReadOnlyComponentBase {
         const held = this.heldFacts(assertions);
         if (replacesStated(this.assertions, held)) this._appliedFixes.clear();
         this.assertions = held;
-        this.reprocess();
+        return this.reprocessNow();
     }
 
     /**

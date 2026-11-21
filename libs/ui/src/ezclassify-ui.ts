@@ -16,7 +16,11 @@
  * onto the shared shape or into per-field parameter lists, so it stays here by
  * design.
  */
-import { isNativeSingleSelect } from './native-control-host';
+import {
+    isNativeSingleSelect,
+    nativeChoiceGroup,
+    writeNativeChoiceGroup,
+} from './native-control-host';
 import { acceptedValue, judgedAsHeld } from './loaded-value';
 import { assertionOriginKey } from './assertion-identity';
 import { fixAssertions } from './components/rule-errors';
@@ -3560,6 +3564,8 @@ export class EzClassifyUI {
         this.warnOnScopeMismatch(el, opts);
 
         // Resolve the native input element (source of truth)
+        const category = el.getAttribute('data-ezclassify-category');
+        const choiceGroup = category ? nativeChoiceGroup(el) : undefined;
         const nativeInput = resolveNativeInput(el, controller);
 
         // Create mount container
@@ -3576,7 +3582,22 @@ export class EzClassifyUI {
                 );
                 this.lastValidated.set(nativeInput, rendered);
             }
+            if (choiceGroup) {
+                writeNativeChoiceGroup(
+                    el,
+                    choiceGroup,
+                    new Set(
+                        assertions
+                            .filter(
+                                (assertion) =>
+                                    assertion.categoryId === category,
+                            )
+                            .map((assertion) => assertion.conceptId),
+                    ),
+                );
+            }
             if (
+                !choiceGroup &&
                 controller !== 'hidden' &&
                 controller !== 'marked-textarea' &&
                 controller !== 'marked-input' &&
@@ -3819,7 +3840,7 @@ export class EzClassifyUI {
             this.draftHosts.set(component, storeMarkingId);
 
         // The component marks with the Context its element resolved.
-        const initPromise = drawer
+        const mounted = drawer
             ? (component as ContextReference).init(
                   container,
                   this.referenceSource(),
@@ -3830,6 +3851,52 @@ export class EzClassifyUI {
                   contextForScheme(resolved!, el),
                   componentOpts,
               );
+
+        const initPromise =
+            choiceGroup && category && mounted instanceof Promise
+                ? mounted.then(async () => {
+                      const readGroup = async () => {
+                          if (
+                              this._destroyed ||
+                              this.mounted.get(el) !== component
+                          )
+                              return;
+                          await component.setAssertions(
+                              choiceGroup.inputs
+                                  .filter(
+                                      (input) =>
+                                          input.checked && !input.disabled,
+                                  )
+                                  .map((input): EngineAssertion => ({
+                                      categoryId: category,
+                                      conceptId: input.value,
+                                      source: 'user',
+                                      confidence: 'certain',
+                                  })),
+                          );
+                      };
+                      await readGroup();
+                      if (this._destroyed || this.mounted.get(el) !== component)
+                          return;
+                      const form = choiceGroup.inputs[0]?.form;
+                      if (!form) return;
+                      const reset = (event: Event) => {
+                          queueMicrotask(() => {
+                              if (!event.defaultPrevented) void readGroup();
+                          });
+                      };
+                      form.addEventListener('reset', reset);
+                      this.plainBehaviorCleanups.set(el, () =>
+                          form.removeEventListener('reset', reset),
+                      );
+                  })
+                : mounted;
+        if (initPromise !== mounted && initPromise instanceof Promise)
+            this._pendingInits.push(
+                initPromise.catch((err) =>
+                    this.logInitFailure(el, controller, err),
+                ),
+            );
 
         if (componentOpts.resolveParts && wholeId) {
             // A part committing changes what the whole has to cover, so the

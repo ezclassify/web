@@ -687,13 +687,15 @@ populates its choices while mounted. The original options return when the
 controller is destroyed. Existing text-input hosts and the cards mode remain
 supported.
 
-For an independent Category Selector or Category Checklist, put a named
-`<input type="hidden">` inside the controller's `<fieldset>`. Its value is the
-component's starting value and the value the form submits after an edit.
-Authored checkboxes or radios can show the original form's choices before
-initialization. EzClassify disables those controls while it renders the
-Runtime choices. If several category pickers should edit one marking, use
-`data-ezclassify-facet-of` to point to the same marking instead.
+For an independent Category Selector or Category Checklist, put native
+checkboxes with a shared `name` inside the controller's `<fieldset>` and set
+`data-ezclassify-category` on the fieldset. Give each checkbox its concept ID
+as its `value`. Checking a box changes the form value with or without
+EzClassify. During enhancement the library uses the Runtime's choices and
+reflects the selection in that same named group. Read the selected concept IDs
+with `FormData.getAll(name)`. An existing fieldset can also use a named hidden
+input for its rendered marking value. To let several category pickers edit
+one marking, use `data-ezclassify-facet-of` and point them at that marking.
 
 An independent DecisionFlow can enhance a named hidden input directly. With
 more than one scope and no explicit format, its native value uses the Runtime's

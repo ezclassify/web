@@ -10,6 +10,7 @@
 import {
     isNativeSingleSelect,
     markGeneratedChoiceValue,
+    nativeChoiceGroup,
 } from './native-control-host';
 import type { ControllerName } from './element-scanner';
 import { resolveFormatAttr } from './format-resolver';
@@ -135,7 +136,7 @@ export function resolveNativeInput(
     el: HTMLElement,
     controller: ControllerName,
 ): HTMLInputElement {
-    if (el.tagName === 'FIELDSET') {
+    if (el.tagName === 'FIELDSET' && !nativeChoiceGroup(el)) {
         let hidden = el.querySelector<HTMLInputElement>('input[type="hidden"]');
         if (!hidden) {
             hidden = document.createElement('input');

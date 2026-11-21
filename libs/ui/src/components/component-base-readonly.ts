@@ -152,7 +152,7 @@ export interface ComponentInstance {
     /** Get the current assertions */
     getAssertions(): Assertion[];
     /** Set assertions (replaces current state) */
-    setAssertions(assertions: Assertion[]): void;
+    setAssertions(assertions: Assertion[]): void | Promise<void>;
     /** Set the value from a marking string (reads it again and re-renders) */
     setValue(value: string): void;
     /** Clean up DOM and event listeners */

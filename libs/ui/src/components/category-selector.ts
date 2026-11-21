@@ -120,9 +120,10 @@ export class CategorySelector extends ComponentBase {
         ]);
     }
 
-    override setAssertions(assertions: Assertion[]): void {
-        super.setAssertions(assertions);
+    override setAssertions(assertions: Assertion[]): void | Promise<void> {
+        const settled = super.setAssertions(assertions);
         this.withdrawStaleFixes();
+        return settled;
     }
 
     private withdrawStaleFixes(): void {
