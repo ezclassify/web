@@ -8041,7 +8041,13 @@ components:
           description: True if this concept is already in the current marking.
         order:
           type: integer
-          description: Sort order.
+          description: The concept's authored position.
+        depth:
+          type: integer
+          description: >-
+            Zero-based indentation level in the returned browse order. Omitted when the result supplies no hierarchy for
+            the suggestion.
+          minimum: 0
         source:
           type: string
           enum:

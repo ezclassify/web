@@ -36,13 +36,13 @@
     "generation": {
         "contractVersion": "1.0.0-dev.30",
         "generator": "ezclassify-wire-corpus-recorder",
-        "generatorDigest": "sha256:731aef3390217d515a1dd04a3a2c1899373dc85515e63e08d34b648d3a95c457"
+        "generatorDigest": "sha256:9e2f56a3e0e8eda3b62ca3a906ad063e5492bb905e8b6e76990db10a56eedc82"
     },
     "runtime": {
         "engineVersion": "1.0.0-dev.30"
     },
     "spec": {
-        "digest": "sha256:5b10dd61da6005025820a3e39c406756e2a7c280db6e16f1325c289fa6217353",
+        "digest": "sha256:563e44e7d33425d2d8063c5da1efa3159269916775f7af2cc9ce7cf4cb8cccec",
         "infoVersion": "1.0.0-dev.30",
         "package": "@ezclassify/openapi",
         "packageVersion": "1.0.0-dev.30"
