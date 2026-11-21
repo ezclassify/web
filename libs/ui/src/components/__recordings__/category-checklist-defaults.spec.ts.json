@@ -122,6 +122,143 @@
             "method": "GET",
             "statusCode": 200
         },
+        "3de36c8ec28e2466d5f3a1e316279aed052cb69c6aa2f274cd5e8270d0c4bbae": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "checklist-defaults",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "checklist-defaults",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "origin",
+                            "conceptId": "HOME",
+                            "confidence": "certain",
+                            "source": "default"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            { "categoryId": "origin", "conceptId": "HOME" }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "HOME",
+                    "renders": {},
+                    "suggestionsFor": {
+                        "level": {
+                            "suggestions": [
+                                {
+                                    "categoryId": "level",
+                                    "conceptId": "LOW",
+                                    "description": "Low",
+                                    "group": "Level",
+                                    "label": "LOW",
+                                    "name": "Low",
+                                    "order": 0,
+                                    "selected": false,
+                                    "views": { "default": "LOW" }
+                                }
+                            ],
+                            "warnings": []
+                        }
+                    },
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
+        "3f719179f8dfc32562b8c4831372433f65cbfa5bcb9ebad73cdac0d340f008e4": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "checklist-defaults",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "checklist-defaults",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [],
+                    "assertions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "LOW",
+                            "confidence": "certain",
+                            "source": "user"
+                        },
+                        {
+                            "categoryId": "origin",
+                            "conceptId": "HOME",
+                            "confidence": "certain",
+                            "source": "default"
+                        }
+                    ],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [
+                            { "categoryId": "level", "conceptId": "LOW" },
+                            { "categoryId": "origin", "conceptId": "HOME" }
+                        ],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": true,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "LOW//HOME",
+                    "renders": {},
+                    "suggestionsFor": {
+                        "level": {
+                            "suggestions": [
+                                {
+                                    "categoryId": "level",
+                                    "conceptId": "LOW",
+                                    "description": "Low",
+                                    "group": "Level",
+                                    "label": "LOW",
+                                    "name": "Low",
+                                    "order": 0,
+                                    "selected": false,
+                                    "views": { "default": "LOW" }
+                                }
+                            ],
+                            "warnings": []
+                        }
+                    },
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
         "4842c14ed04503b46de1660ed2674f2aa7f27f20fe3e3f5e377b569c25a13b4e": {
             "body": [
                 {
@@ -142,6 +279,63 @@
             ],
             "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "GET",
+            "statusCode": 200
+        },
+        "5018c952aee8799ca039077934abb2feb6803507652c9c4848908159c865d080": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "checklist-defaults",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "checklist-defaults",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "suggestions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "LOW",
+                            "description": "Low",
+                            "group": "Level",
+                            "label": "LOW",
+                            "name": "Low",
+                            "order": 0,
+                            "selected": false,
+                            "views": { "default": "LOW" }
+                        },
+                        {
+                            "categoryId": "origin",
+                            "conceptId": "HOME",
+                            "description": "Home",
+                            "group": "Origin",
+                            "label": "HOME",
+                            "name": "Home",
+                            "order": 0,
+                            "selected": false,
+                            "views": { "default": "HOME" }
+                        },
+                        {
+                            "categoryId": "origin",
+                            "conceptId": "PARTNER",
+                            "description": "Partner",
+                            "group": "Origin",
+                            "label": "PARTNER",
+                            "name": "Partner",
+                            "order": 0,
+                            "selected": false,
+                            "views": { "default": "PARTNER" }
+                        }
+                    ],
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
             "statusCode": 200
         },
         "506b5bbf6ed109ae626a955a4d08b220700f9e679d80983c0c3f6e7b6087a1e9": {
@@ -215,6 +409,63 @@
             "method": "GET",
             "statusCode": 200
         },
+        "73eeded777317f56754e6f903fb0b5c75aa8fa512b7d14d3ae96a5ce9d1a6f64": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "checklist-defaults",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "checklist-defaults",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "suggestions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "LOW",
+                            "description": "Low",
+                            "group": "Level",
+                            "label": "LOW",
+                            "name": "Low",
+                            "order": 0,
+                            "selected": false,
+                            "views": { "default": "LOW" }
+                        },
+                        {
+                            "categoryId": "origin",
+                            "conceptId": "HOME",
+                            "description": "Home",
+                            "group": "Origin",
+                            "label": "HOME",
+                            "name": "Home",
+                            "order": 0,
+                            "selected": false,
+                            "views": { "default": "HOME" }
+                        },
+                        {
+                            "categoryId": "origin",
+                            "conceptId": "PARTNER",
+                            "description": "Partner",
+                            "group": "Origin",
+                            "label": "PARTNER",
+                            "name": "Partner",
+                            "order": 0,
+                            "selected": false,
+                            "views": { "default": "PARTNER" }
+                        }
+                    ],
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
         "7a0918d47b48727eba44bb416e9c074be7ac4de21f44b64b1ffe8acf8c9eaa90": {
             "body": [],
             "headers": { "x-ezclassify-resolved-version": "1.0.0" },
@@ -236,6 +487,63 @@
             },
             "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "GET",
+            "statusCode": 200
+        },
+        "9f531c6ef762db3dfc02d8db8ebafea75dd50b80e8d4106993d59ae4e0439771": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "checklist-defaults",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "checklist-defaults",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "suggestions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "LOW",
+                            "description": "Low",
+                            "group": "Level",
+                            "label": "LOW",
+                            "name": "Low",
+                            "order": 0,
+                            "selected": true,
+                            "views": { "default": "LOW" }
+                        },
+                        {
+                            "categoryId": "origin",
+                            "conceptId": "HOME",
+                            "description": "Home",
+                            "group": "Origin",
+                            "label": "HOME",
+                            "name": "Home",
+                            "order": 0,
+                            "selected": true,
+                            "views": { "default": "HOME" }
+                        },
+                        {
+                            "categoryId": "origin",
+                            "conceptId": "PARTNER",
+                            "description": "Partner",
+                            "group": "Origin",
+                            "label": "PARTNER",
+                            "name": "Partner",
+                            "order": 0,
+                            "selected": false,
+                            "views": { "default": "PARTNER" }
+                        }
+                    ],
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
             "statusCode": 200
         },
         "a51f430b92a7e8dd82df5ae5631e5cfb30faeb58cb00a3663bc3cbd7915a49b7": {
@@ -524,6 +832,63 @@
                 "status": "ok"
             },
             "method": "GET",
+            "statusCode": 200
+        },
+        "e95de62356e775eb94ffbce17133dd2be2a4abdded7d49a1556932f3aa14c40e": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "checklist-defaults",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "checklist-defaults",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "suggestions": [
+                        {
+                            "categoryId": "level",
+                            "conceptId": "LOW",
+                            "description": "Low",
+                            "group": "Level",
+                            "label": "LOW",
+                            "name": "Low",
+                            "order": 0,
+                            "selected": false,
+                            "views": { "default": "LOW" }
+                        },
+                        {
+                            "categoryId": "origin",
+                            "conceptId": "HOME",
+                            "description": "Home",
+                            "group": "Origin",
+                            "label": "HOME",
+                            "name": "Home",
+                            "order": 0,
+                            "selected": true,
+                            "views": { "default": "HOME" }
+                        },
+                        {
+                            "categoryId": "origin",
+                            "conceptId": "PARTNER",
+                            "description": "Partner",
+                            "group": "Origin",
+                            "label": "PARTNER",
+                            "name": "Partner",
+                            "order": 0,
+                            "selected": false,
+                            "views": { "default": "PARTNER" }
+                        }
+                    ],
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
             "statusCode": 200
         },
         "ee3a20b2f4c9dff101430a8719c068c74593a17972454e65c66cf5f6805184a1": {

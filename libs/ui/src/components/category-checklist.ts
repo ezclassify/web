@@ -16,6 +16,7 @@ import type { ConceptView, Suggestion } from '@ezclassify/types';
 import type { ComponentEngineSource } from './component-base-readonly';
 import categoryChecklistCss from './category-checklist.css?inline';
 import { focusGridNeighbor } from './focus-grid';
+import { suggestionDepth } from './composer/suggestion-catalog';
 
 const CATEGORY_CHECKLIST_CSS: string = categoryChecklistCss;
 
@@ -69,13 +70,9 @@ export class CategoryChecklist extends ComponentBase {
     private searchMode: 'always' | 'never' | 'overflow' = 'overflow';
     /** Rechecks the list's overflow when its box changes size. */
     private listResize: ResizeObserver | null = null;
-    /**
-     * Concept IDs currently allowed by the store's facet subscription. null =
-     * show all.
-     */
-    private _allowedConceptIds: Set<string> | null = null;
-
-    private liveAllowed: Set<string> | null = null;
+    /** Runtime suggestions from the store's facet subscription, in order. */
+    private baseline: ReadonlyMap<string, Suggestion> | null = null;
+    private liveSuggestions = new Map<string, Suggestion>();
     private availabilityInput = '';
     private availabilitySequence = 0;
 
@@ -97,49 +94,88 @@ export class CategoryChecklist extends ComponentBase {
         ];
         // Store facets offer replacements by removing their own category.
         // Preserve that baseline and add what the current choices open up.
-        const additive =
-            this._allowedConceptIds !== null &&
+        const needsLive =
+            this.baseline === null ||
             this.assertions.some((a) => a.categoryId === this.categoryId);
-        const input = additive
+        const input = needsLive
             ? JSON.stringify([live, this.getProcessingContext()])
             : '';
         if (input === this.availabilityInput) return;
         this.availabilityInput = input;
         const sequence = ++this.availabilitySequence;
-        let allowed: Set<string> | null = null;
-        if (additive) {
+        let suggestions: Suggestion[] = [];
+        if (needsLive) {
             try {
-                const suggestions = await this.composerSuggestions(live);
-                allowed = new Set(
-                    suggestions
-                        .filter(
-                            (s) => s.categoryId === this.categoryId && !s.gated,
-                        )
-                        .map((s) => s.conceptId),
-                );
+                suggestions = await this.composerSuggestions(live);
             } catch {
                 // Keep using the store's answer when live suggestions fail.
             }
         }
         if (this._destroyed || sequence !== this.availabilitySequence) return;
-        this.liveAllowed = allowed;
+        this.liveSuggestions = this.categorySuggestions(
+            suggestions.filter((suggestion) => !suggestion.gated),
+        );
         this.render();
     }
 
+    private categorySuggestions(
+        suggestions: readonly Suggestion[],
+    ): Map<string, Suggestion> {
+        return new Map(
+            suggestions
+                .filter(
+                    (suggestion) => suggestion.categoryId === this.categoryId,
+                )
+                .map((suggestion) => [suggestion.conceptId, suggestion]),
+        );
+    }
+
+    private depthOf(conceptId: string): number {
+        const suggestion =
+            this.liveSuggestions.get(conceptId) ??
+            this.baseline?.get(conceptId);
+        return (suggestion && suggestionDepth(suggestion)) ?? 0;
+    }
+
     private availableConcepts(): ConceptView[] {
-        const allowed = this._allowedConceptIds;
-        if (allowed === null) return this.categoryConcepts;
+        const baseline = this.baseline;
+        const live = this.liveSuggestions;
         const selected = new Set(
             this.assertions
                 .filter((a) => a.categoryId === this.categoryId)
                 .map((a) => a.conceptId),
         );
-        return this.categoryConcepts.filter(
-            (concept) =>
-                allowed.has(concept.id) ||
-                this.liveAllowed?.has(concept.id) ||
-                selected.has(concept.id),
+        const visible = new Map(
+            this.categoryConcepts
+                .filter(
+                    (concept) =>
+                        baseline === null ||
+                        baseline.has(concept.id) ||
+                        live.has(concept.id) ||
+                        selected.has(concept.id),
+                )
+                .map((concept) => [concept.id, concept]),
         );
+        // A live tier listing puts newly offered children beside their parent,
+        // just as the shared picker does. A flat facet keeps its baseline
+        // replacement choices first, followed by additions in Runtime order.
+        const tiered = [...live.values()].some(
+            (suggestion) => suggestionDepth(suggestion) !== undefined,
+        );
+        const baselineIds = [...(baseline?.keys() ?? [])];
+        const liveIds = [...live.keys()];
+        const order = tiered
+            ? [...liveIds, ...baselineIds]
+            : [...baselineIds, ...liveIds];
+        const ordered: ConceptView[] = [];
+        for (const id of order) {
+            const visibleConcept = visible.get(id);
+            if (visibleConcept) {
+                ordered.push(visibleConcept);
+                visible.delete(id);
+            }
+        }
+        return [...ordered, ...visible.values()];
     }
 
     override async init(
@@ -281,6 +317,7 @@ export class CategoryChecklist extends ComponentBase {
         this.container.appendChild(this.announcer);
 
         this.render();
+        void this.refreshAvailability();
     }
 
     /**
@@ -291,24 +328,19 @@ export class CategoryChecklist extends ComponentBase {
      * means no baseline choices, so show checked and live choices only.
      */
     applyAllowableOptions(options: Suggestion[] | null): void {
-        const allowed =
-            options === null
-                ? null
-                : new Set(
-                      options
-                          .filter((s) => s.categoryId === this.categoryId)
-                          .map((s) => s.conceptId),
-                  );
-        const previous = this._allowedConceptIds;
+        const baseline =
+            options === null ? null : this.categorySuggestions(options);
+        const signature = (
+            suggestions: ReadonlyMap<string, Suggestion> | null,
+        ) =>
+            suggestions &&
+            [...suggestions].map(([id, row]) => [id, suggestionDepth(row)]);
         if (
-            previous === allowed ||
-            (previous !== null &&
-                allowed !== null &&
-                previous.size === allowed.size &&
-                [...allowed].every((id) => previous.has(id)))
+            JSON.stringify(signature(baseline)) ===
+            JSON.stringify(signature(this.baseline))
         )
             return;
-        this._allowedConceptIds = allowed;
+        this.baseline = baseline;
         void this.refreshAvailability();
         this.render();
     }
@@ -422,7 +454,10 @@ export class CategoryChecklist extends ComponentBase {
             !this.filterText &&
             available.length === boxes.length &&
             boxes.every(
-                (box, index) => box.dataset.conceptId === available[index].id,
+                (box, index) =>
+                    box.dataset.conceptId === available[index].id &&
+                    box.parentElement?.dataset.depth ===
+                        String(this.depthOf(available[index].id)),
             )
         ) {
             this.syncCheckboxStates();
@@ -634,6 +669,14 @@ export class CategoryChecklist extends ComponentBase {
             item.className =
                 'category-checklist-item' +
                 (isChecked ? ' category-checklist-item--checked' : '');
+
+            const depth = this.depthOf(concept.id);
+            item.dataset.depth = String(depth);
+            if (depth > 0)
+                item.style.setProperty(
+                    '--ez-checklist-indent',
+                    `${depth * 0.75}rem`,
+                );
 
             const checkbox = document.createElement('input');
             checkbox.type = 'checkbox';

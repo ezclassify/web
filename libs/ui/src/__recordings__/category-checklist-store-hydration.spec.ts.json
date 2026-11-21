@@ -952,6 +952,239 @@
             "method": "GET",
             "statusCode": 200
         },
+        "55c6f1aa7a01b97f2572c841396c53390644081b927094005c9762080f12d384": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "multi-scope-regression",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "multi-scope-regression",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "suggestions": [
+                        {
+                            "categoryId": "marked_by",
+                            "conceptId": "MARKED_BY_TEXT",
+                            "description": "Marked By",
+                            "group": "Marked By",
+                            "label": "Name or initials (e.g., Ruiz, M.)",
+                            "name": "Marked By",
+                            "order": 0,
+                            "selected": false,
+                            "views": { "default": "{value}" }
+                        },
+                        {
+                            "categoryId": "comes_from",
+                            "conceptId": "TEST_RULES",
+                            "description": "Test Rules",
+                            "group": "Comes From",
+                            "label": "TEST RULES",
+                            "name": "Test Rules",
+                            "order": 0,
+                            "selected": false,
+                            "views": {
+                                "default": "TEST RULES",
+                                "short": "RULES"
+                            }
+                        },
+                        {
+                            "categoryId": "comes_from",
+                            "conceptId": "NEW_ITEM",
+                            "description": "New Item",
+                            "group": "Comes From",
+                            "label": "NEW ITEM",
+                            "name": "New Item",
+                            "order": 0,
+                            "selected": false,
+                            "views": { "default": "NEW ITEM", "short": "NEW" }
+                        },
+                        {
+                            "categoryId": "comes_from",
+                            "conceptId": "FROM_TEST_BANK",
+                            "description": "From Test Bank",
+                            "group": "Comes From",
+                            "label": "FROM TEST BANK",
+                            "name": "From Test Bank",
+                            "order": 0,
+                            "selected": false,
+                            "views": {
+                                "default": "FROM TEST BANK",
+                                "short": "BANK"
+                            }
+                        },
+                        {
+                            "categoryId": "comes_from",
+                            "conceptId": "FROM_LAST_YEAR",
+                            "description": "From Last Year",
+                            "group": "Comes From",
+                            "label": "FROM LAST YEAR",
+                            "name": "From Last Year",
+                            "order": 0,
+                            "selected": false,
+                            "views": {
+                                "default": "FROM LAST YEAR",
+                                "short": "LAST YR"
+                            }
+                        },
+                        {
+                            "categoryId": "comes_from",
+                            "conceptId": "FROM_STATE_OFFICE",
+                            "description": "From State Office",
+                            "group": "Comes From",
+                            "label": "FROM STATE OFFICE",
+                            "name": "From State Office",
+                            "order": 0,
+                            "selected": false,
+                            "views": {
+                                "default": "FROM STATE OFFICE",
+                                "short": "STATE"
+                            }
+                        },
+                        {
+                            "categoryId": "open_up",
+                            "conceptId": "END_OF_YEAR",
+                            "description": "End of Year",
+                            "group": "Open Up",
+                            "label": "END OF YEAR",
+                            "name": "End of Year",
+                            "order": 0,
+                            "selected": false,
+                            "views": {
+                                "default": "END OF YEAR",
+                                "short": "YEAR END"
+                            }
+                        },
+                        {
+                            "categoryId": "open_up",
+                            "conceptId": "AFTER_TEST_DAY",
+                            "description": "After Test Day",
+                            "group": "Open Up",
+                            "label": "AFTER TEST DAY",
+                            "name": "After Test Day",
+                            "order": 0,
+                            "selected": false,
+                            "views": {
+                                "default": "AFTER TEST DAY",
+                                "short": "TEST DAY"
+                            }
+                        },
+                        {
+                            "categoryId": "open_up",
+                            "conceptId": "AFTER_MAKEUP_DAY",
+                            "description": "After Makeup Day",
+                            "group": "Open Up",
+                            "label": "AFTER MAKEUP DAY",
+                            "name": "After Makeup Day",
+                            "order": 0,
+                            "selected": false,
+                            "views": {
+                                "default": "AFTER MAKEUP DAY",
+                                "short": "MAKEUP"
+                            }
+                        },
+                        {
+                            "categoryId": "open_up",
+                            "conceptId": "WHEN_BOARD_SAYS",
+                            "description": "When State Assessment Staff Says",
+                            "group": "Open Up",
+                            "label": "WHEN BOARD SAYS",
+                            "name": "When State Assessment Staff Says",
+                            "order": 0,
+                            "selected": false,
+                            "views": {
+                                "default": "WHEN BOARD SAYS",
+                                "short": "BOARD"
+                            }
+                        },
+                        {
+                            "categoryId": "open_up",
+                            "conceptId": "NEVER",
+                            "description": "Never",
+                            "group": "Open Up",
+                            "label": "NEVER",
+                            "name": "Never",
+                            "order": 0,
+                            "selected": false,
+                            "views": { "default": "NEVER", "short": "NEVER" }
+                        },
+                        {
+                            "categoryId": "then_do",
+                            "conceptId": "LOCK_IN_OFFICE",
+                            "description": "Lock In Office",
+                            "group": "Then",
+                            "label": "LOCK IN OFFICE",
+                            "name": "Lock In Office",
+                            "order": 0,
+                            "selected": false,
+                            "views": {
+                                "default": "LOCK IN OFFICE",
+                                "short": "LOCK"
+                            }
+                        },
+                        {
+                            "categoryId": "then_do",
+                            "conceptId": "SEND_HOME",
+                            "description": "Send Home",
+                            "group": "Then",
+                            "label": "SEND HOME",
+                            "name": "Send Home",
+                            "order": 0,
+                            "selected": false,
+                            "views": { "default": "SEND HOME", "short": "HOME" }
+                        },
+                        {
+                            "categoryId": "then_do",
+                            "conceptId": "OTHER_SCHOOL",
+                            "description": "Other School",
+                            "group": "Then",
+                            "label": "OTHER SCHOOL",
+                            "name": "Other School",
+                            "order": 0,
+                            "selected": false,
+                            "views": {
+                                "default": "OTHER SCHOOL",
+                                "short": "OTHER"
+                            }
+                        },
+                        {
+                            "categoryId": "then_do",
+                            "conceptId": "PRACTICE_TEST",
+                            "description": "Practice Test",
+                            "group": "Then",
+                            "label": "PRACTICE TEST",
+                            "name": "Practice Test",
+                            "order": 0,
+                            "selected": false,
+                            "views": {
+                                "default": "PRACTICE TEST",
+                                "short": "PRACTICE"
+                            }
+                        },
+                        {
+                            "categoryId": "then_do",
+                            "conceptId": "RECYCLE",
+                            "description": "Recycle",
+                            "group": "Then",
+                            "label": "RECYCLE",
+                            "name": "Recycle",
+                            "order": 0,
+                            "selected": false,
+                            "views": { "default": "RECYCLE", "short": "RECYC" }
+                        }
+                    ],
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
+            "statusCode": 200
+        },
         "5aa25f3239be35f5b5a2b0b1cd2af1436cf236563dd5e531f4acad3d3f7a9f21": {
             "body": {
                 "contextId": "sbx-d439b2590804695e96e6172d9fb1c5c6277e8331758fac94a953613284d9bda6"
@@ -1156,6 +1389,314 @@
             },
             "headers": { "x-ezclassify-resolved-version": "1.0.0" },
             "method": "GET",
+            "statusCode": 200
+        },
+        "5f172cfaa6d66e9c323daee8c4557e0943078418fcd5f6bcd2e023c1f4de5a9c": {
+            "body": {
+                "resolution": {
+                    "artifacts": [
+                        {
+                            "id": "multi-scope-regression",
+                            "kind": "scheme",
+                            "version": "1.0.0"
+                        }
+                    ],
+                    "contextId": "multi-scope-regression",
+                    "requestedVersion": "0.0.0",
+                    "resolvedVersion": "1.0.0"
+                },
+                "result": {
+                    "appliedFixes": [
+                        {
+                            "action": "remove",
+                            "message": "Handed-in fact \"OUR_SCHOOL\" in category \"from_school\" under source \"default\" was not derived again and was removed.",
+                            "remove": [
+                                {
+                                    "categoryId": "from_school",
+                                    "conceptId": "OUR_SCHOOL"
+                                }
+                            ],
+                            "ruleId": "_not_derived_again"
+                        },
+                        {
+                            "action": "remove",
+                            "message": "Handed-in fact \"FILED\" in category \"filing_status\" under source \"default\" was not derived again and was removed.",
+                            "remove": [
+                                {
+                                    "categoryId": "filing_status",
+                                    "conceptId": "FILED"
+                                }
+                            ],
+                            "ruleId": "_not_derived_again"
+                        }
+                    ],
+                    "assertions": [],
+                    "assessment": {
+                        "collapsed": [],
+                        "conflicts": [],
+                        "emitted": [],
+                        "omitted": [],
+                        "unrepresentable": []
+                    },
+                    "errors": [],
+                    "inputWasValid": false,
+                    "notices": [],
+                    "proposedFixes": [],
+                    "rendered": "",
+                    "renders": {},
+                    "suggestionsFor": {
+                        "comes_from": {
+                            "suggestions": [
+                                {
+                                    "categoryId": "comes_from",
+                                    "conceptId": "TEST_RULES",
+                                    "description": "Test Rules",
+                                    "group": "Comes From",
+                                    "label": "TEST RULES",
+                                    "name": "Test Rules",
+                                    "order": 0,
+                                    "selected": false,
+                                    "views": {
+                                        "default": "TEST RULES",
+                                        "short": "RULES"
+                                    }
+                                },
+                                {
+                                    "categoryId": "comes_from",
+                                    "conceptId": "NEW_ITEM",
+                                    "description": "New Item",
+                                    "group": "Comes From",
+                                    "label": "NEW ITEM",
+                                    "name": "New Item",
+                                    "order": 0,
+                                    "selected": false,
+                                    "views": {
+                                        "default": "NEW ITEM",
+                                        "short": "NEW"
+                                    }
+                                },
+                                {
+                                    "categoryId": "comes_from",
+                                    "conceptId": "FROM_TEST_BANK",
+                                    "description": "From Test Bank",
+                                    "group": "Comes From",
+                                    "label": "FROM TEST BANK",
+                                    "name": "From Test Bank",
+                                    "order": 0,
+                                    "selected": false,
+                                    "views": {
+                                        "default": "FROM TEST BANK",
+                                        "short": "BANK"
+                                    }
+                                },
+                                {
+                                    "categoryId": "comes_from",
+                                    "conceptId": "FROM_LAST_YEAR",
+                                    "description": "From Last Year",
+                                    "group": "Comes From",
+                                    "label": "FROM LAST YEAR",
+                                    "name": "From Last Year",
+                                    "order": 0,
+                                    "selected": false,
+                                    "views": {
+                                        "default": "FROM LAST YEAR",
+                                        "short": "LAST YR"
+                                    }
+                                },
+                                {
+                                    "categoryId": "comes_from",
+                                    "conceptId": "FROM_STATE_OFFICE",
+                                    "description": "From State Office",
+                                    "group": "Comes From",
+                                    "label": "FROM STATE OFFICE",
+                                    "name": "From State Office",
+                                    "order": 0,
+                                    "selected": false,
+                                    "views": {
+                                        "default": "FROM STATE OFFICE",
+                                        "short": "STATE"
+                                    }
+                                }
+                            ],
+                            "warnings": []
+                        },
+                        "filing_status": { "suggestions": [], "warnings": [] },
+                        "from_school": { "suggestions": [], "warnings": [] },
+                        "level": { "suggestions": [], "warnings": [] },
+                        "marked_by": {
+                            "suggestions": [
+                                {
+                                    "categoryId": "marked_by",
+                                    "conceptId": "MARKED_BY_TEXT",
+                                    "description": "Marked By",
+                                    "group": "Marked By",
+                                    "label": "Name or initials (e.g., Ruiz, M.)",
+                                    "name": "Marked By",
+                                    "order": 0,
+                                    "selected": false,
+                                    "views": { "default": "{value}" }
+                                }
+                            ],
+                            "warnings": []
+                        },
+                        "open_up": {
+                            "suggestions": [
+                                {
+                                    "categoryId": "open_up",
+                                    "conceptId": "END_OF_YEAR",
+                                    "description": "End of Year",
+                                    "group": "Open Up",
+                                    "label": "END OF YEAR",
+                                    "name": "End of Year",
+                                    "order": 0,
+                                    "selected": false,
+                                    "views": {
+                                        "default": "END OF YEAR",
+                                        "short": "YEAR END"
+                                    }
+                                },
+                                {
+                                    "categoryId": "open_up",
+                                    "conceptId": "AFTER_TEST_DAY",
+                                    "description": "After Test Day",
+                                    "group": "Open Up",
+                                    "label": "AFTER TEST DAY",
+                                    "name": "After Test Day",
+                                    "order": 0,
+                                    "selected": false,
+                                    "views": {
+                                        "default": "AFTER TEST DAY",
+                                        "short": "TEST DAY"
+                                    }
+                                },
+                                {
+                                    "categoryId": "open_up",
+                                    "conceptId": "AFTER_MAKEUP_DAY",
+                                    "description": "After Makeup Day",
+                                    "group": "Open Up",
+                                    "label": "AFTER MAKEUP DAY",
+                                    "name": "After Makeup Day",
+                                    "order": 0,
+                                    "selected": false,
+                                    "views": {
+                                        "default": "AFTER MAKEUP DAY",
+                                        "short": "MAKEUP"
+                                    }
+                                },
+                                {
+                                    "categoryId": "open_up",
+                                    "conceptId": "WHEN_BOARD_SAYS",
+                                    "description": "When State Assessment Staff Says",
+                                    "group": "Open Up",
+                                    "label": "WHEN BOARD SAYS",
+                                    "name": "When State Assessment Staff Says",
+                                    "order": 0,
+                                    "selected": false,
+                                    "views": {
+                                        "default": "WHEN BOARD SAYS",
+                                        "short": "BOARD"
+                                    }
+                                },
+                                {
+                                    "categoryId": "open_up",
+                                    "conceptId": "NEVER",
+                                    "description": "Never",
+                                    "group": "Open Up",
+                                    "label": "NEVER",
+                                    "name": "Never",
+                                    "order": 0,
+                                    "selected": false,
+                                    "views": {
+                                        "default": "NEVER",
+                                        "short": "NEVER"
+                                    }
+                                }
+                            ],
+                            "warnings": []
+                        },
+                        "status": { "suggestions": [], "warnings": [] },
+                        "then_do": {
+                            "suggestions": [
+                                {
+                                    "categoryId": "then_do",
+                                    "conceptId": "LOCK_IN_OFFICE",
+                                    "description": "Lock In Office",
+                                    "group": "Then",
+                                    "label": "LOCK IN OFFICE",
+                                    "name": "Lock In Office",
+                                    "order": 0,
+                                    "selected": false,
+                                    "views": {
+                                        "default": "LOCK IN OFFICE",
+                                        "short": "LOCK"
+                                    }
+                                },
+                                {
+                                    "categoryId": "then_do",
+                                    "conceptId": "SEND_HOME",
+                                    "description": "Send Home",
+                                    "group": "Then",
+                                    "label": "SEND HOME",
+                                    "name": "Send Home",
+                                    "order": 0,
+                                    "selected": false,
+                                    "views": {
+                                        "default": "SEND HOME",
+                                        "short": "HOME"
+                                    }
+                                },
+                                {
+                                    "categoryId": "then_do",
+                                    "conceptId": "OTHER_SCHOOL",
+                                    "description": "Other School",
+                                    "group": "Then",
+                                    "label": "OTHER SCHOOL",
+                                    "name": "Other School",
+                                    "order": 0,
+                                    "selected": false,
+                                    "views": {
+                                        "default": "OTHER SCHOOL",
+                                        "short": "OTHER"
+                                    }
+                                },
+                                {
+                                    "categoryId": "then_do",
+                                    "conceptId": "PRACTICE_TEST",
+                                    "description": "Practice Test",
+                                    "group": "Then",
+                                    "label": "PRACTICE TEST",
+                                    "name": "Practice Test",
+                                    "order": 0,
+                                    "selected": false,
+                                    "views": {
+                                        "default": "PRACTICE TEST",
+                                        "short": "PRACTICE"
+                                    }
+                                },
+                                {
+                                    "categoryId": "then_do",
+                                    "conceptId": "RECYCLE",
+                                    "description": "Recycle",
+                                    "group": "Then",
+                                    "label": "RECYCLE",
+                                    "name": "Recycle",
+                                    "order": 0,
+                                    "selected": false,
+                                    "views": {
+                                        "default": "RECYCLE",
+                                        "short": "RECYC"
+                                    }
+                                }
+                            ],
+                            "warnings": []
+                        }
+                    },
+                    "valid": true,
+                    "warnings": []
+                }
+            },
+            "headers": { "x-ezclassify-resolved-version": "1.0.0" },
+            "method": "POST",
             "statusCode": 200
         },
         "66734438e5f83441fb37912f4cce6dadd80bf09648ad67a179790a4f034e93f7": {
