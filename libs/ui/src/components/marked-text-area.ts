@@ -378,9 +378,8 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
     /** Set once the field is torn down; a late whole change reads nothing. */
     private tornDown = false;
     /**
-     * True when the next scan follows a user edit. Initial and externally
-     * supplied values are parsed and validated without rewriting them; safe
-     * engine repairs become eligible only after the user edits a marking.
+     * True when the next scan follows a user edit. Externally supplied
+     * replacements are read without rewriting them.
      */
     private userEditPending = false;
     /**
@@ -658,7 +657,7 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
         }
         document.fonts?.ready.then(() => this.renderDisplay());
 
-        await this.syncFromTextarea();
+        await this.syncFromTextarea(true);
     }
 
     /** Resolve the host textarea from this container (or its parent). */
@@ -1141,7 +1140,7 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
         }, MarkedTextArea.SYNC_DEBOUNCE_MS);
     }
 
-    private async syncFromTextarea(): Promise<void> {
+    private async syncFromTextarea(initializing = false): Promise<void> {
         // While the inline picker is open, the empty "()" template won't be
         // recognized by the engine scan, so the scan would clear the segment list
         // and call renderDisplay(), which tears down and re-mounts the pickerMount
@@ -1262,9 +1261,8 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
         this.lastMarkingStrings = embedded.map((r) => r.marking);
         // The marks this user edit wrote. Only they may take the engine's safe
         // repairs: a fix rewrites the portion that was edited and no other, so
-        // typing in one paragraph never rewrites the mark of another. A scan
-        // that follows no user edit (load, a value set from outside) edits
-        // nothing and rewrites nothing.
+        // typing in one paragraph never rewrites the mark of another. The
+        // initial scan also accepts safe, settled repairs to loaded marks.
         const edited = new Set(
             userInitiated
                 ? editedMarkingIndices(
@@ -1365,8 +1363,19 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
                       res.appliedFixes,
                       this.omittedFromFieldFormat(res),
                   );
-            const unappliedFixes = corrections.length > 0;
-            if (isEdited) editsByStart.set(r.start, res.appliedFixes);
+            const initialRepair =
+                initializing &&
+                complete &&
+                !!processed &&
+                corrections.length > 0 &&
+                res.valid &&
+                res.recognition?.status === 'complete' &&
+                !!res.rendered &&
+                !renderViewRefused(res) &&
+                this.canRepairAtCaret(r.start, r.end);
+            const unappliedFixes = !initialRepair && corrections.length > 0;
+            if (isEdited || initialRepair)
+                editsByStart.set(r.start, res.appliedFixes);
             const errors = res.errors.map((e) => e.message);
             if (unappliedFixes) {
                 errors.push(
@@ -1402,7 +1411,8 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
                 errors,
                 warnings,
                 validationErrors: res.errors,
-                repaired: isEdited && res.appliedFixes.length > 0,
+                repaired:
+                    initialRepair || (isEdited && res.appliedFixes.length > 0),
                 pendingFixes: unappliedFixes ? res.appliedFixes : [],
                 readFailure: failure,
                 sourceUnresolved,
@@ -1545,7 +1555,8 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
         // Apply autofixes: patch textarea if the repaired rendered differs from what was typed.
         // If repairs were applied, a follow-up scan runs and will call renderDisplay; skip
         // rendering here to avoid displaying stale segment positions against the patched text.
-        const repaired = userInitiated && (await this.applyRepairs());
+        const repaired =
+            (initializing || userInitiated) && (await this.applyRepairs());
         if (repaired) return;
 
         // If no markings changed and the count is the same as before, only the
@@ -1819,6 +1830,14 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
         return new Set(result.assessment.omitted.map((o) => o.conceptId));
     }
 
+    private canRepairAtCaret(
+        start: number,
+        end: number,
+        caret = this.textarea.selectionStart,
+    ): boolean {
+        return !this.hasFocus || caret <= start || caret >= end;
+    }
+
     /**
      * Patch the textarea when repair changed any marking's rendered form.
      * Returns true if patched.
@@ -1829,10 +1848,8 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
         // editor click-out commit), the stale textarea caret must not defer the
         // repair.
         const cursorPos = this.textarea.selectionStart;
-        const safeSegments = this.segments.filter(
-            (seg) =>
-                !this.hasFocus ||
-                !(cursorPos > seg.start && cursorPos < seg.end),
+        const safeSegments = this.segments.filter((seg) =>
+            this.canRepairAtCaret(seg.start, seg.end, cursorPos),
         );
 
         const template = this.template;
