@@ -81,6 +81,14 @@ const BLUR_COMMIT_DELAY_MS = 120;
 /** Why the composer is opening. */
 export type ComposerOpenReason = 'typing' | 'keyboard' | 'pointer' | 'api';
 
+/** Internal event emitted on the picker surface after it closes. */
+export const COMPOSER_DISMISSED = 'composer-dismissed';
+
+export interface ComposerDismissal {
+    /** Whether the close left no pending or invalid draft. */
+    readonly clean: boolean;
+}
+
 /** What a field tells the view about itself. */
 export interface ComposerViewOptions {
     readonly controller: ComposerController;
@@ -134,8 +142,8 @@ export interface ComposerViewOptions {
      * so a control acting on that edit retains its target.
      */
     readonly isFieldChrome?: (node: Node) => boolean;
-    /** The picker closed with no pending or invalid draft. */
-    readonly onCleanClose?: () => void;
+    /** Park focus after Escape closes a clean phone sheet. */
+    readonly parkOnCleanSheetEscape?: boolean;
     /** A blur finished committing. */
     readonly onBlurCommit?: (outcome: CommitOutcome) => void;
     /**
@@ -827,7 +835,8 @@ export class ComposerView {
                     open &&
                     this.sheet &&
                     this.surface.contains(document.activeElement) &&
-                    (!this.opts.onCleanClose || this.controller.isDirty())
+                    (!this.opts.parkOnCleanSheetEscape ||
+                        this.controller.isDirty())
                 )
                     this.opts.input.focus({ preventScroll: true });
                 if (this.controller.escape()) {
@@ -1258,7 +1267,13 @@ export class ComposerView {
                 this.placed = false;
                 this.opts.onPlacement?.(false);
             }
-            if (wasOpen && !s.dirty && !s.invalid) this.opts.onCleanClose?.();
+            if (wasOpen) {
+                this.surface.dispatchEvent(
+                    new CustomEvent<ComposerDismissal>(COMPOSER_DISMISSED, {
+                        detail: { clean: !s.dirty && !s.invalid },
+                    }),
+                );
+            }
             return;
         }
         this.surface.hidden = false;
