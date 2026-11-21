@@ -303,6 +303,8 @@ export interface TooltipPlacement {
      * below the target, or above it.
      */
     readonly clearOf?: HTMLElement | readonly HTMLElement[] | null;
+    /** A dialog in a mobile sheet follows the viewport as its keyboard moves. */
+    readonly followViewport?: boolean;
 }
 
 /** A rectangle in viewport coordinates. */
@@ -680,6 +682,10 @@ export function showTooltip(
         const dismiss = (event: Event) => {
             const scrolled = event.target;
             if (scrolled instanceof Node && tip.contains(scrolled)) return;
+            if (placement?.followViewport) {
+                repositionTooltip(target, root, placement);
+                return;
+            }
             if (
                 event.type === 'scroll' &&
                 focusScroll?.active &&
@@ -713,10 +719,17 @@ export function showTooltip(
         const opts: AddEventListenerOptions = { capture: true, passive: true };
         window.addEventListener('scroll', dismiss, opts);
         window.addEventListener('resize', dismiss);
+        const visualViewport = placement?.followViewport
+            ? window.visualViewport
+            : null;
+        visualViewport?.addEventListener('resize', dismiss);
+        visualViewport?.addEventListener('scroll', dismiss);
         entry.detach = () => {
             focusScroll?.stop();
             window.removeEventListener('scroll', dismiss, opts);
             window.removeEventListener('resize', dismiss);
+            visualViewport?.removeEventListener('resize', dismiss);
+            visualViewport?.removeEventListener('scroll', dismiss);
             entry.detach = undefined;
         };
     }

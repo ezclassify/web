@@ -417,10 +417,23 @@ export function setStatusMarkDraft(
     fixes: readonly Change[] | undefined,
 ): void {
     if (!markOptions.has(mark) || markDraftFixes.get(mark) === fixes) return;
-    dismissStatusMarkPopover(mark);
     if (fixes) markDraftFixes.set(mark, fixes);
     else markDraftFixes.delete(mark);
     applyVisualState(mark, deriveState(mark));
+
+    // Keep the selected tab and its focus while the Runtime answers. Closing
+    // the dialog here would make the mobile editor treat the blur as a save.
+    if (!popoverOpen(mark)) return;
+    const tools = markToolsContent.get(mark);
+    const panel = tools?.querySelector<HTMLElement>('[role="tabpanel"]');
+    if (!panel) return;
+    if (panel.contains(document.activeElement)) {
+        tools
+            ?.querySelector<HTMLElement>('[role="tab"][aria-selected="true"]')
+            ?.focus({ preventScroll: true });
+    }
+    panel.replaceChildren(correctionsContent(mark));
+    refreshStatusMarkPopover(mark);
 }
 
 function visibleError(mark: HTMLElement): string | undefined {
@@ -721,7 +734,10 @@ function errorListsOf(field: HTMLElement): HTMLElement[] {
  */
 function popoverPlacement(mark: HTMLElement): TooltipPlacement {
     const field = fieldOf(mark);
-    return { clearOf: [field, ...errorListsOf(field)] };
+    return {
+        clearOf: [field, ...errorListsOf(field)],
+        followViewport: mark.closest('.ez-composer__sheet-tools') !== null,
+    };
 }
 
 /**
@@ -895,29 +911,18 @@ export function ensureStatusMark(
         const error = visibleError(mark);
         const fixes = markFixes.get(mark);
         if (opts.tools) {
-            const draft = markDraftFixes.get(mark);
             const snapshot = new Set(fixes?.keys());
-            const hasCorrections =
-                error !== undefined ||
-                (explainsFixes() && (draft?.length ?? snapshot.size) > 0);
-            const corrections = hasCorrections
-                ? changeList(
-                      mark,
-                      error,
-                      draft ? null : (opts.undoLastEdit?.() ?? null),
-                  )
-                : document.createElement('div');
-            if (!hasCorrections)
-                corrections.textContent = t('tools.emptyCorrections');
             const favorites = markFavorites.get(mark);
             const showCorrections =
-                error !== undefined || deriveState(mark) === 'unseen';
+                markDraftFixes.has(mark) ||
+                error !== undefined ||
+                deriveState(mark) === 'unseen';
             markContentSnapshot.set(
                 mark,
                 showCorrections || !favorites ? snapshot : new Set(),
             );
             const tools = buildMarkingTools({
-                corrections,
+                corrections: correctionsContent(mark),
                 favorites: favorites?.element,
                 favoritesCount: favorites?.count() ?? 0,
                 showCorrections,
@@ -1169,6 +1174,25 @@ function setMarkChanges(
 
     applyVisualState(mark, deriveState(mark));
     noteReview(mark);
+}
+
+function correctionsContent(mark: HTMLElement): HTMLElement {
+    const opts = markOptions.get(mark);
+    const draft = markDraftFixes.get(mark);
+    const error = visibleError(mark);
+    const count = draft?.length ?? markFixes.get(mark)?.size ?? 0;
+    if (
+        error !== undefined ||
+        (count > 0 && opts?.shouldShowTooltip?.() !== false)
+    )
+        return changeList(
+            mark,
+            error,
+            draft ? null : (opts?.undoLastEdit?.() ?? null),
+        );
+    const empty = document.createElement('div');
+    empty.textContent = t('tools.emptyCorrections');
+    return empty;
 }
 
 /**

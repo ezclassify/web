@@ -359,6 +359,46 @@ describe('CategoryChecklist', () => {
         await expect.poll(visibleChoices).toEqual(['item-a', 'item-b']);
     });
 
+    it('uses the Runtime’s tier order and depth for the current suggestions', async () => {
+        const tier = (id: string, depth: number) => ({
+            ...suggestions([id])[0],
+            depth,
+        });
+        vi.mocked(engine.suggest).mockImplementation((input) => ({
+            warnings: [],
+            suggestions:
+                Array.isArray(input) &&
+                input.some((a) => a.conceptId === 'item-a')
+                    ? [
+                          tier('item-a', 0),
+                          tier('item-d', 1),
+                          tier('item-c', 2),
+                          tier('item-b', 0),
+                      ]
+                    : [],
+        }));
+        await init();
+        checklist.applyAllowableOptions([tier('item-a', 0), tier('item-b', 0)]);
+        boxes()[0].click();
+
+        await expect
+            .poll(visibleChoices)
+            .toEqual(['item-a', 'item-d', 'item-c', 'item-b']);
+        const indents = () =>
+            boxes().map((box) =>
+                box.parentElement?.style.getPropertyValue(
+                    '--ez-checklist-indent',
+                ),
+            );
+        expect(indents()).toEqual(['', '0.75rem', '1.5rem', '']);
+
+        boxes()[0].click();
+        await expect.poll(visibleChoices).toEqual(['item-a', 'item-b']);
+        checklist.applyAllowableOptions([tier('item-b', 0), tier('item-a', 1)]);
+        expect(visibleChoices()).toEqual(['item-b', 'item-a']);
+        expect(indents()).toEqual(['', '0.75rem']);
+    });
+
     it('refreshes additional options when the store updates the choice or its sibling context', async () => {
         const selected: Assertion = {
             conceptId: 'item-a',

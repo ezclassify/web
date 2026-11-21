@@ -353,13 +353,13 @@ describe('autofixes in a phone picker', () => {
                 )!;
                 draft.value = 'LOW';
                 draft.dispatchEvent(new Event('input', { bubbles: true }));
-                await vi.waitFor(() => expect(count()).toBe('1'));
                 return sheet;
             };
 
             const sheet = await openDraft();
             badge.click();
             await vi.waitFor(() => {
+                expect(count()).toBe('1');
                 expect(
                     tools()?.querySelector('.ez-status-list__rule')
                         ?.textContent,
@@ -372,8 +372,10 @@ describe('autofixes in a phone picker', () => {
                     'tab',
                 );
             });
+            window.dispatchEvent(new Event('resize'));
             await wait(150);
             expect(sheet.hidden).toBe(false);
+            expect(tools()?.contains(document.activeElement)).toBe(true);
             expect(field.getAssertions()).toEqual(before);
             tools()
                 ?.querySelector<HTMLButtonElement>('.ez-marking-tools__close')
