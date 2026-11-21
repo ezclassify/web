@@ -273,7 +273,13 @@
 /* Defaults for mounted UI and the native controls it enhances.
    Zero specificity lets ordinary host styles win. The marked text editors
    use a transparent interaction layer with higher specificity. */
-:where([data-ezclassify], [data-ezclassify-mount]) {
+:where(
+    [data-ezclassify],
+    [data-ezclassify-mount],
+    .marking-field-wrap,
+    .marked-input-wrap,
+    .marked-textarea-wrap
+) {
     font-family: var(--ez-font-family);
     color: var(--ez-color-text, inherit);
 }
