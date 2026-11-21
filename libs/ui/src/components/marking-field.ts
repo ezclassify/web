@@ -34,7 +34,6 @@ import {
     ensureStatusMark,
     setStatusMarkFixes,
     statusMarkOwnsNode,
-    unreviewedAdditions,
 } from './status-mark';
 import { mountFieldChrome, type FieldChrome } from './field-chrome';
 import {
@@ -47,6 +46,7 @@ import {
 import { t } from '../i18n';
 import { fixAssertions } from './rule-errors';
 import { locateTokenSpans, type TokenNode } from '../token-tree/token-tree';
+import { derivedAssertion } from '../assertion-identity';
 import {
     ComposerController,
     type CommitOutcome,
@@ -318,10 +318,6 @@ export class MarkingField extends ComponentBase {
             root: this.options.root,
             shouldShowTooltip: () => this.options.tooltips !== false,
             ...this.statusMarkUndo(),
-            // Rule-added values are drawn inferred until reviewed.
-            onReviewChange: () => {
-                if (!this.hasFocus) this.paintTokens();
-            },
         });
         // The value read at init may already carry fixes the engine applied.
         setStatusMarkFixes(this.chrome.status, this.fieldStatusChanges());
@@ -1061,10 +1057,6 @@ export class MarkingField extends ComponentBase {
         const tokens = locateTokenSpans(text, this.getTokenTree(), (node) =>
             this.printsToken(node),
         );
-        // A value a rule added is drawn inferred until it is reviewed.
-        const unreviewed = this.chrome
-            ? unreviewedAdditions(this.chrome.status)
-            : () => false;
         // Text the engine could not read is flagged where the engine's
         // recognition of the value places it.
         const unread = this.unreadSpans.filter(
@@ -1087,11 +1079,8 @@ export class MarkingField extends ComponentBase {
                 this.paintToken(
                     piece,
                     span.token,
-                    !!span.token.conceptId &&
-                        unreviewed({
-                            categoryId: span.token.categoryId,
-                            conceptId: span.token.conceptId,
-                        }),
+                    !!span.token.assertion &&
+                        derivedAssertion(span.token.assertion),
                 );
             else this.paintUnread(piece);
             cursor = span.end;

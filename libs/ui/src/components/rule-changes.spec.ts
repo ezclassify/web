@@ -1,6 +1,6 @@
 /**
  * What a marking rule changed, as the author sees it: a value a rule added is
- * drawn in the family's inferred style until the author reviews it, an option
+ * drawn in the family's inferred style after the author reviews it, an option
  * another choice includes never looks chosen, and the status mark's list ends
  * with the undo of the author's last edit.
  *
@@ -9,7 +9,7 @@
  * (a value the marking does not write, known only as a derived fact).
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { Assertion, Change } from '@ezclassify/types';
+import type { Assertion, Change, Fix } from '@ezclassify/types';
 import { schemeOnlyContext } from '../../test-fixtures/context-doubles';
 import { mockRenderFormats } from '../render-format-layout-mock';
 import { derivedAssertion } from '../assertion-identity';
@@ -239,7 +239,7 @@ afterEach(() => {
     document.body.innerHTML = '';
 });
 
-describe('a value a rule added is drawn inferred until it is reviewed', () => {
+describe('reviewing a correction keeps its inferred values italic', () => {
     it('in the text of a MarkingField', async () => {
         container.innerHTML = '<input value="LOW">';
         const field = new MarkingField();
@@ -253,6 +253,9 @@ describe('a value a rule added is drawn inferred until it is reviewed', () => {
 
         expect(inferred()).toEqual(['STD']);
         await review(document.body);
+        expect(inferred()).toEqual(['STD']);
+        await field.setValue('LOW//STD');
+        await settle();
         expect(inferred()).toEqual([]);
     });
 
@@ -274,7 +277,94 @@ describe('a value a rule added is drawn inferred until it is reviewed', () => {
         ).toBe('LOW//STD');
         expect(inferred()).toEqual(['STD']);
         await review(container);
+        expect(inferred()).toEqual(['STD']);
+        await flow.setValue('LOW//STD');
+        await settle();
         expect(inferred()).toEqual([]);
+    });
+
+    it('in TagInput chips', async () => {
+        container.innerHTML = '<input value="LOW">';
+        const field = new TagInput();
+        mounted = field;
+        await field.init(container, context());
+        await settle();
+        const inferred = () =>
+            [...container.querySelectorAll('.proto-tag--inferred')].map(
+                (tag) => tag.textContent,
+            );
+
+        expect(inferred().join()).toContain('STD');
+        await review(document.body);
+        expect(inferred().join()).toContain('STD');
+        await field.setValue('LOW//STD');
+        await settle();
+        expect(inferred()).toEqual([]);
+    });
+});
+
+it('keeps a rule-added value inferred when MarkedInput applies a proposed fix', async () => {
+    const adapter = engine();
+    const scheme = {
+        ...adapter.getScheme(),
+        embeddedMarking: [
+            { pattern: '\\(([^)]+)\\)', template: '({marking}) ' },
+        ],
+    };
+    const keep = { conceptId: 'LOW', categoryId: 'level' };
+    const drop = { conceptId: 'HIGH', categoryId: 'level' };
+    const fix: Fix = {
+        message: 'Remove HIGH',
+        rendered: 'LOW//STD',
+        keeps: [keep],
+        adds: [],
+        removes: [drop],
+    };
+    const process = vi.fn((...args: Parameters<typeof adapter.process>) => {
+        const result = adapter.process(...args);
+        if (args[0] !== 'LOW/HIGH') return result;
+        return {
+            ...result,
+            valid: false,
+            errors: [
+                { constraintId: 'one-level', message: 'Choose one level.' },
+            ],
+            proposedFixes: [fix],
+        };
+    });
+    container.innerHTML = '<input value="(LOW/HIGH) Quarterly memo">';
+    const field = new MarkedInput();
+    mounted = field;
+    await field.init(
+        container,
+        schemeOnlyContext({ ...adapter, getScheme: () => scheme, process }),
+    );
+
+    const fixButton = [...container.querySelectorAll('button')].find(
+        (button) => button.textContent === fix.message,
+    );
+    expect(fixButton).toBeDefined();
+    fixButton?.click();
+
+    await vi.waitFor(() => {
+        expect(process).toHaveBeenLastCalledWith(
+            '',
+            expect.objectContaining({
+                assertions: [
+                    expect.objectContaining({ ...keep, source: 'user' }),
+                ],
+            }),
+        );
+        expect(field.getAssertions()).toContainEqual(
+            expect.objectContaining({ conceptId: 'STD', source: 'infer' }),
+        );
+        expect(container.querySelector('.marked-input-native')).toHaveProperty(
+            'value',
+            '(LOW//STD) Quarterly memo',
+        );
+        expect(
+            container.querySelector('.ez-status-mark__count')?.textContent,
+        ).toBe('1');
     });
 });
 

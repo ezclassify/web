@@ -386,7 +386,6 @@ export abstract class ComponentBase extends ReadOnlyComponentBase {
             root: this.styleRoot,
             shouldShowTooltip: () => this.shouldShowTooltip(),
             ...this.statusMarkUndo(),
-            onReviewChange: () => this.onStatusReviewChange(),
         });
         this.suiteChrome = chrome;
         this.suiteFavorites = ensureMarkingFavorites(
@@ -396,13 +395,6 @@ export abstract class ComponentBase extends ReadOnlyComponentBase {
         this.updateSuiteStatusMark();
         return chrome;
     }
-
-    /**
-     * What the author has not reviewed of the changes the suite's status mark
-     * lists changed. A control that draws rule-added values differently until
-     * they are reviewed draws them again.
-     */
-    protected onStatusReviewChange(): void {}
 
     /** Remove the suite's chrome; every component's destroy() calls this. */
     protected destroySuiteChrome(): void {

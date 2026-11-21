@@ -379,12 +379,6 @@ export interface StatusMarkOptions {
      * marking-undo.ts), else null. The list ends with it.
      */
     undoLastEdit?: () => (() => void) | null;
-    /**
-     * Called when what the author has not yet reviewed changes, so a field that
-     * draws rule-added values differently (see {@link unreviewedAdditions}) can
-     * draw them again.
-     */
-    onReviewChange?: () => void;
 }
 
 /**
@@ -639,47 +633,6 @@ function linesOf(
     return lines;
 }
 
-/** What each mark last told its field the unreviewed additions were. */
-const markUnreviewed = new WeakMap<HTMLElement, string>();
-
-/**
- * Tell the field when the values its unreviewed changes added differ from the
- * last time it heard, so it can draw them again.
- */
-function noteReview(mark: HTMLElement): void {
-    const key = JSON.stringify([...unreviewedKeys(mark)].sort());
-    if ((markUnreviewed.get(mark) ?? '[]') === key) return;
-    markUnreviewed.set(mark, key);
-    markOptions.get(mark)?.onReviewChange?.();
-}
-
-/** The refKeys of what the mark's not-yet-shown changes added. */
-function unreviewedKeys(mark: HTMLElement): Set<string> {
-    const keys = new Set<string>();
-    const acknowledged = markAcknowledged.get(mark);
-    for (const [effect, change] of markFixes.get(mark) ?? []) {
-        if (acknowledged?.has(effect)) continue;
-        for (const ref of change.add ?? []) keys.add(refKey(ref));
-    }
-    return keys;
-}
-
-/**
- * The values a marking rule added that the author has not reviewed yet: the
- * additions of the changes the wrap's mark has not yet shown. A field draws
- * these in the family's inferred style until they are reviewed.
- *
- * @param wrap - The wrapper the mark was mounted on
- * @returns Whether a value in a category is such an addition
- */
-export function unreviewedAdditions(
-    wrap: HTMLElement,
-): (ref: Pick<AssertionRef, 'categoryId' | 'conceptId'>) => boolean {
-    const mark = statusMarkOf(wrap);
-    const keys = mark ? unreviewedKeys(mark) : new Set<string>();
-    return (ref) => keys.has(refKey(ref));
-}
-
 /** The tooltip root each mark shows its applied-changes popover in. */
 const markRoot = new WeakMap<HTMLElement, HTMLElement | undefined>();
 /** Marks whose popover the user pressed open, as opposed to hovered. */
@@ -856,7 +809,6 @@ function acknowledgeMark(mark: HTMLElement): void {
         if (fixes.has(key)) acknowledged.add(key);
     }
     applyVisualState(mark, deriveState(mark));
-    noteReview(mark);
 }
 
 /**
@@ -1173,7 +1125,6 @@ function setMarkChanges(
     }
 
     applyVisualState(mark, deriveState(mark));
-    noteReview(mark);
 }
 
 function correctionsContent(mark: HTMLElement): HTMLElement {

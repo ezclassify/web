@@ -41,6 +41,7 @@ import { cleanupTooltipForRoot } from './tooltip-manager';
 import {
     NO_RULE_ERRORS,
     RuleErrorList,
+    fixAssertions,
     placeUnderField,
     readFailureReport,
     ruleErrorsFrom,
@@ -966,10 +967,9 @@ export class MarkedInput extends MarkedFieldBase<HTMLTextAreaElement> {
     }
 
     /**
-     * A pressed fix is a user edit of the leading mark. The engine proved the
-     * fix as the text it gives, in this field's format, so that text is written
-     * into the host the way a picker commit is, and the one read that follows
-     * settles it, so the store and any host listener see it.
+     * A pressed fix applies the Runtime's assertion edit to the leading mark.
+     * Write its proposed rendering, then settle the authored assertions so
+     * Runtime can derive any rule-added values again.
      */
     private async applyRuleFix(fix: Fix): Promise<void> {
         // The list reports the committed mark; while the picker is open the
@@ -988,7 +988,10 @@ export class MarkedInput extends MarkedFieldBase<HTMLTextAreaElement> {
             return;
         }
         const marking = this.wrapRendered(fix.rendered);
-        this._editorAssertions = null;
+        this._editorAssertions = {
+            marking: marking.trimEnd(),
+            assertions: fixAssertions(fix, this.assertions),
+        };
         this._userEdited = true;
         this.setHostValue(
             marking
@@ -1098,11 +1101,7 @@ export class MarkedInput extends MarkedFieldBase<HTMLTextAreaElement> {
         };
         const savedAssertions = this._editorAssertions;
         this._editorAssertions = null;
-        const usedSavedAssertions = !!(
-            savedAssertions &&
-            savedAssertions.marking === mark &&
-            savedAssertions.assertions.length > 0
-        );
+        const usedSavedAssertions = savedAssertions?.marking === mark;
 
         try {
             if (usedSavedAssertions) {
@@ -1111,7 +1110,7 @@ export class MarkedInput extends MarkedFieldBase<HTMLTextAreaElement> {
                         '',
                         this.markOptions({
                             outputFormat: this.scanFormat,
-                            assertions: savedAssertions!.assertions,
+                            assertions: savedAssertions.assertions,
                         }),
                     ),
                 );

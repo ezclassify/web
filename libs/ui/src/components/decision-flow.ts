@@ -113,7 +113,6 @@ import { renderViewRefused } from '../render-refusal';
 import { writtenValue } from '../value-spelling';
 import { t } from '../i18n';
 import { derivedAssertion } from '../assertion-identity';
-import { unreviewedAdditions } from './status-mark';
 import { locateTokenSpans } from '../token-tree/token-tree';
 import {
     buildRuleFixes,
@@ -3044,7 +3043,7 @@ export class DecisionFlow extends ComponentBase {
         line.className = 'ez-decision-flow__value';
         const shown = document.createElement('span');
         shown.className = 'ez-decision-flow__value-text';
-        if (text) writeBreakable(shown, text, this.unreviewedRuns(text));
+        if (text) writeBreakable(shown, text, this.inferredRuns(text));
         else {
             shown.textContent = NOT_SET;
             shown.dataset.empty = '';
@@ -3059,28 +3058,14 @@ export class DecisionFlow extends ComponentBase {
         return wrap;
     }
 
-    /**
-     * The runs of a value's text that are values a marking rule added and the
-     * author has not reviewed yet: drawn inferred until they are.
-     */
-    private unreviewedRuns(text: string): { start: number; end: number }[] {
-        if (!this.suiteChrome) return [];
-        const unreviewed = unreviewedAdditions(this.suiteChrome.status);
+    /** Mark the text runs backed by Runtime-derived assertions. */
+    private inferredRuns(text: string): { start: number; end: number }[] {
         return locateTokenSpans(text, this.getTokenTree(), (node) =>
             this.printsToken(node),
         ).filter(
             ({ token }) =>
-                !!token.conceptId &&
-                unreviewed({
-                    categoryId: token.categoryId,
-                    conceptId: token.conceptId,
-                }),
+                !!token.assertion && derivedAssertion(token.assertion),
         );
-    }
-
-    /** What the author has reviewed changed: draw the values again. */
-    protected override onStatusReviewChange(): void {
-        if (this.valuesEl) this.renderValues();
     }
 
     /**
