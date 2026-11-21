@@ -985,7 +985,9 @@ export class MarkingField extends ComponentBase {
             // Write after observer delivery, and ignore height-only changes.
             frame = requestAnimationFrame(() => {
                 frame = undefined;
-                if (!this.host.classList.contains('marking-field-host--resting'))
+                if (
+                    !this.host.classList.contains('marking-field-host--resting')
+                )
                     this.syncHostHeight();
             });
         });

@@ -276,24 +276,24 @@ test('resizes the focused MarkingField when its text has less room', async ({
     expect(initial.content).toBe(initial.visible);
 
     await wrap.evaluate((element) => (element.style.maxWidth = '125px'));
-    await expect.poll(async () => (await heights()).visible).toBeGreaterThan(
-        initial.visible,
-    );
+    await expect
+        .poll(async () => (await heights()).visible)
+        .toBeGreaterThan(initial.visible);
     expect((await heights()).content).toBe((await heights()).visible);
 
     await wrap.evaluate((element) => (element.style.maxWidth = '220px'));
-    await expect.poll(async () => (await heights()).visible).toBe(
-        initial.visible,
-    );
+    await expect
+        .poll(async () => (await heights()).visible)
+        .toBe(initial.visible);
     const wider = await heights();
 
     // The trailing control padding can change without changing the outer width.
-    await wrap.locator('.ez-field-chrome').evaluate((element) =>
-        element.style.setProperty('min-width', '175px'),
-    );
-    await expect.poll(async () => (await heights()).visible).toBeGreaterThan(
-        initial.visible,
-    );
+    await wrap
+        .locator('.ez-field-chrome')
+        .evaluate((element) => element.style.setProperty('min-width', '175px'));
+    await expect
+        .poll(async () => (await heights()).visible)
+        .toBeGreaterThan(initial.visible);
     const padded = await heights();
     expect(padded.width).toBe(wider.width);
     expect(padded.content).toBe(padded.visible);
