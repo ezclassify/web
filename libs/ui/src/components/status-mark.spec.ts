@@ -193,6 +193,22 @@ describe('ensureStatusMark', () => {
         expect(wrap.querySelectorAll('.ez-status-mark')).toHaveLength(1);
     });
 
+    it('finds a borrowed mark and recreates it only after removal', () => {
+        const options = { shape: 'chrome' } as const;
+        const mark = ensureStatusMark(wrap, options);
+        const portal = document.createElement('div');
+        document.body.appendChild(portal);
+        try {
+            portal.appendChild(mark);
+            expect(ensureStatusMark(wrap, options)).toBe(mark);
+            expect(wrap.querySelector('.ez-status-mark')).toBeNull();
+            mark.remove();
+            expect(ensureStatusMark(wrap, options)).not.toBe(mark);
+        } finally {
+            portal.remove();
+        }
+    });
+
     it('defaults to the quiet state', () => {
         const mark = ensureStatusMark(wrap, { shape: 'input' });
         expect(mark.classList.contains('ez-status-mark--quiet')).toBe(true);
