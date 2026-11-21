@@ -296,6 +296,7 @@ export class ComposerView {
     private pressInSurface = false;
     private blurTimer: ReturnType<typeof setTimeout> | null = null;
     private lastQuery = '';
+    private pointerRowAnchor: { id: string; offset: number } | null = null;
     private destroyed = false;
     private chromeSuspended = false;
     private suspendingTools = false;
@@ -652,6 +653,7 @@ export class ComposerView {
         this.on(input, 'input', () => {
             if (this.destroyed || this.muted > 0) return;
             if (input.value === this.controller.draftText) return;
+            this.pointerRowAnchor = null;
             void this.controller.input(
                 input.value,
                 input.selectionStart ?? input.value.length,
@@ -671,6 +673,7 @@ export class ComposerView {
             });
         }
         this.on(input, 'pointerdown', () => {
+            this.pointerRowAnchor = null;
             this.pointerIntent = true;
         });
         this.on(input, 'focus', () => {
@@ -703,8 +706,17 @@ export class ComposerView {
             if (e.target !== this.sheetInput) e.preventDefault();
         });
         this.on(this.surface, 'pointerdown', () => {
+            this.pointerRowAnchor = null;
             this.pressInSurface = true;
         });
+        this.on(
+            this.scroller,
+            'wheel',
+            () => {
+                this.pointerRowAnchor = null;
+            },
+            { passive: true },
+        );
         // A press on the surface is over once its click has landed (or the
         // pointer gave up). Cleared a turn later, so a blur that the same
         // press caused still sees it; left set, the flag would make the next,
@@ -768,6 +780,7 @@ export class ComposerView {
     private onKeydown(e: KeyboardEvent): void {
         if (this.destroyed) return;
         if (e.isComposing || e.keyCode === 229) return;
+        this.pointerRowAnchor = null;
         const open = this.controller.isOpen;
         const vertical = e.key === 'ArrowDown' || e.key === 'ArrowUp';
         if (
@@ -1248,6 +1261,7 @@ export class ComposerView {
                 this.parkFocus();
             this.restoreSheetTools();
             this.lastListSignature = '';
+            this.pointerRowAnchor = null;
             this.surface.hidden = true;
             // A closed surface keeps nothing: text left in it (a reading's
             // errors, say) would still be in the document, stale, for
@@ -1317,6 +1331,19 @@ export class ComposerView {
         // reaches all of it. Any other change of row keeps the scroll.
         const previous = this.lastActiveIndex;
         this.lastActiveIndex = s.activeIndex;
+        // A pointer pick owns the scroll until the next interaction, including
+        // later suggestion responses that move the same row again.
+        const anchor = this.pointerRowAnchor;
+        if (anchor) {
+            const row = document.getElementById(anchor.id);
+            if (row && this.list.contains(row)) {
+                this.scroller.scrollTop +=
+                    row.getBoundingClientRect().top -
+                    this.scroller.getBoundingClientRect().top -
+                    anchor.offset;
+            }
+            return;
+        }
         if (
             (s.activeIndex === 0 && previous > 0) ||
             (s.activeIndex < 0 && previous === 0)
@@ -1883,7 +1910,8 @@ export class ComposerView {
             this.list.appendChild(g);
         }
         this.list.scrollTop = queryChanged ? 0 : saved;
-        this.scroller.scrollTop = queryChanged ? 0 : savedOuter;
+        this.scroller.scrollTop =
+            queryChanged && !this.pointerRowAnchor ? 0 : savedOuter;
     }
 
     /** Move the active marker to `row` on the rows already rendered. */
@@ -1941,6 +1969,15 @@ export class ComposerView {
         if (active) el.classList.add('ez-composer__row--active');
         el.addEventListener('click', (e) => {
             e.preventDefault();
+            this.pointerRowAnchor =
+                row.kind === 'concept' && e.detail > 0
+                    ? {
+                          id: el.id,
+                          offset:
+                              el.getBoundingClientRect().top -
+                              this.scroller.getBoundingClientRect().top,
+                      }
+                    : null;
             void this.controller.activate(row);
         });
         el.addEventListener('mouseenter', () => {
