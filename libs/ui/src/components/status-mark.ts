@@ -393,6 +393,15 @@ export interface StatusMarkOptions {
  */
 type MarkState = 'quiet' | 'unseen' | 'seen' | 'error';
 
+/** The field still owns its status mark while the phone picker borrows it. */
+const statusMarks = new WeakMap<HTMLElement, HTMLElement>();
+
+function statusMarkOf(wrap: HTMLElement): HTMLElement | null {
+    const mark = statusMarks.get(wrap);
+    if (mark && (mark.parentElement === wrap || mark.isConnected)) return mark;
+    return wrap.querySelector<HTMLElement>(':scope > .ez-status-mark');
+}
+
 /** The error each mark reports, when its field has one (see setStatusMarkError). */
 const markErrors = new WeakMap<HTMLElement, string>();
 
@@ -450,7 +459,7 @@ export function setStatusMarkFavorites(
     wrap: HTMLElement,
     favorites: StatusMarkFavorites | null,
 ): void {
-    const mark = wrap.querySelector<HTMLElement>(':scope > .ez-status-mark');
+    const mark = statusMarkOf(wrap);
     if (!mark) return;
     if (favorites) markFavorites.set(mark, favorites);
     else markFavorites.delete(mark);
@@ -627,7 +636,7 @@ function unreviewedKeys(mark: HTMLElement): Set<string> {
 export function unreviewedAdditions(
     wrap: HTMLElement,
 ): (ref: Pick<AssertionRef, 'categoryId' | 'conceptId'>) => boolean {
-    const mark = wrap.querySelector<HTMLElement>(':scope > .ez-status-mark');
+    const mark = statusMarkOf(wrap);
     const keys = mark ? unreviewedKeys(mark) : new Set<string>();
     return (ref) => keys.has(refKey(ref));
 }
@@ -822,9 +831,7 @@ export function ensureStatusMark(
     wrap: HTMLElement,
     opts: StatusMarkOptions,
 ): HTMLElement {
-    const existing = wrap.querySelector<HTMLElement>(
-        ':scope > .ez-status-mark',
-    );
+    const existing = statusMarkOf(wrap);
     if (existing) return existing;
 
     injectStyles(opts.root);
@@ -1022,6 +1029,7 @@ export function ensureStatusMark(
     markRoot.set(mark, opts.root);
 
     wrap.appendChild(mark);
+    statusMarks.set(wrap, mark);
     if (opts.tools)
         bindMarkingToolsShortcut(opts.keyboardRoot ?? fieldOf(mark));
     return mark;
@@ -1088,7 +1096,7 @@ function setMarkChanges(
     wrap: HTMLElement,
     groups: readonly { label?: string; changes: readonly Change[] }[],
 ): void {
-    const mark = wrap.querySelector<HTMLElement>(':scope > .ez-status-mark');
+    const mark = statusMarkOf(wrap);
     if (!mark) return;
     // An ordinary value change invalidates its explanation. A Favorite's
     // own projection must let that application perform its normal handoff.
@@ -1223,7 +1231,7 @@ export function setStatusMarkError(
     wrap: HTMLElement,
     message: string | null,
 ): void {
-    const mark = wrap.querySelector<HTMLElement>(':scope > .ez-status-mark');
+    const mark = statusMarkOf(wrap);
     if (!mark) return;
     if ((markErrors.get(mark) ?? null) === message) return;
     // The popover describes the error it opened with, except while its own

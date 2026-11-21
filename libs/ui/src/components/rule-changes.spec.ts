@@ -276,6 +276,95 @@ describe('a value a rule added is drawn inferred until it is reviewed', () => {
     });
 });
 
+describe('autofixes committed in a phone picker', () => {
+    beforeEach(() => {
+        vi.stubGlobal('innerWidth', 390);
+        vi.stubGlobal('matchMedia', (query: string) => ({
+            matches: query.includes('coarse'),
+            media: query,
+            addEventListener() {},
+            removeEventListener() {},
+        }));
+    });
+
+    afterEach(() => vi.unstubAllGlobals());
+
+    it.each([
+        {
+            control: MarkingField,
+            opener: '.marking-field-host',
+            showsText: true,
+        },
+        { control: TagInput, opener: '.tag-input-filter', showsText: false },
+    ])(
+        'shows the applied rule in $control.name after Done',
+        async ({ control, opener, showsText }) => {
+            container.innerHTML = '<input value="HIGH">';
+            const field = new control();
+            mounted = field;
+            await field.init(container, context());
+            await settle();
+
+            const badge =
+                container.querySelector<HTMLButtonElement>('.ez-status-mark')!;
+            const input = container.querySelector<HTMLElement>(opener)!;
+            input.dispatchEvent(new Event('pointerdown', { bubbles: true }));
+            input.focus();
+            input.click();
+
+            const sheet = await vi.waitFor(() => {
+                const open = document.querySelector<HTMLElement>(
+                    '.ez-composer[data-surface="sheet"]:not([hidden])',
+                );
+                expect(
+                    open
+                        ?.querySelector('.ez-composer__sheet-tools')
+                        ?.contains(badge),
+                ).toBe(true);
+                return open!;
+            });
+            const draft = sheet.querySelector<HTMLInputElement>(
+                '.ez-composer__sheet-input',
+            )!;
+            draft.value = 'LOW';
+            draft.dispatchEvent(new Event('input', { bubbles: true }));
+            sheet
+                .querySelector<HTMLButtonElement>('.ez-composer__sheet-done')!
+                .click();
+
+            await vi.waitFor(() => {
+                expect(sheet.hidden).toBe(true);
+                expect(field.getRendered()).toBe('LOW//STD');
+                expect(container.querySelector('.ez-status-mark')).toBe(badge);
+                expect(
+                    badge.querySelector('.ez-status-mark__count')?.textContent,
+                ).toBe('1');
+            });
+            if (showsText) {
+                expect(
+                    container.querySelector('.marking-field-token--inferred')
+                        ?.textContent,
+                ).toBe('STD');
+            }
+            badge.click();
+            await vi.waitFor(() => {
+                const id = badge.getAttribute('aria-describedby');
+                const tools = id && document.getElementById(id);
+                expect(
+                    tools &&
+                        tools.querySelector('.ez-status-list__rule')
+                            ?.textContent,
+                ).toBe('Rule: adds-std');
+                expect(
+                    tools &&
+                        tools.querySelector('.ez-status-list__text')
+                            ?.textContent,
+                ).toContain('STD');
+            });
+        },
+    );
+});
+
 describe('a DecisionFlow option the author did not choose', () => {
     it('shows a value another choice includes as inferred, not chosen, and says what included it', async () => {
         const flow = new DecisionFlow();
