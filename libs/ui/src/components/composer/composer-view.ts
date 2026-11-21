@@ -49,6 +49,7 @@ import {
 } from './composer-controller';
 import { suggestionDepth } from './suggestion-catalog';
 import { ruleErrorsFrom } from '../rule-errors';
+import { dismissStatusMarkPopover, setStatusMarkDraft } from '../status-mark';
 import composerCss from './composer.css?inline';
 
 /** More broken rules than this fold under one line in the result row. */
@@ -70,6 +71,7 @@ const PAGE = 5;
 
 /** Change marks shown in the result row before the rest become a count. */
 const MAX_CHANGE_MARKS = 4;
+const NO_DRAFT_FIXES = [] as const;
 
 /**
  * Delay before a blur commits when the blur came from a press on the surface,
@@ -726,7 +728,7 @@ export class ComposerView {
             setTimeout(() => {
                 this.pressInSurface = false;
             }, 0);
-        this.on(this.surface, 'click', pressEnded);
+        this.on(this.surface, 'click', pressEnded, true);
         this.on(this.surface, 'pointercancel', pressEnded);
         // iOS does not blur an input when the user taps a blank part of the
         // page, so an outside press has to end the edit explicitly.
@@ -982,6 +984,8 @@ export class ComposerView {
             // a phone that would bring the keyboard up again.
             const pressed = this.pressInSurface;
             this.pressInSurface = false;
+            const active = document.activeElement;
+            if (active && this.opts.isFieldChrome?.(active)) return;
             if (pressed && this.controller.isOpen) {
                 // The press landed on the list; its click keeps working with
                 // the input it came from.
@@ -990,13 +994,10 @@ export class ComposerView {
                 }
                 return;
             }
-            const active = document.activeElement;
             if (
                 active === this.opts.input ||
                 active === this.sheetInput ||
-                (active &&
-                    (this.surface.contains(active) ||
-                        this.opts.isFieldChrome?.(active)))
+                (active && this.surface.contains(active))
             ) {
                 return;
             }
@@ -1018,6 +1019,8 @@ export class ComposerView {
     private restoreSheetTools(): void {
         const home = this.sheetToolsHome;
         if (!home) return;
+        dismissStatusMarkPopover(home.node);
+        setStatusMarkDraft(home.node, undefined);
         // A host that destroyed its control while the sheet was open owns its
         // removal; closing the sheet must not resurrect that control.
         if (home.node.parentNode === this.sheetTools && home.marker.parentNode)
@@ -1293,7 +1296,18 @@ export class ComposerView {
         }
         this.surface.hidden = false;
         this.surface.dataset.surface = this.sheet ? 'sheet' : 'popover';
-        if (this.sheet) this.mountSheetTools();
+        if (this.sheet) {
+            this.mountSheetTools();
+            const tools = this.sheetToolsHome?.node;
+            if (tools) {
+                const reading = s.stale ? null : s.reading;
+                const fixes =
+                    reading?.complete && !reading.refusal
+                        ? reading.appliedFixes
+                        : NO_DRAFT_FIXES;
+                setStatusMarkDraft(tools, s.dirty ? fixes : undefined);
+            }
+        }
         this.arrange(this.sheet && keyboardUp());
         this.sheetField.hidden = !this.sheet;
         // Done cannot store a draft that does not read completely. It stays

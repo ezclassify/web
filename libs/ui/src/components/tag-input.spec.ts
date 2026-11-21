@@ -1240,15 +1240,15 @@ describe('TagInput on a phone with the on-screen keyboard up', () => {
                     }),
                 );
                 await wait(180);
-                expect(root.contains(mark)).toBe(true);
-                expect(root.querySelectorAll('.ez-status-mark')).toHaveLength(
-                    1,
-                );
+                expect(surface.contains(mark)).toBe(true);
+                expect(
+                    document.querySelectorAll('.ez-status-mark'),
+                ).toHaveLength(1);
                 expect(document.activeElement?.getAttribute('role')).toBe(
                     'tab',
                 );
                 expect(mark.getAttribute('aria-expanded')).toBe('true');
-                expect(openSurface()).toBeNull();
+                expect(openSurface()).toBe(surface);
                 expect(tags.getRendered()).toBe('SECRET');
             } finally {
                 window.matchMedia = originalMatchMedia;

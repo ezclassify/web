@@ -408,6 +408,25 @@ const markErrors = new WeakMap<HTMLElement, string>();
 /** The changes each mark explains, one per effect (see effectKey). */
 const markFixes = new WeakMap<HTMLElement, Map<string, Change>>();
 
+// The sheet can show a provisional reading of the marking. Keep its changes
+// separate so reviewing or canceling a draft cannot alter the field's record.
+const markDraftFixes = new WeakMap<HTMLElement, readonly Change[]>();
+
+export function setStatusMarkDraft(
+    mark: HTMLElement,
+    fixes: readonly Change[] | undefined,
+): void {
+    if (!markOptions.has(mark) || markDraftFixes.get(mark) === fixes) return;
+    dismissStatusMarkPopover(mark);
+    if (fixes) markDraftFixes.set(mark, fixes);
+    else markDraftFixes.delete(mark);
+    applyVisualState(mark, deriveState(mark));
+}
+
+function visibleError(mark: HTMLElement): string | undefined {
+    return markDraftFixes.has(mark) ? undefined : markErrors.get(mark);
+}
+
 /**
  * For a mark whose field holds several markings, the marking each of its
  * changes was made to, by the change's key in {@link markFixes}.
@@ -503,6 +522,8 @@ function buildMarkSvg(): string {
 
 /** Derive the mark's current state from its fixes and acknowledgment set. */
 function deriveState(mark: HTMLElement): MarkState {
+    const draft = markDraftFixes.get(mark);
+    if (draft) return draft.length ? 'unseen' : 'quiet';
     if (markErrors.has(mark)) return 'error';
     const fixes = markFixes.get(mark);
     if (!fixes || fixes.size === 0) return 'quiet';
@@ -554,9 +575,12 @@ function applyVisualState(mark: HTMLElement, state: MarkState): void {
     // count and whether it has been reviewed.
     const countEl = mark.querySelector<HTMLElement>('.ez-status-mark__count');
     if (countEl) countEl.textContent = state === 'unseen' ? String(count) : '';
-    const review = state === 'unseen' ? t('mark.notReviewed') : '';
+    const review =
+        state === 'unseen' && !markDraftFixes.has(mark)
+            ? t('mark.notReviewed')
+            : '';
     const fixed = count > 0 ? ` ${changesLabel(count)}${review}.` : '';
-    const error = markErrors.get(mark);
+    const error = visibleError(mark);
     mark.setAttribute(
         'aria-label',
         error !== undefined
@@ -588,8 +612,10 @@ function linesOf(
     const groups = markGroups.get(mark);
     const seen = new Set<string>();
     const lines: { text: string; rule: string; group?: string }[] = [];
-    for (const [key, change] of markFixes.get(mark) ?? []) {
-        const group = groups?.get(key);
+    const draft = markDraftFixes.get(mark);
+    const fixes = draft?.map((change) => [effectKey(change), change] as const);
+    for (const [key, change] of fixes ?? markFixes.get(mark) ?? []) {
+        const group = draft ? undefined : groups?.get(key);
         for (const text of changeLines(change, words)) {
             const once = `${group ?? ''}\u0000${text}`;
             if (seen.has(once)) continue;
@@ -801,6 +827,7 @@ function guardPopover(mark: HTMLElement): void {
  * means something while fixes exist; a quiet mark has nothing to acknowledge.
  */
 function acknowledgeMark(mark: HTMLElement): void {
+    if (markDraftFixes.has(mark)) return;
     const fixes = markFixes.get(mark);
     if (!fixes || fixes.size === 0) return;
     const shown = markContentSnapshot.get(mark);
@@ -865,14 +892,20 @@ export function ensureStatusMark(
     }
 
     const content = (): Node | string | undefined => {
-        const error = markErrors.get(mark);
+        const error = visibleError(mark);
         const fixes = markFixes.get(mark);
         if (opts.tools) {
+            const draft = markDraftFixes.get(mark);
             const snapshot = new Set(fixes?.keys());
             const hasCorrections =
-                error !== undefined || (explainsFixes() && snapshot.size > 0);
+                error !== undefined ||
+                (explainsFixes() && (draft?.length ?? snapshot.size) > 0);
             const corrections = hasCorrections
-                ? changeList(mark, error, opts.undoLastEdit?.() ?? null)
+                ? changeList(
+                      mark,
+                      error,
+                      draft ? null : (opts.undoLastEdit?.() ?? null),
+                  )
                 : document.createElement('div');
             if (!hasCorrections)
                 corrections.textContent = t('tools.emptyCorrections');
@@ -952,7 +985,10 @@ export function ensureStatusMark(
             if (opts.tools) mark.focus();
             return;
         }
-        if (opts.tools) opts.onToolsOpen?.();
+        // The sheet owns the editing focus and can keep its draft open
+        // while its borrowed tools button presents the dialog.
+        if (opts.tools && !mark.closest('.ez-composer__sheet-tools'))
+            opts.onToolsOpen?.();
         const text = opts.tools || mayShow() ? content() : undefined;
         if (!text) return;
         showTooltip(mark, text, opts.root, popoverPlacement(mark), () =>
