@@ -9,9 +9,11 @@ import { ComposerController } from './composer-controller';
 import { createConceptDescriber } from '../concept-description';
 import type { ConceptDescription } from '@ezclassify/types';
 import {
+    COMPOSER_DISMISSED,
     ComposerView,
     accessibleLabel,
     middleEllipsis,
+    type ComposerDismissal,
     type ComposerViewOptions,
 } from './composer-view';
 import { CONCEPTS, FakePort, assertion } from './composer-port-mock';
@@ -692,6 +694,27 @@ describe('accessibility contract', () => {
         v.destroy();
         c.dispose();
     });
+});
+
+it('notifies the owner once when the picker dismisses, including when a draft remains', async () => {
+    mount();
+    const dismissals: boolean[] = [];
+    view.surface.addEventListener(COMPOSER_DISMISSED, (event) => {
+        expect(view.surface.hidden).toBe(true);
+        expect(input.getAttribute('aria-expanded')).toBe('false');
+        dismissals.push((event as CustomEvent<ComposerDismissal>).detail.clean);
+    });
+
+    await view.open('keyboard');
+    view.close();
+    view.close();
+    expect(dismissals).toEqual([true]);
+
+    await view.open('keyboard');
+    await type('SECRET');
+    press(input, 'Escape');
+    expect(input.value).toBe('SECRET');
+    expect(dismissals).toEqual([true, false]);
 });
 
 it('gives an inactive hovered concept a native title and keeps active descriptions accessible but hidden', async () => {

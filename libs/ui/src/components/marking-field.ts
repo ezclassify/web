@@ -51,7 +51,12 @@ import {
     ComposerController,
     type CommitOutcome,
 } from './composer/composer-controller';
-import { ComposerView, accessibleLabel } from './composer/composer-view';
+import {
+    COMPOSER_DISMISSED,
+    ComposerView,
+    accessibleLabel,
+    type ComposerDismissal,
+} from './composer/composer-view';
 import markingFieldCss from './marking-field.css?inline';
 import { defaultSurfaceOf, writesSeveralLines } from '../format-resolver';
 import { inDeclarationOrder, listedScopesOf } from '../scopes';
@@ -279,10 +284,21 @@ export class MarkingField extends ComponentBase {
                     this.syncHostHeight();
                 }
             },
+            parkOnCleanSheetEscape: true,
             onBlurCommit: (outcome) => this.rest(outcome),
+            onEscapeIdle: (fromSheet) => {
+                // Cancel reverts the draft after closing the sheet.
+                if (fromSheet) this.rest('unchanged');
+                return false;
+            },
             isFieldChrome: (node) => statusMarkOwnsNode(this.toolsButton, node),
             sheetTools: () => this.toolsButton,
             textToolsEdges: () => true,
+        });
+        this.view.surface.addEventListener(COMPOSER_DISMISSED, (event) => {
+            if ((event as CustomEvent<ComposerDismissal>).detail.clean) {
+                this.rest('unchanged');
+            }
         });
         if (this.editor) this.wireInputEditor();
         this.container.appendChild(this.view.announcer);
@@ -761,8 +777,8 @@ export class MarkingField extends ComponentBase {
     }
 
     /**
-     * The composer finished a blur commit. A stored or unchanged value rests on
-     * the painted display; an invalid draft stays visible as typed.
+     * When editing ends, a stored or unchanged value rests on the painted
+     * display. An invalid draft stays visible as typed.
      */
     private rest(outcome: CommitOutcome): void {
         if (this._destroyed || document.activeElement === this.host) return;
