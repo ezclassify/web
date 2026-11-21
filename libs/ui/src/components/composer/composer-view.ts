@@ -1781,6 +1781,7 @@ export class ComposerView {
                             row.replaces ?? '',
                             row.gated,
                             row.suggestion.label,
+                            row.suggestion.depth ?? 0,
                             row.ranked?.matchedSpelling ?? '',
                         ].join(':'),
                     );
@@ -1951,12 +1952,24 @@ export class ComposerView {
                 this.clearHoveredDefinition();
         });
         switch (row.kind) {
-            case 'concept':
+            case 'concept': {
+                const depth = row.suggestion.depth ?? 0;
+                if (
+                    s.mode === 'browse' &&
+                    Number.isInteger(depth) &&
+                    depth > 0
+                ) {
+                    el.style.setProperty(
+                        '--ez-composer-indent',
+                        `${Math.min(depth, 6) * 0.25}rem`,
+                    );
+                }
                 el.title = this.opts.describeConcept
                     ? (row.suggestion.description ?? '')
                     : '';
                 this.fillConceptRow(el, row, active, s);
                 break;
+            }
             case 'correction': {
                 el.setAttribute('aria-selected', 'false');
                 const main = this.span(

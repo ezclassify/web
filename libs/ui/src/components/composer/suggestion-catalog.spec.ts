@@ -57,6 +57,44 @@ describe('SuggestionCatalog', () => {
         expect(catalog.rows()).toEqual([row('a'), row('a', 'owner'), row('b')]);
     });
 
+    it('uses an incoming hierarchy as returned, including its root rows', async () => {
+        const root = { ...row('root'), depth: 0 };
+        const child = { ...row('child'), depth: 1 };
+        const other = { ...row('other'), depth: 0 };
+        const catalog = new SuggestionCatalog(
+            async (live) =>
+                live
+                    ? [root, child, other]
+                    : [
+                          root,
+                          other,
+                          { ...row('stale'), depth: 0 },
+                          row('owner', 'owner'),
+                      ],
+            vi.fn(),
+        );
+        await catalog.load();
+        await catalog.refresh([fact('root')]);
+        expect(
+            catalog.rows().filter((choice) => choice.categoryId === 'level'),
+        ).toEqual([root, child, other]);
+        expect(catalog.rows()).toContainEqual(row('owner', 'owner'));
+    });
+
+    it('does not restore earlier hierarchical rows when the live response is empty', async () => {
+        const root = { ...row('root'), depth: 0 };
+        const catalog = new SuggestionCatalog(
+            async (live) => (live ? [] : [root]),
+            vi.fn(),
+        );
+        await catalog.load();
+        expect(catalog.rows()).toEqual([root]);
+        await catalog.refresh([fact('root')]);
+        expect(catalog.rows()).toEqual([]);
+        await catalog.refresh([]);
+        expect(catalog.rows()).toEqual([root]);
+    });
+
     it('keeps the newest live value when engine responses arrive out of order', async () => {
         const old = deferred<Suggestion[]>();
         const catalog = new SuggestionCatalog(
