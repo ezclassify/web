@@ -696,6 +696,9 @@ reflects the selection in that same named group. Read the selected concept IDs
 with `FormData.getAll(name)`. An existing fieldset can also use a named hidden
 input for its rendered marking value. To let several category pickers edit
 one marking, use `data-ezclassify-facet-of` and point them at that marking.
+When a hidden marking is empty, enhancement starts from the native picker
+selections. For a populated marking, native edits replace only their own
+category. Use concept IDs as the values of native select options and checkboxes.
 
 An independent DecisionFlow can enhance a named hidden input directly. With
 more than one scope and no explicit format, its native value uses the Runtime's

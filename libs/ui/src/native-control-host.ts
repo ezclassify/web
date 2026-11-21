@@ -90,3 +90,52 @@ export function writeNativeChoiceGroup(
     }
     if (changed) host.dispatchEvent(new Event('input', { bubbles: true }));
 }
+
+/** Remember the native values left in the form when an enhancement is remounted. */
+const lastNativeFacetValues = new WeakMap<HTMLElement, string[]>();
+
+export function readNativeFacetSelection(
+    host: HTMLElement,
+    hasMarking: boolean,
+): string[] | undefined {
+    if (host.matches(':disabled')) return undefined;
+
+    let values: string[];
+    let defaults: string[];
+    if (isNativeSingleSelect(host)) {
+        const options = Array.from(host.options).filter(
+            (option) => !option.matches(':disabled'),
+        );
+        values = options
+            .filter((option) => option.selected)
+            .map((option) => option.value);
+        defaults = options
+            .filter((option) => option.defaultSelected)
+            .map((option) => option.value);
+        if (!defaults.length && options[0]) defaults = [options[0].value];
+    } else if (host instanceof HTMLFieldSetElement) {
+        const inputs = Array.from(
+            host.querySelectorAll<HTMLInputElement>(
+                'input[type="checkbox"]:not(:disabled), input[type="radio"]:not(:disabled)',
+            ),
+        );
+        if (!inputs.length) return undefined;
+        values = inputs
+            .filter((input) => input.checked)
+            .map((input) => input.value);
+        defaults = inputs
+            .filter((input) => input.defaultChecked)
+            .map((input) => input.value);
+    } else {
+        return undefined;
+    }
+
+    const conceptIds = [...new Set(values.filter(Boolean))];
+    const previous = lastNativeFacetValues.get(host);
+    lastNativeFacetValues.set(host, conceptIds);
+    const baseline = previous ?? (hasMarking ? defaults.filter(Boolean) : []);
+    return conceptIds.length !== baseline.length ||
+        conceptIds.some((value, index) => value !== baseline[index])
+        ? conceptIds
+        : undefined;
+}

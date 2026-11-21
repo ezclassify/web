@@ -289,9 +289,26 @@
     position: relative;
 }
 .select-dropdown-native {
+    appearance: none;
     flex: 1;
     min-width: 0;
     width: 100%;
+    padding-inline-end: calc(var(--ez-spacing-md, 0.75rem) + 0.75em);
+}
+.select-dropdown-field--native::after {
+    content: '';
+    position: absolute;
+    inset-inline-end: calc(
+        var(--ez-field-chrome-inline-size, 0px) + 0.5rem +
+            var(--ez-spacing-md, 0.75rem)
+    );
+    top: 50%;
+    width: 0.45em;
+    height: 0.45em;
+    border: solid currentColor;
+    border-width: 0 1.5px 1.5px 0;
+    transform: translateY(-75%) rotate(45deg);
+    pointer-events: none;
 }
 .select-dropdown {
     flex: 1;

@@ -678,6 +678,72 @@ describe('Declarative attribute system (EzClassifyUI)', () => {
             expect(form.querySelector('[data-ezclassify-mount]')).toBeNull();
         });
 
+        it.each([
+            [
+                'select',
+                '<select data-ezclassify-controller="select"><option value="">Choose</option><option value="A">A</option><option value="B">B</option></select>',
+            ],
+            [
+                'selector',
+                '<fieldset data-ezclassify-controller="selector"><input type="checkbox" value="A"><input type="checkbox" value="B"></fieldset>',
+            ],
+            [
+                'checklist',
+                '<fieldset data-ezclassify-controller="checklist"><input type="checkbox" value="A"><input type="checkbox" value="B"></fieldset>',
+            ],
+        ])(
+            'imports native %s selections into the hidden marking on enhancement',
+            async (_controller, markup) => {
+                const form = document.createElement('form');
+                form.innerHTML = `<input id="shared" type="hidden" name="marking" data-ezclassify-marking>${markup}`;
+                document.body.append(form);
+                const facet = form.querySelector<HTMLElement>(
+                    '[data-ezclassify-controller]',
+                )!;
+                facet.setAttribute('data-ezclassify-facet-of', 'shared');
+                facet.setAttribute('data-ezclassify-category', 'level');
+                const selectNative = (value: string) => {
+                    if (facet instanceof HTMLSelectElement) facet.value = value;
+                    else
+                        facet
+                            .querySelectorAll<HTMLInputElement>(
+                                'input[type=checkbox]',
+                            )
+                            .forEach((input) => {
+                                input.checked = input.value === value;
+                            });
+                };
+                const enable = async () => {
+                    const ready = new Promise<void>((resolve) =>
+                        document.body.addEventListener(
+                            'ezclassify:ready',
+                            () => resolve(),
+                            { once: true },
+                        ),
+                    );
+                    const forms = await createForms();
+                    await ready;
+                    return forms;
+                };
+                selectNative('B');
+                const initial = await enable();
+                expect(new FormData(form).get('marking')).toBe('B');
+                await initial.store.publishAssertions('shared', [
+                    mockAssertion({ categoryId: 'level', conceptId: 'C' }),
+                ]);
+                initial.destroy();
+
+                const unchanged = await enable();
+                expect(new FormData(form).get('marking')).toBe('C');
+                unchanged.destroy();
+
+                selectNative('A');
+                const edited = await enable();
+                expect(new FormData(form).get('marking')).toBe('A');
+                edited.destroy();
+            },
+        );
+
         it.each(['selector', 'checklist'])(
             'keeps the named native group as the submitted value for %s',
             async (controller) => {

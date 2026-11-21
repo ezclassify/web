@@ -19,6 +19,7 @@
 import {
     isNativeSingleSelect,
     nativeChoiceGroup,
+    readNativeFacetSelection,
     writeNativeChoiceGroup,
 } from './native-control-host';
 import { acceptedValue, judgedAsHeld } from './loaded-value';
@@ -438,6 +439,10 @@ export class EzClassifyUI {
      * seeds it again.
      */
     private readonly seededMarkings = new Set<string>();
+    private readonly nativeFacetSeeds = new Map<
+        string,
+        Map<string, EngineAssertion[]>
+    >();
     /**
      * The seeds of hosts mounted during the initial sweep, started together
      * once every init has resolved (see {@link seedOnMount}).
@@ -1163,14 +1168,61 @@ export class EzClassifyUI {
         else seedPortions();
     }
 
-    private seedMarkingHost(id: string, host: HTMLElement): Promise<void> {
+    private async seedMarkingHost(
+        id: string,
+        host: HTMLElement,
+    ): Promise<void> {
         const assertions = this.bodyEditorMark(host);
-        return assertions
-            ? this.store.seedAssertions(id, assertions)
-            : this.store.seedRendered(
-                  id,
-                  (host as HTMLInputElement).value ?? '',
-              );
+        if (assertions) return this.store.seedAssertions(id, assertions);
+
+        const rendered = (host as HTMLInputElement).value ?? '';
+        const facets = this.nativeFacetSeeds.get(id);
+        this.nativeFacetSeeds.delete(id);
+        if (!facets?.size) return this.store.seedRendered(id, rendered);
+
+        const selected = [...facets.values()].flat();
+        if (!rendered) return this.store.seedAssertions(id, selected);
+
+        // The store composes the native edits over the served text, preserving
+        // its other categories and any unread text.
+        await Promise.all([
+            this.store.seedRendered(id, rendered),
+            this.store.publishAssertions(id, selected, undefined, {
+                categories: [...facets.keys()],
+            }),
+        ]);
+    }
+
+    /** Capture the authored inputs before a picker replaces or disables them. */
+    private captureNativeFacet(
+        el: HTMLElement,
+        id: string,
+        category: string,
+    ): void {
+        const host = this.markingHosts.get(id);
+        if (!(host instanceof HTMLInputElement) || host.type !== 'hidden')
+            return;
+        const values = readNativeFacetSelection(el, !!host.value);
+        if (!values) return;
+
+        const known = new Set(
+            schemeEngineOf(this.resolveContext(el), el)
+                .getConceptsInCategory(category)
+                .map((concept) => concept.id),
+        );
+        if (values.some((value) => !known.has(value))) return;
+
+        let facets = this.nativeFacetSeeds.get(id);
+        if (!facets) this.nativeFacetSeeds.set(id, (facets = new Map()));
+        facets.set(
+            category,
+            values.map((conceptId): EngineAssertion => ({
+                categoryId: category,
+                conceptId,
+                source: 'user',
+                confidence: 'certain',
+            })),
+        );
     }
 
     /**
@@ -3562,6 +3614,17 @@ export class EzClassifyUI {
         // Parse the harvested options bag into typed component options.
         const opts = parseComponentOptions(el, rawOptions);
         this.warnOnScopeMismatch(el, opts);
+
+        if (
+            this.initializing &&
+            facetOfId &&
+            facetCategory &&
+            storeBinding &&
+            (controller === 'select' ||
+                controller === 'selector' ||
+                controller === 'checklist')
+        )
+            this.captureNativeFacet(el, facetOfId, facetCategory);
 
         // Resolve the native input element (source of truth)
         const category = el.getAttribute('data-ezclassify-category');
