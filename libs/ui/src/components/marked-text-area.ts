@@ -39,7 +39,6 @@ import { wholeSettled } from '../whole-read-gate';
 import { revealClearOfPinned } from './composer/composer-placement';
 import { replacesMarks } from './composer/composer-controller';
 import {
-    ensureStatusMark,
     statusMarkOwnsNode,
     statusMarkFavoriteApplyOwner,
     recordAppliedFixes,
@@ -47,11 +46,6 @@ import {
     setStatusMarkGroups,
     type StatusMarkGroup,
 } from './status-mark';
-import {
-    ensureMarkingFavorites,
-    schemeOffersPresets,
-    type FavoritesPanel,
-} from './favorites-panel';
 import {
     attachTooltip,
     cleanupTooltipForRoot,
@@ -296,14 +290,13 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
      * transitions.
      */
     private activeSegmentIndex = -1;
-    private favoritesPanel: FavoritesPanel | null = null;
     private toolsButton: HTMLElement | null = null;
 
     protected override isFieldChrome(node: Node): boolean {
         return !!(
             (node === this.host && this.picker?.isToolsSuspended) ||
             statusMarkOwnsNode(this.toolsButton, node) ||
-            this.favoritesPanel?.contains(node)
+            this.fieldFavorites?.contains(node)
         );
     }
 
@@ -571,58 +564,47 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
 
         // The field's single status mark (starless "enhanced" until the
         // engine applies a fix), in the field's inline chrome.
-        this.toolsButton = ensureStatusMark(this.chrome.status, {
-            tools: true,
-            onToolsOpen: () => {
-                if (document.activeElement === this.textarea)
-                    this._lastCaret = this.textarea.selectionStart;
-                this.toolsButton?.focus();
-                this.picker?.suspendForTools();
-            },
-            shape: 'chrome',
-            root: this.container,
-            shouldShowTooltip: () => this.shouldShowTooltip(),
-            words: this.changeWords(),
-        });
-        // Scheme presets remain available without a persistence provider;
-        // all actions still target only the caret's marking.
-        if (
-            this.options.favorites ||
-            schemeOffersPresets(this.scheme, this.options.scope)
-        ) {
-            this.favoritesPanel = ensureMarkingFavorites(this.chrome.status, {
-                root: this.container,
-                schemeId: this.schemeId,
-                scope: this.options.scope,
-                formatId: this.scanFormat,
-                scheme: this.scheme,
-                config: this.options.favorites,
-                read: (marking) => this.readForFavorites(marking),
-                applyPreset: (presetId) =>
-                    this.callApplyPreset(presetId, this.scanFormat),
-                describeTarget: () =>
-                    this.activeSegmentIndex >= 0
-                        ? t('favorites.editingMarking')
-                              .replace(
-                                  '{n}',
-                                  String(this.activeSegmentIndex + 1),
-                              )
-                              .replace('{total}', String(this.segments.length))
-                        : t('favorites.insertParagraph'),
-                ...markingTarget(this),
-                getCurrent: () =>
-                    markingTarget(this)?.getCurrent() ??
-                    this.currentFavoritesMarking(),
-                onApply: (marking, signal) => {
-                    const target = markingTarget(this);
-                    return target && this.favoriteEntryId()
-                        ? target.onApply(marking, signal)
-                        : this.applyFavorite(marking, signal);
+        this.toolsButton = this.mountFieldTools(
+            this.chrome.status,
+            {
+                correctionCategory: this.options.categoryId,
+                onToolsOpen: () => {
+                    if (document.activeElement === this.textarea)
+                        this._lastCaret = this.textarea.selectionStart;
+                    this.toolsButton?.focus();
+                    this.picker?.suspendForTools();
                 },
-                focusField: () =>
-                    this.picker ? this.picker.focus() : this.textarea.focus(),
-            });
-        }
+                root: this.container,
+                shouldShowTooltip: () => this.shouldShowTooltip(),
+                words: this.changeWords(),
+            },
+            () =>
+                this.markedFavoritesHost({
+                    describeTarget: () =>
+                        this.activeSegmentIndex >= 0
+                            ? t('favorites.editingMarking')
+                                  .replace(
+                                      '{n}',
+                                      String(this.activeSegmentIndex + 1),
+                                  )
+                                  .replace(
+                                      '{total}',
+                                      String(this.segments.length),
+                                  )
+                            : t('favorites.insertParagraph'),
+                    getCurrent: () => this.currentFavoritesMarking(),
+                    onApply: (marking, signal) => {
+                        const target = markingTarget(this);
+                        return target && this.favoriteEntryId()
+                            ? target.onApply(marking, signal)
+                            : this.applyFavorite(marking, signal);
+                    },
+                    focusField: () =>
+                        this.picker
+                            ? this.picker.focus()
+                            : this.textarea.focus(),
+                }),
+        );
 
         this.toolsButton?.addEventListener('keydown', this.onBrandDown, true);
 
@@ -1122,8 +1104,7 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
             this.onBrandDown,
             true,
         );
-        this.favoritesPanel?.destroy();
-        this.favoritesPanel = null;
+        this.destroyFieldTools();
         this.toolsButton = null;
         this.textarea.removeEventListener('input', this.boundInput);
         this.textarea.removeEventListener('keydown', this.boundKeydown);

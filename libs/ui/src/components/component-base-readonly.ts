@@ -8,6 +8,7 @@
  * their dependency surface minimal.
  */
 
+import { FieldComponentBase } from './field-component-base';
 import {
     type ContextAdapter,
     type ContextSchemeEngineAdapter,
@@ -44,7 +45,6 @@ import type { FavoritesConfig } from './favorites-panel';
 import type { EzClassifyState } from '../store/ezclassify-store';
 import {
     NO_RULE_ERRORS,
-    RuleErrorList,
     placeUnderField,
     readFailureReport,
     ruleErrorsFrom,
@@ -401,7 +401,10 @@ export const CATEGORY_TEXT_COLORS = CATEGORY_BACKGROUND_TEXT_COLORS;
  * Shared read-only foundation for form components that only display data (no
  * editing, inference, or suggestion logic).
  */
-export abstract class ReadOnlyComponentBase implements ComponentInstance {
+export abstract class ReadOnlyComponentBase
+    extends FieldComponentBase
+    implements ComponentInstance
+{
     protected engine!: ComponentSchemeEngine;
     /**
      * The composed context, when the component was mounted with one. Subclasses
@@ -442,7 +445,6 @@ export abstract class ReadOnlyComponentBase implements ComponentInstance {
     protected displayColor?: ConceptColor;
     private _resolveContext?: () => ProcessingContext | undefined;
     private _resolveParts?: () => readonly string[];
-    private ruleErrorList: RuleErrorList | null = null;
     /** Why the held marking cannot be submitted, independent of an open draft. */
     protected valueValidationMessage = '';
     /**
@@ -1108,19 +1110,13 @@ export abstract class ReadOnlyComponentBase implements ComponentInstance {
             'data-ezclassify-warning',
             report.warnings.length > 0,
         );
-        if (report.messages.length === 0 && report.warnings.length === 0) {
-            this.ruleErrorList?.update(NO_RULE_ERRORS, null);
-        } else {
-            if (!this.ruleErrorList) {
-                this.ruleErrorList = new RuleErrorList(
-                    this.container.ownerDocument,
-                    (pointerType) => this.focusAfterFix(pointerType),
-                );
-                this.ruleErrorList.setSuppressed(this.reportInField);
-            }
-            this.placeRuleErrors();
-            this.ruleErrorList.update(report, this.ruleFixHandler());
-        }
+        this.updateFieldReport(
+            this.container.ownerDocument,
+            report,
+            () => this.placeRuleErrors(),
+            (pointerType) => this.focusAfterFix(pointerType),
+            this.ruleFixHandler(),
+        );
         this.onRuleErrorsChanged();
     }
 
@@ -1132,7 +1128,7 @@ export abstract class ReadOnlyComponentBase implements ComponentInstance {
     protected setReportInField(inField: boolean): void {
         if (this.reportInField === inField) return;
         this.reportInField = inField;
-        this.ruleErrorList?.setSuppressed(inField);
+        this.suppressFieldReport(inField);
         this.onRuleErrorsChanged();
     }
 
@@ -1142,7 +1138,6 @@ export abstract class ReadOnlyComponentBase implements ComponentInstance {
      */
     protected onRuleErrorsChanged(): void {}
 
-    /** Keep the error list directly after the field the user sees. */
     private placeRuleErrors(): void {
         if (!this.ruleErrorList) return;
         placeUnderField(
@@ -1150,15 +1145,6 @@ export abstract class ReadOnlyComponentBase implements ComponentInstance {
             getMountHost(this.container) ?? null,
             this.container.closest('[data-ezclassify-mount]') ?? this.container,
         );
-    }
-
-    /**
-     * Take the rule-error list out of the document. It sits beside the field,
-     * outside the mount container, so every component's destroy() calls this.
-     */
-    protected removeRuleErrors(): void {
-        this.ruleErrorList?.remove();
-        this.ruleErrorList = null;
     }
 
     /**

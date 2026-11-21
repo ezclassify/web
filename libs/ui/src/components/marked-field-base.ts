@@ -66,10 +66,13 @@ import {
 } from './status-mark';
 import type { InlineMarkingEditor } from './inline-marking-editor';
 import { writtenFactTest, type ShownForm } from '../written-facts';
-import { createClearButton, type ClearButton } from './clear-button';
+import type { ClearButton } from './clear-button';
 import { isUndoChord, MarkingUndo } from './marking-undo';
 import { announce, createAnnouncer } from './accessibility-helpers';
 import { mountFieldChrome, type FieldChrome } from './field-chrome';
+import { FieldComponentBase } from './field-component-base';
+import type { FavoritesPanelHost } from './favorites-panel';
+import { markingTarget } from './marking-target';
 
 /**
  * CSS class-name set a concrete field uses. Keeps the shared scaffolding (wrap,
@@ -96,7 +99,10 @@ export interface MarkedFieldClassNames {
  */
 export abstract class MarkedFieldBase<
     H extends HTMLInputElement | HTMLTextAreaElement,
-> implements ComponentInstance {
+>
+    extends FieldComponentBase
+    implements ComponentInstance
+{
     protected engine!: ComponentSchemeEngine;
     /**
      * Read a saved marking (a favorite) in this field's scan format, the way
@@ -120,6 +126,29 @@ export abstract class MarkedFieldBase<
             appliedFixes: result.appliedFixes,
         };
     }
+    protected markedFavoritesHost(
+        actions: Pick<
+            FavoritesPanelHost,
+            'getCurrent' | 'onApply' | 'focusField' | 'describeTarget'
+        >,
+    ): FavoritesPanelHost {
+        const { getCurrent, ...rest } = actions;
+        return {
+            root: this.container,
+            schemeId: this.schemeId,
+            scope: this.options.scope,
+            formatId: this.scanFormat,
+            scheme: this.scheme,
+            config: this.options.favorites,
+            read: (marking) => this.readForFavorites(marking),
+            applyPreset: (presetId) =>
+                this.callApplyPreset(presetId, this.scanFormat),
+            ...markingTarget(this),
+            ...rest,
+            getCurrent: () => markingTarget(this)?.getCurrent() ?? getCurrent(),
+        };
+    }
+
     /** Expand a named scheme preset through the bound adapter. */
     protected callApplyPreset(presetId: string, outputFormat?: string) {
         const options = outputFormat ? { outputFormat } : undefined;
@@ -537,7 +566,7 @@ export abstract class MarkedFieldBase<
             root: this.container,
             align: this.chromeAlign,
         });
-        this.clearControl = createClearButton({
+        this.clearControl = this.createFieldClear({
             label: t('aria.clearText'),
             host: this.host,
             empty: () => this.host.value.length === 0,

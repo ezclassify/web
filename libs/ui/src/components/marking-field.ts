@@ -1,4 +1,3 @@
-import { markingTarget } from './marking-target';
 /**
  * MarkingField: a text-first field whose ENTIRE value is the marking, nothing
  * else.
@@ -30,21 +29,9 @@ import { getMountHost } from '../mount-host-registry';
 import { resolveMarkingColor } from '../color-resolver';
 import { COMPONENT_CSS } from './component-utils';
 import { heightAtLeastFloor } from './dom-helpers';
-import {
-    ensureStatusMark,
-    setStatusMarkFixes,
-    statusMarkOwnsNode,
-} from './status-mark';
+import { setStatusMarkFixes, statusMarkOwnsNode } from './status-mark';
 import { mountFieldChrome, type FieldChrome } from './field-chrome';
-import {
-    ensureMarkingFavorites,
-    schemeOffersPresets,
-    type FavoritesConfig,
-    type FavoritesPanel,
-    type FavoritesPanelHost,
-} from './favorites-panel';
 import { t } from '../i18n';
-import { fixAssertions } from './rule-errors';
 import { locateTokenSpans, type TokenNode } from '../token-tree/token-tree';
 import { derivedAssertion } from '../assertion-identity';
 import {
@@ -77,7 +64,6 @@ export class MarkingField extends ComponentBase {
     /** The inline chrome: marking tools and clear. */
     private chrome: FieldChrome | null = null;
     private toolsButton: HTMLElement | null = null;
-    private favoritesPanel: FavoritesPanel | null = null;
     private controller!: ComposerController;
     private view!: ComposerView;
     /** True while the host textarea is the visible, editable surface. */
@@ -308,28 +294,22 @@ export class MarkingField extends ComponentBase {
         // field's trailing edge, at rest and while editing; the text layers
         // reserve the room they take.
         this.chrome = mountFieldChrome(this.wrap, { root: this.options.root });
-        this.toolsButton = ensureStatusMark(this.chrome.status, {
-            tools: true,
-            onToolsOpen: () => {
-                this.toolsButton?.focus();
-                this.view?.suspendForTools();
+        this.toolsButton = this.mountFieldTools(
+            this.chrome.status,
+            {
+                correctionCategory: this.options.categoryId,
+                onToolsOpen: () => {
+                    this.toolsButton?.focus();
+                    this.view?.suspendForTools();
+                },
+                root: this.options.root,
+                shouldShowTooltip: () => this.options.tooltips !== false,
+                ...this.statusMarkUndo(),
             },
-            shape: 'chrome',
-            root: this.options.root,
-            shouldShowTooltip: () => this.options.tooltips !== false,
-            ...this.statusMarkUndo(),
-        });
+            () => this.fieldFavoritesHost(() => this.host.focus()),
+        );
         // The value read at init may already carry fixes the engine applied.
         setStatusMarkFixes(this.chrome.status, this.fieldStatusChanges());
-        if (
-            this.options.favorites ||
-            schemeOffersPresets(this.scheme, this.options.scope)
-        ) {
-            this.favoritesPanel = ensureMarkingFavorites(
-                this.chrome.status,
-                this.favoritesHost(this.options.favorites),
-            );
-        }
 
         this.boundFocus = () => this.setEditingMode(true);
         this.boundDisplayMouseDown = (e) => this.onDisplayMouseDown(e);
@@ -569,57 +549,11 @@ export class MarkingField extends ComponentBase {
         }
         if (this.chrome)
             setStatusMarkFixes(this.chrome.status, this.fieldStatusChanges());
-        if (this.favoritesPanel) {
-            this.favoritesPanel.updateHost(
-                this.favoritesHost(this.options.favorites),
+        if (this.fieldFavorites) {
+            this.fieldFavorites.updateHost(
+                this.fieldFavoritesHost(() => this.host.focus()),
             );
         }
-    }
-
-    /**
-     * Favorites context for this field: apply REPLACES the marking, exactly
-     * `setValue()` (process the favorite through this field's own scheme/
-     * format, adopt the result). Rebuilt on every render so the panel's
-     * closures never capture stale assertions/rendered state. `config` is
-     * undefined for a presets-only mount (no host favorites wiring); the panel
-     * itself tolerates that and runs read-only.
-     */
-    private favoritesHost(
-        config: FavoritesConfig | undefined,
-    ): FavoritesPanelHost {
-        return {
-            root: this.options.root,
-            schemeId: this.schemeId,
-            scope: this.options.scope,
-            formatId: this.formatId,
-            scheme: this.scheme,
-            config,
-            read: (marking) =>
-                Promise.resolve(
-                    this.callValidate(marking, {
-                        outputFormat: this.formatId,
-                        context: this.getProcessingContext(),
-                    }),
-                ),
-            applyPreset: (presetId) =>
-                this.callApplyPreset(presetId, this.formatId),
-            getCurrent: () => ({
-                rendered: this._lastRendered,
-                valid:
-                    this.assertions.length > 0 &&
-                    !this.container.hasAttribute('data-ezclassify-invalid'),
-            }),
-            ...markingTarget(this),
-            onApply: (marking, signal) => {
-                if (signal.aborted) return;
-                this.controller.discard();
-                const target = markingTarget(this);
-                if (target) return target.onApply(marking, signal);
-                this.beginUserEdit();
-                return this.setValue(marking);
-            },
-            focusField: () => this.host.focus(),
-        };
     }
 
     protected override onRuleErrorsChanged(): void {
@@ -673,8 +607,7 @@ export class MarkingField extends ComponentBase {
         this._themeObserver = null;
         this.stopObservingHostWidth?.();
         this.stopObservingHostWidth = null;
-        this.favoritesPanel?.destroy();
-        this.favoritesPanel = null;
+        this.destroyFieldTools();
         this.chrome?.destroy();
         this.chrome = null;
         this.toolsButton = null;
@@ -820,8 +753,7 @@ export class MarkingField extends ComponentBase {
             return;
         }
         this.beginUserEdit();
-        this.assertions = fixAssertions(fix, this.assertions);
-        this.reprocess();
+        this.reprocessEdit(this.fixedAssertions(fix, this.assertions));
     }
 
     /**

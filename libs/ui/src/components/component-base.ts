@@ -24,7 +24,7 @@ import {
     type ComponentEngineSource,
     type ComponentOptions,
 } from './component-base-readonly';
-import { createClearButton, type ClearButton } from './clear-button';
+import type { ClearButton } from './clear-button';
 import { announce, createAnnouncer } from './accessibility-helpers';
 import {
     isUndoChord,
@@ -33,21 +33,15 @@ import {
     type UndoKind,
 } from './marking-undo';
 import { t } from '../i18n';
-import {
-    ensureMarkingFavorites,
-    type FavoritesPanel,
-    type FavoritesPanelHost,
-} from './favorites-panel';
+import { type FavoritesPanelHost } from './favorites-panel';
 import { markingTarget } from './marking-target';
 import {
     assertDescribesConcepts,
     createConceptDescriber,
 } from './concept-description';
 import { removeAssertionCascade } from './assertion-removal';
-import { fixAssertions } from './rule-errors';
 import {
     dismissStatusMarkPopover,
-    ensureStatusMark,
     explainedChanges,
     recordAppliedFixes,
     setStatusMarkFixes,
@@ -154,7 +148,7 @@ export abstract class ComponentBase extends ReadOnlyComponentBase {
         if (!mount) return;
         // Clear stays the last control of the chrome; the announcer sits
         // before it.
-        this.clearControl = createClearButton({
+        this.clearControl = this.createFieldClear({
             label: this.clearLabel(),
             host: this.enhancedInput ?? undefined,
             empty: () => !this.hasClearValue(),
@@ -342,7 +336,6 @@ export abstract class ComponentBase extends ReadOnlyComponentBase {
      * until the component mounts one.
      */
     protected suiteChrome: FieldChrome | null = null;
-    private suiteFavorites: FavoritesPanel | null = null;
 
     /** The root the component's styles and overlays live in. */
     private get styleRoot(): HTMLElement {
@@ -379,41 +372,50 @@ export abstract class ComponentBase extends ReadOnlyComponentBase {
             placement,
             header,
         });
-        ensureStatusMark(chrome.status, {
-            tools: true,
-            keyboardRoot: this.container,
-            shape: 'chrome',
-            root: this.styleRoot,
-            shouldShowTooltip: () => this.shouldShowTooltip(),
-            ...this.statusMarkUndo(),
-        });
-        this.suiteChrome = chrome;
-        this.suiteFavorites = ensureMarkingFavorites(
+        this.mountFieldTools(
             chrome.status,
-            this.suiteFavoritesHost(),
+            {
+                correctionCategory: this.options.categoryId,
+                keyboardRoot: this.container,
+                root: this.styleRoot,
+                shouldShowTooltip: () => this.shouldShowTooltip(),
+                ...this.statusMarkUndo(),
+            },
+            () => this.fieldFavoritesHost(),
         );
+        this.suiteChrome = chrome;
         this.updateSuiteStatusMark();
         return chrome;
     }
 
     /** Remove the suite's chrome; every component's destroy() calls this. */
     protected destroySuiteChrome(): void {
-        this.suiteFavorites?.destroy();
-        this.suiteFavorites = null;
+        this.destroyFieldTools();
         this.suiteChrome?.destroy();
         this.suiteChrome = null;
     }
 
-    private suiteFavoritesHost(): FavoritesPanelHost {
+    protected fieldFavoritesHost(
+        focusField: () => void = () =>
+            this.container
+                .querySelector<HTMLElement>(
+                    'input:not([type="hidden"]), select, button, [tabindex="0"]',
+                )
+                ?.focus(),
+        root: HTMLElement | undefined = this.styleRoot,
+    ): FavoritesPanelHost {
         return {
-            root: this.styleRoot,
+            root,
             schemeId: this.schemeId,
             scheme: this.scheme,
             scope: this.options.scope,
             formatId: this.formatId,
             config: this.options.favorites,
             read: (marking) =>
-                this.callValidate(marking, { outputFormat: this.formatId }),
+                this.callValidate(marking, {
+                    outputFormat: this.formatId,
+                    context: this.getProcessingContext(),
+                }),
             applyPreset: (presetId) =>
                 this.callApplyPreset(presetId, this.formatId),
             getCurrent: () => ({
@@ -422,17 +424,16 @@ export abstract class ComponentBase extends ReadOnlyComponentBase {
                     this.assertions.length > 0 &&
                     !this.container.hasAttribute('data-ezclassify-invalid'),
             }),
-            onApply: (marking) => {
+            ...markingTarget(this),
+            onApply: (marking, signal) => {
+                if (signal.aborted) return;
+                this.discardDraft();
+                const target = markingTarget(this);
+                if (target) return target.onApply(marking, signal);
                 this.beginUserEdit();
                 return this.setValue(marking);
             },
-            focusField: () =>
-                this.container
-                    .querySelector<HTMLElement>(
-                        'input:not([type="hidden"]), select, button, [tabindex="0"]',
-                    )
-                    ?.focus(),
-            ...markingTarget(this),
+            focusField,
         };
     }
 
@@ -482,7 +483,7 @@ export abstract class ComponentBase extends ReadOnlyComponentBase {
      */
     protected updateSuiteStatusMark(): void {
         if (!this.suiteChrome) return;
-        this.suiteFavorites?.updateHost(this.suiteFavoritesHost());
+        this.fieldFavorites?.updateHost(this.fieldFavoritesHost());
         const category = this.options.facetOf
             ? this.options.categoryId
             : undefined;
@@ -751,7 +752,7 @@ export abstract class ComponentBase extends ReadOnlyComponentBase {
         return (fix) => {
             if (this._destroyed) return;
             this.beginUserEdit();
-            this.reprocessEdit(fixAssertions(fix, this.assertions));
+            this.reprocessEdit(this.fixedAssertions(fix, this.assertions));
         };
     }
 
@@ -1070,7 +1071,7 @@ export abstract class ComponentBase extends ReadOnlyComponentBase {
      * field, so the record starts over and the reprocess records the repairs
      * that still apply. An edit that only adds keeps them.
      */
-    private reprocessEdit(next: Assertion[]): void {
+    protected reprocessEdit(next: Assertion[]): void {
         if (replacesStated(this.assertions, next)) this._appliedFixes.clear();
         this.assertions = next;
         this.reprocess();

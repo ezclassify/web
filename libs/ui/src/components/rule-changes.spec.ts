@@ -368,6 +368,38 @@ it('keeps a rule-added value inferred when MarkedInput applies a proposed fix', 
     });
 });
 
+describe('clearing a marking starts a fresh correction history', () => {
+    it.each([MarkingField, TagInput, DecisionFlow])(
+        'shows a fresh correction after re-entering the same marking in %s',
+        async (Control) => {
+            if (Control !== DecisionFlow) container.innerHTML = '<input>';
+            const field = new Control();
+            mounted = field;
+            await field.init(container, context());
+            const badge = () => document.querySelector('.ez-status-mark');
+            const label = () => badge()?.getAttribute('aria-label');
+            await field.setValue('LOW');
+            await vi.waitFor(() =>
+                expect(label()).toContain('not yet reviewed'),
+            );
+            await review(document.body);
+            expect(label()).not.toContain('not yet reviewed');
+
+            document
+                .querySelector<HTMLButtonElement>('.ez-clear-button')!
+                .click();
+            await vi.waitFor(() => {
+                expect(field.getAssertions()).toEqual([]);
+                expect(label()).not.toContain('change made');
+            });
+            await field.setValue('LOW');
+            await vi.waitFor(() =>
+                expect(label()).toContain('not yet reviewed'),
+            );
+        },
+    );
+});
+
 describe('autofixes in a phone picker', () => {
     beforeEach(() => {
         vi.stubGlobal('innerWidth', 390);

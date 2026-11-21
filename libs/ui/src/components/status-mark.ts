@@ -368,6 +368,8 @@ export interface StatusMarkOptions {
      * MarkingField, TagInput, MarkedInput, and MarkedTextArea use 'chrome'.
      */
     shape: 'input' | 'chrome';
+    /** A category editor explains only changes to the category it owns. */
+    correctionCategory?: string;
     /** Root element for style injection and tooltip mounting. */
     root?: HTMLElement;
     /** Tooltip guard (the data-ezclassify-no-tooltips opt-out). */
@@ -405,6 +407,28 @@ const markFixes = new WeakMap<HTMLElement, Map<string, Change>>();
 // The sheet can show a provisional reading of the marking. Keep its changes
 // separate so reviewing or canceling a draft cannot alter the field's record.
 const markDraftFixes = new WeakMap<HTMLElement, readonly Change[]>();
+
+function changesInCategory(
+    mark: HTMLElement,
+    changes: readonly Change[],
+): readonly Change[] {
+    const category = markOptions.get(mark)?.correctionCategory;
+    if (!category) return changes;
+    return changes.flatMap((change) => {
+        const add = (change.add ?? []).filter(
+            (ref) => ref.categoryId === category,
+        );
+        const remove = (change.remove ?? []).filter(
+            (ref) => ref.categoryId === category,
+        );
+        return add.length || remove.length ? [{ ...change, add, remove }] : [];
+    });
+}
+
+function draftFixesOf(mark: HTMLElement): readonly Change[] | undefined {
+    const fixes = markDraftFixes.get(mark);
+    return fixes && changesInCategory(mark, fixes);
+}
 
 export function setStatusMarkDraft(
     mark: HTMLElement,
@@ -529,7 +553,7 @@ function buildMarkSvg(): string {
 
 /** Derive the mark's current state from its fixes and acknowledgment set. */
 function deriveState(mark: HTMLElement): MarkState {
-    const draft = markDraftFixes.get(mark);
+    const draft = draftFixesOf(mark);
     if (draft) return draft.length ? 'unseen' : 'quiet';
     if (markErrors.has(mark)) return 'error';
     const fixes = markFixes.get(mark);
@@ -619,7 +643,7 @@ function linesOf(
     const groups = markGroups.get(mark);
     const seen = new Set<string>();
     const lines: { text: string; rule: string; group?: string }[] = [];
-    const draft = markDraftFixes.get(mark);
+    const draft = draftFixesOf(mark);
     const fixes = draft?.map((change) => [effectKey(change), change] as const);
     for (const [key, change] of fixes ?? markFixes.get(mark) ?? []) {
         const group = draft ? undefined : groups?.get(key);
@@ -1100,7 +1124,7 @@ function setMarkChanges(
     const changes = new Map<string, Change>();
     const labels = new Map<string, string>();
     for (const { label, changes: list } of groups) {
-        for (const change of list) {
+        for (const change of changesInCategory(mark, list)) {
             const effect = effectKey(change);
             const key =
                 label === undefined
@@ -1129,7 +1153,7 @@ function setMarkChanges(
 
 function correctionsContent(mark: HTMLElement): HTMLElement {
     const opts = markOptions.get(mark);
-    const draft = markDraftFixes.get(mark);
+    const draft = draftFixesOf(mark);
     const error = visibleError(mark);
     const count = draft?.length ?? markFixes.get(mark)?.size ?? 0;
     if (
