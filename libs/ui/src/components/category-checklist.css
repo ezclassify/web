@@ -107,8 +107,9 @@
     color: var(--ez-color-placeholder, #9ca3af);
 }
 .category-checklist-search:focus-visible {
-    outline: 2px solid var(--ez-color-primary, #fdb827);
-    outline-offset: -2px;
+    outline: var(--ez-focus-ring-width, 2px) solid
+        var(--ez-color-border-focus, var(--ez-color-primary, #fdb827));
+    outline-offset: var(--ez-focus-ring-offset, -2px);
 }
 .category-checklist-search:focus:not(:focus-visible) {
     outline: none;

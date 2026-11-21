@@ -65,19 +65,12 @@ describe('styles', () => {
             }
         });
 
-        it('defines --ez-color-border-focus/--ez-focus-ring-shadow in every theme block, not only the component-scope block', () => {
-            // Focus aliases resolve the primary palette at their declaration site.
-            // Standalone .ez-input.ez-styled inputs need :root fallbacks and each
-            // theme's own declarations. This source check establishes placement,
-            // not actual browser focus/cascade results.
+        it('sets focus shadows per palette and resolves the border focus color at the field', () => {
             const css = readFileSync(
                 join(dirname(fileURLToPath(import.meta.url)), 'styles.css'),
                 'utf8',
             );
-            const tokens = [
-                '--ez-color-border-focus',
-                '--ez-focus-ring-shadow',
-            ];
+            const token = '--ez-focus-ring-shadow';
 
             const rootBlockMatch = css.match(
                 /:where\(:root\)\s*\{([\s\S]*?)\n\}/,
@@ -97,19 +90,13 @@ describe('styles', () => {
             expect(lightBlockMatch).not.toBeNull();
             const lightBlock = lightBlockMatch![1];
 
-            for (const token of tokens) {
-                expect(rootBlock, `:root must declare ${token}`).toContain(
-                    token,
-                );
-                expect(
-                    darkBlock,
-                    `the dark theme block must redeclare ${token} so it re-resolves against the dark palette`,
-                ).toContain(token);
-                expect(
-                    lightBlock,
-                    `the light theme block must redeclare ${token} so a nested light island re-resolves against the light palette`,
-                ).toContain(token);
+            for (const block of [rootBlock, darkBlock, lightBlock]) {
+                expect(block).toContain(token);
+                expect(block).not.toContain('--ez-color-border-focus:');
             }
+            expect(css).toMatch(
+                /border-color: var\(\s*--ez-color-border-focus,\s*var\(--ez-color-primary, #fdb827\)\s*\)/,
+            );
         });
 
         it('lets host layout tokens inherit through every generated field mount', () => {

@@ -444,13 +444,10 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
 
         this.host = this.resolveHost();
         const textarea = this.textarea;
+        this.styleNativeField(textarea);
 
         // Capture textarea styles BEFORE making it invisible
         const capturedStyles = this.captureAndMirrorStylesPreHide();
-        const hadFocus = document.activeElement === textarea;
-        textarea.focus({ preventScroll: true });
-        const focusBorderColor = window.getComputedStyle(textarea).borderColor;
-        if (!hadFocus) textarea.blur();
 
         this.wrap = document.createElement('div');
         this.wrap.className = this.classNames.wrap;
@@ -504,6 +501,7 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
 
         // Re-sync color/background when the host changes theme so the display
         // div matches the themed appearance in both light and dark modes.
+        this.setMeasuredFontSize(capturedStyles.fontSize);
         this.installThemeObserver(capturedStyles, 'marked-textarea-input');
 
         this.wrap.insertBefore(this.display, textarea);
@@ -599,7 +597,6 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
         this.textarea.addEventListener('keydown', this.boundKeydown);
         this.textarea.addEventListener('focus', () => {
             this.hasFocus = true;
-            this.display.style.borderColor = focusBorderColor;
             this.renderDisplay();
             if (this.picker?.isToolsSuspended && !this.pressing) {
                 const retained = this.picker;
@@ -1107,6 +1104,7 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
         for (const f of this.hiddenFields) f?.destroy();
         this.hiddenFields = [];
         this.hiddenContainers = [];
+        this.textarea.style.removeProperty('--ez-field-measured-font-size');
         // A host the page removed itself stays removed (see MarkingField).
         if (this.wrap.parentNode && this.textarea.parentNode === this.wrap)
             this.wrap.parentNode.insertBefore(this.textarea, this.wrap);

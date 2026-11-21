@@ -241,6 +241,18 @@ function chromeReach(wrap: HTMLElement, chrome: HTMLElement): number {
     return Math.max(0, Math.ceil(reach));
 }
 
+/** Mark an enhanced native control for the suite's low-specificity defaults. */
+export function mountNativeFieldDefaults(host: HTMLElement): () => void {
+    const existing = host.classList.contains('ez-native-field');
+    const hadClassAttribute = host.hasAttribute('class');
+    host.classList.add('ez-native-field');
+    return () => {
+        if (!existing) host.classList.remove('ez-native-field');
+        if (!hadClassAttribute && !host.className)
+            host.removeAttribute('class');
+    };
+}
+
 /**
  * Give a control that enhances a text input that input's own edge, paint and
  * spacing, the way the text fields do, and keep them current as the host's
@@ -273,6 +285,7 @@ export function mirrorHostFrame(
         opts.styleInputs
     )
         return () => {};
+    const releaseDefaults = mountNativeFieldDefaults(host);
     const sync = () => {
         const styles = window.getComputedStyle(host);
         // The frame's own stylesheet floor, read before the host's values are
@@ -323,12 +336,28 @@ export function mirrorHostFrame(
         );
     };
     sync();
-    if (typeof MutationObserver === 'undefined') return () => {};
+    const observer = observeFieldTheme(host, sync, opts.container, true);
+    return () => {
+        observer?.disconnect();
+        releaseDefaults();
+    };
+}
+
+/** Refresh computed field snapshots when a host changes its theme scope. */
+export function observeFieldTheme(
+    host: HTMLElement,
+    sync: () => void,
+    container?: HTMLElement,
+    observeHostStyle = false,
+): MutationObserver | null {
+    if (typeof MutationObserver === 'undefined') return null;
     const observer = new MutationObserver(sync);
-    observer.observe(opts.container, {
-        attributes: true,
-        attributeFilter: ['data-color-scheme'],
-    });
+    if (container && !container.contains(host)) {
+        observer.observe(container, {
+            attributes: true,
+            attributeFilter: ['data-color-scheme'],
+        });
+    }
     for (
         let ancestor: HTMLElement | null = host;
         ancestor;
@@ -337,13 +366,14 @@ export function mirrorHostFrame(
         observer.observe(ancestor, {
             attributes: true,
             attributeFilter: [
-                'style',
-                'class',
+                ...(ancestor !== host || observeHostStyle
+                    ? ['style', 'class']
+                    : []),
                 'data-theme',
                 'data-bs-theme',
                 'data-color-scheme',
             ],
         });
     }
-    return () => observer.disconnect();
+    return observer;
 }

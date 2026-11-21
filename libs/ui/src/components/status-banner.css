@@ -73,8 +73,8 @@
 
 /* ── Color variant ───────────────────────────────── */
 .status-banner--colored {
-    background-color: var(--ez-banner-bg);
-    color: var(--ez-banner-text);
+    background-color: var(--ez-banner-background, var(--ez-banner-bg));
+    color: var(--ez-banner-foreground, var(--ez-banner-text));
 }
 
 /* ── Empty state ─────────────────────────────────── */

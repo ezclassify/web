@@ -66,8 +66,9 @@
 }
 
 .marking-field-host:focus {
-    outline: 2px solid var(--ez-color-primary, #fdb827);
-    outline-offset: -2px;
+    outline: var(--ez-focus-ring-width, 2px) solid
+        var(--ez-color-border-focus, var(--ez-color-primary, #fdb827));
+    outline-offset: var(--ez-focus-ring-offset, -2px);
     border-radius: var(--ez-border-radius, 0.25rem);
 }
 

@@ -1,5 +1,6 @@
 import type { Assertion, Fix } from '@ezclassify/types';
 import { createClearButton } from './clear-button';
+import { mountNativeFieldDefaults } from './field-chrome';
 import {
     ensureMarkingFavorites,
     type FavoritesPanel,
@@ -24,6 +25,12 @@ export abstract class FieldComponentBase {
     protected ruleErrorList: RuleErrorList | null = null;
     private feedbackStatus: HTMLElement | null = null;
     private inlineReport = false;
+    private releaseNativeFieldDefaults: (() => void) | null = null;
+
+    protected styleNativeField(host: HTMLElement): void {
+        this.releaseNativeFieldDefaults?.();
+        this.releaseNativeFieldDefaults = mountNativeFieldDefaults(host);
+    }
 
     protected mountFieldTools(
         status: HTMLElement,
@@ -41,6 +48,8 @@ export abstract class FieldComponentBase {
     }
 
     protected destroyFieldTools(): void {
+        this.releaseNativeFieldDefaults?.();
+        this.releaseNativeFieldDefaults = null;
         this.fieldFavorites?.destroy();
         this.fieldFavorites = null;
         this.feedbackStatus = null;

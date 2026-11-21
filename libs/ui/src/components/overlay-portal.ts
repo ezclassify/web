@@ -14,6 +14,8 @@ const THEME_PROPERTIES = [
     '--ez-color-background',
     '--ez-color-border',
     '--ez-color-border-focus',
+    '--ez-focus-ring-width',
+    '--ez-focus-ring-offset',
     '--ez-color-text',
     '--ez-color-muted',
     '--ez-color-primary',
@@ -39,7 +41,9 @@ const THEME_PROPERTIES = [
     '--ez-tooltip-body-color',
     '--ez-tooltip-rule-color',
     '--ez-border-radius',
+    '--ez-border-width',
     '--ez-font-family',
+    '--ez-font-size',
     '--ez-z-dropdown',
     '--ez-z-tooltip',
 ] as const;

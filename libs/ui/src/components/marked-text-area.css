@@ -16,8 +16,9 @@
         :has(> .ez-field-chrome .ez-clear-button:focus)
     )
     .marked-textarea-display {
-    outline: 2px solid var(--ez-color-primary, #fdb827);
-    outline-offset: -2px;
+    outline: var(--ez-focus-ring-width, 2px) solid
+        var(--ez-color-border-focus, var(--ez-color-primary, #fdb827));
+    outline-offset: var(--ez-focus-ring-offset, -2px);
     border-radius: var(--ez-border-radius, 0.25rem);
 }
 
@@ -271,7 +272,10 @@
        aligned with the text metrics. */
     .marked-textarea-wrap > textarea.marked-textarea-input,
     .marked-textarea-display {
-        font-size: max(1em, 16px);
+        font-size: max(
+            var(--ez-field-measured-font-size, 1em),
+            16px
+        ) !important;
     }
 }
 

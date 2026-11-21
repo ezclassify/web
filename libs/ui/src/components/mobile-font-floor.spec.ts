@@ -52,14 +52,28 @@ describe('mobile font-size floor (iOS focus-zoom guard)', () => {
         const block = coarseBlock(readCss('marked-input.css'));
         expect(block).toContain('textarea.marked-input-native');
         expect(block).toContain('.marked-input-display');
-        expect(block).toContain('font-size: max(1em, 16px)');
+        expect(block).toMatch(
+            /max\(\s*var\(--ez-field-measured-font-size, 1em\),\s*16px\s*\)/,
+        );
     });
 
     it('MarkedTextArea floors the native capture and display layers', () => {
         const block = coarseBlock(readCss('marked-text-area.css'));
         expect(block).toContain('textarea.marked-textarea-input');
         expect(block).toContain('.marked-textarea-display');
-        expect(block).toContain('font-size: max(1em, 16px)');
+        expect(block).toMatch(
+            /max\(\s*var\(--ez-field-measured-font-size, 1em\),\s*16px\s*\)/,
+        );
+    });
+
+    it('TagInput chips and search use the same size including the coarse-pointer floor', () => {
+        const css = readCss('tag-input.css');
+        expect(css).toMatch(
+            /\.tag-input-wrap > \.proto-tag,\s*\.tag-input-wrap > \.tag-input-filter\s*\{[^}]*font-family: inherit;[^}]*font-size: var\(--ez-tag-input-effective-font-size\)/,
+        );
+        expect(coarseBlock(css)).toMatch(
+            /max\(\s*var\(--ez-tag-input-font-size, 1em\),\s*16px\s*\)/,
+        );
     });
 
     it('InlineMarkingEditor floors the input and its width sizer', () => {

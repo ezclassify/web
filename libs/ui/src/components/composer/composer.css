@@ -113,7 +113,8 @@
     -webkit-tap-highlight-color: transparent;
 }
 .ez-composer__sheet-button:focus-visible {
-    outline: 2px solid var(--ez-color-border-focus, currentColor);
+    outline: var(--ez-focus-ring-width, 2px) solid
+        var(--ez-color-border-focus, var(--ez-color-primary, currentColor));
     outline-offset: -0.25rem;
 }
 /* Cancel's text lines up with the input's text below it and Done's drawn
@@ -180,15 +181,16 @@
     min-height: 2.75rem;
     padding: 0.5rem 0.625rem;
     font: inherit;
-    font-size: 1rem;
+    font-size: max(var(--ez-font-size, 1rem), 16px);
     color: inherit;
     background: var(--ez-color-background, #fff);
-    border: 1px solid var(--ez-color-border, #d1d5db);
+    border: var(--ez-border-width, 1px) solid var(--ez-color-border, #d1d5db);
     border-radius: var(--ez-border-radius, 0.375rem);
 }
 .ez-composer__sheet-input:focus {
-    outline: 2px solid var(--ez-color-border-focus, currentColor);
-    outline-offset: 1px;
+    outline: var(--ez-focus-ring-width, 2px) solid
+        var(--ez-color-border-focus, var(--ez-color-primary, currentColor));
+    outline-offset: var(--ez-focus-ring-offset, -2px);
 }
 
 /* ── Result row: what a commit stores ── */
@@ -648,7 +650,7 @@
 }
 .ez-composer__category-arrow:focus-visible {
     outline: 0.125rem solid
-        var(--ez-color-border-focus, var(--ez-color-text, #111827));
+        var(--ez-color-border-focus, var(--ez-color-primary, #fdb827));
     outline-offset: -0.125rem;
 }
 @media (pointer: coarse) {

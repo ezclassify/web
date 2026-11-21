@@ -76,7 +76,11 @@ import { writtenFactTest, type ShownForm } from '../written-facts';
 import type { ClearButton } from './clear-button';
 import { isUndoChord, MarkingUndo } from './marking-undo';
 import { announce, createAnnouncer } from './accessibility-helpers';
-import { mountFieldChrome, type FieldChrome } from './field-chrome';
+import {
+    mountFieldChrome,
+    observeFieldTheme,
+    type FieldChrome,
+} from './field-chrome';
 import { FieldComponentBase } from './field-component-base';
 import type { FavoritesPanelHost } from './favorites-panel';
 import { markingTarget } from './marking-target';
@@ -216,7 +220,7 @@ export abstract class MarkedFieldBase<
     protected picker: InlineMarkingEditor | null = null;
     protected pickerMount: HTMLElement | null = null;
     /**
-     * The theme MutationObserver on document.documentElement. Stored so
+     * The MutationObserver for the field’s theme scope. Stored so
      * {@link disconnectThemeObserver} can tear it down on destroy; otherwise
      * every mounted field leaks a live observer (and its closure over the
      * detached DOM) for the page lifetime.
@@ -447,10 +451,15 @@ export abstract class MarkedFieldBase<
         return capturedStyles;
     }
 
+    protected setMeasuredFontSize(size: string): void {
+        this.host.style.setProperty('--ez-field-measured-font-size', size);
+        this.display.style.setProperty('--ez-field-measured-font-size', size);
+    }
+
     /**
-     * Watch the document root for theme attribute changes and re-sync the
-     * display's color/background/at-rest border to match the themed host. An
-     * owned editor can supply its original native input as the paint source.
+     * Watch the host's ancestors for theme changes and re-sync the display's
+     * color/background/at-rest border to match the themed host. An owned editor
+     * can supply its original native input as the paint source.
      */
     protected installThemeObserver(
         capturedStyles: Record<string, string>,
@@ -460,7 +469,24 @@ export abstract class MarkedFieldBase<
         if (typeof MutationObserver === 'undefined') return;
         // Replace any prior observer (defensive against a double install).
         this.disconnectThemeObserver();
-        const observer = new MutationObserver(() => {
+        const layout = [
+            'font',
+            'fontSize',
+            'lineHeight',
+            'borderWidth',
+            'borderStyle',
+            'borderRadius',
+            'paddingTop',
+            'paddingRight',
+            'paddingBottom',
+            'paddingLeft',
+        ] as const;
+        const paintProperties = [
+            'color',
+            'backgroundColor',
+            'borderColor',
+        ] as const;
+        this._themeObserver = observeFieldTheme(paintHost, () => {
             const masked = paintHost === this.host;
             const transitionProperty = paintHost.style.getPropertyValue(
                 'transition-property',
@@ -468,11 +494,9 @@ export abstract class MarkedFieldBase<
             const transitionPriority = paintHost.style.getPropertyPriority(
                 'transition-property',
             );
-            let paint: {
-                color: string;
-                backgroundColor: string;
-                borderColor: string;
-            };
+            const paint: Partial<
+                Record<(typeof layout | typeof paintProperties)[number], string>
+            > = {};
             try {
                 if (masked) {
                     // Even reduced-motion's tiny nonzero duration can leave the
@@ -485,11 +509,8 @@ export abstract class MarkedFieldBase<
                     paintHost.classList.remove(hostInputClass);
                 }
                 const cs = window.getComputedStyle(paintHost);
-                paint = {
-                    color: cs.color,
-                    backgroundColor: cs.backgroundColor,
-                    borderColor: cs.borderColor,
-                };
+                for (const property of [...layout, ...paintProperties])
+                    paint[property] = cs[property];
             } finally {
                 if (masked) {
                     paintHost.classList.add(hostInputClass);
@@ -502,23 +523,18 @@ export abstract class MarkedFieldBase<
                     else paintHost.style.removeProperty('transition-property');
                 }
             }
-            this.display.style.color = paint.color;
-            this.display.style.backgroundColor = paint.backgroundColor;
+            for (const property of layout) {
+                const value = paint[property] ?? '';
+                this.display.style[property] = value;
+                if (!masked) this.host.style[property] = value;
+            }
+            if (paint.fontSize) this.setMeasuredFontSize(paint.fontSize);
+            this.display.style.color = paint.color ?? '';
+            this.display.style.backgroundColor = paint.backgroundColor ?? '';
             // Keep the at-rest border current so blur restores themed paint.
-            capturedStyles.borderColor = paint.borderColor;
-            if (!this.hasFocus)
-                this.display.style.borderColor = paint.borderColor;
+            capturedStyles.borderColor = paint.borderColor ?? '';
+            this.display.style.borderColor = capturedStyles.borderColor;
         });
-        observer.observe(document.documentElement, {
-            attributes: true,
-            attributeFilter: [
-                'data-color-scheme',
-                'data-theme',
-                'data-bs-theme',
-                'class',
-            ],
-        });
-        this._themeObserver = observer;
     }
 
     /**

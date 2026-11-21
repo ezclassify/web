@@ -1415,7 +1415,7 @@ describe('MarkingField', () => {
         const here = dirname(fileURLToPath(import.meta.url));
         const css = readFileSync(join(here, 'marking-field.css'), 'utf8');
         expect(css).toMatch(
-            /\.marking-field-host:focus\s*\{[^}]*outline-offset:\s*-2px/,
+            /\.marking-field-host:focus\s*\{[^}]*outline-offset:\s*var\(--ez-focus-ring-offset, -2px\)/,
         );
     });
 

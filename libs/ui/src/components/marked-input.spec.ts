@@ -559,16 +559,12 @@ describe('MarkedInput', () => {
         );
     });
 
-    it('the async style re-read derives font from the class-ON inherited state', async () => {
-        // The native host uses its class-on inherited font while the display
-        // mirrors those metrics. Temporarily unmasking authored colors must not
-        // replace that font with the browser control default. Mock the two
-        // computed states because jsdom does not apply the stylesheet cascade.
+    it('mirrors the original input font onto both marked text layers', async () => {
         const engine = await createTestEngine();
         root.innerHTML = `<input type="text" id="field" data-ezclassify-controller="marked-input" value="(U) title">`;
 
-        const CLASS_ON_FONT = '16px system-ui'; // what .marked-input-native (font: inherit) resolves to
-        const CLASS_OFF_FONT = '13.3333px Arial'; // the UA default control font a bare <textarea> gets
+        const HOST_FONT = '16px system-ui';
+        const EDITOR_FONT = '13.3333px Arial';
 
         const target = () => editingField('field') as HTMLTextAreaElement;
         const realGetComputedStyle = window.getComputedStyle.bind(window);
@@ -589,7 +585,10 @@ describe('MarkedInput', () => {
                     'marked-input-native',
                 );
                 return {
-                    font: classOn ? CLASS_ON_FONT : CLASS_OFF_FONT,
+                    font:
+                        el.id === 'field'
+                            ? HOST_FONT
+                            : (el as HTMLElement).style.font || EDITOR_FONT,
                     padding: '0px',
                     borderWidth: '1px',
                     borderStyle: 'solid',
@@ -631,6 +630,7 @@ describe('MarkedInput', () => {
             // working: it's the only way to see the host's real border/color
             // through the class's hard-coded transparent values.
             expect(display.style.backgroundColor).toBe('rgb(255, 255, 255)');
+            expect(target().style.font).toContain('system-ui');
             target().dispatchEvent(new Event('focus'));
             target().dispatchEvent(new Event('blur'));
             expect(display.style.borderColor).toBe('rgb(209, 213, 219)');

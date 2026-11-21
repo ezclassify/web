@@ -165,6 +165,7 @@ export class MarkedInput extends MarkedFieldBase<HTMLTextAreaElement> {
 
         this.host = this.resolveHost();
         const input = this.input;
+        this.styleNativeField(this.nativeInput);
 
         // Capture the input's current styles before making it invisible.
         // window.getComputedStyle() returns a live CSSStyleDeclaration, snapshot
@@ -187,6 +188,9 @@ export class MarkedInput extends MarkedFieldBase<HTMLTextAreaElement> {
             'borderWidth',
             'borderStyle',
             'borderRadius',
+            'font',
+            'fontSize',
+            'lineHeight',
             'paddingTop',
             'paddingRight',
             'paddingBottom',
@@ -225,6 +229,9 @@ export class MarkedInput extends MarkedFieldBase<HTMLTextAreaElement> {
                 capturedStyles[p] = box[p];
                 this.display.style[p] = box[p];
             }
+            this.setMeasuredFontSize(box.fontSize);
+            input.style.font = box.font;
+            input.style.lineHeight = box.lineHeight;
             input.style.borderWidth = box.borderWidth;
             input.style.borderStyle = box.borderStyle;
             // The text starts where the host's padding puts it, in both layers.

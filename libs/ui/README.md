@@ -715,12 +715,28 @@ injectDefaultStyles();
 
 ### Fit fields to a host form
 
-Style your native form controls as you normally would. Enhanced editors mirror
-their host's typography, padding, and border. Set tokens such as
-`--ez-color-primary`, `--ez-color-primary-contrast`, and `--ez-border-radius`
-on a form wrapper to style the library's buttons, panels, and focus indicators
-in that form. The picker also takes the field's theme when it opens in an
-overlay.
+Mounted components have their own default typography, spacing, and borders.
+Set theme variables on a form wrapper to apply them to the fields and their
+pickers. Style an original native control with ordinary CSS to adjust a single
+field. Enhanced editors mirror that control's typography, padding, and border.
+
+```css
+.case-form {
+    --ez-font-family: Georgia, serif;
+    --ez-font-size: 1rem;
+    --ez-color-background: #f6f7ff;
+    --ez-color-primary: #41368a;
+    --ez-color-primary-contrast: #fff;
+    --ez-color-border-focus: #41368a;
+    --ez-border-radius: 0.5rem;
+}
+```
+
+Use `--ez-focus-ring-width` and `--ez-focus-ring-offset` to adjust the field
+outline. Set `--ez-banner-background` and `--ez-banner-foreground` together to
+override a standard marking banner's scheme colors. Over-boundary alerts
+have their own `--ez-banner-over-boundary-bg` and
+`--ez-banner-over-boundary-text` tokens.
 
 ### Category colors
 
@@ -737,7 +753,8 @@ override to that form.
 }
 ```
 
-`--ez-category-accent` sets the MarkingField underline.
+`--ez-category-accent` sets the MarkingField underline and the accent for
+category choice buttons.
 `--ez-category-background` and `--ez-category-text` set the TagInput chip
 colors. Specify the chip colors together for readable contrast. Categories
 with no override keep their scheme or default palette. Category CSS affects
@@ -746,11 +763,11 @@ a concept was inferred.
 
 ### Fonts
 
-Text you type into a field takes the font of the control it enhances, so the
-field reads like the rest of your form. The library's own chrome (pickers,
-lists, tooltips, banners, labels) takes the page font. Set `--ez-font-family`
-to give that chrome a different font. It leaves field text alone unless you
-opt into the library's styled inputs (`styleInputs: true`), which use it too.
+Set `--ez-font-family` on the form to change the font for controls and their
+pickers together. Set `font-family` on a native control for a field-specific
+override. TagInput uses the same font and size for its chips and search text.
+Use `--ez-tag-input-font-size` to adjust both. Touch devices keep a minimum
+of 16px for those labels to avoid zooming when the search field receives focus.
 
 ## Adapter capabilities used by the UI
 

@@ -84,7 +84,7 @@
     min-height: 2rem;
     padding: 0.375rem 0.5rem;
     background: var(--ez-color-background, inherit);
-    border: 1px solid var(--ez-color-border, #d1d5db);
+    border: var(--ez-border-width, 1px) solid var(--ez-color-border, #d1d5db);
     border-radius: var(--ez-border-radius, 0.25rem);
     color: var(--ez-color-text, inherit);
 }
@@ -92,8 +92,9 @@
    same way inside its own edge. Focus on a chrome control shows that
    control's own ring instead: clearing is a form action, not editing. */
 .ez-field-frame:focus-within:not(:has(.ez-field-chrome :focus)) {
-    outline: 2px solid var(--ez-color-primary, #fdb827);
-    outline-offset: -2px;
+    outline: var(--ez-focus-ring-width, 2px) solid
+        var(--ez-color-border-focus, var(--ez-color-primary, #fdb827));
+    outline-offset: var(--ez-focus-ring-offset, -2px);
 }
 /* A control whose host is locked reads as a disabled input. */
 .ez-field-frame[data-ezclassify-locked] {

@@ -19,6 +19,7 @@
        enhances. The trailing padding is the inline chrome's reserve, the same
        at rest and while focused, so focusing the field never reflows its
        chips. A single row of chips sits centered in a taller host's room. */
+    --ez-tag-input-effective-font-size: var(--ez-tag-input-font-size, 1em);
     font: inherit;
     cursor: text;
     align-content: center;
@@ -42,6 +43,12 @@
     overflow-wrap: normal;
 }
 
+.tag-input-wrap > .proto-tag,
+.tag-input-wrap > .tag-input-filter {
+    font-family: inherit;
+    font-size: var(--ez-tag-input-effective-font-size);
+}
+
 .tag-input-filter {
     flex: 1;
     min-width: 3.75rem;
@@ -60,8 +67,11 @@
     /* iOS Safari zooms the page when a focused field's effective font-size is
        under 16px. The threshold is defined in device px, not rem, so px is
        correct here; max() keeps larger host fonts intact. */
-    .tag-input-filter {
-        font-size: max(1em, 16px);
+    .tag-input-wrap {
+        --ez-tag-input-effective-font-size: max(
+            var(--ez-tag-input-font-size, 1em),
+            16px
+        );
     }
     /* The search input is a 44px target on a finger. */
     .tag-input-filter {

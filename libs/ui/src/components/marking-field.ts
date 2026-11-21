@@ -30,7 +30,11 @@ import { resolveMarkingColor } from '../color-resolver';
 import { COMPONENT_CSS } from './component-utils';
 import { heightAtLeastFloor } from './dom-helpers';
 import { setStatusMarkFixes, statusMarkOwnsNode } from './status-mark';
-import { mountFieldChrome, type FieldChrome } from './field-chrome';
+import {
+    mountFieldChrome,
+    observeFieldTheme,
+    type FieldChrome,
+} from './field-chrome';
 import { t } from '../i18n';
 import { locateTokenSpans, type TokenNode } from '../token-tree/token-tree';
 import { derivedAssertion } from '../assertion-identity';
@@ -188,6 +192,7 @@ export class MarkingField extends ComposerFieldBase {
             );
         }
         this.injectComponentStyles(markingFieldCss);
+        this.styleNativeField(native);
 
         this.wrap = document.createElement('div');
         this.wrap.className = 'marking-field-wrap';
@@ -854,22 +859,13 @@ export class MarkingField extends ComposerFieldBase {
     private installThemeObserver(): void {
         if (typeof MutationObserver === 'undefined') return;
         this._themeObserver?.disconnect();
-        const observer = new MutationObserver(() => {
-            // Input-specific host theme selectors remain authoritative when
-            // the visible editor is an owned textarea.
-            this.captureAndMirrorStyles();
-            if (this.hasFocus) this.syncHostHeight();
-        });
-        observer.observe(document.documentElement, {
-            attributes: true,
-            attributeFilter: [
-                'data-color-scheme',
-                'data-theme',
-                'data-bs-theme',
-                'class',
-            ],
-        });
-        this._themeObserver = observer;
+        this._themeObserver = observeFieldTheme(
+            this.enhancedInput ?? this.host,
+            () => {
+                this.captureAndMirrorStyles();
+                if (this.hasFocus) this.syncHostHeight();
+            },
+        );
     }
 
     private observeHostWidth(): void {
