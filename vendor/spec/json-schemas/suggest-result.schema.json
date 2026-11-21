@@ -18,6 +18,11 @@
                     "description": "The id of the suggested concept.",
                     "type": "string"
                 },
+                "depth": {
+                    "description": "Zero-based indentation level in the returned browse order. Omitted when the result supplies no hierarchy for the suggestion.",
+                    "minimum": 0,
+                    "type": "integer"
+                },
                 "description": {
                     "description": "Secondary label (longer name or alternate view).",
                     "type": "string"
@@ -39,7 +44,7 @@
                     "type": "string"
                 },
                 "order": {
-                    "description": "Sort order.",
+                    "description": "The concept's authored position.",
                     "type": "integer"
                 },
                 "requires": {
