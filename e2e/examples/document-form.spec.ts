@@ -254,6 +254,55 @@ async function outlines(field: Locator): Promise<string[]> {
     }, FIELD_CONTROLS);
 }
 
+test('resizes the focused MarkingField when its text has less room', async ({
+    page,
+}) => {
+    const observed = observe(page);
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto('/');
+    const field = page.locator('textarea.marking-field-host').first();
+    const wrap = page.locator('.marking-field-wrap').first();
+    await expect(field).toHaveValue('INTERNAL');
+    await field.focus();
+    await settle(observed);
+
+    const heights = () =>
+        field.evaluate((element) => ({
+            width: element.clientWidth,
+            visible: element.clientHeight,
+            content: element.scrollHeight,
+        }));
+    const initial = await heights();
+    expect(initial.content).toBe(initial.visible);
+
+    await wrap.evaluate((element) => (element.style.maxWidth = '125px'));
+    await expect.poll(async () => (await heights()).visible).toBeGreaterThan(
+        initial.visible,
+    );
+    expect((await heights()).content).toBe((await heights()).visible);
+
+    await wrap.evaluate((element) => (element.style.maxWidth = '220px'));
+    await expect.poll(async () => (await heights()).visible).toBe(
+        initial.visible,
+    );
+    const wider = await heights();
+
+    // The trailing control padding can change without changing the outer width.
+    await wrap.locator('.ez-field-chrome').evaluate((element) =>
+        element.style.setProperty('min-width', '175px'),
+    );
+    await expect.poll(async () => (await heights()).visible).toBeGreaterThan(
+        initial.visible,
+    );
+    const padded = await heights();
+    expect(padded.width).toBe(wider.width);
+    expect(padded.content).toBe(padded.visible);
+    await expect(field).toHaveValue('INTERNAL');
+    await settle(observed);
+    expect(observed.failures).toEqual([]);
+    expect(observed.errors).toEqual([]);
+});
+
 for (const viewport of [
     { name: 'desktop', width: 1280, height: 900 },
     { name: 'phone', width: 390, height: 844 },
