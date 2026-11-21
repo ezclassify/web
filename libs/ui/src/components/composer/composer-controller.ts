@@ -161,6 +161,11 @@ export interface ComposerPort {
      * countries a REL TO list takes, say).
      */
     suggestions(live?: readonly Assertion[]): Promise<Suggestion[]>;
+    /** Order the combined browse choices within one category. */
+    orderBrowse?(
+        categoryId: string,
+        rows: ComposerConceptRow[],
+    ): ComposerConceptRow[];
     /**
      * Suggestions for `query` that the scheme's rules gate right now, with what
      * each one needs first. Optional; without it no row is shown as gated.
@@ -235,6 +240,8 @@ export type ComposerRow =
           readonly label: string;
       }
     | { readonly kind: 'more'; readonly id: string; readonly count: number };
+
+export type ComposerConceptRow = Extract<ComposerRow, { kind: 'concept' }>;
 
 /** A labeled run of rows: a category in browse, or corrections. */
 export interface ComposerGroup {
@@ -504,9 +511,16 @@ export class ComposerController {
     private readonly suggestionCatalog = new SuggestionCatalog(
         (live) => this.port.suggestions(live),
         () => {
+            const previous = this.snapshotCache;
+            const active =
+                previous?.mode === 'browse'
+                    ? previous.rows[this.activeIndex]
+                    : undefined;
             this.catalog = this.suggestionCatalog.rows();
             this.reconcileScope();
-            this.emit();
+            this.emit(
+                active?.kind === 'concept' ? active.suggestion : undefined,
+            );
         },
     );
     /**
@@ -561,9 +575,19 @@ export class ComposerController {
         return this.snapshotCache;
     }
 
-    private emit(): void {
+    private emit(active?: Suggestion): void {
         this.snapshotCache = null;
-        const snap = this.snapshot();
+        let snap = this.snapshot();
+        if (active) {
+            this.activeIndex = snap.rows.findIndex(
+                (row) =>
+                    row.kind === 'concept' &&
+                    row.suggestion.categoryId === active.categoryId &&
+                    row.suggestion.conceptId === active.conceptId,
+            );
+            snap = { ...snap, activeIndex: this.activeIndex };
+            this.snapshotCache = snap;
+        }
         for (const listener of this.listeners) listener(snap);
     }
 
@@ -942,7 +966,7 @@ export class ComposerController {
         suggestion: Suggestion,
         lookup: RowLookup,
         ranked?: RankedSuggestion,
-    ): ComposerRow {
+    ): ComposerConceptRow {
         const key = keyOf(suggestion);
         const held = lookup.heldByKey.get(key);
         const inferred = held?.confidence === 'inferred';
@@ -1134,7 +1158,7 @@ export class ComposerController {
                 labels.set(id, c.label);
                 if (c.scope) scopes.set(id, c.scope);
             });
-            const byGroup = new Map<string, ComposerRow[]>();
+            const byGroup = new Map<string, ComposerConceptRow[]>();
             const order: string[] = [];
             // One row per concept per category, whichever source offers it.
             const seen = new Set<string>();
@@ -1144,7 +1168,7 @@ export class ComposerController {
                 if (seen.has(keyOf(s))) continue;
                 seen.add(keyOf(s));
                 const row = this.conceptRow(s, lookup);
-                if (row.kind === 'concept' && row.gated) {
+                if (row.gated) {
                     gatedRows.push(row);
                     continue;
                 }
@@ -1168,11 +1192,12 @@ export class ComposerController {
             );
             for (const id of order) {
                 if (filled.has(id) && this.scope !== id) continue;
+                const rows = byGroup.get(id)!;
                 groups.push({
                     id: `g-${idPart(id)}`,
                     label: labels.get(id)!,
                     scope: scopes.get(id),
-                    rows: byGroup.get(id)!,
+                    rows: this.port.orderBrowse?.(id, rows) ?? rows,
                 });
             }
         }

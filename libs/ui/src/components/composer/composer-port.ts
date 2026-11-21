@@ -14,6 +14,7 @@ import type {
 import type {
     ComposerCommit,
     ComposerCommitted,
+    ComposerConceptRow,
     ComposerDraftShape,
     ComposerPort,
     ComposerReading,
@@ -26,6 +27,7 @@ import {
     suggestionForAssertion,
     type ComposerEngineBinding,
 } from './composer-reading';
+import { orderChoiceOptions } from '../choice-options';
 import { addUserAssertion } from '../assertion-addition';
 import { takenFromWhole } from '../../assertion-identity';
 import { removeAssertionCascade } from '../assertion-removal';
@@ -185,6 +187,53 @@ export function createComposerPort(field: ComposerPortField): ComposerPort {
             assertions: mine(reading.assertions),
         };
     };
+    let indexedConcepts: SchemePublicView['concepts'] | undefined;
+    let byId = new Map<string, SchemePublicView['concepts'][number]>();
+    const tieredCategories = new Set<string>();
+    const orderBrowse = (categoryId: string, rows: ComposerConceptRow[]) => {
+        if (rows.length < 2) return rows;
+        const { categories, concepts } = field.scheme();
+        const sort = categories.find(
+            (category) => category.id === categoryId,
+        )?.sort;
+        const keys = Array.isArray(sort) ? sort : [sort];
+        if (keys.length !== 1 || keys[0] !== 'alphabetical') return rows;
+        if (concepts !== indexedConcepts) {
+            byId = new Map(concepts.map((concept) => [concept.id, concept]));
+            tieredCategories.clear();
+            for (const concept of concepts) {
+                if (!concept.tier) continue;
+                for (const category of concept.categories) {
+                    if (
+                        concept.parents.some((id) =>
+                            byId.get(id)?.categories.includes(category),
+                        )
+                    ) {
+                        tieredCategories.add(category);
+                    }
+                }
+            }
+            indexedConcepts = concepts;
+        }
+        if (!tieredCategories.has(categoryId)) return rows;
+        const options = rows.map((row) => {
+            const id = row.suggestion.conceptId;
+            const view = byId.get(id);
+            return {
+                row,
+                concept: { id, parents: view?.tier ? view.parents : undefined },
+                name: view?.name ?? row.suggestion.label,
+            };
+        });
+        // Live choices can be appended later than their siblings in the base catalog.
+        options.sort((a, b) =>
+            a.name < b.name ? -1 : a.name > b.name ? 1 : 0,
+        );
+        return orderChoiceOptions(
+            options,
+            options.map(({ concept }) => concept),
+        ).map(({ row }) => row);
+    };
     return {
         read: async (text, base) =>
             judged(
@@ -226,6 +275,7 @@ export function createComposerPort(field: ComposerPortField): ComposerPort {
                 ),
             ),
         suggestions: (live) => field.suggestions(live),
+        orderBrowse,
         gated: (query, live) => field.gated(query, live),
         committed: () => field.committed(),
         store: (reading, commit) => field.store(owned(reading), commit),

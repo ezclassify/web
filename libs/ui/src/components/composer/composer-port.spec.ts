@@ -5,8 +5,157 @@
  */
 import { describe, expect, it } from 'vitest';
 import type { SchemePublicView } from '@ezclassify/types';
+import {
+    ComposerController,
+    type ComposerReading,
+} from './composer-controller';
 import { createComposerPort, type ComposerPortField } from './composer-port';
 import type { FormatLayoutSource } from '../../format-layout';
+
+it('browses live and base choices alphabetically within their tiers', async () => {
+    const categories: SchemePublicView['categories'] = [
+        { id: 'tags', label: 'Tags', rollup: 'union', sort: 'alphabetical' },
+    ];
+    const concept = (id: string, name: string, parent?: string) => ({
+        id,
+        name,
+        parents: parent ? [parent] : [],
+        tier: parent ? 'attached' : undefined,
+        views: { default: name },
+        aliases: [],
+        categories: ['tags'],
+        position: 0,
+    });
+    const concepts = [
+        concept('root', 'Delta'),
+        concept('other', 'Echo'),
+        concept('child', 'Charlie', 'root'),
+        concept('sibling', 'Bravo', 'root'),
+        concept('leaf', 'Alpha', 'child'),
+    ];
+    const choices = (ids: string[]) =>
+        ids.map((id) => {
+            const { name, views } = concepts.find((entry) => entry.id === id)!;
+            return {
+                conceptId: id,
+                categoryId: 'tags',
+                label: name,
+                description: '',
+                name,
+                views,
+                group: 'Tags',
+                order: 0,
+                selected: false,
+            };
+        });
+    const reading: ComposerReading = {
+        assertions: [
+            {
+                conceptId: 'child',
+                categoryId: 'tags',
+                source: 'input',
+                confidence: 'certain',
+            },
+        ],
+        rendered: 'Charlie',
+        complete: true,
+        valid: true,
+        errors: [],
+        warnings: [],
+        proposedFixes: [],
+        appliedFixes: [],
+        unmatched: [],
+        corrections: [],
+    };
+    let rootOnly = false;
+    let releaseLive: (() => void) | undefined;
+    const port = createComposerPort({
+        shape: 'whole',
+        binding: {
+            process: async () => {
+                throw new Error('unused');
+            },
+        },
+        scheme: () => ({ categories, concepts }),
+        meta: () => ({}),
+        formatId: () => 'demo',
+        suggestions: async (live) => {
+            if (rootOnly) return choices(['other', 'root']);
+            if (!live) return choices(['child', 'root', 'other']);
+            await new Promise<void>((resolve) => {
+                releaseLive = resolve;
+            });
+            return choices(['leaf', 'sibling', 'child', 'root', 'other']);
+        },
+        gated: async () => [],
+        committed: () => ({
+            assertions: reading.assertions,
+            rendered: reading.rendered,
+        }),
+        store: async () => {},
+    });
+    const browseIds = async () => {
+        const picker = new ComposerController({
+            port: {
+                ...port,
+                read: async () =>
+                    rootOnly ? { ...reading, assertions: [] } : reading,
+                render: async () => reading,
+            },
+            shape: 'whole',
+        });
+        await picker.open();
+        await picker.settle();
+        const other = picker
+            .snapshot()
+            .rows.findIndex(
+                (row) =>
+                    row.kind === 'concept' &&
+                    row.suggestion.conceptId === 'other',
+            );
+        const activeId = picker.snapshot().rows[other]?.id;
+        expect(activeId).toBeDefined();
+        picker.setActive(other);
+        if (releaseLive) {
+            await new Promise<void>((resolve) => {
+                const unsubscribe = picker.subscribe(() => {
+                    unsubscribe();
+                    resolve();
+                });
+                releaseLive?.();
+                releaseLive = undefined;
+            });
+            expect(picker.activeRow()?.id).toBe(activeId);
+        }
+        const ids = picker
+            .snapshot()
+            .rows.flatMap((row) =>
+                row.kind === 'concept' ? [row.suggestion.conceptId] : [],
+            );
+        picker.dispose();
+        return ids;
+    };
+    expect(await browseIds()).toEqual([
+        'root',
+        'sibling',
+        'child',
+        'leaf',
+        'other',
+    ]);
+
+    rootOnly = true;
+    expect(await browseIds()).toEqual(['root', 'other']);
+
+    rootOnly = false;
+    categories[0]!.sort = 'position';
+    expect(await browseIds()).toEqual([
+        'child',
+        'root',
+        'other',
+        'leaf',
+        'sibling',
+    ]);
+});
 
 const categories = [
     { id: 'level', label: 'Level', required: true, rollup: 'max' },
