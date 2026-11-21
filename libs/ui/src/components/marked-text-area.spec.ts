@@ -1405,6 +1405,40 @@ describe('MarkedTextArea favorites', () => {
     });
 });
 
+it.each(['before', 'after'])(
+    'keeps the restored native textarea free of a picker on mouse-up %s teardown',
+    async (when) => {
+        const container = document.createElement('div');
+        const textarea = document.createElement('textarea');
+        const value = '(U) Body text here.';
+        textarea.value = value;
+        root.append(textarea, container);
+        const field = new MarkedTextArea();
+        await field.init(container, await createTestContext());
+
+        const clickMark = () => {
+            textarea.focus();
+            textarea.setSelectionRange(2, 2);
+            textarea.dispatchEvent(
+                new MouseEvent('mouseup', {
+                    bubbles: true,
+                    button: 0,
+                    detail: 1,
+                }),
+            );
+        };
+        if (when === 'before') clickMark();
+        field.destroy();
+        if (when === 'after') clickMark();
+        await wait(100);
+
+        expect(textarea.parentNode).toBe(root);
+        expect(textarea.value).toBe(value);
+        expect(document.querySelector('.ez-composer__result-label')).toBeNull();
+        expect(container.querySelector('.inline-editor-input')).toBeNull();
+    },
+);
+
 describe('MarkedTextArea favorites: caret-scoped selection and pinned row', () => {
     /** Mount MarkedTextArea directly (see createTestContext's doc comment). */
     async function mountDirect(

@@ -377,6 +377,7 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
     private lastMarkingStrings: string[] = [];
     /** Set once the field is torn down; a late whole change reads nothing. */
     private tornDown = false;
+    private readonly textareaEvents = new AbortController();
     /**
      * True when the next scan follows a user edit. Externally supplied
      * replacements are read without rewriting them.
@@ -592,9 +593,9 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
         this.boundDocKeydown = (e) => this.onDocKeydown(e);
         this.boundDocClick = (e) => this.onDocClick(e);
         this.boundSelectionChange = () => this.onSelectionChange();
-        this.textarea.addEventListener('input', this.boundInput);
-        this.textarea.addEventListener('keydown', this.boundKeydown);
-        this.textarea.addEventListener('focus', () => {
+        this.listenToTextarea('input', this.boundInput);
+        this.listenToTextarea('keydown', this.boundKeydown);
+        this.listenToTextarea('focus', () => {
             this.hasFocus = true;
             this.renderDisplay();
             if (this.picker?.isToolsSuspended && !this.pressing) {
@@ -620,7 +621,7 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
                 });
             }
         });
-        this.textarea.addEventListener('blur', () => {
+        this.listenToTextarea('blur', () => {
             this.hasFocus = false;
             this.display.style.borderColor = capturedStyles.borderColor;
             if (!this.picker) this.renderDisplay();
@@ -634,11 +635,11 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
         // click. The release decides (see MarkedFieldBase.pressing): a drag or
         // a double-click is a text selection and opens nothing.
         this.watchPresses();
-        this.textarea.addEventListener('mouseup', (event) => {
+        this.listenToTextarea('mouseup', (event) => {
             if (event.button !== 0 || event.detail > 1) return;
             requestAnimationFrame(() => this.openFromClick());
         });
-        this.textarea.addEventListener('scroll', () => {
+        this.listenToTextarea('scroll', () => {
             this.display.scrollTop = this.textarea.scrollTop;
             this.display.scrollLeft = this.textarea.scrollLeft;
         });
@@ -1091,8 +1092,7 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
         );
         this.destroyFieldTools();
         this.toolsButton = null;
-        this.textarea.removeEventListener('input', this.boundInput);
-        this.textarea.removeEventListener('keydown', this.boundKeydown);
+        this.textareaEvents.abort();
         document.removeEventListener('keydown', this.boundDocKeydown, true);
         document.removeEventListener('mousedown', this.boundDocClick);
         this.unwatchPresses();
@@ -1115,6 +1115,15 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
         // that is gone.
         this.scanComplete = true;
         this.reportScanCompleteness();
+    }
+
+    private listenToTextarea<K extends keyof HTMLElementEventMap>(
+        type: K,
+        listener: (event: HTMLElementEventMap[K]) => void,
+    ): void {
+        this.textarea.addEventListener(type, listener, {
+            signal: this.textareaEvents.signal,
+        });
     }
 
     private onTextareaInput(): void {
@@ -2434,6 +2443,7 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
         openList = true,
         caret?: number,
     ): Promise<void> {
+        if (this.tornDown || !this.wrap.isConnected) return;
         this.destroyPicker();
         // Escape cancels the edit. The Ctrl+Enter path snapshots before its
         // template insertion; the click/caret-driven opens snapshot here.
@@ -2536,7 +2546,7 @@ export class MarkedTextArea extends MarkedFieldBase<HTMLTextAreaElement> {
      * leaves the marking that was open, as a keyboard move would.
      */
     private openFromClick(): void {
-        if (!this.hasFocus) return;
+        if (this.tornDown || !this.hasFocus) return;
         const pos = this.textarea.selectionStart;
         if (pos !== this.textarea.selectionEnd) return;
         // Offsets from a scan that lags the text would point at the wrong
